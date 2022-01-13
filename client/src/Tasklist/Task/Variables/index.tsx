@@ -33,11 +33,15 @@ import {
   NameTextField,
 } from './styled';
 import {
-  validateJSON,
-  validateNonEmpty,
-  validateDuplicateVariableName,
+  validateNameComplete,
+  validateNameNotDuplicate,
+  validateValueComplete,
+  validateValueJSON,
 } from './validators';
-import {createVariableFieldName} from './createVariableFieldName';
+import {
+  createVariableFieldName,
+  createNewVariableFieldName,
+} from './createVariableFieldName';
 import {getVariableFieldName} from './getVariableFieldName';
 import {Variable} from 'modules/types';
 import {
@@ -91,6 +95,9 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
     return Boolean(name?.dirty || value?.dirty);
   };
 
+  const hasEmptyNewVariable = (values: FormValues) =>
+    values.newVariables?.some((variable) => variable === undefined);
+
   return (
     <Form<FormValues>
       mutators={{...arrayMutators}}
@@ -113,32 +120,6 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
           })),
           ...newVariables,
         ]);
-      }}
-      validate={(values) => {
-        const {newVariables} = values;
-
-        if (newVariables !== undefined) {
-          return {
-            newVariables: newVariables.map((variable, index) => {
-              if (variable === undefined) {
-                return {
-                  name: validateNonEmpty(''),
-                  value: validateJSON(''),
-                };
-              }
-              const {value, name} = variable;
-
-              return {
-                name:
-                  validateNonEmpty(name) ??
-                  validateDuplicateVariableName(variable, values, index),
-                value: validateJSON(value),
-              };
-            }),
-          };
-        }
-
-        return {};
       }}
       initialValues={variables.reduce(
         (values, variable) => ({
@@ -195,10 +176,10 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                     name={createVariableFieldName(
                                       variable.name,
                                     )}
-                                    validate={(value) =>
+                                    validate={
                                       variable.isValueTruncated
-                                        ? undefined
-                                        : validateJSON(value)
+                                        ? () => undefined
+                                        : validateValueJSON
                                     }
                                   >
                                     {({input, meta}) => (
@@ -266,15 +247,42 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                 return (
                                   <TR key={variable} data-testid={variable}>
                                     <InputTD>
-                                      <Field name={`${variable}.name`}>
-                                        {({input}) => (
+                                      <Field
+                                        name={createNewVariableFieldName(
+                                          variable,
+                                          'name',
+                                        )}
+                                        validate={(
+                                          variableName,
+                                          allValues,
+                                          meta,
+                                        ) =>
+                                          validateNameComplete(
+                                            variableName,
+                                            allValues,
+                                            meta,
+                                          ) ||
+                                          validateNameNotDuplicate(
+                                            variableName,
+                                            allValues,
+                                            meta,
+                                          )
+                                        }
+                                      >
+                                        {({input, meta}) => (
                                           <NameTextField
+                                            {...input}
+                                            type="text"
                                             name={input.name}
                                             data-testid={input.name}
                                             onChange={input.onChange}
                                             value={input.value}
                                             aria-label={`New variable ${index} name`}
-                                            error={
+                                            error={meta.error}
+                                            placeholder="Name"
+                                            autoFocus={true}
+                                            shouldDebounceError={
+                                              !meta.dirty &&
                                               isVariableDirty(
                                                 form.getFieldState(
                                                   `${variable}.name`,
@@ -283,42 +291,29 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                                   `${variable}.value`,
                                                 ),
                                               )
-                                                ? get(
-                                                    form.getState().errors,
-                                                    `${variable}.name`,
-                                                  )
-                                                : undefined
                                             }
-                                            placeholder="Name"
-                                            autoFocus={true}
                                           />
                                         )}
                                       </Field>
                                     </InputTD>
                                     <InputTD>
-                                      <Field name={`${variable}.value`}>
-                                        {({input}) => (
+                                      <Field
+                                        name={createNewVariableFieldName(
+                                          variable,
+                                          'value',
+                                        )}
+                                        validate={validateValueComplete}
+                                      >
+                                        {({input, meta}) => (
                                           <ValueTextField
+                                            {...input}
+                                            type="text"
                                             name={input.name}
                                             data-testid={`${input.name}`}
                                             onChange={input.onChange}
                                             value={input.value}
                                             aria-label={`New variable ${index} value`}
-                                            error={
-                                              isVariableDirty(
-                                                form.getFieldState(
-                                                  `${variable}.name`,
-                                                ),
-                                                form.getFieldState(
-                                                  `${variable}.value`,
-                                                ),
-                                              )
-                                                ? get(
-                                                    form.getState().errors,
-                                                    `${variable}.value`,
-                                                  )
-                                                : undefined
-                                            }
+                                            error={meta.error}
                                             placeholder="Value"
                                             fieldSuffix={{
                                               type: 'icon',
@@ -330,6 +325,17 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                               },
                                               tooltip: 'Open JSON editor modal',
                                             }}
+                                            shouldDebounceError={
+                                              !meta.dirty &&
+                                              isVariableDirty(
+                                                form.getFieldState(
+                                                  `${variable}.name`,
+                                                ),
+                                                form.getFieldState(
+                                                  `${variable}.value`,
+                                                ),
+                                              )
+                                            }
                                           />
                                         )}
                                       </Field>
@@ -368,7 +374,9 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                 type="submit"
                 disabled={
                   form.getState().submitting ||
-                  form.getState().hasValidationErrors
+                  form.getState().hasValidationErrors ||
+                  form.getState().validating ||
+                  hasEmptyNewVariable(values)
                 }
               >
                 Complete Task

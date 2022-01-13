@@ -28,6 +28,7 @@ type Props = Omit<
 > & {
   name: string;
   onChange: React.ComponentProps<typeof CmTextfield>['onCmInput'];
+  shouldDebounceError: boolean;
   error?: string;
   autoFocus?: boolean;
 };
@@ -37,19 +38,35 @@ const TextField: React.FC<Props> = ({
   onChange,
   error,
   autoFocus,
+  shouldDebounceError,
   ...props
 }) => {
   const fieldRef = useRef<HTMLCmTextfieldElement | null>(null);
-
-  useEffect(() => {
-    fieldRef.current?.renderValidity();
-  }, [error]);
+  const timeoutId = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (autoFocus) {
       fieldRef.current?.forceFocus();
     }
   }, [autoFocus]);
+
+  const runAfterDelay = (validator: () => void) => {
+    if (timeoutId.current !== null) {
+      clearTimeout(timeoutId.current);
+      timeoutId.current = null;
+    }
+    timeoutId.current = setTimeout(() => {
+      validator();
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (shouldDebounceError) {
+      runAfterDelay(() => fieldRef.current?.renderValidity());
+    } else {
+      fieldRef.current?.renderValidity();
+    }
+  }, [error, shouldDebounceError]);
 
   return (
     <CmTextfield

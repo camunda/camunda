@@ -10,6 +10,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
+  within,
 } from '@testing-library/react';
 import {
   mockGetCurrentUser,
@@ -110,7 +111,10 @@ describe('<Variables />', () => {
     userEvent.type(screen.getByLabelText('myVar'), newVariableValue);
 
     expect(screen.getByDisplayValue(newVariableValue)).toBeInTheDocument();
-    expect(await screen.findByText(/complete task/i)).toBeEnabled();
+
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
   });
 
   it('should add two variables and remove one', async () => {
@@ -269,7 +273,9 @@ describe('<Variables />', () => {
       '"valid_value"',
     );
 
-    expect(await screen.findByText(/complete task/i)).toBeEnabled();
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
 
     expect(
       screen.queryByTitle('Name has to be filled and Value has to be JSON'),
@@ -303,7 +309,12 @@ describe('<Variables />', () => {
     userEvent.click(await screen.findByText(/add variable/i));
     userEvent.type(screen.getByLabelText('New variable 0 name'), 'var');
     userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
-    userEvent.click(await screen.findByText(/complete task/i));
+
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+
+    userEvent.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
@@ -324,7 +335,12 @@ describe('<Variables />', () => {
     userEvent.click(await screen.findByText(/add variable/i));
     userEvent.type(screen.getByLabelText('New variable 0 name'), 'name');
     userEvent.type(screen.getByLabelText('New variable 0 value'), '"Jon"');
-    userEvent.click(await screen.findByText(/complete task/i));
+
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+
+    userEvent.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
@@ -352,7 +368,11 @@ describe('<Variables />', () => {
 
     userEvent.clear(await screen.findByLabelText('myVar'));
     userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
-    userEvent.click(await screen.findByText(/complete task/i));
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+
+    userEvent.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -421,6 +441,10 @@ describe('<Variables />', () => {
     userEvent.type(
       screen.getByLabelText('New variable 0 value'),
       '"newVariableValue"',
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
     userEvent.click(screen.getByText(/complete task/i));
 
@@ -530,6 +554,9 @@ describe('<Variables />', () => {
 
     userEvent.clear(screen.getByDisplayValue('"0001"'));
     userEvent.type(screen.getByLabelText('myVar'), '"newVariableValue"');
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
     userEvent.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
@@ -589,5 +616,210 @@ describe('<Variables />', () => {
       await screen.findByDisplayValue(mockVariable.value),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(mockNewValue)).toBeInTheDocument();
+  });
+
+  describe('Duplicate variable validations', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
+    it('should display error if name is the same with one of the existing variables', async () => {
+      mockServer.use(
+        graphql.query('GetTaskVariables', (_, res, ctx) => {
+          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        }),
+      );
+
+      render(
+        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        {
+          wrapper: Wrapper,
+        },
+      );
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+
+      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar');
+
+      expect(
+        await screen.findByText('Name must be unique'),
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByText('Value has to be JSON'),
+      ).toBeInTheDocument();
+    });
+
+    it('should display error on the last modified field when two new variables are added with the same name', async () => {
+      mockServer.use(
+        graphql.query('GetTaskVariables', (_, res, ctx) => {
+          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        }),
+      );
+
+      render(
+        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        {
+          wrapper: Wrapper,
+        },
+      );
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
+
+      expect(
+        await screen.findByText('Value has to be JSON'),
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByText(/Add Variable/));
+      userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
+
+      expect(
+        await within(screen.getByTestId('newVariables[1]')).findByText(
+          'Name must be unique',
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        await within(screen.getByTestId('newVariables[1]')).findByText(
+          'Value has to be JSON',
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        // eslint-disable-next-line testing-library/prefer-presence-queries
+        within(screen.getByTestId('newVariables[0]')).queryByText(
+          'Name must be unique',
+        ),
+      ).not.toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('New variable 1 name'), '3');
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText('Name must be unique'),
+      );
+
+      userEvent.type(screen.getByLabelText('New variable 0 name'), '3');
+      expect(
+        await within(screen.getByTestId('newVariables[0]')).findByText(
+          'Name must be unique',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        // eslint-disable-next-line testing-library/prefer-presence-queries
+        within(screen.getByTestId('newVariables[1]')).queryByText(
+          'Name must be unique',
+        ),
+      ).not.toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('New variable 1 name'), '4');
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText('Name must be unique'),
+      );
+    });
+
+    it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
+      mockServer.use(
+        graphql.query('GetTaskVariables', (_, res, ctx) => {
+          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        }),
+      );
+
+      render(
+        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        {
+          wrapper: Wrapper,
+        },
+      );
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+
+      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
+      userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
+
+      await waitFor(() =>
+        expect(screen.getByText(/complete task/i)).toBeEnabled(),
+      );
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+
+      userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
+      userEvent.type(screen.getByLabelText('New variable 1 value'), '2');
+
+      expect(
+        await within(screen.getByTestId('newVariables[1]')).findByText(
+          'Name must be unique',
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        // eslint-disable-next-line testing-library/prefer-presence-queries
+        within(screen.getByTestId('newVariables[0]')).queryByText(
+          'Name must be unique',
+        ),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should continue to display existing duplicate name error', async () => {
+      mockServer.use(
+        graphql.query('GetTaskVariables', (_, res, ctx) => {
+          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        }),
+      );
+
+      render(
+        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        {
+          wrapper: Wrapper,
+        },
+      );
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+
+      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
+      userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
+
+      await waitFor(() =>
+        expect(screen.getByText(/complete task/i)).toBeEnabled(),
+      );
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+
+      userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
+      userEvent.type(screen.getByLabelText('New variable 1 value'), '2');
+
+      expect(
+        await within(screen.getByTestId('newVariables[1]')).findByText(
+          'Name must be unique',
+        ),
+      ).toBeInTheDocument();
+
+      userEvent.click(await screen.findByText(/Add Variable/));
+
+      userEvent.type(screen.getByLabelText('New variable 2 name'), 'myVar2');
+      userEvent.type(screen.getByLabelText('New variable 2 value'), '3');
+
+      expect(
+        await within(screen.getByTestId('newVariables[2]')).findByText(
+          'Name must be unique',
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        within(screen.getByTestId('newVariables[1]')).getByText(
+          'Name must be unique',
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        // eslint-disable-next-line testing-library/prefer-presence-queries
+        within(screen.getByTestId('newVariables[0]')).queryByText(
+          'Name must be unique',
+        ),
+      ).not.toBeInTheDocument();
+    });
   });
 });

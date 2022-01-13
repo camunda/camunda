@@ -5,7 +5,11 @@
  */
 
 const getVariableFieldName = (variableNameWithPrefix: string) => {
-  return variableNameWithPrefix.substr(1);
+  return variableNameWithPrefix.substring(1);
 };
 
-export {getVariableFieldName};
+const getNewVariablePrefix = (variableName: string) => {
+  return variableName.replace('.name', '').replace('.value', '');
+};
+
+export {getVariableFieldName, getNewVariablePrefix};

@@ -4,10 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getVariableFieldName} from './getVariableFieldName';
+import {
+  getVariableFieldName,
+  getNewVariablePrefix,
+} from './getVariableFieldName';
 
 describe('getVariableFieldName', () => {
   it('should get variable field name', () => {
     expect(getVariableFieldName('#someVariableName')).toBe('someVariableName');
+  });
+  it('should get new variable prefix', () => {
+    expect(getNewVariablePrefix('newVariables[0].name')).toBe(
+      'newVariables[0]',
+    );
+    expect(getNewVariablePrefix('newVariables[0].value')).toBe(
+      'newVariables[0]',
+    );
   });
 });

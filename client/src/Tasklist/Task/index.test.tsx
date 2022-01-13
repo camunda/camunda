@@ -14,7 +14,6 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-  within,
 } from '@testing-library/react';
 import {
   mockGetTaskClaimed,
@@ -371,86 +370,6 @@ describe('<Task />', () => {
     expect(await screen.findByText('Unclaim')).toBeInTheDocument();
 
     expect(screen.getByText(/Task has no Variables/)).toBeInTheDocument();
-  });
-
-  it('should not allow duplicate variables', async () => {
-    mockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
-      }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
-      }),
-      graphql.mutation('UnclaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockUnclaimTask.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
-      }),
-      graphql.mutation('ClaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockClaimTask.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
-      }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
-      }),
-    );
-
-    render(<Task />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: ['/0'],
-        }),
-      ),
-    });
-
-    userEvent.click(await screen.findByText(/Add Variable/));
-
-    // try to add a variable with a same name from one of the existing variables
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar');
-
-    expect(await screen.findByText('Name must be unique')).toBeInTheDocument();
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
-
-    userEvent.clear(screen.getByLabelText('New variable 0 name'));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByText('Name must be unique'),
-    );
-    expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
-
-    // try to add a variable with a same name from one of the new added variables
-    userEvent.click(screen.getByText(/Add Variable/));
-    userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
-
-    expect(
-      await within(screen.getByTestId('newVariables[1]')).findByText(
-        'Name must be unique',
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      await within(screen.getByTestId('newVariables[1]')).findByText(
-        'Value has to be JSON',
-      ),
-    ).toBeInTheDocument();
-
-    const withinFirstVariable = within(screen.getByTestId('newVariables[0]'));
-    expect(
-      withinFirstVariable.queryByText('Name must be unique'),
-    ).not.toBeInTheDocument();
-
-    expect(
-      withinFirstVariable.getByText('Value has to be JSON'),
-    ).toBeInTheDocument();
-
-    userEvent.click(screen.getByLabelText('Remove new variable 0'));
-
-    expect(screen.queryByText('Name must be unique')).not.toBeInTheDocument();
-    expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
   });
 
   it('should render created task with variables form', async () => {

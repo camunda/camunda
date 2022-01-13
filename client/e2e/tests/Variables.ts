@@ -134,6 +134,13 @@ test('new variable still exists after refresh if task is completed', async (t) =
   );
 
   const currentUrl = await getURL();
+  await t
+    .expect(
+      screen
+        .getByRole('button', {name: 'Complete Task'})
+        .hasAttribute('disabled'),
+    )
+    .notOk();
   await t.click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
@@ -195,6 +202,13 @@ test('edited variable is saved after refresh if task is completed', async (t) =>
     .typeText(variableValueField, '"updatedValue"');
 
   const currentUrl = await getURL();
+  await t
+    .expect(
+      screen
+        .getByRole('button', {name: 'Complete Task'})
+        .hasAttribute('disabled'),
+    )
+    .notOk();
   await t.click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t

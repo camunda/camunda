@@ -8,4 +8,8 @@ const createVariableFieldName = (name: string) => {
   return `#${name}`;
 };
 
-export {createVariableFieldName};
+const createNewVariableFieldName = (prefix: string, suffix: string) => {
+  return `${prefix}.${suffix}`;
+};
+
+export {createVariableFieldName, createNewVariableFieldName};

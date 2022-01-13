@@ -42,6 +42,7 @@ const VariablesTable: React.FC = () => {
               id="clientNo"
               value={'"CNT-1211132-02"'}
               onChange={noop}
+              shouldDebounceError={false}
             />
           </InputTD>
           <IconTD />
@@ -57,6 +58,7 @@ const VariablesTable: React.FC = () => {
               aria-invalid
               value="42.37"
               onChange={noop}
+              shouldDebounceError={false}
             />
           </InputTD>
           <td />
@@ -68,6 +70,7 @@ const VariablesTable: React.FC = () => {
               placeholder="Variable"
               name="variable"
               onChange={noop}
+              shouldDebounceError={false}
             />
           </InputTD>
           <InputTD>
@@ -76,6 +79,7 @@ const VariablesTable: React.FC = () => {
               placeholder="Value"
               name="value"
               onChange={noop}
+              shouldDebounceError={false}
             />
           </InputTD>
           <IconTD>
@@ -94,6 +98,7 @@ const VariablesTable: React.FC = () => {
               placeholder="Variable"
               aria-invalid
               onChange={noop}
+              shouldDebounceError={false}
             />
           </InputTD>
           <InputTD>
@@ -103,6 +108,7 @@ const VariablesTable: React.FC = () => {
               placeholder="Value"
               aria-invalid
               onChange={noop}
+              shouldDebounceError={false}
             />
           </InputTD>
           <IconTD>
