@@ -83,7 +83,7 @@ spec:
           mountPath: /config/application.yml
           subPath: application.yml
       - name: operate
-        image: camunda/operate:0.24.2
+        image: camunda/operate:SNAPSHOT
         #imagePullPolicy: Always   #this must be uncommented when snapshot is used
         env:
         - name: JAVA_OPTS
