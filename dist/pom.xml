@@ -217,7 +217,8 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-Xms128m
             --illegal-access=deny
-            -XX:+ExitOnOutOfMemoryError</extraJvmArguments>
+            -XX:+ExitOnOutOfMemoryError
+            -Dfile.encoding=UTF-8</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
@@ -244,7 +245,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration />
+            <configuration></configuration>
           </execution>
         </executions>
       </plugin>
