@@ -95,7 +95,7 @@
     "react-scripts": "4.0.3",
     "testcafe": "1.18.1",
     "typescript": "4.5.4",
-    "zeebe-node": "1.3.4"
+    "zeebe-node": "1.4.0"
   },
   "lint-staged": {
     "*": [
