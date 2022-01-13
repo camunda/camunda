@@ -21,25 +21,10 @@ RUN chmod +x -R ${TMP_DIR}/bin/
 RUN chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
 
 # Building prod image
-FROM eclipse-temurin:17 as jre-build
-
-# Create a custom Java runtime
-RUN $JAVA_HOME/bin/jlink \
-   --add-modules ALL-MODULE-PATH \
-   --strip-debug \
-   --no-man-pages \
-   --no-header-files \
-   --compress=2 \
-   --output jre17-with-all-modules
-
-# Define your base image
-FROM ubuntu:focal as prod
-ENV JAVA_HOME=/opt/java/openjdk
-ENV PATH "${JAVA_HOME}/bin:${PATH}"
-COPY --from=jre-build /jre17-with-all-modules $JAVA_HOME
+FROM eclipse-temurin:17-jre-focal as prod
 
 # Building dev image
-FROM eclipse-temurin:17 as dev
+FROM eclipse-temurin:17-jdk-focal as dev
 RUN echo "running DEV pre-install commands"
 RUN apt-get update
 RUN curl -sSL https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
