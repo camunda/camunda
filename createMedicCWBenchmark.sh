@@ -43,7 +43,11 @@ then
   git push origin medic-cw-benchmarks
 
 else
-  echo "We currently not support to delete benchmarks, before calendar week 5. Our deletion logic is not sophisticated enough. Please delete the benchmark manually."
+  set +x
+  echo -e "\e[31m!!!!!!!!!!!!!!"
+  echo -e "We currently not support to delete benchmarks, before calendar week 5. Our deletion logic is not sophisticated enough. Please delete the benchmark manually."
+  echo -e "!!!!!!!!!!!!!!\e[0m"
+  set -x
 fi
 
 
