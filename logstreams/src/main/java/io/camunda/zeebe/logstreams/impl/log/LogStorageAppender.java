@@ -108,7 +108,13 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     return new NoopAppendLimiter();
   }
 
-  private void appendBlock(final BlockPeek blockPeek) {
+  /**
+   * Appends the passed block to the {@link LogStorage}.
+   *
+   * @param blockPeek block to append
+   * @return true when the block could be appended to log storage, otherwise, false is returned
+   */
+  private boolean appendBlock(final BlockPeek blockPeek) {
     final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
     final int bytes = rawBuffer.remaining();
     final ByteBuffer copiedBuffer = ByteBuffer.allocate(bytes).put(rawBuffer).flip();
@@ -126,6 +132,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
       logStorage.append(positions.getLeft(), positions.getRight(), copiedBuffer, listener);
 
       blockPeek.markCompleted();
+      return true;
     } else {
       appendBackpressureMetrics.deferred();
       LOG.trace(
@@ -133,6 +140,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
           appendEntryLimiter.getInflight(),
           appendEntryLimiter.getLimit());
       // we will be called later again
+      return false;
     }
   }
 
@@ -178,10 +186,17 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   }
 
   private void onWriteBufferAvailable() {
-    final BlockPeek blockPeek = new BlockPeek();
-    if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0) {
-      appendBlock(blockPeek);
-    } else {
+    final var blockPeek = new BlockPeek();
+    final var readBytes = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
+
+    final var canAppend = readBytes > 0;
+    var appendBlockSucceeded = false;
+
+    if (canAppend) {
+      appendBlockSucceeded = appendBlock(blockPeek);
+    }
+
+    if (!canAppend || !appendBlockSucceeded) {
       actor.yieldThread();
     }
   }
