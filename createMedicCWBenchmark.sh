@@ -37,14 +37,15 @@ if [ $cw -gt 4 ]
 then
   nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
   ./deleteBenchmark.sh $nameOfOldestBenchmark
+
+  # commit that change
+  git commit -am "test(benchmark): rm $nameOfOldestBenchmark"
+  git push origin medic-cw-benchmarks
+
 else
   echo "We currently not support to delete benchmarks, before calendar week 5. Our deletion logic is not sophisticated enough. Please delete the benchmark manually."
 fi
 
-# commit that change
-
-git commit -am "test(benchmark): rm $nameOfOldestBenchmark"
-git push origin medic-cw-benchmarks
 
 # print out the name of the new benchmark so it can be easily copied
 nameOfNewestBenchmark=$(ls | grep medic-cw- | sort | tail -n 1)
