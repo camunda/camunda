@@ -32,10 +32,14 @@ git push origin medic-cw-benchmarks
 # delete older benchmark
 cd benchmarks/setup/
 
-nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
-
-./stopBenchmarks.sh $nameOfOldestBenchmark
-./deleteBenchmark.sh $nameOfOldestBenchmark
+cw=$(date +%V)
+if [ $cw -gt 4 ]
+then
+  nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
+  ./deleteBenchmark.sh $nameOfOldestBenchmark
+else
+  echo "We currently not support to delete benchmarks, before calendar week 5. Our deletion logic is not sophisticated enough. Please delete the benchmark manually."
+fi
 
 # commit that change
 
