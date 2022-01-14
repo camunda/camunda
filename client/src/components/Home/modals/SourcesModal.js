@@ -5,6 +5,7 @@
  */
 
 import {useState, useEffect} from 'react';
+import classnames from 'classnames';
 
 import {
   Button,
@@ -73,10 +74,57 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   const filteredDefinitions =
     definitions?.filter(
       (def) =>
-        def.tenants.some(({id}) =>
-          typeof selectedTenant !== 'undefined' ? selectedTenant === id : true
-        ) && def.name.toLowerCase().includes(query.toLowerCase())
+        definitionHasSelectedTenant(def, selectedTenant) &&
+        def.name.toLowerCase().includes(query.toLowerCase())
     ) || [];
+
+  function deselectAll() {
+    setSelected(
+      selected.concat(
+        filteredDefinitions
+          .filter(({key}) => !selected.some(({definitionKey}) => key === definitionKey))
+          .map(format)
+          .map(removeExtraTenants)
+      )
+    );
+  }
+
+  function selectAll() {
+    setSelected(
+      selected.filter(
+        ({definitionKey}) => !filteredDefinitions.some(({key}) => definitionKey === key)
+      )
+    );
+  }
+
+  const tableHead = [
+    {
+      label: (
+        <Input
+          type="checkbox"
+          className={classnames({hidden: !filteredDefinitions.length})}
+          checked={filteredDefinitions.every(({key}) =>
+            selected.some(({definitionKey}) => key === definitionKey)
+          )}
+          onChange={({target: {checked}}) => (checked ? deselectAll() : selectAll())}
+        />
+      ),
+      id: 'checked',
+      sortable: false,
+      width: 30,
+    },
+    {label: t('common.name'), id: 'name', sortable: true},
+    {label: t('common.entity.type'), id: 'type', sortable: false, width: 80},
+  ];
+
+  if (tenants.length !== 0) {
+    tableHead.push({
+      label: t('common.tenant.label-plural'),
+      id: 'tenants',
+      sortable: false,
+      width: 80,
+    });
+  }
 
   return (
     <Modal
@@ -134,62 +182,13 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
           </div>
         </div>
         <Table
-          head={[
-            {
-              label:
-                filteredDefinitions.length > 0 ? (
-                  <Input
-                    type="checkbox"
-                    checked={filteredDefinitions.every(({key}) =>
-                      selected.some(({definitionKey}) => key === definitionKey)
-                    )}
-                    onChange={({target: {checked}}) =>
-                      checked
-                        ? setSelected(
-                            selected.concat(
-                              filteredDefinitions
-                                .filter(
-                                  ({key}) =>
-                                    !selected.some(({definitionKey}) => key === definitionKey)
-                                )
-                                .map(format)
-                                .map(removeExtraTenants)
-                            )
-                          )
-                        : setSelected(
-                            selected.filter(
-                              ({definitionKey}) =>
-                                !filteredDefinitions.some(({key}) => definitionKey === key)
-                            )
-                          )
-                    }
-                  />
-                ) : (
-                  ' '
-                ),
-              id: 'checked',
-              sortable: false,
-              width: 30,
-            },
-            {label: t('common.name'), id: 'name', sortable: true},
-            {label: t('common.entity.type'), id: 'type', sortable: false, width: 80},
-            ...(tenants.length !== 0
-              ? [
-                  {
-                    label: t('common.tenant.label-plural'),
-                    id: 'tenants',
-                    sortable: false,
-                    width: 80,
-                  },
-                ]
-              : []),
-          ]}
+          head={tableHead}
           body={filteredDefinitions.map((def) => {
             const selectedDefinition = selected.find(
               ({definitionKey}) => def.key === definitionKey
             );
 
-            return [
+            const body = [
               <Input
                 type="checkbox"
                 checked={!!selectedDefinition}
@@ -203,30 +202,33 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
               />,
               def.name || def.key,
               def.type,
-              ...(tenants.length !== 0
-                ? [
-                    <TenantPopover
-                      tenants={def.tenants}
-                      selected={selectedDefinition?.tenants || ['']}
-                      disabled={!selectedDefinition}
-                      onChange={(newTenants) => {
-                        setSelected(
-                          selected.map((selectedDefinition) => {
-                            if (def.key === selectedDefinition.definitionKey) {
-                              return {
-                                ...selectedDefinition,
-                                tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
-                              };
-                            }
-                            return selectedDefinition;
-                          })
-                        );
-                      }}
-                      renderInPortal="sourcesModalTenantPopover"
-                    />,
-                  ]
-                : []),
             ];
+
+            if (tenants.length !== 0) {
+              body.push(
+                <TenantPopover
+                  tenants={def.tenants}
+                  selected={selectedDefinition?.tenants || ['']}
+                  disabled={!selectedDefinition}
+                  onChange={(newTenants) => {
+                    setSelected(
+                      selected.map((selectedDefinition) => {
+                        if (def.key === selectedDefinition.definitionKey) {
+                          return {
+                            ...selectedDefinition,
+                            tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
+                          };
+                        }
+                        return selectedDefinition;
+                      })
+                    );
+                  }}
+                  renderInPortal="sourcesModalTenantPopover"
+                />
+              );
+            }
+
+            return body;
           })}
           disablePagination
           noHighlight
@@ -245,6 +247,8 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   );
 }
 
+export default withErrorHandling(SourcesModal);
+
 function format({key, type, tenants}) {
   return {
     definitionKey: key,
@@ -253,4 +257,8 @@ function format({key, type, tenants}) {
   };
 }
 
-export default withErrorHandling(SourcesModal);
+function definitionHasSelectedTenant(def, selectedTenant) {
+  return def.tenants.some(({id}) =>
+    typeof selectedTenant !== 'undefined' ? selectedTenant === id : true
+  );
+}
