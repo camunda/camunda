@@ -16,7 +16,7 @@
 
   <properties>
     <version.java>8</version.java>
-    <version.maven-jar-plugin>3.2.0</version.maven-jar-plugin>
+    <version.maven-jar-plugin>3.2.2</version.maven-jar-plugin>
   </properties>
 
   <dependencies>
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.32</version>
+      <version>1.7.33</version>
     </dependency>
   </dependencies>
 
