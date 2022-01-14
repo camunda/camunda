@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.el.impl.feel
+package io.camunda.zeebe.feel.impl
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader
 import io.camunda.zeebe.util.buffer.BufferUtil.{bufferAsString, cloneBuffer}
