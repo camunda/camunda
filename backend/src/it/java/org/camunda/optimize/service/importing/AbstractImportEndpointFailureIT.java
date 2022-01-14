@@ -78,6 +78,9 @@ public abstract class AbstractImportEndpointFailureIT {
   @BeforeAll
   public static void beforeAll() {
     engineIntegrationExtension.cleanEngine();
+    // Due to a possible race condition with data from the previous tests not being yet in the indices, we need to
+    // refresh the indices before deleting the existing data
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
     elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
     elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
