@@ -47,8 +47,7 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDrgIsDeployed() {
     // when
-    final var persistedDrg =
-        decisionState.findLatestDecisionRequirementsById(wrapString("drg-1"));
+    final var persistedDrg = decisionState.findLatestDecisionRequirementsById(wrapString("drg-1"));
 
     // then
     assertThat(persistedDrg).isEmpty();
