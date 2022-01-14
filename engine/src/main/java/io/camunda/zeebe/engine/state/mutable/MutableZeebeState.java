@@ -62,5 +62,5 @@ public interface MutableZeebeState extends ZeebeState {
   MutableLastProcessedPositionState getLastProcessedPositionState();
 
   @Override
-  MutableDmnDecisionState getDmnDecisionState();
+  MutableDecisionState getDecisionState();
 }

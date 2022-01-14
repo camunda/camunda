@@ -13,13 +13,13 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.mutable.MutableDmnDecisionState;
+import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public final class DbDmnDecisionState implements MutableDmnDecisionState {
+public final class DbDecisionState implements MutableDecisionState {
 
   private final DbLong dbDecisionKey = new DbLong();
   private final PersistedDecision dbPersistedDecision = new PersistedDecision();
@@ -36,7 +36,7 @@ public final class DbDmnDecisionState implements MutableDmnDecisionState {
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbLong> latestDecisionRequirementsKeysById;
 
-  public DbDmnDecisionState(
+  public DbDecisionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
     decisionsByKey =

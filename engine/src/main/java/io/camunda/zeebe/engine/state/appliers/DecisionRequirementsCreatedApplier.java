@@ -8,21 +8,21 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableDmnDecisionState;
+import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 
 public final class DecisionRequirementsCreatedApplier
     implements TypedEventApplier<DecisionRequirementsIntent, DecisionRequirementsRecord> {
 
-  private final MutableDmnDecisionState dmnDecisionState;
+  private final MutableDecisionState decisionState;
 
-  public DecisionRequirementsCreatedApplier(final MutableDmnDecisionState dmnDecisionState) {
-    this.dmnDecisionState = dmnDecisionState;
+  public DecisionRequirementsCreatedApplier(final MutableDecisionState decisionState) {
+    this.decisionState = decisionState;
   }
 
   @Override
   public void applyState(final long key, final DecisionRequirementsRecord value) {
-    dmnDecisionState.putDecisionRequirements(value);
+    decisionState.putDecisionRequirements(value);
   }
 }

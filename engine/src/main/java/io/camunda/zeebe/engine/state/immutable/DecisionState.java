@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public interface DmnDecisionState {
+public interface DecisionState {
 
   /**
    * Query decisions by the given decision id and return the latest version of the decision.

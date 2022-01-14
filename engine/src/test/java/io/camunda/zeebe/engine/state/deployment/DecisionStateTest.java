@@ -12,7 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableDmnDecisionState;
+import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -23,21 +23,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ZeebeStateExtension.class)
-public final class DmnDecisionStateTest {
+public final class DecisionStateTest {
 
   private MutableZeebeState zeebeState;
-  private MutableDmnDecisionState dmnDecisionState;
+  private MutableDecisionState decisionState;
 
   @BeforeEach
   public void setup() {
-    dmnDecisionState = zeebeState.getDmnDecisionState();
+    decisionState = zeebeState.getDecisionState();
   }
 
   @DisplayName("should return empty if no decision is deployed")
   @Test
   void shouldReturnEmptyIfNoDecisionIsDeployed() {
     // when
-    final var persistedDecision = dmnDecisionState.findLatestDecisionById(wrapString("decision-1"));
+    final var persistedDecision = decisionState.findLatestDecisionById(wrapString("decision-1"));
 
     // then
     assertThat(persistedDecision).isEmpty();
@@ -48,7 +48,7 @@ public final class DmnDecisionStateTest {
   void shouldReturnEmptyIfNoDrgIsDeployed() {
     // when
     final var persistedDrg =
-        dmnDecisionState.findLatestDecisionRequirementsById(wrapString("drg-1"));
+        decisionState.findLatestDecisionRequirementsById(wrapString("drg-1"));
 
     // then
     assertThat(persistedDrg).isEmpty();
@@ -58,7 +58,7 @@ public final class DmnDecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDrgIsDeployedByKey() {
     // when
-    final var persistedDrg = dmnDecisionState.findDecisionRequirementsByKey(1L);
+    final var persistedDrg = decisionState.findDecisionRequirementsByKey(1L);
 
     // then
     assertThat(persistedDrg).isEmpty();
@@ -69,11 +69,11 @@ public final class DmnDecisionStateTest {
   void shouldPutDecision() {
     // given
     final var decisionRecord = sampleDecisionRecord();
-    dmnDecisionState.putDecision(decisionRecord);
+    decisionState.putDecision(decisionRecord);
 
     // when
     final var persistedDecision =
-        dmnDecisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer());
+        decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer());
 
     // then
     assertThat(persistedDecision).isNotEmpty();
@@ -98,14 +98,14 @@ public final class DmnDecisionStateTest {
     final var decisionRecord2 =
         sampleDecisionRecord().setDecisionId("decision-2").setDecisionKey(2L);
 
-    dmnDecisionState.putDecision(decisionRecord1);
-    dmnDecisionState.putDecision(decisionRecord2);
+    decisionState.putDecision(decisionRecord1);
+    decisionState.putDecision(decisionRecord2);
 
     // when
     final var persistedDecision1 =
-        dmnDecisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
     final var persistedDecision2 =
-        dmnDecisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
 
     // then
     assertThat(persistedDecision1).isNotEmpty();
@@ -125,13 +125,13 @@ public final class DmnDecisionStateTest {
     final var decisionRecordV2 = sampleDecisionRecord().setDecisionKey(2L).setVersion(2);
     final var decisionRecordV3 = sampleDecisionRecord().setDecisionKey(3L).setVersion(3);
 
-    dmnDecisionState.putDecision(decisionRecordV1);
-    dmnDecisionState.putDecision(decisionRecordV3);
-    dmnDecisionState.putDecision(decisionRecordV2);
+    decisionState.putDecision(decisionRecordV1);
+    decisionState.putDecision(decisionRecordV3);
+    decisionState.putDecision(decisionRecordV2);
 
     // when
     final var persistedDecision =
-        dmnDecisionState.findLatestDecisionById(decisionRecordV1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionById(decisionRecordV1.getDecisionIdBuffer());
 
     // then
     assertThat(persistedDecision).isNotEmpty();
@@ -143,11 +143,11 @@ public final class DmnDecisionStateTest {
   void shouldPutDecisionRequirements() {
     // given
     final var drg = sampleDecisionRequirementsRecord();
-    dmnDecisionState.putDecisionRequirements(drg);
+    decisionState.putDecisionRequirements(drg);
 
     // when
     final var persistedDrg =
-        dmnDecisionState.findLatestDecisionRequirementsById(drg.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsById(drg.getDecisionRequirementsIdBuffer());
 
     // then
     assertThat(persistedDrg).isNotEmpty();
@@ -182,14 +182,14 @@ public final class DmnDecisionStateTest {
             .setDecisionRequirementsId("drg-2")
             .setDecisionRequirementsKey(2L);
 
-    dmnDecisionState.putDecisionRequirements(drg1);
-    dmnDecisionState.putDecisionRequirements(drg2);
+    decisionState.putDecisionRequirements(drg1);
+    decisionState.putDecisionRequirements(drg2);
 
     // when
     final var persistedDrg1 =
-        dmnDecisionState.findLatestDecisionRequirementsById(drg1.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsById(drg1.getDecisionRequirementsIdBuffer());
     final var persistedDrg2 =
-        dmnDecisionState.findLatestDecisionRequirementsById(drg2.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsById(drg2.getDecisionRequirementsIdBuffer());
 
     // then
     assertThat(persistedDrg1).isNotEmpty();
@@ -218,13 +218,13 @@ public final class DmnDecisionStateTest {
             .setDecisionRequirementsKey(3L)
             .setDecisionRequirementsVersion(3);
 
-    dmnDecisionState.putDecisionRequirements(decisionRecordV1);
-    dmnDecisionState.putDecisionRequirements(decisionRecordV3);
-    dmnDecisionState.putDecisionRequirements(decisionRecordV2);
+    decisionState.putDecisionRequirements(decisionRecordV1);
+    decisionState.putDecisionRequirements(decisionRecordV3);
+    decisionState.putDecisionRequirements(decisionRecordV2);
 
     // when
     final var persistedDrg =
-        dmnDecisionState.findLatestDecisionRequirementsById(
+        decisionState.findLatestDecisionRequirementsById(
             decisionRecordV1.getDecisionRequirementsIdBuffer());
 
     // then
@@ -240,14 +240,14 @@ public final class DmnDecisionStateTest {
     final var drg1 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(1L);
     final var drg2 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(2L);
 
-    dmnDecisionState.putDecisionRequirements(drg1);
-    dmnDecisionState.putDecisionRequirements(drg2);
+    decisionState.putDecisionRequirements(drg1);
+    decisionState.putDecisionRequirements(drg2);
 
     // when
     final var persistedDrg1 =
-        dmnDecisionState.findDecisionRequirementsByKey(drg1.getDecisionRequirementsKey());
+        decisionState.findDecisionRequirementsByKey(drg1.getDecisionRequirementsKey());
     final var persistedDrg2 =
-        dmnDecisionState.findDecisionRequirementsByKey(drg2.getDecisionRequirementsKey());
+        decisionState.findDecisionRequirementsByKey(drg2.getDecisionRequirementsKey());
 
     // then
     assertThat(persistedDrg1).isNotEmpty();

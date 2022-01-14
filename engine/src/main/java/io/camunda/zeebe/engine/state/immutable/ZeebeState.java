@@ -38,7 +38,7 @@ public interface ZeebeState extends StreamProcessorLifecycleAware {
 
   EventScopeInstanceState getEventScopeInstanceState();
 
-  DmnDecisionState getDmnDecisionState();
+  DecisionState getDecisionState();
 
   int getPartitionId();
 

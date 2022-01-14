@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.DmnDecisionState;
+import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 
-public interface MutableDmnDecisionState extends DmnDecisionState {
+public interface MutableDecisionState extends DecisionState {
 
   /**
    * Put the given decision in the state. Update the latest version of the decision if it is newer.
