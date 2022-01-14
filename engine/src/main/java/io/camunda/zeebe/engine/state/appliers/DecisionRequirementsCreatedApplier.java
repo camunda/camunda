@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableDmnDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 
-public final class DecisionRequirementsApplier
+public final class DecisionRequirementsCreatedApplier
     implements TypedEventApplier<DecisionRequirementsIntent, DecisionRequirementsRecord> {
 
   private final MutableDmnDecisionState dmnDecisionState;
 
-  public DecisionRequirementsApplier(final MutableDmnDecisionState dmnDecisionState) {
+  public DecisionRequirementsCreatedApplier(final MutableDmnDecisionState dmnDecisionState) {
     this.dmnDecisionState = dmnDecisionState;
   }
 

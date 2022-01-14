@@ -68,7 +68,7 @@ public final class EventAppliers implements EventApplier {
     register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDmnDecisionState()));
     register(
         DecisionRequirementsIntent.CREATED,
-        new DecisionRequirementsApplier(state.getDmnDecisionState()));
+        new DecisionRequirementsCreatedApplier(state.getDmnDecisionState()));
   }
 
   private void registerTimeEventAppliers(final MutableZeebeState state) {
