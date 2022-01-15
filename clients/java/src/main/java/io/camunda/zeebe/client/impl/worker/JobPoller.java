@@ -132,7 +132,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   }
 
   private void logFailure(final Throwable throwable) {
-    final String errorMsg = "Failed to activated jobs for worker {} and job type {}";
+    final String errorMsg = "Failed to activate jobs for worker {} and job type {}";
 
     if (throwable instanceof StatusRuntimeException) {
       final StatusRuntimeException statusRuntimeException = (StatusRuntimeException) throwable;
