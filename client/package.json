@@ -90,7 +90,7 @@
     "mock-socket": "^9.0.8",
     "node-fetch": "^2.6.1",
     "opn": "^6.0.0",
-    "prettier": "2.4.1",
+    "prettier": "2.5.1",
     "react-scripts": "4.0.3",
     "sass": "^1.43.4",
     "shelljs": "^0.8.5",
