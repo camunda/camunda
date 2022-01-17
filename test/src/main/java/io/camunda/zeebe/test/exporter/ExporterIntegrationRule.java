@@ -303,6 +303,20 @@ public class ExporterIntegrationRule extends ExternalResource {
   }
 
   /**
+   * Deploys the given classpath resource to the broker.
+   *
+   * @param classpathResource the resource to deploy
+   */
+  public void deployResourceFromClasspath(final String classpathResource) {
+    clientRule
+        .getClient()
+        .newDeployCommand()
+        .addResourceFromClasspath(classpathResource)
+        .send()
+        .join();
+  }
+
+  /**
    * Creates a process instance for the given process ID, with the given variables.
    *
    * @param processId BPMN process ID
