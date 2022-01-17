@@ -79,6 +79,10 @@ public class ElasticsearchExporterConfiguration {
         return index.processInstanceCreation;
       case PROCESS_MESSAGE_SUBSCRIPTION:
         return index.processMessageSubscription;
+      case DECISION_REQUIREMENTS:
+        return index.decisionRequirements;
+      case DECISION:
+        return index.decision;
       default:
         return false;
     }
@@ -123,6 +127,8 @@ public class ElasticsearchExporterConfiguration {
     public boolean processInstance = true;
     public boolean processInstanceCreation = false;
     public boolean processMessageSubscription = false;
+    public boolean decisionRequirements = true;
+    public boolean decision = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -182,6 +188,10 @@ public class ElasticsearchExporterConfiguration {
           + processInstanceCreation
           + ", processMessageSubscription="
           + processMessageSubscription
+          + ", decisionRequirements="
+          + decisionRequirements
+          + ", decision="
+          + decision
           + '}';
     }
   }
