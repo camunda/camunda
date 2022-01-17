@@ -15,7 +15,7 @@ exports[`should render bucket options 1`] = `
     className="inputGroup"
   >
     <ForwardRef(Input)
-      defaultValue="10"
+      defaultValue="-"
       disabled={true}
       isInvalid={false}
       onBlur={[Function]}
@@ -26,7 +26,7 @@ exports[`should render bucket options 1`] = `
     className="inputGroup"
   >
     <ForwardRef(LabeledInput)
-      defaultValue="0"
+      defaultValue="-"
       disabled={true}
       isInvalid={false}
       label="Baseline"

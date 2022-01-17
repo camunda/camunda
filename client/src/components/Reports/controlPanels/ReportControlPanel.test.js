@@ -8,8 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, reportConfig} from 'services';
-import {Button} from 'components';
+import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'services';
 
 import {DefinitionList} from './DefinitionList';
 import GroupBy from './GroupBy';
@@ -65,6 +64,8 @@ const report = {
       xml: 'fooXml',
       tableColumns: {columnOrder: [], includedColumns: [], excludedColumns: []},
       heatmapTargetValue: {values: {}},
+      customBucket: {active: false},
+      distributeByCustomBucket: {active: false},
     },
   },
   result: {instanceCount: 3, instanceCountWithoutFilters: 5},
@@ -652,5 +653,28 @@ describe('filter handling when changing definitions', () => {
     expect(spy.mock.calls[0][0].filter).toEqual({
       $set: [],
     });
+  });
+});
+
+it('should disable bucket size configuration when changing definitions', async () => {
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        customBucket: {active: {$set: true}},
+        distributeByCustomBucket: {active: {$set: true}},
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionList).prop('onChange')({}, 0);
+
+  expect(spy.mock.calls[0][0].configuration.customBucket).toEqual({active: {$set: false}});
+  expect(spy.mock.calls[0][0].configuration.distributeByCustomBucket).toEqual({
+    active: {$set: false},
   });
 });

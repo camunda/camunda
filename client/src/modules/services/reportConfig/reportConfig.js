@@ -139,6 +139,13 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
     if (newReport.view.properties.length > 1) {
       newReport.configuration.targetValue.active = false;
     }
+
+    // disable bucket size config on group update
+    // reason: group by variable bucket size does not make sense for group by duration
+    if (type === 'group') {
+      newReport.configuration.customBucket.active = false;
+      newReport.configuration.distributeByCustomBucket.active = false;
+    }
   }
 
   return {

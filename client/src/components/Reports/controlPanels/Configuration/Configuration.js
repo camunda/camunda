@@ -77,16 +77,16 @@ export default class Configuration extends React.Component {
         distributeByDateVariableUnit: 'automatic',
         customBucket: {
           active: false,
-          bucketSize: '10',
+          bucketSize: '10.0',
           bucketSizeUnit: 'minute',
-          baseline: '0',
+          baseline: '0.0',
           baselineUnit: 'minute',
         },
         distributeByCustomBucket: {
           active: false,
-          bucketSize: '10',
+          bucketSize: '10.0',
           bucketSizeUnit: 'minute',
-          baseline: '0',
+          baseline: '0.0',
           baselineUnit: 'minute',
         },
         measureVisualizations: {

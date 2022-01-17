@@ -9,6 +9,8 @@ import {createReportUpdate} from './reportConfig';
 const report = {
   configuration: {
     tableColumns: {},
+    customBucket: {},
+    distributeByCustomBucket: {},
   },
   definitions: [{}],
   view: {
@@ -253,5 +255,26 @@ describe('process exclusive updates', () => {
         view: {properties: {$set: ['frequency', 'duration']}},
       }).configuration.$set.targetValue.active
     ).toBe(false);
+  });
+
+  it('should reset bucket size on group by update', () => {
+    const bucketSizeReport = {
+      ...report,
+      groupBy: {type: 'variable'},
+      configuration: {
+        ...report.configuration,
+        customBucket: {active: true},
+        distributeByCustomBucket: {active: true},
+      },
+    };
+
+    expect(
+      createReportUpdate('process', bucketSizeReport, 'group', 'duration').configuration.$set
+        .customBucket
+    ).toEqual({active: false});
+    expect(
+      createReportUpdate('process', bucketSizeReport, 'group', 'duration').configuration.$set
+        .distributeByCustomBucket
+    ).toEqual({active: false});
   });
 });
