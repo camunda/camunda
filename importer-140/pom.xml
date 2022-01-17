@@ -7,8 +7,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Tasklist Importer 120</name>
-  <artifactId>tasklist-importer-120</artifactId>
+  <name>Tasklist Importer 140</name>
+  <artifactId>tasklist-importer-140</artifactId>
 
   <dependencies>
 
@@ -23,7 +23,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
-      <version>${project.previous_version}</version>
+      <version>${version.zeebe}</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 

@@ -3,9 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v120.record.value;
+package io.camunda.tasklist.zeebeimport.v140.record.value;
 
-import io.camunda.tasklist.zeebeimport.v120.record.RecordValueWithPayloadImpl;
+import io.camunda.tasklist.zeebeimport.v140.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +56,16 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   @Override
   public int getRetries() {
     return retries;
+  }
+
+  @Override
+  public long getRetryBackoff() {
+    return 0;
+  }
+
+  @Override
+  public long getRecurringTime() {
+    return 0;
   }
 
   @Override

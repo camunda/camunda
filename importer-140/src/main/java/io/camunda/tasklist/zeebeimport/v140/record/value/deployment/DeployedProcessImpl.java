@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v120.record.value.deployment;
+package io.camunda.tasklist.zeebeimport.v140.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Arrays;
@@ -17,6 +17,7 @@ public class DeployedProcessImpl implements Process {
   private int version;
   private byte[] checksum;
   private byte[] resource;
+  private boolean isDuplicate;
 
   public DeployedProcessImpl() {}
 
@@ -50,6 +51,11 @@ public class DeployedProcessImpl implements Process {
     return resource;
   }
 
+  @Override
+  public boolean isDuplicate() {
+    return isDuplicate;
+  }
+
   public void setResourceName(String resourceName) {
     this.resourceName = resourceName;
   }
@@ -76,6 +82,10 @@ public class DeployedProcessImpl implements Process {
     return this;
   }
 
+  public void setDuplicate(final boolean duplicate) {
+    isDuplicate = duplicate;
+  }
+
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("toJson operation is not supported");
@@ -92,6 +102,7 @@ public class DeployedProcessImpl implements Process {
     final DeployedProcessImpl that = (DeployedProcessImpl) o;
     return processDefinitionKey == that.processDefinitionKey
         && version == that.version
+        && isDuplicate == that.isDuplicate
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(resourceName, that.resourceName)
         && Arrays.equals(checksum, that.checksum)
@@ -100,7 +111,8 @@ public class DeployedProcessImpl implements Process {
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(bpmnProcessId, resourceName, processDefinitionKey, version);
+    int result =
+        Objects.hash(bpmnProcessId, resourceName, processDefinitionKey, version, isDuplicate);
     result = 31 * result + Arrays.hashCode(checksum);
     result = 31 * result + Arrays.hashCode(resource);
     return result;
@@ -123,6 +135,8 @@ public class DeployedProcessImpl implements Process {
         + Arrays.toString(checksum)
         + ", resource="
         + Arrays.toString(resource)
+        + ", isDuplicate="
+        + isDuplicate
         + '}';
   }
 }

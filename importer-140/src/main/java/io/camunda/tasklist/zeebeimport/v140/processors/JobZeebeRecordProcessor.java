@@ -3,13 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v120.processors;
+package io.camunda.tasklist.zeebeimport.v140.processors;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.tasklist.zeebeimport.v120.record.Intent.CANCELED;
-import static io.camunda.tasklist.zeebeimport.v120.record.Intent.COMPLETED;
-import static io.camunda.tasklist.zeebeimport.v120.record.Intent.CREATED;
+import static io.camunda.tasklist.zeebeimport.v140.record.Intent.CANCELED;
+import static io.camunda.tasklist.zeebeimport.v140.record.Intent.COMPLETED;
+import static io.camunda.tasklist.zeebeimport.v140.record.Intent.CREATED;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_ASSIGNEE_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
@@ -17,7 +20,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.DateUtil;
-import io.camunda.tasklist.zeebeimport.v120.record.value.JobRecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v140.record.value.JobRecordValueImpl;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
@@ -67,6 +70,24 @@ public class JobZeebeRecordProcessor {
     final String formKey =
         recordValue.getCustomHeaders().get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
     entity.setFormKey(formKey);
+
+    final String assignee = recordValue.getCustomHeaders().get(USER_TASK_ASSIGNEE_HEADER_NAME);
+    if (assignee != null) {
+      entity.setAssignee(assignee);
+    }
+
+    final String candidateGroups =
+        recordValue.getCustomHeaders().get(USER_TASK_CANDIDATE_GROUPS_HEADER_NAME);
+    if (candidateGroups != null) {
+      try {
+        entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
+      } catch (JsonProcessingException e) {
+        LOGGER.warn(
+            String.format(
+                "Candidate groups can't be parsed from %s: %s", candidateGroups, e.getMessage()),
+            e);
+      }
+    }
 
     final String taskState = record.getIntent().name();
     LOGGER.debug("JobState {}", taskState);

@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class RetryAfterFailureTestConfig {
 
-  @Bean("io.camunda.tasklist.zeebeimport.v110.processors.ElasticsearchBulkProcessor")
+  @Bean("io.camunda.tasklist.zeebeimport.v130.processors.ElasticsearchBulkProcessor")
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();
