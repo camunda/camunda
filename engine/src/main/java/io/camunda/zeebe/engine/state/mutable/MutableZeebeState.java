@@ -60,4 +60,7 @@ public interface MutableZeebeState extends ZeebeState {
   KeyGenerator getKeyGenerator();
 
   MutableLastProcessedPositionState getLastProcessedPositionState();
+
+  @Override
+  MutableDecisionState getDecisionState();
 }

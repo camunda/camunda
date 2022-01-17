@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
+import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -70,6 +72,7 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final MutableMigrationState mutableMigrationState;
+  private final MutableDecisionState decisionState;
 
   private final int partitionId;
 
@@ -103,6 +106,7 @@ public class ZeebeDbState implements MutableZeebeState {
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
+    decisionState = new DbDecisionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
@@ -241,5 +245,10 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
     return lastProcessedPositionState;
+  }
+
+  @Override
+  public MutableDecisionState getDecisionState() {
+    return decisionState;
   }
 }

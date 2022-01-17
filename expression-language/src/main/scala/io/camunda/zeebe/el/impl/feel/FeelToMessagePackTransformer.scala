@@ -8,6 +8,7 @@
 package io.camunda.zeebe.el.impl.feel
 
 import io.camunda.zeebe.el.impl.Loggers.LOGGER
+import io.camunda.zeebe.feel.impl.MessagePackContext
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter
 import org.agrona.concurrent.UnsafeBuffer
 import org.agrona.{DirectBuffer, ExpandableArrayBuffer}
