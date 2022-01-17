@@ -5,10 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.records;
 
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.exporter.AbstractElasticsearchExporterIntegrationTestCase;
+import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.Before;
