@@ -15,6 +15,10 @@
 
   <name>Zeebe Protocol Jackson</name>
 
+  <properties>
+    <version.java>11</version.java>
+  </properties>
+
   <dependencies>
     <!--
       scoped as provided since the annotations are not retained at runtime and therefore it can be
