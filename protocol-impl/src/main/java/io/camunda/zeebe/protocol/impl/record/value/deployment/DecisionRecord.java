@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -29,13 +30,16 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   private final LongProperty decisionRequirementsKeyProp =
       new LongProperty("decisionRequirementsKey");
 
+  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
+
   public DecisionRecord() {
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
         .declareProperty(decisionKeyProp)
         .declareProperty(decisionRequirementsIdProp)
-        .declareProperty(decisionRequirementsKeyProp);
+        .declareProperty(decisionRequirementsKeyProp)
+        .declareProperty(isDuplicateProp);
   }
 
   @Override
@@ -70,7 +74,7 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
 
   @Override
   public boolean isDuplicate() {
-    return false;
+    return isDuplicateProp.getValue();
   }
 
   public DecisionRecord setDecisionId(String decisionId) {
@@ -100,6 +104,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
 
   public DecisionRecord setDecisionRequirementsKey(long decisionRequirementsKey) {
     decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    return this;
+  }
+
+  public DecisionRecord markAsDuplicate() {
+    isDuplicateProp.setValue(true);
     return this;
   }
 

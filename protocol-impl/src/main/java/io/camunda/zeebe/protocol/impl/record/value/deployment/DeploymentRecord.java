@@ -11,10 +11,12 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
@@ -27,8 +29,17 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<ProcessMetadata> processesMetadataProp =
       new ArrayProperty<>(PROCESSES, new ProcessMetadata());
 
+  private final ArrayProperty<DecisionRecord> decisionMetadataProp =
+      new ArrayProperty<>("decisionsMetadata", new DecisionRecord());
+
+  private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
+      new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
+
   public DeploymentRecord() {
-    declareProperty(resourcesProp).declareProperty(processesMetadataProp);
+    declareProperty(resourcesProp)
+        .declareProperty(processesMetadataProp)
+        .declareProperty(decisionRequirementsMetadataProp)
+        .declareProperty(decisionMetadataProp);
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
@@ -39,17 +50,22 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return resourcesProp;
   }
 
+  public ValueArray<DecisionRecord> decisionsMetadata() {
+    return decisionMetadataProp;
+  }
+
+  public ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadata() {
+    return decisionRequirementsMetadataProp;
+  }
+
   @Override
   public List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
     final List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
         new ArrayList<>();
 
     for (final DeploymentResource resource : resourcesProp) {
-      final byte[] bytes = new byte[resource.getLength()];
-      final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
-      resource.write(copyBuffer, 0);
-
       final DeploymentResource copiedResource = new DeploymentResource();
+      final var copyBuffer = BufferUtil.createCopy(resource);
       copiedResource.wrap(copyBuffer);
       resources.add(copiedResource);
     }
@@ -62,15 +78,40 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     final List<ProcessMetadataValue> processesMeta = new ArrayList<>();
 
     for (final ProcessMetadata processRecord : processesMetadataProp) {
-      final byte[] bytes = new byte[processRecord.getLength()];
-      final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
-      processRecord.write(copyBuffer, 0);
-
       final ProcessMetadata copiedProcessRecord = new ProcessMetadata();
+      final var copyBuffer = BufferUtil.createCopy(processRecord);
       copiedProcessRecord.wrap(copyBuffer);
       processesMeta.add(copiedProcessRecord);
     }
 
     return processesMeta;
+  }
+
+  @Override
+  public List<DecisionRecordValue> getDecisionsMetadata() {
+    final var metadataList = new ArrayList<DecisionRecordValue>();
+
+    for (final DecisionRecord metadata : decisionMetadataProp) {
+      final var copyRecord = new DecisionRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+
+    return metadataList;
+  }
+
+  @Override
+  public List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata() {
+    final var metadataList = new ArrayList<DecisionRequirementsMetadataValue>();
+
+    for (final DecisionRequirementsMetadataRecord metadata : decisionRequirementsMetadataProp) {
+      final var copyRecord = new DecisionRequirementsMetadataRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+
+    return metadataList;
   }
 }
