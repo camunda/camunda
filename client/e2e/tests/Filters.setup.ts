@@ -5,63 +5,6 @@
  */
 
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
-import {within, screen} from '@testing-library/testcafe';
-
-const cmRunningInstancesCheckbox = within(
-  screen.queryByTestId('filter-running-instances').shadowRoot()
-).queryByRole('checkbox');
-
-const cmActiveCheckbox = within(
-  screen.queryByTestId('filter-active').shadowRoot()
-).queryByRole('checkbox');
-
-const cmIncidentsCheckbox = within(
-  screen.queryByTestId('filter-incidents').shadowRoot()
-).queryByRole('checkbox');
-
-const cmFinishedInstancesCheckbox = within(
-  screen.queryByTestId('filter-finished-instances').shadowRoot()
-).queryByRole('checkbox');
-
-const cmCompletedCheckbox = within(
-  screen.queryByTestId('filter-completed').shadowRoot()
-).queryByRole('checkbox');
-
-const cmCanceledCheckbox = within(
-  screen.queryByTestId('filter-canceled').shadowRoot()
-).queryByRole('checkbox');
-
-const cmParentInstanceIdField = within(
-  screen.queryByTestId('filter-parent-instance-id').shadowRoot()
-).queryByRole('textbox');
-
-const cmErrorMessageField = within(
-  screen.queryByTestId('filter-error-message').shadowRoot()
-).queryByRole('textbox');
-
-const cmStartDateField = within(
-  screen.queryByTestId('filter-start-date').shadowRoot()
-).queryByRole('textbox');
-
-const cmEndDateField = within(
-  screen.queryByTestId('filter-end-date').shadowRoot()
-).queryByRole('textbox');
-
-const cmOperationIdField = within(
-  screen.queryByTestId('filter-operation-id').shadowRoot()
-).queryByRole('textbox');
-
-const cmVariableNameField = within(
-  screen.queryByTestId('filter-variable-name').shadowRoot()
-).queryByRole('textbox');
-
-const cmVariableValueField = within(
-  screen.queryByTestId('filter-variable-value').shadowRoot()
-).queryByRole('textbox');
-
-const cmInstanceIdsField = within(
-  screen.queryByTestId('filter-instance-ids').shadowRoot()
-).queryByRole('textbox');
 
 const setup = async () => {
   await deploy([
@@ -106,20 +49,4 @@ const setup = async () => {
   };
 };
 
-export {
-  setup,
-  cmRunningInstancesCheckbox,
-  cmActiveCheckbox,
-  cmIncidentsCheckbox,
-  cmFinishedInstancesCheckbox,
-  cmCompletedCheckbox,
-  cmCanceledCheckbox,
-  cmParentInstanceIdField,
-  cmErrorMessageField,
-  cmOperationIdField,
-  cmStartDateField,
-  cmEndDateField,
-  cmVariableNameField,
-  cmVariableValueField,
-  cmInstanceIdsField,
-};
+export {setup};

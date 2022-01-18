@@ -7,14 +7,12 @@
 import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
 import {config} from '../config';
-import {
-  setup,
-  cmOperationIdField,
-  cmInstanceIdsField,
-} from './Operations.setup';
+import {setup} from './Operations.setup';
 import {DATE_REGEX} from './constants';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
+import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {instancePage as InstancePage} from './PageModels/Instance';
 
 fixture('Operations')
   .page(config.endpoint)
@@ -50,16 +48,14 @@ test('Retry and Cancel single instance ', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
   // filter by instance id
-  await t.typeText(instanceIdsField, instance.processInstanceKey, {
-    paste: true,
-  });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
+    instance.processInstanceKey,
+    {
+      paste: true,
+    }
+  );
 
   // wait for filter to be applied
   await t
@@ -76,8 +72,8 @@ test('Retry and Cancel single instance ', async (t) => {
   );
 
   // expect spinner to show and disappear
-  await t.expect(screen.queryByTestId('operation-spinner').exists).ok();
-  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
+  await t.expect(InstancePage.operationSpinner.exists).ok();
+  await t.expect(InstancePage.operationSpinner.exists).notOk();
 
   // cancel single instance using operation button
   await t
@@ -122,14 +118,10 @@ test('Retry and Cancel single instance ', async (t) => {
     )
     .eql(1);
 
-  const operationIdField = IS_NEW_FILTERS_FORM
-    ? cmOperationIdField
-    : screen.queryByRole('textbox', {
-        name: 'Operation Id',
-      });
-
   // expect operation id filter to be set
-  await t.expect(operationIdField.value).eql(operationId);
+  await t
+    .expect(InstancesPage.Filters.operationId.value.value)
+    .eql(operationId);
 
   const instanceRow = within(
     within(screen.queryByTestId('instances-list')).getAllByRole('row').nth(0)
@@ -162,15 +154,9 @@ test('Retry and cancel multiple instances ', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
   // filter by instance ids
-  await t.typeText(
-    instanceIdsField,
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
     instances.map((instance) => instance.processInstanceKey).join(','),
     {paste: true}
@@ -183,11 +169,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length);
 
-  await t.click(
-    screen.queryByRole('checkbox', {
-      name: 'Select all instances',
-    })
-  );
+  await t.click(InstancesPage.selectAllInstancesCheckbox);
 
   await t.click(
     screen.queryByRole('button', {
@@ -227,15 +209,9 @@ test('Retry and cancel multiple instances ', async (t) => {
 
   // reset filters
   await t
-    .click(screen.queryByRole('button', {name: /reset filters/i}))
+    .click(InstancesPage.resetFiltersButton)
     .expect(within(instancesList).getAllByRole('row').count)
     .gt(instances.length);
-
-  const operationIdField = IS_NEW_FILTERS_FORM
-    ? cmOperationIdField
-    : screen.queryByRole('textbox', {
-        name: 'Operation Id',
-      });
 
   // select all instances from operation
   await t
@@ -246,7 +222,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     )
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length)
-    .expect(operationIdField.value)
+    .expect(InstancesPage.Filters.operationId.value.value)
     .eql(
       await within(instancesListItems.nth(0)).queryByTestId('operation-id')
         .innerText
@@ -266,11 +242,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     )
   );
 
-  await t.click(
-    screen.queryByRole('checkbox', {
-      name: 'Select all instances',
-    })
-  );
+  await t.click(InstancesPage.selectAllInstancesCheckbox);
 
   await t.click(
     screen.queryByRole('button', {

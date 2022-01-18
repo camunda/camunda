@@ -5,16 +5,7 @@
  */
 
 import {config} from '../config';
-import {
-  setup,
-  cmRunningInstancesCheckbox,
-  cmActiveCheckbox,
-  cmIncidentsCheckbox,
-  cmFinishedInstancesCheckbox,
-  cmCompletedCheckbox,
-  cmCanceledCheckbox,
-  cmInstanceIdsField,
-} from './Instances.setup';
+import {setup} from './Instances.setup';
 import {deploy} from '../setup-utils';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
@@ -25,6 +16,9 @@ import {screen, within} from '@testing-library/testcafe';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
+import {validateCheckedState} from './utils/validateCheckedState';
+import {validateSelectValue} from './utils/validateSelectValue';
+import {instancesPage as InstancesPage} from './PageModels/Instances';
 
 fixture('Instances')
   .page(config.endpoint)
@@ -46,6 +40,14 @@ fixture('Instances')
 
 test('Instances Page Initial Load', async (t) => {
   const {initialData} = t.fixtureCtx;
+  const {
+    runningInstances,
+    active,
+    incidents,
+    finishedInstances,
+    completed,
+    canceled,
+  } = InstancesPage.Filters;
 
   await t.click(
     screen.getByRole('link', {
@@ -53,39 +55,10 @@ test('Instances Page Initial Load', async (t) => {
     })
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  await validateCheckedState({
+    checked: [runningInstances.field, active.field, incidents.field],
+    unChecked: [finishedInstances.field, completed.field, canceled.field],
+  });
 
   await t
     .expect(screen.queryByText('There is no Process selected').exists)
@@ -101,14 +74,8 @@ test('Instances Page Initial Load', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: /instance id\(s\) separated by space or comma/i,
-      });
-
-  await t.typeText(
-    instanceIdsField,
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
     `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
@@ -146,37 +113,20 @@ test('Select flow node in diagram', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
   // Filter by Instance ID
-  await t.typeText(instanceIdsField, instance.processInstanceKey, {
-    paste: true,
-  });
-
-  const processCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-process-name')
-    : screen.queryByRole('combobox', {
-        name: 'Process',
-      });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
+    instance.processInstanceKey,
+    {
+      paste: true,
+    }
+  );
 
   // Select "Order Process"
-  await t
-    .click(processCombobox)
-    .click(
-      IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-          ).queryByText('Order process')
-        : within(processCombobox).queryByRole('option', {
-            name: 'Order process',
-          })
-    )
-    .expect(screen.queryByTestId('diagram').exists)
-    .ok();
+  await t.click(InstancesPage.Filters.processName.field);
+  await InstancesPage.selectProcess('Order process');
+
+  await t.expect(screen.queryByTestId('diagram').exists).ok();
 
   // Select "Ship Articles" flow node
   const shipArticlesTaskId = 'shipArticles';
@@ -186,17 +136,15 @@ test('Select flow node in diagram', async (t) => {
   );
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(
-          screen.queryByTestId('filter-flow-node').shadowRoot()
-        ).queryByText('Ship Articles').exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'Ship Articles'
+    );
   } else {
-    await t
-      .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
-      .eql(shipArticlesTaskId);
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      shipArticlesTaskId
+    );
   }
 
   await t
@@ -226,17 +174,15 @@ test('Select flow node in diagram', async (t) => {
   );
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(
-          screen.queryByTestId('filter-flow-node').shadowRoot()
-        ).queryByText('Check payment').exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'Check payment'
+    );
   } else {
-    await t
-      .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
-      .eql(checkPaymentTaskId);
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      checkPaymentTaskId
+    );
   }
 
   await t
@@ -269,19 +215,11 @@ test('Wait for process creation', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     await t
-      .expect(
-        screen.queryByTestId('filter-process-name').getAttribute('disabled')
-      )
+      .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
       .eql('true');
   } else {
     await t
-      .expect(
-        screen
-          .queryByRole('combobox', {
-            name: 'Process',
-          })
-          .hasAttribute('disabled')
-      )
+      .expect(InstancesPage.Filters.processName.field.hasAttribute('disabled'))
       .ok();
   }
 
@@ -299,33 +237,21 @@ test('Wait for process creation', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     await t
-      .expect(
-        screen.getByTestId('filter-process-name').getAttribute('disabled')
-      )
+      .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
       .eql('false');
-    await t
-      .expect(
-        within(
-          screen.getByTestId('filter-process-name').shadowRoot()
-        ).getByText('Test Process').exists
-      )
-      .ok();
+
+    await validateSelectValue(
+      InstancesPage.Filters.processName.field,
+      'Test Process'
+    );
   } else {
     await t
-      .expect(
-        screen
-          .getByRole('combobox', {
-            name: 'Process',
-          })
-          .hasAttribute('disabled')
-      )
+      .expect(InstancesPage.Filters.processName.field.hasAttribute('disabled'))
       .notOk();
-    await t
-      .expect(
-        screen.getByRole('combobox', {
-          name: 'Process',
-        }).value
-      )
-      .eql('testProcess');
+
+    await validateSelectValue(
+      InstancesPage.Filters.processName.field,
+      'testProcess'
+    );
   }
 });

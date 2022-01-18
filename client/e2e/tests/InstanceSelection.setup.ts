@@ -5,15 +5,6 @@
  */
 
 import {deploy, createInstances} from '../setup-utils';
-import {within, screen} from '@testing-library/testcafe';
-
-const cmFinishedInstancesCheckbox = within(
-  screen.queryByTestId('filter-finished-instances').shadowRoot()
-).queryByRole('checkbox');
-
-const cmInstanceIdsField = within(
-  screen.queryByTestId('filter-instance-ids').shadowRoot()
-).queryByRole('textbox');
 
 const setup = async () => {
   await deploy([
@@ -27,4 +18,4 @@ const setup = async () => {
   await createInstances('processWithAnIncident', 1, 5);
 };
 
-export {setup, cmFinishedInstancesCheckbox, cmInstanceIdsField};
+export {setup};

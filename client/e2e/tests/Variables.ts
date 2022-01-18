@@ -5,21 +5,15 @@
  */
 
 import {config} from '../config';
-import {
-  setup,
-  cmNameField,
-  cmValueField,
-  cmEditValueField,
-  cmVariableNameFilter,
-  cmVariableValueFilter,
-  cmInstanceIdsFilter,
-} from './Variables.setup';
+import {setup} from './Variables.setup';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
+import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {instancePage as InstancePage} from './PageModels/Instance';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
@@ -39,69 +33,69 @@ test('Validations for add variable works correctly', async (t) => {
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Add variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
   // open single instance page, after clicking add new variable button see that save variable button is disabled and no spinner is displayed.
   await t
-    .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .click(InstancePage.addVariableButton)
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .notOk();
 
   // add a new variable called test, see that save button is disabled, and no sipnner is displayed.
-  const nameField = within(cmNameField).queryByRole('textbox');
+  const nameField = within(InstancePage.newVariableNameField).queryByRole(
+    'textbox'
+  );
 
   await t
     .typeText(nameField, 'test')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .ok();
 
   // add a valid value to the newly added variable, see that save button is enabled and no spinner is displayed.
-  const valueField = within(cmValueField).queryByRole('textbox');
+  const valueField = within(InstancePage.newVariableValueField).queryByRole(
+    'textbox'
+  );
 
   await t
     .typeText(valueField, '123')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .notOk();
 
   // delete the value of the variable and add some invalid value instead. see that save button is disabled and no spinner is displayed.
@@ -109,19 +103,19 @@ test('Validations for add variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, 'someTestValue')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .ok();
 
   // delete the value of the variable and add some valid string value instead. see that save button is enabled and no spinner is displayed.
@@ -129,19 +123,19 @@ test('Validations for add variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '"someTestValue"')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .notOk();
 
   // delete the value of the variable and add some valid json value instead. see that save button is enabled and no spinner is displayed.
@@ -149,40 +143,44 @@ test('Validations for add variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '{"name": "value","found":true}')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .notOk();
 
   // delete the key of the newly added variable and see that save button is disabled and no spinner is displayed.
   await t
     .selectText(nameField)
     .pressKey('delete')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   await t
-    .expect(within(cmNameField).queryByText('Name has to be filled').exists)
+    .expect(
+      within(InstancePage.newVariableNameField).queryByText(
+        'Name has to be filled'
+      ).exists
+    )
     .ok()
-    .expect(within(cmValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .notOk();
 
   await t.click(screen.queryByRole('button', {name: 'Exit edit mode'}));
@@ -195,62 +193,60 @@ test('Validations for edit variable works correctly', async (t) => {
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Add variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
   // open single instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
     .click(screen.queryByTestId('edit-variable-button'))
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk()
-    .expect(within(cmEditValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.editVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .notOk();
 
-  const valueField = within(cmEditValueField).queryByRole('textbox');
+  const valueField = within(InstancePage.editVariableValueField).queryByRole(
+    'textbox'
+  );
 
   // clear value field, see that save button is disabled, and no sipnner is displayed.
   await t
     .selectText(valueField)
     .pressKey('delete')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk()
-    .expect(within(cmEditValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.editVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .ok();
 
   // type a valid value, see that save button is enabled and no spinner is displayed.
   await t
     .typeText(valueField, '123')
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .notOk()
+    .expect(InstancePage.variableSpinner.exists)
+    .notOk()
+    .expect(InstancePage.operationSpinner.exists)
+    .notOk()
     .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
+      within(InstancePage.editVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
     )
-    .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
-    .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk()
-    .expect(within(cmEditValueField).queryByText('Invalid input text').exists)
     .notOk();
 
   // delete the value of the variable and add some invalid value instead. see that save button is disabled and no spinner is displayed.
@@ -258,17 +254,17 @@ test('Validations for edit variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, 'someTestValue')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk()
-    .expect(within(cmEditValueField).queryByText('Invalid input text').exists)
+    .expect(
+      within(InstancePage.editVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
+    )
     .ok();
 
   // delete the value of the variable and add some valid string value instead. see that save button is enabled and no spinner is displayed.
@@ -276,17 +272,17 @@ test('Validations for edit variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '"someTestValue"')
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .notOk()
+    .expect(InstancePage.variableSpinner.exists)
+    .notOk()
+    .expect(InstancePage.operationSpinner.exists)
+    .notOk()
     .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
+      within(InstancePage.editVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
     )
-    .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
-    .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk()
-    .expect(within(cmEditValueField).queryByText('Invalid input text').exists)
     .notOk();
 
   // delete the value of the variable and add some valid json value instead. see that save button is enabled and no spinner is displayed.
@@ -294,17 +290,17 @@ test('Validations for edit variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '{"name": "value","found":true}')
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .notOk()
+    .expect(InstancePage.variableSpinner.exists)
+    .notOk()
+    .expect(InstancePage.operationSpinner.exists)
+    .notOk()
     .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
+      within(InstancePage.editVariableValueField).queryByText(
+        'Invalid input text'
+      ).exists
     )
-    .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
-    .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk()
-    .expect(within(cmEditValueField).queryByText('Invalid input text').exists)
     .notOk();
 
   await t.click(screen.queryByRole('button', {name: 'Exit edit mode'}));
@@ -318,54 +314,44 @@ test('Edit variables', async (t) => {
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Add variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
   // open single instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
     .click(screen.queryByTestId('edit-variable-button'))
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok();
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
-  const valueField = within(cmEditValueField).queryByRole('textbox');
+  const valueField = within(InstancePage.editVariableValueField).queryByRole(
+    'textbox'
+  );
 
   await t
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '"editedTestValue"')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
-    .click(screen.queryByRole('button', {name: 'Save variable'}))
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .click(InstancePage.saveVariableButton)
+    .expect(InstancePage.variableSpinner.exists)
     .ok()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .ok();
 
   // see that spinners both disappear after save variable operation completes.
   await t
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   // refresh the page and see the variable is still there.
@@ -383,68 +369,56 @@ test('Add variables', async (t) => {
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Add variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
   // open single instance page, click add new variable button and see that save variable button is disabled.
   await t
-    .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .click(InstancePage.addVariableButton)
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok();
 
   // add a key to the newly added variable and see that save variable button is disabled and no spinner is displayed.
-  const nameField = within(cmNameField).queryByRole('textbox');
+  const nameField = within(InstancePage.newVariableNameField).queryByRole(
+    'textbox'
+  );
 
   await t
     .typeText(nameField, 'secondTestKey')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   // add a value to the newly added variable and see that save variable button is enabled and no spinner is displayed.
-  const valueField = within(cmValueField).queryByRole('textbox');
+  const valueField = within(InstancePage.newVariableValueField).queryByRole(
+    'textbox'
+  );
 
   await t
     .typeText(valueField, '"secondTestValue"')
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
-    .click(screen.queryByRole('button', {name: 'Save variable'}))
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .click(InstancePage.saveVariableButton)
+    .expect(InstancePage.variableSpinner.exists)
     .ok()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .ok();
 
   // see that spinners both disappear after save variable operation completes
   await t
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 
   // refresh the page and see the variable is still there.
@@ -456,7 +430,6 @@ test('Add variables', async (t) => {
     .ok();
 
   // go to instance page, filter and find the instance by added variable
-
   await t.click(
     screen.queryByRole('link', {
       name: /view instances/i,
@@ -468,22 +441,20 @@ test('Add variables', async (t) => {
     await displayOptionalFilter('Variable');
   }
 
-  const variableNameFilter = IS_NEW_FILTERS_FORM
-    ? cmVariableNameFilter
-    : screen.queryByRole('textbox', {name: 'Variable'});
-  const variableValueFilter = IS_NEW_FILTERS_FORM
-    ? cmVariableValueFilter
-    : screen.queryByRole('textbox', {name: 'Value'});
-  const instanceIdsFilter = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsFilter
-    : screen.queryByRole('textbox', {
-        name: /instance id\(s\) separated by space or comma/i,
-      });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.variableName.field,
+    'secondTestKey'
+  );
 
-  await t
-    .typeText(variableNameFilter, 'secondTestKey')
-    .typeText(variableValueFilter, '"secondTestValue"')
-    .typeText(instanceIdsFilter, instance.processInstanceKey);
+  await InstancesPage.typeText(
+    InstancesPage.Filters.variableValue.field,
+    '"secondTestValue"'
+  );
+
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
+    instance.processInstanceKey
+  );
 
   await t
     .expect(
@@ -501,21 +472,17 @@ test('Should not change add variable state when enter is pressed', async (t) => 
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Add variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  await t.click(
-    screen.queryByRole('button', {
-      name: 'Add variable',
-    })
-  );
+  await t.click(InstancePage.addVariableButton);
 
-  const nameField = within(cmNameField).queryByRole('textbox');
-  const valueField = within(cmValueField).queryByRole('textbox');
+  const nameField = within(InstancePage.newVariableNameField).queryByRole(
+    'textbox'
+  );
+  const valueField = within(InstancePage.newVariableValueField).queryByRole(
+    'textbox'
+  );
 
   await t.expect(nameField.exists).ok().expect(valueField.exists).ok();
 
@@ -531,32 +498,32 @@ test('Remove fields when instance is canceled', async (t) => {
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Add variable'})
-        .hasAttribute('disabled')
-    )
+    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
   await t
-    .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .expect(within(cmNameField).queryByRole('textbox').exists)
+    .click(InstancePage.addVariableButton)
+    .expect(
+      within(InstancePage.newVariableNameField).queryByRole('textbox').exists
+    )
     .ok()
-    .expect(within(cmValueField).queryByRole('textbox').exists)
+    .expect(
+      within(InstancePage.newVariableValueField).queryByRole('textbox').exists
+    )
     .ok();
 
   await t
     .click(screen.queryByRole('button', {name: /^Cancel Instance/}))
     .click(screen.queryByRole('button', {name: 'Apply'}))
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .ok();
 
   await t
-    .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk()
     .expect(screen.queryByTestId('add-variable-name').exists)
     .notOk()
     .expect(screen.queryByTestId('add-variable-value').exists)
+    .notOk()
+    .expect(InstancePage.operationSpinner.exists)
     .notOk();
 });
 

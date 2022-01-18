@@ -5,23 +5,7 @@
  */
 
 import {config} from '../config';
-import {
-  setup,
-  cmRunningInstancesCheckbox,
-  cmActiveCheckbox,
-  cmIncidentsCheckbox,
-  cmFinishedInstancesCheckbox,
-  cmCompletedCheckbox,
-  cmCanceledCheckbox,
-  cmParentInstanceIdField,
-  cmErrorMessageField,
-  cmOperationIdField,
-  cmStartDateField,
-  cmEndDateField,
-  cmVariableNameField,
-  cmVariableValueField,
-  cmInstanceIdsField,
-} from './Filters.setup';
+import {setup} from './Filters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {convertToQueryString} from './utils/convertToQueryString';
@@ -31,6 +15,9 @@ import {getSearch} from './utils/getSearch';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
+import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {validateCheckedState} from './utils/validateCheckedState';
+import {validateSelectValue} from './utils/validateSelectValue';
 
 fixture('Filters')
   .page(config.endpoint)
@@ -73,39 +60,19 @@ test('Navigating in header should affect filters and url correctly', async (t) =
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  const {
+    runningInstances,
+    active,
+    incidents,
+    finishedInstances,
+    completed,
+    canceled,
+  } = InstancesPage.Filters;
+
+  await validateCheckedState({
+    checked: [runningInstances.field, active.field, incidents.field],
+    unChecked: [finishedInstances.field, completed.field, canceled.field],
+  });
 });
 
 test('Instance IDs filter', async (t) => {
@@ -119,15 +86,13 @@ test('Instance IDs filter', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
-  await t.typeText(instanceIdsField, instanceId.toString(), {
-    paste: true,
-  });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
+    instanceId.toString(),
+    {
+      paste: true,
+    }
+  );
 
   // wait for filter to be applied, see there is only 1 result
   await t
@@ -158,7 +123,7 @@ test('Instance IDs filter', async (t) => {
     )
     .eql(instanceId);
 
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // wait for reset filter to be applied, see there is more than one result again
   await t
@@ -169,10 +134,10 @@ test('Instance IDs filter', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     // instance ids filter is hidden
-    await t.expect(screen.queryByTestId('filter-instance-ids').exists).notOk();
+    await t.expect(InstancesPage.Filters.instanceIds.field.exists).notOk();
   } else {
     // filter has been reset
-    await t.expect(instanceIdsField.value).eql('');
+    await t.expect(InstancesPage.Filters.instanceIds.value.value).eql('');
   }
 
   // changes reflected in the url
@@ -193,22 +158,14 @@ test('Parent Instance Id filter', async (t) => {
     initialData: {callActivityProcessInstance},
   } = t.fixtureCtx;
 
-  const completedCheckbox = IS_NEW_FILTERS_FORM
-    ? cmCompletedCheckbox
-    : screen.queryByRole('checkbox', {name: 'Completed'});
-
-  await t.click(completedCheckbox);
+  await t.click(InstancesPage.Filters.completed.field);
 
   if (IS_NEW_FILTERS_FORM) {
     await displayOptionalFilter('Parent Instance Id');
   }
 
-  const parentInstanceIdField = IS_NEW_FILTERS_FORM
-    ? cmParentInstanceIdField
-    : screen.queryByRole('textbox', {name: 'Parent Instance Id'});
-
-  await t.typeText(
-    parentInstanceIdField,
+  await InstancesPage.typeText(
+    InstancesPage.Filters.parentInstanceId.field,
     callActivityProcessInstance.processInstanceKey,
     {paste: true}
   );
@@ -229,7 +186,7 @@ test('Parent Instance Id filter', async (t) => {
     )
     .eql(callActivityProcessInstance.processInstanceKey);
 
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // wait for reset filter to be applied, see there is more than one result again
   await t
@@ -240,12 +197,10 @@ test('Parent Instance Id filter', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     // parent id filter is hidden
-    await t
-      .expect(screen.queryByTestId('filter-parent-instance-id').exists)
-      .notOk();
+    await t.expect(InstancesPage.Filters.parentInstanceId.field.exists).notOk();
   } else {
     // filter has been reset
-    await t.expect(parentInstanceIdField.value).eql('');
+    await t.expect(InstancesPage.Filters.parentInstanceId.value.value).eql('');
   }
 });
 
@@ -263,13 +218,13 @@ test('Error Message filter', async (t) => {
     await displayOptionalFilter('Error Message');
   }
 
-  const errorMessageField = IS_NEW_FILTERS_FORM
-    ? cmErrorMessageField
-    : screen.queryByRole('textbox', {name: /error message/i});
-
-  await t.typeText(errorMessageField, errorMessage, {
-    paste: true,
-  });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.errorMessage.field,
+    errorMessage,
+    {
+      paste: true,
+    }
+  );
 
   // wait for filter to be applied, see results are narrowed down.
   await t
@@ -291,7 +246,7 @@ test('Error Message filter', async (t) => {
       })
     );
 
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // wait for reset filter to be applied, see there is more than one result again.
   await t
@@ -302,10 +257,10 @@ test('Error Message filter', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     // error message filter is hidden
-    await t.expect(screen.queryByTestId('filter-error-message').exists).notOk();
+    await t.expect(InstancesPage.Filters.errorMessage.field.exists).notOk();
   } else {
     // filter has been reset
-    await t.expect(errorMessageField.value).eql('');
+    await t.expect(InstancesPage.Filters.errorMessage.value.value).eql('');
   }
 
   // changes reflected in the url
@@ -330,15 +285,13 @@ test('End Date filter', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
-  await t.typeText(instanceIdsField, instanceToCancel.processInstanceKey, {
-    paste: true,
-  });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
+    instanceToCancel.processInstanceKey,
+    {
+      paste: true,
+    }
+  );
 
   // wait for filter to be applied
   await t
@@ -358,11 +311,7 @@ test('End Date filter', async (t) => {
     )
     .ok();
 
-  const finishedInstancesCheckbox = IS_NEW_FILTERS_FORM
-    ? cmFinishedInstancesCheckbox
-    : screen.queryByRole('checkbox', {name: 'Finished Instances'});
-
-  await t.click(finishedInstancesCheckbox);
+  await t.click(InstancesPage.Filters.finishedInstances.field);
 
   // wait for filter to be applied
   await t
@@ -377,7 +326,7 @@ test('End Date filter', async (t) => {
   ).queryByTestId('end-time').innerText;
 
   // reset the filters to start over
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   const instanceCount = await within(
     screen.queryByTestId('instances-list')
@@ -387,11 +336,9 @@ test('End Date filter', async (t) => {
     await displayOptionalFilter('End Date');
   }
 
-  const endDateField = IS_NEW_FILTERS_FORM
-    ? cmEndDateField
-    : screen.queryByRole('textbox', {name: /end date/i});
+  await t.click(InstancesPage.Filters.finishedInstances.field);
 
-  await t.click(finishedInstancesCheckbox).typeText(endDateField, endDate, {
+  await InstancesPage.typeText(InstancesPage.Filters.endDate.field, endDate, {
     paste: true,
   });
 
@@ -416,7 +363,7 @@ test('End Date filter', async (t) => {
       })
     );
 
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // wait for filter to be applied, see there are more results again.
   await t
@@ -427,10 +374,10 @@ test('End Date filter', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     // end date filter is hidden
-    await t.expect(screen.queryByTestId('filter-end-date').exists).notOk();
+    await t.expect(InstancesPage.Filters.endDate.field.exists).notOk();
   } else {
     // filter has been reset
-    await t.expect(endDateField.value).eql('');
+    await t.expect(InstancesPage.Filters.endDate.value.value).eql('');
   }
 
   // changes reflected in the url
@@ -451,27 +398,27 @@ test('Variable filter', async (t) => {
     await displayOptionalFilter('Variable');
   }
 
-  const variableNameField = IS_NEW_FILTERS_FORM
-    ? cmVariableNameField
-    : screen.queryByRole('textbox', {name: /variable/i});
-
-  const variableValueField = IS_NEW_FILTERS_FORM
-    ? cmVariableValueField
-    : screen.queryByRole('textbox', {name: /value/i});
-
   await t.expect(screen.queryByTestId('instances-list').exists).ok();
 
   const instanceCount = await within(
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
-  await t.typeText(variableNameField, 'filtersTest', {
-    paste: true,
-  });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.variableName.field,
+    'filtersTest',
+    {
+      paste: true,
+    }
+  );
 
-  await t.typeText(variableValueField, '123', {
-    paste: true,
-  });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.variableValue.field,
+    '123',
+    {
+      paste: true,
+    }
+  );
 
   // wait for filter to be applied, see results are narrowed down.
   await t
@@ -493,7 +440,7 @@ test('Variable filter', async (t) => {
       })
     );
 
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // wait for filter to be applied, see there is more than one result again.
   await t
@@ -504,15 +451,13 @@ test('Variable filter', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     // variable name and value filters are hidden
-    await t.expect(screen.queryByTestId('filter-variable-name').exists).notOk();
-    await t
-      .expect(screen.queryByTestId('filter-variable-value').exists)
-      .notOk();
+    await t.expect(InstancesPage.Filters.variableName.field.exists).notOk();
+    await t.expect(InstancesPage.Filters.variableValue.field.exists).notOk();
   } else {
     // filter has been reset
-    await t.expect(variableNameField.value).eql('');
+    await t.expect(InstancesPage.Filters.variableName.value.value).eql('');
 
-    await t.expect(variableValueField.value).eql('');
+    await t.expect(InstancesPage.Filters.variableValue.value.value).eql('');
   }
 
   await t
@@ -536,14 +481,8 @@ test('Operation ID filter', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
-  await t.typeText(
-    instanceIdsField,
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
     instanceToCancelForOperations.processInstanceKey,
     {
       paste: true,
@@ -574,7 +513,7 @@ test('Operation ID filter', async (t) => {
   await t.click(screen.queryByRole('button', {name: 'Collapse Operations'}));
 
   // reset the filters to start over
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   const instanceCount = await within(
     screen.queryByTestId('instances-list')
@@ -584,19 +523,14 @@ test('Operation ID filter', async (t) => {
     await displayOptionalFilter('Operation Id');
   }
 
-  const operationIdField = IS_NEW_FILTERS_FORM
-    ? cmOperationIdField
-    : screen.queryByRole('textbox', {name: /operation id/i});
-
-  const finishedInstancesCheckbox = IS_NEW_FILTERS_FORM
-    ? cmFinishedInstancesCheckbox
-    : screen.queryByRole('checkbox', {name: 'Finished Instances'});
-
-  await t
-    .click(finishedInstancesCheckbox)
-    .typeText(operationIdField, operationId, {
+  await t.click(InstancesPage.Filters.finishedInstances.field);
+  await InstancesPage.typeText(
+    InstancesPage.Filters.operationId.field,
+    operationId,
+    {
       paste: true,
-    });
+    }
+  );
 
   // wait for filter to be applied
   await t
@@ -619,7 +553,7 @@ test('Operation ID filter', async (t) => {
       })
     );
 
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // wait for filter to be applied, see there are more results again.
   await t
@@ -630,10 +564,10 @@ test('Operation ID filter', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     // operation id filter is hidden
-    await t.expect(screen.queryByTestId('filter-operation-id').exists).notOk();
+    await t.expect(InstancesPage.Filters.operationId.field.exists).notOk();
   } else {
     // filter has been reset
-    await t.expect(operationIdField.value).eql('');
+    await t.expect(InstancesPage.Filters.operationId.value.value).eql('');
   }
 
   await t
@@ -649,79 +583,42 @@ test('Operation ID filter', async (t) => {
 });
 
 test('Checkboxes', async (t) => {
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmRunningInstancesCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Running Instances'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .notOk()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  const {
+    runningInstances,
+    active,
+    incidents,
+    finishedInstances,
+    completed,
+    canceled,
+  } = InstancesPage.Filters;
+
+  await t.click(runningInstances.field);
+
+  await validateCheckedState({
+    checked: [],
+    unChecked: [
+      runningInstances.field,
+      active.field,
+      incidents.field,
+      finishedInstances.field,
+      completed.field,
+      canceled.field,
+    ],
+  });
 
   await t.expect(await getPathname()).eql('/instances');
+  await t.click(active.field);
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmActiveCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Active'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .notOk()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  await validateCheckedState({
+    checked: [active.field],
+    unChecked: [
+      runningInstances.field,
+      incidents.field,
+      finishedInstances.field,
+      completed.field,
+      canceled.field,
+    ],
+  });
 
   await t
     .expect(await getPathname())
@@ -733,41 +630,12 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmIncidentsCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Incidents'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  await t.click(incidents.field);
+
+  await validateCheckedState({
+    checked: [runningInstances.field, active.field, incidents.field],
+    unChecked: [finishedInstances.field, completed.field, canceled.field],
+  });
 
   await t
     .expect(await getPathname())
@@ -780,41 +648,19 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmFinishedInstancesCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .ok();
-  }
+  await t.click(finishedInstances.field);
+
+  await validateCheckedState({
+    checked: [
+      runningInstances.field,
+      active.field,
+      incidents.field,
+      finishedInstances.field,
+      completed.field,
+      canceled.field,
+    ],
+    unChecked: [],
+  });
 
   await t
     .expect(await getPathname())
@@ -829,41 +675,17 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmCompletedCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Completed'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .ok();
-  }
+  await t.click(completed.field);
+
+  await validateCheckedState({
+    checked: [
+      runningInstances.field,
+      active.field,
+      incidents.field,
+      canceled.field,
+    ],
+    unChecked: [finishedInstances.field, completed.field],
+  });
 
   await t
     .expect(await getPathname())
@@ -877,41 +699,12 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmCanceledCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Canceled'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  await t.click(canceled.field);
+
+  await validateCheckedState({
+    checked: [runningInstances.field, active.field, incidents.field],
+    unChecked: [finishedInstances.field, completed.field, canceled.field],
+  });
 
   await t
     .expect(await getPathname())
@@ -924,41 +717,19 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .click(cmFinishedInstancesCheckbox)
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .ok();
-  }
+  await t.click(finishedInstances.field);
+
+  await validateCheckedState({
+    checked: [
+      runningInstances.field,
+      active.field,
+      incidents.field,
+      finishedInstances.field,
+      completed.field,
+      canceled.field,
+    ],
+    unChecked: [],
+  });
 
   await t
     .expect(await getPathname())
@@ -972,41 +743,13 @@ test('Checkboxes', async (t) => {
         canceled: 'true',
       })
     );
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .notOk();
-  }
+  await t.click(InstancesPage.resetFiltersButton);
+
+  await validateCheckedState({
+    checked: [runningInstances.field, active.field, incidents.field],
+    unChecked: [finishedInstances.field, completed.field, canceled.field],
+  });
 
   await t
     .expect(await getPathname())
@@ -1021,45 +764,18 @@ test('Checkboxes', async (t) => {
 });
 
 test('Process Filter', async (t) => {
-  const processCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-process-name')
-    : screen.queryByRole('combobox', {
-        name: 'Process',
-      });
-
-  const processVersionCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-process-version')
-    : screen.queryByRole('combobox', {
-        name: 'Process Version',
-      });
-
-  const flowNodeCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-flow-node')
-    : screen.queryByRole('combobox', {
-        name: /flow node/i,
-      });
-
   // select a process with multiple versions, see that latest version is selected by default, a diagram is displayed and selected instances are removed
-  await t.click(processCombobox).click(
-    IS_NEW_FILTERS_FORM
-      ? within(
-          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-        ).queryByText('Process With Multiple Versions')
-      : within(processCombobox).queryByRole('option', {
-          name: 'Process With Multiple Versions',
-        })
-  );
+  await t.click(InstancesPage.Filters.processName.field);
+
+  await InstancesPage.selectProcess('Process With Multiple Versions');
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(
-          screen.queryByTestId('filter-process-version').shadowRoot()
-        ).queryByText('Version 2').exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'Version 2'
+    );
   } else {
-    await t.expect(processVersionCombobox.value).eql('2');
+    await validateSelectValue(InstancesPage.Filters.processVersion.field, '2');
   }
 
   await t
@@ -1078,28 +794,20 @@ test('Process Filter', async (t) => {
   await t.expect(screen.queryByTestId('diagram').exists).ok();
 
   // select all versions, see that diagram disappeared and selected instances are removed
-  await t.click(processVersionCombobox);
-
-  await t.click(
-    IS_NEW_FILTERS_FORM
-      ? within(
-          screen.queryByTestId('cm-flyout-process-version').shadowRoot()
-        ).queryByText('All')
-      : screen.queryByRole('option', {name: 'All versions'})
-  );
+  await t.click(InstancesPage.Filters.processVersion.field);
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(
-          screen.queryByTestId('filter-process-version').shadowRoot()
-        ).queryByText('All').exists
-      )
-      .ok();
+    await InstancesPage.selectVersion('All');
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'All'
+    );
   } else {
-    await t
-      .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-      .eql('all');
+    await InstancesPage.selectVersion('All versions');
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'all'
+    );
   }
 
   await t
@@ -1130,40 +838,19 @@ test('Process Filter', async (t) => {
     );
 
   // reset the filters to start over
-  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(InstancesPage.resetFiltersButton);
 
   // select a process and a flow node
-  await t
-    .click(processCombobox)
-    .click(
-      IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-          ).queryByText('Process With Multiple Versions')
-        : within(processCombobox).queryByRole('option', {
-            name: 'Process With Multiple Versions',
-          })
-    )
-    .click(flowNodeCombobox)
-    .click(
-      IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
-          ).queryByText('StartEvent_1')
-        : screen.queryByRole('option', {
-            name: 'StartEvent_1',
-          })
-    );
+  await t.click(InstancesPage.Filters.processName.field);
+  await InstancesPage.selectProcess('Process With Multiple Versions');
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(flowNodeCombobox.shadowRoot()).queryByText('StartEvent_1').exists
-      )
-      .ok();
-  } else {
-    await t.expect(flowNodeCombobox.value).eql('StartEvent_1');
-  }
+  await t.click(InstancesPage.Filters.flowNode.field);
+  await InstancesPage.selectFlowNode('StartEvent_1');
+
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'StartEvent_1'
+  );
 
   await t
     .expect(await getPathname())
@@ -1180,22 +867,13 @@ test('Process Filter', async (t) => {
     );
 
   // change process and see flow node filter has been reset
-  await t.click(processCombobox).click(
-    IS_NEW_FILTERS_FORM
-      ? within(
-          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-        ).queryByText('Order process')
-      : within(processCombobox).queryByRole('option', {
-          name: 'Order process',
-        })
-  );
+  await t.click(InstancesPage.Filters.processName.field);
+  await InstancesPage.selectProcess('Order process');
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
-      .ok();
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
   } else {
-    await t.expect(flowNodeCombobox.value).eql('');
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
   }
 
   await t
@@ -1213,24 +891,6 @@ test('Process Filter', async (t) => {
 });
 
 test('Process Filter - Interaction with diagram', async (t) => {
-  const processCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-process-name')
-    : screen.queryByRole('combobox', {
-        name: 'Process',
-      });
-
-  const processVersionCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-process-version')
-    : screen.queryByRole('combobox', {
-        name: 'Process Version',
-      });
-
-  const flowNodeCombobox = IS_NEW_FILTERS_FORM
-    ? screen.queryByTestId('filter-flow-node')
-    : screen.queryByRole('combobox', {
-        name: /flow node/i,
-      });
-
   await t
     .expect(screen.queryByText('There is no Process selected').exists)
     .ok()
@@ -1243,26 +903,31 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     await t
-      .expect(processVersionCombobox.getAttribute('disabled'))
-      .eql('true')
-      .expect(flowNodeCombobox.getAttribute('disabled'))
-      .eql('true')
       .expect(
-        within(processVersionCombobox.shadowRoot()).queryByText('All').exists
+        InstancesPage.Filters.processVersion.field.getAttribute('disabled')
       )
-      .ok()
-      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
-      .ok();
+      .eql('true')
+      .expect(InstancesPage.Filters.flowNode.field.getAttribute('disabled'))
+      .eql('true');
+
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'All'
+    );
+
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
   } else {
     await t
-      .expect(processVersionCombobox.hasAttribute('disabled'))
+      .expect(
+        InstancesPage.Filters.processVersion.field.hasAttribute('disabled')
+      )
       .ok()
-      .expect(flowNodeCombobox.hasAttribute('disabled'))
-      .ok()
-      .expect(processVersionCombobox.value)
-      .eql('')
-      .expect(flowNodeCombobox.value)
-      .eql('');
+      .expect(InstancesPage.Filters.flowNode.field.hasAttribute('disabled'))
+      .ok();
+
+    await validateSelectValue(InstancesPage.Filters.processVersion.field, '');
+
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
   }
 
   await t
@@ -1277,15 +942,8 @@ test('Process Filter - Interaction with diagram', async (t) => {
     );
 
   // select a process that has only one version
-  await t.click(processCombobox).click(
-    IS_NEW_FILTERS_FORM
-      ? within(
-          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-        ).queryByText('Order process')
-      : within(processCombobox).queryByRole('option', {
-          name: 'Order process',
-        })
-  );
+  await t.click(InstancesPage.Filters.processName.field);
+  await InstancesPage.selectProcess('Order process');
 
   await t
     .expect(screen.queryByTestId('diagram').exists)
@@ -1301,23 +959,23 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   if (IS_NEW_FILTERS_FORM) {
     await t
-      .expect(processCombobox.getAttribute('disabled'))
-      .eql('false')
-      .expect(
-        within(processVersionCombobox.shadowRoot()).queryByText('Version 1')
-          .exists
-      )
-      .ok()
-      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
-      .ok();
+      .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+      .eql('false');
+
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'Version 1'
+    );
+
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
   } else {
     await t
-      .expect(flowNodeCombobox.hasAttribute('disabled'))
-      .notOk()
-      .expect(processVersionCombobox.value)
-      .eql('1')
-      .expect(flowNodeCombobox.value)
-      .eql('');
+      .expect(InstancesPage.Filters.processName.field.hasAttribute('disabled'))
+      .notOk();
+
+    await validateSelectValue(InstancesPage.Filters.processVersion.field, '1');
+
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
   }
 
   await t
@@ -1345,15 +1003,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .ok();
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-
-      .expect(
-        within(flowNodeCombobox.shadowRoot()).queryByText('Ship Articles')
-          .exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'Ship Articles'
+    );
   } else {
-    await t.expect(flowNodeCombobox.value).eql('shipArticles');
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'shipArticles'
+    );
   }
 
   await t
@@ -1382,14 +1040,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .notOk();
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(flowNodeCombobox.shadowRoot()).queryByText('Check payment')
-          .exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'Check payment'
+    );
   } else {
-    await t.expect(flowNodeCombobox.value).eql('checkPayment');
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'checkPayment'
+    );
   }
 
   await t
@@ -1425,22 +1084,21 @@ test('Process Filter - Interaction with diagram', async (t) => {
     );
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
-      .ok();
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
   } else {
-    await t.expect(flowNodeCombobox.value).eql('');
+    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
   }
 });
 
 test('Should set filters from url', async (t) => {
-  const variableNameField = IS_NEW_FILTERS_FORM
-    ? cmVariableNameField
-    : screen.queryByRole('textbox', {name: /variable/i});
-
-  const variableValueField = IS_NEW_FILTERS_FORM
-    ? cmVariableValueField
-    : screen.queryByRole('textbox', {name: /value/i});
+  const {
+    runningInstances,
+    active,
+    incidents,
+    finishedInstances,
+    completed,
+    canceled,
+  } = InstancesPage.Filters;
 
   await t.navigateTo(
     `/instances?${convertToQueryString({
@@ -1462,118 +1120,61 @@ test('Should set filters from url', async (t) => {
     })}`
   );
 
-  const parentInstanceIdField = IS_NEW_FILTERS_FORM
-    ? cmParentInstanceIdField
-    : screen.queryByRole('textbox', {name: 'Parent Instance Id'});
-
-  const errorMessageField = IS_NEW_FILTERS_FORM
-    ? cmErrorMessageField
-    : screen.queryByRole('textbox', {name: /error message/i});
-
-  const startDateField = IS_NEW_FILTERS_FORM
-    ? cmStartDateField
-    : screen.queryByRole('textbox', {name: /start date/i});
-
-  const endDateField = IS_NEW_FILTERS_FORM
-    ? cmEndDateField
-    : screen.queryByRole('textbox', {name: /end date/i});
-
-  const operationIdField = IS_NEW_FILTERS_FORM
-    ? cmOperationIdField
-    : screen.queryByRole('textbox', {name: /operation id/i});
-
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
-
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(
-          screen.queryByTestId('filter-process-name').shadowRoot()
-        ).queryByText('Process With Multiple Versions').exists
-      )
-      .ok()
-      .expect(
-        within(
-          screen.queryByTestId('filter-process-version').shadowRoot()
-        ).queryByText('Version 2').exists
-      )
-      .ok()
-      .expect(
-        within(
-          screen.queryByTestId('filter-flow-node').shadowRoot()
-        ).queryByText('Always fails').exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.processName.field,
+      'Process With Multiple Versions'
+    );
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'Version 2'
+    );
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'Always fails'
+    );
   } else {
-    await t
-      .expect(
-        screen.queryByRole('combobox', {
-          name: 'Process',
-        }).value
-      )
-      .eql('processWithMultipleVersions')
-      .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-      .eql('2')
-      .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-      .eql('alwaysFails');
+    await validateSelectValue(
+      InstancesPage.Filters.processName.field,
+      'processWithMultipleVersions'
+    );
+    await validateSelectValue(InstancesPage.Filters.processVersion.field, '2');
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'alwaysFails'
+    );
   }
 
   await t
-    .expect(instanceIdsField.value)
+    .expect(InstancesPage.Filters.instanceIds.value.value)
     .eql('2251799813685255')
-    .expect(parentInstanceIdField.value)
+    .expect(InstancesPage.Filters.parentInstanceId.value.value)
     .eql('2251799813685731')
-    .expect(errorMessageField.value)
+    .expect(InstancesPage.Filters.errorMessage.value.value)
     .eql('some error message')
-    .expect(startDateField.value)
+    .expect(InstancesPage.Filters.startDate.value.value)
     .eql('2020-09-10 18:41:44')
-    .expect(endDateField.value)
+    .expect(InstancesPage.Filters.endDate.value.value)
     .eql('2020-12-12 12:12:12')
 
-    .expect(variableNameField.value)
+    .expect(InstancesPage.Filters.variableName.value.value)
     .eql('test')
-    .expect(variableValueField.value)
+    .expect(InstancesPage.Filters.variableValue.value.value)
     .eql('123')
-    .expect(operationIdField.value)
+    .expect(InstancesPage.Filters.operationId.value.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .ok();
-  }
+  await validateCheckedState({
+    checked: [
+      runningInstances.field,
+      active.field,
+      incidents.field,
+      finishedInstances.field,
+      completed.field,
+      canceled.field,
+    ],
+    unChecked: [],
+  });
 
   // should navigate to dashboard and back, and see filters are still there
 
@@ -1591,90 +1192,59 @@ test('Should set filters from url', async (t) => {
   );
 
   if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        within(
-          screen.queryByTestId('filter-process-name').shadowRoot()
-        ).queryByText('Process With Multiple Versions').exists
-      )
-      .ok()
-      .expect(
-        within(
-          screen.queryByTestId('filter-process-version').shadowRoot()
-        ).queryByText('Version 2').exists
-      )
-      .ok()
-      .expect(
-        within(
-          screen.queryByTestId('filter-flow-node').shadowRoot()
-        ).queryByText('Always fails').exists
-      )
-      .ok();
+    await validateSelectValue(
+      InstancesPage.Filters.processName.field,
+      'Process With Multiple Versions'
+    );
+    await validateSelectValue(
+      InstancesPage.Filters.processVersion.field,
+      'Version 2'
+    );
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'Always fails'
+    );
   } else {
-    await t
-      .expect(
-        screen.queryByRole('combobox', {
-          name: 'Process',
-        }).value
-      )
-      .eql('processWithMultipleVersions')
-      .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-      .eql('2')
-      .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-      .eql('alwaysFails');
+    await validateSelectValue(
+      InstancesPage.Filters.processName.field,
+      'processWithMultipleVersions'
+    );
+    await validateSelectValue(InstancesPage.Filters.processVersion.field, '2');
+    await validateSelectValue(
+      InstancesPage.Filters.flowNode.field,
+      'alwaysFails'
+    );
   }
 
   await t
-    .expect(instanceIdsField.value)
+    .expect(InstancesPage.Filters.instanceIds.value.value)
     .eql('2251799813685255')
-    .expect(parentInstanceIdField.value)
+    .expect(InstancesPage.Filters.parentInstanceId.value.value)
     .eql('2251799813685731')
-    .expect(errorMessageField.value)
+    .expect(InstancesPage.Filters.errorMessage.value.value)
     .eql('some error message')
-    .expect(startDateField.value)
+    .expect(InstancesPage.Filters.startDate.value.value)
     .eql('2020-09-10 18:41:44')
-    .expect(endDateField.value)
+    .expect(InstancesPage.Filters.endDate.value.value)
     .eql('2020-12-12 12:12:12')
-    .expect(variableNameField.value)
+    .expect(InstancesPage.Filters.variableName.value.value)
     .eql('test')
-    .expect(variableValueField.value)
+    .expect(InstancesPage.Filters.variableValue.value.value)
     .eql('123')
-    .expect(operationIdField.value)
+    .expect(InstancesPage.Filters.operationId.value.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCompletedCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmCanceledCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok()
-      .expect(
-        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-      )
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-      .ok();
-  }
+  await validateCheckedState({
+    checked: [
+      runningInstances.field,
+      active.field,
+      incidents.field,
+      finishedInstances.field,
+      completed.field,
+      canceled.field,
+    ],
+    unChecked: [],
+  });
 });
 
 (IS_NEW_FILTERS_FORM ? test : test.skip)(
@@ -1690,46 +1260,39 @@ test('Should set filters from url', async (t) => {
 
     await t
       .expect(
-        screen.getByTestId('filter-operation-id').parent().getAttribute('order')
+        InstancesPage.Filters.operationId.field.parent().getAttribute('order')
       )
       .eql('6');
     await t
       .expect(
-        screen.getByTestId('filter-instance-ids').parent().getAttribute('order')
+        InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
       )
       .eql('5');
     await t
       .expect(
-        screen.getByTestId('filter-start-date').parent().getAttribute('order')
+        InstancesPage.Filters.startDate.field.parent().getAttribute('order')
       )
       .eql('4');
     await t
       .expect(
-        screen
-          .getByTestId('filter-variable-name')
-          .parent()
-          .getAttribute('order')
+        InstancesPage.Filters.variableName.field.parent().getAttribute('order')
       )
       .eql('3');
     await t
       .expect(
-        screen.getByTestId('filter-end-date').parent().getAttribute('order')
+        InstancesPage.Filters.endDate.field.parent().getAttribute('order')
       )
       .eql('2');
     await t
       .expect(
-        screen
-          .getByTestId('filter-parent-instance-id')
+        InstancesPage.Filters.parentInstanceId.field
           .parent()
           .getAttribute('order')
       )
       .eql('1');
     await t
       .expect(
-        screen
-          .getByTestId('filter-error-message')
-          .parent()
-          .getAttribute('order')
+        InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
       )
       .eql('0');
 
@@ -1745,46 +1308,39 @@ test('Should set filters from url', async (t) => {
 
     await t
       .expect(
-        screen.getByTestId('filter-instance-ids').parent().getAttribute('order')
+        InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
       )
       .eql('6');
     await t
       .expect(
-        screen
-          .getByTestId('filter-error-message')
-          .parent()
-          .getAttribute('order')
+        InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
       )
       .eql('5');
     await t
       .expect(
-        screen.getByTestId('filter-end-date').parent().getAttribute('order')
+        InstancesPage.Filters.endDate.field.parent().getAttribute('order')
       )
       .eql('4');
     await t
       .expect(
-        screen.getByTestId('filter-operation-id').parent().getAttribute('order')
+        InstancesPage.Filters.operationId.field.parent().getAttribute('order')
       )
       .eql('3');
     await t
       .expect(
-        screen
-          .getByTestId('filter-parent-instance-id')
+        InstancesPage.Filters.parentInstanceId.field
           .parent()
           .getAttribute('order')
       )
       .eql('2');
     await t
       .expect(
-        screen.getByTestId('filter-start-date').parent().getAttribute('order')
+        InstancesPage.Filters.startDate.field.parent().getAttribute('order')
       )
       .eql('1');
     await t
       .expect(
-        screen
-          .getByTestId('filter-variable-name')
-          .parent()
-          .getAttribute('order')
+        InstancesPage.Filters.variableName.field.parent().getAttribute('order')
       )
       .eql('0');
   }

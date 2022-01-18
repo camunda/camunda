@@ -10,6 +10,7 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {DATE_REGEX} from './constants';
+import {instancePage as InstancePage} from './PageModels/Instance';
 
 fixture('Instance')
   .page(config.endpoint)
@@ -189,9 +190,7 @@ test('Instance with an incident - resolve incidents', async (t) => {
   await t
     .click(withinVariablesList.queryByRole('button', {name: 'Enter edit mode'}))
     .typeText(
-      within(
-        withinVariablesList.getByTestId('edit-variable-value').shadowRoot()
-      ).queryByRole('textbox'),
+      within(InstancePage.editVariableValueField).queryByRole('textbox'),
       '20',
       {
         paste: true,
@@ -199,9 +198,9 @@ test('Instance with an incident - resolve incidents', async (t) => {
       }
     )
     .click(withinVariablesList.queryByRole('button', {name: 'Save variable'}))
-    .expect(withinVariablesList.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .ok()
-    .expect(withinVariablesList.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk({timeout: 120000});
 
   // retry one incident to resolve it
@@ -231,20 +230,16 @@ test('Instance with an incident - resolve incidents', async (t) => {
   // add variable isCool
 
   await t
-    .click(screen.queryByRole('button', {name: 'Add variable'}))
+    .click(InstancePage.addVariableButton)
     .typeText(
-      within(screen.getByTestId('add-variable-name').shadowRoot()).queryByRole(
-        'textbox'
-      ),
+      within(InstancePage.newVariableNameField).queryByRole('textbox'),
       'isCool',
       {
         paste: true,
       }
     )
     .typeText(
-      within(
-        screen.queryByTestId('add-variable-value').shadowRoot()
-      ).queryByRole('textbox'),
+      within(InstancePage.newVariableValueField).queryByRole('textbox'),
       'true',
       {
         paste: true,
@@ -259,9 +254,9 @@ test('Instance with an incident - resolve incidents', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Save variable'}))
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .ok()
-    .expect(screen.queryByTestId('edit-variable-spinner').exists)
+    .expect(InstancePage.variableSpinner.exists)
     .notOk({timeout: 120000});
 
   // retry second incident to resolve it
@@ -474,9 +469,9 @@ test('Instance with an incident - cancel an instance', async (t) => {
       })
     )
     .click(screen.getByRole('button', {name: 'Apply'}))
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .ok()
-    .expect(screen.queryByTestId('operation-spinner').exists)
+    .expect(InstancePage.operationSpinner.exists)
     .notOk({timeout: 120000});
 
   await t
@@ -525,6 +520,6 @@ test('Instance without an incident', async (t) => {
     .ok()
     .expect(screen.queryByText('Instance History').exists)
     .ok()
-    .expect(screen.queryByRole('button', {name: 'Add variable'}).exists)
+    .expect(InstancePage.addVariableButton.exists)
     .ok();
 });

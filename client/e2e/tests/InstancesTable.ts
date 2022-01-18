@@ -8,10 +8,11 @@ import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
-import {cmInstanceIdsField, setup} from './InstancesTable.setup';
+import {setup} from './InstancesTable.setup';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
+import {instancesPage as InstancesPage} from './PageModels/Instances';
 
 fixture('InstancesTable')
   .page(config.endpoint)
@@ -49,14 +50,15 @@ test('Sorting', async (t) => {
     await displayOptionalFilter('Instance Id(s)');
   }
 
-  const instanceIdsField = IS_NEW_FILTERS_FORM
-    ? cmInstanceIdsField
-    : screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      });
+  await InstancesPage.typeText(
+    InstancesPage.Filters.instanceIds.field,
+    instanceIds.join(),
+    {
+      paste: true,
+    }
+  );
 
   await t
-    .typeText(instanceIdsField, instanceIds.join(), {paste: true})
     .expect(
       screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
@@ -159,21 +161,8 @@ test('Scrolling', async (t) => {
       return instanceId2 - instanceId1;
     });
 
-  const processCombobox = IS_NEW_FILTERS_FORM
-    ? screen.getByTestId('filter-process-name')
-    : screen.queryByRole('combobox', {
-        name: 'Process',
-      });
-
-  await t.click(processCombobox).click(
-    IS_NEW_FILTERS_FORM
-      ? within(
-          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-        ).queryByText('Process For Infinite Scroll')
-      : within(processCombobox).queryByRole('option', {
-          name: 'Process For Infinite Scroll',
-        })
-  );
+  await t.click(InstancesPage.Filters.processName.field);
+  await InstancesPage.selectProcess('Process For Infinite Scroll');
 
   await t.click(screen.queryByRole('button', {name: /Sort by id/}));
 

@@ -6,14 +6,9 @@
 
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
 import {wait} from './utils/wait';
-import {within, screen} from '@testing-library/testcafe';
 
 // time difference between start dates in ms for sorting test
 const startDateDifference = 1000;
-
-const cmInstanceIdsField = within(
-  screen.queryByTestId('filter-instance-ids').shadowRoot()
-).queryByRole('textbox');
 
 async function setup() {
   await deploy([
@@ -53,4 +48,4 @@ async function setup() {
   };
 }
 
-export {setup, cmInstanceIdsField};
+export {setup};

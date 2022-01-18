@@ -5,16 +5,12 @@
  */
 
 import {config} from '../config';
-import {
-  setup,
-  cmActiveCheckbox,
-  cmIncidentsCheckbox,
-  cmErrorMessageField,
-} from './Dashboard.setup';
+import {setup} from './Dashboard.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
+import {validateCheckedState} from './utils/validateCheckedState';
 import {screen, within} from '@testing-library/testcafe';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
+import {instancesPage as InstancesPage} from './PageModels/Instances';
 
 fixture('Dashboard')
   .page(config.endpoint)
@@ -71,19 +67,10 @@ test('Navigation to Instances View', async (t) => {
 
   await t.click(screen.queryByTestId('active-instances-link'));
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .notOk();
-  } else {
-    await t
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .notOk();
-  }
+  await validateCheckedState({
+    checked: [InstancesPage.Filters.active.field],
+    unChecked: [InstancesPage.Filters.incidents.field],
+  });
 
   await t
     .expect(
@@ -101,19 +88,10 @@ test('Navigation to Instances View', async (t) => {
 
   await t.click(screen.queryByTestId('incident-instances-link'));
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok();
-  }
+  await validateCheckedState({
+    checked: [InstancesPage.Filters.incidents.field],
+    unChecked: [InstancesPage.Filters.active.field],
+  });
 
   await t
     .expect(
@@ -142,19 +120,13 @@ test('Select instances by process', async (t) => {
 
   await t.click(screen.queryByTestId('incident-byProcess-0'));
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .ok()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .ok()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok();
-  }
+  await validateCheckedState({
+    checked: [
+      InstancesPage.Filters.active.field,
+      InstancesPage.Filters.incidents.field,
+    ],
+    unChecked: [],
+  });
 
   await t
     .expect(
@@ -179,19 +151,10 @@ test('Select instances by error message', async (t) => {
 
   await t.click(screen.queryByTestId('incident-byError-0'));
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok();
-  }
+  await validateCheckedState({
+    checked: [InstancesPage.Filters.incidents.field],
+    unChecked: [InstancesPage.Filters.active.field],
+  });
 
   await t
     .expect(
@@ -199,11 +162,9 @@ test('Select instances by error message', async (t) => {
     )
     .eql(incidentCount);
 
-  const errorMessageField = IS_NEW_FILTERS_FORM
-    ? cmErrorMessageField
-    : screen.queryByRole('textbox', {name: 'Error Message'});
-
-  await t.expect(errorMessageField.value).eql(incidentMessage);
+  await t
+    .expect(InstancesPage.Filters.errorMessage.value.value)
+    .eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).notOk();
 });
@@ -233,19 +194,10 @@ test('Select instances by error message (expanded)', async (t) => {
       .nth(0)
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(cmActiveCheckbox.hasClass('checked'))
-      .notOk()
-      .expect(cmIncidentsCheckbox.hasClass('checked'))
-      .ok();
-  } else {
-    await t
-      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-      .notOk()
-      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-      .ok();
-  }
+  await validateCheckedState({
+    checked: [InstancesPage.Filters.incidents.field],
+    unChecked: [InstancesPage.Filters.active.field],
+  });
 
   await t
     .expect(
@@ -253,11 +205,9 @@ test('Select instances by error message (expanded)', async (t) => {
     )
     .eql(incidentCount);
 
-  const errorMessageField = IS_NEW_FILTERS_FORM
-    ? cmErrorMessageField
-    : screen.queryByRole('textbox', {name: 'Error Message'});
-
-  await t.expect(errorMessageField.value).eql(incidentMessage);
+  await t
+    .expect(InstancesPage.Filters.errorMessage.value.value)
+    .eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).ok();
 });
