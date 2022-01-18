@@ -273,12 +273,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-test</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
