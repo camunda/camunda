@@ -52,6 +52,59 @@
                   "type": "text"
                 }
               }
+            },
+            "decisionRequirementsMetadata": {
+              "properties": {
+                "decisionRequirementsId": {
+                  "type": "keyword"
+                },
+                "decisionRequirementsName": {
+                  "type": "keyword"
+                },
+                "decisionRequirementsVersion": {
+                  "type": "long"
+                },
+                "decisionRequirementsKey": {
+                  "type": "long"
+                },
+                "namespace": {
+                  "type": "keyword"
+                },
+                "resourceName": {
+                  "type": "text"
+                },
+                "checksum": {
+                  "enabled": false
+                },
+                "duplicate": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "decisionsMetadata": {
+              "properties": {
+                "decisionId": {
+                  "type": "keyword"
+                },
+                "decisionName": {
+                  "type": "keyword"
+                },
+                "version": {
+                  "type": "long"
+                },
+                "decisionKey": {
+                  "type": "long"
+                },
+                "decisionRequirementsId": {
+                  "type": "keyword"
+                },
+                "decisionRequirementsKey": {
+                  "type": "long"
+                },
+                "duplicate": {
+                  "type": "boolean"
+                }
+              }
             }
           }
         }
