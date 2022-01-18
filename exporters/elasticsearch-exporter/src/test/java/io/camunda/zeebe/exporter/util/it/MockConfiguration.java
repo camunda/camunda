@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.exporter;
+package io.camunda.zeebe.exporter.util.it;
 
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import java.util.Collections;

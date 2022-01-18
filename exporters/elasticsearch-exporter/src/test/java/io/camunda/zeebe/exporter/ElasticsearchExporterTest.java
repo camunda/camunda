@@ -20,10 +20,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.util.it.ExporterTestHarness;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.exporter.ExporterTestHarness;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;

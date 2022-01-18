@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.exporter;
+package io.camunda.zeebe.exporter.util.it;
 
-import static io.camunda.zeebe.test.EmbeddedBrokerRule.TEST_RECORD_EXPORTER_ID;
+import static io.camunda.zeebe.exporter.util.it.EmbeddedBrokerRule.TEST_RECORD_EXPORTER_ID;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.processInstanceRecords;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,26 +18,20 @@ import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.exporter.api.Exporter;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.test.ClientRule;
-import io.camunda.zeebe.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.test.util.WorkloadGenerator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
@@ -118,16 +112,6 @@ import org.junit.runners.model.Statement;
  * than one exporter, as long as the IDs are different.
  */
 public class ExporterIntegrationRule extends ExternalResource {
-
-  public static final BpmnModelInstance SAMPLE_PROCESS =
-      Bpmn.createExecutableProcess("testProcess")
-          .startEvent()
-          .intermediateCatchEvent(
-              "message",
-              e -> e.message(m -> m.name("catch").zeebeCorrelationKeyExpression("orderId")))
-          .serviceTask("task", t -> t.zeebeJobType("work").zeebeTaskHeader("foo", "bar"))
-          .endEvent()
-          .done();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -238,48 +222,7 @@ public class ExporterIntegrationRule extends ExternalResource {
 
   /** Runs a sample workload on the broker, exporting several records of different types. */
   public void performSampleWorkload() {
-    deployProcess(SAMPLE_PROCESS, "sample_process.bpmn");
-
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("orderId", "foo-bar-123");
-    variables.put("largeValue", "x".repeat(8192));
-    variables.put("unicode", "Á");
-
-    final long processInstanceKey = createProcessInstance("testProcess", variables);
-
-    // create job worker which fails on first try and sets retries to 0 to create an incident
-    final AtomicBoolean fail = new AtomicBoolean(true);
-    final JobWorker worker =
-        createJobWorker(
-            "work",
-            (client, job) -> {
-              if (fail.getAndSet(false)) {
-                // fail job
-                client.newFailCommand(job.getKey()).retries(0).errorMessage("failed").send().join();
-              } else {
-                client.newCompleteCommand(job.getKey()).send().join();
-              }
-            });
-
-    publishMessage("catch", "foo-bar-123");
-
-    // wait for incident and resolve it
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-    clientRule
-        .getClient()
-        .newUpdateRetriesCommand(incident.getValue().getJobKey())
-        .retries(3)
-        .send()
-        .join();
-    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
-
-    // wrap up
-    awaitProcessCompletion(processInstanceKey);
-    worker.close();
+    WorkloadGenerator.performSampleWorkload(clientRule.getClient());
   }
 
   /**

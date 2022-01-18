@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test;
+package io.camunda.zeebe.exporter.util.it;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.agrona.LangUtil;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -173,7 +172,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       try {
         systemContext.getScheduler().stop().get();
       } catch (final InterruptedException | ExecutionException e) {
-        LangUtil.rethrowUnchecked(e);
+        throw new RuntimeException(e);
       }
       systemContext = null;
       System.gc();

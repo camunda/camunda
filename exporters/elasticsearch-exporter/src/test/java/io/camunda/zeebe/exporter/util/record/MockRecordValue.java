@@ -5,15 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.exporter.record;
+package io.camunda.zeebe.exporter.util.record;
 
-import io.camunda.zeebe.broker.exporter.ExporterObjectMapper;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
-public abstract class ExporterMappedObject {
-
-  protected static final ExporterObjectMapper OBJECT_MAPPER = new ExporterObjectMapper();
-
-  public String toJson() {
-    return OBJECT_MAPPER.toJson(this);
-  }
-}
+public class MockRecordValue extends ExporterMappedObject implements RecordValue {}

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.exporter.record;
+package io.camunda.zeebe.exporter.util.record;
 
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
