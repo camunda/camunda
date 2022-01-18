@@ -15,6 +15,10 @@
 
   <name>Zeebe Gateway Protocol</name>
 
+  <properties>
+    <version.java>8</version.java>
+  </properties>
+
   <build>
     <resources>
       <resource>
