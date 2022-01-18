@@ -34,7 +34,6 @@
     box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
     @include scrollable;
     overflow-x: hidden;
-    overflow-y: auto;
 
     .hoverGuard {
       position: absolute;
