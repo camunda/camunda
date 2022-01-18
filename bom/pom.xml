@@ -31,7 +31,7 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
-    <version.java>11</version.java>
+    <version.java>17</version.java>
     <plugin.version.javadoc>3.3.1</plugin.version.javadoc>
   </properties>
 
