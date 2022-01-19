@@ -179,7 +179,7 @@ pipeline {
 }
 
 void runMaven(String cmd) {
-  configFileProvider([configFile(fileId: 'camunda-maven-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
 }
