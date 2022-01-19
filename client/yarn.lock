@@ -1356,12 +1356,12 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/form-js-editor@^0.5.1":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.5.1.tgz#67a9f10c71fecce363826b78f99164a1cb399025"
-  integrity sha512-9hVsg3VNeorWatJxeH6y3rAbN2iGbo8OXw7bxszsgmN+1mvwSb2isuTgOMm3DMXSFnevrJQVDuwpa0sKCHu1Mg==
+"@bpmn-io/form-js-editor@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.6.0.tgz#b871bd2e55fdeea5ecea554961457037da5562bb"
+  integrity sha512-4hlkdUYwiTZ9bWbl3iq5OGXq2IRSoDHGvkX69UKzcH4lS5jLvGJQeZGLE3SHBelfxgDbV8HlVQo9+RsH+SFTtA==
   dependencies:
-    "@bpmn-io/form-js-viewer" "^0.5.1"
+    "@bpmn-io/form-js-viewer" "^0.6.0"
     array-move "^3.0.1"
     dragula "^3.7.3"
     ids "^1.0.0"
@@ -1369,10 +1369,10 @@
     min-dom "^3.1.3"
     preact "^10.5.14"
 
-"@bpmn-io/form-js-viewer@^0.5.1":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.5.1.tgz#755b1de0404f7a6cfb4d9528dcec3f3f61f0e02a"
-  integrity sha512-H98i3uDJ/9rYqpoRucvfieZvdGH+9Xh2QWxLjO08lafz125E61ERniwmZruED0MiRMOLcLP97SNGutRDbO4W9w==
+"@bpmn-io/form-js-viewer@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.6.0.tgz#9573f0cd9a886e86742ba9593af179835d086cfb"
+  integrity sha512-z/Kd4qBeMQ5u+60/Ez+5dCt1zpWLdcEQy8aGlXVEmQ1d7IcKhL236qmbpCHa4EoxMIB/YemhixEFr6rjSvJ5EQ==
   dependencies:
     "@bpmn-io/snarkdown" "^2.1.0"
     didi "^5.2.1"
@@ -1381,13 +1381,13 @@
     preact "^10.5.14"
     preact-markup "^2.1.1"
 
-"@bpmn-io/form-js@0.5.1":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.5.1.tgz#113f5da48d198eea4c973af258e5a7ea1b2d3d79"
-  integrity sha512-7SYQZw/8Lb9gBn/W4lZpZjnjN/QHQxJH7r4fDtkbEgK2BqOSg2/bQ8D4uYEkhn8znkBH3aS5/KH3AynkHbTzYg==
+"@bpmn-io/form-js@0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.6.0.tgz#06d092eeed583aa676d7693b5ab47082895cf02b"
+  integrity sha512-fGfH5kETV+vPS5vTOqHKPv7jkKy4vR+7oTZiZ8/w/UNL3LcZEmzhxgG22dB7xVPw136OMvsT5HkBTtO3Iwa27A==
   dependencies:
-    "@bpmn-io/form-js-editor" "^0.5.1"
-    "@bpmn-io/form-js-viewer" "^0.5.1"
+    "@bpmn-io/form-js-editor" "^0.6.0"
+    "@bpmn-io/form-js-viewer" "^0.6.0"
 
 "@bpmn-io/snarkdown@^2.1.0":
   version "2.1.0"
