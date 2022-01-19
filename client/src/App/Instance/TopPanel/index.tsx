@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {computed} from 'mobx';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {observer} from 'mobx-react';
@@ -21,6 +21,7 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
+import {IncidentsBanner} from './IncidentsBanner';
 
 type Props = {
   incidents?: unknown;
@@ -36,6 +37,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
 
   const {processInstanceId} = useInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
+  const [isInTransition, setIsInTransition] = useState(false);
 
   useEffect(() => {
     sequenceFlowsStore.init();
@@ -73,6 +75,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
   const {
     setIncidentBarOpen,
     state: {isIncidentBarOpen},
+    incidentsCount,
   } = incidentsStore;
 
   return (
@@ -80,6 +83,20 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
       <Styled.SplitPaneHeader data-testid="instance-header">
         <InstanceHeader />
       </Styled.SplitPaneHeader>
+      {incidentsCount > 0 && (
+        <IncidentsBanner
+          onClick={() => {
+            if (isInTransition) {
+              return;
+            }
+
+            setIncidentBarOpen(!isIncidentBarOpen);
+          }}
+          isOpen={incidentsStore.state.isIncidentBarOpen}
+          expandState={expandState}
+        />
+      )}
+
       <Styled.SplitPaneBody data-testid="diagram-panel-body">
         {['initial', 'first-fetch', 'fetching'].includes(status) && (
           <SpinnerSkeleton data-testid="diagram-spinner" />
@@ -92,13 +109,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
         {status === 'fetched' && (
           <>
             {instance?.state === 'INCIDENT' && (
-              <IncidentsWrapper
-                expandState={expandState}
-                isOpen={incidentsStore.state.isIncidentBarOpen}
-                onClick={() => {
-                  setIncidentBarOpen(!isIncidentBarOpen);
-                }}
-              />
+              <IncidentsWrapper setIsInTransition={setIsInTransition} />
             )}
             {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
             {diagramModel?.definitions && (

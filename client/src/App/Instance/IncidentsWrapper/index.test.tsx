@@ -76,20 +76,18 @@ describe('IncidentsFilter', () => {
     await incidentsStore.fetchIncidents('1');
   });
 
-  it('should render the IncidentsBanner', () => {
-    render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
-      wrapper: Wrapper,
-    });
+  it('should render the table', async () => {
+    render(
+      <IncidentsWrapper
+        {...mockIncidentWrapperProps}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      }
+    );
 
-    expect(screen.getByText('2 Incidents occured')).toBeInTheDocument();
-  });
-
-  it('should render the table', () => {
-    render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
-      wrapper: Wrapper,
-    });
-    userEvent.click(screen.getByText('2 Incidents occured'));
-
+    incidentsStore.setIncidentBarOpen(true);
     const table = within(screen.getByTestId('incidents-table'));
 
     expect(table.getByText(/^Incident Type/)).toBeInTheDocument();
@@ -101,10 +99,16 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render the filters', () => {
-    render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
-      wrapper: Wrapper,
-    });
-    userEvent.click(screen.getByText('2 Incidents occured'));
+    render(
+      <IncidentsWrapper
+        {...mockIncidentWrapperProps}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      }
+    );
+    incidentsStore.setIncidentBarOpen(true);
 
     const errorFilters = within(screen.getByTestId(/incidents-by-errortype/i));
     const flowNodeFilters = within(
@@ -126,13 +130,16 @@ describe('IncidentsFilter', () => {
     let rerender: any;
     beforeEach(() => {
       const wrapper = render(
-        <IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />,
+        <IncidentsWrapper
+          {...mockIncidentWrapperProps}
+          setIsInTransition={jest.fn()}
+        />,
         {
           wrapper: Wrapper,
         }
       );
       rerender = wrapper.rerender;
-      userEvent.click(screen.getByText('2 Incidents occured'));
+      incidentsStore.setIncidentBarOpen(true);
     });
 
     it('should not have active filters by default', () => {
@@ -234,7 +241,10 @@ describe('IncidentsFilter', () => {
       await incidentsStore.fetchIncidents('1');
 
       rerender(
-        <IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />
+        <IncidentsWrapper
+          {...mockIncidentWrapperProps}
+          setIsInTransition={jest.fn()}
+        />
       );
 
       expect(

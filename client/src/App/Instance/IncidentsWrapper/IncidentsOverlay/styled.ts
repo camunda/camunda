@@ -6,8 +6,6 @@
 
 import styled, {css} from 'styled-components';
 
-import {INCIDENTS_BAR_HEIGHT} from 'modules/constants';
-
 const Overlay = styled.div`
   ${({theme}) => {
     const colors = theme.colors.incidentsOverlay;
@@ -16,7 +14,6 @@ const Overlay = styled.div`
     return css`
       width: 100%;
       height: 100%;
-      padding-top: ${INCIDENTS_BAR_HEIGHT}px;
       padding-left: 52px;
       position: absolute;
       z-index: 3;

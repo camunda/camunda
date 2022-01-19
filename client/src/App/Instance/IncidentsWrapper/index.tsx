@@ -4,9 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useEffect} from 'react';
 
-import {IncidentsBanner} from './IncidentsBanner';
 import IncidentsOverlay from './IncidentsOverlay';
 import {IncidentsTable} from './IncidentsTable';
 import {IncidentsFilter} from './IncidentsFilter';
@@ -16,15 +15,10 @@ import {observer} from 'mobx-react';
 import * as Styled from './styled';
 
 type Props = {
-  expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
-  isOpen: boolean;
-  onClick?: () => void;
+  setIsInTransition: (isTransitionActive: boolean) => void;
 };
 
-const IncidentsWrapper: React.FC<Props> = observer(function (props) {
-  const {expandState, isOpen, onClick} = props;
-  const [isInTransition, setIsInTransition] = useState(false);
-
+const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
   useEffect(() => {
     incidentsStore.init();
 
@@ -33,23 +27,14 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
     };
   }, []);
 
-  function handleToggle() {
-    !isInTransition && onClick?.();
-  }
-
   if (incidentsStore.incidentsCount === 0) {
     return null;
   }
 
   return (
     <>
-      <IncidentsBanner
-        onClick={handleToggle}
-        isOpen={isOpen}
-        expandState={expandState}
-      />
       <Styled.Transition
-        in={isOpen}
+        in={incidentsStore.state.isIncidentBarOpen}
         onEnter={() => setIsInTransition(true)}
         onEntered={() => setIsInTransition(false)}
         onExit={() => setIsInTransition(true)}
