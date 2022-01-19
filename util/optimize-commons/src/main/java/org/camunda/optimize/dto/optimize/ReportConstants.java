@@ -135,6 +135,7 @@ public class ReportConstants {
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
   public static final String OBJECT_TYPE = "Object";
+  public static final String JSON_TYPE = "Json";
 
   public static final String GROUP_NONE_KEY = "____none";
 

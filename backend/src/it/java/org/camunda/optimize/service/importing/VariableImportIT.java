@@ -32,6 +32,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -74,7 +75,10 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class VariableImportIT extends AbstractImportIT {
+
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   public void setup() {
@@ -232,16 +236,17 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @SneakyThrows
-  @Test
-  public void objectVariablesAreImportedAndFlattened() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void objectAndNativeJsonVariablesAreImportedAndFlattened(final boolean isNativeJsonVar) {
     // given
     final Map<String, Object> person = createPersonVariableWithAllTypes();
-    final VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(person);
+    final VariableDto variableDto = variablesClient.createObjectVariableDto(isNativeJsonVar, person);
     final Map<String, Object> variables = new HashMap<>();
-    variables.put("objectVar", objectVariableDto);
+    variables.put("objectVar", variableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
     final List<Tuple> expectedVariables = List.of(
-      Tuple.tuple("objectVar", OBJECT.getId(), singletonList(objectVariableDto.getValue())),
+      Tuple.tuple("objectVar", OBJECT.getId(), singletonList(variableDto.getValue())),
       Tuple.tuple("objectVar.name", STRING.getId(), singletonList("Pond")),
       Tuple.tuple("objectVar.age", DOUBLE.getId(), singletonList("28.0")),
       Tuple.tuple("objectVar.IQ", DOUBLE.getId(), singletonList("9.9999999999999E13")),
@@ -290,19 +295,23 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @SneakyThrows
-  @Test
-  public void objectVariableJsonIsFormatted() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void objectAndNativeJsonVariableJsonIsFormatted(final boolean isNativeJsonVar) {
     // given
     final Map<String, Object> objectVar = new HashMap<>();
     objectVar.put("name", "Pond");
     objectVar.put("age", "28");
     objectVar.put("likes", List.of("optimize", "garlic"));
-    final VariableDto objectVariableDto = variablesClient.createJsonObjectVariableDto(
-      new ObjectMapper().writeValueAsString(objectVar), // map variable without indents/newline formatting
-      "java.util.HashMap"
-    );
+    final String varValue = objectMapper.disable(SerializationFeature.INDENT_OUTPUT)
+      .writeValueAsString(objectVar); // map variable without indents/newline
+
+    final VariableDto variableDto = isNativeJsonVar
+      ? variablesClient.createNativeJsonVariableDto(varValue)
+      : variablesClient.createJsonObjectVariableDto(varValue, "java.util.HashMap");
+
     final Map<String, Object> variables = new HashMap<>();
-    variables.put("objectVar", objectVariableDto);
+    variables.put("objectVar", variableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
 
     // when
@@ -319,19 +328,21 @@ public class VariableImportIT extends AbstractImportIT {
       )
       .containsExactly(
         OBJECT.getId(),
-        singletonList(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(objectVar))
+        singletonList(objectMapper.enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(objectVar))
       );
   }
 
   @SneakyThrows
-  @Test
-  public void flattenedObjectVariablesAreUpdated() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void flattenedObjectAndNativeJsonVariablesAreUpdated(final boolean isNativeJsonVar) {
     // given an instance with an object variable
     final Map<String, Object> objectVar = new HashMap<>();
     objectVar.put("name", "Pond");
     objectVar.put("age", 28);
     objectVar.put("likes", List.of("optimize", "garlic"));
-    VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
+    VariableDto objectVariableDto = variablesClient.createObjectVariableDto(isNativeJsonVar, objectVar);
+
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", objectVariableDto);
     final ProcessInstanceEngineDto instance =
@@ -341,11 +352,11 @@ public class VariableImportIT extends AbstractImportIT {
     // and the variable is updated while the instance is running
     objectVar.put("age", 29);
     objectVar.put("likes", List.of("optimize", "garlic", "tofu"));
-    objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
+    objectVariableDto = variablesClient.createObjectVariableDto(isNativeJsonVar, objectVar);
     engineIntegrationExtension.updateVariableInstanceForProcessInstance(
       instance.getId(),
       "objectVar",
-      new ObjectMapper().writeValueAsString(objectVariableDto)
+      objectMapper.writeValueAsString(objectVariableDto)
     );
     engineIntegrationExtension.finishAllRunningUserTasks();
 
@@ -372,10 +383,9 @@ public class VariableImportIT extends AbstractImportIT {
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("objectListVariableScenarios")
-  public void objectListVariablesAreNotImportedButHaveSizeProperty(final List<Object> listVarValue) {
+  @MethodSource("listVariableScenarios")
+  public void listVariablesAreNotImportedButHaveSizeProperty(final VariableDto objectVariableDto) {
     // given a variable that contains a list of objects
-    final VariableDto objectVariableDto = variablesClient.createListJsonObjectVariableDto(listVarValue);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectListVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
@@ -402,10 +412,9 @@ public class VariableImportIT extends AbstractImportIT {
   @ParameterizedTest
   @MethodSource("primitiveListVariableScenarios")
   public void primitiveListVariablesAreImportedAndHaveSizeProperty(final VariableType type,
-                                                                   final List<Object> variableValues,
+                                                                   final VariableDto objectVariableDto,
                                                                    final List<String> expectedVariableValues) {
     // // given a variable that contains a list of primitives
-    final VariableDto objectVariableDto = variablesClient.createListJsonObjectVariableDto(variableValues);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("primitiveListVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
@@ -431,12 +440,10 @@ public class VariableImportIT extends AbstractImportIT {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("primitiveObjectVariableScenarios")
-  public void objectVariablesThatArePrimitivesAreNotDuplicated(final String value, final String objectTypeName,
+  public void objectVariablesThatArePrimitivesAreNotDuplicated(final VariableDto objectVariableDto,
                                                                final VariableType expectedType,
                                                                final List<String> expectedValue) {
     // given
-    final VariableDto objectVariableDto =
-      variablesClient.createJsonObjectVariableDto(value, objectTypeName);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
@@ -457,8 +464,9 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @SneakyThrows
-  @Test
-  public void differentDateFormatForObjectVariableDateProperties() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void differentDateFormatForObjectVariableDateProperties(final boolean isNativeJsonVar) {
     // given
     final Map<String, Object> objectVar = new HashMap<>();
     objectVar.put(
@@ -466,12 +474,18 @@ public class VariableImportIT extends AbstractImportIT {
       new Date(OffsetDateTime.parse("2021-11-01T05:05:00+01:00").toInstant().toEpochMilli())
     );
     final SimpleDateFormat objectVarDateFormat = new SimpleDateFormat("EEEEE dd MMMMM yyyy HH:mm:ss.SSSZ");
-    final VariableDto objectVariableDto = variablesClient.createJsonObjectVariableDto(
-      new ObjectMapper().setDateFormat(objectVarDateFormat)
+    final VariableDto objectVariableDto = isNativeJsonVar
+      ? variablesClient.createNativeJsonVariableDto(
+      objectMapper.setDateFormat(objectVarDateFormat)
+        .enable(SerializationFeature.INDENT_OUTPUT)
+        .writeValueAsString(objectVar))
+      : variablesClient.createJsonObjectVariableDto(
+      objectMapper.setDateFormat(objectVarDateFormat)
         .enable(SerializationFeature.INDENT_OUTPUT)
         .writeValueAsString(objectVar),
       "java.util.HashMap"
     );
+
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
@@ -911,36 +925,87 @@ public class VariableImportIT extends AbstractImportIT {
     }
   }
 
-  private static Stream<Arguments> primitiveObjectVariableScenarios() {
-    return Stream.of(
-      Arguments.of("\"someString\"", "java.lang.String", STRING, singletonList("someString")),
-      Arguments.of("5", "java.lang.Integer", DOUBLE, singletonList("5.0")),
-      Arguments.of("true", "java.lang.Boolean", BOOLEAN, singletonList("true"))
-    );
-  }
-
-  private static Stream<Arguments> primitiveListVariableScenarios() {
+  private Stream<Arguments> primitiveObjectVariableScenarios() {
+    final String stringObjectValue = "\"someString\"";
+    final String numberObjectValue = "5";
+    final String boolObjectValue = "true";
     return Stream.of(
       Arguments.of(
-        DATE,
-        List.of("2021-12-24T00:00:00.000+0100", "1992-12-24T00:00:00.000+0100"),
-        List.of("2021-12-24T00:00:00.000+0100", "1992-12-24T00:00:00.000+0100")
-      ),
-      Arguments.of(STRING, List.of("string1", "string2"), List.of("string1", "string2")),
-      Arguments.of(DOUBLE, List.of(5.0, 7.5), List.of("5.0", "7.5")),
-      Arguments.of(DOUBLE, List.of(50, 75), List.of("50.0", "75.0")),
-      Arguments.of(BOOLEAN, List.of(true, false), List.of("true", "false"))
-    );
-  }
-
-  private static Stream<Arguments> objectListVariableScenarios() {
-    return Stream.of(
-      Arguments.of(
-        List.of(List.of("string1", "string2"), List.of("string3", "string4"))
+        variablesClient.createJsonObjectVariableDto(stringObjectValue, "java.lang.String"),
+        STRING,
+        singletonList("someString")
       ),
       Arguments.of(
-        List.of(Map.of("name", "aDog", "type", "dog"), Map.of("name", "aCat", "type", "cat"))
+        variablesClient.createNativeJsonVariableDto(stringObjectValue),
+        STRING,
+        singletonList("someString")
+      ),
+      Arguments.of(
+        variablesClient.createJsonObjectVariableDto(numberObjectValue, "java.lang.Integer"),
+        DOUBLE,
+        singletonList("5.0")
+      ),
+      Arguments.of(
+        variablesClient.createNativeJsonVariableDto(numberObjectValue),
+        DOUBLE,
+        singletonList("5.0")
+      ),
+      Arguments.of(
+        variablesClient.createJsonObjectVariableDto(boolObjectValue, "java.lang.Boolean"),
+        BOOLEAN,
+        singletonList("true")
+      ),
+      Arguments.of(
+        variablesClient.createNativeJsonVariableDto(boolObjectValue),
+        BOOLEAN,
+        singletonList("true")
       )
+    );
+  }
+
+  private Stream<Arguments> primitiveListVariableScenarios() {
+    final List<Object> listOfDates = List.of("2021-12-24T00:00:00.000+0100", "1992-12-24T00:00:00.000+0100");
+    final List<Object> listOfStrings = List.of("string1", "string2");
+    final List<Object> listOfDoubles = List.of(5.0, 7.5);
+    final List<Object> listOfIntegers = List.of(50, 75);
+    final List<Object> listOfBooleans = List.of(true, false);
+
+    return Stream.of(true, false)
+      .flatMap(isNativeJsonVar -> Stream.of(
+        Arguments.of(DATE, variablesClient.createObjectVariableDto(isNativeJsonVar, listOfDates), listOfDates),
+        Arguments.of(STRING, variablesClient.createObjectVariableDto(isNativeJsonVar, listOfStrings), listOfStrings),
+        Arguments.of(
+          DOUBLE,
+          variablesClient.createObjectVariableDto(isNativeJsonVar, listOfDoubles),
+          List.of("5.0", "7.5")
+        ),
+        Arguments.of(
+          DOUBLE,
+          variablesClient.createObjectVariableDto(isNativeJsonVar, listOfIntegers),
+          List.of("50.0", "75.0")
+        ),
+        Arguments.of(
+          BOOLEAN,
+          variablesClient.createObjectVariableDto(isNativeJsonVar, listOfBooleans),
+          List.of("true", "false")
+        )
+      ));
+  }
+
+  private Stream<VariableDto> listVariableScenarios() {
+    final List<Object> listOfLists = List.of(
+      List.of("string1", "string2"),
+      List.of("string3", "string4")
+    );
+    final List<Object> listOfObjects = List.of(
+      Map.of("name", "aDog", "type", "dog"),
+      Map.of("name", "aCat", "type", "cat")
+    );
+    return Stream.of(
+      variablesClient.createListJsonObjectVariableDto(listOfLists),
+      variablesClient.createListJsonObjectVariableDto(listOfObjects),
+      variablesClient.createNativeJsonVariableDto(listOfLists),
+      variablesClient.createNativeJsonVariableDto(listOfObjects)
     );
   }
 
