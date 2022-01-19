@@ -107,7 +107,7 @@
     <version.byte-buddy>1.12.7</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
-    <version.immutables>2.8.9-ea-1</version.immutables>
+    <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
 
     <!-- maven plugins -->
