@@ -216,7 +216,6 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-Xms128m
-            --illegal-access=deny
             -XX:+ExitOnOutOfMemoryError
             -Dfile.encoding=UTF-8</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
