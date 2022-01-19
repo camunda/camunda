@@ -60,8 +60,6 @@ public class UIConfigurationService implements ConfigurationReloadable {
     final String optimizeProfile = determineOptimizeProfile();
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
-    uiConfigurationDto.setOptimizeCloudEnvironment(
-      optimizeProfile.equals(CLOUD_PROFILE) || optimizeProfile.equals(CCSM_PROFILE));
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());

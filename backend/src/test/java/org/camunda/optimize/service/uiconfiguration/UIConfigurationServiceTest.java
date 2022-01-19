@@ -66,21 +66,6 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(activeProfile);
   }
 
-  @ParameterizedTest
-  @MethodSource("optimizeProfilesAndExpectedCloudEnabledSetting")
-  public void testCloudEnabledConfiguredCorrectly(final String activeProfile,
-                                                  final boolean expectedCloudEnabledProperty) {
-    // given
-    initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[]{activeProfile});
-
-    // when
-    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
-
-    // then
-    assertThat(configurationResponse.isOptimizeCloudEnvironment()).isEqualTo(expectedCloudEnabledProperty);
-  }
-
   @Test
   public void testDefaultProfileUsed() {
     // given
@@ -138,14 +123,6 @@ public class UIConfigurationServiceTest {
       Arguments.of(CLOUD_PROFILE),
       Arguments.of(CCSM_PROFILE),
       Arguments.of(PLATFORM_PROFILE)
-    );
-  }
-
-  private static Stream<Arguments> optimizeProfilesAndExpectedCloudEnabledSetting() {
-    return Stream.of(
-      Arguments.of(CLOUD_PROFILE, true),
-      Arguments.of(CCSM_PROFILE, true),
-      Arguments.of(PLATFORM_PROFILE, false)
     );
   }
 

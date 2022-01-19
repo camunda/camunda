@@ -230,15 +230,6 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getIsCloudEnvironment() {
-    // when
-    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
-
-    // then
-    assertThat(response.isOptimizeCloudEnvironment()).isFalse();
-  }
-
-  @Test
   public void getIsEnterpriseMode() {
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
