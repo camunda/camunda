@@ -27,7 +27,7 @@ import {tracking} from 'modules/tracking';
 
 const InstancesByProcess = observer(() => {
   useEffect(() => {
-    instancesByProcessStore.getInstancesByProcess();
+    instancesByProcessStore.init();
     return () => {
       instancesByProcessStore.reset();
     };

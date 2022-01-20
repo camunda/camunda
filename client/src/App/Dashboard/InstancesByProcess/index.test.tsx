@@ -238,6 +238,47 @@ describe('InstancesByProcess', () => {
     );
   });
 
+  it('should update after next poll', async () => {
+    jest.useFakeTimers();
+    mockServer.use(
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(ctx.json(mockWithSingleVersion))
+      )
+    );
+
+    const historyMock = createMemoryHistory();
+    render(<InstancesByProcess />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    const withinIncident = within(
+      await screen.findByTestId('incident-byProcess-0')
+    );
+
+    expect(
+      withinIncident.getByText('loanProcess – 138 Instances in 1 Version')
+    ).toBeInTheDocument();
+
+    mockServer.use(
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(
+          ctx.json([{...mockWithSingleVersion[0], activeInstancesCount: 142}])
+        )
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+
+    expect(
+      await withinIncident.findByText(
+        'loanProcess – 158 Instances in 1 Version'
+      )
+    ).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   it('should not erase persistent params', async () => {
     mockServer.use(
       rest.get('/api/incidents/byProcess', (_, res, ctx) =>

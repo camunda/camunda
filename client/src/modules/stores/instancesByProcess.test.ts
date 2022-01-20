@@ -68,12 +68,43 @@ describe('stores/instancesByProcess', () => {
     instancesByProcessStore.reset();
   });
 
-  it('should get instances by process', async () => {
-    await instancesByProcessStore.getInstancesByProcess();
-    expect(instancesByProcessStore.state.status).toBe('fetched');
+  it('should fetch instances by process on init', async () => {
+    expect(instancesByProcessStore.state.status).toBe('initial');
+    instancesByProcessStore.init();
+
+    expect(instancesByProcessStore.state.status).toBe('fetching');
+    await waitFor(() => {
+      expect(instancesByProcessStore.state.instances).toEqual(
+        mockInstancesByProcess
+      );
+    });
+  });
+
+  it('should start polling on init', async () => {
+    jest.useFakeTimers();
+    instancesByProcessStore.init();
+    await waitFor(() =>
+      expect(instancesByProcessStore.state.status).toBe('fetched')
+    );
+
     expect(instancesByProcessStore.state.instances).toEqual(
       mockInstancesByProcess
     );
+
+    mockServer.use(
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(ctx.json([]))
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(instancesByProcessStore.state.instances).toEqual([]);
+    });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should set failed response on error', async () => {

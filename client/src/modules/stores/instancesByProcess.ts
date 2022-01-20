@@ -8,6 +8,7 @@ import {action, makeObservable, observable, override} from 'mobx';
 
 import {fetchInstancesByProcess} from 'modules/api/incidents';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {isEqual} from 'lodash';
 
 type Process = {
   processId: string;
@@ -37,6 +38,7 @@ const DEFAULT_STATE: State = {
 
 class InstancesByProcess extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  intervalId: null | ReturnType<typeof setInterval> = null;
 
   constructor() {
     super();
@@ -47,6 +49,14 @@ class InstancesByProcess extends NetworkReconnectionHandler {
       setInstances: action,
       reset: override,
     });
+  }
+
+  init() {
+    this.getInstancesByProcess();
+
+    if (this.intervalId === null) {
+      this.startPolling();
+    }
   }
 
   getInstancesByProcess = this.retryOnConnectionLost(async () => {
@@ -72,6 +82,42 @@ class InstancesByProcess extends NetworkReconnectionHandler {
     this.state.status = 'error';
   };
 
+  handlePolling = async () => {
+    try {
+      const response = await fetchInstancesByProcess();
+
+      if (this.intervalId !== null) {
+        if (response.ok) {
+          const instances = await response.json();
+          if (!isEqual(instances, this.state.instances)) {
+            this.setInstances(instances);
+          }
+        } else {
+          this.setError();
+        }
+      }
+    } catch {
+      if (this.intervalId !== null) {
+        this.setError();
+      }
+    }
+  };
+
+  startPolling = async () => {
+    this.intervalId = setInterval(() => {
+      this.handlePolling();
+    }, 5000);
+  };
+
+  stopPolling = () => {
+    const {intervalId} = this;
+
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+      this.intervalId = null;
+    }
+  };
+
   setInstances = (instances: InstanceByProcess[]) => {
     this.state.instances = instances;
     this.state.status = 'fetched';
@@ -80,6 +126,7 @@ class InstancesByProcess extends NetworkReconnectionHandler {
   reset() {
     super.reset();
     this.state = {...DEFAULT_STATE};
+    this.stopPolling();
   }
 }
 
