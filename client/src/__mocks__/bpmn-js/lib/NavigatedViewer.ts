@@ -6,7 +6,7 @@
 
 import {diObject} from 'modules/testUtils';
 
-export const mockedModules = {
+const mockedModules: {[module: string]: any} = {
   canvas: {
     zoom: jest.fn(),
     addMarker: jest.fn(),
@@ -34,8 +34,6 @@ export const mockedModules = {
   overlays: {add: jest.fn(), remove: jest.fn()},
 };
 
-export const mockedImportDefinitions = jest.fn(() => Promise.resolve({}));
-
 class Viewer {
   bpmnRenderer: any;
   container: any;
@@ -44,12 +42,15 @@ class Viewer {
     this.bpmnRenderer = bpmnRenderer;
   }
 
-  importDefinitions = mockedImportDefinitions;
-
+  importDefinitions = jest.fn(() => Promise.resolve({}));
+  importXML = jest.fn(() => {
+    this.container.innerHTML = 'Diagram mock';
+    return Promise.resolve({});
+  });
   detach = jest.fn();
+  destroy = jest.fn();
 
-  // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-  get = (key: any) => mockedModules[key];
+  get = (module: string) => mockedModules[module];
 }
 
 export default Viewer;

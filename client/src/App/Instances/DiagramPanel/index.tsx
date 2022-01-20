@@ -7,7 +7,7 @@
 import React from 'react';
 import SplitPane from 'modules/components/SplitPane';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
-import Diagram from 'modules/components/Diagram';
+import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
 import * as Styled from './styled';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
@@ -17,6 +17,7 @@ import {useHistory} from 'react-router-dom';
 import {Location} from 'history';
 import {getFilters, deleteSearchParams} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
+import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 
 const Message: React.FC = ({children}) => {
   return (
@@ -46,7 +47,7 @@ type Props = {
 
 const DiagramPanel: React.FC<Props> = observer((props) => {
   const history = useHistory();
-  const {status, diagramModel} = instancesDiagramStore.state;
+  const {status, diagramModel, xml} = instancesDiagramStore.state;
   const {selectableIds} = instancesDiagramStore;
   const {statistics} = processStatisticsStore.state;
   const {process, version, flowNodeId} = getFilters(history.location.search);
@@ -95,9 +96,12 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
                To see a Diagram, select a single Version`}
           </Message>
         ) : null}
-        {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
-        {!isNoVersionSelected && diagramModel?.definitions ? (
-          <Diagram
+
+        {IS_NEXT_DIAGRAM ? (
+          xml !== null && <Diagram xml={xml} />
+        ) : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
+        !isNoVersionSelected && diagramModel?.definitions ? (
+          <DiagramLegacy
             // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
             definitions={diagramModel.definitions}
             onFlowNodeSelection={(flowNodeId) => {

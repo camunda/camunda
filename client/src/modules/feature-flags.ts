@@ -5,5 +5,6 @@
  */
 
 const IS_NEW_FILTERS_FORM = false;
+const IS_NEXT_DIAGRAM = false;
 
-export {IS_NEW_FILTERS_FORM};
+export {IS_NEW_FILTERS_FORM, IS_NEXT_DIAGRAM};

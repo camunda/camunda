@@ -16,12 +16,13 @@ import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
-import Diagram from 'modules/components/Diagram';
+import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
 import {IncidentsBanner} from './IncidentsBanner';
+import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 
 type Props = {
   incidents?: unknown;
@@ -69,7 +70,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
   const {instance} = currentInstanceStore.state;
 
   const {
-    state: {status, diagramModel},
+    state: {status, diagramModel, xml},
   } = singleInstanceDiagramStore;
 
   const {
@@ -111,25 +112,28 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
             {instance?.state === 'INCIDENT' && (
               <IncidentsWrapper setIsInTransition={setIsInTransition} />
             )}
-            {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
-            {diagramModel?.definitions && (
-              <Diagram
-                expandState={expandState}
-                onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                  flowNodeSelectionStore.selectFlowNode({
-                    flowNodeId,
-                    isMultiInstance,
-                  });
-                }}
-                selectableFlowNodes={selectableFlowNodes}
-                processedSequenceFlows={processedSequenceFlows}
-                selectedFlowNodeId={flowNodeSelection?.flowNodeId}
-                flowNodeStateOverlays={flowNodeStateOverlays.get()}
-                // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                definitions={diagramModel.definitions}
-                hidePopover={isIncidentBarOpen}
-              />
-            )}
+
+            {IS_NEXT_DIAGRAM
+              ? xml !== null && <Diagram xml={xml} />
+              : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
+                diagramModel?.definitions && (
+                  <DiagramLegacy
+                    expandState={expandState}
+                    onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                      flowNodeSelectionStore.selectFlowNode({
+                        flowNodeId,
+                        isMultiInstance,
+                      });
+                    }}
+                    selectableFlowNodes={selectableFlowNodes}
+                    processedSequenceFlows={processedSequenceFlows}
+                    selectedFlowNodeId={flowNodeSelection?.flowNodeId}
+                    flowNodeStateOverlays={flowNodeStateOverlays.get()}
+                    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+                    definitions={diagramModel.definitions}
+                    hidePopover={isIncidentBarOpen}
+                  />
+                )}
           </>
         )}
       </Styled.SplitPaneBody>

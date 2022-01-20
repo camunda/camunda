@@ -35,12 +35,14 @@ type FlowNodeMetaData = {
 
 type State = {
   diagramModel: unknown;
+  xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
   nodeMetaDataMap?: NodeMetaDataMap;
 };
 
 const DEFAULT_STATE: State = {
   diagramModel: null,
+  xml: null,
   status: 'initial',
   nodeMetaDataMap: undefined,
 };
@@ -84,7 +86,8 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
         const response = await fetchProcessXML(processId);
 
         if (response.ok) {
-          this.handleFetchSuccess(await parseDiagramXML(await response.text()));
+          const xml = await response.text();
+          this.handleFetchSuccess(xml, await parseDiagramXML(xml));
         } else {
           this.handleFetchFailure();
         }
@@ -102,8 +105,9 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchSuccess = (parsedDiagramXml: any) => {
+  handleFetchSuccess = (xml: string, parsedDiagramXml: any) => {
     this.state.diagramModel = parsedDiagramXml;
+    this.state.xml = xml;
     this.state.nodeMetaDataMap = createNodeMetaDataMap(
       getSelectableFlowNodes(parsedDiagramXml.bpmnElements)
     );

@@ -20,6 +20,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   diagramModel: unknown;
+  xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
@@ -31,6 +32,7 @@ type Node = {
 
 const DEFAULT_STATE: State = {
   diagramModel: null,
+  xml: null,
   status: 'initial',
 };
 
@@ -59,7 +61,8 @@ class InstancesDiagram extends NetworkReconnectionHandler {
         const response = await fetchProcessXML(processId);
 
         if (response.ok) {
-          this.handleFetchSuccess(await parseDiagramXML(await response.text()));
+          const xml = await response.text();
+          this.handleFetchSuccess(xml, await parseDiagramXML(xml));
         } else {
           this.handleFetchError();
         }
@@ -82,12 +85,14 @@ class InstancesDiagram extends NetworkReconnectionHandler {
     this.state.status = 'fetching';
   };
 
-  handleFetchSuccess = (parsedDiagramXml: any) => {
+  handleFetchSuccess = (xml: string, parsedDiagramXml: any) => {
+    this.state.xml = xml;
     this.state.diagramModel = parsedDiagramXml;
     this.state.status = 'fetched';
   };
 
   handleFetchError = (error?: unknown) => {
+    this.state.xml = null;
     this.state.diagramModel = null;
     this.state.status = 'error';
 
