@@ -12,6 +12,7 @@ import static io.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
@@ -32,6 +33,8 @@ import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -51,10 +54,13 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   @Autowired
   private ListViewReader listViewReader;
 
+  private ProcessInstancesArchiverJob archiverJob;
+
   @Before
   public void before() {
     super.before();
     cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
+    archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
   }
 
   /**
@@ -78,6 +84,68 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .waitUntil()
         .flowNodeIsActive(taskId)
         .getProcessInstanceKey();
+
+    //when 1.1
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(processInstanceKey), taskId, null, null);
+
+    //then
+    assertThat(flowNodeMetadata.getBreadcrumb()).isEmpty();
+    assertThat(flowNodeMetadata.getInstanceCount()).isNull();
+    final String flowNodeInstanceId1 = flowNodeMetadata.getFlowNodeInstanceId();
+    assertThat(flowNodeInstanceId1).isNotNull();
+    assertThat(flowNodeMetadata.getFlowNodeId()).isNull();
+    assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
+    assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
+    assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId, SERVICE_TASK,
+        flowNodeInstanceId1, false);
+
+    //when 2.1
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(processInstanceKey), null, null, flowNodeInstanceId1);
+
+    //then
+    assertThat(flowNodeMetadata.getBreadcrumb()).isEmpty();
+    assertThat(flowNodeMetadata.getInstanceCount()).isNull();
+    final String flowNodeInstanceId2 = flowNodeMetadata.getFlowNodeInstanceId();
+    assertThat(flowNodeInstanceId2).isEqualTo(flowNodeInstanceId1);
+    assertThat(flowNodeMetadata.getFlowNodeId()).isNull();
+    assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
+    assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
+    assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId, SERVICE_TASK,
+        flowNodeInstanceId2, false);
+  }
+
+  /**
+   * Use cases 1.1 and 2.1.
+   */
+  @Test
+  public void shouldReturnOneInstanceMetadataForArchivedFinishedProcessInstance() throws Exception {
+    //having
+    final Instant currentTime = pinZeebeTime();
+    pinZeebeTime(currentTime.minus(3, ChronoUnit.DAYS));
+
+    final String taskId = "taskA";
+    final String processId = "testProcess";
+    final BpmnModelInstance testProcess =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(taskId).zeebeJobType(taskId)
+            .endEvent()
+            .done();
+    final long processInstanceKey = tester
+        .deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(processId)
+        .and()
+        .waitUntil()
+        .flowNodeIsActive(taskId)
+        .completeTask(taskId)
+        .waitUntil()
+        .processInstanceIsFinished()
+        .getProcessInstanceKey();
+
+    resetZeebeTime();
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
 
     //when 1.1
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(

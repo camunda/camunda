@@ -202,7 +202,7 @@ public class ProcessInstanceReader extends AbstractReader {
         termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
         termQuery(KEY, processInstanceId));
     final SearchRequest request = ElasticsearchUtil
-        .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
+        .createSearchRequest(listViewTemplate)
         .source(new SearchSourceBuilder().query(query)
             .fetchSource(TREE_PATH, null));
     try {
