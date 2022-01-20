@@ -62,6 +62,10 @@ spec:
     emptyDir: {}
   - name: docker-storage
     emptyDir: {}
+  - name: es-it-data
+    emptyDir:
+      medium: Memory
+      sizeLimit: 1Gi
   imagePullSecrets:
   - name: registry-camunda-cloud
   initContainers:
@@ -201,8 +205,10 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         cpu: ${cpuLimit}
         memory: ${memoryLimitInGb}Gi
     volumeMounts:
-    - name: es-snapshot
-      mountPath: /var/tmp
+      - name: es-snapshot
+        mountPath: /var/tmp
+      - name: es-it-data
+        mountPath: /opt/elasticsearch/volatile
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -225,6 +231,10 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         value: 1000
       - name: path.repo
         value: /var/tmp
+      - name: path.data
+        value: /opt/elasticsearch/volatile/data
+      - name: path.logs
+        value: /opt/elasticsearch/volatile/logs
    """
 }
 
