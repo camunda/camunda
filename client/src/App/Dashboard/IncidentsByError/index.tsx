@@ -34,7 +34,7 @@ function truncateErrorMessage(errorMessage: string) {
 
 const IncidentsByError = observer(() => {
   useEffect(() => {
-    incidentsByErrorStore.getIncidentsByError();
+    incidentsByErrorStore.init();
     return () => {
       incidentsByErrorStore.reset();
     };

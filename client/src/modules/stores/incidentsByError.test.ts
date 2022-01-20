@@ -69,10 +69,41 @@ describe('stores/incidentsByError', () => {
     incidentsByErrorStore.reset();
   });
 
-  it('should get incidents by error', async () => {
-    await incidentsByErrorStore.getIncidentsByError();
-    expect(incidentsByErrorStore.state.status).toBe('fetched');
+  it('should fetch incidents by error on init', async () => {
+    expect(incidentsByErrorStore.state.status).toBe('initial');
+    incidentsByErrorStore.init();
+
+    expect(incidentsByErrorStore.state.status).toBe('fetching');
+    await waitFor(() => {
+      expect(incidentsByErrorStore.state.incidents).toEqual(
+        mockIncidentsByError
+      );
+    });
+  });
+
+  it('should start polling on init', async () => {
+    jest.useFakeTimers();
+    incidentsByErrorStore.init();
+    await waitFor(() =>
+      expect(incidentsByErrorStore.state.status).toBe('fetched')
+    );
+
     expect(incidentsByErrorStore.state.incidents).toEqual(mockIncidentsByError);
+
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json([]))
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(incidentsByErrorStore.state.incidents).toEqual([]);
+    });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should set failed response on error', async () => {

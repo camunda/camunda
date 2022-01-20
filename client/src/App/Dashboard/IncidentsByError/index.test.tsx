@@ -169,6 +169,53 @@ describe('IncidentsByError', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
+  it('should update after next poll', async () => {
+    jest.useFakeTimers();
+
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidentsByError))
+      )
+    );
+
+    const historyMock = createMemoryHistory();
+    render(<IncidentsByError />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    const withinIncident = within(
+      await screen.findByTestId('incident-byError-0')
+    );
+
+    expect(
+      withinIncident.getByTitle(
+        "Expand 36 Instances with error JSON path '$.paid' has no result."
+      )
+    ).toBeInTheDocument();
+
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {...mockIncidentsByError[0], instancesWithErrorCount: 40},
+            mockIncidentsByError[1],
+          ])
+        )
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+
+    expect(
+      await withinIncident.findByTitle(
+        "Expand 40 Instances with error JSON path '$.paid' has no result."
+      )
+    ).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   it('should not erase persistent params', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
