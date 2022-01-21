@@ -144,22 +144,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <javax.net.ssl.trustStore>
-              ${paths.certificates}/elastic-stack-ca.p12
-            </javax.net.ssl.trustStore>
-            <javax.net.ssl.trustStorePassword>changeit</javax.net.ssl.trustStorePassword>
-            <javax.net.ssl.trustStoreType>pkcs12</javax.net.ssl.trustStoreType>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>
