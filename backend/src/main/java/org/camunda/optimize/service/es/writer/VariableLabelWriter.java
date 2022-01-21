@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -19,7 +19,6 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -39,11 +38,12 @@ public class VariableLabelWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void createVariableLabelUpsertRequest(DefinitionLabelsDto definitionLabelsDto) {
+  public void createVariableLabelUpsertRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     try {
       final Map<String, Object> params = new HashMap<>();
-      params.put("labels", definitionLabelsDto.getLabels());
+      params.put("labels", definitionVariableLabelsDto.getLabels());
 
+      // @formatter:off
       String query =
           "def existingLabels = ctx._source.labels;" +
           "for (label in params['labels']) {" +
@@ -54,6 +54,7 @@ public class VariableLabelWriter {
           "        existingLabels.add(label);" +
           "   }" +
           " }";
+      // @formatter:on
 
       final Script updateEntityScript = createDefaultScriptWithSpecificDtoParams(
         query,
@@ -61,15 +62,15 @@ public class VariableLabelWriter {
         objectMapper
       );
 
-      List<LabelDto> labelsForIndexCreation = definitionLabelsDto.getLabels().stream()
+      List<LabelDto> labelsForIndexCreation = definitionVariableLabelsDto.getLabels().stream()
         .filter(label -> StringUtils.isNotBlank(label.getVariableLabel()))
         .collect(Collectors.toList());
-      definitionLabelsDto.setLabels(labelsForIndexCreation);
+      definitionVariableLabelsDto.setLabels(labelsForIndexCreation);
 
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(VARIABLE_LABEL_INDEX_NAME)
-        .id(definitionLabelsDto.getDefinitionKey())
-        .upsert(objectMapper.writeValueAsString(definitionLabelsDto), XContentType.JSON)
+        .id(definitionVariableLabelsDto.getDefinitionKey().toLowerCase())
+        .upsert(objectMapper.writeValueAsString(definitionVariableLabelsDto), XContentType.JSON)
         .script(updateEntityScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -78,7 +79,7 @@ public class VariableLabelWriter {
     } catch (IOException e) {
       String errorMessage = String.format(
         "Was not able to update the variable labels for the process definition with id: [%s]",
-        definitionLabelsDto.getDefinitionKey()
+        definitionVariableLabelsDto.getDefinitionKey()
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -86,7 +87,7 @@ public class VariableLabelWriter {
       String errorMessage = String.format(
         "Was not able to update the variable labels for the process definition with id: [%s] due to an Elasticsearch" +
           " exception",
-        definitionLabelsDto.getDefinitionKey()
+        definitionVariableLabelsDto.getDefinitionKey()
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

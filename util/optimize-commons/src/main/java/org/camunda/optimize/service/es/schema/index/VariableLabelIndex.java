@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -26,10 +26,10 @@ public class VariableLabelIndex extends DefaultIndexMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     xContentBuilder
-      .startObject(DefinitionLabelsDto.Fields.definitionKey)
+      .startObject(DefinitionVariableLabelsDto.Fields.definitionKey)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(DefinitionLabelsDto.Fields.labels)
+      .startObject(DefinitionVariableLabelsDto.Fields.labels)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .startObject("properties")
           .startObject(LabelDto.Fields.variableLabel)

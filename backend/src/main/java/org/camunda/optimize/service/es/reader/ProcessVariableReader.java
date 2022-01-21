@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.reader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
@@ -20,6 +22,7 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -44,6 +47,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -75,10 +79,14 @@ public class ProcessVariableReader {
   private static final String TYPE_AGGREGATION = "variableTypeAggregation";
   private static final String VALUE_AGGREGATION = "values";
   private static final String VAR_NAME_AND_TYPE_COMPOSITE_AGG = "varNameAndTypeCompositeAgg";
+  private static final String INDEX_AGGREGATION = "_index";
+  private static final String PROCESS_INSTANCE_INDEX_NAME_SUBSECTION =
+    "-" + ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
   private final OptimizeElasticsearchClient esClient;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ConfigurationService configurationService;
+  private final VariableLabelReader variableLabelReader;
 
   public List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto) {
     if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
@@ -101,6 +109,12 @@ public class ProcessVariableReader {
       return Collections.emptyList();
     }
 
+    List<String> processDefinitionKeys = variableNameRequests.stream()
+      .map(ProcessVariableNameRequestDto::getProcessDefinitionKey)
+      .collect(Collectors.toList());
+    Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos =
+      variableLabelReader.getVariableLabelsByKey(processDefinitionKeys);
+
     BoolQueryBuilder query = boolQuery();
     variableNameRequests.stream()
       .filter(request -> request.getProcessDefinitionKey() != null)
@@ -112,15 +126,19 @@ public class ProcessVariableReader {
         new ProcessInstanceIndex(request.getProcessDefinitionKey()),
         processDefinitionReader::getLatestVersionToKey
       )));
-    return getVariableNamesForInstancesMatchingQuery(query);
+    return getVariableNamesForInstancesMatchingQuery(query, definitionLabelsDtos);
   }
 
-  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery) {
+  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery,
+                                                                                        final Map<String,
+                                                                                          DefinitionVariableLabelsDto> definitionLabelsDtos) {
     List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
     variableNameAndTypeTerms.add(new TermsValuesSourceBuilder(NAME_AGGREGATION)
                                    .field(getNestedVariableNameField()));
     variableNameAndTypeTerms.add(new TermsValuesSourceBuilder(TYPE_AGGREGATION)
                                    .field(getNestedVariableTypeField()));
+    variableNameAndTypeTerms.add(new TermsValuesSourceBuilder(INDEX_AGGREGATION)
+                                   .field(INDEX_AGGREGATION));
 
     CompositeAggregationBuilder varNameAndTypeAgg =
       new CompositeAggregationBuilder(VAR_NAME_AND_TYPE_COMPOSITE_AGG, variableNameAndTypeTerms)
@@ -130,6 +148,7 @@ public class ProcessVariableReader {
       .query(baseQuery)
       .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
       .size(0);
+
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
@@ -138,24 +157,60 @@ public class ProcessVariableReader {
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(VARIABLES, VAR_NAME_AND_TYPE_COMPOSITE_AGG)
-      .setCompositeBucketConsumer(bucket -> variableNames.add(extractVariableName(bucket)))
+      .setCompositeBucketConsumer(bucket -> variableNames.add(extractVariableNameAndLabel(
+        bucket,
+        definitionLabelsDtos
+      )))
       .consumeAllPages();
-    filterVariableNameResults(variableNames);
-    return variableNames;
+    return filterVariableNameResults(variableNames);
   }
 
-  private void filterVariableNameResults(final List<ProcessVariableNameResponseDto> variableNames) {
-    // Exclude object variables from this result as they are only visible in raw data reports
-    variableNames.removeIf(varName -> VariableType.OBJECT.equals(varName.getType()));
+  private List<ProcessVariableNameResponseDto> filterVariableNameResults(final List<ProcessVariableNameResponseDto> variableNames) {
+    // Exclude object variables from this result as they are only visible in raw data reports.
+    // Additionally, in case variables have the same name, type and label across definitions
+    // then we eliminate duplicates and we display the variable as one.
+    return variableNames.stream()
+      .distinct()
+      .filter(varName -> !VariableType.OBJECT.equals(varName.getType()))
+      .collect(Collectors.toList());
   }
 
-  private ProcessVariableNameResponseDto extractVariableName(final ParsedComposite.ParsedBucket bucket) {
+  private ProcessVariableNameResponseDto extractVariableNameAndLabel(final ParsedComposite.ParsedBucket bucket,
+                                                                     final Map<String, DefinitionVariableLabelsDto> definitionLabelsByKey) {
+    final String processDefinitionKey = extractProcessDefinitionKeyFromIndexName(((String) bucket.getKey()
+      .get(INDEX_AGGREGATION)));
     final String variableName = (String) (bucket.getKey()).get(NAME_AGGREGATION);
     final String variableType = (String) (bucket.getKey().get(TYPE_AGGREGATION));
+    String labelValue = null;
+    if (processDefinitionKey != null && definitionLabelsByKey.containsKey(processDefinitionKey)) {
+      final List<LabelDto> labels = definitionLabelsByKey.get(processDefinitionKey).getLabels();
+      for (LabelDto label : labels) {
+        if (label.getVariableName().equals(variableName) && label.getVariableType()
+          .toString()
+          .equalsIgnoreCase(variableType)) {
+          labelValue = label.getVariableLabel();
+        }
+      }
+    }
+
     return new ProcessVariableNameResponseDto(
       variableName,
-      VariableType.getTypeForId(variableType)
+      VariableType.getTypeForId(variableType),
+      labelValue
     );
+  }
+
+  public String extractProcessDefinitionKeyFromIndexName(final String indexName) {
+    int firstIndex = indexName.indexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
+    int lastIndex = indexName.lastIndexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
+    if (firstIndex != lastIndex) {
+      log.warn("Skipping fetching variables for process definition with index name: {}.", indexName);
+      return null;
+    }
+
+    final int processDefKeyStartIndex = firstIndex + PROCESS_INSTANCE_INDEX_NAME_SUBSECTION.length();
+    final int processDefKeyEndIndex = indexName.lastIndexOf("_v" + ProcessInstanceIndex.VERSION);
+    return indexName.substring(processDefKeyStartIndex, processDefKeyEndIndex);
   }
 
   public List<String> getVariableValues(final ProcessVariableValuesQueryDto requestDto) {

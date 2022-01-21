@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,10 +40,10 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
   @Test
   public void updateVariableLabelsWithoutAccessToken() {
     // given
-    DefinitionLabelsDto definitionLabelsDto = new DefinitionLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
+    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(definitionLabelsDto, null);
+    Response response = executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto, null);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -54,10 +54,10 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionLabelsDto definitionLabelsDto = new DefinitionLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
+    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(definitionLabelsDto, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto, ACCESS_TOKEN);
 
     // then
     assertThat(getAllDocumentsOfVariableLabelIndex())
@@ -71,7 +71,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
     final LabelDto emptyLabelName = new LabelDto("", "a variable name", VariableType.STRING);
     final LabelDto whiteSpaceLabel = new LabelDto(" ", "a second name", VariableType.STRING);
-    DefinitionLabelsDto labelOptimizeDto = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(emptyLabelName, whiteSpaceLabel)
     );
@@ -90,7 +90,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionLabelsDto labelOptimizeDto = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, SECOND_LABEL)
     );
@@ -111,7 +111,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     final LabelDto otherLabelSameValue = new LabelDto("a label 1", "a different name", VariableType.STRING);
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionLabelsDto labelOptimizeDto = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, otherLabelSameValue)
     );
@@ -132,11 +132,11 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     LabelDto deletedFirstLabel = new LabelDto("", "a name", VariableType.STRING);
-    DefinitionLabelsDto labelOptimizeDto1 = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, SECOND_LABEL)
     );
-    DefinitionLabelsDto labelOptimizeDto2 = new DefinitionLabelsDto(PROCESS_DEFINITION_KEY, List.of(deletedFirstLabel));
+    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(deletedFirstLabel));
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
@@ -160,11 +160,11 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
       FIRST_LABEL.getVariableName(),
       FIRST_LABEL.getVariableType()
     );
-    DefinitionLabelsDto labelOptimizeDto1 = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, SECOND_LABEL)
     );
-    DefinitionLabelsDto labelOptimizeDto2 = new DefinitionLabelsDto(PROCESS_DEFINITION_KEY, List.of(updatedFirstLabel));
+    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(updatedFirstLabel));
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
@@ -188,7 +188,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
       FIRST_LABEL.getVariableName(),
       FIRST_LABEL.getVariableType()
     );
-    DefinitionLabelsDto labelOptimizeDto1 = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, updatedFirstLabel)
     );
@@ -211,7 +211,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
       FIRST_LABEL.getVariableName(),
       FIRST_LABEL.getVariableType()
     );
-    DefinitionLabelsDto labelOptimizeDto1 = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
       processDefinitionKey,
       List.of(FIRST_LABEL, updatedFirstLabel)
     );
@@ -229,7 +229,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     LabelDto updatedFirstLabel = new LabelDto("doesntMatter", "doesntMatter", null);
-    DefinitionLabelsDto labelOptimizeDto1 = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, updatedFirstLabel)
     );
@@ -248,7 +248,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     LabelDto updatedFirstLabel = new LabelDto("doesntMatter", variableName, VariableType.DATE);
-    DefinitionLabelsDto labelOptimizeDto1 = new DefinitionLabelsDto(
+    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, updatedFirstLabel)
     );
@@ -263,7 +263,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
   @Test
   public void storeVariableLabelForNonExistentDefinition() {
     // given
-    DefinitionLabelsDto labelOptimizeDto = new DefinitionLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL));
+    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN);
@@ -272,14 +272,14 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  public List<DefinitionLabelsDto> getAllDocumentsOfVariableLabelIndex() {
+  public List<DefinitionVariableLabelsDto> getAllDocumentsOfVariableLabelIndex() {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
       VARIABLE_LABEL_INDEX_NAME,
-      DefinitionLabelsDto.class
+      DefinitionVariableLabelsDto.class
     );
   }
 
-  public Response executeUpdateProcessVariableLabelRequest(DefinitionLabelsDto labelOptimizeDto, String accessToken) {
+  public Response executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto, String accessToken) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildProcessVariableLabelRequest(labelOptimizeDto, accessToken)

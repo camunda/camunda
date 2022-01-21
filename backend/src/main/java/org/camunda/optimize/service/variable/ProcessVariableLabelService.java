@@ -7,16 +7,14 @@ package org.camunda.optimize.service.variable;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.writer.VariableLabelWriter;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -27,8 +25,8 @@ public class ProcessVariableLabelService {
   private final VariableLabelWriter variableLabelWriter;
   private final DefinitionService definitionService;
 
-  public void storeVariableLabels(final DefinitionLabelsDto definitionLabelsDto) {
-    definitionLabelsDto.getLabels()
+  public void storeVariableLabels(final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+    definitionVariableLabelsDto.getLabels()
       .stream()
       .collect(Collectors.groupingBy(
         label -> label.getVariableName() + label.getVariableType(),
@@ -39,11 +37,11 @@ public class ProcessVariableLabelService {
         }
       });
 
-    if (definitionService.definitionExists(DefinitionType.PROCESS, definitionLabelsDto.getDefinitionKey())) {
-      variableLabelWriter.createVariableLabelUpsertRequest(definitionLabelsDto);
+    if (definitionService.definitionExists(DefinitionType.PROCESS, definitionVariableLabelsDto.getDefinitionKey())) {
+      variableLabelWriter.createVariableLabelUpsertRequest(definitionVariableLabelsDto);
     } else {
         throw new NotFoundException(
-          "The process definition with id " + definitionLabelsDto.getDefinitionKey() + " has not yet been imported to Optimize");
+          "The process definition with id " + definitionVariableLabelsDto.getDefinitionKey() + " has not yet been imported to Optimize");
     }
   }
 

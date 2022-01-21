@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
@@ -85,9 +85,9 @@ public class ProcessVariableRestService {
   @Path("/labels")
   @Consumes(MediaType.APPLICATION_JSON)
   public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
-                                   @Valid DefinitionLabelsDto definitionLabelsDto) {
+                                   @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     validateAccessToken(requestContext, configurationService.getOptimizeApiConfiguration().getAccessToken());
-    processVariableLabelService.storeVariableLabels(definitionLabelsDto);
+    processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 
 }

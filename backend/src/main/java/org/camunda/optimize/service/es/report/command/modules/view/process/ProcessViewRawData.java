@@ -94,8 +94,11 @@ public class ProcessViewRawData extends ProcessViewPart {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
 
     final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
+    // we do not fetch the variable labels as part of the /evaluate
+    // endpoint, but the frontend will query the /variables endpoint
+    // to fetch them
     final Set<String> allVariableNamesForMatchingInstances =
-      processVariableReader.getVariableNamesForInstancesMatchingQuery(variableQuery)
+      processVariableReader.getVariableNamesForInstancesMatchingQuery(variableQuery, Collections.emptyMap())
         .stream()
         .map(ProcessVariableNameResponseDto::getName)
         .collect(Collectors.toSet());
@@ -118,14 +121,14 @@ public class ProcessViewRawData extends ProcessViewPart {
                                         MAX_RESPONSE_SIZE_LIMIT : pag.getLimit()));
       searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
     } else {
-        context.getPagination().ifPresent(pag -> {
-          if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
-            pag.setLimit(MAX_RESPONSE_SIZE_LIMIT);
-          }
-          search
-            .size(pag.getLimit())
-            .from(pag.getOffset());
-        });
+      context.getPagination().ifPresent(pag -> {
+        if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
+          pag.setLimit(MAX_RESPONSE_SIZE_LIMIT);
+        }
+        search
+          .size(pag.getLimit())
+          .from(pag.getOffset());
+      });
     }
     Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());

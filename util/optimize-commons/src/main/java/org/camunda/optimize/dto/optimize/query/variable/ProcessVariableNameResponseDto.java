@@ -15,4 +15,5 @@ import lombok.NoArgsConstructor;
 public class ProcessVariableNameResponseDto {
   protected String name;
   protected VariableType type;
+  protected String label;
 }

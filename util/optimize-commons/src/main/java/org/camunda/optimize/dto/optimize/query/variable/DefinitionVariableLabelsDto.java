@@ -19,7 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
-public class DefinitionLabelsDto implements OptimizeDto {
+public class DefinitionVariableLabelsDto implements OptimizeDto {
   @NotBlank
   private String definitionKey;
 

@@ -21,6 +21,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardSt
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -413,6 +416,48 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   }
 
   @Test
+  public void dashboardVariableFiltersDoesNotGetRemovedFromDahboardOnReportDeleteIfFilterExistsForSameVariableInOtherReports() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getOptimizeApiConfiguration()
+      .setAccessToken(("aToken"));
+
+    final ProcessInstanceEngineDto firstDeployedInstance = deployInstanceWithVariables(ImmutableMap.of(BOOL_VAR, true));
+    final String firstReportId = createAndSaveReportForDeployedInstance(firstDeployedInstance).getId();
+    final ProcessInstanceEngineDto secondDeployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String secondReportId = createAndSaveReportForDeployedInstance(secondDeployedInstance).getId();
+    final List<DashboardFilterDto<?>> dashboardFilterDtos = Arrays.asList(
+      createStateDashboardFilter(),
+      createBoolVarDashboardFilter(),
+      createDateVarDashboardFilter()
+    );
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        dashboardFilterDtos,
+        Arrays.asList(firstReportId, secondReportId)
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    importAllEngineEntitiesFromScratch();
+
+    final LabelDto firstLabel = new LabelDto("first instance label", "boolVar", VariableType.BOOLEAN);
+    addVariableLabelsToProcessDefinition(firstLabel, firstDeployedInstance);
+
+    final LabelDto secondLabel = new LabelDto("second instance label", "boolVar", VariableType.BOOLEAN);
+    addVariableLabelsToProcessDefinition(secondLabel, firstDeployedInstance);
+
+    // when
+    reportClient.deleteReport(firstReportId, true);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
+
+    // then the variable filters all remain as the variable exists in the other report that is still in the dashboard
+    // even though the variable have different labels across definitions
+    assertThat(dashboard.getAvailableFilters())
+      .hasSize(3)
+      .containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
+  }
+
+  @Test
   public void reportIsNotUpdatedIfVariableFiltersFailToBeRemovedFromDashboard() {
     // given
     final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
@@ -698,4 +743,18 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     return stateFilterDto;
   }
 
+  private void addVariableLabelsToProcessDefinition(final LabelDto label, final ProcessInstanceEngineDto deployedProcessInstance) {
+    DefinitionVariableLabelsDto definitionLabelDto = new DefinitionVariableLabelsDto(
+      deployedProcessInstance.getProcessDefinitionKey(),
+      List.of(label)
+    );
+    executeUpdateProcessVariableLabelRequest(definitionLabelDto, "aToken");
+  }
+
+  public void executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto, String accessToken) {
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildProcessVariableLabelRequest(labelOptimizeDto, accessToken)
+      .execute();
+  }
 }

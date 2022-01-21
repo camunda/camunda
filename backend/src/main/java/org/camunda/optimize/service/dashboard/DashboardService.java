@@ -226,13 +226,18 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .map(SingleProcessReportDefinitionRequestDto.class::cast)
             .collect(toList());
         final List<ProcessVariableNameResponseDto> varNamesForReportsToRemain =
-          processVariableService.getVariableNamesForReportDefinitions(allReportsForIdsOmitXml);
+          processVariableService.getVariableNamesForReportDefinitions(allReportsForIdsOmitXml)
+            .stream()
+            // since the filter is being applied across variables with same name and type in different definitions
+            // independently of the label, we can exclude the label from here.
+            .peek(variableName -> variableName.setLabel(null))
+            .collect(Collectors.toList());
         final List<DashboardVariableFilterDto> filtersToRemove =
           extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).stream()
             .filter(variableFilter -> {
               final DashboardVariableFilterDataDto filterData = variableFilter.getData();
               final ProcessVariableNameResponseDto processVariableForFilter =
-                new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType());
+                new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType(), null);
               return !varNamesForReportsToRemain.contains(processVariableForFilter) &&
                 filters.contains(processVariableForFilter);
             })
@@ -408,11 +413,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final Map<String, List<VariableType>> possibleVarTypesByName =
         processVariableService.getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
           .stream().collect(
-          groupingBy(
-            ProcessVariableNameResponseDto::getName,
-            Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())
-          )
-        );
+            groupingBy(
+              ProcessVariableNameResponseDto::getName,
+              Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())
+            )
+          );
       final List<DashboardFilterDto<?>> invalidFilters = variableFilters.stream()
         .filter(isInvalidVariableFilter(possibleVarTypesByName))
         .collect(toList());
