@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.allocation;
 
 import io.camunda.zeebe.util.CloseableSilently;
 import java.nio.ByteBuffer;
+import org.agrona.BufferUtil;
 
 public abstract class AllocatedBuffer implements CloseableSilently {
 
@@ -37,6 +38,7 @@ public abstract class AllocatedBuffer implements CloseableSilently {
     if (!closed) {
       closed = true;
       doClose();
+      BufferUtil.free(rawBuffer);
       rawBuffer = null;
     }
   }
