@@ -5,6 +5,7 @@
  */
 
 import {
+  validateNameCharacters,
   validateNameComplete,
   validateNameNotDuplicate,
   validateValueComplete,
@@ -18,6 +19,47 @@ const mockMeta = {
 };
 
 describe('Validators', () => {
+  describe('validateNameCharacters', () => {
+    it('should validate', () => {
+      ['abc', '123'].forEach((variableName) => {
+        expect(
+          validateNameCharacters(
+            variableName,
+            {newVariables: [{name: variableName}]},
+            {
+              ...mockMeta,
+              name: 'newVariables[0].name',
+            },
+          ),
+        ).toBeUndefined();
+      });
+    });
+
+    it('should not validate', () => {
+      [
+        '"',
+        ' ',
+        'test ',
+        '"test"',
+        'test\twith\ttab',
+        'line\nbreak',
+        'carriage\rreturn',
+        'form\ffeed',
+      ].forEach((variableName) => {
+        expect(
+          validateNameCharacters(
+            variableName,
+            {newVariables: [{name: variableName}]},
+            {
+              ...mockMeta,
+              name: 'newVariables[0].name',
+            },
+          ),
+        ).toBe('Name is invalid');
+      });
+    });
+  });
+
   describe('validateNameComplete', () => {
     it('should validate', () => {
       ['abc', 'true', '123'].forEach((variableName) => {

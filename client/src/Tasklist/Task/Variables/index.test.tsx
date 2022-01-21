@@ -205,6 +205,44 @@ describe('<Variables />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should validate an invalid variable name', async () => {
+    jest.useFakeTimers();
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.type(screen.getByLabelText('New variable 0 name'), '"');
+    userEvent.type(
+      screen.getByLabelText('New variable 0 value'),
+      '"valid_value"',
+    );
+
+    expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
+
+    userEvent.clear(screen.getByLabelText('New variable 0 name'));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText('Name is invalid'),
+    );
+
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'test ');
+
+    expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   it('should validate an empty variable value', async () => {
     mockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {

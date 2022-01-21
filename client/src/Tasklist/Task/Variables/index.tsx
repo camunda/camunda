@@ -33,11 +33,13 @@ import {
   NameTextField,
 } from './styled';
 import {
+  validateNameCharacters,
   validateNameComplete,
   validateNameNotDuplicate,
   validateValueComplete,
   validateValueJSON,
 } from './validators';
+import {mergeValidators} from './validators/mergeValidators';
 import {
   createVariableFieldName,
   createNewVariableFieldName,
@@ -252,22 +254,11 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                           variable,
                                           'name',
                                         )}
-                                        validate={(
-                                          variableName,
-                                          allValues,
-                                          meta,
-                                        ) =>
-                                          validateNameComplete(
-                                            variableName,
-                                            allValues,
-                                            meta,
-                                          ) ||
-                                          validateNameNotDuplicate(
-                                            variableName,
-                                            allValues,
-                                            meta,
-                                          )
-                                        }
+                                        validate={mergeValidators(
+                                          validateNameCharacters,
+                                          validateNameComplete,
+                                          validateNameNotDuplicate,
+                                        )}
                                       >
                                         {({input, meta}) => (
                                           <NameTextField

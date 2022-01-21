@@ -14,6 +14,16 @@ import {FieldValidator} from 'final-form';
 
 const VALIDATION_DELAY = 1000;
 
+const validateNameCharacters: FieldValidator<string | undefined> = (
+  variableName = '',
+) => {
+  if (variableName.includes('"') || variableName.match(new RegExp('[\\s]+'))) {
+    return 'Name is invalid';
+  }
+
+  return;
+};
+
 const validateNameComplete: FieldValidator<string | undefined> =
   promisifyValidator(
     (
@@ -115,6 +125,7 @@ const validateValueJSON: FieldValidator<string | undefined> =
 export {
   validateValueComplete,
   validateValueJSON,
+  validateNameCharacters,
   validateNameComplete,
   validateNameNotDuplicate,
 };
