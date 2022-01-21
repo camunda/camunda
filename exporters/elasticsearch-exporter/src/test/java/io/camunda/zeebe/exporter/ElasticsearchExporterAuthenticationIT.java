@@ -42,11 +42,6 @@ public class ElasticsearchExporterAuthenticationIT
               c.getAuthentication().setPassword("1234567");
             })
       },
-      new Object[] {
-        "one way ssl handshake",
-        elastic(c -> c.withKeyStore("certs/elastic-certificates.p12")),
-        exporter(c -> {})
-      }
     };
   }
 
