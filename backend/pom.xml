@@ -81,7 +81,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-cloud-iam-sdk</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${iam.version}</version>
     </dependency>
 
     <!-- Javax XML -->

@@ -106,9 +106,9 @@ spec:
     """
 }
 
-String dockerInDockerSpec(Integer dockerCpuLimit = 4){
-String dockerMemoryLimit = dockerCpuLimit + 4;
-return """
+String dockerInDockerSpec(Integer dockerCpuLimit = 4) {
+  String dockerMemoryLimit = dockerCpuLimit + 4;
+  return """
   - name: docker
     image: docker:20.10.5-dind
     args:

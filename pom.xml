@@ -27,7 +27,11 @@
 
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
+
     <zeebe.version>1.3.1</zeebe.version>
+    <iam.version>1.3.1</iam.version>
+    <!-- We use this for the Zeebe test container version only -->
+    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->

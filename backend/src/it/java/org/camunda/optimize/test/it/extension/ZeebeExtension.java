@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
-  private static final String ZEEBE_VERSION = IntegrationTestConfigurationUtil.getZeebeVersion();
+  private static final String ZEEBE_VERSION = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
 
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;
