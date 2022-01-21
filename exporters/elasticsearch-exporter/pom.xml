@@ -138,6 +138,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Dependencies needed for the integration tests only. See https://github.com/camunda-cloud/zeebe/issues/8609 -->
     <dependency>
       <groupId>io.camunda</groupId>
