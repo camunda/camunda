@@ -28,7 +28,6 @@
     <module>logstreams</module>
     <module>engine</module>
     <module>transport</module>
-    <module>test</module>
     <module>util</module>
     <module>test-util</module>
     <module>dispatcher</module>

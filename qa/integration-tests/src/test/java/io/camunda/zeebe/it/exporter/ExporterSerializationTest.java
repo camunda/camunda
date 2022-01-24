@@ -5,16 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson;
+package io.camunda.zeebe.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.exporter.debug.DebugHttpExporter;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.test.exporter.ExporterIntegrationRule;
+import io.camunda.zeebe.test.util.WorkloadGenerator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.io.IOException;
@@ -24,35 +27,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
 
-final class ExporterSerializationIT {
+public final class ExporterSerializationTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final ExporterIntegrationRule testHarness = new ExporterIntegrationRule();
+  @Rule public ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1, this::configureBroker);
+
   private int debugExporterPort;
 
-  @BeforeEach
-  void beforeEach() {
-    debugExporterPort = SocketUtil.getNextAddress().getPort();
-    testHarness.configure(
-        "debug", DebugHttpExporter.class, Map.of("port", debugExporterPort, "limit", 3000));
-  }
-
-  @AfterEach
-  void afterEach() {
-    testHarness.stop();
-  }
-
   @Test
-  void shouldDeserializeExportedRecords() throws IOException {
-    // given
-    testHarness.start();
-
+  public void shouldDeserializeExportedRecords() throws IOException {
     // when
-    testHarness.performSampleWorkload();
+    WorkloadGenerator.performSampleWorkload(clusteringRule.getClient());
 
     // then
     // collecting all exported records will wait up to 2 seconds before returning, giving us some
@@ -93,5 +81,14 @@ final class ExporterSerializationIT {
     final var expectedJson = MAPPER.valueToTree(expected);
 
     assertThat(actualJson).isEqualTo(expectedJson);
+  }
+
+  private void configureBroker(final BrokerCfg brokerCfg) {
+    debugExporterPort = SocketUtil.getNextAddress().getPort();
+    final var exporterCfg = new ExporterCfg();
+    exporterCfg.setClassName(DebugHttpExporter.class.getName());
+    exporterCfg.setArgs(Map.of("port", debugExporterPort, "limit", 3000));
+
+    brokerCfg.getExporters().put("debug", exporterCfg);
   }
 }

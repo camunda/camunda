@@ -149,7 +149,7 @@ public final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
@@ -179,9 +179,30 @@ public final class JsonSerializableToJsonTest {
                   .setVersion(processVersion)
                   .setChecksum(checksum)
                   .markAsDuplicate();
+              record
+                  .decisionRequirementsMetadata()
+                  .add()
+                  .setDecisionRequirementsId("drg-id")
+                  .setDecisionRequirementsName("drg-name")
+                  .setDecisionRequirementsVersion(1)
+                  .setDecisionRequirementsKey(1L)
+                  .setNamespace("namespace")
+                  .setResourceName("resource-name")
+                  .setChecksum(checksum)
+                  .markAsDuplicate();
+              record
+                  .decisionsMetadata()
+                  .add()
+                  .setDecisionId("decision-id")
+                  .setDecisionName("decision-name")
+                  .setVersion(1)
+                  .setDecisionKey(2L)
+                  .setDecisionRequirementsKey(1L)
+                  .setDecisionRequirementsId("drg-id")
+                  .markAsDuplicate();
               return record;
             },
-        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'processesMetadata':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':true}]}"
+        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'processesMetadata':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':true}],'decisionsMetadata':[{'version':1,'decisionRequirementsId':'drg-id','decisionRequirementsKey':1,'decisionId':'decision-id','decisionName':'decision-name','decisionKey':2,'duplicate':true}],'decisionRequirementsMetadata':[{'decisionRequirementsId':'drg-id','decisionRequirementsName':'drg-name','decisionRequirementsVersion':1,'decisionRequirementsKey':1,'namespace':'namespace','resourceName':'resource-name','checksum':'Y2hlY2tzdW0=','duplicate':true}]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// DeploymentDistributionRecord /////////////////////////////////
@@ -202,7 +223,7 @@ public final class JsonSerializableToJsonTest {
       new Object[] {
         "Empty DeploymentRecord",
         (Supplier<UnifiedRecordValue>) DeploymentRecord::new,
-        "{'resources':[],'processesMetadata':[]}"
+        "{'resources':[],'processesMetadata':[],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// ProcessRecord ///////////////////////////////////////

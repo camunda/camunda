@@ -88,14 +88,14 @@
     <version.wiremock>2.32.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.2</version.asm>
-    <version.testcontainers>1.16.2</version.testcontainers>
+    <version.testcontainers>1.16.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.2.0</version.zeebe-test-container>
     <version.feel-scala>1.14.1</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>4.4.0</version.rest-assured>
     <version.spring>5.3.15</version.spring>
-    <version.spring-boot>2.6.2</version.spring-boot>
+    <version.spring-boot>2.6.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>5.2.1</version.kryo>
@@ -104,10 +104,10 @@
     <version.jqwik>1.6.3</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.12.6</version.byte-buddy>
+    <version.byte-buddy>1.12.7</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
-    <version.immutables>2.8.9-ea-1</version.immutables>
+    <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
 
     <!-- maven plugins -->
@@ -137,7 +137,7 @@
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
     <plugin.version.spotless>2.20.0</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
-    <plugin.version.versions>2.8.1</plugin.version.versions>
+    <plugin.version.versions>2.9.0</plugin.version.versions>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
@@ -270,12 +270,6 @@
         <version>${project.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-test</artifactId>
-        <version>${project.version}</version>
       </dependency>
 
       <dependency>

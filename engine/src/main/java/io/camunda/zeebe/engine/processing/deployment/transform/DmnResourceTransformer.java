@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
@@ -49,7 +50,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      writeRecords(resource, parsedDrg);
+      appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
+      writeRecords(deployment, resource);
       return Either.right(null);
 
     } else {
@@ -58,23 +60,24 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     }
   }
 
-  private void writeRecords(
-      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
+  private void appendMetadataToDeploymentEvent(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
 
     final var decisionRequirementsKey = keyGenerator.nextKey();
+    final var checksum = checksumGenerator.apply(resource);
 
-    stateWriter.appendFollowUpEvent(
-        decisionRequirementsKey,
-        DecisionRequirementsIntent.CREATED,
-        new DecisionRequirementsRecord()
-            .setDecisionRequirementsKey(decisionRequirementsKey)
-            .setDecisionRequirementsId(parsedDrg.getId())
-            .setDecisionRequirementsName(parsedDrg.getName())
-            .setDecisionRequirementsVersion(1)
-            .setNamespace(parsedDrg.getNamespace())
-            .setResourceName(resource.getResourceName())
-            .setResource(resource.getResourceBuffer())
-            .setChecksum(checksumGenerator.apply(resource)));
+    deploymentEvent
+        .decisionRequirementsMetadata()
+        .add()
+        .setDecisionRequirementsKey(decisionRequirementsKey)
+        .setDecisionRequirementsId(parsedDrg.getId())
+        .setDecisionRequirementsName(parsedDrg.getName())
+        .setDecisionRequirementsVersion(1)
+        .setNamespace(parsedDrg.getNamespace())
+        .setResourceName(resource.getResourceName())
+        .setChecksum(checksum);
 
     parsedDrg
         .getDecisions()
@@ -82,16 +85,46 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             decision -> {
               final var decisionKey = keyGenerator.nextKey();
 
-              stateWriter.appendFollowUpEvent(
-                  decisionKey,
-                  DecisionIntent.CREATED,
-                  new DecisionRecord()
-                      .setDecisionKey(decisionKey)
-                      .setDecisionId(decision.getId())
-                      .setDecisionName(decision.getName())
-                      .setVersion(1)
-                      .setDecisionRequirementsId(parsedDrg.getId())
-                      .setDecisionRequirementsKey(decisionRequirementsKey));
+              deploymentEvent
+                  .decisionsMetadata()
+                  .add()
+                  .setDecisionKey(decisionKey)
+                  .setDecisionId(decision.getId())
+                  .setDecisionName(decision.getName())
+                  .setVersion(1)
+                  .setDecisionRequirementsId(parsedDrg.getId())
+                  .setDecisionRequirementsKey(decisionRequirementsKey);
             });
+  }
+
+  private void writeRecords(final DeploymentRecord deployment, final DeploymentResource resource) {
+
+    for (DecisionRequirementsMetadataRecord drg : deployment.decisionRequirementsMetadata()) {
+      stateWriter.appendFollowUpEvent(
+          drg.getDecisionRequirementsKey(),
+          DecisionRequirementsIntent.CREATED,
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+              .setDecisionRequirementsId(drg.getDecisionRequirementsId())
+              .setDecisionRequirementsName(drg.getDecisionRequirementsName())
+              .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
+              .setNamespace(drg.getNamespace())
+              .setResourceName(drg.getResourceName())
+              .setChecksum(drg.getChecksumBuffer())
+              .setResource(resource.getResourceBuffer()));
+    }
+
+    for (DecisionRecord decision : deployment.decisionsMetadata()) {
+      stateWriter.appendFollowUpEvent(
+          decision.getDecisionKey(),
+          DecisionIntent.CREATED,
+          new DecisionRecord()
+              .setDecisionKey(decision.getDecisionKey())
+              .setDecisionId(decision.getDecisionId())
+              .setDecisionName(decision.getDecisionName())
+              .setVersion(decision.getVersion())
+              .setDecisionRequirementsId(decision.getDecisionRequirementsId())
+              .setDecisionRequirementsKey(decision.getDecisionRequirementsKey()));
+    }
   }
 }

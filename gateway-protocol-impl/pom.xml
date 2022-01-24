@@ -27,9 +27,11 @@
   </properties>
 
   <dependencies>
+    <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
