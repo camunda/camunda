@@ -300,6 +300,29 @@ public final class UserTaskTest {
   }
 
   @Test
+  public void shouldCreateJobAndIgnoreEmptyEvaluatedAssigneeExpressionHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssigneeExpression("user"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("user", ""))
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders).hasSize(0).doesNotContainKey(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME);
+  }
+
+  @Test
   public void shouldCreateJobWithCandidateGroupsHeader() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeCandidateGroups("alice,bob"))).deploy();
