@@ -25,4 +25,9 @@ public interface DecisionEngine {
    * @return the parsed decision, or the failure message if the DMN is not valid
    */
   ParsedDecisionRequirementsGraph parse(InputStream dmnResource);
+
+  DecisionResult evaluateDecisionById(
+      ParsedDecisionRequirementsGraph decisionRequirementsGraph,
+      String decisionId,
+      DecisionContext context);
 }

@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.dmn.impl;
 
+import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
+import io.camunda.zeebe.dmn.DecisionResult;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import java.io.InputStream;
 import org.camunda.dmn.DmnEngine;
@@ -52,5 +54,13 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       final var failureMessage = e.getMessage();
       return new ParseFailureMessage(failureMessage);
     }
+  }
+
+  @Override
+  public DecisionResult evaluateDecisionById(
+      final ParsedDecisionRequirementsGraph decisionRequirementsGraph,
+      final String decisionId,
+      final DecisionContext context) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }
