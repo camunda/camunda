@@ -67,7 +67,8 @@ public final class DeploymentTransformer {
             zeebeState.getProcessState(),
             expressionProcessor);
     final var dmnResourceTransformer =
-        new DmnResourceTransformer(keyGenerator, stateWriter, this::getChecksum);
+        new DmnResourceTransformer(
+            keyGenerator, stateWriter, this::getChecksum, zeebeState.getDecisionState());
 
     resourceTransformers =
         Map.ofEntries(
@@ -141,7 +142,7 @@ public final class DeploymentTransformer {
     return rejectionReason;
   }
 
-  private DeploymentResourceTransformer getResourceTransformer(String resourceName) {
+  private DeploymentResourceTransformer getResourceTransformer(final String resourceName) {
     return resourceTransformers.entrySet().stream()
         .filter(entry -> resourceName.endsWith(entry.getKey()))
         .map(Entry::getValue)
