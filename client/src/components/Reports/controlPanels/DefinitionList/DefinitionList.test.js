@@ -61,11 +61,6 @@ it('should allow copying definitions', () => {
 
   node.find(Button).first().simulate('click');
   expect(spy).toHaveBeenCalled();
-
-  spy.mockClear();
-
-  node.find(DefinitionEditor).first().simulate('copy');
-  expect(spy).toHaveBeenCalled();
 });
 
 it('should not allow copy if limit of 10 definitions is reached', () => {
@@ -83,5 +78,4 @@ it('should not allow copy if limit of 10 definitions is reached', () => {
   );
 
   expect(node.find({type: 'copy-small'})).not.toExist();
-  expect(node.find(DefinitionEditor).first().prop('onCopy')).toBe(false);
 });

@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {Input, BPMNDiagram, Button} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
+import RenameVariablesModal from './RenameVariablesModal';
 import {DefinitionEditor} from './DefinitionEditor';
 import {loadVersions} from './service';
 
@@ -104,20 +105,14 @@ it('should allow opening the diagram in a bigger modal', () => {
   expect(node.find('.diagramModal').find(BPMNDiagram).prop('xml')).toBe(loadProcessDefinitionXml());
 });
 
-it('should allow removing the definition', () => {
-  const spy = jest.fn();
-  const node = shallow(<DefinitionEditor {...props} onRemove={spy} />);
+it('should pass all tenants ids to the renameVariableModal', () => {
+  const tenantInfo = [
+    {id: 'a', name: 'A'},
+    {id: 'b', name: 'B'},
+  ];
+  const node = shallow(<DefinitionEditor {...props} tenantInfo={tenantInfo} />);
 
   node.find('.actionBar').find(Button).simulate('click');
 
-  expect(spy).toHaveBeenCalled();
-});
-
-it('should allow copying the definition', () => {
-  const spy = jest.fn();
-  const node = shallow(<DefinitionEditor {...props} onCopy={spy} />);
-
-  node.find('.actionBar').find(Button).at(0).simulate('click');
-
-  expect(spy).toHaveBeenCalled();
+  expect(node.find(RenameVariablesModal).prop('availableTenants')).toEqual(['a', 'b']);
 });

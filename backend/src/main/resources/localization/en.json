@@ -398,7 +398,15 @@
       "process": "Process Definition",
       "process-plural": "Process Definitions",
       "decision": "Decision Definition",
-      "decision-plural": "Decision Definitions"
+      "decision-plural": "Decision Definitions",
+      "variables": {
+        "rename": "Rename Variables",
+        "variableName": "Variable Name",
+        "type": "Type",
+        "newName": "New Name",
+        "renameInfo": "You may provide a UI-only alias to override each over your variable names.",
+        "renameWarning": "Warning! Changes will update across all reports using this process definition. This can affect other users."
+      }
     },
     "noDefinitionMessage": {
       "process": "Select a <b>Process Definition</b>.",
@@ -836,6 +844,7 @@
     "for": "for",
     "download": "Download",
     "view": "View",
+    "viewDocumentation": "View documentation",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

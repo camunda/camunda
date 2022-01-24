@@ -87,18 +87,6 @@ export function DefinitionList({
                   definition={definition}
                   tenantInfo={tenantInfo}
                   onChange={(change) => onChange(change, idx)}
-                  onRemove={() => {
-                    onRemove(idx);
-                    setOpenPopover();
-                    document.body.click(); // closes the popover
-                  }}
-                  onCopy={
-                    !isDefinitionLimitReached &&
-                    (() => {
-                      onCopy(idx);
-                      document.body.click(); // closes the popover
-                    })
-                  }
                   type={type}
                 />
               </Popover>

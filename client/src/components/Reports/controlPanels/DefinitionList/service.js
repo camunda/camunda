@@ -27,3 +27,7 @@ export async function loadVersions(type, collectionId, key) {
 
   return await response.json();
 }
+
+export async function updateVariables(definitionKey, labels) {
+  return await post('api/variables/labels', {definitionKey, labels});
+}
