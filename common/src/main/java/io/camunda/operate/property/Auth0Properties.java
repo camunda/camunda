@@ -36,11 +36,6 @@ public class Auth0Properties {
   private String claimName;
 
   /**
-   * The given organization should be contained in value of claim key (claimName) - MUST given
-   */
-  private String organization;
-
-  /**
    * Key for claim to retrieve the user name
    */
   private String nameKey = "name";
@@ -93,15 +88,6 @@ public class Auth0Properties {
 
   public Auth0Properties setClaimName(final String claimName) {
     this.claimName = claimName;
-    return this;
-  }
-
-  public String getOrganization() {
-    return organization;
-  }
-
-  public Auth0Properties setOrganization(final String organization) {
-    this.organization = organization;
     return this;
   }
 

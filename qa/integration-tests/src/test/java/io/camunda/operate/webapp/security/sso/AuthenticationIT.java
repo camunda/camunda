@@ -74,7 +74,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
         "camunda.operate.auth0.clientId=1",
         "camunda.operate.auth0.clientSecret=2",
-        "camunda.operate.auth0.organization=3",
+        "camunda.operate.cloud.organizationId=3",
         "camunda.operate.auth0.domain=domain",
         "camunda.operate.auth0.backendDomain=backendDomain",
         "camunda.operate.auth0.claimName=claimName"
@@ -142,7 +142,7 @@ public class AuthenticationIT {
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getAuth0().getOrganization()));
+            operateProperties.getCloud().getOrganizationId()));
     doThrow(new Auth0ServiceException(new Exception("Invalid response code from the auth0-sandbox: HTTP 502.")))
         .when(auth0Service).authenticate(any(), any());
     response = get(SSO_CALLBACK_URI, cookies);
@@ -175,7 +175,7 @@ public class AuthenticationIT {
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getAuth0().getOrganization()));
+            operateProperties.getCloud().getOrganizationId()));
 
     response = get(SSO_CALLBACK_URI, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
@@ -251,7 +251,7 @@ public class AuthenticationIT {
     response = get(LOGIN_RESOURCE, cookies);
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getAuth0().getOrganization()));
+            operateProperties.getCloud().getOrganizationId()));
     response = get(SSO_CALLBACK_URI, cookies);
     response = get(ROOT, cookies);
 
@@ -290,7 +290,7 @@ public class AuthenticationIT {
     // Step 3 Call back uri
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(orgExtractor
         .apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getAuth0().getOrganization()));
+            operateProperties.getCloud().getOrganizationId()));
 
     response = get(SSO_CALLBACK_URI, httpEntity);
     httpEntity = httpEntityWithCookie(response);
