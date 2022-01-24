@@ -16,10 +16,6 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
-private static String ZEEBE_MINOR_RELEASE_TO_TEST() {
-  "1.3.0"
-}
-
 static String mavenIntegrationTestSpec(String cambpmVersion, String esVersion) {
   return """
 metadata:
@@ -201,7 +197,7 @@ pipeline {
     stage('Zeebe Integration Tests') {
       failFast false
       parallel {
-        stage(ZEEBE_MINOR_RELEASE_TO_TEST()) {
+        stage("1.3.0") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
@@ -211,7 +207,7 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps(ZEEBE_MINOR_RELEASE_TO_TEST(), false)
+            integrationTestSteps("1.3.0", false)
           }
           post {
             always {
