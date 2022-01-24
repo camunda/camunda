@@ -257,7 +257,7 @@ pipeline {
             """)
           // Trigger Snapshot
           sh ("""
-                echo \$(curl -qs -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_2?wait_for_completion=true")
+                echo \$(curl -qs -H "Content-Type: application/json" -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_2?wait_for_completion=true" -d '{"indices": "operate*", "ignore_unavailable": "true", "include_global_state": false}')
             """)
         }
       }
