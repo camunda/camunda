@@ -48,7 +48,7 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
         return ParsedDmnScalaDrg.of(parsedDmn);
       }
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final var failureMessage = e.getMessage();
       return new ParseFailureMessage(failureMessage);
     }
