@@ -188,7 +188,7 @@ const unitFormats = {
 };
 
 function toDuration(valueMs) {
-  const {value, unit} = formatters.convertDurationToObject(valueMs);
+  const {value, unit} = formatters.convertDurationToObject(Math.floor(valueMs));
 
   return [value, unitFormats[unit]];
 }
