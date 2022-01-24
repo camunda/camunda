@@ -22,28 +22,28 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 
+@ExtendWith(MockitoExtension.class)
 final class ElasticsearchExporterFlushTest {
-  private Controller controller;
-  private Context context;
-  private ElasticsearchClient client;
+  @Mock private Controller controller;
+  @Mock private ElasticsearchClient client;
+  @Mock private Context context;
   private ElasticsearchExporter exporter;
 
   @BeforeEach
   void setup() {
-    final var config = new ElasticsearchExporterConfiguration();
-    final var configuration = mock(Configuration.class);
-    final var context = mock(Context.class);
-    when(configuration.instantiate(eq(ElasticsearchExporterConfiguration.class)))
-        .thenReturn(config);
-    when(context.getConfiguration()).thenReturn(configuration);
+    final var esConfig = new ElasticsearchExporterConfiguration();
+    final var exporterConfig = mock(Configuration.class);
+    when(exporterConfig.instantiate(eq(ElasticsearchExporterConfiguration.class)))
+        .thenReturn(esConfig);
+    when(context.getConfiguration()).thenReturn(exporterConfig);
     when(context.getLogger()).thenReturn(mock(Logger.class));
 
-    this.context = context;
-    controller = mock(Controller.class);
-    client = mock(ElasticsearchClient.class);
     exporter =
         new ElasticsearchExporter() {
           @Override
@@ -51,19 +51,18 @@ final class ElasticsearchExporterFlushTest {
             return client;
           }
         };
+
+    exporter.configure(context);
+    exporter.open(controller);
   }
 
   @Test
   void shouldScheduleFlush() {
-    // when
-    exporter.configure(context);
-    exporter.open(controller);
-
-    // then -- a flush task is scheduled
+    // given -- a flush task should be scheduled after opening
     final var capturedTask = ArgumentCaptor.forClass(Runnable.class);
     verify(controller).scheduleCancellableTask(any(), capturedTask.capture());
 
-    // and -- when run, the task schedules another flush task
+    // then -- when run, the task schedules another flush task
     final var task = capturedTask.getValue();
     task.run();
     verify(controller).scheduleCancellableTask(any(), not(eq(task)));
@@ -71,12 +70,7 @@ final class ElasticsearchExporterFlushTest {
 
   @Test
   void shouldFlushOnClose() {
-    // given
-    exporter.configure(context);
-    exporter.open(controller);
-
     // when
-    when(client.shouldFlush()).thenReturn(true);
     exporter.close();
 
     // then
@@ -89,11 +83,9 @@ final class ElasticsearchExporterFlushTest {
     final long position = 10;
     final var record = mock(Record.class);
     when(record.getPosition()).thenReturn(position);
-    exporter.configure(context);
-    exporter.open(controller);
+    when(client.shouldFlush()).thenReturn(true);
 
     // when
-    when(client.shouldFlush()).thenReturn(true);
     exporter.export(record);
 
     // then
@@ -103,13 +95,11 @@ final class ElasticsearchExporterFlushTest {
   @Test
   void shouldNotCatchExceptionDuringFlush() {
     // given
-    exporter.configure(context);
-    exporter.open(controller);
+    final var exception = new RuntimeException();
 
     // when
-    final var exception = new RuntimeException();
-    doThrow(exception).when(client).flush();
     when(client.shouldFlush()).thenReturn(true);
+    doThrow(exception).when(client).flush();
 
     // then
     assertThatThrownBy(() -> exporter.export(mock(Record.class))).isEqualTo(exception);
