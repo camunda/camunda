@@ -96,7 +96,7 @@ services:
     networks:
       - iam-network
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.8.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.10.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
