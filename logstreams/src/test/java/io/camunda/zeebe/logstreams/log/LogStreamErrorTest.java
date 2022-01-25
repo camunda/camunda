@@ -19,12 +19,25 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class LogStreamErrorTest {
+
+  @Parameterized.Parameter(0)
+  public Throwable logStorageException;
 
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   final LogStorage mockLogStorage = mock(LogStorage.class);
   private SyncLogStream logStream;
+
+  @Parameterized.Parameters
+  public static Object[][] parameters() {
+    return new Object[][] {
+      {new RuntimeException("reader cannot be created")}, {new Error("reader cannot be created")}
+    };
+  }
 
   @Before
   public void setup() {
@@ -35,7 +48,7 @@ public class LogStreamErrorTest {
             .withActorSchedulingService(actorSchedulerRule.get())
             .build();
 
-    when(mockLogStorage.newReader()).thenThrow(new RuntimeException("reader cannot be created"));
+    when(mockLogStorage.newReader()).thenThrow(logStorageException);
   }
 
   @After
