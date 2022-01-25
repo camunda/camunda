@@ -1,6 +1,7 @@
 #!/bin/bash -eux
 
 source "${BASH_SOURCE%/*}/../lib/flaky-tests.sh"
+source "${BASH_SOURCE%/*}/../lib/duplicate-tests.sh"
 
 # This is a workaround for JDK8, which does not support the --add-exports options
 rm .mvn/jvm.config
@@ -30,6 +31,8 @@ mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" -pl 
 status=${PIPESTATUS[0]}
 
 # delay checking the maven status after we've analysed flaky tests
+# delay checking the maven status after we've checked for flaky and duplicated tests
+findDuplicateTestRuns "${tempFile}" "./DuplicateTests.txt" || exit $?
 analyseFlakyTests "${tempFile}" "./FlakyTests.txt" || exit $?
 
 if [[ $status != 0 ]]; then
