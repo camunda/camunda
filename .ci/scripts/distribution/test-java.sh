@@ -32,8 +32,8 @@ mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} \
 status=${PIPESTATUS[0]}
 
 # delay checking the maven status after we've checked for flaky and duplicated tests
-findDuplicateTestRuns "${tmpfile}" "./DuplicateTests.txt" || exit $?
 analyseFlakyTests "${tmpfile}" "./FlakyTests.txt" || exit $?
+findDuplicateTestRuns "${tmpfile}" "./DuplicateTests.txt" || exit $?
 
 if [[ $status != 0 ]]; then
   exit $status;
