@@ -373,6 +373,56 @@ public final class DeploymentDmnTest {
             tuple("jedi-or-sith", 3, "force-users"));
   }
 
+  @Test
+  public void shouldRejectIfMultipleDrgHaveTheSameId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlClasspathResource(DMN_DECISION_TABLE_V2)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The decision requirements ids must be unique within a deployment. "
+                    + "Found a duplicated id 'force-users' in the resources '%s' and '%s'",
+                DMN_DECISION_TABLE, DMN_DECISION_TABLE_V2));
+  }
+
+  @Test
+  public void shouldRejectIfMultipleDecisionsHaveTheSameId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The decision ids must be unique within a deployment. "
+                    + "Found a duplicated id 'jedi-or-sith' in the resources '%s' and '%s'",
+                DMN_DECISION_TABLE, DMN_DECISION_TABLE_RENAMED_DRG));
+  }
+
   private byte[] getChecksum(final String resourceName) {
     var checksum = new byte[0];
     try {

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
+import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -24,15 +25,19 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class DmnResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
+
+  private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -60,14 +65,87 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
-      writeRecords(deployment, resource);
-      return Either.right(null);
+      return checkForDuplicateIds(resource, parsedDrg, deployment)
+          .map(
+              noDuplicates -> {
+                appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
+                writeRecords(deployment, resource);
+                return null;
+              });
 
     } else {
       final var failure = new Failure(parsedDrg.getFailureMessage());
       return Either.left(failure);
     }
+  }
+
+  private Either<Failure, ?> checkForDuplicateIds(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
+
+    return checkDuplicatedDrgIds(resource, parsedDrg, deploymentEvent)
+        .flatMap(noDuplicates -> checkDuplicatedDecisionIds(resource, parsedDrg, deploymentEvent));
+  }
+
+  private Either<Failure, ?> checkDuplicatedDrgIds(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
+
+    final var decisionRequirementsId = parsedDrg.getId();
+
+    return deploymentEvent.getDecisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsId().equals(decisionRequirementsId))
+        .findFirst()
+        .map(
+            duplicatedDrg -> {
+              final var failureMessage =
+                  String.format(
+                      "The decision requirements ids must be unique within a deployment."
+                          + " Found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      decisionRequirementsId,
+                      duplicatedDrg.getResourceName(),
+                      resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(NO_DUPLICATES);
+  }
+
+  private Either<Failure, ?> checkDuplicatedDecisionIds(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
+
+    final var decisionIds =
+        parsedDrg.getDecisions().stream().map(ParsedDecision::getId).collect(Collectors.toList());
+
+    return deploymentEvent.getDecisionsMetadata().stream()
+        .filter(decision -> decisionIds.contains(decision.getDecisionId()))
+        .findFirst()
+        .map(
+            duplicatedDecision -> {
+              final var failureMessage =
+                  String.format(
+                      "The decision ids must be unique within a deployment."
+                          + " Found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      duplicatedDecision.getDecisionId(),
+                      findResourceName(
+                          deploymentEvent, duplicatedDecision.getDecisionRequirementsKey()),
+                      resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(NO_DUPLICATES);
+  }
+
+  private String findResourceName(
+      final DeploymentRecord deploymentEvent, final long decisionRequirementsKey) {
+
+    return deploymentEvent.getDecisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
+        .map(DecisionRequirementsMetadataValue::getResourceName)
+        .findFirst()
+        .orElse("<?>");
   }
 
   private void appendMetadataToDeploymentEvent(
