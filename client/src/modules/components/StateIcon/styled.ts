@@ -40,26 +40,22 @@ const ActiveIcon = styled(StateOk)`
 
 const CompletedIcon = styled(StateCompleted)`
   ${({theme}) => {
-    const colors = theme.colors.modules.stateIcon;
-    const opacity = theme.opacity.modules.stateIcon.completedIcon;
+    const colors = theme.colors.modules.stateIcon.completedIcon;
 
     return css`
       ${iconPosition};
       color: ${colors.color};
-      opacity: ${opacity};
     `;
   }}
 `;
 
 const CanceledIcon = styled(Stop)`
   ${({theme}) => {
-    const colors = theme.colors.modules.stateIcon;
-    const opacity = theme.opacity.modules.stateIcon.canceledIcon;
+    const colors = theme.colors.modules.stateIcon.canceledIcon;
 
     return css`
       ${iconPosition};
       color: ${colors.color};
-      opacity: ${opacity};
     `;
   }}
 `;

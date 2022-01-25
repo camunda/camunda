@@ -566,12 +566,12 @@ const theme = Object.freeze({
                 color: SEMANTIC_COLORS.white,
               },
               completed: {
-                backgroundColor: SEMANTIC_COLORS.badge02,
+                backgroundColor: LIGHT_COLORS.button02,
                 color: SEMANTIC_COLORS.white,
               },
               canceled: {
-                backgroundColor: SEMANTIC_COLORS.badge01,
-                color: DARK_COLORS.ui04,
+                backgroundColor: SEMANTIC_COLORS.badge02,
+                color: SEMANTIC_COLORS.white,
               },
             },
           },
@@ -841,6 +841,12 @@ const theme = Object.freeze({
           },
         },
         stateIcon: {
+          canceledIcon: {
+            color: SEMANTIC_COLORS.white,
+          },
+          completedIcon: {
+            color: LIGHT_COLORS.button02,
+          },
           color: SEMANTIC_COLORS.white,
         },
         table: {
@@ -992,8 +998,6 @@ const theme = Object.freeze({
         },
         skeleton: 0.2,
         stateIcon: {
-          completedIcon: 0.46,
-          canceledIcon: 0.81,
           aliasIcon: 0.46,
         },
       },
@@ -1526,8 +1530,8 @@ const theme = Object.freeze({
                 color: SEMANTIC_COLORS.white,
               },
               completed: {
-                backgroundColor: SEMANTIC_COLORS.badge01,
-                color: LIGHT_COLORS.ui06,
+                backgroundColor: LIGHT_COLORS.button02,
+                color: SEMANTIC_COLORS.white,
               },
               canceled: {
                 backgroundColor: SEMANTIC_COLORS.badge02,
@@ -1800,6 +1804,12 @@ const theme = Object.freeze({
           },
         },
         stateIcon: {
+          canceledIcon: {
+            color: DARK_COLORS.ui04,
+          },
+          completedIcon: {
+            color: LIGHT_COLORS.button02,
+          },
           color: LIGHT_COLORS.ui06,
         },
         table: {
@@ -1951,8 +1961,6 @@ const theme = Object.freeze({
         },
         skeleton: 0.09,
         stateIcon: {
-          completedIcon: 0.4,
-          canceledIcon: 0.75,
           aliasIcon: 0.4,
         },
       },
