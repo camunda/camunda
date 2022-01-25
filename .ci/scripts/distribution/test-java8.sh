@@ -30,10 +30,9 @@ mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" -pl 
  verify | tee "${tempFile}"
 status=${PIPESTATUS[0]}
 
-# delay checking the maven status after we've analysed flaky tests
 # delay checking the maven status after we've checked for flaky and duplicated tests
-findDuplicateTestRuns "${tempFile}" "./DuplicateTests.txt" || exit $?
 analyseFlakyTests "${tempFile}" "./FlakyTests.txt" || exit $?
+findDuplicateTestRuns "${tempFile}" "./DuplicateTests.txt" || exit $?
 
 if [[ $status != 0 ]]; then
   exit "${status}";
