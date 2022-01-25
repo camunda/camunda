@@ -2091,10 +2091,10 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@mswjs/cookies@^0.1.6":
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/@mswjs/cookies/-/cookies-0.1.6.tgz#176f77034ab6d7373ae5c94bcbac36fee8869249"
-  integrity sha512-A53XD5TOfwhpqAmwKdPtg1dva5wrng2gH5xMvklzbd9WLTSVU953eCRa8rtrrm6G7Cy60BOGsBRN89YQK0mlKA==
+"@mswjs/cookies@^0.1.7":
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@mswjs/cookies/-/cookies-0.1.7.tgz#d334081b2c51057a61c1dd7b76ca3cac02251651"
+  integrity sha512-bDg1ReMBx+PYDB4Pk7y1Q07Zz1iKIEUWQpkEXiA2lEWg9gvOZ8UBmGXilCEUvyYoRFlmr/9iXTRR69TrgSwX/Q==
   dependencies:
     "@types/set-cookie-parser" "^2.4.0"
     set-cookie-parser "^2.4.6"
@@ -5191,10 +5191,10 @@ boxen@^4.2.0:
     type-fest "^0.8.1"
     widest-line "^3.1.0"
 
-bpmn-js@8.9.0:
-  version "8.9.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.9.0.tgz#c2c8db6216c22f281a512eb1bc2eaec3581115a2"
-  integrity sha512-cthSxiJUpEHspiUKiL0YA8/mRCYngNKwALWieLKPtFo42n+vWTFgmxnASNRwhxpPEbSXjYuTah1lZ0lSyLWPpw==
+bpmn-js@8.9.1:
+  version "8.9.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.9.1.tgz#03dd5abb2b104e42cea08ed89ab737decbea022f"
+  integrity sha512-Y81C/5e0yFwQC47QDKO4B2tyDRYtMIRGgGQhsvJWtP55m5i2AQJS0cEoBH9sDuYx7tr6pfb18BpZXo3DdRlnig==
   dependencies:
     bpmn-moddle "^7.1.2"
     css.escape "^1.5.1"
@@ -12111,12 +12111,12 @@ msw-storybook-addon@1.4.1:
     "@storybook/addons" "^6.0.0"
     is-node-process "^1.0.1"
 
-msw@0.36.5:
-  version "0.36.5"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.36.5.tgz#3a77c0cb88d20ec4da274771ddd15c7ee5e359e2"
-  integrity sha512-GlSrkQ6rdfARan5V96oF2hWW3PRzW+3CHqk7CD1k5/auoIy2GZpRdt6rf7wHs3iVRcxYm41qKuHly6AlAm2AYA==
+msw@0.36.7:
+  version "0.36.7"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.36.7.tgz#c20fa4fe21d9567af50bd6e5a4237d7b2545ad70"
+  integrity sha512-D991x0e+nuX9ebdSMSo4hESzY/wIkcwLxlc769B6aLUMqUe1CaIdTyV9+yBIRH/RAiXmnQRaGrFyjSaKV2KNFA==
   dependencies:
-    "@mswjs/cookies" "^0.1.6"
+    "@mswjs/cookies" "^0.1.7"
     "@mswjs/interceptors" "^0.12.7"
     "@open-draft/until" "^1.0.3"
     "@types/cookie" "^0.4.1"
@@ -12130,7 +12130,7 @@ msw@0.36.5:
     inquirer "^8.2.0"
     is-node-process "^1.0.1"
     js-levenshtein "^1.1.6"
-    node-fetch "^2.6.1"
+    node-fetch "^2.6.7"
     path-to-regexp "^6.2.0"
     statuses "^2.0.0"
     strict-event-emitter "^0.2.0"
@@ -12254,7 +12254,7 @@ node-dir@^0.1.10:
   dependencies:
     minimatch "^3.0.2"
 
-node-fetch@2.6.7:
+node-fetch@2.6.7, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
