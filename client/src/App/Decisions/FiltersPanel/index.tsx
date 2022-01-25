@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const IS_NEW_FILTERS_FORM = false;
-const IS_NEXT_DIAGRAM = false;
-const IS_DMN = false;
+const FiltersPanel: React.FC = () => {
+  return <div>Filters</div>;
+};
 
-export {IS_NEW_FILTERS_FORM, IS_NEXT_DIAGRAM, IS_DMN};
+export {FiltersPanel};

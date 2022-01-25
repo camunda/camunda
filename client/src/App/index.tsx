@@ -15,12 +15,14 @@ import {Login} from './Login';
 import {Dashboard} from './Dashboard';
 import {Instances} from './Instances';
 import {Instance} from './Instance';
+import {Decisions} from './Decisions';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {Routes} from 'modules/routes';
 import {HashRouterMigrator} from './HashRouterMigrator';
+import {IS_DMN} from 'modules/feature-flags';
 
 function App() {
   return (
@@ -39,6 +41,9 @@ function App() {
               <Route exact path={Routes.dashboard()} component={Dashboard} />
               <Route exact path={Routes.instances()} component={Instances} />
               <Route exact path={Routes.instance()} component={Instance} />
+              {IS_DMN && (
+                <Route exact path={Routes.decisions()} component={Decisions} />
+              )}
             </Authentication>
           </Switch>
         </BrowserRouter>

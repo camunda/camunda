@@ -27,6 +27,9 @@ const Routes = {
   instance(processInstanceId: string = ':processInstanceId') {
     return `/instances/${processInstanceId}`;
   },
+  decisions() {
+    return '/decisions';
+  },
 } as const;
 
 const Locations = {
@@ -100,6 +103,13 @@ const Locations = {
     return {
       ...location,
       pathname: Routes.instance(id),
+      search: getPersistentQueryParams(location.search),
+    };
+  },
+  decisions(location: Location): Location {
+    return {
+      ...location,
+      pathname: Routes.decisions(),
       search: getPersistentQueryParams(location.search),
     };
   },

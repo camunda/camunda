@@ -14,6 +14,7 @@ import {Locations} from 'modules/routes';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
 import {tracking} from 'modules/tracking';
 import {LicenseNote} from './LicenseNote';
+import {IS_DMN} from 'modules/feature-flags';
 
 const Header: React.FC = observer(() => {
   const [forceRedirect, setForceRedirect] = useState(false);
@@ -62,6 +63,13 @@ const Header: React.FC = observer(() => {
               });
             }}
           />
+          {IS_DMN && (
+            <NavElement
+              to={Locations.decisions}
+              title="View Decisions"
+              label="Decisions"
+            />
+          )}
         </Menu>
       </nav>
       {window.clientConfig?.isEnterprise === true ||
