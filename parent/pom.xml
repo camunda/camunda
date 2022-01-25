@@ -1278,18 +1278,19 @@
             </dependency>
           </dependencies>
 
+<!-- Disabled due to https://issues.apache.org/jira/projects/MDEP/issues/MDEP-774 and https://issues.apache.org/jira/browse/MDEP-753
           <executions>
             <execution>
               <id>analyze-dependencies</id>
               <goals>
                 <goal>analyze-only</goal>
               </goals>
-              <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
+              &lt;!&ndash; The analyze-only goal assumes that the test-compile phase has been executed &ndash;&gt;
               <phase>verify</phase>
               <configuration>
                 <failOnWarning>true</failOnWarning>
                 <outputXML>true</outputXML>
-                <!-- dependencies not directly used in all projects during tests -->
+                &lt;!&ndash; dependencies not directly used in all projects during tests &ndash;&gt;
                 <ignoredUnusedDeclaredDependencies combine.children="append">
                   <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
@@ -1308,6 +1309,7 @@
               </configuration>
             </execution>
           </executions>
+-->
         </plugin>
 
         <plugin>
@@ -1618,6 +1620,7 @@
                   <silent>true</silent>
                 </configuration>
               </execution>
+<!-- Disabled due to https://issues.apache.org/jira/projects/MDEP/issues/MDEP-774 and https://issues.apache.org/jira/browse/MDEP-753
               <execution>
                 <id>analyze-dependencies</id>
                 <goals>
@@ -1631,6 +1634,7 @@
                   </ignoredUnusedDeclaredDependencies>
                 </configuration>
               </execution>
+-->
             </executions>
           </plugin>
         </plugins>
