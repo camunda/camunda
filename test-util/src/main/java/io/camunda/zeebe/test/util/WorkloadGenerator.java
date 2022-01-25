@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.test.util;
 
-import static io.camunda.zeebe.test.util.record.RecordingExporter.processInstanceRecords;
-
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -93,6 +91,12 @@ public final class WorkloadGenerator {
         .join();
 
     // wait for incident and resolve it
+    TestUtil.waitUntil(
+        () ->
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("task")
+                .exists());
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -104,7 +108,7 @@ public final class WorkloadGenerator {
     // wrap up
     TestUtil.waitUntil(
         () ->
-            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .filter(r -> r.getKey() == processInstanceKey)
                 .exists());
     worker.close();
