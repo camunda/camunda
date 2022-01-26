@@ -1,0 +1,92 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "position": {
+        "type": "long"
+      },
+      "evaluationTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "decisionRequirementsKey": {
+        "type": "long"
+      },
+      "decisionRequirementsId": {
+        "type":"keyword"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "elementInstanceKey": {
+        "type": "long"
+      },
+      "elementId": {
+        "type": "keyword"
+      },
+      "decisionId": {
+        "type": "keyword"
+      },
+      "decisionKey": {
+        "type": "long"
+      },
+      "decisionName": {
+        "type": "keyword"
+      },
+      "decisionType": {
+        "type": "keyword"
+      },
+      "result": {
+        "type": "text",
+        "index": false
+      },
+      "evaluatedInputs": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "value": {
+            "type": "keyword"
+          }
+        }
+      },
+      "evaluatedOutputs": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "value": {
+            "type": "keyword"
+          },
+          "ruleId": {
+            "type": "keyword"
+          },
+          "ruleIndex": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

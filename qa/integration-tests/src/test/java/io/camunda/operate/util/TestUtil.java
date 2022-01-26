@@ -19,6 +19,11 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceState;
+import io.camunda.operate.entities.dmn.DecisionType;
+import io.camunda.operate.entities.dmn.DesicionInstanceInputEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -473,6 +478,61 @@ public abstract class TestUtil {
         .setEndDate(endDate)
         .setUsername(username)
         .setType(OperationType.CANCEL_PROCESS_INSTANCE);
+  }
+
+  public static DecisionInstanceEntity createDecisionInstanceEntity() {
+    final DecisionInstanceEntity decisionInstance = new DecisionInstanceEntity();
+    final long key = Math.abs(random.nextLong());
+    decisionInstance.setId(String.valueOf(key))
+        .setKey(key)
+        .setDecisionId(UUID.randomUUID().toString())
+        .setDecisionKey(Math.abs(random.nextLong()))
+        .setDecisionId("decisionId")
+        .setDecisionName("Decision Name")
+        .setDecisionRequirementsId(UUID.randomUUID().toString())
+        .setDecisionRequirementsKey(Math.abs(random.nextLong()))
+        .setDecisionType(DecisionType.TABLE)
+        .setElementId("businessTask")
+        .setElementInstanceKey(Math.abs(random.nextLong()))
+        .setEvaluationTime(OffsetDateTime.now())
+        .setPosition(Math.abs(random.nextLong()))
+        .setProcessDefinitionKey(Math.abs(random.nextLong()))
+        .setProcessInstanceKey(Math.abs(random.nextLong()))
+        .setResult("someJSON")
+        .setState(DecisionInstanceState.COMPLETED)
+        .setEvaluatedInputs(createDecisionInstanceInputs())
+        .setEvaluatedOutputs(createDecisionOutputs());
+    return decisionInstance;
+  }
+
+  private static DecisionInstanceOutputEntity[] createDecisionOutputs() {
+    final DecisionInstanceOutputEntity[] outputs = new DecisionInstanceOutputEntity[2];
+    outputs[0] = new DecisionInstanceOutputEntity()
+        .setId("output1")
+        .setName("Output 1")
+        .setValue("output1")
+        .setRuleId("rule1")
+        .setRuleIndex(1);
+    outputs[1] = new DecisionInstanceOutputEntity()
+        .setId("output2")
+        .setName("Output 2")
+        .setValue("output2")
+        .setRuleId("rule2")
+        .setRuleIndex(2);
+    return outputs;
+  }
+
+  private static DesicionInstanceInputEntity[] createDecisionInstanceInputs() {
+    final DesicionInstanceInputEntity[] inputs = new DesicionInstanceInputEntity[2];
+    inputs[0] = new DesicionInstanceInputEntity();
+    inputs[0].setId("input1")
+      .setName("Input 1")
+      .setValue("value1");
+    inputs[1] = new DesicionInstanceInputEntity();
+    inputs[1].setId("input2")
+      .setName("Input 2")
+      .setValue("value2");
+    return inputs;
   }
 
 }

@@ -16,6 +16,7 @@ import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -26,6 +27,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
@@ -97,6 +99,9 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
+
+  @Autowired
+  private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
   protected OperateProperties operateProperties;
@@ -354,6 +359,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
       entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
     }
     return entityToESAliasMap;
   }
