@@ -7,14 +7,17 @@
 import {FiltersPanel} from './FiltersPanel';
 import {DecisionTablePanel} from './DecisionTablePanel';
 import {InstancesListPanel} from './InstancesListPanel';
+import {Container, RightContainer} from './styled';
 
 const Decisions: React.FC = () => {
   return (
-    <>
+    <Container>
       <FiltersPanel />
-      <DecisionTablePanel />
-      <InstancesListPanel />
-    </>
+      <RightContainer>
+        <DecisionTablePanel />
+        <InstancesListPanel />
+      </RightContainer>
+    </Container>
   );
 };
 
