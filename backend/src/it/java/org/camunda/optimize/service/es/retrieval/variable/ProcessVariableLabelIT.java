@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.retrieval.variable;
 
-import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -283,7 +282,7 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
                                                          String accessToken) {
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto, accessToken)
+      .buildProcessVariableLabelRequest(labelOptimizeDto)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 

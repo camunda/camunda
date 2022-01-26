@@ -9,7 +9,6 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,22 +27,21 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
   final LabelDto FIRST_LABEL = new LabelDto("a label 1", "a name", VariableType.STRING);
   final LabelDto SECOND_LABEL = new LabelDto("a label 2", "an other name", VariableType.STRING);
   final String PROCESS_DEFINITION_KEY = "someProcessDefinition";
-  final String ACCESS_TOKEN = "aToken";
-
-  @BeforeEach
-  public void setup() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getOptimizeApiConfiguration()
-      .setAccessToken(ACCESS_TOKEN);
-  }
 
   @Test
-  public void updateVariableLabelsWithoutAccessToken() {
+  public void updateVariableLabelForUnauthenticatedUser() {
     // given
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
+    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
+      PROCESS_DEFINITION_KEY,
+      Collections.emptyList()
+    );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto, null);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildProcessVariableLabelRequest(definitionVariableLabelsDto)
+      .withoutAuthentication()
+      .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -54,10 +52,13 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
+    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
+      PROCESS_DEFINITION_KEY,
+      Collections.emptyList()
+    );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto);
 
     // then
     assertThat(getAllDocumentsOfVariableLabelIndex())
@@ -77,7 +78,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -96,7 +97,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -117,7 +118,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -136,12 +137,15 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, SECOND_LABEL)
     );
-    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(deletedFirstLabel));
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
+    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(
+      PROCESS_DEFINITION_KEY,
+      List.of(deletedFirstLabel)
+    );
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // when
-    response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto2, ACCESS_TOKEN);
+    response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto2);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -164,12 +168,15 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
       PROCESS_DEFINITION_KEY,
       List.of(FIRST_LABEL, SECOND_LABEL)
     );
-    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(updatedFirstLabel));
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
+    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(
+      PROCESS_DEFINITION_KEY,
+      List.of(updatedFirstLabel)
+    );
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // when
-    response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto2, ACCESS_TOKEN);
+    response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto2);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -194,7 +201,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -217,7 +224,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -235,7 +242,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -254,7 +261,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -263,10 +270,13 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
   @Test
   public void storeVariableLabelForNonExistentDefinition() {
     // given
-    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL));
+    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
+      PROCESS_DEFINITION_KEY,
+      List.of(FIRST_LABEL)
+    );
 
     // when
-    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN);
+    Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -279,10 +289,10 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
     );
   }
 
-  public Response executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto, String accessToken) {
+  public Response executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto, accessToken)
+      .buildProcessVariableLabelRequest(labelOptimizeDto)
       .execute();
   }
 

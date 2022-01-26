@@ -28,8 +28,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthorizationUtil.validateAccessToken;
-
 @AllArgsConstructor
 @Path(ProcessVariableRestService.PROCESS_VARIABLES_PATH)
 @Component
@@ -86,7 +84,6 @@ public class ProcessVariableRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
                                    @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
-    validateAccessToken(requestContext, configurationService.getOptimizeApiConfiguration().getAccessToken());
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 

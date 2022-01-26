@@ -754,7 +754,7 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   public void executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto, String accessToken) {
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto, accessToken)
+      .buildProcessVariableLabelRequest(labelOptimizeDto)
       .execute();
   }
 }

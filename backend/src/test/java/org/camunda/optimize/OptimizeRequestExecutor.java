@@ -924,10 +924,9 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
+  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     this.path = "variables/labels";
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(definitionVariableLabelsDto);
     return this;
