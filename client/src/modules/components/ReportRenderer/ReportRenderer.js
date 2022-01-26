@@ -118,7 +118,8 @@ function checkProcessReport(data) {
   if (
     isEmpty(data.definitions) ||
     isEmpty(data.definitions?.[0].key) ||
-    isEmpty(data.definitions?.[0].versions)
+    isEmpty(data.definitions?.[0].versions) ||
+    isEmpty(data.definitions?.[0].tenantIds)
   ) {
     return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.process')}} />;
   } else {
