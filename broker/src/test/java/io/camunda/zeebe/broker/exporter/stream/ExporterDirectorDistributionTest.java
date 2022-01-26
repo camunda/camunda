@@ -93,12 +93,13 @@ public final class ExporterDirectorDistributionTest {
     final long position =
         activeExporters.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
 
-    Awaitility.await("director has read all records until now")
-        .untilAsserted(() -> assertThat(exporter.getExportedRecords()).hasSize(1));
-
     final var activeExporterState = activeExporters.getExportersState();
-    assertThat(activeExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
-    assertThat(activeExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+    Awaitility.await("Director has read all records and update the positions.")
+        .untilAsserted(
+            () -> {
+              assertThat(activeExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+              assertThat(activeExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+            });
 
     final var passiveExporterState = passiveExporters.getExportersState();
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(-1);
