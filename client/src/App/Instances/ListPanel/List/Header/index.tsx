@@ -16,9 +16,9 @@ import {
   TH,
   THead,
   SkeletonCheckboxBlock,
+  SelectAllCheckbox,
 } from './styled';
 import ColumnHeader from '../ColumnHeader';
-import Checkbox from 'modules/components/Checkbox';
 import {Restricted} from 'modules/components/Restricted';
 
 const Header = observer(function (props: any) {
@@ -46,11 +46,11 @@ const Header = observer(function (props: any) {
           <CheckAll shouldShowOffset={!isInitialDataLoaded}>
             <Restricted scopes={['write']}>
               {isInitialDataLoaded ? (
-                <Checkbox
-                  disabled={isListEmpty}
-                  isChecked={isAllChecked}
-                  onChange={instanceSelectionStore.selectAllInstances}
+                <SelectAllCheckbox
                   title="Select all instances"
+                  checked={isAllChecked}
+                  onCmInput={instanceSelectionStore.selectAllInstances}
+                  disabled={isListEmpty}
                 />
               ) : (
                 <SkeletonCheckboxBlock />

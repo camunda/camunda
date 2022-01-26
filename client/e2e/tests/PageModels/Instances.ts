@@ -176,9 +176,7 @@ class InstancesPage {
   };
 
   resetFiltersButton = screen.queryByRole('button', {name: /reset filters/i});
-  selectAllInstancesCheckbox = screen.queryByRole('checkbox', {
-    name: 'Select all instances',
-  });
+  selectAllInstancesCheckbox = screen.queryByTitle('Select all instances');
 
   typeText = async (
     field: Selector | SelectorPromise,

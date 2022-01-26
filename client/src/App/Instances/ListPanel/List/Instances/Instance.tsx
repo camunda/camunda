@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import Checkbox from 'modules/components/Checkbox';
 import {Operations} from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import {getProcessName} from 'modules/utils/instance';
@@ -19,6 +18,7 @@ import Table from 'modules/components/Table';
 import React from 'react';
 import {Restricted} from 'modules/components/Restricted';
 import {tracking} from 'modules/tracking';
+import {CmCheckbox} from '@camunda-cloud/common-ui-react';
 
 const {TD} = Table;
 
@@ -42,14 +42,13 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
           <Restricted scopes={['write']}>
             <>
               <SelectionStatusIndicator selected={isSelected} />
-              <Checkbox
+              <CmCheckbox
                 data-testid="instance-checkbox"
-                type="selection"
-                isChecked={isSelected}
-                onChange={() =>
+                title={`Select instance ${instance.id}`}
+                checked={isSelected}
+                onCmInput={() =>
                   instanceSelectionStore.selectInstance(instance.id)
                 }
-                title={`Select instance ${instance.id}`}
               />
             </>
           </Restricted>

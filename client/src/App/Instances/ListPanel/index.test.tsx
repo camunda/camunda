@@ -145,9 +145,7 @@ describe('ListPanel', () => {
       render(<ListPanel />, {wrapper: createWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
 
-      expect(
-        screen.getByRole('checkbox', {name: 'Select all instances'})
-      ).toBeInTheDocument();
+      expect(screen.getByTitle('Select all instances')).toBeInTheDocument();
       expect(
         screen.getAllByRole('checkbox', {name: /select instance/i}).length
       ).toBe(2);
@@ -201,7 +199,7 @@ describe('ListPanel', () => {
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
 
       expect(
-        screen.queryByRole('checkbox', {name: 'Select all instances'})
+        screen.queryByTitle('Select all instances')
       ).not.toBeInTheDocument();
       expect(
         screen.queryByRole('checkbox', {name: /select instance/i})
@@ -295,7 +293,7 @@ describe('ListPanel', () => {
       expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      userEvent.click(screen.getByLabelText(/select all instances/i));
+      userEvent.click(screen.getByTitle(/select all instances/i));
       userEvent.click(screen.getByText(/apply operation on/i));
       userEvent.click(screen.getByText(/cancel/i));
       userEvent.click(screen.getByText(/^apply$/i));
@@ -338,7 +336,7 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      userEvent.click(screen.getByLabelText(/select all instances/i));
+      userEvent.click(screen.getByTitle(/select all instances/i));
       userEvent.click(screen.getByText(/apply operation on/i));
       userEvent.click(screen.getByText(/cancel/i));
       userEvent.click(screen.getByText(/^apply$/i));
@@ -373,7 +371,7 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      userEvent.click(screen.getByLabelText(/select all instances/i));
+      userEvent.click(screen.getByTitle(/select all instances/i));
       userEvent.click(screen.getByText(/apply operation on/i));
       userEvent.click(screen.getByText(/cancel/i));
       userEvent.click(screen.getByText(/^apply$/i));

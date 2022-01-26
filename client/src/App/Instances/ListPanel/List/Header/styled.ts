@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 import Table from 'modules/components/Table';
 import {BaseBlock} from 'modules/components/Skeleton';
+import {CmCheckbox} from '@camunda-cloud/common-ui-react';
 
 const TRHeader = styled(Table.TR)`
   border-top: none;
@@ -61,6 +62,7 @@ const CheckAll = styled.div<CheckAllProps>`
   ${({shouldShowOffset}) => {
     return css`
       display: inline-block;
+      position: relative;
       margin-left: ${shouldShowOffset ? 15 : 16}px;
       margin-right: 28px;
       &:empty {
@@ -85,4 +87,17 @@ const SkeletonCheckboxBlock = styled(BaseBlock)`
   margin-bottom: -2px;
 `;
 
-export {OperationsTH, TRHeader, CheckAll, TH, THead, SkeletonCheckboxBlock};
+const SelectAllCheckbox = styled(CmCheckbox)`
+  position: absolute;
+  top: -13px;
+`;
+
+export {
+  OperationsTH,
+  TRHeader,
+  CheckAll,
+  TH,
+  THead,
+  SkeletonCheckboxBlock,
+  SelectAllCheckbox,
+};
