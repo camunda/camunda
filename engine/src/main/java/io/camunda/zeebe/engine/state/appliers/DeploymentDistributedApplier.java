@@ -7,22 +7,80 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
+
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class DeploymentDistributedApplier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
 
   private final MutableProcessState mutableProcessState;
+  private final MutableDecisionState decisionState;
 
-  public DeploymentDistributedApplier(final MutableProcessState mutableProcessState) {
+  public DeploymentDistributedApplier(
+      final MutableProcessState mutableProcessState, final MutableDecisionState decisionState) {
     this.mutableProcessState = mutableProcessState;
+    this.decisionState = decisionState;
   }
 
   @Override
   public void applyState(final long key, final DeploymentRecord value) {
     mutableProcessState.putDeployment(value);
+
+    putDmnResourcesInState(value);
+  }
+
+  private void putDmnResourcesInState(final DeploymentRecord value) {
+    value
+        .decisionRequirementsMetadata()
+        .forEach(
+            drg -> {
+              final var resource = getResourceByName(value, drg.getResourceName());
+              final var decisionRequirementsRecord =
+                  createDecisionRequirementsRecord(drg, resource);
+              decisionState.putDecisionRequirements(decisionRequirementsRecord);
+            });
+
+    value.decisionsMetadata().forEach(decisionState::putDecision);
+  }
+
+  private DirectBuffer getResourceByName(
+      final DeploymentRecord deployment, final String resourceName) {
+    return deployment.getResources().stream()
+        .filter(resource -> resource.getResourceName().equals(resourceName))
+        .map(DeploymentResource::getResource)
+        .map(BufferUtil::wrapArray)
+        .findFirst()
+        .orElseThrow(() -> new NoSuchResourceException(resourceName));
+  }
+
+  private DecisionRequirementsRecord createDecisionRequirementsRecord(
+      final DecisionRequirementsMetadataValue drg, final DirectBuffer resource) {
+    return new DecisionRequirementsRecord()
+        .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+        .setDecisionRequirementsId(drg.getDecisionRequirementsId())
+        .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
+        .setDecisionRequirementsName(drg.getDecisionRequirementsName())
+        .setNamespace(drg.getNamespace())
+        .setResourceName(drg.getResourceName())
+        .setChecksum(wrapArray(drg.getChecksum()))
+        .setResource(resource);
+  }
+
+  private static final class NoSuchResourceException extends IllegalStateException {
+    private NoSuchResourceException(final String resourceName) {
+      super(
+          String.format(
+              "Expected to find resource '%s' in deployment but not found", resourceName));
+    }
   }
 }
