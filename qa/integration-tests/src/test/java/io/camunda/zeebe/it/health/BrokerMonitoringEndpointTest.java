@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.health;
 
 import static io.restassured.RestAssured.given;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.restassured.builder.RequestSpecBuilder;
