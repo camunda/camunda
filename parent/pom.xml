@@ -26,6 +26,7 @@
   </licenses>
 
   <properties>
+    <version.java>17</version.java>
 
     <!-- Zeebe Community License v1.1 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
@@ -1287,6 +1288,8 @@
               <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
               <phase>verify</phase>
               <configuration>
+                <!-- Disabled due to https://issues.apache.org/jira/projects/MDEP/issues/MDEP-774 and https://issues.apache.org/jira/browse/MDEP-753 -->
+                <skip>true</skip>
                 <failOnWarning>true</failOnWarning>
                 <outputXML>true</outputXML>
                 <!-- dependencies not directly used in all projects during tests -->
@@ -1627,6 +1630,9 @@
                 </goals>
                 <phase>verify</phase>
                 <configuration>
+                  <!-- Disabled due to https://issues.apache.org/jira/projects/MDEP/issues/MDEP-774
+                  and https://issues.apache.org/jira/browse/MDEP-753 -->
+                  <skip>true</skip>
                   <ignoredUnusedDeclaredDependencies combine.children="append">
                     <dep>org.revapi:revapi-java</dep>
                     <dep>io.zeebe:flaky-test-extractor-maven-plugin</dep>
