@@ -8,6 +8,8 @@ package io.camunda.operate.webapp.security.ldap;
 import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
@@ -39,18 +41,28 @@ public class LDAPUserService implements UserService<Authentication> {
   @Autowired
   private OperateProperties operateProperties;
 
+  private Map<String,UserDto> ldapDnToUser = new ConcurrentHashMap<>();
+
   @Override
   public UserDto createUserDtoFrom(
       final Authentication authentication) {
-    LdapUserDetails userDetails = (LdapUserDetails) authentication.getPrincipal();
+      final LdapUserDetails userDetails = (LdapUserDetails) authentication.getPrincipal();
+      final String dn = userDetails.getDn();
+      if(!ldapDnToUser.containsKey(dn)) {
+        logger.info(String.format("Do a LDAP Lookup for user DN: %s)", dn));
+        try {
+          ldapDnToUser.put(dn, ldapTemplate.lookup(dn, new LdapUserAttributesMapper()));
+        } catch (Exception ex) {
+          throw new UserNotFoundException(String.format("Couldn't find user for dn %s", dn));
+        }
+      }
+      return ldapDnToUser.get(dn);
+  }
+
+  public void cleanUp(Authentication authentication) {
+    final LdapUserDetails userDetails = (LdapUserDetails) authentication.getPrincipal();
     final String dn = userDetails.getDn();
-    try {
-      return ldapTemplate
-          .lookup(dn,
-              new LdapUserAttributesMapper());
-    } catch (Exception ex) {
-      throw new UserNotFoundException(String.format("Couldn't find user for %s", dn));
-    }
+    ldapDnToUser.remove(dn);
   }
 
   private class LdapUserAttributesMapper implements AttributesMapper<UserDto> {
