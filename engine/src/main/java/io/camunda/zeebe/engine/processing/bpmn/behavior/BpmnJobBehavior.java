@@ -31,12 +31,19 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class BpmnJobBehavior {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder();
@@ -150,10 +157,10 @@ public final class BpmnJobBehavior {
     final var headers = new HashMap<>(taskHeaders);
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
-    if (assignee != null) {
+    if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
     }
-    if (candidateGroups != null) {
+    if (candidateGroups != null && !candidateGroups.isEmpty()) {
       headers.put(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, candidateGroups);
     }
     return headerEncoder.encode(headers);
@@ -234,21 +241,28 @@ public final class BpmnJobBehavior {
 
       final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
 
+      final var validHeaders =
+          taskHeaders.entrySet().stream()
+              .filter(entry -> isValidHeader(entry.getKey(), entry.getValue()))
+              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+      if (validHeaders.size() != taskHeaders.size()) {
+        LOGGER.debug("Ignored {} invalid headers.", taskHeaders.size() - validHeaders.size());
+      }
+
       final ExpandableArrayBuffer expandableBuffer =
-          new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * taskHeaders.size());
+          new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * validHeaders.size());
 
       msgPackWriter.wrap(expandableBuffer, 0);
-      msgPackWriter.writeMapHeader(taskHeaders.size());
+      msgPackWriter.writeMapHeader(validHeaders.size());
 
-      taskHeaders.forEach(
+      validHeaders.forEach(
           (k, v) -> {
-            if (isValidHeader(k, v)) {
-              final DirectBuffer key = wrapString(k);
-              msgPackWriter.writeString(key);
+            final DirectBuffer key = wrapString(k);
+            msgPackWriter.writeString(key);
 
-              final DirectBuffer value = wrapString(v);
-              msgPackWriter.writeString(value);
-            }
+            final DirectBuffer value = wrapString(v);
+            msgPackWriter.writeString(value);
           });
 
       buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
