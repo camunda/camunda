@@ -1,5 +1,7 @@
 #!/bin/bash -eux
 
+source "${BASH_SOURCE%/*}/../lib/duplicate-tests.sh"
+
 # specialized script to run tests with random elements without flaky test detection
 
 # getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
@@ -25,4 +27,16 @@ if [ ! -z "$JUNIT_THREAD_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DjunitThreadCount=$JUNIT_THREAD_COUNT")
 fi
 
-mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} test -P parallel-tests,include-random-tests "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
+mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" \
+  -P parallel-tests,include-random-tests \
+  "${MAVEN_PROPERTIES[@]}" \
+  test | tee "${tmpfile}"
+
+status=${PIPESTATUS[0]}
+
+# delay checking the maven status after we've checked for duplicated tests
+findDuplicateTestRuns "${tmpfile}" "./DuplicateTests.txt" || exit $?
+
+if [[ $status != 0 ]]; then
+  exit "${status}";
+fi
