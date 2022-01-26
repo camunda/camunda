@@ -26,14 +26,22 @@ class BpmnJS {
     currentTheme.state.selectedTheme;
   #themeChangeReactionDisposer: IReactionDisposer | null = null;
   #xml: string | null = null;
+  #selectableFlowNodes: string[] = [];
 
-  render = async (container: HTMLElement, xml: string) => {
+  render = async (
+    container: HTMLElement,
+    xml: string,
+    selectableFlowNodes: string[] = []
+  ) => {
     if (this.#navigatedViewer === null) {
       this.#createViewer(container);
     }
 
     if (this.#theme !== currentTheme.state.selectedTheme || this.#xml !== xml) {
       this.#theme = currentTheme.state.selectedTheme;
+
+      // Cleanup before importing
+      this.#selectableFlowNodes = [];
 
       await this.#navigatedViewer!.importXML(xml);
 
@@ -47,9 +55,21 @@ class BpmnJS {
       () => currentTheme.state.selectedTheme,
       () => {
         this.#createViewer(container);
-        this.render(container, xml);
+
+        this.render(container, xml, selectableFlowNodes);
       }
     );
+
+    // handle op-selectable markers
+    if (this.#selectableFlowNodes !== selectableFlowNodes) {
+      this.#selectableFlowNodes.forEach((flowNodeId) => {
+        this.#removeMarker(flowNodeId, 'op-selectable');
+      });
+      selectableFlowNodes.forEach((flowNodeId) => {
+        this.#addMarker(flowNodeId, 'op-selectable');
+      });
+      this.#selectableFlowNodes = selectableFlowNodes;
+    }
   };
 
   #createViewer = (container: HTMLElement) => {
@@ -59,6 +79,29 @@ class BpmnJS {
       bpmnRenderer:
         theme[currentTheme.state.selectedTheme].colors.modules.diagram,
     });
+  };
+
+  #addMarker = (elementId: string, className: string) => {
+    const canvas = this.#navigatedViewer?.get('canvas');
+    const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+
+    if (elementRegistry?.get(elementId) !== undefined) {
+      canvas?.addMarker(elementId, className);
+      const gfx = elementRegistry
+        .getGraphics(elementId)
+        .querySelector('.djs-outline');
+      gfx.setAttribute('rx', '14px');
+      gfx.setAttribute('ry', '14px');
+    }
+  };
+
+  #removeMarker = (elementId: string, className: string) => {
+    const canvas = this.#navigatedViewer?.get('canvas');
+    const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+
+    if (elementRegistry?.get(elementId) !== undefined) {
+      canvas?.removeMarker(elementId, className);
+    }
   };
 
   #destroy = () => {

@@ -114,7 +114,12 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
             )}
 
             {IS_NEXT_DIAGRAM
-              ? xml !== null && <Diagram xml={xml} />
+              ? xml !== null && (
+                  <Diagram
+                    xml={xml}
+                    selectableFlowNodes={selectableFlowNodes}
+                  />
+                )
               : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
                 diagramModel?.definitions && (
                   <DiagramLegacy

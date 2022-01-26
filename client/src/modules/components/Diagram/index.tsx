@@ -12,9 +12,10 @@ import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 
 type Props = {
   xml: string;
+  selectableFlowNodes?: string[];
 };
 
-const Diagram: React.FC<Props> = ({xml}) => {
+const Diagram: React.FC<Props> = ({xml, selectableFlowNodes}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDiagramRendered, setIsDiagramRendered] = useState(false);
   const viewer = useRef<BpmnJS>(new BpmnJS());
@@ -23,13 +24,17 @@ const Diagram: React.FC<Props> = ({xml}) => {
     async function renderDiagram() {
       if (containerRef.current) {
         setIsDiagramRendered(false);
-        await viewer.current.render(containerRef.current, xml);
+        await viewer.current.render(
+          containerRef.current,
+          xml,
+          selectableFlowNodes
+        );
         setIsDiagramRendered(true);
       }
     }
 
     renderDiagram();
-  }, [xml]);
+  }, [xml, selectableFlowNodes]);
 
   useEffect(() => {
     const currentViewer = viewer.current;
