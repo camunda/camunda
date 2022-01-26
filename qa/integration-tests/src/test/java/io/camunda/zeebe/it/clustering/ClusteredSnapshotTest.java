@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +40,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.springframework.util.unit.DataSize;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @RunWith(Parameterized.class)
 public class ClusteredSnapshotTest {
@@ -237,7 +237,7 @@ public class ClusteredSnapshotTest {
         });
   }
 
-  private void awaitUntilAsserted(Consumer<Broker> consumer) {
+  private void awaitUntilAsserted(final Consumer<Broker> consumer) {
     Awaitility.await()
         .pollInterval(Duration.ofSeconds(1))
         .timeout(Duration.ofSeconds(60))
@@ -304,7 +304,7 @@ public class ClusteredSnapshotTest {
         .join();
   }
 
-  private BrokerAssert assertThat(Broker broker) {
+  private BrokerAssert assertThat(final Broker broker) {
     return new BrokerAssert(broker, clusteringRule);
   }
 
@@ -360,7 +360,7 @@ public class ClusteredSnapshotTest {
 
     private final ClusteringRule rule;
 
-    protected BrokerAssert(Broker actual, ClusteringRule rule) {
+    protected BrokerAssert(final Broker actual, final ClusteringRule rule) {
       super(actual, BrokerAssert.class);
       this.rule = rule;
     }
@@ -376,11 +376,11 @@ public class ClusteredSnapshotTest {
 
   private static class SnapshotAssert extends AbstractAssert<SnapshotAssert, SnapshotId> {
 
-    protected SnapshotAssert(SnapshotId actual) {
+    protected SnapshotAssert(final SnapshotId actual) {
       super(actual, SnapshotAssert.class);
     }
 
-    public SnapshotAssert withIndex(long expected) {
+    public SnapshotAssert withIndex(final long expected) {
       Assertions.assertThat(actual.getIndex())
           .withFailMessage(
               "Expecting snapshot index <%s> but was <%s>", expected, actual.getIndex())
@@ -388,14 +388,14 @@ public class ClusteredSnapshotTest {
       return myself;
     }
 
-    public SnapshotAssert withTerm(long expected) {
+    public SnapshotAssert withTerm(final long expected) {
       Assertions.assertThat(actual.getTerm())
           .withFailMessage("Expecting snapshot term <%s> but was <%s>", expected, actual.getTerm())
           .isEqualTo(expected);
       return myself;
     }
 
-    public SnapshotAssert withProcessedPosition(long expected) {
+    public SnapshotAssert withProcessedPosition(final long expected) {
       Assertions.assertThat(actual.getProcessedPosition())
           .withFailMessage(
               "Expecting snapshot processed position <%s> but was <%s>",
@@ -404,7 +404,7 @@ public class ClusteredSnapshotTest {
       return myself;
     }
 
-    public SnapshotAssert withExportedPosition(long expected) {
+    public SnapshotAssert withExportedPosition(final long expected) {
       Assertions.assertThat(actual.getExportedPosition())
           .withFailMessage(
               "Expecting snapshot exported position <%s> but was <%s>",
@@ -414,7 +414,7 @@ public class ClusteredSnapshotTest {
     }
 
     @Override
-    public SnapshotAssert isEqualTo(Object expected) {
+    public SnapshotAssert isEqualTo(final Object expected) {
       return super.isEqualTo(expected);
     }
   }
