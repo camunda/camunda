@@ -175,6 +175,9 @@ pipeline {
                         always {
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
+                        failure {
+                            archiveArtifacts artifacts: '**/FlakyTests.txt, **/DuplicateTests.txt', allowEmptyArchive: true
+                        }
                     }
                 }
 
@@ -196,6 +199,9 @@ pipeline {
                         always {
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
+                        failure {
+                            archiveArtifacts artifacts: '**/DuplicateTests.txt', allowEmptyArchive: true
+                        }
                     }
                 }
 
@@ -213,6 +219,9 @@ pipeline {
                     post {
                         always {
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
+                        }
+                        failure {
+                            archiveArtifacts artifacts: '**/FlakyTests.txt, **/DuplicateTests.txt', allowEmptyArchive: true
                         }
                     }
                 }
@@ -286,6 +295,7 @@ pipeline {
                                 failure {
                                     zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/failsafe-reports/**"
                                     zip zipFile: 'test-errors-it.zip', archive: true, glob: "**/hs_err_*.log"
+                                    archiveArtifacts artifacts: '**/FlakyTests.txt, **/DuplicateTests.txt', allowEmptyArchive: true
                                 }
                             }
                         }
