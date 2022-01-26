@@ -79,7 +79,6 @@ public final class ExporterDirectorDistributionTest {
   @Test
   public void shouldDistributeExporterPositions() {
     // given
-    final ControlledTestExporter exporter = exporters.get(1);
     exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
     startExporters(exporterDescriptors);
 
