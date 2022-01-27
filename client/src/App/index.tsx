@@ -16,6 +16,7 @@ import {Dashboard} from './Dashboard';
 import {Instances} from './Instances';
 import {Instance} from './Instance';
 import {Decisions} from './Decisions';
+import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {GettingStartedExperience} from './GettingStartedExperience';
@@ -42,7 +43,18 @@ function App() {
               <Route exact path={Routes.instances()} component={Instances} />
               <Route exact path={Routes.instance()} component={Instance} />
               {IS_DMN && (
-                <Route exact path={Routes.decisions()} component={Decisions} />
+                <>
+                  <Route
+                    exact
+                    path={Routes.decisions()}
+                    component={Decisions}
+                  />
+                  <Route
+                    exact
+                    path={Routes.decisionInstance()}
+                    component={DecisionInstance}
+                  />
+                </>
               )}
             </Authentication>
           </Switch>

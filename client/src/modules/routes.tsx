@@ -30,6 +30,9 @@ const Routes = {
   decisions() {
     return '/decisions';
   },
+  decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
+    return `/decisions/${decisionInstanceId}`;
+  },
 } as const;
 
 const Locations = {
@@ -110,6 +113,13 @@ const Locations = {
     return {
       ...location,
       pathname: Routes.decisions(),
+      search: getPersistentQueryParams(location.search),
+    };
+  },
+  decisionInstance(id: string, location: Location): Location {
+    return {
+      ...location,
+      pathname: Routes.decisionInstance(id),
       search: getPersistentQueryParams(location.search),
     };
   },
