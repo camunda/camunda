@@ -16,9 +16,12 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.awaitility.Awaitility;
 
 /**
  * Utility to produce some work for a Zeebe cluster. The intention is to use {@link
@@ -91,26 +94,28 @@ public final class WorkloadGenerator {
         .join();
 
     // wait for incident and resolve it
-    TestUtil.waitUntil(
-        () ->
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("task")
-                .exists());
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
+        Awaitility.await("the incident was created")
+            .timeout(Duration.ofMinutes(1))
+            .until(
+                () ->
+                    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withElementId("task")
+                        .findFirst(),
+                Optional::isPresent)
+            .orElseThrow();
+
     client.newUpdateRetriesCommand(incident.getValue().getJobKey()).retries(3).send().join();
     client.newResolveIncidentCommand(incident.getKey()).send().join();
 
     // wrap up
-    TestUtil.waitUntil(
-        () ->
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getKey() == processInstanceKey)
-                .exists());
+    Awaitility.await("the process instance was completed")
+        .until(
+            () ->
+                RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .filter(r -> r.getKey() == processInstanceKey)
+                    .exists());
     worker.close();
   }
 }
