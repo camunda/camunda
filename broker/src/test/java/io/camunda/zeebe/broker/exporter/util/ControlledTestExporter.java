@@ -11,12 +11,12 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 public class ControlledTestExporter implements Exporter {
-  private final List<Record<?>> exportedRecords = new ArrayList<>();
+  private final List<Record<?>> exportedRecords = new CopyOnWriteArrayList<>();
 
   private boolean shouldAutoUpdatePosition;
   private Consumer<Context> onConfigure;
