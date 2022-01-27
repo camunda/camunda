@@ -19,6 +19,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import userEvent from '@testing-library/user-event';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {visibleFiltersStore} from 'modules/stores/visibleFilters';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
@@ -49,6 +50,10 @@ const FinishingOperationsEntry: React.FC = () => {
     />
   );
 };
+
+afterEach(() => {
+  visibleFiltersStore.reset();
+});
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -167,6 +172,30 @@ describe('OperationsEntry', () => {
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+  });
+
+  it('should not remove optional operation id filter when operation filter is applied twice', () => {
+    panelStatesStore.toggleFiltersPanel();
+
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={{
+          ...OPERATIONS.EDIT,
+          instancesCount: 3,
+        }}
+      />,
+      {wrapper: createWrapper()}
+    );
+
+    expect(visibleFiltersStore.state.visibleFilters).toEqual([]);
+
+    userEvent.click(screen.getByText('3 Instances'));
+
+    expect(visibleFiltersStore.state.visibleFilters).toEqual(['operationId']);
+
+    userEvent.click(screen.getByText('3 Instances'));
+    expect(visibleFiltersStore.state.visibleFilters).toEqual(['operationId']);
   });
 
   it('should fake the first 10% progress', async () => {

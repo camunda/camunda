@@ -48,6 +48,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     panelStatesStore.expandFiltersPanel();
 
     visibleFiltersStore.reset();
+    visibleFiltersStore.addVisibleFilters(['operationId']);
     history.push(
       Locations.filters(history.location, {
         active: true,
