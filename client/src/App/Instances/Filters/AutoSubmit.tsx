@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
+import {throttle} from 'lodash';
 
 type Props = {
   fieldsToSkipTimeout?: string[];
@@ -13,6 +14,8 @@ type Props = {
 
 const AutoSubmit: React.FC<Props> = ({fieldsToSkipTimeout = []}) => {
   const form = useForm();
+  const throttledSubmit = useRef(throttle(form.submit, 100, {leading: false}));
+
   const {dirtyFields, values} = useFormState({
     subscription: {
       dirtyFields: true,
@@ -22,12 +25,13 @@ const AutoSubmit: React.FC<Props> = ({fieldsToSkipTimeout = []}) => {
   const shouldSkipTimeout = fieldsToSkipTimeout
     .map((field) => dirtyFields[field])
     .some((field) => field);
+
   const isDirty =
     Object.entries(dirtyFields).filter(([, value]) => value).length > 0;
 
   useEffect(() => {
     if (isDirty && shouldSkipTimeout) {
-      form.submit();
+      throttledSubmit.current();
 
       return;
     }
