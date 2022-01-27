@@ -112,6 +112,12 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
   </dependencies>
 
 </project>
