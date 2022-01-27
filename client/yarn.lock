@@ -11583,9 +11583,9 @@ mimic-response@^1.0.0, mimic-response@^1.0.1:
   integrity sha512-j5EctnkH7amfV/q5Hgmoal1g2QHFJRraOtmx0JpIqkxhBhI/lJSl1nMpQ45hVarwNETOoWEimndZ4QK0RHxuxQ==
 
 min-dash@^3.7.0:
-  version "3.8.0"
-  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.8.0.tgz#4725fd2ac7c94d898f4c935a72c63d0bf1e4db83"
-  integrity sha512-a0TLbmL6p4RlNGblZcLd2yjPORp+bCYRlNGvwK5OMwWaMROWh1DlRgN9W8jJm2x9gVuscvD38BEosV7cnikKnw==
+  version "3.8.1"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.8.1.tgz#09a8bd8a041d65eec4732042cde9cb24a6e84b0d"
+  integrity sha512-evumdlmIlg9mbRVPbC4F5FuRhNmcMS5pvuBUbqb1G9v09Ro0ImPEgz5n3khir83lFok1inKqVDjnKEg3GpDxQg==
 
 min-document@^2.19.0:
   version "2.19.0"
