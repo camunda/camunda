@@ -52,7 +52,7 @@
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.12</version.docker-java-api>
     <version.elasticsearch>7.16.3</version.elasticsearch>
-    <version.error-prone>2.10.0</version.error-prone>
+    <version.error-prone>2.11.0</version.error-prone>
     <version.grpc>1.44.0</version.grpc>
     <version.gson>2.8.9</version.gson>
     <version.guava>31.0.1-jre</version.guava>
