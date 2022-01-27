@@ -393,8 +393,8 @@ public final class DeploymentDmnTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The decision requirements ids must be unique within a deployment. "
-                    + "Found a duplicated id 'force-users' in the resources '%s' and '%s'",
+                "Expected the decision requirements ids to be unique within a deployment "
+                    + "but found a duplicated id 'force-users' in the resources '%s' and '%s'",
                 DMN_DECISION_TABLE, DMN_DECISION_TABLE_V2));
   }
 
@@ -418,8 +418,8 @@ public final class DeploymentDmnTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The decision ids must be unique within a deployment. "
-                    + "Found a duplicated id 'jedi-or-sith' in the resources '%s' and '%s'",
+                "Expected the decision ids to be unique within a deployment "
+                    + "but found a duplicated id 'jedi-or-sith' in the resources '%s' and '%s'",
                 DMN_DECISION_TABLE, DMN_DECISION_TABLE_RENAMED_DRG));
   }
 

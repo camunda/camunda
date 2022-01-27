@@ -102,8 +102,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             duplicatedDrg -> {
               final var failureMessage =
                   String.format(
-                      "The decision requirements ids must be unique within a deployment."
-                          + " Found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      "Expected the decision requirements ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
                       decisionRequirementsId,
                       duplicatedDrg.getResourceName(),
                       resource.getResourceName());
@@ -127,8 +127,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             duplicatedDecision -> {
               final var failureMessage =
                   String.format(
-                      "The decision ids must be unique within a deployment."
-                          + " Found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      "Expected the decision ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
                       duplicatedDecision.getDecisionId(),
                       findResourceName(
                           deploymentEvent, duplicatedDecision.getDecisionRequirementsKey()),
