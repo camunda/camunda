@@ -11,8 +11,22 @@ import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionResult;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import org.agrona.DirectBuffer;
 import org.camunda.dmn.DmnEngine;
+import org.camunda.dmn.DmnEngine.EvalFailure;
+import org.camunda.dmn.DmnEngine.EvalResult;
+import org.camunda.dmn.DmnEngine.Failure;
+import org.camunda.dmn.parser.ParsedDmn;
+import org.camunda.feel.syntaxtree.Val;
+import scala.util.Either;
+import scala.util.Left;
 
 /**
  * A wrapper around the DMN-Scala decision engine.
@@ -23,7 +37,10 @@ import org.camunda.dmn.DmnEngine;
  */
 public final class DmnScalaDecisionEngine implements DecisionEngine {
 
+  private static final DirectBuffer NIL_OUTPUT = BufferUtil.wrapArray(MsgPackHelper.NIL);
+
   private final DmnEngine dmnEngine;
+  private final FeelToMessagePackTransformer outputConverter = new FeelToMessagePackTransformer();
 
   public DmnScalaDecisionEngine() {
     dmnEngine = new DmnEngine.Builder().build();
@@ -61,6 +78,57 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       final ParsedDecisionRequirementsGraph decisionRequirementsGraph,
       final String decisionId,
       final DecisionContext context) {
-    throw new UnsupportedOperationException("Not yet implemented");
+
+    Objects.requireNonNull(decisionRequirementsGraph);
+    Objects.requireNonNull(decisionId);
+    final DecisionContext evalContext = Objects.requireNonNullElse(context, Map::of);
+
+    if (!decisionRequirementsGraph.isValid()) {
+      return new EvaluationFailure(
+          String.format(
+              "Expected to evaluate decision '%s', but the decision requirements graph is invalid",
+              decisionId));
+    }
+
+    final var parsedDmn = ((ParsedDmnScalaDrg) decisionRequirementsGraph).getParsedDmn();
+    final Either<EvalFailure, EvalResult> result = tryEval(decisionId, parsedDmn, evalContext);
+    if (result.isLeft()) {
+      final var reason = result.left().get().failure().message();
+      return new EvaluationFailure(
+          String.format("Expected to evaluate decision '%s', but %s", decisionId, reason));
+    }
+
+    final var evalResult = result.right().get();
+    if (evalResult.isNil()) {
+      return new EvaluatedDecision(NIL_OUTPUT);
+    }
+
+    final Object output = evalResult.value();
+    if (output instanceof Val val) {
+      return new EvaluatedDecision(outputConverter.toMessagePack(val));
+    }
+
+    throw new IllegalStateException(
+        String.format(
+            "Expected DMN evaluation result to be of type '%s' but was '%s'",
+            Val.class, output.getClass()));
+  }
+
+  private Either<EvalFailure, EvalResult> tryEval(
+      final String decisionId, final ParsedDmn parsedDmn, final DecisionContext context) {
+    try {
+      // todo(#8092): pass in context that allows fetching variable by name (lazy)
+      return dmnEngine.eval(parsedDmn, decisionId, context.toMap());
+
+    } catch (final NoSuchElementException e) {
+      if (e.getMessage().equals("last of empty list")) {
+        // workaround for: https://github.com/camunda-community-hub/dmn-scala/issues/135
+        final var message = String.format("no decision found for '%s'", decisionId);
+        return Left.apply(new EvalFailure(new Failure(message), null));
+
+      } else {
+        throw e;
+      }
+    }
   }
 }

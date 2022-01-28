@@ -7,10 +7,28 @@
  */
 package io.camunda.zeebe.dmn;
 
+import org.agrona.DirectBuffer;
+
 /**
  * The result of a {@link ParsedDecision}. If successful it contains the output of the decision that
  * was made, otherwise it contains the evaluation failure.
  *
  * @see DecisionEngine
  */
-public interface DecisionResult {}
+public interface DecisionResult {
+
+  /** @return {@code true} if the evaluation was not successful, otherwise {@code false} */
+  boolean isFailure();
+
+  /**
+   * Returns the reason why the evaluation failed. Use {@link #isFailure()} ()} to check if the
+   * evaluation was successful or not.
+   *
+   * @return the failure message if the evaluation was not successful, or {@code null} if the
+   *     evaluation was successful
+   */
+  String getFailureMessage();
+
+  /** @return the output of the decision if it was made successfully, otherwise {@code null} */
+  DirectBuffer getOutput();
+}

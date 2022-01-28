@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dmn;
 
+import java.util.Map;
+
 /**
  * {@link ParsedDecision Decisions} can only be made within in a specific context. The context must
  * contain all input data required by the decision in the {@link ParsedDecisionRequirementsGraph
@@ -14,4 +16,8 @@ package io.camunda.zeebe.dmn;
  *
  * @see DecisionEngine
  */
-public interface DecisionContext {}
+public interface DecisionContext {
+
+  /** @return the Context as map */
+  Map<String, Object> toMap();
+}
