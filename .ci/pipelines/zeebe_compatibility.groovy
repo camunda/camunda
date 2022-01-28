@@ -162,7 +162,7 @@ void integrationTestSteps(String version, boolean snapshot) {
       sh("""    
         echo "running zeebe tests using Zeebe version: ${zeebeVersionToUse}, IAM version: ${iamVersionToUse}"
       """)
-      runMaven("verify -Dzeebe.version=${zeebeVersionToUse} -Diam.version=${iamVersionToUse} -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend,upgrade,util/optimize-reimport-preparation -am")
+      runMaven("verify -Dzeebe.version=${zeebeVersionToUse} -Diam.version=${iamVersionToUse} -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
     }
   }
 }
