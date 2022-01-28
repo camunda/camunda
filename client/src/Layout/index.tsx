@@ -6,23 +6,14 @@
 
 /* istanbul ignore file */
 
-import * as React from 'react';
-import {Route} from 'react-router-dom';
-
-import {Pages} from 'modules/constants/pages';
+import {Outlet} from 'react-router-dom';
 import {Header} from './Header';
 import {Filters} from './Filters';
 import {Tasks} from './Tasks';
-import {Task} from './Task';
-import {
-  Container,
-  TasksPanel,
-  DetailsPanel,
-  NoTaskSelectedMessage,
-} from './styled';
+import {Container, TasksPanel, DetailsPanel} from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
-const Tasklist: React.FC = () => {
+const Layout: React.FC = () => {
   return (
     <>
       <Header />
@@ -32,18 +23,11 @@ const Tasklist: React.FC = () => {
           <Tasks />
         </TasksPanel>
         <DetailsPanel title="Details" footer={getCurrentCopyrightNoticeText()}>
-          <Route exact path={Pages.Initial()}>
-            <NoTaskSelectedMessage>
-              Select a Task to view the details
-            </NoTaskSelectedMessage>
-          </Route>
-          <Route path={Pages.TaskDetails()}>
-            <Task />
-          </Route>
+          <Outlet />
         </DetailsPanel>
       </Container>
     </>
   );
 };
 
-export {Tasklist};
+export {Layout};

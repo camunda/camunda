@@ -6,21 +6,21 @@
 
 /* istanbul ignore file */
 
-import * as React from 'react';
-import {BrowserRouter, Switch, Route} from 'react-router-dom';
+import {BrowserRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'styled-components';
 import {ApolloProvider} from '@apollo/client';
 import {NotificationProvider} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-
-import {PrivateRoute} from './PrivateRoute';
-import {Tasklist} from './Tasklist';
+import {AuthenticationCheck} from './AuthenticationCheck';
+import {Layout} from './Layout';
 import {Login} from './Login';
 import {Pages} from 'modules/constants/pages';
 import {theme} from 'modules/theme';
 import {GlobalStyle} from './GlobalStyle';
 import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
+import {EmptyDetails} from './EmptyDetails';
+import {Task} from './Task';
 
 const App: React.FC = () => {
   return (
@@ -31,14 +31,27 @@ const App: React.FC = () => {
           <NetworkStatusWatcher />
           <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
             <SessionWatcher />
-            <Switch>
-              <Route path={Pages.Login} component={Login} />
-              <PrivateRoute
-                redirectPath={Pages.Login}
-                path={Pages.Initial({useIdParam: true})}
-                component={Tasklist}
-              />
-            </Switch>
+            <Routes>
+              <Route path={Pages.Login} element={<Login />} />
+              <Route
+                path={Pages.Initial()}
+                element={
+                  <AuthenticationCheck redirectPath={Pages.Login}>
+                    <Layout />
+                  </AuthenticationCheck>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <EmptyDetails>
+                      Select a Task to view the details
+                    </EmptyDetails>
+                  }
+                />
+                <Route path={Pages.TaskDetails()} element={<Task />} />
+              </Route>
+            </Routes>
           </BrowserRouter>
         </NotificationProvider>
       </ThemeProvider>

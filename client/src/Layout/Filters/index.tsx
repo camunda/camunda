@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {Form, Field} from 'react-final-form';
-import {useHistory} from 'react-router-dom';
-
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {Select} from 'modules/components/Select';
 import {Container} from './styled';
@@ -22,14 +20,15 @@ interface FormValues {
 }
 
 const Filters: React.FC = () => {
-  const history = useHistory();
+  const location = useLocation();
+  const navigate = useNavigate();
   const {loading} = useTasks({withPolling: false});
 
   return (
     <Container>
       <Form<FormValues>
         onSubmit={(values) => {
-          const searchParams = new URLSearchParams(history.location.search);
+          const searchParams = new URLSearchParams(location.search);
 
           tracking.track({
             eventName: 'tasks-filtered',
@@ -38,15 +37,14 @@ const Filters: React.FC = () => {
 
           searchParams.set('filter', values.filter);
 
-          history.push({
+          navigate({
             pathname: Pages.Initial(),
             search: searchParams.toString(),
           });
         }}
         initialValues={{
           filter:
-            getSearchParam('filter', history.location.search) ??
-            FilterValues.AllOpen,
+            getSearchParam('filter', location.search) ?? FilterValues.AllOpen,
         }}
       >
         {({handleSubmit, form}) => (

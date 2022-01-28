@@ -6,10 +6,7 @@
 
 /* istanbul ignore file */
 
-import React from 'react';
-import {MemoryRouter, Route} from 'react-router-dom';
-
-import {Tasklist} from './index';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
@@ -38,22 +35,34 @@ import {
   mockGetSelectedVariables,
   mockGetSelectedVariablesEmptyVariables,
 } from 'modules/queries/get-selected-variables';
+import {Layout} from './Layout';
+import {EmptyDetails} from 'EmptyDetails';
+import {Task} from './Task';
 
 export default {
   title: 'Pages States/Tasklist',
 };
 
 interface Props {
-  children: React.ReactNode;
   initialEntries: React.ComponentProps<typeof MemoryRouter>['initialEntries'];
   mocks: React.ComponentProps<typeof MockedApolloProvider>['mocks'];
 }
 
-const Wrapper: React.FC<Props> = ({children, initialEntries, mocks}) => {
+const Wrapper: React.FC<Props> = ({initialEntries, mocks}) => {
   return (
     <MockedApolloProvider mocks={mocks}>
       <MemoryRouter initialEntries={initialEntries}>
-        <Route path={Pages.Initial({useIdParam: true})}>{children}</Route>
+        <Routes>
+          <Route path={Pages.Initial()} element={<Layout />}>
+            <Route
+              index
+              element={
+                <EmptyDetails>Select a Task to view the details</EmptyDetails>
+              }
+            />
+            <Route path={Pages.TaskDetails()} element={<Task />} />
+          </Route>
+        </Routes>
       </MemoryRouter>
     </MockedApolloProvider>
   );
@@ -64,9 +73,7 @@ const EmptyPage: React.FC = () => {
     <Wrapper
       mocks={[mockGetCurrentUser, mockGetEmptyTasks]}
       initialEntries={['/']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -75,9 +82,7 @@ const AllOpenTasks: React.FC = () => {
     <Wrapper
       mocks={[mockGetCurrentUser, mockGetAllOpenTasks()]}
       initialEntries={['/']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -86,9 +91,7 @@ const ClaimedByMeTasks: React.FC = () => {
     <Wrapper
       mocks={[mockGetCurrentUser, mockGetClaimedByMe]}
       initialEntries={['/?filter=claimed-by-me']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -97,9 +100,7 @@ const UnclaimedTasks: React.FC = () => {
     <Wrapper
       mocks={[mockGetCurrentUser, mockGetUnclaimed]}
       initialEntries={['/?filter=unclaimed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -108,9 +109,7 @@ const CompletedTasks: React.FC = () => {
     <Wrapper
       mocks={[mockGetCurrentUser, mockGetCompleted]}
       initialEntries={['/?filter=completed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -126,9 +125,7 @@ const Unclaimed: React.FC = () => {
         mockGetUnclaimed,
       ]}
       initialEntries={['/0?filter=unclaimed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -143,9 +140,7 @@ const Claimed: React.FC = () => {
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -160,9 +155,7 @@ const Completed: React.FC = () => {
         mockGetCompleted,
       ]}
       initialEntries={['/0?filter=completed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -178,9 +171,7 @@ const UnclaimedWithVariables: React.FC = () => {
         mockGetUnclaimed,
       ]}
       initialEntries={['/0?filter=unclaimed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -195,9 +186,7 @@ const ClaimedWithVariables: React.FC = () => {
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -214,9 +203,7 @@ const UnclaimedWithForm: React.FC = () => {
         mockGetUnclaimed,
       ]}
       initialEntries={['/0?filter=unclaimed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -233,9 +220,7 @@ const UnclaimedWithPrefilledForm: React.FC = () => {
         mockGetUnclaimed,
       ]}
       initialEntries={['/0?filter=unclaimed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -252,9 +237,7 @@ const UnclaimedWithNoEditPermission: React.FC = () => {
         mockGetUnclaimed,
       ]}
       initialEntries={['/0?filter=unclaimed']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -270,9 +253,7 @@ const ClaimedWithForm: React.FC = () => {
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -288,9 +269,7 @@ const ClaimedWithPrefilledForm: React.FC = () => {
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 
@@ -306,9 +285,7 @@ const ClaimedWithNoEditPermission: React.FC = () => {
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
-    >
-      <Tasklist />
-    </Wrapper>
+    />
   );
 };
 

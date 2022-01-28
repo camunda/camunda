@@ -4,23 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {BrandInfo, Brand, UserControls, AppName, Separator} from './styled';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
-import {Location} from 'history';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
 import {LicenseNote} from './LicenseNote';
+import {useLocation} from 'react-router-dom';
+import {Pages} from 'modules/constants/pages';
 
 const Header: React.FC = () => {
+  const location = useLocation();
+
   return (
     <CmHeader>
       <BrandInfo slot="left">
         <Brand
-          to={(location: Location) => ({
+          to={{
             ...location,
-            pathname: '/',
+            pathname: Pages.Initial(),
             search: getPersistentQueryParams(location.search ?? ''),
-          })}
+          }}
         >
           <CmLogo data-testid="logo" />
           <AppName>Tasklist</AppName>

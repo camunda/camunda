@@ -6,14 +6,14 @@
 
 /* istanbul ignore file */
 
-import React from 'react';
 import styled from 'styled-components';
-
+import {ComponentStory, ComponentMeta} from '@storybook/react';
 import {BrandInfo, Brand, AppName} from './styled';
 import {Dropdown} from './Dropdown';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {CmLogo} from '@camunda-cloud/common-ui-react';
+import {MemoryRouter} from 'react-router-dom';
 
 const Wrapper = styled.div`
   width: 100%;
@@ -23,9 +23,16 @@ const Wrapper = styled.div`
 
 export default {
   title: 'Components/Tasklist/Header',
-};
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
+} as ComponentMeta<React.FC>;
 
-const Logo: React.FC = () => {
+const Logo: ComponentStory<React.FC> = () => {
   return (
     <BrandInfo>
       <Brand to="/">
@@ -36,7 +43,7 @@ const Logo: React.FC = () => {
   );
 };
 
-const UserDropdown: React.FC = () => {
+const UserDropdown: ComponentStory<React.FC> = () => {
   return (
     <MockedApolloProvider mocks={[mockGetCurrentUser]}>
       <Wrapper>
@@ -46,7 +53,7 @@ const UserDropdown: React.FC = () => {
   );
 };
 
-const UserDropdownOpen: React.FC = () => {
+const UserDropdownOpen: ComponentStory<React.FC> = () => {
   return (
     <MockedApolloProvider mocks={[mockGetCurrentUser]}>
       <Wrapper>

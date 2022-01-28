@@ -4,12 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Details} from './';
-
-import * as React from 'react';
+import {Details} from '.';
 import {render, screen, fireEvent} from '@testing-library/react';
-
-import {Route, MemoryRouter} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
   mockGetTaskCompleted,
@@ -35,13 +32,15 @@ import {
 
 const getWrapper = (id: string = '0') => {
   const Wrapper: React.FC = ({children}) => (
-    <MemoryRouter initialEntries={[`/${id}`]}>
-      <Route path="/:id">
-        <ApolloProvider client={client}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </ApolloProvider>
-      </Route>
-    </MemoryRouter>
+    <ApolloProvider client={client}>
+      <MockThemeProvider>
+        <MemoryRouter initialEntries={[`/${id}`]}>
+          <Routes>
+            <Route path="/:id" element={children} />
+          </Routes>
+        </MemoryRouter>
+      </MockThemeProvider>
+    </ApolloProvider>
   );
 
   return Wrapper;

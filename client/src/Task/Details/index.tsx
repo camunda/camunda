@@ -48,7 +48,7 @@ import {getSortValues} from '../getSortValues';
 import {tracking} from 'modules/tracking';
 
 const Details: React.FC = () => {
-  const {id} = useParams<{id: string}>();
+  const {id = ''} = useParams<{id: string}>();
 
   const location = useLocation();
   const filter =

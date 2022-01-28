@@ -4,9 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory, History} from 'history';
+import {MemoryRouter} from 'react-router-dom';
 import {render, waitFor} from '@testing-library/react';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {login} from 'modules/stores/login';
@@ -23,16 +21,16 @@ jest.mock('modules/notifications', () => ({
 }));
 
 type GetWrapperProps = {
-  history: History;
+  initialEntries: React.ComponentProps<typeof MemoryRouter>['initialEntries'];
 };
 
-const getWrapper = ({history}: GetWrapperProps) => {
+const getWrapper = ({initialEntries}: GetWrapperProps) => {
   const Wrapper: React.FC = ({children}) => (
     <MockThemeProvider>
-      <Router history={history}>
+      <MemoryRouter initialEntries={initialEntries}>
         <SessionWatcher />
         {children}
-      </Router>
+      </MemoryRouter>
     </MockThemeProvider>
   );
 
@@ -45,14 +43,11 @@ describe('SessionWatcher', () => {
   });
 
   it('should display notification if session is expired on main page', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/'],
-    });
     login.activateSession();
 
     render(<div />, {
       wrapper: getWrapper({
-        history,
+        initialEntries: ['/'],
       }),
     });
     login.disableSession();
@@ -65,14 +60,11 @@ describe('SessionWatcher', () => {
   });
 
   it('should display notification if session is expired on task detail page', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/1234'],
-    });
     login.activateSession();
 
     render(<div />, {
       wrapper: getWrapper({
-        history,
+        initialEntries: ['/1234'],
       }),
     });
     login.disableSession();
@@ -84,13 +76,9 @@ describe('SessionWatcher', () => {
   });
 
   it('should not display notification on initial login on main page', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/'],
-    });
-
     render(<div />, {
       wrapper: getWrapper({
-        history,
+        initialEntries: ['/'],
       }),
     });
     login.disableSession();
@@ -98,13 +86,9 @@ describe('SessionWatcher', () => {
   });
 
   it('should display notification on initial login on task detail page', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/1234'],
-    });
-
     render(<div />, {
       wrapper: getWrapper({
-        history,
+        initialEntries: ['/1234'],
       }),
     });
     login.disableSession();
@@ -116,13 +100,9 @@ describe('SessionWatcher', () => {
   });
 
   it('should not display notification on login page', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/login'],
-    });
-
     render(<div />, {
       wrapper: getWrapper({
-        history,
+        initialEntries: ['/login'],
       }),
     });
 

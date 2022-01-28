@@ -24,7 +24,7 @@ import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {useEffect, useRef} from 'react';
-import {getSortValues} from './Task/getSortValues';
+import {getSortValues} from '../Task/getSortValues';
 
 function useTasks({withPolling}: {withPolling?: boolean}) {
   const location = useLocation();

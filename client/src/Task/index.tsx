@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
-import {useParams, useLocation, useHistory} from 'react-router-dom';
+import {useEffect} from 'react';
+import {useParams, useLocation, useNavigate} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/client';
 import {GetTask, useTask} from 'modules/queries/get-task';
 import {
@@ -48,8 +48,8 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
 }
 
 const Task: React.FC = () => {
-  const {id} = useParams<{id: string}>();
-  const history = useHistory();
+  const {id = ''} = useParams<'id'>();
+  const navigate = useNavigate();
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -129,9 +129,9 @@ const Task: React.FC = () => {
         });
       }
 
-      history.push({
+      navigate({
         pathname: Pages.Initial(),
-        search: history.location.search,
+        search: location.search,
       });
     } catch (error) {
       const errorMessage = (error as Error).message ?? '';

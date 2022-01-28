@@ -4,26 +4,40 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {Link, MemoryRouter} from 'react-router-dom';
 import {rest} from 'msw';
-
 import {Login} from './index';
 import {login} from 'modules/stores/login';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockServer} from 'modules/mockServer';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const getFullYearMock = jest.spyOn(Date.prototype, 'getFullYear');
 function createWrapper(
-  history = createMemoryHistory({initialEntries: ['/login']}),
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = ['/login'],
 ) {
   const Wrapper: React.FC = ({children}) => (
-    <Router history={history}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </Router>
+    <MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <Link
+          to="/login"
+          state={{
+            referrer: {
+              pathname: '/1',
+              search: '?filter=unclaimed',
+            },
+          }}
+        >
+          emulate redirection
+        </Link>
+        <LocationLog />
+      </MemoryRouter>
+    </MockThemeProvider>
   );
   return Wrapper;
 }
@@ -39,21 +53,22 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the initial page on success', async () => {
-    const historyMock = createMemoryHistory({initialEntries: ['/login']});
     login.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
     render(<Login />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     userEvent.type(screen.getByLabelText('Username'), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
-    await waitFor(() => expect(historyMock.location.pathname).toBe('/'));
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/'),
+    );
   });
 
   it('should redirect to the referrer page', async () => {
@@ -61,34 +76,20 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
     login.disableSession();
-    const referrer = createMemoryHistory({
-      initialEntries: [
-        {
-          pathname: '/1',
-          search: '?filter=unclaimed',
-        },
-      ],
-    }).location;
-    const historyMock = createMemoryHistory({
-      initialEntries: [
-        {
-          pathname: '/login',
-          state: {
-            referrer,
-          },
-        },
-      ],
-    });
     render(<Login />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
+
+    userEvent.click(screen.getByRole('link', {name: /emulate redirection/i}));
 
     userEvent.type(screen.getByLabelText('Username'), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
-    await waitFor(() => expect(historyMock.location.pathname).toBe('/1'));
-    expect(historyMock.location.search).toBe('?filter=unclaimed');
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/1'),
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent('filter=unclaimed');
   });
 
   it('should show an error for wrong credentials', async () => {
@@ -179,10 +180,9 @@ describe('<Login />', () => {
 
   it('should not allow the form to be submitted with empty fields', async () => {
     login.disableSession();
-    const historyMock = createMemoryHistory({initialEntries: ['/login']});
 
     render(<Login />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();

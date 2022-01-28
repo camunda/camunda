@@ -28,12 +28,4 @@ const DetailsPanel = styled(Panel)`
   height: 100%;
 `;
 
-const NoTaskSelectedMessage = styled.h1`
-  font-size: 16px;
-  color: ${({theme}) => theme.colors.text.black};
-  text-align: center;
-  padding-top: 40px;
-  font-weight: normal;
-`;
-
-export {Container, TasksPanel, DetailsPanel, NoTaskSelectedMessage};
+export {Container, TasksPanel, DetailsPanel};

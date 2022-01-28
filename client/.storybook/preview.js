@@ -15,10 +15,8 @@ Object.defineProperty(window, 'clientConfig', {
 });
 
 addDecorator((storyFn) => (
-  <MemoryRouter>
-    <ThemeProvider theme={theme}>
-      <GlobalStyle />
-      {storyFn()}
-    </ThemeProvider>
-  </MemoryRouter>
+  <ThemeProvider theme={theme}>
+    <GlobalStyle />
+    {storyFn()}
+  </ThemeProvider>
 ));

@@ -4,11 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
-
 import {login} from 'modules/stores/login';
 import {Pages} from 'modules/constants/pages';
 import {
@@ -25,13 +23,22 @@ import {Input} from './Input';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 import {Disclaimer} from './Disclaimer';
 
+function stateHasReferrer(state: unknown): state is {referrer: Location} {
+  if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
+    return true;
+  }
+
+  return false;
+}
+
 interface FormValues {
   username: string;
   password: string;
 }
 
 const Login: React.FC = () => {
-  const history = useHistory();
+  const location = useLocation();
+  const navigate = useNavigate();
   const {handleLogin} = login;
 
   return (
@@ -40,13 +47,15 @@ const Login: React.FC = () => {
         onSubmit={async ({username, password}) => {
           try {
             const response = await handleLogin(username, password);
-            const referrer = history.location.state?.referrer;
 
             if (response.ok) {
-              return history.push(
-                referrer?.pathname === undefined
-                  ? {...history.location, pathname: Pages.Initial()}
-                  : referrer,
+              return navigate(
+                stateHasReferrer(location.state)
+                  ? location.state.referrer
+                  : {...location, pathname: Pages.Initial()},
+                {
+                  replace: true,
+                },
               );
             }
 

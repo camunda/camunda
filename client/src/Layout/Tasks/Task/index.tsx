@@ -14,8 +14,7 @@ import {
   Assignee,
   CreationTime,
 } from './styled';
-import {useParams, Link} from 'react-router-dom';
-import {Location} from 'history';
+import {Link, useLocation, useMatch} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
 import {Task as TaskType} from 'modules/types';
@@ -31,18 +30,19 @@ interface Props {
 
 const Task = React.forwardRef<HTMLLIElement, Props>(
   ({taskId, name, processName, assignee, creationTime}, ref) => {
-    const {id} = useParams<{id: string}>();
+    const match = useMatch('/:id');
+    const location = useLocation();
 
     return (
       <Link
-        to={(location: Location) => ({
+        to={{
           ...location,
           pathname: Pages.TaskDetails(taskId),
-        })}
+        }}
       >
         <Entry
           ref={ref}
-          isSelected={id === taskId}
+          isSelected={match?.params?.id === taskId}
           data-testid={`task-${taskId}`}
         >
           <TaskInfo>

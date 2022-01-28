@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
@@ -16,8 +15,7 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetAllOpenTasks, mockGetUnclaimed} from 'modules/queries/get-tasks';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-
-import {Tasklist} from './index';
+import {Layout} from './index';
 import {ApolloProvider} from '@apollo/client';
 import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
@@ -35,7 +33,7 @@ const Wrapper: React.FC = ({children}) => {
   );
 };
 
-describe('<Tasklist />', () => {
+describe('<Layout />', () => {
   it('should load tasks', async () => {
     mockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
@@ -52,7 +50,7 @@ describe('<Tasklist />', () => {
       }),
     );
 
-    render(<Tasklist />, {
+    render(<Layout />, {
       wrapper: Wrapper,
     });
 
@@ -117,7 +115,7 @@ describe('<Tasklist />', () => {
       }),
     );
 
-    render(<Tasklist />, {
+    render(<Layout />, {
       wrapper: Wrapper,
     });
 

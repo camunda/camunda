@@ -4,18 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {
   render,
   screen,
   waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
-
 import {Tasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {Link, MemoryRouter} from 'react-router-dom';
 import {
   mockGetAllOpenTasks,
   mockGetEmptyTasks,
@@ -29,14 +26,22 @@ import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql} from 'msw';
+import userEvent from '@testing-library/user-event';
 
-const getWrapper = (history = createMemoryHistory({initialEntries: ['/']})) => {
+const getWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = ['/'],
+) => {
   const Wrapper: React.FC = ({children}) => (
-    <ApolloProvider client={client}>
-      <Router history={history}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </Router>
-    </ApolloProvider>
+    <MockThemeProvider>
+      <ApolloProvider client={client}>
+        <MemoryRouter initialEntries={initialEntries}>
+          {children}
+          <Link to="/">go home</Link>
+        </MemoryRouter>
+      </ApolloProvider>
+    </MockThemeProvider>
   );
 
   return Wrapper;
@@ -121,11 +126,7 @@ describe('<Tasks />', () => {
     );
 
     render(<Tasks />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: [`/?filter=${FilterValues.ClaimedByMe}`],
-        }),
-      ),
+      wrapper: getWrapper([`/?filter=${FilterValues.ClaimedByMe}`]),
     });
 
     await waitForElementToBeRemoved(
@@ -145,11 +146,7 @@ describe('<Tasks />', () => {
     );
 
     render(<Tasks />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: [`/?filter=${FilterValues.Unclaimed}`],
-        }),
-      ),
+      wrapper: getWrapper([`/?filter=${FilterValues.Unclaimed}`]),
     });
 
     await waitForElementToBeRemoved(
@@ -169,11 +166,7 @@ describe('<Tasks />', () => {
     );
 
     render(<Tasks />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: [`/?filter=${FilterValues.Completed}`],
-        }),
-      ),
+      wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
     });
 
     await waitForElementToBeRemoved(
@@ -195,12 +188,8 @@ describe('<Tasks />', () => {
       }),
     );
 
-    const historyMock = createMemoryHistory({
-      initialEntries: [`/?filter=${FilterValues.Completed}`],
-    });
-
     render(<Tasks />, {
-      wrapper: getWrapper(historyMock),
+      wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
     });
 
     expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
@@ -209,7 +198,7 @@ describe('<Tasks />', () => {
       screen.getByTestId('tasks-loading-overlay'),
     );
 
-    historyMock.push('/');
+    userEvent.click(screen.getByRole('link', {name: /go home/i}));
 
     expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
 

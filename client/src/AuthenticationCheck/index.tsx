@@ -4,41 +4,38 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
-import {Route, Redirect, RouteProps} from 'react-router-dom';
+import {Navigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
-
 import {login} from 'modules/stores/login';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
-interface Props extends RouteProps {
+interface Props {
   redirectPath: string;
+  children: React.ReactNode;
 }
 
-const PrivateRoute: React.FC<Props> = observer(
-  ({redirectPath, children, location, ...routeProps}) => {
+const AuthenticationCheck: React.FC<Props> = observer(
+  ({redirectPath, children}) => {
+    const location = useLocation();
     const {status} = login;
 
     if (['logged-in', 'initial'].includes(status)) {
-      return (
-        <Route location={location} {...routeProps}>
-          {children}
-        </Route>
-      );
+      return <>{children}</>;
     }
 
     return (
-      <Redirect
+      <Navigate
         to={{
           pathname: redirectPath,
-          state: {
-            referrer: location,
-          },
           search: getPersistentQueryParams(location?.search ?? ''),
         }}
+        state={{
+          referrer: location,
+        }}
+        replace={true}
       />
     );
   },
 );
 
-export {PrivateRoute};
+export {AuthenticationCheck};

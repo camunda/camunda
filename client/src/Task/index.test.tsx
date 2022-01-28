@@ -5,10 +5,7 @@
  */
 
 import {Task} from './index';
-
-import * as React from 'react';
-import {Route, Router} from 'react-router-dom';
-import {createMemoryHistory, History} from 'history';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
   screen,
@@ -37,6 +34,7 @@ import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -45,15 +43,20 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
-const getWrapper = (history: History) => {
+const getWrapper = (
+  initialEntries: React.ComponentProps<typeof MemoryRouter>['initialEntries'],
+) => {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ApolloProvider client={client}>
-        <Router history={history}>
-          <Route path="/:id">
-            <MockThemeProvider>{children}</MockThemeProvider>
-          </Route>
-        </Router>
+        <MockThemeProvider>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route path="/:id" element={children} />
+              <Route path="*" element={<LocationLog />} />
+            </Routes>
+          </MemoryRouter>
+        </MockThemeProvider>
       </ApolloProvider>
     );
   };
@@ -75,12 +78,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -104,12 +103,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -130,12 +125,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -159,12 +150,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -191,18 +178,14 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     userEvent.click(await screen.findByText('Complete Task'));
 
     await waitFor(() => {
-      expect(history.location.pathname).toBe('/');
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     });
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
@@ -226,12 +209,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     userEvent.click(await screen.findByText('Complete Task'));
@@ -263,20 +242,15 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0?gseUrl=https://www.testUrl.com'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0?gseUrl=https://www.testUrl.com']),
     });
 
     userEvent.click(await screen.findByText('Complete Task'));
 
     await waitFor(() => {
-      expect(history.location.pathname).toBe('/');
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     });
-
     expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
       headline: 'To continue getting started, head back to Console',
       isDismissable: false,
@@ -301,12 +275,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     expect(screen.getByTestId('details-overlay')).toBeInTheDocument();
@@ -345,11 +315,8 @@ describe('<Task />', () => {
       }),
     );
 
-    const mockHistory = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
     render(<Task />, {
-      wrapper: getWrapper(mockHistory),
+      wrapper: getWrapper(['/0']),
     });
 
     userEvent.click(await screen.findByText(/Add Variable/));
@@ -373,10 +340,6 @@ describe('<Task />', () => {
   });
 
   it('should render created task with variables form', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
     mockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) =>
         res.once(ctx.data(mockGetCurrentUser.result.data)),
@@ -393,7 +356,7 @@ describe('<Task />', () => {
     );
 
     render(<Task />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/0']),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();

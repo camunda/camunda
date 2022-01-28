@@ -4,20 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-
 import {Task} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-const createWrapper = (history = createMemoryHistory()) => {
+const createWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = ['/'],
+) => {
   const Wrapper: React.FC = ({children}) => (
-    <Router history={history}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </Router>
+    <MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <LocationLog />
+      </MemoryRouter>
+    </MockThemeProvider>
   );
 
   return Wrapper;
@@ -82,7 +87,6 @@ describe('<Task />', () => {
   });
 
   it('should navigate to task detail on click', () => {
-    const historyMock = createMemoryHistory();
     render(
       <Task
         taskId="1"
@@ -92,19 +96,15 @@ describe('<Task />', () => {
         assignee={currentUser.username}
       />,
       {
-        wrapper: createWrapper(historyMock),
+        wrapper: createWrapper(),
       },
     );
 
     fireEvent.click(screen.getByText('processName'));
-    expect(historyMock.location.pathname).toBe('/1');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/1');
   });
 
   it('should preserve search params', () => {
-    const mockSearchParams = '?filter=all-open';
-    const historyMock = createMemoryHistory({
-      initialEntries: [mockSearchParams],
-    });
     render(
       <Task
         taskId="1"
@@ -114,13 +114,13 @@ describe('<Task />', () => {
         assignee={currentUser.username}
       />,
       {
-        wrapper: createWrapper(historyMock),
+        wrapper: createWrapper(['/?filter=all-open']),
       },
     );
 
     fireEvent.click(screen.getByText('processName'));
 
-    expect(historyMock.location.pathname).toBe('/1');
-    expect(historyMock.location.search).toBe(mockSearchParams);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/1');
+    expect(screen.getByTestId('search')).toHaveTextContent('filter=all-open');
   });
 });

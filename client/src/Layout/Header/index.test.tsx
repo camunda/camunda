@@ -4,28 +4,35 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-
 import {Header} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {MemoryRouter} from 'react-router-dom';
 import {login} from 'modules/stores/login';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {rest, graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-function createWrapper(history = createMemoryHistory()) {
-  const Wrapper: React.FC = ({children}) => (
-    <ApolloProvider client={client}>
-      <Router history={history}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </Router>
-    </ApolloProvider>
-  );
+function createWrapper(
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = ['/'],
+) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ApolloProvider client={client}>
+        <MockThemeProvider>
+          <MemoryRouter initialEntries={initialEntries}>
+            {children}
+            <LocationLog />
+          </MemoryRouter>
+        </MockThemeProvider>
+      </ApolloProvider>
+    );
+  };
   return Wrapper;
 }
 
@@ -53,33 +60,27 @@ describe('<Header />', () => {
   });
 
   it('should navigate to home page when brand label is clicked', async () => {
-    const historyMock = createMemoryHistory();
-
     render(<Header />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
     await screen.findByText('Demo User');
 
     fireEvent.click(screen.getByText('Tasklist'));
 
-    expect(historyMock.location.pathname).toBe('/');
-    expect(historyMock.location.search).toBe('');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
   });
 
   it('should navigate to home page when brand label is clicked (with gse url)', async () => {
-    const historyMock = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
-
     render(<Header />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(['/?gseUrl=https://www.testUrl.com']),
     });
     await screen.findByText('Demo User');
 
     fireEvent.click(screen.getByText('Tasklist'));
 
-    expect(historyMock.location.pathname).toBe('/');
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent(
       'gseUrl=https%3A%2F%2Fwww.testUrl.com',
     );
   });

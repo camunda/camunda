@@ -4,11 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
-
+import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {OPTIONS} from './constants';
@@ -24,15 +21,23 @@ import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql} from 'msw';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const getWrapper =
-  (history = createMemoryHistory()): React.FC =>
+  (
+    initialEntries: React.ComponentProps<
+      typeof MemoryRouter
+    >['initialEntries'] = ['/'],
+  ): React.FC =>
   ({children}) => {
     return (
       <ApolloProvider client={client}>
-        <Router history={history}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </Router>
+        <MockThemeProvider>
+          <MemoryRouter initialEntries={initialEntries}>
+            {children}
+            <LocationLog />
+          </MemoryRouter>
+        </MockThemeProvider>
       </ApolloProvider>
     );
   };
@@ -62,26 +67,61 @@ describe('<Filters />', () => {
       }),
     );
 
-    const history = createMemoryHistory();
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(),
     });
 
+    expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled();
+
+    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
+      target: {
+        value: 'all-open',
+      },
+    });
+
+    expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled();
+    expect(screen.getByTestId('search')).toHaveTextContent('filter=all-open');
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Filter'})).toBeDisabled(),
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeEnabled(),
     );
 
-    FILTERS.forEach((filter) => {
-      fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
-        target: {
-          value: filter,
-        },
-      });
-
-      expect(new URLSearchParams(history.location.search).get('filter')).toBe(
-        filter,
-      );
+    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
+      target: {
+        value: 'claimed-by-me',
+      },
     });
+
+    expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled();
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      'filter=claimed-by-me',
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeEnabled(),
+    );
+
+    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
+      target: {
+        value: 'unclaimed',
+      },
+    });
+
+    expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled();
+    expect(screen.getByTestId('search')).toHaveTextContent('filter=unclaimed');
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeEnabled(),
+    );
+
+    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
+      target: {
+        value: 'completed',
+      },
+    });
+
+    expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled();
+    expect(screen.getByTestId('search')).toHaveTextContent('filter=completed');
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeEnabled(),
+    );
   });
 
   it('should redirect to the initial page', async () => {
@@ -91,14 +131,12 @@ describe('<Filters />', () => {
       }),
     );
 
-    const history = createMemoryHistory({initialEntries: ['/foobar']});
-
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper(['/foobar']),
     });
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Filter'})).toBeDisabled(),
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled(),
     );
 
     fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
@@ -107,7 +145,7 @@ describe('<Filters />', () => {
       },
     });
 
-    expect(history.location.pathname).toBe('/');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
   });
 
   it('should preserve existing search params on the URL', async () => {
@@ -120,16 +158,13 @@ describe('<Filters />', () => {
       id: 'foo',
       value: 'bar',
     } as const;
-    const history = createMemoryHistory({
-      initialEntries: [`/?${mockSearchParam.id}=${mockSearchParam.value}`],
-    });
 
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper([`/?${mockSearchParam.id}=${mockSearchParam.value}`]),
     });
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Filter'})).toBeDisabled(),
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled(),
     );
 
     fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
@@ -138,7 +173,9 @@ describe('<Filters />', () => {
       },
     });
 
-    const searchParams = new URLSearchParams(history.location.search);
+    const searchParams = new URLSearchParams(
+      screen.getByTestId('search')?.textContent ?? '',
+    );
 
     expect(searchParams.get('filter')).toBe(FILTERS[0]);
     expect(searchParams.get(mockSearchParam.id)).toBe(mockSearchParam.value);
@@ -155,16 +192,13 @@ describe('<Filters />', () => {
     );
 
     const [, mockFilter] = OPTIONS;
-    const history = createMemoryHistory({
-      initialEntries: [`/?filter=${mockFilter.value}`],
-    });
 
     render(<Filters />, {
-      wrapper: getWrapper(history),
+      wrapper: getWrapper([`/?filter=${mockFilter.value}`]),
     });
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Filter'})).toBeDisabled(),
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled(),
     );
 
     expect(screen.getByDisplayValue(mockFilter.label)).toBeInTheDocument();
@@ -178,11 +212,11 @@ describe('<Filters />', () => {
     );
 
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory()),
+      wrapper: getWrapper(),
     });
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Filter'})).toBeDisabled(),
+      expect(screen.getByRole('combobox', {name: /filter/i})).toBeDisabled(),
     );
 
     OPTIONS.forEach(({label, value}) => {
@@ -200,7 +234,7 @@ describe('<Filters />', () => {
     );
 
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory()),
+      wrapper: getWrapper(),
     });
 
     await waitFor(() =>

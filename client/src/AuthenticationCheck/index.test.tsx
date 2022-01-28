@@ -4,11 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {render, screen} from '@testing-library/react';
-import {MemoryRouter, Switch, Route} from 'react-router-dom';
-
-import {PrivateRoute} from './index';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {AuthenticationCheck} from './index';
 import {login} from 'modules/stores/login';
 
 const LOGIN_CONTENT = 'Login content';
@@ -18,15 +16,15 @@ const LOGIN_PATH = '/login';
 const Wrapper: React.FC = ({children}) => {
   return (
     <MemoryRouter>
-      <Switch>
-        {children}
-        <Route path={LOGIN_PATH} render={() => <h1>{LOGIN_CONTENT}</h1>} />
-      </Switch>
+      <Routes>
+        <Route path={LOGIN_PATH} element={<h1>{LOGIN_CONTENT}</h1>} />
+        <Route path="*" element={children} />
+      </Routes>
     </MemoryRouter>
   );
 };
 
-describe('<PrivateRoute />', () => {
+describe('<AuthenticationCheck />', () => {
   afterEach(() => {
     fetchMock.mockClear();
     login.reset();
@@ -44,14 +42,9 @@ describe('<PrivateRoute />', () => {
     await login.handleLogin('demo', 'demo');
 
     render(
-      <PrivateRoute
-        exact
-        path="/"
-        redirectPath={LOGIN_PATH}
-        render={() => {
-          return <h1>{CONTENT}</h1>;
-        }}
-      />,
+      <AuthenticationCheck redirectPath={LOGIN_PATH}>
+        <h1>{CONTENT}</h1>
+      </AuthenticationCheck>,
       {wrapper: Wrapper},
     );
 
@@ -62,14 +55,9 @@ describe('<PrivateRoute />', () => {
     login.disableSession();
 
     render(
-      <PrivateRoute
-        exact
-        path="/"
-        redirectPath={LOGIN_PATH}
-        render={() => {
-          return <h1>Secret route</h1>;
-        }}
-      />,
+      <AuthenticationCheck redirectPath={LOGIN_PATH}>
+        <h1>Secret route</h1>
+      </AuthenticationCheck>,
       {wrapper: Wrapper},
     );
 
