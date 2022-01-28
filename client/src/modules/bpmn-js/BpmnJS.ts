@@ -9,16 +9,31 @@ import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import {IReactionDisposer, reaction} from 'mobx';
 import {theme} from 'modules/theme';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
+import {isMultiInstance} from './isMultiInstance';
 
 interface BpmnJSModule {
   [member: string]: any;
 }
 
+type BpmnJSElement = {
+  id: string;
+  type: string;
+  businessObject: {loopCharacteristics?: {$type: string}; di: {set: Function}};
+};
+
 type NavigatedViewerType = {
   importXML: (xml: string) => Promise<{warnings: string[]}>;
   destroy: () => void;
   get: (moduleName: string) => BpmnJSModule | undefined;
+  on: (event: string, callback: Function) => void;
+  off: (event: string, callback: Function) => void;
 } | null;
+
+type OnFlowNodeSelection = (
+  elementId?: BpmnJSElement['id'],
+  isMultiInstance?: boolean
+) => void;
 
 class BpmnJS {
   #navigatedViewer: NavigatedViewerType = null;
@@ -27,11 +42,18 @@ class BpmnJS {
   #themeChangeReactionDisposer: IReactionDisposer | null = null;
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
+  #selectedFlowNodeId?: string;
+  #onFlowNodeSelection?: OnFlowNodeSelection;
+
+  constructor(onFlowNodeSelection?: OnFlowNodeSelection) {
+    this.#onFlowNodeSelection = onFlowNodeSelection;
+  }
 
   render = async (
     container: HTMLElement,
     xml: string,
-    selectableFlowNodes: string[] = []
+    selectableFlowNodes: string[] = [],
+    selectedFlowNodeId?: string
   ) => {
     if (this.#navigatedViewer === null) {
       this.#createViewer(container);
@@ -41,13 +63,16 @@ class BpmnJS {
       this.#theme = currentTheme.state.selectedTheme;
 
       // Cleanup before importing
+      this.#navigatedViewer!.off('element.click', this.#handleElementClick);
       this.#selectableFlowNodes = [];
+      this.#selectedFlowNodeId = undefined;
 
       await this.#navigatedViewer!.importXML(xml);
 
       // Initialize after importing
       this.#xml = xml;
       this.zoomReset();
+      this.#navigatedViewer!.on('element.click', this.#handleElementClick);
     }
 
     this.#themeChangeReactionDisposer?.();
@@ -55,8 +80,7 @@ class BpmnJS {
       () => currentTheme.state.selectedTheme,
       () => {
         this.#createViewer(container);
-
-        this.render(container, xml, selectableFlowNodes);
+        this.render(container, xml, selectableFlowNodes, selectedFlowNodeId);
       }
     );
 
@@ -69,6 +93,19 @@ class BpmnJS {
         this.#addMarker(flowNodeId, 'op-selectable');
       });
       this.#selectableFlowNodes = selectableFlowNodes;
+    }
+
+    // handle op-selected markers
+    if (this.#selectedFlowNodeId !== selectedFlowNodeId) {
+      if (this.#selectedFlowNodeId !== undefined) {
+        this.#removeMarker(this.#selectedFlowNodeId, 'op-selected');
+      }
+
+      if (selectedFlowNodeId !== undefined) {
+        this.#addMarker(selectedFlowNodeId, 'op-selected');
+      }
+
+      this.#selectedFlowNodeId = selectedFlowNodeId;
     }
   };
 
@@ -104,6 +141,24 @@ class BpmnJS {
     }
   };
 
+  #handleElementClick = (event: {element: BpmnJSElement}) => {
+    const flowNode = event.element;
+    if (
+      isNonSelectableFlowNode(flowNode, this.#selectableFlowNodes) ||
+      this.#selectableFlowNodes === []
+    ) {
+      return;
+    }
+    if (
+      this.#selectableFlowNodes.includes(flowNode.id) &&
+      flowNode.id !== this.#selectedFlowNodeId
+    ) {
+      this.#onFlowNodeSelection?.(flowNode.id, isMultiInstance(flowNode));
+    } else if (this.#selectedFlowNodeId !== undefined) {
+      this.#onFlowNodeSelection?.(undefined);
+    }
+  };
+
   #destroy = () => {
     this.#themeChangeReactionDisposer?.();
     this.#navigatedViewer?.destroy();
@@ -136,3 +191,4 @@ class BpmnJS {
 }
 
 export {BpmnJS};
+export type {BpmnJSElement, OnFlowNodeSelection};

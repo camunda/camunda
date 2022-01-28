@@ -49,6 +49,8 @@ class Viewer {
   });
   detach = jest.fn();
   destroy = jest.fn();
+  on = jest.fn();
+  off = jest.fn();
 
   get = (module: string) => mockedModules[module];
 }

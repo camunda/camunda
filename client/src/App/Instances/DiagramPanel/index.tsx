@@ -99,7 +99,22 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
 
         {IS_NEXT_DIAGRAM ? (
           xml !== null && (
-            <Diagram xml={xml} selectableFlowNodes={selectableIds} />
+            <Diagram
+              xml={xml}
+              selectableFlowNodes={selectableIds}
+              selectedFlowNodeId={flowNodeId}
+              onFlowNodeSelection={(flowNodeId) => {
+                if (flowNodeId === null || flowNodeId === undefined) {
+                  history.push(
+                    deleteSearchParams(history.location, ['flowNodeId'])
+                  );
+                } else {
+                  history.push(
+                    setSearchParam(history.location, ['flowNodeId', flowNodeId])
+                  );
+                }
+              }}
+            />
           )
         ) : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
         !isNoVersionSelected && diagramModel?.definitions ? (

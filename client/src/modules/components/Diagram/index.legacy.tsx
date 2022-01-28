@@ -17,13 +17,8 @@ import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import {PopoverOverlay} from './PopoverOverlay';
-import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
-
-type BpmnJSElement = {
-  id: string;
-  type: string;
-  businessObject: {di: {set: Function}; loopCharacteristics?: {$type: string}};
-};
+import {isNonSelectableFlowNode} from 'modules/bpmn-js/isNonSelectableFlowNode';
+import {BpmnJSElement} from 'modules/bpmn-js/BpmnJS';
 
 function isMultiInstance(element: BpmnJSElement) {
   return (

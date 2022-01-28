@@ -5,7 +5,7 @@
  */
 
 import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
-import {BpmnJS} from 'modules/bpmn-js/BpmnJS';
+import {BpmnJS, OnFlowNodeSelection} from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import DiagramLegacy from './index.legacy';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
@@ -13,44 +13,59 @@ import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 type Props = {
   xml: string;
   selectableFlowNodes?: string[];
+  selectedFlowNodeId?: string;
+  onFlowNodeSelection?: OnFlowNodeSelection;
 };
 
-const Diagram: React.FC<Props> = ({xml, selectableFlowNodes}) => {
+const Diagram: React.FC<Props> = ({
+  xml,
+  selectableFlowNodes,
+  selectedFlowNodeId,
+  onFlowNodeSelection,
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDiagramRendered, setIsDiagramRendered] = useState(false);
-  const viewer = useRef<BpmnJS>(new BpmnJS());
+  const viewerRef = useRef<BpmnJS | null>(null);
+
+  function getViewer() {
+    if (viewerRef.current === null) {
+      viewerRef.current = new BpmnJS(onFlowNodeSelection);
+    }
+    return viewerRef.current;
+  }
+  const viewer = getViewer();
 
   useLayoutEffect(() => {
     async function renderDiagram() {
       if (containerRef.current) {
         setIsDiagramRendered(false);
-        await viewer.current.render(
+        await viewer.render(
           containerRef.current,
           xml,
-          selectableFlowNodes
+          selectableFlowNodes,
+          selectedFlowNodeId
         );
         setIsDiagramRendered(true);
       }
     }
 
     renderDiagram();
-  }, [xml, selectableFlowNodes]);
+  }, [xml, selectableFlowNodes, selectedFlowNodeId, viewer]);
 
   useEffect(() => {
-    const currentViewer = viewer.current;
     return () => {
-      currentViewer.reset();
+      viewer.reset();
     };
-  }, []);
+  }, [viewer]);
 
   return (
     <StyledDiagram data-testid="diagram">
       <DiagramCanvas ref={containerRef} />
       {isDiagramRendered && (
         <DiagramControls
-          handleZoomIn={viewer.current.zoomIn}
-          handleZoomOut={viewer.current.zoomOut}
-          handleZoomReset={viewer.current.zoomReset}
+          handleZoomIn={viewer.zoomIn}
+          handleZoomOut={viewer.zoomOut}
+          handleZoomReset={viewer.zoomReset}
         />
       )}
     </StyledDiagram>

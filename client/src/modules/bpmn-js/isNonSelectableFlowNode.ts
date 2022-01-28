@@ -5,7 +5,7 @@
  */
 
 import {isFlowNode} from 'modules/utils/flowNodes';
-import {BpmnJSElement} from './index.legacy';
+import {BpmnJSElement} from './BpmnJS';
 
 function isNonSelectableFlowNode(
   element: BpmnJSElement,
