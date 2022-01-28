@@ -28,6 +28,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
+import io.camunda.operate.qa.migration.util.EntityReader;
 import io.camunda.operate.qa.migration.v100.BasicProcessDataGenerator;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.templates.EventTemplate;
@@ -55,7 +56,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
   public void findProcessInstanceIds() {
     assumeThatProcessIsUnderTest(bpmnProcessId);
     if (processInstanceIds == null) {
-      sleepFor(5_000);
+      //sleepFor(5_000);
       SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
       // Process instances list
       searchRequest.source()
@@ -160,8 +161,6 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
     IncidentEntity randomIncident = chooseOne(incidents);
     assertThat(randomIncident.getErrorMessageHash()).isNotNull();
-    //TODO remove this condition when migrating further
-    assertThat(incidents.stream().allMatch(i -> i.isPending() == true)).describedAs("All incidents are pending after migration to 1.3.0").isTrue();
 
     incidents.forEach(inc -> {
       assertThat(inc.getTreePath()).isNotNull();

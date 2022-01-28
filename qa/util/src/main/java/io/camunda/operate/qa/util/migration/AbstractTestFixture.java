@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.qa.util.migration;
 
-import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,7 +32,7 @@ public abstract class AbstractTestFixture implements TestFixture {
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
   private static final String ZEEBE_PREFIX = "migration-test";
 
-  protected ZeebeBrokerContainer broker;
+  protected ZeebeContainer broker;
   protected GenericContainer<?> operateContainer;
 
   protected TestContext testContext;
@@ -113,7 +113,7 @@ public abstract class AbstractTestFixture implements TestFixture {
 
   protected void startZeebe(final String version) {
     logger.info("************ Starting Zeebe {} ************", version);
-    broker = new ZeebeBrokerContainer(DockerImageName.parse("camunda/zeebe:" + version))
+    broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version))
         .withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data")
         .withNetwork(testContext.getNetwork())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
@@ -126,7 +126,7 @@ public abstract class AbstractTestFixture implements TestFixture {
     testContext.setExternalZeebeContactPoint(broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
   }
 
-  protected void addConfig(ZeebeBrokerContainer zeebeBroker) {
+  protected void addConfig(ZeebeContainer zeebeBroker) {
     zeebeBroker.withCopyFileToContainer(MountableFile.forClasspathResource(ZEEBE_CFG_YAML_FILE), "/usr/local/zeebe/config/application.yaml");
   }
 
