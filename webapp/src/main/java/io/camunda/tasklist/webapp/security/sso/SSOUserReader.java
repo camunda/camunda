@@ -42,9 +42,8 @@ public class SSOUserReader implements UserReader {
       final String email = claims.get(tasklistProperties.getAuth0().getEmailKey()).asString();
       return Optional.of(
           new UserDTO()
-              .setUsername(email)
-              .setFirstname(EMPTY)
-              .setLastname(name)
+              .setUserId(email)
+              .setDisplayName(name)
               .setApiUser(false)
               // TODO to fix this later. Permissions will come from console - not role name
               .setPermissions(List.of(Permission.READ, Permission.WRITE)));
@@ -60,12 +59,6 @@ public class SSOUserReader implements UserReader {
   @Override
   public List<UserDTO> getUsersByUsernames(List<String> usernames) {
     return map(
-        usernames,
-        name ->
-            new UserDTO()
-                .setUsername(name)
-                .setFirstname(EMPTY)
-                .setLastname(name)
-                .setApiUser(false));
+        usernames, name -> new UserDTO().setDisplayName(name).setUserId(name).setApiUser(false));
   }
 }

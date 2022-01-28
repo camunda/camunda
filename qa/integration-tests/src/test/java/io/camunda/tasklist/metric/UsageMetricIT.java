@@ -54,9 +54,8 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   private static UserDTO buildAllAccessUserWith(
       String username, String firstname, String lastname) {
     return new UserDTO()
-        .setUsername(username)
-        .setFirstname(firstname)
-        .setLastname(lastname)
+        .setUserId(username)
+        .setDisplayName(String.format("%s %s", firstname, lastname))
         .setPermissions(List.of(Permission.WRITE));
   }
 

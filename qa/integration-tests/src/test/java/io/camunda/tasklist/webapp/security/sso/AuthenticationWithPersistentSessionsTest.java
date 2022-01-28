@@ -236,10 +236,8 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.username"))
-        .isEqualTo(TASKLIST_TESTUSER_EMAIL);
-    assertThat(graphQLResponse.get("$.data.currentUser.firstname")).isEmpty();
-    assertThat(graphQLResponse.get("$.data.currentUser.lastname")).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
+    assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
   }
 
   @Test

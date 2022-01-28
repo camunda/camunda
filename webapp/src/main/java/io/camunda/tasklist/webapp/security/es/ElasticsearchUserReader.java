@@ -34,9 +34,8 @@ public class ElasticsearchUserReader implements UserReader {
       final User user = (User) principal;
       return Optional.of(
           new UserDTO()
-              .setUsername(user.getUsername())
-              .setFirstname(user.getFirstname())
-              .setLastname(user.getLastname())
+              .setUserId(user.getUserId())
+              .setDisplayName(user.getDisplayName())
               .setPermissions(rolePermissionService.getPermissions(user.getRoles()))
               .setApiUser(false));
     }
@@ -49,14 +48,13 @@ public class ElasticsearchUserReader implements UserReader {
   }
 
   @Override
-  public List<UserDTO> getUsersByUsernames(List<String> usernames) {
+  public List<UserDTO> getUsersByUsernames(List<String> userIds) {
     return CollectionUtil.map(
-        userStorage.getUsersByUsernames(usernames),
+        userStorage.getUsersByUserIds(userIds),
         userEntity ->
             new UserDTO()
-                .setUsername(userEntity.getUsername())
-                .setFirstname(userEntity.getFirstname())
-                .setLastname(userEntity.getLastname())
+                .setUserId(userEntity.getUserId())
+                .setDisplayName(userEntity.getDisplayName())
                 .setApiUser(false));
   }
 }

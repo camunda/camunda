@@ -48,7 +48,7 @@ test('logout redirect', async (t) => {
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
 
-  await t.click(screen.getByRole('button', {name: 'Demo User'}));
+  await t.click(screen.getByRole('button', {name: 'demo'}));
   await t.click(screen.getByRole('button', {name: 'Logout'}));
 
   await t.expect(await getPathname()).eql('/login');
@@ -94,7 +94,7 @@ test('redirect to the correct URL after login', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedTaskURL)
-    .click(screen.getByRole('button', {name: /demo user/i}))
+    .click(screen.getByRole('button', {name: 'demo'}))
     .click(screen.getByRole('button', {name: /logout/i}));
 
   await t
@@ -104,7 +104,7 @@ test('redirect to the correct URL after login', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedFilterUrl)
-    .click(screen.getByRole('button', {name: /demo user/i}))
+    .click(screen.getByRole('button', {name: 'demo'}))
     .click(screen.getByRole('button', {name: /logout/i}));
 
   await t
@@ -114,6 +114,6 @@ test('redirect to the correct URL after login', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedTaskAndFilterURL)
-    .click(screen.getByRole('button', {name: /demo user/i}))
+    .click(screen.getByRole('button', {name: 'demo'}))
     .click(screen.getByRole('button', {name: /logout/i}));
 });

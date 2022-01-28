@@ -426,7 +426,7 @@ describe('<Variables />', () => {
     const UserName = () => {
       const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
-      return <div>{data?.currentUser.firstname}</div>;
+      return <div>{data?.currentUser.displayName}</div>;
     };
 
     mockServer.use(
@@ -450,7 +450,7 @@ describe('<Variables />', () => {
       },
     );
 
-    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(await screen.findByText(/myVar/)).toBeInTheDocument();
 
     expect(screen.queryByText('Add Variable')).not.toBeInTheDocument();

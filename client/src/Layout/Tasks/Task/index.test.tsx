@@ -36,7 +36,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="2020-05-29 14:00:00"
-        assignee={currentUser.username}
+        assignee={currentUser.userId}
       />,
       {
         wrapper: createWrapper(),
@@ -75,7 +75,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="invalid date"
-        assignee={currentUser.username}
+        assignee={currentUser.userId}
       />,
       {
         wrapper: createWrapper(),
@@ -93,7 +93,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="2020-05-29 14:00:00"
-        assignee={currentUser.username}
+        assignee={currentUser.userId}
       />,
       {
         wrapper: createWrapper(),
@@ -111,7 +111,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="2020-05-29 14:00:00"
-        assignee={currentUser.username}
+        assignee={currentUser.userId}
       />,
       {
         wrapper: createWrapper(['/?filter=all-open']),

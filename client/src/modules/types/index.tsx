@@ -9,9 +9,8 @@ type NonEmptyArray<T> = [T, ...T[]];
 type Permissions = NonEmptyArray<'read' | 'write'>;
 
 type User = Readonly<{
-  username: string;
-  firstname: string | null;
-  lastname: string | null;
+  userId: string;
+  displayName: string | null;
   permissions: Permissions;
   __typename: string;
 }>;

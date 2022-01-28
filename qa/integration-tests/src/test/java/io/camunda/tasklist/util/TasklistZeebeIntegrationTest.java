@@ -5,7 +5,7 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.USERNAME_DEFAULT;
+import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.DEFAULT_USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
@@ -40,10 +40,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 
-@WithMockUser(USERNAME_DEFAULT)
+@WithMockUser(DEFAULT_USER_ID)
 public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTest {
 
-  public static final String USERNAME_DEFAULT = "demo";
+  public static final String DEFAULT_USER_ID = "demo";
+  public static final String DEFAULT_DISPLAY_NAME = "Demo User";
   @Autowired public BeanFactory beanFactory;
   @Rule public final TasklistZeebeRule zeebeRule;
   public ZeebeContainer zeebeContainer;
@@ -94,20 +95,19 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
 
   protected UserDTO getDefaultCurrentUser() {
     return new UserDTO()
-        .setUsername(USERNAME_DEFAULT)
-        .setFirstname("Demo")
-        .setLastname("User")
+        .setUserId(DEFAULT_USER_ID)
+        .setDisplayName(DEFAULT_DISPLAY_NAME)
         .setPermissions(List.of(Permission.WRITE));
   }
 
   protected void setCurrentUser(UserDTO user) {
-    Mockito.when(userReader.getCurrentUserId()).thenReturn(user.getUsername() + "-id");
+    Mockito.when(userReader.getCurrentUserId()).thenReturn(user.getUserId());
     Mockito.when(userReader.getCurrentUser()).thenReturn(user);
     Mockito.when(userReader.getUsersByUsernames(any())).thenReturn(List.of(user));
     final String organisation =
-        user.getUsername().equals("demo")
+        user.getUserId().equals(DEFAULT_USER_ID)
             ? UserReader.DEFAULT_ORGANIZATION
-            : user.getUsername() + "-org";
+            : user.getUserId() + "-org";
     Mockito.when(userReader.getCurrentOrganizationId()).thenReturn(organisation);
   }
 

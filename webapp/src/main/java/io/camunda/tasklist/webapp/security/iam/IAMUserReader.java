@@ -28,9 +28,8 @@ public class IAMUserReader implements UserReader {
       final UserInfo userInfo = tokenAuth.getUserInfo();
       return Optional.of(
           new UserDTO()
-              .setFirstname(userInfo.getFirstName())
-              .setLastname(userInfo.getLastName())
-              .setUsername(userInfo.getUsername())
+              .setDisplayName(userInfo.getFullName())
+              .setUserId(userInfo.getUsername())
               .setPermissions(tokenAuth.getPermissions()));
     }
     return Optional.empty();
@@ -43,7 +42,6 @@ public class IAMUserReader implements UserReader {
 
   @Override
   public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
-    return map(
-        usernames, name -> new UserDTO().setUsername(name).setFirstname(EMPTY).setLastname(name));
+    return map(usernames, name -> new UserDTO().setUserId(name).setDisplayName(name));
   }
 }

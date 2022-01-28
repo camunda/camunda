@@ -25,8 +25,8 @@ public interface TaskValidator {
         if (taskBefore.getAssignee() == null) {
           throw new TaskValidationException("Task is not assigned");
         }
-        if (!taskBefore.getAssignee().equals(currentUser.getUsername())) {
-          throw new TaskValidationException("Task is not assigned to " + currentUser.getUsername());
+        if (!taskBefore.getAssignee().equals(currentUser.getUserId())) {
+          throw new TaskValidationException("Task is not assigned to " + currentUser.getUserId());
         }
       };
 

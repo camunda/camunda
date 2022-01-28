@@ -56,16 +56,14 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private ObjectMapper objectMapper;
 
-  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
-  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
-  private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
+  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe Doe");
+  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane Doe");
+  private final UserDTO demo = buildAllAccessUserWith(DEFAULT_USER_ID, DEFAULT_DISPLAY_NAME);
 
-  private static UserDTO buildAllAccessUserWith(
-      final String username, final String firstname, final String lastname) {
+  private static UserDTO buildAllAccessUserWith(final String userId, final String displayName) {
     return new UserDTO()
-        .setUsername(username)
-        .setFirstname(firstname)
-        .setLastname(lastname)
+        .setUserId(userId)
+        .setDisplayName(displayName)
         .setPermissions(List.of(Permission.WRITE));
   }
 
@@ -541,7 +539,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .having()
             .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, 1)
             .when()
-            .getTasksByQuery("{tasks(query: {assignee: \"demo\", state: CREATED}) {id}}");
+            .getTasksByQuery(
+                "{tasks(query: {assignee: \"" + DEFAULT_USER_ID + "\", state: CREATED}) {id}}");
     assertEquals(0, tasks.size());
 
     tasks = tester.getCreatedTasks();
@@ -554,7 +553,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, tasks.get(1).getId()))
             .then()
             .waitFor(1000)
-            .getTasksByQuery("{tasks(query: { assignee: \"demo\", state: CREATED}) {id}}");
+            .getTasksByQuery(
+                "{tasks(query: { assignee: \"" + DEFAULT_USER_ID + "\", state: CREATED}) {id}}");
     assertEquals(2, tasks.size());
   }
 
@@ -593,7 +593,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals(createdTasks.get(1).getId(), janesTasks.get(0).getId());
 
     final List<TaskDTO> demoTasks =
-        tester.getTasksByQuery("{tasks(query: {assignee: \"demo\", state: CREATED}) {id}}");
+        tester.getTasksByQuery(
+            "{tasks(query: {assignee: \"" + DEFAULT_USER_ID + "\", state: CREATED}) {id}}");
     assertEquals(1, demoTasks.size());
     assertEquals(createdTasks.get(4).getId(), demoTasks.get(0).getId());
   }

@@ -33,16 +33,14 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TestRestTemplate testRestTemplate;
 
-  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
-  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
-  private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
+  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe Doe");
+  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane Doe");
+  private final UserDTO demo = buildAllAccessUserWith(DEFAULT_USER_ID, DEFAULT_DISPLAY_NAME);
 
-  private static UserDTO buildAllAccessUserWith(
-      String username, String firstname, String lastname) {
+  private static UserDTO buildAllAccessUserWith(String userId, String displayName) {
     return new UserDTO()
-        .setUsername(username)
-        .setFirstname(firstname)
-        .setLastname(lastname)
+        .setUserId(userId)
+        .setDisplayName(displayName)
         .setPermissions(List.of(Permission.WRITE));
   }
 
@@ -82,19 +80,21 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe-id\",} 1.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe\",} 1.0"));
     assertThat(filter(claimedTasksMetrics, m -> m.contains("jane")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane-id\",} 2.0"));
-    assertThat(filter(claimedTasksMetrics, m -> m.contains("demo")))
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane\",} 2.0"));
+    assertThat(filter(claimedTasksMetrics, m -> m.contains(DEFAULT_USER_ID)))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\"demo-id\",} 1.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\""
+                        + DEFAULT_USER_ID
+                        + "\",} 1.0"));
   }
 
   @Test
@@ -143,19 +143,21 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe-id\",} 1.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe\",} 1.0"));
     assertThat(filter(completedTasksMetrics, m -> m.contains("jane")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane-id\",} 2.0"));
-    assertThat(filter(completedTasksMetrics, m -> m.contains("demo")))
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane\",} 2.0"));
+    assertThat(filter(completedTasksMetrics, m -> m.contains(DEFAULT_USER_ID)))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\"demo-id\",} 1.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\""
+                        + DEFAULT_USER_ID
+                        + "\",} 1.0"));
   }
 
   protected List<String> metricsFor(final String key) {

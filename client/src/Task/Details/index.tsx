@@ -72,7 +72,7 @@ const Details: React.FC = () => {
         query: GET_TASKS,
         variables: {
           ...getQueryVariables(filter, {
-            username: userData?.currentUser.username,
+            userId: userData?.currentUser.userId,
             pageSize:
               currentTaskCount <= MAX_TASKS_PER_REQUEST
                 ? MAX_TASKS_PER_REQUEST
@@ -95,7 +95,7 @@ const Details: React.FC = () => {
         query: GET_TASKS,
         variables: {
           ...getQueryVariables(filter, {
-            username: userData?.currentUser.username,
+            userId: userData?.currentUser.userId,
             pageSize:
               currentTaskCount <= MAX_TASKS_PER_REQUEST
                 ? MAX_TASKS_PER_REQUEST

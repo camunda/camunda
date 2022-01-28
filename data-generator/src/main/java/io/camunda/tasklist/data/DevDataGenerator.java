@@ -109,8 +109,7 @@ public class DevDataGenerator implements DataGenerator {
     final String passwordEncoded = passwordEncoder.encode(password);
     final UserEntity user =
         UserEntity.from(username, passwordEncoded, List.of("USER"))
-            .setFirstname(firstname)
-            .setLastname(lastname)
+            .setDisplayName(firstname + " " + lastname)
             .setRoles(asList("OWNER"));
     try {
       final IndexRequest request =
@@ -119,7 +118,7 @@ public class DevDataGenerator implements DataGenerator {
               .source(userEntityToJSONString(user), XContentType.JSON);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception t) {
-      LOGGER.error("Could not create demo user with username {}", user.getUsername(), t);
+      LOGGER.error("Could not create demo user with user id {}", user.getUserId(), t);
     }
     LOGGER.info("Created demo user {} with password {}", username, password);
   }

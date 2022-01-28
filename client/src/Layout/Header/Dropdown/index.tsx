@@ -15,7 +15,6 @@ import {
   GET_CURRENT_USER,
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
-import {getUserDisplayName} from './getUserDisplayName';
 
 interface Props {
   isInitiallyOpen?: boolean;
@@ -56,7 +55,7 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
             setIsOpen(!isOpen);
           }}
         >
-          <LabelWrapper>{getUserDisplayName(data.currentUser)}</LabelWrapper>
+          <LabelWrapper>{data.currentUser.displayName}</LabelWrapper>
           <Icon data-testid="dropdown-icon" />
         </Button>
 
@@ -79,7 +78,7 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
 
   return (
     <Container ref={dropdownRef} slot={slot}>
-      <LabelWrapper>{getUserDisplayName(data.currentUser)}</LabelWrapper>
+      <LabelWrapper>{data.currentUser.displayName}</LabelWrapper>
     </Container>
   );
 };

@@ -10,11 +10,10 @@ import java.util.Objects;
 
 public class UserEntity extends TasklistEntity<UserEntity> {
 
-  private String username;
+  private String userId;
   private String password;
+  private String displayName;
   private List<String> roles;
-  private String firstname;
-  private String lastname;
 
   public List<String> getRoles() {
     return roles;
@@ -25,13 +24,13 @@ public class UserEntity extends TasklistEntity<UserEntity> {
     return this;
   }
 
-  public String getUsername() {
-    return username;
+  public String getUserId() {
+    return userId;
   }
 
-  public UserEntity setUsername(String username) {
-    this.username = username;
-    setId(username);
+  public UserEntity setUserId(String userId) {
+    this.userId = userId;
+    setId(userId);
     return this;
   }
 
@@ -44,33 +43,18 @@ public class UserEntity extends TasklistEntity<UserEntity> {
     return this;
   }
 
-  public String getFirstname() {
-    return firstname;
+  public String getDisplayName() {
+    return displayName;
   }
 
-  public UserEntity setFirstname(String firstname) {
-    this.firstname = firstname;
-    return this;
-  }
-
-  public String getLastname() {
-    return lastname;
-  }
-
-  public UserEntity setLastname(String lastname) {
-    this.lastname = lastname;
+  public UserEntity setDisplayName(String displayName) {
+    this.displayName = displayName;
     return this;
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (username != null ? username.hashCode() : 0);
-    result = 31 * result + (password != null ? password.hashCode() : 0);
-    result = 31 * result + (roles != null ? roles.hashCode() : 0);
-    result = 31 * result + (firstname != null ? firstname.hashCode() : 0);
-    result = 31 * result + (lastname != null ? lastname.hashCode() : 0);
-    return result;
+    return Objects.hash(userId, displayName, password, roles);
   }
 
   @Override
@@ -78,34 +62,23 @@ public class UserEntity extends TasklistEntity<UserEntity> {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null) {
       return false;
     }
-    if (!super.equals(o)) {
+    if (getClass() != o.getClass()) {
       return false;
     }
-
     final UserEntity that = (UserEntity) o;
 
-    if (!Objects.equals(username, that.username)) {
-      return false;
-    }
-    if (!Objects.equals(password, that.password)) {
-      return false;
-    }
-    if (!Objects.equals(roles, that.roles)) {
-      return false;
-    }
-    if (!Objects.equals(firstname, that.firstname)) {
-      return false;
-    }
-    return Objects.equals(lastname, that.lastname);
+    return Objects.equals(userId, that.userId)
+        && Objects.equals(displayName, that.displayName)
+        && Objects.equals(password, that.password)
+        && Objects.equals(roles, that.roles);
   }
 
-  public static UserEntity from(String username, String password, List<String> roles) {
+  public static UserEntity from(String userId, String password, List<String> roles) {
     final UserEntity userEntity = new UserEntity();
-    userEntity.setId(username);
-    userEntity.setUsername(username);
+    userEntity.setUserId(userId);
     userEntity.setPassword(password);
     userEntity.setRoles(roles);
     return userEntity;

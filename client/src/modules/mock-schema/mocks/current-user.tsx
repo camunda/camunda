@@ -7,34 +7,30 @@
 import {User} from 'modules/types';
 
 const currentUser: User = {
-  username: 'demo',
-  firstname: 'Demo',
-  lastname: 'User',
+  userId: 'demo',
+  displayName: 'Demo User',
   permissions: ['read', 'write'],
   __typename: 'User',
 };
 
 const currentRestrictedUser: User = {
-  username: 'demo',
-  firstname: 'Demo',
-  lastname: 'User',
+  userId: 'demo',
+  displayName: 'Demo User',
   permissions: ['read'],
   __typename: 'User',
 };
 
 const currentUserWithUnknownRole: User = {
-  username: 'demo',
-  firstname: 'Demo',
-  lastname: 'User',
+  userId: 'demo',
+  displayName: 'Demo User',
   // @ts-ignore
   permissions: ['unknown'],
   __typename: 'User',
 };
 
 const currentUserWithOutRole: User = {
-  username: 'demo',
-  firstname: 'Demo',
-  lastname: 'User',
+  userId: 'demo',
+  displayName: 'Demo User',
   // @ts-ignore
   permissions: [],
   __typename: 'User',

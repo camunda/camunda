@@ -25,7 +25,7 @@ import {client} from 'modules/apollo-client';
 const UserName = () => {
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
-  return <div>{data?.currentUser.firstname}</div>;
+  return <div>{data?.currentUser.displayName}</div>;
 };
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -57,7 +57,7 @@ describe('Restricted', () => {
       {wrapper: Wrapper},
     );
 
-    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
   });
 
@@ -75,7 +75,7 @@ describe('Restricted', () => {
       {wrapper: Wrapper},
     );
 
-    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.getByText('test content')).toBeInTheDocument();
   });
 
@@ -93,7 +93,7 @@ describe('Restricted', () => {
       {wrapper: Wrapper},
     );
 
-    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.getByText('test content')).toBeInTheDocument();
   });
 
@@ -113,7 +113,7 @@ describe('Restricted', () => {
       {wrapper: Wrapper},
     );
 
-    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
   });
 
@@ -131,7 +131,7 @@ describe('Restricted', () => {
       {wrapper: Wrapper},
     );
 
-    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
   });
 });

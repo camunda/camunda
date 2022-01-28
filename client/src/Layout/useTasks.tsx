@@ -42,7 +42,7 @@ function useTasks({withPolling}: {withPolling?: boolean}) {
     GetTasksVariables
   >(GET_TASKS, {
     variables: getQueryVariables(filter, {
-      username: currentUserResult.data?.currentUser.username,
+      userId: currentUserResult.data?.currentUser.userId,
       pageSize: MAX_TASKS_PER_REQUEST,
     }),
     fetchPolicy: 'network-only',

@@ -16,31 +16,32 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public class User extends org.springframework.security.core.userdetails.User {
 
-  private String firstname;
-  private String lastname;
+  private String userId;
+  private String displayName;
 
   private List<Role> roles;
 
   public User(String username, String password, List<Role> roles) {
     super(username, password, toAuthorities(roles));
     this.roles = roles;
+    this.userId = username;
   }
 
-  public String getFirstname() {
-    return firstname;
+  public String getUserId() {
+    return userId;
   }
 
-  public User setFirstname(String firstname) {
-    this.firstname = firstname;
+  public User setUserId(final String userId) {
+    this.userId = userId;
     return this;
   }
 
-  public String getLastname() {
-    return lastname;
+  public String getDisplayName() {
+    return displayName;
   }
 
-  public User setLastname(String lastname) {
-    this.lastname = lastname;
+  public User setDisplayName(final String displayName) {
+    this.displayName = displayName;
     return this;
   }
 
@@ -69,13 +70,13 @@ public class User extends org.springframework.security.core.userdetails.User {
       return false;
     }
     final User user = (User) o;
-    return Objects.equals(firstname, user.firstname)
-        && Objects.equals(lastname, user.lastname)
+    return Objects.equals(userId, user.userId)
+        && Objects.equals(displayName, user.displayName)
         && Objects.equals(roles, user.roles);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), firstname, lastname, roles);
+    return Objects.hash(super.hashCode(), userId, displayName, roles);
   }
 }

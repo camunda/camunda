@@ -398,13 +398,13 @@ public class TaskReaderWriter {
     }
     if (StringUtils.isNotEmpty(assignee)
         && !currentUser.isApiUser()
-        && !assignee.equals(currentUser.getUsername())) {
+        && !assignee.equals(currentUser.getUserId())) {
       throw new TasklistRuntimeException(
           "User doesn't have the permission to assign another user to this task");
     }
 
     if (StringUtils.isEmpty(assignee) && !currentUser.isApiUser()) {
-      assignee = currentUser.getUsername();
+      assignee = currentUser.getUserId();
     }
 
     task.setAssignee(assignee);

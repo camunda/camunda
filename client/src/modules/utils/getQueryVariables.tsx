@@ -10,13 +10,13 @@ import {TaskStates} from 'modules/constants/taskStates';
 const getQueryVariables = (
   filter: string,
   {
-    username,
+    userId,
     pageSize,
     searchBefore,
     searchAfter,
     searchAfterOrEqual,
   }: {
-    username?: string;
+    userId?: string;
     pageSize?: number;
     searchBefore?: string[];
     searchAfter?: string[];
@@ -27,7 +27,7 @@ const getQueryVariables = (
     case FilterValues.ClaimedByMe: {
       return {
         assigned: true,
-        assignee: username,
+        assignee: userId,
         state: TaskStates.Created,
         pageSize,
         searchBefore,

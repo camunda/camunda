@@ -8,40 +8,34 @@ package io.camunda.tasklist.webapp.graphql.entity;
 import io.camunda.tasklist.webapp.security.Permission;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.util.StringUtils;
 
 public class UserDTO {
 
-  private String username;
-  private String firstname;
-  private String lastname;
+  private String userId;
+  private String displayName;
   private boolean apiUser;
 
   private List<Permission> permissions;
 
-  public String getUsername() {
-    return username;
+  public String getUserId() {
+    return userId;
   }
 
-  public UserDTO setUsername(String username) {
-    this.username = username;
+  public UserDTO setUserId(final String userId) {
+    this.userId = userId;
     return this;
   }
 
-  public String getFirstname() {
-    return firstname;
+  public String getDisplayName() {
+    if (!StringUtils.hasText(displayName)) {
+      return userId;
+    }
+    return displayName;
   }
 
-  public UserDTO setFirstname(String firstname) {
-    this.firstname = firstname;
-    return this;
-  }
-
-  public String getLastname() {
-    return lastname;
-  }
-
-  public UserDTO setLastname(String lastname) {
-    this.lastname = lastname;
+  public UserDTO setDisplayName(final String displayName) {
+    this.displayName = displayName;
     return this;
   }
 
@@ -65,7 +59,7 @@ public class UserDTO {
 
   @Override
   public int hashCode() {
-    return Objects.hash(firstname, lastname, username, apiUser, permissions);
+    return Objects.hash(userId, displayName, apiUser, permissions);
   }
 
   @Override
@@ -80,10 +74,9 @@ public class UserDTO {
       return false;
     }
     final UserDTO other = (UserDTO) obj;
-    return Objects.equals(firstname, other.firstname)
-        && Objects.equals(apiUser, other.apiUser)
-        && Objects.equals(lastname, other.lastname)
-        && Objects.equals(username, other.username)
+    return Objects.equals(apiUser, other.apiUser)
+        && Objects.equals(displayName, other.displayName)
+        && Objects.equals(userId, other.userId)
         && Objects.equals(permissions, other.permissions);
   }
 }

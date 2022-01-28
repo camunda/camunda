@@ -28,11 +28,9 @@ public class TasklistProperties {
   /** Indicates, whether CSRF prevention is enabled. */
   @Deprecated private boolean csrfPreventionEnabled = true;
 
-  /** Standard user data */
-  private String username = "demo";
-
+  private String userId = "demo";
+  private String displayName = "demo";
   private String password = "demo";
-
   private List<String> roles = List.of("OWNER");
 
   /** Maximum size of batch operation. */
@@ -127,12 +125,20 @@ public class TasklistProperties {
     this.zeebe = zeebe;
   }
 
-  public String getUsername() {
-    return username;
+  public String getUserId() {
+    return userId;
   }
 
-  public void setUsername(String username) {
-    this.username = username;
+  public void setUserId(String userId) {
+    this.userId = userId;
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  public void setDisplayName(final String displayName) {
+    this.displayName = displayName;
   }
 
   public String getPassword() {

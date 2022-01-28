@@ -38,13 +38,10 @@ import org.springframework.test.context.ActiveProfiles;
 public class AuthenticationTest extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";
-  private static final String CURRENT_USER_QUERY =
-      "{currentUser{ username \n lastname \n firstname }}";
+  private static final String CURRENT_USER_QUERY = "{currentUser{ userId \n displayName }}";
 
   private static final String USERNAME = "demo";
   private static final String PASSWORD = "demo";
-  private static final String FIRSTNAME = "Firstname";
-  private static final String LASTNAME = "Lastname";
 
   @Autowired private TestRestTemplate testRestTemplate;
 
@@ -57,12 +54,10 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
   public void setUp() {
     final UserEntity user =
         new UserEntity()
-            .setUsername(USERNAME)
+            .setUserId(USERNAME)
             .setPassword(encoder.encode(PASSWORD))
-            .setRoles(List.of(Role.OPERATOR.name()))
-            .setFirstname(FIRSTNAME)
-            .setLastname(LASTNAME);
-    given(userStorage.getByName(USERNAME)).willReturn(user);
+            .setRoles(List.of(Role.OPERATOR.name()));
+    given(userStorage.getByUserId(USERNAME)).willReturn(user);
   }
 
   @Test
@@ -136,9 +131,8 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     final GraphQLResponse response = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(response.get("$.data.currentUser.username")).isEqualTo(USERNAME);
-    assertThat(response.get("$.data.currentUser.firstname")).isEqualTo(FIRSTNAME);
-    assertThat(response.get("$.data.currentUser.lastname")).isEqualTo(LASTNAME);
+    assertThat(response.get("$.data.currentUser.userId")).isEqualTo(USERNAME);
+    assertThat(response.get("$.data.currentUser.displayName")).isEqualTo(USERNAME);
   }
 
   @Test

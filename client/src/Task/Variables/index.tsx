@@ -86,7 +86,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
 
   const {assignee, taskState} = task;
   const canCompleteTask =
-    userData?.currentUser.username === assignee &&
+    userData?.currentUser.userId === assignee &&
     taskState === 'CREATED' &&
     hasPermission;
 

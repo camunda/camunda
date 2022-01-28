@@ -50,7 +50,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + ".username = user1",
+      TasklistProperties.PREFIX + ".userId = user1",
       TasklistProperties.PREFIX + ".password = psw1",
       "graphql.servlet.websocket.enabled=false"
     },
@@ -96,15 +96,14 @@ public class ElasticsearchUserDetailsServiceIT extends TasklistIntegrationTest {
     final User testUser = (User) userDetails;
     assertThat(testUser.getUsername()).isEqualTo(TEST_USERNAME);
     assertThat(passwordEncoder.matches(TEST_PASSWORD, testUser.getPassword())).isTrue();
-    assertThat(testUser.getFirstname()).isEqualTo(TEST_FIRSTNAME);
-    assertThat(testUser.getLastname()).isEqualTo(TEST_LASTNAME);
+    assertThat(testUser.getUserId()).isEqualTo("user1");
+    assertThat(testUser.getDisplayName()).isEqualTo(TEST_FIRSTNAME + " " + TEST_LASTNAME);
   }
 
   private void updateUserRealName() {
     try {
       final Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(UserIndex.FIRSTNAME, TEST_FIRSTNAME);
-      jsonMap.put(UserIndex.LASTNAME, TEST_LASTNAME);
+      jsonMap.put(UserIndex.DISPLAY_NAME, String.format("%s %s", TEST_FIRSTNAME, TEST_LASTNAME));
       final UpdateRequest request =
           new UpdateRequest()
               .index(userIndex.getFullQualifiedName())

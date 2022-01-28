@@ -31,9 +31,8 @@ public interface UserReader {
       final String name =
           jwtAuthentication.getName() == null ? DEFAULT_USER : jwtAuthentication.getName();
       return new UserDTO()
-          .setUsername(name)
-          .setFirstname(EMPTY)
-          .setLastname(name)
+          .setUserId(name)
+          .setDisplayName(name)
           .setApiUser(true)
           .setPermissions(List.of(Permission.WRITE));
     } else {

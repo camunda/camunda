@@ -87,9 +87,8 @@ input VariableInput {
 }
 # Describes the user.
 type User {
-    username: ID!
-    firstname: String
-    lastname: String
+    userId: ID!
+    displayName: String
     permissions: [String!]
 }
 # What can be searched for.

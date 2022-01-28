@@ -16,7 +16,7 @@ const tasks: ReadonlyArray<Task> = [
     processName: 'processName',
     creationTime: '2020-05-28 10:11:12',
     completionTime: new Date().toISOString(),
-    assignee: currentUser.username,
+    assignee: currentUser.userId,
     variables: [],
     taskState: TaskStates.Created,
     sortValues: ['0', '1'],
@@ -73,7 +73,7 @@ const tasks: ReadonlyArray<Task> = [
 
 const tasksClaimedByDemoUser: ReadonlyArray<Task> = tasks.map((task) => ({
   ...task,
-  assignee: currentUser.username,
+  assignee: currentUser.userId,
 }));
 
 const unclaimedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
@@ -83,7 +83,7 @@ const unclaimedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
 
 const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
   ...task,
-  assignee: task.assignee === null ? currentUser.username : task.assignee,
+  assignee: task.assignee === null ? currentUser.userId : task.assignee,
   taskState: TaskStates.Completed,
 }));
 

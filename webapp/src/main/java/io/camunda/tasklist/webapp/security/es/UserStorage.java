@@ -50,12 +50,12 @@ public class UserStorage extends AbstractReader {
 
   @Autowired private UserIndex userIndex;
 
-  public UserEntity getByName(String username) {
+  public UserEntity getByUserId(String userId) {
     final SearchRequest searchRequest =
         new SearchRequest(userIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(QueryBuilders.termQuery(UserIndex.USERNAME, username)));
+                    .query(QueryBuilders.termQuery(UserIndex.USER_ID, userId)));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value == 1) {
@@ -63,10 +63,9 @@ public class UserStorage extends AbstractReader {
             response.getHits().getHits()[0].getSourceAsString(), objectMapper, UserEntity.class);
       } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(
-            String.format("Could not find unique user with username '%s'.", username));
+            String.format("Could not find unique user with userId '%s'.", userId));
       } else {
-        throw new NotFoundException(
-            String.format("Could not find user with username '%s'.", username));
+        throw new NotFoundException(String.format("Could not find user with userId '%s'.", userId));
       }
     } catch (IOException e) {
       final String message =
@@ -83,13 +82,13 @@ public class UserStorage extends AbstractReader {
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      LOGGER.error("Could not create user with username {}", user.getUsername(), e);
+      LOGGER.error("Could not create user with user id {}", user.getUserId(), e);
     }
   }
 
-  public List<UserEntity> getUsersByUsernames(List<String> usernames) {
+  public List<UserEntity> getUsersByUserIds(List<String> userIds) {
     final ConstantScoreQueryBuilder esQuery =
-        constantScoreQuery(idsQuery().addIds(usernames.toArray(String[]::new)));
+        constantScoreQuery(idsQuery().addIds(userIds.toArray(String[]::new)));
 
     final SearchRequest searchRequest =
         new SearchRequest(userIndex.getAlias())
@@ -97,11 +96,9 @@ public class UserStorage extends AbstractReader {
                 new SearchSourceBuilder()
                     .query(esQuery)
                     .sort(
-                        SortBuilders.scriptSort(getScript(usernames), ScriptSortType.NUMBER)
+                        SortBuilders.scriptSort(getScript(userIds), ScriptSortType.NUMBER)
                             .order(SortOrder.ASC))
-                    .fetchSource(
-                        new String[] {UserIndex.USERNAME, UserIndex.FIRSTNAME, UserIndex.LASTNAME},
-                        null));
+                    .fetchSource(new String[] {UserIndex.USER_ID, UserIndex.DISPLAY_NAME}, null));
 
     try {
       return ElasticsearchUtil.scroll(searchRequest, UserEntity.class, objectMapper, esClient);
@@ -112,16 +109,16 @@ public class UserStorage extends AbstractReader {
     }
   }
 
-  private Script getScript(final List<String> usernames) {
+  private Script getScript(final List<String> userIds) {
     final String scriptCode =
         String.format(
-            "def usernamesCount = params.usernames.size();"
-                + "def username = doc['%s'].value;"
-                + "def foundIdx = params.usernames.indexOf(username);"
-                + "return foundIdx > -1 ? foundIdx: usernamesCount + 1;",
-            UserIndex.USERNAME);
+            "def userIdsCount = params.userIds.size();"
+                + "def userId = doc['%s'].value;"
+                + "def foundIdx = params.userIds.indexOf(userId);"
+                + "return foundIdx > -1 ? foundIdx: userIdsCount + 1;",
+            UserIndex.USER_ID);
     return new Script(
-        ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptCode, Map.of("usernames", usernames));
+        ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptCode, Map.of("userIds", userIds));
   }
 
   protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {

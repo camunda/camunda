@@ -17,9 +17,8 @@ import {
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {
     currentUser {
-      firstname
-      lastname
-      username
+      userId
+      displayName
       permissions
     }
   }

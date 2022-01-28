@@ -45,16 +45,16 @@ public class UserStorageIT extends TasklistIntegrationTest {
   @Test
   public void usersByUsernamesShouldBeInSameOrder() {
     // given
-    final var usernames = new ArrayList<>(List.of("demo", "jane", "joe"));
-    usernames.forEach(
-        username ->
-            userDetailsService.addUserWith(username, username, List.of(Role.OPERATOR.name())));
+    final var userIds = new ArrayList<>(List.of("demo", "jane", "joe"));
+    userIds.forEach(
+        userId ->
+            userDetailsService.addUserWith(userId, userId, userId, List.of(Role.OPERATOR.name())));
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     // when ( getting request of random ordered usernames )
-    Collections.shuffle(usernames);
+    Collections.shuffle(userIds);
 
     // then
-    assertThat(userStorage.getUsersByUsernames(usernames).stream().map(UserEntity::getUsername))
-        .isEqualTo(usernames);
+    assertThat(userStorage.getUsersByUserIds(userIds).stream().map(UserEntity::getUserId))
+        .isEqualTo(userIds);
   }
 }
