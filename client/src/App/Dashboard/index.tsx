@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {MetricPanel} from './MetricPanel';
 import {InstancesByProcess} from './InstancesByProcess';

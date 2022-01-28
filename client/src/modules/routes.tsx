@@ -11,7 +11,6 @@ import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 type RouterState = {
   referrer?: string;
-  isLoggedIn?: boolean;
 };
 
 const Routes = {

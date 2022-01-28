@@ -370,7 +370,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read', 'write'],
       canLogout: true,
@@ -402,7 +402,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,

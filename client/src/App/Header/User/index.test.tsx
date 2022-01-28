@@ -4,15 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {User} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
-import Authentication from 'App/Authentication';
-import {MemoryRouter} from 'react-router-dom';
 
 const mockUser = {
   displayName: 'Franz Kafka',
@@ -24,18 +22,8 @@ const mockSsoUser = {
   canLogout: false,
 };
 
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>
-        <Authentication>{children} </Authentication>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
+const Wrapper: React.FC = ({children}) => {
+  return <ThemeProvider>{children}</ThemeProvider>;
 };
 
 describe('User', () => {
@@ -50,9 +38,11 @@ describe('User', () => {
       )
     );
 
-    render(<User handleRedirect={() => {}} />, {
+    render(<User />, {
       wrapper: Wrapper,
     });
+
+    authenticationStore.authenticate();
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
   });
@@ -64,9 +54,11 @@ describe('User', () => {
       )
     );
 
-    render(<User handleRedirect={() => {}} />, {
+    render(<User />, {
       wrapper: Wrapper,
     });
+
+    authenticationStore.authenticate();
 
     expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
 
@@ -83,15 +75,15 @@ describe('User', () => {
       rest.post('/api/logout', (_, res, ctx) => res.once(ctx.json('')))
     );
 
-    const mockHandleRedirect = jest.fn();
-
-    render(<User handleRedirect={mockHandleRedirect} />, {
+    render(<User />, {
       wrapper: Wrapper,
     });
+
+    authenticationStore.authenticate();
 
     userEvent.click(await screen.findByText('Franz Kafka'));
     userEvent.click(await screen.findByText('Logout'));
 
-    await waitFor(() => expect(mockHandleRedirect).toHaveBeenCalled());
+    expect(await screen.findByTestId('username-skeleton')).toBeInTheDocument();
   });
 });

@@ -4,6 +4,38 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {request, setResponseInterceptor} from './request';
+import {authenticationStore} from 'modules/stores/authentication';
+import {mergePathname} from './mergePathname';
 
-export {get, post, put, del} from './wrappers';
+type RequestParams = {
+  url: string;
+  method?: RequestInit['method'];
+  headers?: RequestInit['headers'];
+  body?: string | unknown;
+  signal?: RequestInit['signal'];
+};
+
+async function request({url, method, body, headers, signal}: RequestParams) {
+  const response = await fetch(
+    mergePathname(window.clientConfig?.contextPath ?? '/', url),
+    {
+      method,
+      credentials: 'include',
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      mode: 'cors',
+      signal,
+    }
+  );
+
+  if ([401, 403].includes(response.status)) {
+    authenticationStore.expireSession();
+  }
+
+  return response;
+}
+
+export {request};

@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post} from 'modules/request';
+import {request} from 'modules/request';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
-
-const URL = '/api/flow-node-instances';
 
 type Query = {
   processInstanceId: ProcessInstanceEntity['id'];
@@ -19,7 +17,11 @@ type Query = {
 };
 
 async function fetchFlowNodeInstances(queries: Query[]) {
-  return post(URL, {queries});
+  return request({
+    url: '/api/flow-node-instances',
+    method: 'POST',
+    body: {queries},
+  });
 }
 
 export {fetchFlowNodeInstances};

@@ -4,16 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import {useHistory} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
-
-import {login} from 'modules/api/login';
 import Button from 'modules/components/Button';
 import {PAGE_TITLE} from 'modules/constants';
 import {clearStateLocally} from 'modules/utils/localStorage';
-
 import {Disclaimer} from './Disclaimer';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {
@@ -29,6 +26,8 @@ import {
 } from './styled';
 import {Routes} from 'modules/routes';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
+import {authenticationStore} from 'modules/stores/authentication';
+import {NetworkError} from 'modules/networkError';
 
 type FormValues = {
   username: string;
@@ -37,10 +36,9 @@ type FormValues = {
 
 type LocationState = {
   referrer?: Location;
-  isLoggedIn?: boolean;
 };
 
-function Login() {
+const Login: React.FC = () => {
   const history = useHistory<LocationState>();
 
   useEffect(() => {
@@ -50,42 +48,30 @@ function Login() {
   return (
     <Form<FormValues>
       onSubmit={async (values) => {
-        try {
-          const response = await login(values);
+        const response = await authenticationStore.handleLogin(values);
 
-          if (response.status === 401) {
-            return {
-              [FORM_ERROR]: LOGIN_ERROR,
-            };
-          }
-
-          if (!response.ok) {
-            return {
-              [FORM_ERROR]: GENERIC_ERROR,
-            };
-          }
+        if (response === undefined) {
           clearStateLocally();
-          history.push(
+          history.replace(
             history.location.state?.referrer === undefined
               ? {
                   ...history.location,
                   pathname: Routes.dashboard(),
-                  state: {
-                    isLoggedIn: true,
-                  },
                 }
-              : {
-                  ...history.location.state.referrer,
-                  state: {
-                    isLoggedIn: true,
-                  },
-                }
+              : history.location.state.referrer
           );
-        } catch {
+          return;
+        }
+
+        if (response instanceof NetworkError && response.status === 401) {
           return {
-            [FORM_ERROR]: GENERIC_ERROR,
+            [FORM_ERROR]: LOGIN_ERROR,
           };
         }
+
+        return {
+          [FORM_ERROR]: GENERIC_ERROR,
+        };
       }}
     >
       {({handleSubmit, submitting, submitError, form, dirtyFields}) => (
@@ -146,6 +132,6 @@ function Login() {
       )}
     </Form>
   );
-}
+};
 
 export {Login};

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post} from 'modules/request';
+import {request} from 'modules/request';
 
 async function fetchFlowNodeMetaData({
   processInstanceId,
@@ -17,13 +17,14 @@ async function fetchFlowNodeMetaData({
   flowNodeInstanceId?: string;
   flowNodeType?: string;
 }) {
-  const URL = `/api/process-instances/${processInstanceId}/flow-node-metadata`;
-
-  if (flowNodeInstanceId === undefined) {
-    return post(URL, {flowNodeId, flowNodeInstanceId, flowNodeType});
-  } else {
-    return post(URL, {flowNodeInstanceId, flowNodeType});
-  }
+  return request({
+    url: `/api/process-instances/${processInstanceId}/flow-node-metadata`,
+    method: 'POST',
+    body:
+      flowNodeInstanceId === undefined
+        ? {flowNodeId, flowNodeInstanceId, flowNodeType}
+        : {flowNodeInstanceId, flowNodeType},
+  });
 }
 
 export {fetchFlowNodeMetaData};

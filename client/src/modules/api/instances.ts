@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post, get} from 'modules/request';
+import {request} from 'modules/request';
 import {RequestFilters} from 'modules/utils/filter';
 
 const URL = '/api/process-instances';
@@ -49,11 +49,11 @@ type VariablePayload = {
 };
 
 async function fetchProcessInstance(id: ProcessInstanceEntity['id']) {
-  return get(`${URL}/${id}`);
+  return request({url: `${URL}/${id}`});
 }
 
 async function fetchProcessInstanceIncidents(id: ProcessInstanceEntity['id']) {
-  return get(`${URL}/${id}/incidents`);
+  return request({url: `${URL}/${id}/incidents`});
 }
 
 async function fetchProcessInstances({
@@ -63,21 +63,26 @@ async function fetchProcessInstances({
   payload: ProcessInstancesQuery;
   signal?: AbortSignal;
 }) {
-  return await post(`${URL}`, payload, {signal});
+  return request({
+    url: `${URL}`,
+    method: 'POST',
+    body: payload,
+    signal,
+  });
 }
 
 async function fetchSequenceFlows(
   processInstanceId: ProcessInstanceEntity['id']
 ) {
-  return get(`${URL}/${processInstanceId}/sequence-flows`);
+  return request({url: `${URL}/${processInstanceId}/sequence-flows`});
 }
 
 async function fetchGroupedProcesses() {
-  return get('/api/processes/grouped');
+  return request({url: '/api/processes/grouped'});
 }
 
 async function fetchProcessCoreStatistics() {
-  return get(`${URL}/core-statistics`);
+  return request({url: `${URL}/core-statistics`});
 }
 
 async function fetchProcessInstancesByIds({
@@ -105,7 +110,11 @@ async function fetchProcessInstancesByIds({
 }
 
 async function fetchProcessInstancesStatistics(payload: any) {
-  const response = await post(`${URL}/statistics`, payload);
+  const response = await request({
+    url: `${URL}/statistics`,
+    method: 'POST',
+    body: payload,
+  });
   return {statistics: await response.json()};
 }
 
@@ -116,7 +125,14 @@ async function applyBatchOperation(
   operationType: OperationEntityType,
   query: BatchOperationQuery
 ) {
-  return post(`${URL}/batch-operation`, {operationType, query});
+  return request({
+    url: `${URL}/batch-operation`,
+    method: 'POST',
+    body: {
+      operationType,
+      query,
+    },
+  });
 }
 
 /**
@@ -127,11 +143,15 @@ async function applyOperation(
   instanceId: ProcessInstanceEntity['id'],
   payload: OperationPayload
 ) {
-  return post(`${URL}/${instanceId}/operation`, payload);
+  return request({
+    url: `${URL}/${instanceId}/operation`,
+    method: 'POST',
+    body: payload,
+  });
 }
 
 async function getOperation(batchOperationId: string) {
-  return get(`/api/operations?batchOperationId=${batchOperationId}`);
+  return request({url: `/api/operations?batchOperationId=${batchOperationId}`});
 }
 
 async function fetchVariables({
@@ -143,11 +163,16 @@ async function fetchVariables({
   payload: VariablePayload;
   signal?: AbortSignal;
 }) {
-  return post(`${URL}/${instanceId}/variables`, payload, {signal});
+  return request({
+    url: `${URL}/${instanceId}/variables`,
+    method: 'POST',
+    body: payload,
+    signal,
+  });
 }
 
 async function fetchVariable(id: VariableEntity['id']) {
-  return get(`/api/variables/${id}`);
+  return request({url: `/api/variables/${id}`});
 }
 
 export type {VariablePayload};

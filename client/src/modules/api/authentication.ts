@@ -4,24 +4,39 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post} from 'modules/request';
+import {request} from 'modules/request';
 
 type Credentials = {
   username: string;
   password: string;
 };
 
-async function login({username, password}: Credentials) {
+function login({username, password}: Credentials) {
   const body = new URLSearchParams([
     ['username', username],
     ['password', password],
   ]).toString();
 
-  return post('/api/login', body, {
+  return request({
+    url: '/api/login',
+    method: 'POST',
+    body,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
   });
 }
 
-export {login};
+function getUser() {
+  return request({url: '/api/authentications/user'});
+}
+
+function logout() {
+  return request({
+    url: '/api/logout',
+    method: 'POST',
+  });
+}
+
+export {login, getUser, logout};
+export type {Credentials};

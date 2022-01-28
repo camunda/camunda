@@ -4,26 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import Option from 'modules/components/Dropdown/Option';
-import * as api from 'modules/api/header';
-import * as Styled from './styled';
+import {ProfileDropdown, Dropdown, SkeletonBlock} from './styled';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
 
-type Props = {
-  handleRedirect: () => void;
-};
-
-const User: React.FC<Props> = observer(({handleRedirect}) => {
+const User: React.FC = observer(() => {
   const {displayName, canLogout} = authenticationStore.state;
 
   return (
-    <Styled.ProfileDropdown data-testid="profile-dropdown">
+    <ProfileDropdown data-testid="profile-dropdown">
       {displayName ? (
-        <Styled.Dropdown label={displayName}>
+        <Dropdown label={displayName}>
           <Option
             label="Toggle Theme"
             data-testid="toggle-theme-button"
@@ -34,17 +27,14 @@ const User: React.FC<Props> = observer(({handleRedirect}) => {
             <Option
               label="Logout"
               data-testid="logout-button"
-              onClick={async () => {
-                await api.logout();
-                handleRedirect();
-              }}
+              onClick={authenticationStore.handleLogout}
             />
           )}
-        </Styled.Dropdown>
+        </Dropdown>
       ) : (
-        <Styled.SkeletonBlock data-testid="username-skeleton" />
+        <SkeletonBlock data-testid="username-skeleton" />
       )}
-    </Styled.ProfileDropdown>
+    </ProfileDropdown>
   );
 });
 

@@ -4,9 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post} from 'modules/request';
-
-const URL = '/api/batch-operations';
+import {request} from 'modules/request';
 
 export async function fetchOperations({
   pageSize,
@@ -15,8 +13,12 @@ export async function fetchOperations({
   pageSize: number;
   searchAfter?: [string, string];
 }) {
-  return post(URL, {
-    pageSize,
-    searchAfter,
+  return request({
+    url: '/api/batch-operations',
+    method: 'POST',
+    body: {
+      pageSize,
+      searchAfter,
+    },
   });
 }

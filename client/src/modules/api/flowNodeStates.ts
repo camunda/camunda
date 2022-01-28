@@ -4,12 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get} from 'modules/request';
+import {request} from 'modules/request';
 
 async function fetchFlowNodeStates(
   processInstanceId: ProcessInstanceEntity['id']
 ) {
-  return get(`/api/process-instances/${processInstanceId}/flow-node-states`);
+  return request({
+    url: `/api/process-instances/${processInstanceId}/flow-node-states`,
+  });
 }
 
 export {fetchFlowNodeStates};

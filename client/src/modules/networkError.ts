@@ -4,10 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get} from 'modules/request';
+class NetworkError extends Error {
+  status: Response['status'] | void = undefined;
 
-export const fetchProcessXML = async (
-  processId: ProcessInstanceEntity['processId']
-) => {
-  return get(`/api/processes/${processId}/xml`);
-};
+  constructor(message: string, response: Response) {
+    super(message);
+
+    this.status = response.status;
+  }
+}
+
+export {NetworkError};

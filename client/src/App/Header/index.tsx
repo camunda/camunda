@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
-import {Redirect, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {User} from './User';
 import {NavElement} from './NavElement';
@@ -17,13 +15,6 @@ import {LicenseNote} from './LicenseNote';
 import {IS_DMN} from 'modules/feature-flags';
 
 const Header: React.FC = observer(() => {
-  const [forceRedirect, setForceRedirect] = useState(false);
-  const location = useLocation();
-
-  if (forceRedirect) {
-    return <Redirect to={Locations.login(location)} />;
-  }
-
   return (
     <CmHeader>
       <nav slot="left">
@@ -84,7 +75,7 @@ const Header: React.FC = observer(() => {
         </>
       )}
       <div slot="right">
-        <User handleRedirect={() => setForceRedirect(true)} />
+        <User />
       </div>
     </CmHeader>
   );

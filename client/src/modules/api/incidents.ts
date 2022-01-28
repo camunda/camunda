@@ -4,14 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get} from 'modules/request';
+import {request} from 'modules/request';
 
 async function fetchInstancesByProcess() {
-  return get('/api/incidents/byProcess');
+  return request({url: '/api/incidents/byProcess'});
 }
 
 async function fetchIncidentsByError() {
-  return get('/api/incidents/byError');
+  return request({url: '/api/incidents/byError'});
 }
 
 export {fetchInstancesByProcess, fetchIncidentsByError};

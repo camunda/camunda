@@ -176,7 +176,7 @@ describe('ListPanel', () => {
     });
 
     it('should render for restricted users', async () => {
-      authenticationStore.enableUserSession({
+      authenticationStore.setUser({
         displayName: 'demo',
         permissions: ['read'],
         canLogout: true,

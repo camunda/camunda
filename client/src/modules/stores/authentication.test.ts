@@ -13,13 +13,13 @@ describe('stores/authentication', () => {
 
   it('should set user role', () => {
     expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: undefined,
       canLogout: true,
     });
     expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
@@ -31,7 +31,7 @@ describe('stores/authentication', () => {
     expect(authenticationStore.hasPermission(['write'])).toBe(true);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);
     expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: undefined,
       canLogout: true,
@@ -39,7 +39,7 @@ describe('stores/authentication', () => {
     expect(authenticationStore.hasPermission(['write'])).toBe(true);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);
     expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,

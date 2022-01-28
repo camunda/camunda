@@ -5,12 +5,8 @@
  */
 
 import {BrowserRouter, Route, Switch} from 'react-router-dom';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
-
-import Authentication from './Authentication';
-import {Header} from './Header';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
 import {Instances} from './Instances';
@@ -24,8 +20,11 @@ import {CommonUiContext} from 'modules/CommonUiContext';
 import {Routes} from 'modules/routes';
 import {HashRouterMigrator} from './HashRouterMigrator';
 import {IS_DMN} from 'modules/feature-flags';
+import {AuthenticatedRoute} from './AuthenticatedRoute';
+import {Header} from './Header';
+import {SessionWatcher} from './SessionWatcher';
 
-function App() {
+const App: React.FC = () => {
   return (
     <ThemeProvider>
       <NotificationProvider>
@@ -35,33 +34,70 @@ function App() {
         <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
           <GettingStartedExperience />
           <HashRouterMigrator />
+          <SessionWatcher />
           <Switch>
-            <Route path={Routes.login()} component={Login} />
-            <Authentication>
-              <Header />
-              <Route exact path={Routes.dashboard()} component={Dashboard} />
-              <Route exact path={Routes.instances()} component={Instances} />
-              <Route exact path={Routes.instance()} component={Instance} />
-              {IS_DMN && (
-                <>
-                  <Route
-                    exact
-                    path={Routes.decisions()}
-                    component={Decisions}
-                  />
-                  <Route
-                    exact
-                    path={Routes.decisionInstance()}
-                    component={DecisionInstance}
-                  />
-                </>
-              )}
-            </Authentication>
+            <Route path={Routes.login()}>
+              <Login />
+            </Route>
+            <AuthenticatedRoute
+              exact
+              path={Routes.dashboard()}
+              redirectPath={Routes.login()}
+            >
+              <>
+                <Header />
+                <Dashboard />
+              </>
+            </AuthenticatedRoute>
+            <AuthenticatedRoute
+              exact
+              path={Routes.instances()}
+              redirectPath={Routes.login()}
+            >
+              <>
+                <Header />
+                <Instances />
+              </>
+            </AuthenticatedRoute>
+            <AuthenticatedRoute
+              exact
+              path={Routes.instance()}
+              redirectPath={Routes.login()}
+            >
+              <>
+                <Header />
+                <Instance />
+              </>
+            </AuthenticatedRoute>
+            {IS_DMN && (
+              <>
+                <AuthenticatedRoute
+                  exact
+                  path={Routes.decisions()}
+                  redirectPath={Routes.login()}
+                >
+                  <>
+                    <Header />
+                    <Decisions />
+                  </>
+                </AuthenticatedRoute>
+                <AuthenticatedRoute
+                  exact
+                  path={Routes.decisionInstance()}
+                  redirectPath={Routes.decisionInstance()}
+                >
+                  <>
+                    <Header />
+                    <DecisionInstance />
+                  </>
+                </AuthenticatedRoute>
+              </>
+            )}
           </Switch>
         </BrowserRouter>
       </NotificationProvider>
     </ThemeProvider>
   );
-}
+};
 
 export {App};

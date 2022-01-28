@@ -89,7 +89,7 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers for restricted user', () => {
     incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
@@ -164,7 +164,7 @@ describe('IncidentsTable', () => {
 
   it('should render incident details for restricted user', () => {
     incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
-    authenticationStore.enableUserSession({
+    authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,

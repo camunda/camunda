@@ -1089,7 +1089,7 @@ describe('Variables', () => {
 
   describe('Restricted user', () => {
     beforeAll(() => {
-      authenticationStore.enableUserSession({
+      authenticationStore.setUser({
         displayName: 'demo',
         permissions: ['read'],
         canLogout: true,

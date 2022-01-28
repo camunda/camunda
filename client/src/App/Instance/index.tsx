@@ -24,7 +24,6 @@ import {useInstancePageParams} from './useInstancePageParams';
 import {useHistory} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {Breadcrumb} from './Breadcrumb';
-
 import * as Styled from './styled';
 
 const Instance = observer(() => {

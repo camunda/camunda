@@ -4,28 +4,24 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {Router} from 'react-router-dom';
-
+import {Router, Route} from 'react-router-dom';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {Header} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createMemoryHistory} from 'history';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import {instancesStore} from 'modules/stores/instances';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-import Authentication from 'App/Authentication';
 import {authenticationStore} from 'modules/stores/authentication';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => (
     <ThemeProvider>
       <Router history={history}>
-        <Authentication>{children}</Authentication>
+        <Route>{children}</Route>
       </Router>
     </ThemeProvider>
   );
@@ -39,6 +35,8 @@ describe('Header', () => {
         res.once(
           ctx.json({
             displayName: 'firstname lastname',
+            canLogout: false,
+            permissions: ['read', 'write'],
           })
         )
       ),
@@ -51,6 +49,8 @@ describe('Header', () => {
         )
       )
     );
+
+    authenticationStore.authenticate();
   });
 
   afterEach(() => {
