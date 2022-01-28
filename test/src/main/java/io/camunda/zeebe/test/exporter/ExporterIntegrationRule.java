@@ -8,7 +8,6 @@
 package io.camunda.zeebe.test.exporter;
 
 import static io.camunda.zeebe.test.EmbeddedBrokerRule.TEST_RECORD_EXPORTER_ID;
-import static io.camunda.zeebe.test.util.record.RecordingExporter.processInstanceRecords;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +26,6 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.ClientRule;
 import io.camunda.zeebe.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
-import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.netty.util.NetUtil;
@@ -43,6 +41,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -298,10 +297,16 @@ public class ExporterIntegrationRule extends ExternalResource {
 
     // wait for incident and resolve it
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
+        Awaitility.await("the incident was created")
+            .timeout(Duration.ofMinutes(1))
+            .until(
+                () ->
+                    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withElementId("task")
+                        .findFirst(),
+                Optional::isPresent)
+            .orElseThrow();
     clientRule
         .getClient()
         .newUpdateRetriesCommand(incident.getValue().getJobKey())
@@ -389,11 +394,12 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param processInstanceKey ID of the process
    */
   public void awaitProcessCompletion(final long processInstanceKey) {
-    TestUtil.waitUntil(
-        () ->
-            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getKey() == processInstanceKey)
-                .exists());
+    Awaitility.await("the process instance was completed")
+        .until(
+            () ->
+                RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .filter(r -> r.getKey() == processInstanceKey)
+                    .exists());
   }
 
   private Properties newClientProperties() {
