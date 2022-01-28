@@ -23,6 +23,7 @@ import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -81,12 +82,11 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void testArchiving() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     // having
     // deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    offsetZeebeTime(Duration.ofDays(-4));
     final String processId = "demoProcess";
     final String flowNodeBpmnId = "task1";
     deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
@@ -95,7 +95,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     final int count = random.nextInt(6) + 3;
     final Instant endDate = currentTime.minus(2, ChronoUnit.DAYS);
     startInstancesAndCompleteTasks(processId, flowNodeBpmnId, count, endDate);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
 
     // when
     final int expectedCount =
@@ -163,7 +163,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
   private void startInstancesAndCompleteTasks(
       String processId, String flowNodeBpmnId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     for (int i = 0; i < count; i++) {
       tester.startProcessInstance(processId, "{\"var\": 123}").completeUserTaskInZeebe();
     }

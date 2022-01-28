@@ -5,35 +5,32 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.ConversionUtils.toHostAndPortAsString;
-
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.client.ClientProperties;
-import io.camunda.zeebe.test.ClientRule;
-import io.camunda.zeebe.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Properties;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 public class TasklistZeebeRule extends TestWatcher {
 
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
-  private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds
-  private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearch";
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeRule.class);
   @Autowired public TasklistProperties tasklistProperties;
 
@@ -41,18 +38,11 @@ public class TasklistZeebeRule extends TestWatcher {
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  protected final EmbeddedBrokerRule brokerRule;
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-  @Autowired private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
-  private ClientRule clientRule;
+  protected ZeebeContainer zeebeContainer;
+  private ZeebeClient client;
 
   private String prefix;
   private boolean failed = false;
-
-  public TasklistZeebeRule() {
-    brokerRule = new EmbeddedBrokerRule();
-  }
 
   public void refreshIndices(Instant instant) {
     try {
@@ -66,12 +56,6 @@ public class TasklistZeebeRule extends TestWatcher {
   }
 
   @Override
-  public Statement apply(Statement base, Description description) {
-    final Statement statement = this.recordingExporterTestWatcher.apply(base, description);
-    return super.apply(statement, description);
-  }
-
-  @Override
   protected void failed(Throwable e, Description description) {
     this.failed = true;
   }
@@ -80,9 +64,53 @@ public class TasklistZeebeRule extends TestWatcher {
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
     tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
-    embeddedZeebeConfigurer.injectPrefixToZeebeConfig(
-        brokerRule, ELASTICSEARCH_EXPORTER_ID, prefix);
-    start();
+
+    startZeebe();
+  }
+
+  private void startZeebe() {
+    zeebeContainer =
+        new ZeebeContainer(
+            DockerImageName.parse("camunda/zeebe")
+                .withTag(ZeebeClient.class.getPackage().getImplementationVersion()));
+    Testcontainers.exposeHostPorts(9200);
+    zeebeContainer
+        .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
+        .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
+        .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
+        .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
+        .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
+            "http://host.testcontainers.internal:9200")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", prefix)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.ElasticsearchExporter");
+    zeebeContainer.start();
+
+    client =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+            .usePlaintext()
+            .defaultRequestTimeout(REQUEST_TIMEOUT)
+            .build();
+
+    testZeebeIsReady();
+  }
+
+  private void testZeebeIsReady() {
+    // get topology to check that cluster is available and ready for work
+    Topology topology = null;
+    while (topology == null) {
+      try {
+        topology = client.newTopologyRequest().send().join();
+      } catch (ClientException ex) {
+        ex.printStackTrace();
+      }
+    }
   }
 
   @Override
@@ -93,48 +121,14 @@ public class TasklistZeebeRule extends TestWatcher {
     }
   }
 
-  /**
-   * Starts the broker and the client. This is blocking and will return once the broker is ready to
-   * accept commands.
-   *
-   * @throws IllegalStateException if no exporter has previously been configured
-   */
-  public void start() {
-    final long startTime = System.currentTimeMillis();
-    brokerRule.startBroker();
-    LOGGER.info(
-        "\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
-
-    clientRule = new ClientRule(this::newClientProperties);
-    clientRule.createClient();
-  }
-
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
-    brokerRule.stopBroker();
+    zeebeContainer.stop();
 
-    if (clientRule != null) {
-      clientRule.destroyClient();
+    if (client != null) {
+      client.close();
+      client = null;
     }
-  }
-
-  /**
-   * Returns the current broker configuration.
-   *
-   * @return current broker configuration
-   */
-  public BrokerCfg getBrokerConfig() {
-    return brokerRule.getBrokerCfg();
-  }
-
-  private Properties newClientProperties() {
-    final Properties properties = new Properties();
-    properties.put(
-        ClientProperties.GATEWAY_ADDRESS, toHostAndPortAsString(brokerRule.getGatewayAddress()));
-    properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
-    properties.setProperty(
-        ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
-    return properties;
   }
 
   public String getPrefix() {
@@ -145,12 +139,12 @@ public class TasklistZeebeRule extends TestWatcher {
     this.prefix = prefix;
   }
 
-  public EmbeddedBrokerRule getBrokerRule() {
-    return brokerRule;
+  public ZeebeContainer getZeebeContainer() {
+    return zeebeContainer;
   }
 
-  public ClientRule getClientRule() {
-    return clientRule;
+  public ZeebeClient getClient() {
+    return client;
   }
 
   public void setTasklistProperties(final TasklistProperties tasklistProperties) {
@@ -159,9 +153,5 @@ public class TasklistZeebeRule extends TestWatcher {
 
   public void setZeebeEsClient(final RestHighLevelClient zeebeEsClient) {
     this.zeebeEsClient = zeebeEsClient;
-  }
-
-  public void setEmbeddedZeebeConfigurer(final EmbeddedZeebeConfigurer embeddedZeebeConfigurer) {
-    this.embeddedZeebeConfigurer = embeddedZeebeConfigurer;
   }
 }

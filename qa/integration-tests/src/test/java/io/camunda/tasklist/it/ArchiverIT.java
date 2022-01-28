@@ -29,6 +29,7 @@ import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -98,12 +99,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void testArchivingTasks() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     // having
     // deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    offsetZeebeTime(Duration.ofDays(-4));
     final String processId = "demoProcess";
     final String flowNodeBpmnId = "task1";
     deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
@@ -125,7 +125,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final List<String> ids3 =
         startInstances(processId, flowNodeBpmnId, count3, currentTime.minus(1, ChronoUnit.DAYS));
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
 
     // when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
@@ -154,12 +154,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void testArchivingOnlyOneHourOldData() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     // having
     // deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    offsetZeebeTime(Duration.ofDays(-4));
     final String processId = "demoProcess";
     final String flowNodeBpmnId = "task1";
     deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
@@ -176,7 +175,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final List<String> ids2 =
         startInstancesAndCompleteTasks(processId, flowNodeBpmnId, count2, endDate2);
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
 
     // when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
@@ -193,12 +192,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldDeleteProcessInstanceRelatedData() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     // having
     // deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    offsetZeebeTime(Duration.ofDays(-4));
     final String processId = "demoProcess";
     final String flowNodeBpmnId = "task1";
     deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
@@ -219,7 +217,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final List<String> ids3 =
         startAndCompleteInstances(processId, flowNodeBpmnId, count3, endDate2);
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // when
@@ -314,7 +312,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   private List<String> startInstancesAndCompleteTasks(
       String processId, String flowNodeBpmnId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(
@@ -333,7 +331,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   private List<String> startAndCancelInstances(
       String processId, String flowNodeBpmnId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(
@@ -353,7 +351,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   private List<String> startAndCompleteInstances(
       String processId, String flowNodeBpmnId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(
@@ -372,7 +370,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   private List<String> startInstances(
       String processId, String flowNodeBpmnId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(

@@ -10,11 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
-import io.camunda.tasklist.util.EmbeddedZeebeConfigurer;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TasklistZeebeRule;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.util.ZeebeClientRule;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import org.apache.http.HttpStatus;
@@ -47,8 +45,6 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @Autowired private PartitionHolder partitionHolder;
 
-  @Autowired private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
-
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
@@ -59,15 +55,10 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private TasklistZeebeRule tasklistZeebeRule;
 
-  private ZeebeClientRule clientRule;
-
   @After
   public void cleanup() {
     if (tasklistZeebeRule != null) {
       tasklistZeebeRule.finished(null);
-    }
-    if (clientRule != null) {
-      clientRule.after();
     }
   }
 
@@ -103,14 +94,11 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     tasklistZeebeRule = new TasklistZeebeRule();
-    tasklistZeebeRule.setEmbeddedZeebeConfigurer(embeddedZeebeConfigurer);
     tasklistZeebeRule.setTasklistProperties(tasklistProperties);
     tasklistZeebeRule.setZeebeEsClient(zeebeEsClient);
-    clientRule = new ZeebeClientRule(tasklistZeebeRule.getBrokerRule());
     tasklistZeebeRule.starting(null);
-    clientRule.before();
     tasklistProperties.getZeebeElasticsearch().setPrefix(tasklistZeebeRule.getPrefix());
-    partitionHolder.setZeebeClient(clientRule.getClient());
+    partitionHolder.setZeebeClient(tasklistZeebeRule.getClient());
   }
 
   @Test
@@ -126,9 +114,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     // when 2
     // Zeebe is restarted
     tasklistZeebeRule.finished(null);
-    clientRule.after();
     tasklistZeebeRule.starting(null);
-    clientRule.before();
 
     // then 2
     // data import is still working
