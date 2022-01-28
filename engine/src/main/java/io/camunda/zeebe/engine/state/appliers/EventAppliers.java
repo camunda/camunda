@@ -85,7 +85,8 @@ public final class EventAppliers implements EventApplier {
 
     register(DeploymentIntent.CREATED, new DeploymentCreatedApplier(state.getDeploymentState()));
     register(
-        DeploymentIntent.DISTRIBUTED, new DeploymentDistributedApplier(state.getProcessState()));
+        DeploymentIntent.DISTRIBUTED,
+        new DeploymentDistributedApplier(state.getProcessState(), state.getDecisionState()));
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
