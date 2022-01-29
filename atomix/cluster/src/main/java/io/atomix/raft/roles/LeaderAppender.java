@@ -16,10 +16,15 @@
  */
 package io.atomix.raft.roles;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
+import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.metrics.LeaderMetrics;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
@@ -27,25 +32,44 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.RaftRequest;
+import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
+import io.atomix.utils.logging.ContextualLoggerFactory;
+import io.atomix.utils.logging.LoggerContext;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotChunk;
+import io.camunda.zeebe.snapshots.SnapshotChunkReader;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
 
 /**
  * The leader appender is responsible for sending {@link AppendRequest}s on behalf of a leader to
  * followers. Append requests are sent by the leader only to other active members of the cluster.
  */
-final class LeaderAppender extends AbstractAppender {
+final class LeaderAppender {
 
   private static final int MIN_BACKOFF_FAILURE_COUNT = 5;
 
+  private final int maxBatchSizePerAppend;
+  private final Logger log;
+  private final RaftContext raft;
+  private boolean open = true;
+
+  private final LeaderMetrics metrics;
   private final long leaderTime;
   private final long leaderIndex;
   private final long electionTimeout;
-  private final long heartbeatInterval;
   private final Map<Long, CompletableFuture<Long>> appendFutures = new HashMap<>();
   private final List<TimestampedFuture<Long>> heartbeatFutures = new ArrayList<>();
   private final long heartbeatTime;
@@ -53,18 +77,407 @@ final class LeaderAppender extends AbstractAppender {
   private final long maxQuorumResponseTimeout;
 
   LeaderAppender(final LeaderRole leader) {
-    super(leader.raft);
+    raft = checkNotNull(leader.raft, "context cannot be null");
+    log =
+        ContextualLoggerFactory.getLogger(
+            getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
+    metrics = new LeaderMetrics(raft.getName());
+    maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
     leaderTime = System.currentTimeMillis();
     leaderIndex =
         raft.getLog().isEmpty() ? raft.getLog().getFirstIndex() : raft.getLog().getLastIndex() + 1;
     heartbeatTime = leaderTime;
     electionTimeout = raft.getElectionTimeout().toMillis();
-    heartbeatInterval = raft.getHeartbeatInterval().toMillis();
     minStepDownFailureCount = raft.getMinStepDownFailureCount();
     maxQuorumResponseTimeout =
         raft.getMaxQuorumResponseTimeout().isZero()
             ? electionTimeout * 2
             : raft.getMaxQuorumResponseTimeout().toMillis();
+  }
+
+  /**
+   * Builds an append request.
+   *
+   * @param member The member to which to send the request.
+   * @return The append request.
+   */
+  private AppendRequest buildAppendRequest(final RaftMemberContext member, final long lastIndex) {
+    // If the log is empty then send an empty commit.
+    // If the next index hasn't yet been set then we send an empty commit first.
+    // If the next index is greater than the last index then send an empty commit.
+    // If the member failed to respond to recent communication send an empty commit. This
+    // helps avoid doing expensive work until we can ascertain the member is back up.
+    if (!member.hasNextEntry()) {
+      return buildAppendEmptyRequest(member);
+    } else if (member.getFailureCount() > 0) {
+      return buildAppendEmptyRequest(member);
+    } else {
+      return buildAppendEntriesRequest(member, lastIndex);
+    }
+  }
+
+  /**
+   * Builds an empty AppendEntries request.
+   *
+   * <p>Empty append requests are used as heartbeats to followers.
+   */
+  private AppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
+    // Read the previous entry from the reader.
+    // The reader can be null for RESERVE members.
+    final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
+
+    final DefaultRaftMember leader = raft.getLeader();
+    return builderWithPreviousEntry(prevEntry)
+        .withTerm(raft.getTerm())
+        .withLeader(leader.memberId())
+        .withEntries(Collections.emptyList())
+        .withCommitIndex(raft.getCommitIndex())
+        .build();
+  }
+
+  private AppendRequest.Builder builderWithPreviousEntry(final IndexedRaftLogEntry prevEntry) {
+    long prevIndex = 0;
+    long prevTerm = 0;
+
+    if (prevEntry != null) {
+      prevIndex = prevEntry.index();
+      prevTerm = prevEntry.term();
+    } else {
+      final var currentSnapshot = raft.getCurrentSnapshot();
+      if (currentSnapshot != null) {
+        prevIndex = currentSnapshot.getIndex();
+        prevTerm = currentSnapshot.getTerm();
+      }
+    }
+    return AppendRequest.builder().withPrevLogTerm(prevTerm).withPrevLogIndex(prevIndex);
+  }
+
+  /** Builds a populated AppendEntries request. */
+  private AppendRequest buildAppendEntriesRequest(
+      final RaftMemberContext member, final long lastIndex) {
+    final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
+
+    final DefaultRaftMember leader = raft.getLeader();
+    final AppendRequest.Builder builder =
+        builderWithPreviousEntry(prevEntry)
+            .withTerm(raft.getTerm())
+            .withLeader(leader.memberId())
+            .withCommitIndex(raft.getCommitIndex());
+
+    // Build a list of entries to send to the member.
+    final List<PersistedRaftRecord> entries = new ArrayList<>();
+
+    // Build a list of entries up to the MAX_BATCH_SIZE. Note that entries in the log may
+    // be null if they've been compacted and the member to which we're sending entries is just
+    // joining the cluster or is otherwise far behind. Null entries are simply skipped and not
+    // counted towards the size of the batch.
+    // If there exists an entry in the log with size >= MAX_BATCH_SIZE the logic ensures that
+    // entry will be sent in a batch of size one
+    int size = 0;
+
+    // Iterate through the log until the last index or the end of the log is reached.
+    while (member.hasNextEntry()) {
+      // Otherwise, read the next entry and add it to the batch.
+      final IndexedRaftLogEntry entry = member.nextEntry();
+      final var replicatableRecord = entry.getPersistedRaftRecord();
+      entries.add(replicatableRecord);
+      size += replicatableRecord.approximateSize();
+      if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
+        break;
+      }
+    }
+
+    // Add the entries to the request builder and build the request.
+    return builder.withEntries(entries).build();
+  }
+
+  /** Connects to the member and sends a commit message. */
+  private void sendAppendRequest(final RaftMemberContext member, final AppendRequest request) {
+    // If this is a heartbeat message and a heartbeat is already in progress, skip the request.
+    if (request.entries().isEmpty() && !member.canHeartbeat()) {
+      return;
+    }
+
+    // Start the append to the member.
+    member.startAppend();
+
+    final long timestamp = System.currentTimeMillis();
+
+    log.trace("Sending {} to {}", request, member.getMember().memberId());
+    raft.getProtocol()
+        .append(member.getMember().memberId(), request)
+        .whenCompleteAsync(
+            (response, error) -> {
+              // Complete the append to the member.
+              final long appendLatency = System.currentTimeMillis() - timestamp;
+              metrics.appendComplete(appendLatency, member.getMember().memberId().id());
+              if (!request.entries().isEmpty()) {
+                member.completeAppend(appendLatency);
+              } else {
+                member.completeAppend();
+              }
+
+              if (open) {
+                if (error == null) {
+                  log.trace("Received {} from {}", response, member.getMember().memberId());
+                  handleAppendResponse(member, request, response, timestamp);
+                } else {
+                  handleAppendResponseFailure(member, request, error);
+                }
+              }
+            },
+            raft.getThreadContext());
+
+    if (!request.entries().isEmpty() && hasMoreEntries(member)) {
+      appendEntries(member);
+    }
+  }
+
+  /** Succeeds an attempt to contact a member. */
+  private void succeedAttempt(final RaftMemberContext member) {
+    // Reset the member failure count and time.
+    member.resetFailureCount();
+  }
+
+  /** Updates the match index when a response is received. */
+  private void updateMatchIndex(final RaftMemberContext member, final AppendResponse response) {
+    // If the replica returned a valid match index then update the existing match index.
+    member.setMatchIndex(response.lastLogIndex());
+  }
+
+  /** Resets the match index when a response fails. */
+  private void resetMatchIndex(final RaftMemberContext member, final AppendResponse response) {
+    if (response.lastLogIndex() < member.getMatchIndex()) {
+      member.setMatchIndex(response.lastLogIndex());
+      log.trace("Reset match index for {} to {}", member, member.getMatchIndex());
+    }
+  }
+
+  /** Resets the next index when a response fails. */
+  private void resetNextIndex(final RaftMemberContext member, final AppendResponse response) {
+    final long nextIndex = response.lastLogIndex() + 1;
+    resetNextIndex(member, nextIndex);
+  }
+
+  private void resetNextIndex(final RaftMemberContext member, final long nextIndex) {
+    member.reset(nextIndex);
+    log.trace("Reset next index for {} to {}", member, nextIndex);
+  }
+
+  /** Resets the snapshot index of the member when a response fails. */
+  private void resetSnapshotIndex(final RaftMemberContext member, final AppendResponse response) {
+    final long snapshotIndex = response.lastSnapshotIndex();
+    if (member.getSnapshotIndex() != snapshotIndex) {
+      member.setSnapshotIndex(snapshotIndex);
+      log.trace("Reset snapshot index for {} to {}", member, snapshotIndex);
+    }
+  }
+
+  /** Builds a configure request for the given member. */
+  private ConfigureRequest buildConfigureRequest() {
+    final DefaultRaftMember leader = raft.getLeader();
+    return ConfigureRequest.builder()
+        .withTerm(raft.getTerm())
+        .withLeader(leader.memberId())
+        .withIndex(raft.getCluster().getConfiguration().index())
+        .withTime(raft.getCluster().getConfiguration().time())
+        .withMembers(raft.getCluster().getConfiguration().members())
+        .build();
+  }
+
+  /** Connects to the member and sends a configure request. */
+  private void sendConfigureRequest(
+      final RaftMemberContext member, final ConfigureRequest request) {
+    log.debug("Configuring {}", member.getMember().memberId());
+
+    // Start the configure to the member.
+    member.startConfigure();
+
+    final long timestamp = System.currentTimeMillis();
+
+    log.trace("Sending {} to {}", request, member.getMember().memberId());
+    raft.getProtocol()
+        .configure(member.getMember().memberId(), request)
+        .whenCompleteAsync(
+            (response, error) -> {
+              // Complete the configure to the member.
+              member.completeConfigure();
+
+              if (open) {
+                if (error == null) {
+                  log.trace("Received {} from {}", response, member.getMember().memberId());
+                  handleConfigureResponse(member, request, response, timestamp);
+                } else {
+                  if (log.isTraceEnabled()) {
+                    log.debug("Failed to configure {}", member.getMember().memberId(), error);
+                  } else {
+                    log.debug("Failed to configure {}", member.getMember().memberId());
+                  }
+                  handleConfigureResponseFailure(member, request, error);
+                }
+              }
+            },
+            raft.getThreadContext());
+  }
+
+  /** Handles a configure failure. */
+  protected void handleConfigureResponseFailure(
+      final RaftMemberContext member, final ConfigureRequest request, final Throwable error) {
+    // Log the failed attempt to contact the member.
+    failAttempt(member, request, error);
+  }
+
+  /** Handles an OK configuration response. */
+  @SuppressWarnings("unused")
+  protected void handleConfigureResponseOk(
+      final RaftMemberContext member,
+      final ConfigureRequest request,
+      final ConfigureResponse response) {
+    // Reset the member failure count and update the member's status if necessary.
+    succeedAttempt(member);
+
+    // Update the member's current configuration term and index according to the installed
+    // configuration.
+    member.setConfigTerm(request.term());
+    member.setConfigIndex(request.index());
+
+    // Recursively append entries to the member.
+    appendEntries(member);
+  }
+
+  /** Builds an install request for the given member. */
+  private Optional<InstallRequest> buildInstallRequest(
+      final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
+    if (member.getNextSnapshotIndex() != persistedSnapshot.getIndex()) {
+      try {
+        final SnapshotChunkReader snapshotChunkReader = persistedSnapshot.newChunkReader();
+        member.setSnapshotChunkReader(snapshotChunkReader);
+      } catch (final UncheckedIOException e) {
+        log.warn(
+            "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
+            persistedSnapshot.getId(),
+            e);
+        return Optional.empty();
+      }
+      member.setNextSnapshotIndex(persistedSnapshot.getIndex());
+      member.setNextSnapshotChunk(null);
+    }
+
+    final SnapshotChunkReader reader = member.getSnapshotChunkReader();
+    if (!reader.hasNext()) {
+      return Optional.empty();
+    }
+
+    try {
+      final SnapshotChunk chunk = reader.next();
+
+      // Create the install request, indicating whether this is the last chunk of data based on
+      // the number of bytes remaining in the buffer.
+      final DefaultRaftMember leader = raft.getLeader();
+
+      final InstallRequest request =
+          InstallRequest.builder()
+              .withCurrentTerm(raft.getTerm())
+              .withLeader(leader.memberId())
+              .withIndex(persistedSnapshot.getIndex())
+              .withTerm(persistedSnapshot.getTerm())
+              .withVersion(persistedSnapshot.version())
+              .withData(new SnapshotChunkImpl(chunk).toByteBuffer())
+              .withChunkId(ByteBuffer.wrap(chunk.getChunkName().getBytes()))
+              .withInitial(member.getNextSnapshotChunk() == null)
+              .withComplete(!reader.hasNext())
+              .withNextChunkId(reader.nextId())
+              .build();
+      return Optional.of(request);
+    } catch (final UncheckedIOException e) {
+      log.warn(
+          "Expected to send next chunk of Snapshot {} to {}. But could not read SnapshotChunk. Snapshot may have been deleted. Will retry.",
+          persistedSnapshot.getId(),
+          member.getMember().memberId(),
+          e);
+      // If snapshot was deleted, a new reader should be created with the new snapshot
+      member.setNextSnapshotIndex(0);
+      return Optional.empty();
+    }
+  }
+
+  /** Connects to the member and sends a snapshot request. */
+  private void sendInstallRequest(final RaftMemberContext member, final InstallRequest request) {
+    // Start the install to the member.
+    member.startInstall();
+
+    final long timestamp = System.currentTimeMillis();
+
+    log.trace("Sending {} to {}", request, member.getMember().memberId());
+    raft.getProtocol()
+        .install(member.getMember().memberId(), request)
+        .whenCompleteAsync(
+            (response, error) -> {
+              // Complete the install to the member.
+              member.completeInstall();
+
+              if (open) {
+                if (error == null) {
+                  log.trace("Received {} from {}", response, member.getMember().memberId());
+                  handleInstallResponse(member, request, response, timestamp);
+                } else {
+                  // Trigger reactions to the install response failure.
+                  handleInstallResponseFailure(member, request, error);
+                }
+              }
+            },
+            raft.getThreadContext());
+  }
+
+  /** Handles an install response failure. */
+  private void handleInstallResponseFailure(
+      final RaftMemberContext member, final InstallRequest request, final Throwable error) {
+    // Reset the member's snapshot index and offset to resend the snapshot from the start
+    // once a connection to the member is re-established.
+    member.setNextSnapshotIndex(0);
+    member.setNextSnapshotChunk(null);
+
+    // Log the failed attempt to contact the member.
+    failAttempt(member, request, error);
+  }
+
+  /** Handles an OK install response. */
+  private void handleInstallResponseOk(
+      final RaftMemberContext member, final InstallRequest request) {
+    // Reset the member failure count and update the member's status if necessary.
+    succeedAttempt(member);
+
+    // If the install request was completed successfully, set the member's snapshotIndex and reset
+    // the next snapshot index/offset.
+    if (request.complete()) {
+      member.setNextSnapshotIndex(0);
+      member.setNextSnapshotChunk(null);
+      member.setSnapshotIndex(request.index());
+      resetNextIndex(member, request.index() + 1);
+    }
+    // If more install requests remain, increment the member's snapshot offset.
+    else {
+      member.setNextSnapshotChunk(request.nextChunkId());
+    }
+
+    // Recursively append entries to the member.
+    appendEntries(member);
+  }
+
+  /** Handles an ERROR install response. */
+  @SuppressWarnings("unused")
+  private void handleInstallResponseError(
+      final RaftMemberContext member,
+      final InstallRequest request,
+      final InstallResponse response) {
+    log.warn(
+        "Failed to send {} to member {}, with {}. Restart sending snapshot.",
+        request,
+        member.getMember().memberId(),
+        response.error().toString());
+
+    member.setNextSnapshotIndex(0);
+    member.setNextSnapshotChunk(null);
   }
 
   /**
@@ -148,17 +561,25 @@ final class LeaderAppender extends AbstractAppender {
     }
   }
 
-  @Override
-  protected void handleAppendResponseFailure(
+  private void handleAppendResponseFailure(
       final RaftMemberContext member, final AppendRequest request, final Throwable error) {
     failHeartbeat();
-    super.handleAppendResponseFailure(member, request, error);
+
+    // Log the failed attempt to contact the member.
+    failAttempt(member, request, error);
   }
 
-  @Override
-  protected void failAttempt(
+  private void failAttempt(
       final RaftMemberContext member, final RaftRequest request, final Throwable error) {
-    super.failAttempt(member, request, error);
+    // If any append error occurred, increment the failure count for the member. Log the first three
+    // failures,
+    // and thereafter log 1% of the failures. This keeps the log from filling up with annoying error
+    // messages
+    // when attempting to send entries to down followers.
+    final int failures = member.incrementFailureCount();
+    if (failures <= 3 || failures % 100 == 0) {
+      log.warn("{} to {} failed: {}", request, member.getMember().memberId(), error);
+    }
 
     // Fail heartbeat futures.
     failHeartbeat();
@@ -183,19 +604,21 @@ final class LeaderAppender extends AbstractAppender {
     }
   }
 
-  @Override
-  protected void handleAppendResponse(
+  private void handleAppendResponse(
       final RaftMemberContext member,
       final AppendRequest request,
       final AppendResponse response,
       final long timestamp) {
-    super.handleAppendResponse(member, request, response, timestamp);
+    if (response.status() == RaftResponse.Status.OK) {
+      handleAppendResponseOk(member, response);
+    } else {
+      handleAppendResponseError(member, request, response);
+    }
     recordHeartbeat(member, timestamp);
   }
 
-  @Override
-  protected void handleAppendResponseOk(
-      final RaftMemberContext member, final AppendRequest request, final AppendResponse response) {
+  private void handleAppendResponseOk(
+      final RaftMemberContext member, final AppendResponse response) {
     // Reset the member failure count and update the member's availability status if necessary.
     succeedAttempt(member);
 
@@ -239,8 +662,12 @@ final class LeaderAppender extends AbstractAppender {
     }
   }
 
-  @Override
-  protected void appendEntries(final RaftMemberContext member) {
+  /**
+   * Sends an AppendRequest to the given member.
+   *
+   * @param member The member to which to send the append request.
+   */
+  private void appendEntries(final RaftMemberContext member) {
     // Prevent recursive, asynchronous appends from being executed if the appender has been closed.
     if (!open) {
       return;
@@ -281,15 +708,12 @@ final class LeaderAppender extends AbstractAppender {
     }
   }
 
-  @Override
-  protected boolean hasMoreEntries(final RaftMemberContext member) {
+  private boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
     return member.hasNextEntry();
   }
 
-  /** Handles a {@link io.atomix.raft.protocol.RaftResponse.Status#ERROR} response. */
-  @Override
-  protected void handleAppendResponseError(
+  private void handleAppendResponseError(
       final RaftMemberContext member, final AppendRequest request, final AppendResponse response) {
     // If we've received a greater term, update the term and transition back to follower.
     if (response.term() > raft.getTerm()) {
@@ -302,33 +726,53 @@ final class LeaderAppender extends AbstractAppender {
       raft.setLeader(null);
       raft.transition(RaftServer.Role.FOLLOWER);
     } else {
-      super.handleAppendResponseError(member, request, response);
+      // If any other error occurred, increment the failure count for the member. Log the first
+      // three
+      // failures,
+      // and thereafter log 1% of the failures. This keeps the log from filling up with annoying
+      // error
+      // messages
+      // when attempting to send entries to down followers.
+      final int failures = member.incrementFailureCount();
+      if (failures <= 3 || failures % 100 == 0) {
+        log.warn(
+            "{} to {} failed: {}",
+            request,
+            member.getMember().memberId(),
+            response.error() != null ? response.error() : "");
+      }
     }
   }
 
-  @Override
-  protected void handleConfigureResponse(
+  private void handleConfigureResponse(
       final RaftMemberContext member,
       final ConfigureRequest request,
       final ConfigureResponse response,
       final long timestamp) {
-    super.handleConfigureResponse(member, request, response, timestamp);
+    if (response.status() == RaftResponse.Status.OK) {
+      handleConfigureResponseOk(member, request, response);
+    }
+
+    // In the event of a configure response error, simply do nothing and await the next heartbeat.
+    // This prevents infinite loops when cluster configurations fail.
     recordHeartbeat(member, timestamp);
   }
 
-  @Override
-  protected void handleInstallResponse(
+  private void handleInstallResponse(
       final RaftMemberContext member,
       final InstallRequest request,
       final InstallResponse response,
       final long timestamp) {
-    super.handleInstallResponse(member, request, response, timestamp);
+    if (response.status() == RaftResponse.Status.OK) {
+      handleInstallResponseOk(member, request);
+    } else {
+      handleInstallResponseError(member, request, response);
+    }
     recordHeartbeat(member, timestamp);
   }
 
-  @Override
   public void close() {
-    super.close();
+    open = false;
     appendFutures
         .values()
         .forEach(
@@ -408,7 +852,7 @@ final class LeaderAppender extends AbstractAppender {
     member.setResponseTime(System.currentTimeMillis());
 
     // Compute the quorum heartbeat time.
-    final long heartbeatTime = computeHeartbeatTime();
+    final long quorumHeartbeatTime = computeHeartbeatTime();
     final long currentTimestamp = System.currentTimeMillis();
 
     // Iterate through pending timestamped heartbeat futures and complete all futures where the
@@ -420,7 +864,7 @@ final class LeaderAppender extends AbstractAppender {
 
       // If the future is timestamped prior to the last heartbeat to a majority of the cluster,
       // complete the future.
-      if (future.timestamp < heartbeatTime) {
+      if (future.timestamp < quorumHeartbeatTime) {
         future.complete(null);
         iterator.remove();
       }
