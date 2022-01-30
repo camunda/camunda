@@ -167,13 +167,8 @@ public final class ExporterDirectorDistributionTest {
    * <p>This makes sure that even if we miss one export position event, we distribute the event
    * later again, which makes tests less flaky.
    */
-  private static final class ClockShifter implements ConditionEvaluationListener<Void> {
-
-    private final ControlledActorClock clock;
-
-    public ClockShifter(final ControlledActorClock clock) {
-      this.clock = clock;
-    }
+  private record ClockShifter(ControlledActorClock clock)
+      implements ConditionEvaluationListener<Void> {
 
     @Override
     public void conditionEvaluated(final EvaluatedCondition<Void> condition) {
