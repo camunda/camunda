@@ -16,7 +16,7 @@
     "mixpanel-browser": "2.43.0",
     "mobx": "6.3.13",
     "mobx-react": "7.2.1",
-    "msw-storybook-addon": "1.4.1",
+    "msw-storybook-addon": "1.6.0",
     "polished": "4.1.4",
     "react": "17.0.2",
     "react-contenteditable": "3.3.6",
