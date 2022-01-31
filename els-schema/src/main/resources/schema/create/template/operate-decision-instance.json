@@ -42,8 +42,8 @@
       "decisionId": {
         "type": "keyword"
       },
-      "decisionKey": {
-        "type": "long"
+      "decisionDefinitionId": {
+        "type": "keyword"
       },
       "decisionName": {
         "type": "keyword"

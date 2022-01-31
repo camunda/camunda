@@ -35,7 +35,7 @@ public class PayloadUtil {
 
   }
   
-  public String readJSONStringFromClasspath(String filename) {
+  public String readStringFromClasspath(String filename) {
     try (InputStream inputStream = PayloadUtil.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);

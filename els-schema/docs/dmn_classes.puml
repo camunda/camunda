@@ -49,7 +49,7 @@ class     DecisionInstanceEntity {
   processInstanceKey: long
   elementInstanceKey: long
   elementId: String
-  decisionKey: long
+  decisionDefinitionId: long
   decisionId: String
   decisionName: String
   decisionType: DecisionType

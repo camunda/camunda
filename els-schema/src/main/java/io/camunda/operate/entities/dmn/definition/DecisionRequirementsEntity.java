@@ -12,7 +12,7 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
 
   private String decisionRequirementsId;
   private String name;
-  private long version;
+  private int version;
   private String xml;
   private String resourceName;
 
@@ -35,11 +35,11 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
     return this;
   }
 
-  public long getVersion() {
+  public int getVersion() {
     return version;
   }
 
-  public DecisionRequirementsEntity setVersion(final long version) {
+  public DecisionRequirementsEntity setVersion(final int version) {
     this.version = version;
     return this;
   }

@@ -17,6 +17,8 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -25,6 +27,8 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.ElasticsearchSchemaManager;
+import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -102,6 +106,12 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
+
+  @Autowired
+  private DecisionRequirementsIndex decisionRequirementsIndex;
+
+  @Autowired
+  private DecisionIndex decisionIndex;
 
   @Autowired
   protected OperateProperties operateProperties;
@@ -360,6 +370,8 @@ public class ElasticsearchTestRule extends TestWatcher {
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
       entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
       entityToESAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
+      entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
     }
     return entityToESAliasMap;
   }

@@ -486,7 +486,7 @@ public abstract class TestUtil {
     decisionInstance.setId(String.valueOf(key))
         .setKey(key)
         .setDecisionId(UUID.randomUUID().toString())
-        .setDecisionKey(Math.abs(random.nextLong()))
+        .setDecisionDefinitionId(String.valueOf(Math.abs(random.nextLong())))
         .setDecisionId("decisionId")
         .setDecisionName("Decision Name")
         .setDecisionRequirementsId(UUID.randomUUID().toString())

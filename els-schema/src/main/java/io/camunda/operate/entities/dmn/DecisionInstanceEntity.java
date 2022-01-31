@@ -22,7 +22,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private long elementInstanceKey;
   private String elementId;
   private String decisionId;
-  private long decisionKey;
+  private String decisionDefinitionId;
   private String decisionName;
   private DecisionType decisionType;
   private String result;
@@ -57,12 +57,12 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
-  public long getDecisionKey() {
-    return decisionKey;
+  public String getDecisionDefinitionId() {
+    return decisionDefinitionId;
   }
 
-  public DecisionInstanceEntity setDecisionKey(final long decisionKey) {
-    this.decisionKey = decisionKey;
+  public DecisionInstanceEntity setDecisionDefinitionId(final String decisionDefinitionId) {
+    this.decisionDefinitionId = decisionDefinitionId;
     return this;
   }
 
@@ -195,13 +195,13 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
         processDefinitionKey == that.processDefinitionKey &&
         processInstanceKey == that.processInstanceKey &&
         elementInstanceKey == that.elementInstanceKey &&
-        decisionKey == that.decisionKey &&
         state == that.state &&
         Objects.equals(evaluationTime, that.evaluationTime) &&
         Objects.equals(position, that.position) &&
         Objects.equals(decisionRequirementsId, that.decisionRequirementsId) &&
         Objects.equals(elementId, that.elementId) &&
         Objects.equals(decisionId, that.decisionId) &&
+        Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
         Objects.equals(decisionName, that.decisionName) &&
         decisionType == that.decisionType &&
         Objects.equals(result, that.result) &&
@@ -214,7 +214,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     int result1 = Objects
         .hash(super.hashCode(), state, evaluationTime, position, decisionRequirementsKey,
             decisionRequirementsId, processDefinitionKey, processInstanceKey, elementInstanceKey,
-            elementId, decisionId, decisionKey, decisionName, decisionType, result);
+            elementId, decisionId, decisionDefinitionId, decisionName, decisionType, result);
     result1 = 31 * result1 + Arrays.hashCode(evaluatedInputs);
     result1 = 31 * result1 + Arrays.hashCode(evaluatedOutputs);
     return result1;

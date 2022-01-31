@@ -15,6 +15,9 @@
       "name": {
         "type": "keyword"
       },
+      "partitionId": {
+        "type": "integer"
+      },
       "version": {
         "type": "long"
       },

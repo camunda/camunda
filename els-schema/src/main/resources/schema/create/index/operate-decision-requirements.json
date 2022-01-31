@@ -19,6 +19,9 @@
       "name": {
         "type": "keyword"
       },
+      "partitionId": {
+        "type": "integer"
+      },
       "decisionRequirementsId": {
         "type": "keyword"
       },

@@ -12,7 +12,7 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
 
   private String decisionId;
   private String name;
-  private long version;
+  private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
 
@@ -34,11 +34,11 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
     return this;
   }
 
-  public long getVersion() {
+  public int getVersion() {
     return version;
   }
 
-  public DecisionDefinitionEntity setVersion(final long version) {
+  public DecisionDefinitionEntity setVersion(final int version) {
     this.version = version;
     return this;
   }

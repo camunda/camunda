@@ -58,7 +58,7 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
   public void testVariableValueSizeCanBeHigherThan32KB() throws Exception {
     // having
     //  big json string
-    String bigJSONVariablePayload = payloadUtil.readJSONStringFromClasspath("/large-payload.json");
+    String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.json");
     //  and object with two vars
     Map<String, Object> variables = payloadUtil.parsePayload(bigJSONVariablePayload);
 

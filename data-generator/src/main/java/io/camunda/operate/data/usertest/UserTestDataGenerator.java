@@ -7,6 +7,9 @@ package io.camunda.operate.data.usertest;
 
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
+import io.camunda.operate.data.util.DecisionDataUtil;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -26,9 +29,11 @@ import io.camunda.operate.data.AbstractDataGenerator;
 import io.camunda.operate.data.util.NameGenerator;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +54,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   @Autowired
   protected PayloadUtil payloadUtil;
+
+  @Autowired
+  @Qualifier("esClient")
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private DecisionDataUtil testUtil;
 
   @Override
   public boolean createZeebeData(boolean manuallyCalled) {
@@ -91,7 +103,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private void createAndStartProcessWithLargeVariableValue() {
     logger.debug("Deploy and start process with large variable value >32kb");
     ZeebeTestUtil.deployProcess(client, "usertest/single-task.bpmn");
-    String jsonString = payloadUtil.readJSONStringFromClasspath("/usertest/large-payload.json");
+    String jsonString = payloadUtil.readStringFromClasspath("/usertest/large-payload.json");
     ZeebeTestUtil.startProcessInstance(client, "bigVarProcess", jsonString);
   }
 
@@ -635,6 +647,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(client, "usertest/intermediate-none-event.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "usertest/message-end-event.bpmn");
+
+    deployDMN();
+  }
+
+  private void deployDMN() {
+    try {
+      testUtil.persistOperateEntities(testUtil.createDecisionDefinitions());
+    } catch (PersistenceException e) {
+      throw new OperateRuntimeException("Exception occurred when creating test data", e);
+    }
   }
 
   protected void startProcessInstances(int version) {
