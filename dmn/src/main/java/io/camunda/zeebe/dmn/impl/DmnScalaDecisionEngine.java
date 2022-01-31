@@ -7,18 +7,25 @@
  */
 package io.camunda.zeebe.dmn.impl;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
 import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionResult;
+import io.camunda.zeebe.dmn.EvaluatedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.camunda.dmn.Audit.AuditLog;
 import org.camunda.dmn.DmnEngine;
 import org.camunda.dmn.DmnEngine.EvalFailure;
 import org.camunda.dmn.DmnEngine.EvalResult;
@@ -92,20 +99,26 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
 
     final var parsedDmn = ((ParsedDmnScalaDrg) decisionRequirementsGraph).getParsedDmn();
     final Either<EvalFailure, EvalResult> result = tryEval(decisionId, parsedDmn, evalContext);
+    final AuditLog auditLog =
+        result.map(EvalResult::auditLog).getOrElse(() -> result.left().get().auditLog());
+    final var evaluatedDecisions =
+        Optional.ofNullable(auditLog).map(this::getEvaluatedDecisions).orElse(List.of());
+
     if (result.isLeft()) {
       final var reason = result.left().get().failure().message();
       return new EvaluationFailure(
-          String.format("Expected to evaluate decision '%s', but %s", decisionId, reason));
+          String.format("Expected to evaluate decision '%s', but %s", decisionId, reason),
+          evaluatedDecisions);
     }
 
     final var evalResult = result.right().get();
     if (evalResult.isNil()) {
-      return new EvaluationResult(NIL_OUTPUT);
+      return new EvaluationResult(NIL_OUTPUT, evaluatedDecisions);
     }
 
     final Object output = evalResult.value();
     if (output instanceof Val val) {
-      return new EvaluationResult(outputConverter.toMessagePack(val));
+      return new EvaluationResult(toMessagePack(val), evaluatedDecisions);
     }
 
     throw new IllegalStateException(
@@ -130,5 +143,24 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
         throw e;
       }
     }
+  }
+
+  private List<EvaluatedDecision> getEvaluatedDecisions(final AuditLog auditLog) {
+    final var evaluatedDecisions = new ArrayList<EvaluatedDecision>();
+    auditLog
+        .entries()
+        .foreach(
+            auditLogEntry -> {
+              final var evaluatedDecision =
+                  EvaluatedDmnScalaDecision.of(auditLogEntry, this::toMessagePack);
+              return evaluatedDecisions.add(evaluatedDecision);
+            });
+
+    return evaluatedDecisions;
+  }
+
+  private DirectBuffer toMessagePack(final Val value) {
+    final var reusedBuffer = outputConverter.toMessagePack(value);
+    return cloneBuffer(reusedBuffer);
   }
 }
