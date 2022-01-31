@@ -16,9 +16,10 @@ import java.util.Optional;
 public class VariableHelper {
 
   public static boolean isProcessVariableTypeSupported(final String variableTypeString) {
-    return isProcessVariableTypeSupported(
-      Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)
-    );
+    return Optional.ofNullable(variableTypeString)
+      .map(VariableType::getTypeForId)
+      .map(VariableHelper::isProcessVariableTypeSupported)
+      .orElse(false);
   }
 
   public static boolean isProcessVariableTypeSupported(final VariableType variableType) {
@@ -26,12 +27,14 @@ public class VariableHelper {
   }
 
   public static boolean isDecisionVariableTypeSupported(final String variableTypeString) {
-    return isProcessVariableTypeSupported(
-      Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)
-    );
+    return Optional.ofNullable(variableTypeString)
+      .map(VariableType::getTypeForId)
+      .map(VariableHelper::isDecisionVariableTypeSupported)
+      .orElse(false);
   }
 
   public static boolean isDecisionVariableTypeSupported(final VariableType variableType) {
     return ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES.contains(variableType);
   }
+
 }

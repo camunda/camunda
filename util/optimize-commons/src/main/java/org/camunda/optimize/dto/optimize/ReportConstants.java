@@ -148,8 +148,10 @@ public class ReportConstants {
     VariableType.BOOLEAN,
     VariableType.DATE
   );
+
   public static final List<VariableType> ALL_SUPPORTED_PROCESS_VARIABLE_TYPES =
     ImmutableList.copyOf(VariableType.values());
+
   public static final List<VariableType> ALL_SUPPORTED_DECISION_VARIABLE_TYPES = List.of(
     VariableType.STRING,
     VariableType.SHORT,

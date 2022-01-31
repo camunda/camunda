@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
@@ -469,8 +470,7 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void decisionDefinitionWithInputTypeNull() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(DMN_DIAGRAM_NO_INPUT_TYPE, DEFAULT_TENANT);
+    engineIntegrationExtension.deployDecisionDefinition(DMN_DIAGRAM_NO_INPUT_TYPE, DEFAULT_TENANT);
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -480,7 +480,7 @@ public class DecisionImportIT extends AbstractImportIT {
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
 
     List<VariableType> variableTypes = allDecisionDefinitions.stream()
-      .flatMap(definition -> definition.getInputVariableNames().stream().map(variable -> variable.getType()))
+      .flatMap(definition -> definition.getInputVariableNames().stream().map(DecisionVariableNameResponseDto::getType))
       .collect(Collectors.toList());
     assertThat(variableTypes).isNotEmpty()
       .allMatch(type -> type.equals(VariableType.STRING));
@@ -489,8 +489,7 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void decisionDefinitionWithOutputTypeNull() {
     // given
-    final DecisionDefinitionEngineDto definitionEngineDto =
-      engineIntegrationExtension.deployDecisionDefinition(DMN_DIAGRAM_NO_OUTPUT_TYPE, DEFAULT_TENANT);
+    engineIntegrationExtension.deployDecisionDefinition(DMN_DIAGRAM_NO_OUTPUT_TYPE, DEFAULT_TENANT);
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -500,7 +499,7 @@ public class DecisionImportIT extends AbstractImportIT {
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
 
     List<VariableType> variableTypes = allDecisionDefinitions.stream()
-      .flatMap(definition -> definition.getOutputVariableNames().stream().map(variable -> variable.getType()))
+      .flatMap(definition -> definition.getOutputVariableNames().stream().map(DecisionVariableNameResponseDto::getType))
       .collect(Collectors.toList());
     assertThat(variableTypes).isNotEmpty()
       .allMatch(type -> type.equals(VariableType.STRING));
