@@ -192,12 +192,17 @@ public final class ProcessingStateMachine {
     final var hasNext = logStreamReader.hasNext();
 
     if (currentRecord != null) {
+      final var previousRecord = currentRecord;
       // All commands cause a follow-up event or rejection, which means the processor
       // reached the end of the log if:
       //  * the last record was an event or rejection
       //  * and there is no next record on the log
-      final var previousRecord = currentRecord;
-      reachedEnd = commandFilter.applies(previousRecord) && !hasNext;
+      //  * and this was the last record written (records that have been written to the dispatcher
+      //    might not be written to the log yet, which means they will appear shortly after this)
+      reachedEnd =
+          commandFilter.applies(previousRecord)
+              && !hasNext
+              && lastWrittenPosition == previousRecord.getPosition();
     }
 
     if (shouldProcessNext.getAsBoolean() && hasNext && currentProcessor == null) {
