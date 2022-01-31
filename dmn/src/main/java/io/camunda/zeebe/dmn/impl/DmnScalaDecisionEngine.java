@@ -100,12 +100,12 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
 
     final var evalResult = result.right().get();
     if (evalResult.isNil()) {
-      return new EvaluatedDecision(NIL_OUTPUT);
+      return new EvaluationResult(NIL_OUTPUT);
     }
 
     final Object output = evalResult.value();
     if (output instanceof Val val) {
-      return new EvaluatedDecision(outputConverter.toMessagePack(val));
+      return new EvaluationResult(outputConverter.toMessagePack(val));
     }
 
     throw new IllegalStateException(
