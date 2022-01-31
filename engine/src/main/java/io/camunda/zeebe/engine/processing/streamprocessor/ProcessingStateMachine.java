@@ -79,21 +79,21 @@ public final class ProcessingStateMachine {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_WRITE_RECORD_ABORTED =
-      "Expected to write one or more follow up events for event '{} {}' without errors, but exception was thrown.";
+      "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
-      "Expected to roll back the current transaction for event '{} {}' successfully, but exception was thrown.";
+      "Expected to roll back the current transaction for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
-      "Expected to execute side effects for event '{} {}' successfully, but exception was thrown.";
+      "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
-      "Expected to successfully update state for event '{} {}', but caught an exception. Retry.";
+      "Expected to successfully update state for record '{} {}', but caught an exception. Retry.";
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{} {}', but caught an exception. Skip this event.";
+      "Expected to find processor for record '{} {}', but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Expected to successfully process event '{} {}' with processor, but caught an exception. Skip this event.";
+      "Expected to successfully process record '{} {}' with processor, but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
-      "Expected to process event '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
+      "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String PROCESSING_ERROR_MESSAGE =
-      "Expected to process event '%s' without errors, but exception occurred with message '%s'.";
+      "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
