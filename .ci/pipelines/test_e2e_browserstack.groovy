@@ -84,7 +84,7 @@ spec:
         readOnly: true
   containers:
     - name: node
-      image: node:14.15.4-alpine
+      image: node:16.13.2-alpine
       command: ["cat"]
       tty: true
       env:
