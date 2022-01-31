@@ -20,7 +20,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,17 +41,17 @@ import org.slf4j.Logger;
  *
  * <pre>
  *
- * +-----------------+             +--------------------+
- * |                 |             |                    |      exception
- * | readNextEvent() |------------>|   processEvent()   |------------------+
- * |                 |             |                    |                  v
- * +-----------------+             +--------------------+            +---------------+
+ * +------------------+            +--------------------+
+ * |                  |            |                    |      exception
+ * | readNextRecord() |----------->|  processCommand()  |------------------+
+ * |                  |            |                    |                  v
+ * +------------------+            +--------------------+            +---------------+
  *           ^                             |                         |               |------+
  *           |                             |         +-------------->|   onError()   |      | exception
  *           |                             |         |  exception    |               |<-----+
  *           |                     +-------v-------------+           +---------------+
  *           |                     |                     |                 |
- *           |                     |    writeEvent()     |                 |
+ *           |                     |   writeRecords()    |                 |
  *           |                     |                     |<----------------+
  * +----------------------+        +---------------------+
  * |                      |                 |
@@ -79,7 +78,7 @@ import org.slf4j.Logger;
 public final class ProcessingStateMachine {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
-  private static final String ERROR_MESSAGE_WRITE_EVENT_ABORTED =
+  private static final String ERROR_MESSAGE_WRITE_RECORD_ABORTED =
       "Expected to write one or more follow up events for event '{} {}' without errors, but exception was thrown.";
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
       "Expected to roll back the current transaction for event '{} {}' successfully, but exception was thrown.";
@@ -129,17 +128,17 @@ public final class ProcessingStateMachine {
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
   private final RecordProcessorMap recordProcessorMap;
-  private final TypedEventImpl typedEvent;
+  private final TypedEventImpl typedCommand;
   private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
 
   // current iteration
   private SideEffectProducer sideEffectProducer;
-  private LoggedEvent currentEvent;
+  private LoggedEvent currentRecord;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
-  private long lastSuccessfulProcessedEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
   private int onErrorRetries;
@@ -167,7 +166,7 @@ public final class ProcessingStateMachine {
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = logStream.getPartitionId();
-    typedEvent = new TypedEventImpl(partitionId);
+    typedCommand = new TypedEventImpl(partitionId);
     responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
@@ -175,37 +174,37 @@ public final class ProcessingStateMachine {
   }
 
   private void skipRecord() {
-    notifySkippedListener(currentEvent);
-    actor.submit(this::readNextEvent);
+    notifySkippedListener(currentRecord);
+    actor.submit(this::readNextRecord);
     metrics.eventSkipped();
   }
 
-  void readNextEvent() {
+  void readNextRecord() {
     if (onErrorRetries > 0) {
       onErrorHandlingLoop = false;
       onErrorRetries = 0;
     }
 
-    tryToReadNextEvent();
+    tryToReadNextRecord();
   }
 
-  private void tryToReadNextEvent() {
+  private void tryToReadNextRecord() {
     final var hasNext = logStreamReader.hasNext();
 
-    if (currentEvent != null) {
+    if (currentRecord != null) {
       // All commands cause a follow-up event or rejection, which means the processor
       // reached the end of the log if:
       //  * the last record was an event or rejection
       //  * and there is no next record on the log
-      final var previousEvent = currentEvent;
-      reachedEnd = commandFilter.applies(previousEvent) && !hasNext;
+      final var previousRecord = currentRecord;
+      reachedEnd = commandFilter.applies(previousRecord) && !hasNext;
     }
 
     if (shouldProcessNext.getAsBoolean() && hasNext && currentProcessor == null) {
-      currentEvent = logStreamReader.next();
+      currentRecord = logStreamReader.next();
 
-      if (eventFilter.applies(currentEvent)) {
-        processEvent(currentEvent);
+      if (eventFilter.applies(currentRecord)) {
+        processCommand(currentRecord);
       } else {
         skipRecord();
       }
@@ -223,11 +222,11 @@ public final class ProcessingStateMachine {
     return reachedEnd;
   }
 
-  private void processEvent(final LoggedEvent event) {
+  private void processCommand(final LoggedEvent command) {
     metadata.reset();
-    event.readMetadata(metadata);
+    command.readMetadata(metadata);
 
-    currentProcessor = chooseNextProcessor(event);
+    currentProcessor = chooseNextProcessor(command);
     if (currentProcessor == null) {
       skipRecord();
       return;
@@ -240,28 +239,31 @@ public final class ProcessingStateMachine {
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
     try {
-      final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
-      typedEvent.wrap(event, metadata, value);
+      final var value = recordValues.readRecordValue(command, metadata.getValueType());
+      typedCommand.wrap(command, metadata, value);
 
-      metrics.processingLatency(event.getTimestamp(), processingStartTime);
+      metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
-      processInTransaction(typedEvent);
+      processInTransaction(typedCommand);
 
       metrics.commandsProcessed();
 
-      writeEvent();
+      writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
-          ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING, event, metadata, recoverableException);
-      actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
+          ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
+          command,
+          metadata,
+          recoverableException);
+      actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, metadata, e);
-      onError(e, this::writeEvent);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
+      onError(e, this::writeRecords);
     }
   }
 
-  private TypedRecordProcessor<?> chooseNextProcessor(final LoggedEvent event) {
+  private TypedRecordProcessor<?> chooseNextProcessor(final LoggedEvent command) {
     TypedRecordProcessor<?> typedRecordProcessor = null;
 
     try {
@@ -269,7 +271,7 @@ public final class ProcessingStateMachine {
           recordProcessorMap.get(
               metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, metadata, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
     }
 
     return typedRecordProcessor;
@@ -326,7 +328,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentEvent, metadata, throwable);
+            LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
           try {
             errorHandlingInTransaction(processingException);
@@ -342,7 +344,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
-          final long position = typedEvent.getPosition();
+          final long position = typedCommand.getPosition();
           resetOutput(position);
 
           writeRejectionOnCommand(processingException);
@@ -350,30 +352,30 @@ public final class ProcessingStateMachine {
 
           zeebeState
               .getBlackListState()
-              .tryToBlacklist(typedEvent, errorRecord::setProcessInstanceKey);
+              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
 
           logStreamWriter.appendFollowUpEvent(
-              typedEvent.getKey(), ErrorIntent.CREATED, errorRecord);
+              typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
         });
   }
 
   private void writeRejectionOnCommand(final Throwable exception) {
     final String errorMessage =
-        String.format(PROCESSING_ERROR_MESSAGE, typedEvent, exception.getMessage());
+        String.format(PROCESSING_ERROR_MESSAGE, typedCommand, exception.getMessage());
     LOG.error(errorMessage, exception);
 
-    logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
+    logStreamWriter.appendRejection(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
     responseWriter.writeRejectionOnCommand(
-        typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
+        typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
-  private void writeEvent() {
+  private void writeRecords() {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
               final long position = logStreamWriter.flush();
 
-              // only overwrite position if events were flushed
+              // only overwrite position if records were flushed
               if (position > 0) {
                 writtenPosition = position;
               }
@@ -386,12 +388,12 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, t) -> {
           if (t != null) {
-            LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, metadata, t);
-            onError(t, this::writeEvent);
+            LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
+            onError(t, this::writeRecords);
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
-            // of written events via the lastWritten and now written position.
+            // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
             updateState();
@@ -404,8 +406,8 @@ public final class ProcessingStateMachine {
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.commit();
-              lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
-              metrics.setLastProcessedPosition(lastSuccessfulProcessedEventPosition);
+              lastSuccessfulProcessedRecordPosition = currentRecord.getPosition();
+              metrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
               return true;
             },
@@ -415,7 +417,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, metadata, throwable);
+            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
             onError(throwable, this::updateState);
           } else {
             executeSideEffects();
@@ -431,17 +433,18 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentEvent, metadata, throwable);
+            LOG.error(
+                ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentRecord, metadata, throwable);
           }
 
-          notifyProcessedListener(typedEvent);
+          notifyProcessedListener(typedCommand);
 
           // observe the processing duration
           processingTimer.close();
 
-          // continue with next event
+          // continue with next record
           currentProcessor = null;
-          actor.submit(this::readNextEvent);
+          actor.submit(this::readNextRecord);
         });
   }
 
@@ -461,8 +464,8 @@ public final class ProcessingStateMachine {
     }
   }
 
-  public long getLastSuccessfulProcessedEventPosition() {
-    return lastSuccessfulProcessedEventPosition;
+  public long getLastSuccessfulProcessedRecordPosition() {
+    return lastSuccessfulProcessedRecordPosition;
   }
 
   public long getLastWrittenPosition() {
@@ -474,20 +477,20 @@ public final class ProcessingStateMachine {
   }
 
   public void startProcessing(final LastProcessingPositions lastProcessingPositions) {
-    // Replay ends at the end of the log and returns the lastSourceEventPosition
+    // Replay ends at the end of the log and returns the lastSourceRecordPosition
     // which is equal to the last processed position
     // we need to seek to the next record after that position where the processing should start
     // Be aware on processing we ignore events, so we will process the next command
     final var lastProcessedPosition = lastProcessingPositions.getLastProcessedPosition();
     logStreamReader.seekToNextEvent(lastProcessedPosition);
-    if (lastSuccessfulProcessedEventPosition == StreamProcessor.UNSET_POSITION) {
-      lastSuccessfulProcessedEventPosition = lastProcessedPosition;
+    if (lastSuccessfulProcessedRecordPosition == StreamProcessor.UNSET_POSITION) {
+      lastSuccessfulProcessedRecordPosition = lastProcessedPosition;
     }
 
     if (lastWrittenPosition == StreamProcessor.UNSET_POSITION) {
       lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
     }
 
-    actor.submit(this::readNextEvent);
+    actor.submit(this::readNextRecord);
   }
 }
