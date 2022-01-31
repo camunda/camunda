@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
-import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -35,9 +34,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.HasAggregations;
-import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
-import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
@@ -67,10 +63,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static org.camunda.bpm.engine.ActivityTypes.*;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
@@ -84,6 +82,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -98,8 +97,8 @@ public class DurationOutliersReader {
   private static final String AGG_VARIABLE_VALUE_TERMS = "variableValueTerms";
   private static final String LOWER_DURATION_AGG = "lowerDurationAgg";
   private static final String HIGHER_DURATION_AGG = "higherDurationAgg";
-  private static final String COMPOSITE_FLOW_NODE_IDS_AGG = "compositeFlowNodeIds";
   private static final String FLOW_NODE_ID_AGG = "flowNodeId";
+  private static final String FLOW_NODE_TYPE_FILTER = "flowNodeTypeFilter";
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -164,17 +163,28 @@ public class DurationOutliersReader {
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(AGG_STATS)
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
-    CompositeAggregationBuilder compositeActivityIdsAgg = new CompositeAggregationBuilder(
-      COMPOSITE_FLOW_NODE_IDS_AGG,
-      Collections.singletonList(
-        new TermsValuesSourceBuilder(FLOW_NODE_ID_AGG).field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_ID)
-      )
-    )
-      .size(configurationService.getEsAggregationBucketLimit())
-      .subAggregation(stats);
+    final BoolQueryBuilder query = boolQuery();
+    if(processDefinitionParams.isDisconsiderAutomatedTasks())
+    {
+      query.filter(termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE, generateListOfHumanTasks()));
+    }
+    else
+    {
+      query.filter(boolQuery().mustNot(termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE,
+                                                  generateListOfStandardExcludedFlowNodeTypes())));
+    }
+
+    AggregationBuilder aggregationflowNodeTypeAndId = AggregationBuilders
+      .filter(FLOW_NODE_TYPE_FILTER, query)
+      .subAggregation(
+        AggregationBuilders
+          .terms(FLOW_NODE_ID_AGG).field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
+          .size(configurationService.getEsAggregationBucketLimit())
+          .subAggregation(stats)
+      );
 
     NestedAggregationBuilder nested = AggregationBuilders.nested(AGG_NESTED, FLOW_NODE_INSTANCES)
-      .subAggregation(compositeActivityIdsAgg);
+      .subAggregation(aggregationflowNodeTypeAndId);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(processInstanceQuery)
@@ -186,18 +196,27 @@ public class DurationOutliersReader {
       new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
         .source(searchSourceBuilder);
 
-    final List<ParsedComposite.ParsedBucket> deviationForEachFlowNode = new ArrayList<>();
-    CompositeAggregationScroller.create()
-      .setEsClient(esClient)
-      .setSearchRequest(searchRequest)
-      .setPathToAggregation(AGG_NESTED, COMPOSITE_FLOW_NODE_IDS_AGG)
-      .setCompositeBucketConsumer(deviationForEachFlowNode::add)
-      .consumeAllPages();
+    final SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest);
+    } catch (IOException e) {
+      final String reason = "Could not fetch data to generate Outlier Analysis Heatmap";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    final List<? extends Terms.Bucket> deviationForEachFlowNode = searchResponse.getAggregations()
+      .<Nested>get(AGG_NESTED)
+      .getAggregations()
+      .<Filter>get(
+        FLOW_NODE_TYPE_FILTER)
+      .getAggregations()
+      .<Terms>get(FLOW_NODE_ID_AGG)
+      .getBuckets();
 
     return createFlowNodeOutlierMap(
       deviationForEachFlowNode,
       processInstanceQuery,
-      processDefinitionParams.getProcessDefinitionKey()
+      processDefinitionParams
     );
   }
 
@@ -395,20 +414,18 @@ public class DurationOutliersReader {
 
     final NestedAggregationBuilder nestedVariableAggregation =
       AggregationBuilders.nested(AGG_VARIABLES, VARIABLES);
-    variableNames.stream().distinct().forEach(variableName -> {
-      nestedVariableAggregation.subAggregation(
-        AggregationBuilders.filter(variableName, termQuery(VARIABLES + "." + VARIABLE_NAME, variableName))
-          .subAggregation(
-            AggregationBuilders.terms(AGG_VARIABLE_VALUE_TERMS).field(VARIABLES + "." + VARIABLE_VALUE)
-              // This corresponds to the min doc count also used by elasticsearch's own significant terms implementation
-              // and serves the purpose to ignore high cardinality values
-              // @formatter:off
-              // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
-              // @formatter:on
-              .minDocCount(3)
-          )
-      );
-    });
+    variableNames.stream().distinct().forEach(variableName -> nestedVariableAggregation.subAggregation(
+      AggregationBuilders.filter(variableName, termQuery(VARIABLES + "." + VARIABLE_NAME, variableName))
+        .subAggregation(
+          AggregationBuilders.terms(AGG_VARIABLE_VALUE_TERMS).field(VARIABLES + "." + VARIABLE_VALUE)
+            // This corresponds to the min doc count also used by elasticsearch's own significant terms implementation
+            // and serves the purpose to ignore high cardinality values
+            // @formatter:off
+            // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
+            // @formatter:on
+            .minDocCount(3)
+        )
+    ));
 
     return createFilteredFlowNodeVariableAggregation(outlierParams, flowNodeFilterQuery, nestedVariableAggregation);
   }
@@ -536,9 +553,9 @@ public class DurationOutliersReader {
     return outlierVariableTermOccurrences;
   }
 
-  private Map<String, FindingsDto> createFlowNodeOutlierMap(final List<ParsedComposite.ParsedBucket> deviationForEachFlowNode,
+  private Map<String, FindingsDto> createFlowNodeOutlierMap(final List<? extends Terms.Bucket> deviationForEachFlowNode,
                                                             final BoolQueryBuilder processInstanceQuery,
-                                                            final String processDefinitionKey) {
+                                                            final ProcessDefinitionParametersDto processDefinitionParams) {
     final Map<String, ExtendedStats> statsByFlowNodeId = new HashMap<>();
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(processInstanceQuery)
@@ -550,15 +567,19 @@ public class DurationOutliersReader {
     );
     searchSourceBuilder.aggregation(nestedFlowNodeAggregation);
     deviationForEachFlowNode
-      .forEach((bucket) -> {
-        final String flowNodeId = String.valueOf(bucket.getKey().get(FLOW_NODE_ID_AGG));
+      .forEach(bucket -> {
+        final String flowNodeId = String.valueOf(bucket.getKeyAsString());
         final ExtendedStats statsAgg = bucket.getAggregations().get(AGG_STATS);
         statsByFlowNodeId.put(flowNodeId, statsAgg);
 
         if (statsAgg.getStdDeviation() != 0.0D) {
           double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
           double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
-
+          double average = statsAgg.getAvg();
+          stdDeviationBoundLower = Math.min(stdDeviationBoundLower,
+                                            average - processDefinitionParams.getMinimumDeviationFromAvg());
+          stdDeviationBoundHigher = Math.max(stdDeviationBoundHigher,
+                                             average + processDefinitionParams.getMinimumDeviationFromAvg());
           final FilterAggregationBuilder lowerOutlierEventFilter = AggregationBuilders.filter(
             LOWER_DURATION_AGG,
             rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).lte(stdDeviationBoundLower)
@@ -579,7 +600,7 @@ public class DurationOutliersReader {
         }
       });
 
-    final SearchRequest searchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
+    final SearchRequest searchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
       .source(searchSourceBuilder);
     try {
       final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest)
@@ -593,7 +614,7 @@ public class DurationOutliersReader {
         log.info(
           "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. " +
             "Returning empty map.",
-          getProcessInstanceIndexAliasName(processDefinitionKey)
+          getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey())
         );
         return Collections.emptyMap();
       }
@@ -743,5 +764,27 @@ public class DurationOutliersReader {
 
   private double getRatio(final long totalCount, final long observedCount) {
     return (double) observedCount / totalCount;
+  }
+
+  private static List<String> generateListOfHumanTasks() {
+    return List.of(TASK_USER_TASK, TASK_MANUAL_TASK);
+  }
+
+  private static List<String> generateListOfStandardExcludedFlowNodeTypes() {
+    /* This list contains all the node types that we always want to exclude because they add no value to the outlier
+    analysis. Please note that non-user task nodes that do add value to the analysis (e.g. service tasks) shall not
+    be included in this list, as they shall also undergo an outlier analysis.
+     */
+    return List.of(
+      GATEWAY_EXCLUSIVE, GATEWAY_INCLUSIVE, GATEWAY_PARALLEL, GATEWAY_COMPLEX, GATEWAY_EVENT_BASED, CALL_ACTIVITY,
+      BOUNDARY_TIMER, BOUNDARY_MESSAGE, BOUNDARY_SIGNAL, BOUNDARY_COMPENSATION, BOUNDARY_ERROR, BOUNDARY_ESCALATION,
+      BOUNDARY_CANCEL, BOUNDARY_CONDITIONAL, START_EVENT, START_EVENT_TIMER, START_EVENT_MESSAGE, START_EVENT_SIGNAL,
+      START_EVENT_ESCALATION, START_EVENT_COMPENSATION, START_EVENT_ERROR, START_EVENT_CONDITIONAL,
+      INTERMEDIATE_EVENT_CATCH, INTERMEDIATE_EVENT_MESSAGE, INTERMEDIATE_EVENT_TIMER, INTERMEDIATE_EVENT_LINK,
+      INTERMEDIATE_EVENT_SIGNAL,INTERMEDIATE_EVENT_CONDITIONAL, INTERMEDIATE_EVENT_THROW,
+      INTERMEDIATE_EVENT_SIGNAL_THROW, INTERMEDIATE_EVENT_COMPENSATION_THROW, INTERMEDIATE_EVENT_MESSAGE_THROW,
+      INTERMEDIATE_EVENT_NONE_THROW , INTERMEDIATE_EVENT_ESCALATION_THROW, END_EVENT_ERROR, END_EVENT_CANCEL,
+      END_EVENT_TERMINATE, END_EVENT_MESSAGE, END_EVENT_SIGNAL, END_EVENT_COMPENSATION , END_EVENT_ESCALATION,
+      END_EVENT_NONE);
   }
 }

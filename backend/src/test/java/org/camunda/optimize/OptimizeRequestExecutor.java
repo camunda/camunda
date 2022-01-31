@@ -1293,11 +1293,21 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
                                                               List<String> version,
                                                               List<String> tenantIds) {
+    return buildFlowNodeOutliersRequest(key, version, tenantIds, 0, false);
+  }
+
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
+                                                              List<String> version,
+                                                              List<String> tenantIds,
+                                                              final long minimalDeviationInMs,
+                                                              final boolean onlyHumanTasks) {
     this.path = "analysis/flowNodeOutliers";
     this.method = GET;
     this.addSingleQueryParam("processDefinitionKey", key);
     this.addSingleQueryParam("processDefinitionVersions", version);
     this.addSingleQueryParam("tenantIds", tenantIds);
+    this.addSingleQueryParam("minimumDeviationFromAvg", minimalDeviationInMs);
+    this.addSingleQueryParam("disconsiderAutomatedTasks", onlyHumanTasks);
     return this;
   }
 

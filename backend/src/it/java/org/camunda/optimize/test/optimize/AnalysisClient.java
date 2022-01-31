@@ -88,11 +88,17 @@ public class AnalysisClient {
   }
 
   public HashMap<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
-                                                          List<String> tenants) {
+                                                          List<String> tenants, long minimalDeviationInMs,
+                                                          boolean onlyHumanTasks) {
     return getRequestExecutor()
-      .buildFlowNodeOutliersRequest(procDefKey, procDefVersions, tenants)
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
+      .buildFlowNodeOutliersRequest(procDefKey, procDefVersions, tenants, minimalDeviationInMs, onlyHumanTasks)
+      .execute(new TypeReference<>() {
       });
+  }
+
+  public HashMap<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
+                                                          List<String> tenants) {
+    return getFlowNodeOutliers(procDefKey, procDefVersions, tenants, 0, false);
   }
 
   public List<DurationChartEntryDto> getDurationChart(String procDefKey, List<String> procDefVersions,

@@ -9,7 +9,6 @@ import lombok.Data;
 import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +20,8 @@ public class ProcessDefinitionParametersDto {
   protected String processDefinitionKey;
   protected List<String> processDefinitionVersions;
   protected List<String> tenantIds = DEFAULT_TENANT_IDS;
+  protected long minimumDeviationFromAvg = 50;
+  protected boolean disconsiderAutomatedTasks;
 
   public void setTenantIds(List<String> tenantIds) {
     this.tenantIds = normalizeTenants(tenantIds);
