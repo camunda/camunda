@@ -8,8 +8,8 @@
 package io.camunda.zeebe.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
@@ -41,14 +41,13 @@ public class LogStreamErrorTest {
 
   @Before
   public void setup() {
+    doThrow(logStorageException).when(mockLogStorage).newReader();
     logStream =
         SyncLogStream.builder()
             .withLogName("test-log")
             .withLogStorage(mockLogStorage)
             .withActorSchedulingService(actorSchedulerRule.get())
             .build();
-
-    when(mockLogStorage.newReader()).thenThrow(logStorageException);
   }
 
   @After
