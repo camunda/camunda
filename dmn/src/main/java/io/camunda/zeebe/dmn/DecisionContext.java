@@ -7,18 +7,17 @@
  */
 package io.camunda.zeebe.dmn;
 
+import java.util.Map;
+
 /**
- * A parsed DMN decision. A decision denotes the act of choosing among multiple possible options. It
- * is contained in a {@link ParsedDecisionRequirementsGraph decision requirements graph (DRG)} that
- * shows how a decision can be made.
+ * {@link ParsedDecision Decisions} can only be made within in a specific context. The context must
+ * contain all input data required by the decision in the {@link ParsedDecisionRequirementsGraph
+ * decision requirements graph} in order to successfully make a decision.
  *
  * @see DecisionEngine
  */
-public interface ParsedDecision {
+public interface DecisionContext {
 
-  /** @return the name of the decision */
-  String getName();
-
-  /** @return the id of the decision */
-  String getId();
+  /** @return the Context as map */
+  Map<String, Object> toMap();
 }

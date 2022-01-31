@@ -16,6 +16,16 @@
   <dependencies>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-feel-integration</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
       <artifactId>dmn-engine</artifactId>
     </dependency>
@@ -30,11 +40,28 @@
       <artifactId>camunda-dmn-model</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
 
