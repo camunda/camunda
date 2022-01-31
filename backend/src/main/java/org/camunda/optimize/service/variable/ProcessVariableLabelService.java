@@ -40,9 +40,13 @@ public class ProcessVariableLabelService {
     if (definitionService.definitionExists(DefinitionType.PROCESS, definitionVariableLabelsDto.getDefinitionKey())) {
       variableLabelWriter.createVariableLabelUpsertRequest(definitionVariableLabelsDto);
     } else {
-        throw new NotFoundException(
-          "The process definition with id " + definitionVariableLabelsDto.getDefinitionKey() + " has not yet been imported to Optimize");
+      throw new NotFoundException(
+        "The process definition with id " + definitionVariableLabelsDto.getDefinitionKey() + " has not yet been " +
+          "imported to Optimize");
     }
   }
 
+  public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
+    variableLabelWriter.deleteVariableLabelsForDefinition(processDefinitionKey);
+  }
 }

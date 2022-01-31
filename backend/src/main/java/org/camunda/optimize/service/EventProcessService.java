@@ -60,6 +60,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -113,6 +114,7 @@ public class EventProcessService {
   private final ExternalEventService externalEventService;
   private final CamundaEventService camundaEventService;
   private final AutogenerationProcessModelService autogenerationProcessModelService;
+  private final ProcessVariableLabelService processVariableLabelService;
 
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
@@ -185,6 +187,7 @@ public class EventProcessService {
         reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
         collectionWriter.deleteScopeEntryFromAllCollections(CollectionScopeEntryDto.convertTypeAndKeyToScopeEntryId(
           PROCESS, eventProcessMappingId));
+        processVariableLabelService.deleteVariableLabelsForDefinition(eventProcessMappingId);
         eventProcessPublishStateWriter.markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
           eventProcessMappingId);
         eventProcessMappingsToDelete.add(eventProcessMappingId);
@@ -202,6 +205,7 @@ public class EventProcessService {
     reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
     collectionWriter.deleteScopeEntryFromAllCollections(CollectionScopeEntryDto.convertTypeAndKeyToScopeEntryId(
       PROCESS, eventProcessMappingId));
+    processVariableLabelService.deleteVariableLabelsForDefinition(eventProcessMappingId);
     eventProcessPublishStateWriter.markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
       eventProcessMappingId);
     return eventProcessMappingWriter.deleteEventProcessMapping(eventProcessMappingId);

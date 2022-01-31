@@ -15,6 +15,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
@@ -45,11 +48,15 @@ import static org.camunda.optimize.test.optimize.EventProcessClient.createMapped
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_LABEL_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
 public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
   private static String simpleDiagramXml;
+
+  final LabelDto FIRST_LABEL = new LabelDto("first label", "a name", VariableType.STRING);
+  final LabelDto SECOND_LABEL = new LabelDto("second label", "a name", VariableType.STRING);
 
   @RegisterExtension
   @Order(5)
@@ -100,26 +107,38 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   @Test
   public void deletePublishedEventProcessMapping_dependentResourcesGetCleared() {
     // given a published event process with various dependent resources created using its definition
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      STARTED_EVENT, FINISHED_EVENT
+    );
+    String eventProcessDefinitionKeyToDelete = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
-    publishMappingAndExecuteImport(eventProcessDefinitionKey);
-    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessDefinitionKey);
+    publishMappingAndExecuteImport(eventProcessDefinitionKeyToDelete);
+    publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
+    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessDefinitionKeyToDelete);
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
+    executeImportCycle();
 
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     collectionClient.addScopeEntryToCollection(
       collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
+      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKeyToDelete)
+    );
+
+    addLabelForEventProcessDefinition(eventProcessDefinitionKeyToDelete, FIRST_LABEL);
+    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
+      nonDeletedEventProcessDefinitionKey,
+      SECOND_LABEL
     );
 
     String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
       reportClient.createSingleProcessReportDefinitionDto(
         collectionId,
-        eventProcessDefinitionKey,
+        eventProcessDefinitionKeyToDelete,
         Collections.emptyList()
       ));
     String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
@@ -143,11 +162,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     );
 
     // when the event process is deleted
-    eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKey);
+    eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKeyToDelete);
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then the event process is deleted and the associated resources are cleaned up
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
@@ -161,8 +180,45 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertThat(dashboardClient.getDashboard(dashboardId).getReports())
       .extracting(ReportLocationDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKeyToDelete)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
+    assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1).containsExactly(nonDeletedDefinitionVariableLabelsDto);
+  }
+
+  @Test
+  public void deletePublishedEventProcessMapping_labelDocumentDoesNotExist() {
+    // given
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      STARTED_EVENT, FINISHED_EVENT
+    );
+    String eventProcessDefinitionKeyToDelete = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+
+    publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
+    publishMappingAndExecuteImport(eventProcessDefinitionKeyToDelete);
+    EventProcessPublishStateDto eventProcessDefinitionKeyToDeletePublishState = getEventProcessPublishStateDto(eventProcessDefinitionKeyToDelete);
+    assertThat(eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState)).isTrue();
+    EventProcessPublishStateDto nonDeletedEventProcessDefinitionPublishState = getEventProcessPublishStateDto(nonDeletedEventProcessDefinitionKey);
+    assertThat(eventInstanceIndexForPublishStateExists(nonDeletedEventProcessDefinitionPublishState)).isTrue();
+    executeImportCycle();
+
+    addLabelForEventProcessDefinition(nonDeletedEventProcessDefinitionKey, FIRST_LABEL);
+    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
+      nonDeletedEventProcessDefinitionKey,
+      SECOND_LABEL
+    );
+
+    // when
+    eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKeyToDelete);
+    embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
+
+    // then
+    assertGetMappingRequestStatusCode(eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKeyToDelete)).isEmpty();
+    assertThat(eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState)).isFalse();
+    assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1).containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
 
   @Test
@@ -514,28 +570,41 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
   @Test
   public void bulkDeletePublishedEventProcessMappings_dependentResourcesGetCleared() {
-    // given a published event process with various dependent resources created using its definition
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    // given
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      STARTED_EVENT, FINISHED_EVENT
+    );
+    String firstDeletingEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String secondDeletingEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
-    publishMappingAndExecuteImport(eventProcessDefinitionKey1);
-    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessDefinitionKey1);
+    publishMappingAndExecuteImport(firstDeletingEventProcessDefinitionKey);
+    publishMappingAndExecuteImport(secondDeletingEventProcessDefinitionKey);
+    publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
+    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(firstDeletingEventProcessDefinitionKey);
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
+    executeImportCycle();
 
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
+    addLabelForEventProcessDefinition(firstDeletingEventProcessDefinitionKey, FIRST_LABEL);
+    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
+      nonDeletedEventProcessDefinitionKey,
+      SECOND_LABEL
+    );
+
     collectionClient.addScopeEntryToCollection(
       collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey1)
+      new CollectionScopeEntryDto(PROCESS, firstDeletingEventProcessDefinitionKey)
     );
 
     String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
       reportClient.createSingleProcessReportDefinitionDto(
         collectionId,
-        eventProcessDefinitionKey1,
+        firstDeletingEventProcessDefinitionKey,
         Collections.emptyList()
       ));
     String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
@@ -558,14 +627,14 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey)
     );
 
-    List<String> eventProcessIds = Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
+    List<String> eventProcessIds = Arrays.asList(firstDeletingEventProcessDefinitionKey, secondDeletingEventProcessDefinitionKey);
 
     // when
     eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(firstDeletingEventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
@@ -579,9 +648,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertThat(dashboardClient.getDashboard(dashboardId).getReports())
       .extracting(ReportLocationDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey1)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(firstDeletingEventProcessDefinitionKey)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(firstDeletingEventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1)
+      .containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource() {
@@ -611,4 +682,27 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .execute(statusCode);
   }
 
+  private void executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto) {
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildProcessVariableLabelRequest(labelOptimizeDto)
+      .execute();
+  }
+
+  private List<DefinitionVariableLabelsDto> getAllDocumentsOfVariableLabelIndex() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      VARIABLE_LABEL_INDEX_NAME,
+      DefinitionVariableLabelsDto.class
+    );
+  }
+
+  private DefinitionVariableLabelsDto addLabelForEventProcessDefinition(final String eventProcessDefinitionKey,
+                                                                        final LabelDto labelDto) {
+    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
+      eventProcessDefinitionKey,
+      List.of(labelDto)
+    );
+    executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto);
+    return definitionVariableLabelsDto;
+  }
 }

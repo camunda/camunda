@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -88,6 +89,24 @@ public class VariableLabelWriter {
         "Was not able to update the variable labels for the process definition with id: [%s] due to an Elasticsearch" +
           " exception",
         definitionVariableLabelsDto.getDefinitionKey()
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
+    log.debug("Deleting variable label document with id [{}].", processDefinitionKey);
+    final DeleteRequest request = new DeleteRequest(VARIABLE_LABEL_INDEX_NAME)
+      .id(processDefinitionKey)
+      .setRefreshPolicy(IMMEDIATE);
+
+    try {
+       esClient.delete(request);
+    } catch (IOException e) {
+      String errorMessage = String.format(
+        "Could not delete variable label document with id [%s]. ",
+        processDefinitionKey
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
