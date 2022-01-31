@@ -353,7 +353,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastSourceEventPosition();
           } else {
-            return processingStateMachine.getLastSuccessfulProcessedEventPosition();
+            return processingStateMachine.getLastSuccessfulProcessedRecordPosition();
           }
         });
   }
@@ -368,7 +368,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastReplayedEventPosition();
           } else {
-            return processingStateMachine.getLastWrittenEventPosition();
+            return processingStateMachine.getLastWrittenPosition();
           }
         });
   }
@@ -451,7 +451,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               // since the listeners are not recovered yet
               lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
               phase = Phase.PROCESSING;
-              actor.submit(processingStateMachine::readNextEvent);
+              actor.submit(processingStateMachine::readNextRecord);
               LOG.debug("Resumed processing for partition {}", partitionId);
             }
           }
@@ -460,7 +460,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public void onRecordAvailable() {
-    actor.run(processingStateMachine::readNextEvent);
+    actor.run(processingStateMachine::readNextRecord);
   }
 
   public enum Phase {
