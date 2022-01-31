@@ -12111,10 +12111,10 @@ msw-storybook-addon@1.4.1:
     "@storybook/addons" "^6.0.0"
     is-node-process "^1.0.1"
 
-msw@0.36.7:
-  version "0.36.7"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.36.7.tgz#c20fa4fe21d9567af50bd6e5a4237d7b2545ad70"
-  integrity sha512-D991x0e+nuX9ebdSMSo4hESzY/wIkcwLxlc769B6aLUMqUe1CaIdTyV9+yBIRH/RAiXmnQRaGrFyjSaKV2KNFA==
+msw@0.36.8:
+  version "0.36.8"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.36.8.tgz#33ff8bfb0299626a95f43d0e4c3dc2c73c17f1ba"
+  integrity sha512-K7lOQoYqhGhTSChsmHMQbf/SDCsxh/m0uhN6Ipt206lGoe81fpTmaGD0KLh4jUxCONMOUnwCSj0jtX2CM4pEdw==
   dependencies:
     "@mswjs/cookies" "^0.1.7"
     "@mswjs/interceptors" "^0.12.7"
