@@ -311,6 +311,10 @@ public final class StreamProcessorReplayModeTest {
     // when
     startStreamProcessor(replayContinuously);
 
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY));
+
     final var eventPosition =
         replayContinuously.writeEvent(
             ELEMENT_ACTIVATING,

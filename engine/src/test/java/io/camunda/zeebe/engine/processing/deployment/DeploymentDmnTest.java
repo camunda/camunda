@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
@@ -32,6 +33,10 @@ import org.junit.Test;
 public final class DeploymentDmnTest {
 
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
+  private static final String DMN_DECISION_TABLE_RENAMED_DRG =
+      "/dmn/decision-table-with-renamed-drg.dmn";
+
   private static final String DMN_INVALID_EXPRESSION =
       "/dmn/decision-table-with-invalid-expression.dmn";
   private static final String DMN_WITH_TWO_DECISIONS = "/dmn/drg-force-user.dmn";
@@ -193,6 +198,229 @@ public final class DeploymentDmnTest {
     assertThat(decisionRecords.get(0).getKey())
         .describedAs("Expect that the decision records have different keys")
         .isNotEqualTo(decisionRecords.get(1).getKey());
+  }
+
+  @Test
+  public void shouldDeployNewVersion() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    // then
+    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata())
+        .extracting(DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
+        .describedAs("Expect that the DRG version is increased")
+        .containsExactly(2);
+
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+        .extracting(DecisionRecordValue::getVersion)
+        .describedAs("Expect that the decision version is increased")
+        .containsExactly(2);
+
+    assertThat(RecordingExporter.decisionRequirementsRecords().limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(
+            DecisionRequirementsMetadataValue::getDecisionRequirementsId,
+            DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
+        .contains(tuple("force-users", 1), tuple("force-users", 2));
+
+    assertThat(RecordingExporter.decisionRecords().limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getVersion)
+        .contains(tuple("jedi-or-sith", 1), tuple("jedi-or-sith", 2));
+  }
+
+  @Test
+  public void shouldDeployDuplicate() {
+    // given
+    final var firstDeployment =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    final var drgV1 = firstDeployment.getValue().getDecisionRequirementsMetadata().get(0);
+    final var decisionV1 = firstDeployment.getValue().getDecisionsMetadata().get(0);
+
+    // when
+    final var secondDeployment =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    // then
+    assertThat(secondDeployment.getValue().getDecisionRequirementsMetadata()).hasSize(1);
+
+    final var drgMetadata = secondDeployment.getValue().getDecisionRequirementsMetadata().get(0);
+    Assertions.assertThat(drgMetadata)
+        .hasDecisionRequirementsVersion(1)
+        .hasDecisionRequirementsKey(drgV1.getDecisionRequirementsKey())
+        .isDuplicate();
+
+    assertThat(secondDeployment.getValue().getDecisionsMetadata()).hasSize(1);
+
+    final var decisionMetadata = secondDeployment.getValue().getDecisionsMetadata().get(0);
+    Assertions.assertThat(decisionMetadata)
+        .hasVersion(1)
+        .hasDecisionKey(decisionV1.getDecisionKey())
+        .hasDecisionRequirementsKey(drgV1.getDecisionRequirementsKey())
+        .isDuplicate();
+  }
+
+  @Test
+  public void shouldOmitRecordsForDuplicate() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    // when
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    // then
+    assertThat(RecordingExporter.decisionRequirementsRecords().limit(2))
+        .extracting(Record::getValue)
+        .extracting(DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
+        .describedAs("Expect to omit decision requirements record for duplicate")
+        .containsExactly(1, 2);
+
+    assertThat(RecordingExporter.decisionRecords().limit(2))
+        .extracting(Record::getValue)
+        .extracting(DecisionRecordValue::getVersion)
+        .describedAs("Expect to omit decision record for duplicate")
+        .containsExactly(1, 2);
+  }
+
+  @Test
+  public void shouldDeployNewVersionIfResourceNameDiffers() {
+    // given
+    final var dmnResource = readResource(DMN_DECISION_TABLE);
+    engine.deployment().withXmlResource(dmnResource, "decision-table.dmn").deploy();
+
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlResource(dmnResource, "renamed-decision-table.dmn").deploy();
+
+    // then
+    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata())
+        .extracting(DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
+        .describedAs("Expect that the DRG version is increased")
+        .containsExactly(2);
+
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+        .extracting(DecisionRecordValue::getVersion)
+        .describedAs("Expect that the decision version is increased")
+        .containsExactly(2);
+  }
+
+  @Test
+  public void shouldDeployNewVersionIfDrgIdDiffers() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    // when
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG).deploy();
+
+    // then
+    assertThat(RecordingExporter.decisionRequirementsRecords().limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(
+            DecisionRequirementsMetadataValue::getDecisionRequirementsId,
+            DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
+        .contains(tuple("force-users", 1), tuple("star-wars", 1));
+
+    assertThat(RecordingExporter.decisionRecords().limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getVersion)
+        .contains(tuple("jedi-or-sith", 1), tuple("jedi-or-sith", 2));
+  }
+
+  @Test
+  public void shouldDeployDecisionWithTwoDrg() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG).deploy();
+
+    // when
+    final var deploymentEvent =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    // then
+    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata())
+        .extracting(
+            DecisionRequirementsMetadataValue::getDecisionRequirementsVersion,
+            DecisionRequirementsMetadataValue::isDuplicate)
+        .describedAs("Expect that the DRG is a duplicate")
+        .containsOnly(tuple(1, true));
+
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+        .extracting(DecisionRecordValue::getVersion, DecisionRecordValue::isDuplicate)
+        .describedAs("Expect that the decision version is increased")
+        .containsExactly(tuple(3, false));
+
+    assertThat(RecordingExporter.decisionRecords().limit(3))
+        .hasSize(3)
+        .extracting(Record::getValue)
+        .extracting(
+            DecisionRecordValue::getDecisionId,
+            DecisionRecordValue::getVersion,
+            DecisionRecordValue::getDecisionRequirementsId)
+        .contains(
+            tuple("jedi-or-sith", 1, "force-users"),
+            tuple("jedi-or-sith", 2, "star-wars"),
+            tuple("jedi-or-sith", 3, "force-users"));
+  }
+
+  @Test
+  public void shouldRejectIfMultipleDrgHaveTheSameId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlClasspathResource(DMN_DECISION_TABLE_V2)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the decision requirements ids to be unique within a deployment "
+                    + "but found a duplicated id 'force-users' in the resources '%s' and '%s'",
+                DMN_DECISION_TABLE, DMN_DECISION_TABLE_V2));
+  }
+
+  @Test
+  public void shouldRejectIfMultipleDecisionsHaveTheSameId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "Expected the decision ids to be unique within a deployment "
+                    + "but found a duplicated id 'jedi-or-sith' in the resources '%s' and '%s'",
+                DMN_DECISION_TABLE, DMN_DECISION_TABLE_RENAMED_DRG));
   }
 
   private byte[] getChecksum(final String resourceName) {

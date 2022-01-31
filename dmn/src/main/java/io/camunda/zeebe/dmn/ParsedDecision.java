@@ -7,7 +7,13 @@
  */
 package io.camunda.zeebe.dmn;
 
-/** A parsed DMN decision. A decision is contained in a decision requirements graph (DRG). */
+/**
+ * A parsed DMN decision. A decision denotes the act of choosing among multiple possible options. It
+ * is contained in a {@link ParsedDecisionRequirementsGraph decision requirements graph (DRG)} that
+ * shows how a decision can be made.
+ *
+ * @see DecisionEngine
+ */
 public interface ParsedDecision {
 
   /** @return the name of the decision */

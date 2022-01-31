@@ -24,7 +24,7 @@
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
 
     <!-- java version -->
-    <version.java>11</version.java>
+    <version.java>17</version.java>
 
     <!-- dependency versions -->
     <version.config>1.4.1</version.config>

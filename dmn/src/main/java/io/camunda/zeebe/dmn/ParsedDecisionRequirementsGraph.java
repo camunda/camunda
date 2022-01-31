@@ -9,7 +9,12 @@ package io.camunda.zeebe.dmn;
 
 import java.util.Collection;
 
-/** A parsed DMN decision requirements graph (DRG). */
+/**
+ * A parsed DMN decision requirements graph (DRG). A DRG shows how a decision can be made, and
+ * contains the requirements necessary to make the {@link ParsedDecision decision}.
+ *
+ * @see DecisionEngine
+ */
 public interface ParsedDecisionRequirementsGraph {
 
   /** @return the id of the DRG, or {@code null} if the DMN is not valid */

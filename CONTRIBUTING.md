@@ -6,7 +6,7 @@
   * [Starting on an Issue](#starting-on-an-issue)
   * [Creating a Pull Request](#creating-a-pull-request)
   * [Reviewing a Pull Request](#reviewing-a-pull-request)
-  * [Review Emoji Code](#review-emoji-code) 
+  * [Review Emoji Code](#review-emoji-code)
   * [Backporting changes](#backporting-changes)
   * [Commit Message Guidelines](#commit-message-guidelines)
 * [Contributor License Agreement](#contributor-license-agreement)
@@ -18,9 +18,10 @@
 Zeebe is a multi-module maven project. To build all components,
 run the command: `mvn clean install -DskipTests` in the root folder.
 
-> NOTE: All Java modules in Zeebe are built and tested with JDK 17. All modules use language level
-> 11, except for the bpmn-model, gateway-protocol-impl, protocol and client modules which use
-> language level 8.
+> NOTE: All Java modules in Zeebe are built and tested with JDK 17. Most modules use language level
+> 17, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
+> zeebe-gateway-protocol-impl and zeebe-protocol which use language level 8 and
+> zeebe-protocol-jackson which uses language level 11.
 
 > NOTE: The Go client and zbctl are built and tested with Go 1.15
 
@@ -155,14 +156,14 @@ Before doing your first review, please have a look at this [guide](https://githu
 As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
 
 The review should result in:
-- approving the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍  
-- requesting changes if there are major issues ❌ 
+- approving the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍
+- requesting changes if there are major issues ❌
 - commenting if there are open questions ❓
 
 ### Review emoji code
 
-The following emojis can be used in a review to express the intention of a comment. 
-For example, to distinguish a required change from an optional suggestion.  
+The following emojis can be used in a review to express the intention of a comment.
+For example, to distinguish a required change from an optional suggestion.
 
 - 👍 or `:+1:`: This is great! It always feels good when somebody likes your work. Show them!
 - ❓ or `:question:`: I have a question. Please clarify.

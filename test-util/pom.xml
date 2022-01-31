@@ -139,6 +139,12 @@
       <artifactId>netty-common</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
   </dependencies>
   <build>
     <plugins>

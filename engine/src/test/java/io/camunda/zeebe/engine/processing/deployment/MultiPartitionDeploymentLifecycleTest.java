@@ -22,17 +22,16 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Collectors;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class MultiPartitionDeploymentLifecycleTest {
 
-  public static final String PROCESS_ID = "process";
-  public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
-  public static final int PARTITION_COUNT = 3;
+  private static final int PARTITION_COUNT = 3;
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
+  private static final String DMN_RESOURCE = "/dmn/decision-table.dmn";
+
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -48,14 +47,15 @@ public class MultiPartitionDeploymentLifecycleTest {
             .done();
 
     // when
-    ENGINE.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
+    engine.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
 
     // then
     final var deploymentPartitionRecords =
-        RecordingExporter.records().withPartitionId(1).limit(14).collect(Collectors.toList());
+        RecordingExporter.records().withPartitionId(1).limit(10).collect(Collectors.toList());
 
     assertThat(deploymentPartitionRecords)
         .extracting(Record::getIntent, Record::getRecordType)
+        .hasSize(10)
         .containsExactly(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
@@ -75,5 +75,30 @@ public class MultiPartitionDeploymentLifecycleTest {
     assertThat(RecordingExporter.records().withPartitionId(3).limit(2).collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .containsExactly(DeploymentIntent.DISTRIBUTE, DeploymentIntent.DISTRIBUTED);
+  }
+
+  @Test
+  public void shouldDistributeDmnResources() {
+    // when
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+
+    // then
+    assertThat(RecordingExporter.deploymentRecords().withPartitionId(DEPLOYMENT_PARTITION).limit(3))
+        .extracting(Record::getIntent)
+        .hasSize(3)
+        .contains(DeploymentIntent.FULLY_DISTRIBUTED);
+
+    assertThat(RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).limit(2))
+        .extracting(Record::getPartitionId)
+        .contains(2, 3);
+
+    final var distributedEvent =
+        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).getFirst().getValue();
+    assertThat(distributedEvent.getDecisionRequirementsMetadata())
+        .describedAs("Expect that decision requirements are distributed")
+        .isNotEmpty();
+    assertThat(distributedEvent.getDecisionsMetadata())
+        .describedAs("Expect that decisions are distributed")
+        .isNotEmpty();
   }
 }

@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1640095638552,
+  "iteration": 1641576536903,
   "links": [],
   "panels": [
     {
@@ -156,7 +156,7 @@
                 "properties": [
                   {
                     "id": "custom.width",
-                    "value": 352
+                    "value": null
                   }
                 ]
               }
@@ -373,7 +373,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "1 - kube_pod_container_status_ready{pod=~\".*\", pod!~\".*curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
+              "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", pod!~\".*curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -902,7 +902,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:71",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -911,7 +910,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:72",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1349,7 +1347,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "container_memory_rss{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"}",
+              "expr": "container_memory_rss{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -1358,14 +1356,14 @@
               "refId": "A"
             },
             {
-              "expr": "max(kube_pod_container_resource_limits_memory_bytes{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"})",
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
               "hide": false,
               "interval": "",
               "legendFormat": "limit",
               "refId": "B"
             },
             {
-              "expr": "min(kube_pod_container_resource_requests_memory_bytes{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"})",
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
               "interval": "",
               "legendFormat": "request",
               "refId": "C"
@@ -1519,7 +1517,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:107",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1528,7 +1525,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:108",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2938,7 +2934,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:144",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2947,7 +2942,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:145",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3036,7 +3030,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:144",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3045,7 +3038,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:145",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3134,7 +3126,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:144",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3143,7 +3134,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:145",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3232,7 +3222,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:144",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3241,7 +3230,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:145",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4102,7 +4090,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:226",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4111,7 +4098,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:227",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4201,7 +4187,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:226",
               "format": "s",
               "label": null,
               "logBase": 1,
@@ -4210,7 +4195,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:227",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4514,7 +4498,6 @@
           ],
           "thresholds": [
             {
-              "$$hashKey": "object:317",
               "colorMode": "critical",
               "fill": true,
               "line": true,
@@ -4646,7 +4629,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:123",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4655,7 +4637,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:124",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -11082,5 +11063,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 26
+  "version": 27
 }
