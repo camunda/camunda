@@ -13,13 +13,12 @@ import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableD
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;

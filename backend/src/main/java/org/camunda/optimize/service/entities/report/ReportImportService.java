@@ -38,7 +38,6 @@ import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionSco
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.util.set.Sets;
 import org.springframework.stereotype.Component;
 
@@ -451,7 +450,7 @@ public class ReportImportService {
     }
   }
 
-  private void validateCollectionScopeOrFail(@Nullable final CollectionDefinitionDto collection,
+  private void validateCollectionScopeOrFail(final CollectionDefinitionDto collection,
                                              final SingleProcessReportDefinitionExportDto reportToImport) {
     if (collection != null) {
       reportService.ensureCompliesWithCollectionScope(
@@ -460,7 +459,7 @@ public class ReportImportService {
     }
   }
 
-  private void validateCollectionScopeOrFail(@Nullable final CollectionDefinitionDto collection,
+  private void validateCollectionScopeOrFail(final CollectionDefinitionDto collection,
                                              final SingleDecisionReportDefinitionExportDto reportToImport) {
     if (collection != null) {
       reportService.ensureCompliesWithCollectionScope(

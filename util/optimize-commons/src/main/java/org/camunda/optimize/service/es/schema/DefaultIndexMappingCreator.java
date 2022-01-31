@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.schema;
 
 import lombok.Setter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

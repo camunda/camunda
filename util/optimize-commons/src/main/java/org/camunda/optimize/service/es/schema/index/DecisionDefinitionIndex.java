@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 

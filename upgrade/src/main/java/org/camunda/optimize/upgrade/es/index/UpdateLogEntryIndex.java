@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.es.index;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
