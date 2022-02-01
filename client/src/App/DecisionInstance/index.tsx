@@ -8,7 +8,7 @@ import {useEffect} from 'react';
 import {useParams} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
-import {DecisionTablePanel} from './DecisionTablePanel';
+import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
 import {Container} from './styled';
@@ -26,7 +26,7 @@ const DecisionInstance: React.FC = observer(() => {
   return (
     <Container>
       <Header />
-      <DecisionTablePanel />
+      <DecisionPanel />
       <VariablesPanel />
     </Container>
   );

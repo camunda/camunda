@@ -8,6 +8,8 @@ import ReactDOM from 'react-dom';
 import {App} from './App';
 import './index.css';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
+import 'dmn-js-decision-table/assets/css/dmn-js-decision-table.css';
+import 'dmn-js-shared/assets/css/dmn-js-shared.css';
 import {startMocking} from 'modules/mock-server/browser';
 import {tracking} from 'modules/tracking';
 

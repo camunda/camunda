@@ -5628,6 +5628,13 @@ camelize@^1.0.0:
   resolved "https://registry.yarnpkg.com/camelize/-/camelize-1.0.0.tgz#164a5483e630fa4321e5af07020e531831b2609b"
   integrity sha1-FkpUg+Yw+kMh5a8HAg5TGDGyYJs=
 
+camunda-dmn-moddle@^1.0.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/camunda-dmn-moddle/-/camunda-dmn-moddle-1.1.0.tgz#16c1e72805e634e062850c7b23fe178c897697e0"
+  integrity sha512-jRPrAYgpCLBg52ydpSHT6frXqWhRg6PV3YG9DUz5CO3SPo7qtbiMwUwb06nmKgyR+UerDbUA7eistQsuM7kidw==
+  dependencies:
+    min-dash "^3.0.0"
+
 caniuse-api@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/caniuse-api/-/caniuse-api-3.0.0.tgz#5e4d90e2274961d46291997df599e3ed008ee4c0"
@@ -6115,6 +6122,16 @@ component-event@^0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/component-event/-/component-event-0.1.4.tgz#3de78fc28782381787e24bf2a7c536bf0142c9b4"
   integrity sha1-PeePwoeCOBeH4kvyp8U2vwFCybQ=
+
+component-props@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/component-props/-/component-props-1.1.1.tgz#f9b7df9b9927b6e6d97c9bd272aa867670f34944"
+  integrity sha1-+bffm5kntubZfJvScqqGdnDzSUQ=
+
+component-xor@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/component-xor/-/component-xor-0.0.4.tgz#c55d83ccc1b94cd5089a4e93fa7891c7263e59aa"
+  integrity sha1-xV2DzMG5TNUImk6T+niRxyY+Wao=
 
 compose-function@3.0.3:
   version "3.0.3"
@@ -7143,6 +7160,46 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
+dmn-js-decision-table@^11.1.1:
+  version "11.1.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-11.1.1.tgz#fe979c80ebb9738a447e5f1a2cf022117fc2d34b"
+  integrity sha512-mSdePb1jeVsyy1aIVBSgdckancCMZPGn+ybiyUbF2ol7zCxDfQd3Xb/G3N0LmoP1lLZv2nqUBgEA5fPTZXAFLA==
+  dependencies:
+    css.escape "^1.5.1"
+    diagram-js "^7.8.2"
+    dmn-js-shared "^11.1.1"
+    escape-html "^1.0.3"
+    inferno "~5.6.2"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
+    selection-ranges "^3.0.2"
+    table-js "^7.2.0"
+
+dmn-js-shared@^11.1.1:
+  version "11.1.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-11.1.1.tgz#8ce010f577a6c31ea504bb683046bc46133915be"
+  integrity sha512-pIen3TORI5QYFzmHQdVNEUHypsGw68ZQ5kahw8W9+na/hcYvT1cYzPa1BOwBFPNYYK3YFhNWbXh7IIG8FfU34w==
+  dependencies:
+    camunda-dmn-moddle "^1.0.0"
+    diagram-js "^7.8.2"
+    dmn-moddle "^10.0.0"
+    ids "^0.2.0"
+    inferno "~5.6.2"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
+    selection-ranges "^3.0.2"
+    selection-update "^0.1.2"
+    table-js "^7.2.0"
+
+dmn-moddle@^10.0.0:
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/dmn-moddle/-/dmn-moddle-10.0.0.tgz#dadabfac6b6efb2d94ae328ba5ed2a840639d632"
+  integrity sha512-JD08qH2VqA7O54qCQFrGruwGyVovow+9g2O5/ww0KpC/n0mvuua117dz2CONiUWexJxq/dOAaMjrQwkWnK+oEA==
+  dependencies:
+    min-dash "^3.0.0"
+    moddle "^5.0.1"
+    moddle-xml "^9.0.5"
+
 dns-equal@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/dns-equal/-/dns-equal-1.0.0.tgz#b39e7f1da6eb0a75ba9c17324b34753c47e0654d"
@@ -7196,6 +7253,14 @@ dom-helpers@^5.0.1:
   dependencies:
     "@babel/runtime" "^7.8.7"
     csstype "^3.0.2"
+
+dom-iterator@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/dom-iterator/-/dom-iterator-1.0.0.tgz#9c09899846ec41c2d257adc4d6015e4759ef05ad"
+  integrity sha512-7dsMOQI07EMU98gQM8NSB3GsAiIeBYIPKpnxR3c9xOvdvBjChAcOM0iJ222I3p5xyiZO9e5oggkNaCusuTdYig==
+  dependencies:
+    component-props "1.1.1"
+    component-xor "0.0.4"
 
 dom-serializer@0:
   version "0.2.2"
@@ -7629,7 +7694,7 @@ escalade@^3.0.2, escalade@^3.1.1:
   resolved "https://registry.yarnpkg.com/escalade/-/escalade-3.1.1.tgz#d8cfdc7000965c5a0174b4a82eaa5c0552742e40"
   integrity sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==
 
-escape-html@~1.0.3:
+escape-html@^1.0.3, escape-html@~1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/escape-html/-/escape-html-1.0.3.tgz#0258eae4d3d0c0974de1c169188ef0051d1d1988"
   integrity sha1-Aljq5NPQwJdN4cFpGI7wBR0dGYg=
@@ -9239,6 +9304,11 @@ hastscript@^6.0.0:
     property-information "^5.0.0"
     space-separated-tokens "^1.0.0"
 
+hat@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/hat/-/hat-0.0.3.tgz#bb014a9e64b3788aed8005917413d4ff3d502d8a"
+  integrity sha1-uwFKnmSzeIrtgAWRdBPU/z1QLYo=
+
 he@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
@@ -9565,6 +9635,13 @@ identity-obj-proxy@3.0.0:
   dependencies:
     harmony-reflect "^1.4.6"
 
+ids@^0.2.0:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/ids/-/ids-0.2.2.tgz#c23140dd06f5e5e95b1a5e5e98877ea734965540"
+  integrity sha512-icIO8S7A7Hat9x/59VYjS5uwfBU1xRTDxeFC4t9wNceLxZFm2JbPhO4lC/xhFqFNVaxw2idwpLgUfkVQrjsxIw==
+  dependencies:
+    hat "^0.0.3"
+
 ids@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.0.tgz#df67f2d37b81d7c2effc87e03d17ebff95a58c05"
@@ -9684,6 +9761,25 @@ infer-owner@^1.0.3, infer-owner@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/infer-owner/-/infer-owner-1.0.4.tgz#c4cefcaa8e51051c2a40ba2ce8a3d27295af9467"
   integrity sha512-IClj+Xz94+d7irH5qRyfJonOdfTzuDaifE6ZPWfx0N0+/ATZCbuTPq2prFl526urkQd90WyUKIh1DfBQ2hMz9A==
+
+inferno-shared@5.6.1:
+  version "5.6.1"
+  resolved "https://registry.yarnpkg.com/inferno-shared/-/inferno-shared-5.6.1.tgz#5c5e471dbff72eb9f1768f97510a32e5fa76b6dd"
+  integrity sha512-OoRargelGtMFpiyKiOv66Ihmkpt6LLlzw7jOkJr97QqBRIjQWVvtDSriwJIy6pER6EEz9KzRUbZBaEWdPvf5kA==
+
+inferno-vnode-flags@5.6.1:
+  version "5.6.1"
+  resolved "https://registry.yarnpkg.com/inferno-vnode-flags/-/inferno-vnode-flags-5.6.1.tgz#43974687cc54f22c24ecee116376f6c1bd697499"
+  integrity sha512-DDb6R17FX0Fs1SH+7SSVfHEFiYcN2U/DlPHB6qk2HOP149qtYgeRi5h0AAJswJCzBkV/QcBSyRirn0SAzl1NAQ==
+
+inferno@~5.6.2:
+  version "5.6.2"
+  resolved "https://registry.yarnpkg.com/inferno/-/inferno-5.6.2.tgz#a256a9de063287fb18d09525a85467cbd6c5b47a"
+  integrity sha512-+blJ5pI0+5tmxhDDF2VuAPvOO3LPN/jp2eYkGzkXq/nptp1iH1crOsbhp8be1nnAtrGcNSWLbziulkOnejOTyQ==
+  dependencies:
+    inferno-shared "5.6.1"
+    inferno-vnode-flags "5.6.1"
+    opencollective-postinstall "^2.0.3"
 
 inflight@^1.0.4:
   version "1.0.6"
@@ -12049,6 +12145,13 @@ moddle-xml@^9.0.5:
     moddle "^5.0.2"
     saxen "^8.1.2"
 
+moddle@^5.0.1:
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/moddle/-/moddle-5.0.3.tgz#3687845da07e65e69e7c05260fe83a53f9c65e7d"
+  integrity sha512-EjnQkSaZClHMsM3H/guBy9h7AmHUICH0Pf8H1VnnYGUXy2hkZQU4gqEAyHywJzMRAhYX87pXjH2NtyigF7evkA==
+  dependencies:
+    min-dash "^3.0.0"
+
 moddle@^5.0.2:
   version "5.0.2"
   resolved "https://registry.yarnpkg.com/moddle/-/moddle-5.0.2.tgz#9768320698be636711a29101c82fd361e3d90253"
@@ -12585,6 +12688,11 @@ open@^7.0.2, open@^7.0.3:
   dependencies:
     is-docker "^2.0.0"
     is-wsl "^2.1.1"
+
+opencollective-postinstall@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/opencollective-postinstall/-/opencollective-postinstall-2.0.3.tgz#7a0fff978f6dbfa4d006238fbac98ed4198c3259"
+  integrity sha512-8AV/sCtuzUeTo8gQK5qDZzARrulB3egtLzFgteqB2tcT4Mw7B8Kt7JcDHmltjz6FOAHsvTevk70gZEbhM4ZS9Q==
 
 opn@^5.5.0:
   version "5.5.0"
@@ -15339,6 +15447,18 @@ select-hose@^2.0.0:
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
   integrity sha1-Yl2GWPhlr0Psliv8N2o3NZpJlMo=
 
+selection-ranges@^3.0.2, selection-ranges@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/selection-ranges/-/selection-ranges-3.0.3.tgz#7f346169d606b76e28e0fa721a115eb6efe97be1"
+  integrity sha512-60Oqc07j16YCrp96uITgBFu7oT81JKMmL+cOOcxe3jvuGSiFSwsLpOSXNBAlITV9hGhEl1H6P/+g1bKnpfXoSw==
+  dependencies:
+    dom-iterator "^1.0.0"
+
+selection-update@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/selection-update/-/selection-update-0.1.2.tgz#803a044dcc6edab5a3ae648f5f0357e89ad66b96"
+  integrity sha1-gDoETcxu2rWjrmSPXwNX6JrWa5Y=
+
 selfsigned@^1.10.8:
   version "1.10.11"
   resolved "https://registry.yarnpkg.com/selfsigned/-/selfsigned-1.10.11.tgz#24929cd906fe0f44b6d01fb23999a739537acbe9"
@@ -16279,6 +16399,17 @@ symbol.prototype.description@^1.0.0:
     get-symbol-description "^1.0.0"
     has-symbols "^1.0.2"
     object.getownpropertydescriptors "^2.1.2"
+
+table-js@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-7.2.0.tgz#3e41a73de4c02dddb548f3ffbec363c724c4d3bf"
+  integrity sha512-Qo+1RZFeEh1kvrc0ol67/5izV9WvCjipfD9iLQtGipPj8k1H2gRZnrkGs4BlwZOC9ke+JJB0yUZEQ+rf7wn/Og==
+  dependencies:
+    didi "^5.2.1"
+    ids "^1.0.0"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
+    selection-ranges "^3.0.3"
 
 table@^6.0.9:
   version "6.7.1"

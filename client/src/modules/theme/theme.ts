@@ -430,6 +430,9 @@ const theme = Object.freeze({
           focusInner: DARK_COLORS.focusInner,
         },
       },
+      decisionPanel: {
+        background: LIGHT_COLORS.ui04,
+      },
       modules: {
         badge: {
           filters: {
@@ -1393,6 +1396,9 @@ const theme = Object.freeze({
           labelColor: LIGHT_COLORS.ui06,
           focusInner: DARK_COLORS.focusInner,
         },
+      },
+      decisionPanel: {
+        background: LIGHT_COLORS.ui04,
       },
       modules: {
         badge: {

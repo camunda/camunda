@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const DecisionTablePanel: React.FC = () => {
-  return <div>Decision Table</div>;
-};
+class Viewer {
+  destroy = jest.fn();
+}
 
-export {DecisionTablePanel};
+export default Viewer;
