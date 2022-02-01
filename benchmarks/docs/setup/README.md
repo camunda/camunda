@@ -109,7 +109,7 @@ linkerd check
 
 There are a few additional steps that need to be done when setting this up with a cloud provider, such as GCP.
 
-As first you have to [create a new cluster in the Google cloud console](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster?hl=de). 
+As first you have to [create a new cluster in the Google cloud console](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster?hl=de).
 
 > Remember from the top level readme, to switch easily between clusters/namespaces, make sure to install kubectx and kubens.
 
@@ -122,3 +122,4 @@ After the GCP cluster is set up, make sure to create the SSD storage class, whic
 ```
 kubectl apply -f ssd-storageclass.yaml
 ```
+

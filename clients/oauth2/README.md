@@ -7,8 +7,8 @@ setups with different identity providers, [ory/hydra](https://www.ory.sh/docs/hy
 Each set up consists of a docker-compose file which sets up the following stack:
 
 1. keycloak or hydra
-1. nginx
-1. zeebe broker
+2. nginx
+3. zeebe broker
 
 ## Usage
 

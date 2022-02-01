@@ -2,11 +2,12 @@
 
 This section should collect several common failures, we have observed on running our benchmarks.
 
-## Problems with Elasticsearch Exporter 
+## Problems with Elasticsearch Exporter
 
 If you observing that the elasticsearch exporter is not able to export data it is very likely that it is due to out of disk space issues.
 
 Check the log if you some logs statements which are similar to the following:
+
 ```
 I 2019-10-17T12:39:27.467341628Z 2019-10-17 12:39:27.467 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-4] WARN  io.camunda.zeebe.broker.exporter.elasticsearch - Failed to flush bulk completely
  
