@@ -202,7 +202,7 @@ public final class ProcessingStateMachine {
       reachedEnd =
           commandFilter.applies(previousRecord)
               && !hasNext
-              && lastWrittenPosition == previousRecord.getPosition();
+              && lastWrittenPosition <= previousRecord.getPosition();
     }
 
     if (shouldProcessNext.getAsBoolean() && hasNext && currentProcessor == null) {
