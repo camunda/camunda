@@ -76,10 +76,10 @@ export function MultiDefinitionSelection({
     >
       {availableDefinitions
         .filter((def) => !selectedDefinitions.some(({key}) => key === def.key))
-        .map((definition) => {
+        .map(({name, key}) => {
           return (
-            <MultiSelect.Option key={definition.key} value={definition.key} label={definition.name}>
-              {definition.name}
+            <MultiSelect.Option key={key} value={key} label={name || key}>
+              {name || key}
             </MultiSelect.Option>
           );
         })}

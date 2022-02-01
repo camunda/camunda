@@ -51,7 +51,7 @@ const props = {
     },
     {
       key: 'bar',
-      name: 'Bar',
+      name: null,
     },
   ],
   selectedDefinitions: [],
@@ -99,7 +99,7 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
     {
       identifier: 'randomID',
       key: 'bar',
-      name: 'Bar',
+      name: null,
       tenantIds: ['a'],
       versions: ['all'],
     },
@@ -118,4 +118,10 @@ it('should invoke onChange when removing definition', () => {
 
   node.find(MultiSelect).simulate('remove', 'foo');
   expect(spy).toHaveBeenCalledWith([]);
+});
+
+it('should display key of definition if name is null', () => {
+  const node = shallow(<MultiDefinitionSelection {...props} />);
+
+  expect(node.find({value: 'bar'}).text()).toBe('bar');
 });

@@ -75,7 +75,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     definitions?.filter(
       (def) =>
         definitionHasSelectedTenant(def, selectedTenant) &&
-        def.name.toLowerCase().includes(query.toLowerCase())
+        (def.name || def.key).toLowerCase().includes(query.toLowerCase())
     ) || [];
 
   function deselectAll() {

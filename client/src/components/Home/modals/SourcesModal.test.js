@@ -44,6 +44,18 @@ it('should load definitions and tenants on mount', async () => {
   expect(getTenantsWithDefinitions).toHaveBeenCalled();
 });
 
+it('should display key of definition if name is null', async () => {
+  getDefinitionsWithTenants.mockReturnValueOnce([
+    {key: 'testDef', name: null, type: 'process', tenants: [{id: 'sales'}]},
+  ]);
+
+  const node = shallow(<SourcesModal {...props} />);
+
+  await runAllEffects();
+
+  expect(node.find('Table').prop('body')[0][1]).toBe('testDef');
+});
+
 it('should hide tenants if they are not available', async () => {
   areTenantsAvailable.mockReturnValueOnce(false);
   const node = shallow(<SourcesModal {...props} />);
