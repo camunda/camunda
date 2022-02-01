@@ -508,6 +508,23 @@ public class VariableImportIT extends AbstractImportIT {
       );
   }
 
+  @Test
+  public void objectVariablesWithUnsupportedSerializationFormatAreNotImported() {
+    // given
+    final Map<String, Object> object = Map.of("aProperty", "aValue");
+    final VariableDto objectVar = variablesClient.createMapJsonObjectVariableDto(object);
+    objectVar.getValueInfo().setSerializationDataFormat("unsupported");
+    final ProcessInstanceEngineDto instanceDto =
+      deployAndStartSimpleServiceProcessTaskWithVariables(Map.of("objVar", objectVar));
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instanceDto);
+
+    // then
+    assertThat(instanceVariables).isEmpty();
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
   public void objectVariableValueIsFetchedDependingOnConfig(final boolean includeObjectVariableValue) {
