@@ -7160,7 +7160,7 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
-dmn-js-decision-table@^11.1.1:
+dmn-js-decision-table@11.1.1:
   version "11.1.1"
   resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-11.1.1.tgz#fe979c80ebb9738a447e5f1a2cf022117fc2d34b"
   integrity sha512-mSdePb1jeVsyy1aIVBSgdckancCMZPGn+ybiyUbF2ol7zCxDfQd3Xb/G3N0LmoP1lLZv2nqUBgEA5fPTZXAFLA==
