@@ -71,7 +71,7 @@ class DmnParsingTest {
     assertThat(parsedDrg.getDecisions())
         .hasSize(1)
         .extracting(ParsedDecision::getId, ParsedDecision::getName)
-        .contains(tuple("jedi-or-sith", "Jedi or Sith"));
+        .contains(tuple("jedi_or_sith", "Jedi or Sith"));
 
     assertThat(parsedDrg.getFailureMessage()).isNull();
   }
@@ -92,7 +92,7 @@ class DmnParsingTest {
     assertThat(parsedDrg.getDecisions())
         .hasSize(2)
         .extracting(ParsedDecision::getId, ParsedDecision::getName)
-        .contains(tuple("jedi-or-sith", "Jedi or Sith"), tuple("force-user", "Which force user?"));
+        .contains(tuple("jedi_or_sith", "Jedi or Sith"), tuple("force_user", "Which force user?"));
   }
 
   @Test
