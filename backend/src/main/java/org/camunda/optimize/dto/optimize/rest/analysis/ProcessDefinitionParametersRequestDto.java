@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.rest.analysis;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.QueryParam;
 import java.util.List;
 
@@ -33,12 +34,14 @@ public class ProcessDefinitionParametersRequestDto extends ProcessDefinitionPara
 
   @Override
   @QueryParam("minimumDeviationFromAvg")
+  @DefaultValue("50")
   public void setMinimumDeviationFromAvg(final long minimumDeviationFromAvg) {
     this.minimumDeviationFromAvg = minimumDeviationFromAvg;
   }
 
   @Override
   @QueryParam("disconsiderAutomatedTasks")
+  @DefaultValue("false")
   public void setDisconsiderAutomatedTasks(final boolean disconsiderAutomatedTasks) {
     this.disconsiderAutomatedTasks = disconsiderAutomatedTasks;
   }

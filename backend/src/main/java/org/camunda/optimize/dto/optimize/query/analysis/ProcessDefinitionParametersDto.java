@@ -20,7 +20,7 @@ public class ProcessDefinitionParametersDto {
   protected String processDefinitionKey;
   protected List<String> processDefinitionVersions;
   protected List<String> tenantIds = DEFAULT_TENANT_IDS;
-  protected long minimumDeviationFromAvg = 50;
+  protected long minimumDeviationFromAvg;
   protected boolean disconsiderAutomatedTasks;
 
   public void setTenantIds(List<String> tenantIds) {
