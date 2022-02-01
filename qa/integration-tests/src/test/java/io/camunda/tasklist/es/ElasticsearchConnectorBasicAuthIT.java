@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
@@ -42,10 +43,10 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {ElasticsearchConnectorBasicAuthIT.ElasticsearchStarter.class})
-public class ElasticsearchConnectorBasicAuthIT {
+public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.16.2")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.16.3")
           .withEnv(
               Map.of(
                   "xpack.security.enabled", "true",

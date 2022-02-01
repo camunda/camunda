@@ -13,16 +13,19 @@ import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
 import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
+import io.camunda.tasklist.zeebe.PartitionHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -42,7 +45,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-public class ProbesTestIT {
+public class ProbesTestIT extends TasklistIntegrationTest {
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -50,8 +53,11 @@ public class ProbesTestIT {
 
   @Autowired private ElsIndicesCheck probes;
 
+  @MockBean private PartitionHolder partitionHolder;
+
   @Before
   public void before() {
+    mockPartitionHolder(partitionHolder);
     tasklistProperties
         .getElasticsearch()
         .setIndexPrefix("test-probes-" + TestUtil.createRandomString(5));

@@ -8,6 +8,7 @@ package io.camunda.tasklist.es;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.io.File;
 import java.util.Map;
@@ -34,7 +35,7 @@ import org.testcontainers.utility.MountableFile;
       ElasticsearchConnector.class
     })
 @ContextConfiguration(initializers = {ElasticsearchConnectorSSLAuthIT.ElasticsearchStarter.class})
-public class ElasticsearchConnectorSSLAuthIT {
+public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
