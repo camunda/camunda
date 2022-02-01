@@ -200,7 +200,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>dmn</artifactId>
+        <artifactId>zeebe-dmn</artifactId>
         <version>${project.version}</version>
       </dependency>
 
