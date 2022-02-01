@@ -16,16 +16,28 @@ import {logger} from 'modules/logger';
 import {fetchDecisionInstance} from 'modules/api/decsions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {decisionXmlStore} from './decisionXml';
+import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 
-type Instance = {
+type Instance = ReadonlyDeep<{
   decisionId: string;
   decisionDefinitionId: string;
   state: 'failed' | 'completed';
   name: string;
   version: string;
-  evaluationDate: Date;
+  evaluationDate: string;
   processInstanceId: string | null;
-};
+  inputs: Array<{
+    id: string;
+    name: string;
+    value: string;
+  }>;
+  outputs: Array<{
+    id: string;
+    rule: number;
+    name: string;
+    value: string;
+  }>;
+}>;
 
 type State = {
   decisionInstance: Instance | null;
