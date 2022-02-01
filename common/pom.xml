@@ -57,11 +57,6 @@
 			<artifactId>zeebe-client-java</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>io.camunda</groupId>
-			<artifactId>zeebe-util</artifactId>
-		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 		<dependency>
 			<groupId>org.glassfish</groupId>
