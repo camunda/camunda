@@ -151,7 +151,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
 
   private void pollingDone() {
     if (activatedJobs > 0) {
-      LOG.trace(
+      LOG.debug(
           "Activated {} jobs for worker {} and job type {}",
           activatedJobs,
           requestBuilder.getWorker(),
