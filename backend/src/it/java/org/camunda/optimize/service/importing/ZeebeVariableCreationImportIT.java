@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -55,8 +54,14 @@ import static org.mockserver.model.HttpRequest.request;
 
 public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
 
-  private final String PROCESS_ID = "demoProcess";
-  private final Map<String, Object> variables = generateVariables();
+  private static final String PROCESS_ID = "demoProcess";
+  private static final Map<String, Object> VARIABLES =
+    Map.of("var1", "someValue",
+           "var2", false,
+           "var3", 123,
+           "var4", 123.3,
+           "var5", ""
+    );
 
   @Test
   public void zeebeVariableImport_processStartedWithVariables() {
@@ -106,8 +111,8 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     // given
     final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    zeebeExtension.addVariablesToScope(processInstanceEvent.getProcessInstanceKey(), variables, false);
-    waitUntilMinimumVariableDocumentsExportedCount(4);
+    zeebeExtension.addVariablesToScope(processInstanceEvent.getProcessInstanceKey(), VARIABLES, false);
+    waitUntilMinimumVariableDocumentsExportedCount(5);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -187,7 +192,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     final long deployedInstanceKey1 = deployProcessAndStartProcessInstanceWithVariables();
     final long deployedInstanceKey2 = deployProcessAndStartProcessInstanceWithVariables();
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    waitUntilMinimumVariableDocumentsExportedCount(8);
+    waitUntilMinimumVariableDocumentsExportedCount(10);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -206,18 +211,14 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     // given
     final Process deployedProcess1 = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
     final long startedInstanceKey1 = deployProcessAndStartProcessInstanceWithVariables();
-    zeebeExtension.startProcessInstanceWithVariables(
-      deployedProcess1.getBpmnProcessId(),
-      variables
-    );
     final Process deployedProcess2 = zeebeExtension.deployProcess(createSimpleServiceTaskProcess("second_process"));
     final long startedInstanceKey2 =
       zeebeExtension.startProcessInstanceWithVariables(
         deployedProcess2.getBpmnProcessId(),
-        variables
+        VARIABLES
       );
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    waitUntilMinimumVariableDocumentsExportedCount(8);
+    waitUntilMinimumVariableDocumentsExportedCount(10);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -308,24 +309,24 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType,
         SimpleProcessVariableDto::getValue
       ).containsExactlyInAnyOrder(
-      Tuple.tuple(
-        "objectVar",
-        OBJECT.getId(),
-        Collections.singletonList(variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())
-      ),
-      Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
-      Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("28.0")),
-      Tuple.tuple("objectVar.IQ", DOUBLE.getId(), Collections.singletonList("9.9999999999999E13")),
-      Tuple.tuple("objectVar.birthday", DATE.getId(), Collections.singletonList("1992-11-17T00:00:00.000+0100")),
-      Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), Collections.singletonList("99.9")),
-      Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), Collections.singletonList("false")),
-      Tuple.tuple("objectVar.hands", DOUBLE.getId(), Collections.singletonList("2.0")),
-      Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), Collections.singletonList("true")),
-      Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), Collections.singletonList("false")),
-      Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
-      // additional _listSize variable for lists
-      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2"))
-    );
+        Tuple.tuple(
+          "objectVar",
+          OBJECT.getId(),
+          Collections.singletonList(variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())
+        ),
+        Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
+        Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("28.0")),
+        Tuple.tuple("objectVar.IQ", DOUBLE.getId(), Collections.singletonList("9.9999999999999E13")),
+        Tuple.tuple("objectVar.birthday", DATE.getId(), Collections.singletonList("1992-11-17T00:00:00.000+0100")),
+        Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), Collections.singletonList("99.9")),
+        Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), Collections.singletonList("false")),
+        Tuple.tuple("objectVar.hands", DOUBLE.getId(), Collections.singletonList("2.0")),
+        Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), Collections.singletonList("true")),
+        Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), Collections.singletonList("false")),
+        Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
+        // additional _listSize variable for lists
+        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2"))
+      );
   }
 
   @SneakyThrows
@@ -351,10 +352,10 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType,
         SimpleProcessVariableDto::getValue
       ).containsExactlyInAnyOrder(
-      Tuple.tuple("listVar", STRING.getId(), List.of("value1", "value2")),
-      // additional _listSize variable for lists
-      Tuple.tuple("listVar._listSize", LONG.getId(), Collections.singletonList("2"))
-    );
+        Tuple.tuple("listVar", STRING.getId(), List.of("value1", "value2")),
+        // additional _listSize variable for lists
+        Tuple.tuple("listVar._listSize", LONG.getId(), Collections.singletonList("2"))
+      );
   }
 
   @Test
@@ -464,15 +465,6 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       );
   }
 
-  private Map<String, Object> generateVariables() {
-    return Map.of("var1", "someValue",
-                  "var2", false,
-                  "var3", 123,
-                  "var4", 123.3,
-                  "var5", ""
-    );
-  }
-
   private ProcessInstanceEvent deployProcessAndStartProcessInstance() {
     final Process deployedProcess = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
     return zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
@@ -482,7 +474,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     return zeebeExtension.startProcessInstanceWithVariables(
       deployedProcess.getBpmnProcessId(),
-      generateVariables()
+      VARIABLES
     );
   }
 
