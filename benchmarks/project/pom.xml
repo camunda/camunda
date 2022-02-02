@@ -27,7 +27,7 @@
     <version.java>17</version.java>
 
     <!-- dependency versions -->
-    <version.config>1.4.1</version.config>
+    <version.config>1.4.2</version.config>
 
     <!-- maven plugin versions -->
     <plugin.version.exec>1.6.0</plugin.version.exec>
