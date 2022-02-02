@@ -111,6 +111,7 @@ public class ProcessVariableReader {
 
     List<String> processDefinitionKeys = variableNameRequests.stream()
       .map(ProcessVariableNameRequestDto::getProcessDefinitionKey)
+      .distinct()
       .collect(Collectors.toList());
     Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos =
       variableLabelReader.getVariableLabelsByKey(processDefinitionKeys);

@@ -7,11 +7,16 @@ package org.camunda.optimize.service.es.retrieval.variable;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +26,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -54,8 +61,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(2)
       .containsExactlyInAnyOrder(
-        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, "a label 1"),
-        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, "a label 2")
+        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
+        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel())
       );
   }
 
@@ -86,11 +93,7 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     // given
     List<ProcessDefinitionEngineDto> processEngineDtos =
       deployProcessDefinitionsAndStartProcessInstancesWithVariables();
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      processEngineDtos.get(0).getKey(),
-      List.of(FIRST_LABEL, SECOND_LABEL)
-    );
-    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto, ACCESS_TOKEN);
+    addVariableLabelsToDefinition(processEngineDtos.get(0).getKey(), List.of(FIRST_LABEL, SECOND_LABEL));
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
@@ -103,8 +106,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(4)
       .containsExactlyInAnyOrder(
-        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, "a label 1"),
-        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, "a label 2"),
+        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
+        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel()),
         new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, null),
         new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, null)
       );
@@ -115,17 +118,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     // given
     List<ProcessDefinitionEngineDto> processEngineDtos =
       deployProcessDefinitionsAndStartProcessInstancesWithVariables();
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      processEngineDtos.get(0).getKey(),
-      List.of(FIRST_LABEL, SECOND_LABEL)
-    );
-    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto, ACCESS_TOKEN);
-
-    DefinitionVariableLabelsDto definitionVariableLabelsDto2 = new DefinitionVariableLabelsDto(
-      processEngineDtos.get(1).getKey(),
-      List.of(FIRST_LABEL, SECOND_LABEL)
-    );
-    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto2, ACCESS_TOKEN);
+    addVariableLabelsToDefinition(processEngineDtos.get(0).getKey(), List.of(FIRST_LABEL, SECOND_LABEL));
+    addVariableLabelsToDefinition(processEngineDtos.get(1).getKey(), List.of(FIRST_LABEL, SECOND_LABEL));
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
@@ -138,8 +132,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(2)
       .containsExactlyInAnyOrder(
-        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, "a label 1"),
-        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, "a label 2")
+        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
+        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel())
       );
   }
 
@@ -153,11 +147,7 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      processDefinition.getKey(),
-      List.of(FIRST_LABEL)
-    );
-    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto, ACCESS_TOKEN);
+    addVariableLabelsToDefinition(processDefinition.getKey(), List.of(FIRST_LABEL));
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
@@ -169,7 +159,7 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(2)
       .containsExactlyInAnyOrder(
-        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, "a label 1"),
+        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
         new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, null)
       );
   }
@@ -188,12 +178,7 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     final LabelDto firstLabel = new LabelDto("string variable", FIRST_VARIABLE_NAME, VariableType.STRING);
     final LabelDto secondLabel = new LabelDto("integer variable", SECOND_VARIABLE_NAME, VariableType.INTEGER);
     final LabelDto thirdLabel = new LabelDto("boolean variable", "third variable", VariableType.BOOLEAN);
-
-    DefinitionVariableLabelsDto definitionVariableLabelsDto1 = new DefinitionVariableLabelsDto(
-      processDefinition1.getKey(),
-      List.of(firstLabel, secondLabel, thirdLabel)
-    );
-    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto1, ACCESS_TOKEN);
+    addVariableLabelsToDefinition(processDefinition1.getKey(), List.of(firstLabel, secondLabel, thirdLabel));
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
@@ -223,17 +208,13 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(2)
       .containsExactlyInAnyOrder(
-        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, "a label 1"),
-        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, "a label 2")
+        new ProcessVariableNameResponseDto(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
+        new ProcessVariableNameResponseDto(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel())
       );
 
     // when
     final LabelDto deletedFirstLabel = new LabelDto("", FIRST_VARIABLE_NAME, VariableType.STRING);
-    DefinitionVariableLabelsDto labelOptimizeDtoDeletedLabel = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(deletedFirstLabel)
-    );
-    executeUpdateProcessVariablesLabelRequest(labelOptimizeDtoDeletedLabel, ACCESS_TOKEN);
+    addVariableLabelsToDefinition(processDefinition.getKey(), List.of(deletedFirstLabel));
     variableResponse = variablesClient.getProcessVariableNames(processDefinition);
 
     // then
@@ -246,23 +227,106 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
       )
       .containsExactlyInAnyOrder(
         Tuple.tuple(FIRST_VARIABLE_NAME, VariableType.STRING, null),
-        Tuple.tuple(SECOND_VARIABLE_NAME, VariableType.STRING, "a label 2")
+        Tuple.tuple(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel())
       );
+  }
+
+  @Test
+  public void variableLabelBeingFetchedCorrectlyForReportsInDashboards() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    ProcessInstanceEngineDto startedInstance = startProcessInstanceWithVariables(processDefinition.getId());
+    startedInstance.setProcessDefinitionKey(processDefinition.getKey());
+    importAllEngineEntitiesFromScratch();
+    addVariableLabelsToDefinition(processDefinition.getKey(), List.of(FIRST_LABEL, SECOND_LABEL));
+    final String firstReportId = createAndSaveReportForDeployedInstance(startedInstance).getId();
+    final String secondReportId = createAndSaveReportForDeployedInstance(startedInstance).getId();
+    createEmptyDashboardAndAddReports(List.of(firstReportId, secondReportId), null);
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNamesForReportIds(List.of(
+      firstReportId,
+      secondReportId
+    ));
+
+    // then
+    assertThat(variableResponse)
+      .hasSize(2)
+      .extracting(
+        ProcessVariableNameResponseDto::getName,
+        ProcessVariableNameResponseDto::getType,
+        ProcessVariableNameResponseDto::getLabel
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
+        Tuple.tuple(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel())
+      );
+  }
+
+  @Test
+  public void variableLabelBeingFetchedCorrectlyForReportCopiesInDashboards() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    ProcessInstanceEngineDto startedInstance = startProcessInstanceWithVariables(processDefinition.getId());
+    startedInstance.setProcessDefinitionKey(processDefinition.getKey());
+    importAllEngineEntitiesFromScratch();
+    addVariableLabelsToDefinition(processDefinition.getKey(), List.of(FIRST_LABEL, SECOND_LABEL));
+    final String firstReportId = createAndSaveReportForDeployedInstance(startedInstance).getId();
+    final String copiedReport = copyReport(firstReportId);
+    createEmptyDashboardAndAddReports(List.of(firstReportId, copiedReport), null);
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNamesForReportIds(List.of(
+      firstReportId,
+      copiedReport
+    ));
+
+    // then
+    assertThat(variableResponse)
+      .hasSize(2)
+      .extracting(
+        ProcessVariableNameResponseDto::getName,
+        ProcessVariableNameResponseDto::getType,
+        ProcessVariableNameResponseDto::getLabel
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(FIRST_VARIABLE_NAME, VariableType.STRING, FIRST_LABEL.getVariableLabel()),
+        Tuple.tuple(SECOND_VARIABLE_NAME, VariableType.STRING, SECOND_LABEL.getVariableLabel())
+      );
+  }
+
+  private void createEmptyDashboardAndAddReports(final List<String> reportIds, final String collectionId) {
+    final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
+    dashboardDefinitionDto.setReports(reportIds.stream()
+                                        .map(id -> ReportLocationDto.builder().id(id).build())
+                                        .collect(Collectors.toList()));
+    Optional.ofNullable(collectionId).ifPresent(dashboardDefinitionDto::setCollectionId);
+    dashboardClient.createDashboard(dashboardDefinitionDto);
+  }
+
+  private SingleProcessReportDefinitionRequestDto createAndSaveReportForDeployedInstance
+    (final ProcessInstanceEngineDto deployedInstanceWithAllVariables) {
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      reportClient.createSingleProcessReportDefinitionDto(
+        null,
+        deployedInstanceWithAllVariables.getProcessDefinitionKey(),
+        Collections.singletonList(null)
+      );
+    singleProcessReportDefinitionDto.getData().setProcessDefinitionVersion(ALL_VERSIONS);
+    final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+    return reportClient.getSingleProcessReportDefinitionDto(reportId);
   }
 
   public ProcessDefinitionEngineDto deployDefinitionWithLabels(final LabelDto firstLabelDto,
                                                                final LabelDto secondLabelDto) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put(FIRST_VARIABLE_NAME, "value1");
-    variables.put(SECOND_VARIABLE_NAME, "value2");
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    startProcessInstanceWithVariables(processDefinition.getId());
     importAllEngineEntitiesFromScratch();
     DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
       processDefinition.getKey(),
       List.of(firstLabelDto, secondLabelDto)
     );
-    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto, ACCESS_TOKEN);
+    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto);
     return processDefinition;
   }
 
@@ -278,20 +342,38 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     return List.of(processDefinition1, processDefinition2);
   }
 
-  private void executeUpdateProcessVariablesLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto,
-                                                         String accessToken) {
+  private void executeUpdateProcessVariablesLabelRequest(final DefinitionVariableLabelsDto labelOptimizeDto) {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildProcessVariableLabelRequest(labelOptimizeDto)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  private ProcessVariableNameRequestDto createProcessVariableRequestDto(String processDefinitionKey) {
+  private ProcessInstanceEngineDto startProcessInstanceWithVariables(final String processDefinitionId) {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(FIRST_VARIABLE_NAME, "value1");
+    variables.put(SECOND_VARIABLE_NAME, "value2");
+    return engineIntegrationExtension.startProcessInstance(processDefinitionId, variables);
+  }
+
+  private ProcessVariableNameRequestDto createProcessVariableRequestDto(final String processDefinitionKey) {
     return new ProcessVariableNameRequestDto(
       processDefinitionKey,
       Collections.singletonList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS
     );
+  }
+
+  private void addVariableLabelsToDefinition(final String processDefinitionKey, final List<LabelDto> labelsToAdd) {
+    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
+      processDefinitionKey,
+      labelsToAdd
+    );
+    executeUpdateProcessVariablesLabelRequest(definitionVariableLabelsDto);
+  }
+
+  private String copyReport(final String reportId) {
+    return reportClient.copyReportToCollection(reportId, null).readEntity(IdResponseDto.class).getId();
   }
 
 }
