@@ -47,8 +47,8 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
@@ -126,6 +126,7 @@ import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DE
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.IMPORT_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.LABELS_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_SUB_PATH;
@@ -927,6 +928,15 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     this.path = "variables/labels";
     this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(definitionVariableLabelsDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
+    this.path = PUBLIC_PATH + LABELS_SUB_PATH;
+    this.method = POST;
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(definitionVariableLabelsDto);
     return this;

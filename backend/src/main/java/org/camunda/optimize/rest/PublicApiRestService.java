@@ -10,6 +10,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
@@ -21,6 +22,7 @@ import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.export.JsonReportResultExportService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -58,6 +60,7 @@ public class PublicApiRestService {
   public static final String IMPORT_SUB_PATH = "/import";
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
+  public static final String LABELS_SUB_PATH = "/variables/labels";
   public static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
   public static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
   public static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
@@ -74,6 +77,7 @@ public class PublicApiRestService {
   private final EntityImportService entityImportService;
   private final ReportService reportService;
   private final DashboardService dashboardService;
+  private final ProcessVariableLabelService processVariableLabelService;
 
   @GET
   @Path(REPORT_SUB_PATH)
@@ -173,6 +177,15 @@ public class PublicApiRestService {
                                         final @PathParam("dashboardId") String dashboardId) {
     validateAccessToken(requestContext, getJsonExportAccessToken());
     dashboardService.deleteDashboard(dashboardId);
+  }
+
+  @POST
+  @Path(LABELS_SUB_PATH)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
+                                   @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+    validateAccessToken(requestContext, getJsonExportAccessToken());
+    processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 
   private void validateCollectionIdNotNull(final String collectionId) {
