@@ -16,8 +16,13 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.dmn.impl.ParseFailureMessage;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class DmnEvaluatedDecisionsTest {
 
@@ -142,5 +147,67 @@ class DmnEvaluatedDecisionsTest {
     final var evaluatedDecisions = result.getEvaluatedDecisions();
     assertEquality(evaluatedDecisions.get(0).decisionOutput(), "'Jedi'");
     assertEquality(evaluatedDecisions.get(1).decisionOutput(), "null");
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @DisplayName("If successfully evaluated, the decision")
+  class DecisionTypeTests {
+
+    private static final String DECISION_TYPES_DRG = "/drg-decision-types.dmn";
+
+    Stream<DecisionTest> decisions() {
+      return Stream.of(
+          new DecisionTest("decision_table", DecisionType.DECISION_TABLE, "'okay'"),
+          new DecisionTest("literal_expression", DecisionType.LITERAL_EXPRESSION, "'okay'"),
+          new DecisionTest("context", DecisionType.CONTEXT, "{'is':'okay'}"),
+          new DecisionTest("invocation", DecisionType.INVOCATION, "'okay'"),
+          new DecisionTest("list", DecisionType.LIST, "['okay']"),
+          new DecisionTest("relation", DecisionType.RELATION, "[{'is':'okay'}]"));
+    }
+
+    private DecisionResult evaluateDecision(final String decisionId) {
+      final var inputStream = getClass().getResourceAsStream(DECISION_TYPES_DRG);
+      final var parsedDrg = decisionEngine.parse(inputStream);
+
+      // when
+      final var result = decisionEngine.evaluateDecisionById(parsedDrg, decisionId, null);
+
+      // then
+      assertThat(result.isFailure())
+          .describedAs(
+              "Expect that the decision is evaluated successfully", result.getFailureMessage())
+          .isFalse();
+
+      return result;
+    }
+
+    @ParameterizedTest
+    @MethodSource("decisions")
+    @DisplayName("Should return the type of the decision")
+    void shouldReturnTheDecisionType(final DecisionTest test) {
+      // when
+      final var result = evaluateDecision(test.decisionId);
+
+      // then
+      assertThat(result.getEvaluatedDecisions())
+          .extracting(EvaluatedDecision::decisionType)
+          .contains(test.expectedType);
+    }
+
+    @ParameterizedTest
+    @MethodSource("decisions")
+    @DisplayName("Should return the output of the decision")
+    void shouldReturnDecisionResult(final DecisionTest test) {
+      // when
+      final var result = evaluateDecision(test.decisionId);
+
+      // then
+      assertThat(result.getEvaluatedDecisions())
+          .extracting(EvaluatedDecision::decisionOutput)
+          .allSatisfy(decisionResult -> assertEquality(decisionResult, test.expectedResult));
+    }
+
+    record DecisionTest(String decisionId, DecisionType expectedType, String expectedResult) {}
   }
 }
