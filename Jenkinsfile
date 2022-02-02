@@ -48,26 +48,6 @@ pipeline {
   }
 
   stages {
-    stage('Prepare') {
-      steps {
-        container('maven') {
-          sh '.ci/scripts/ensure-naming-for-process.sh'
-        }
-      }
-    }
-    stage('Frontend - Build') {
-      steps {
-        container('node') {
-          sh '''
-            apk add --no-cache git
-            cd ./client
-            yarn install --frozen-lockfile
-            yarn lint
-            yarn build
-          '''
-        }
-      }
-    }
     stage('Backend - Build') {
       steps {
         container('maven') {
@@ -118,21 +98,6 @@ pipeline {
           post {
             always {
               junit testResults: 'qa/integration-tests/target-old-zeebe/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-            }
-          }
-        }
-        stage('Frontend - Tests') {
-          steps {
-            container('node') {
-              sh '''
-                cd ./client
-                yarn test:ci
-              '''
-            }
-          }
-          post {
-            always {
-              junit testResults: 'client/jest-test-results.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }

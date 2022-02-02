@@ -34,9 +34,11 @@
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom --resetMocks=false",
-    "test:ci": "CI=true react-scripts test --env=jsdom --resetMocks=false --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit --testTimeout 7000",
+    "test:ci": "CI=true react-scripts test --env=jsdom --resetMocks=false --ci --testTimeout 7000",
     "eject": "react-scripts eject",
-    "lint": "tsc && tsc --noEmit --project e2e/tsconfig.json && eslint src/ e2e/",
+    "ts-check": "tsc && tsc --noEmit --project e2e/tsconfig.json",
+    "eslint": "eslint src/ e2e/",
+    "lint": "yarn ts-check && yarn eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
@@ -51,14 +53,6 @@
     "transformIgnorePatterns": [
       "/node_modules/(?!@camunda-cloud/common-ui.*)"
     ]
-  },
-  "jest-junit": {
-    "suiteName": "client",
-    "outputName": "jest-test-results.xml",
-    "suiteNameTemplate": "{filename}",
-    "classNameTemplate": "client.{filename}",
-    "titleTemplate": "{title}",
-    "ancestorSeparator": " @ "
   },
   "devDependencies": {
     "@storybook/addon-actions": "6.3.12",
@@ -87,7 +81,6 @@
     "glob": "7.2.0",
     "http-proxy-middleware": "2.0.2",
     "husky": "7.0.4",
-    "jest-junit": "13.0.0",
     "jest-styled-components": "7.0.8",
     "lint-staged": "12.3.3",
     "msw": "0.36.8",
