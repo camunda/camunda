@@ -37,8 +37,8 @@
     "lint": "tsc && tsc --noEmit --project e2e/tsconfig.json && eslint src/ e2e/",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci",
-    "storybook": "start-storybook -p 9009 -s public",
-    "build-storybook": "build-storybook -s public",
+    "storybook": "start-storybook -p 9009",
+    "build-storybook": "build-storybook",
     "chromatic": "npx chromatic --skip 'dependabot/**' --auto-accept-changes master --exit-once-uploaded",
     "postinstall": "cd .. && husky install"
   },
@@ -63,9 +63,9 @@
     ]
   },
   "devDependencies": {
-    "@storybook/addons": "6.3.12",
+    "@storybook/addons": "6.4.17",
     "@storybook/preset-create-react-app": "3.2.0",
-    "@storybook/react": "6.3.12",
+    "@storybook/react": "6.4.17",
     "@testing-library/jest-dom": "5.16.1",
     "@testing-library/react": "11.2.7",
     "@testing-library/testcafe": "4.4.0",
@@ -77,7 +77,6 @@
     "@types/react": "17.0.38",
     "@types/react-dom": "17.0.11",
     "@types/styled-components": "5.1.21",
-    "babel-loader": "8.1.0",
     "chromatic": "6.4.3",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-camunda-licensed": "0.4.4",
@@ -119,5 +118,9 @@
   },
   "scarfSettings": {
     "enabled": false
+  },
+  "resolutions": {
+    "webpack": "4.44.2",
+    "babel-loader": "8.1.0"
   }
 }
