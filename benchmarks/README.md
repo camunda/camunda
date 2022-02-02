@@ -12,12 +12,12 @@ In order to setup a benchmark you need to have several tools on your machine ins
 
 Follow these guide's to install each of them:
 
- * gcloud https://cloud.google.com/sdk/install
- * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
- * Helm 3.*  https://helm.sh/docs/intro/install/
- * docker https://docs.docker.com/install/
- * kubens/kubectx https://github.com/ahmetb/kubectx
- * OPTIONAL go https://golang.org/doc/install
+* gcloud https://cloud.google.com/sdk/install
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* docker https://docs.docker.com/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+* OPTIONAL go https://golang.org/doc/install
 
 Some of the necessary steps you need to do are:
 
@@ -51,7 +51,7 @@ install kubens /usr/local/bin/
 
 ## Best Practices Windows
 
- Running the benchmarks on Windows is possible with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+Running the benchmarks on Windows is possible with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 The setup changes slightly compared to the Linux setup.
 
 These are the components to install on Windows:
@@ -65,9 +65,9 @@ These are the components to install within the WSL:
 
 When following the instructions above, execute all commands that deal with Docker in a Windows shell, and exeucte all other commands in the WSL shell.
 
-
 ## What's next?
 
- * [Read the docs](docs/README.md)
- * [Run a Benchmark](setup/README.md)
- * [Change the Project](project/README.md)
+* [Read the docs](docs/README.md)
+* [Run a Benchmark](setup/README.md)
+* [Change the Project](project/README.md)
+

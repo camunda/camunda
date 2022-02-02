@@ -1,9 +1,13 @@
 ## Description
 
 <!-- Link to the PR that is back ported -->
-Backport of #
+
+Backport of \#
 
 ## Related issues
 
-<!-- Link to the issue that is closed by the origin PR -->
-closes #
+<!-- Link to the related issues of the origin PR -->
+
+closes \#
+
+relates to \#

@@ -1,6 +1,5 @@
 # Zeebe Go Client
 
-
 ## Development
 
 If we had a gateway-protocol change we need to make sure that we regenerate the protobuf file, which is used by the go client.
@@ -57,6 +56,8 @@ go-bindata -pkg embedded -o embedded.go -prefix data data/
 ```
 
 If you don't have `go-bindata` installed, you can install it by running:
+
 ```
 go get -u github.com/go-bindata/go-bindata/...
 ```
+

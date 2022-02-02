@@ -22,12 +22,13 @@ run the command: `mvn clean install -DskipTests` in the root folder.
 > 17, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
 > zeebe-gateway-protocol-impl and zeebe-protocol which use language level 8 and
 > zeebe-protocol-jackson which uses language level 11.
-
+>
 > NOTE: The Go client and zbctl are built and tested with Go 1.15
-
+>
 > NOTE: The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
 
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
+
 ```
 dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.tar.gz
 dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.zip
@@ -71,7 +72,7 @@ If you have a general usage question please ask on the [forum][] or [slack][] ch
 Every issue should have a meaningful name and a description which either
 describes:
 - a new feature with details about the use case the feature would solve or
-  improve
+improve
 - a problem, how we can reproduce it and what would be the expected behavior
 - a change and the intention how this would improve the system
 
@@ -85,26 +86,29 @@ To work on an issue, follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-1. Checkout the `develop` branch and pull the latest changes.
+2. Checkout the `develop` branch and pull the latest changes.
+
    ```
    git checkout develop
    git pull
    ```
-1. Create a new branch with the naming scheme `issueId-description`.
+3. Create a new branch with the naming scheme `issueId-description`.
+
    ```
    git checkout -b 123-adding-bpel-support`
    ```
-1. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
+4. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
-1. Implement the required changes on your branch and regularly push your
+5. Implement the required changes on your branch and regularly push your
    changes to the origin so that the CI can run. Code formatting, style and
    license header are fixed automatically by running maven. Checkstyle
    violations have to be fixed manually.
+
    ```
    git commit -am 'feat(broker): bpel support'
    git push -u origin 123-adding-bpel-support
    ```
-1. If you think you finished the issue please prepare the branch for reviewing.
+6. If you think you finished the issue please prepare the branch for reviewing.
    Please consider our [pull requests and code
    reviews](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews)
    guide, before requesting a review. In general the commits should be squashed
@@ -113,7 +117,8 @@ To work on an issue, follow the following steps:
    it would be best if they are split up into another commit. Rule of thumb is
    that you should think about how a reviewer can best understand your changes.
    Please follow the [commit message guidelines](#commit-message-guidelines).
-1. After finishing up the squashing force push your changes to your branch.
+7. After finishing up the squashing force push your changes to your branch.
+
    ```
    git push --force-with-lease
    ```
@@ -132,22 +137,22 @@ Before opening your first pull request, please have a look at this [guide](https
 3. The reviewer will look at the pull request in the following days and give
    you either feedback or accept the changes. Your reviewer might use
    [emoji code](#review-emoji-code) during the reviewing process.
-    1. If there are changes requested address them in a new commit. Notify the
-       reviewer in a comment if the pull request is ready for review again. If
-       the changes are accepted squash them again in the related commit and force push.
-       Then initiate a merge by writing a comment with the content `bors merge`.
-    2. If no changes are requested the reviewer will initiate a merge by adding a
-       comment with the content `bors merge`.
-5. When a merge is initiated, a bot will merge your branch with the latest
+   1. If there are changes requested address them in a new commit. Notify the
+      reviewer in a comment if the pull request is ready for review again. If
+      the changes are accepted squash them again in the related commit and force push.
+      Then initiate a merge by writing a comment with the content `bors merge`.
+   2. If no changes are requested the reviewer will initiate a merge by adding a
+      comment with the content `bors merge`.
+4. When a merge is initiated, a bot will merge your branch with the latest
    develop and run the CI on it.
-    1. If everything goes well the branch is merged and deleted and the issue
-       and pull request are closed.
-    2. If there are merge conflicts the author of the pull request has to
-       manually rebase `develop` into the issue branch and retrigger a merge
-       attempt.
-    3. If there are CI errors the author of the pull request has to check if
-       they are caused by its changes and address them. If they are flaky tests
-       a merge can be retried with a comment with the content `bors retry`.
+   1. If everything goes well the branch is merged and deleted and the issue
+      and pull request are closed.
+   2. If there are merge conflicts the author of the pull request has to
+      manually rebase `develop` into the issue branch and retrigger a merge
+      attempt.
+   3. If there are CI errors the author of the pull request has to check if
+      they are caused by its changes and address them. If they are flaky tests
+      a merge can be retried with a comment with the content `bors retry`.
 
 ## Reviewing a pull request
 
@@ -189,21 +194,20 @@ Please follow these steps to backport your changes:
    - When _successful_, a new backport pull request was automatically created. Simply **approve and
      merge it** by adding a review with a `bors merge` comment.
    - If it _failed_, please follow these **manual steps**:
-      1. Locally checkout the target branch (e.g. `stable/1.0`).
-      2. Make sure it's up to date with origin (i.e. `git pull`).
-      3. Checkout a new branch for your backported changes (e.g. `git checkout -b
-         backport-123-to-stable/1.0`).
-      4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
-         conflicts.
-      5. Push your cherry-picked changes `git push`.
-      6. Create a pull request for your backport branch:
-         - Make sure it is clear that this backports in the title (e.g. `[Backport stable/1.0] Title
-           of the original PR`).
-         - Make sure to change the target of the pull request to the correct branch (e.g.
-           `stable/1.0`).
-         - Refer to the pull request in the description to link it (e.g. `backports #123`)
-         - Refer to any issues that were referenced in the original pull request (e.g. `relates to
-           #99`).
+     1. Locally checkout the target branch (e.g. `stable/1.0`).
+     2. Make sure it's up to date with origin (i.e. `git pull`).
+     3. Checkout a new branch for your backported changes (e.g. `git checkout -b
+        backport-123-to-stable/1.0`).
+     4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+        conflicts.
+     5. Push your cherry-picked changes `git push`.
+     6. Create a pull request for your backport branch:
+        - Make sure it is clear that this backports in the title (e.g. `[Backport stable/1.0] Title
+          of the original PR`).
+        - Make sure to change the target of the pull request to the correct branch (e.g.
+          `stable/1.0`).
+        - Refer to the pull request in the description to link it (e.g. `backports #123`)
+        - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
 
 ## Commit Message Guidelines
 
@@ -221,6 +225,7 @@ Zeebe uses a bot which will check your commit messages when a pull request is
 submitted. Please make sure to address any hints from the bot.
 
 ### Commit message header
+
 Examples:
 
 * `docs(reference): add start event to bpmn symbol support matrix`
@@ -228,6 +233,7 @@ Examples:
 * `feat(clients/go): allow more than 9000 jobs in a single call`
 
 The commit header should match the following pattern:
+
 ```
 %{type}(%{scope}): %{description}
 ```
@@ -235,16 +241,16 @@ The commit header should match the following pattern:
 The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
 
 - `type` should be one of:
-   - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
-   - `ci`: Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
-   - `deps`: A change to the external dependencies (was already used by Dependabot)
-   - `docs`:  A change to the documentation
-   - `feat`: A new feature (both internal or user-facing)
-   - `fix`: A bug fix (both internal or user-facing)
-   - `perf`: A code change that improves performance
-   - `refactor`: A code change that does not change the behavior
-   - `style`: A change to align the code with our style guide
-   - `test`: Adding missing tests or correcting existing tests
+  - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
+  - `ci`: Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
+  - `deps`: A change to the external dependencies (was already used by Dependabot)
+  - `docs`:  A change to the documentation
+  - `feat`: A new feature (both internal or user-facing)
+  - `fix`: A bug fix (both internal or user-facing)
+  - `perf`: A code change that improves performance
+  - `refactor`: A code change that does not change the behavior
+  - `style`: A change to align the code with our style guide
+  - `test`: Adding missing tests or correcting existing tests
 - `scope` (optional): name of the changed component (e.g. `engine`, `journal`, `README`)
 - `description`: short description of the change in present tense
 
@@ -288,21 +294,19 @@ unacceptable behavior as soon as possible.
 [forum]: https://forum.zeebe.io/
 [slack]: https://zeebe-slack-invite.herokuapp.com/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
-
 [status]: https://github.com/zeebe-io/zeebe/labels?q=Type
 [planned]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
 [ready]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
 [in progress]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
 [needs review]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
-
 [type]: https://github.com/zeebe-io/zeebe/labels?q=Type
 [enhancement]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
 [maintenance]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
 [bug]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
 [docs]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
 [question]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Question
-
 [scope]: https://github.com/zeebe-io/zeebe/labels?q=Scope
 [broker]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20broker
 [clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
 [clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
+

@@ -38,8 +38,8 @@ Testing:
 * [ ] New tests are written to ensure backwards compatibility with further versions
 * [ ] The behavior is tested manually
 * [ ] The change has been verified by a QA run
-* [ ] The impact of the changes is verified by a benchmark 
+* [ ] The impact of the changes is verified by a benchmark
 
-Documentation: 
+Documentation:
 * [ ] The documentation is updated (e.g. BPMN reference, configuration, examples, get-started guides, etc.)
 * [ ] New content is added to the [release announcement](https://drive.google.com/drive/u/0/folders/1DTIeswnEEq-NggJ25rm2BsDjcCQpDape)

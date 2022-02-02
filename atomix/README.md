@@ -20,16 +20,16 @@ This was then the point we decided that we can change more and more the code bas
 In order to avoid broken builds (develop etc.) and improve the development cycle we decided to merge the Atomix repo into ours.
 
 **Pros:**
- * we have the benefit of one build (everything is build together) - it doesn't break another branch
- * shorter development cycle, we can easily test changes in Atomix in a Zeebe branch
- * easier to create new benchmarks
- * Atomix tests are run more often - which might lead also to new bugs
- * we can easily use our tools and plugins (LGTM, sonarcloud, licensecheck, checkstyle etc.)
- * make release process easier
+* we have the benefit of one build (everything is build together) - it doesn't break another branch
+* shorter development cycle, we can easily test changes in Atomix in a Zeebe branch
+* easier to create new benchmarks
+* Atomix tests are run more often - which might lead also to new bugs
+* we can easily use our tools and plugins (LGTM, sonarcloud, licensecheck, checkstyle etc.)
+* make release process easier
 
 **Cons:**
- * More flaky tests in the beginning
- * Longer build time
+* More flaky tests in the beginning
+* Longer build time
 
 We removed half of their code base, because we don't need it.
 We changed the code style to our style, which makes it also much easier to develop.

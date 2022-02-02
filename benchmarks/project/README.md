@@ -16,3 +16,4 @@ mvn versions:set-property -DgenerateBackupPoms=false -Dproperty=version.zeebe -D
 docker-compose build
 docker-compose push
 ```
+
