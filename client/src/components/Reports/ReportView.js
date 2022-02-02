@@ -145,10 +145,15 @@ export default class ReportView extends React.Component {
   }
 }
 
-function calculateTotalEntries({data, result}) {
-  if (data?.view?.properties[0] === 'rawData') {
-    return result.instanceCount;
+function calculateTotalEntries({result}) {
+  switch (result.type) {
+    case 'raw':
+      return result.instanceCount;
+    case 'map':
+    case 'hyperMap':
+      return result?.measures?.[0]?.data?.length;
+    case 'number':
+    default:
+      return 1;
   }
-
-  return result?.measures?.[0].data.length;
 }

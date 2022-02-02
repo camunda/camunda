@@ -27,18 +27,14 @@ export function DownloadButton({
   ...props
 }) {
   const [exportLimit, setExportLimit] = useState(1000);
-  const [displayModal, setDisplayModal] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
       const limit = await getExportCsvLimit();
       setExportLimit(limit);
-      if (totalCount > limit) {
-        setDisplayModal(true);
-      }
     })();
-  }, [totalCount]);
+  }, []);
 
   function triggerDownload(evt) {
     onClick?.(evt);
@@ -57,6 +53,8 @@ export function DownloadButton({
   const closeModal = () => {
     setModalOpen(false);
   };
+
+  const displayModal = totalCount > exportLimit;
 
   return (
     <>
