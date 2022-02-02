@@ -12,11 +12,11 @@ const startDateDifference = 1000;
 
 async function setup() {
   await deploy([
-    './e2e/tests/resources/instancesTableProcessA.bpmn',
-    './e2e/tests/resources/instancesTableProcessB_v_1.bpmn',
-    './e2e/tests/resources/instancesTableProcessForInfiniteScroll.bpmn',
+    'instancesTableProcessA.bpmn',
+    'instancesTableProcessB_v_1.bpmn',
+    'instancesTableProcessForInfiniteScroll.bpmn',
   ]);
-  await deploy(['./e2e/tests/resources/instancesTableProcessB_v_2.bpmn']);
+  await deploy(['instancesTableProcessB_v_2.bpmn']);
 
   const processA = await createInstances('instancesTableProcessA', 1, 30);
 

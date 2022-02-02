@@ -7,7 +7,7 @@
 import {deploy, createSingleInstance, completeTask} from '../setup-utils';
 
 export async function setup() {
-  await deploy(['./e2e/tests/resources/multiInstanceProcess.bpmn']);
+  await deploy(['multiInstanceProcess.bpmn']);
 
   completeTask('multiInstanceProcessTaskA', false, {}, (job) => {
     return job.complete({...job.variables, i: job.variables.i + 1});

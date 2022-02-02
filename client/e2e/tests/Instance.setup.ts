@@ -14,10 +14,10 @@ import {wait} from './utils/wait';
 
 export async function setup() {
   await deploy([
-    './e2e/tests/resources/processWithAnIncident.bpmn',
-    './e2e/tests/resources/processWithMultiIncidents.bpmn',
-    './e2e/tests/resources/withoutIncidentsProcess_v_1.bpmn',
-    './e2e/tests/resources/processWithMultipleTokens.bpmn',
+    'processWithAnIncident.bpmn',
+    'processWithMultiIncidents.bpmn',
+    'withoutIncidentsProcess_v_1.bpmn',
+    'processWithMultipleTokens.bpmn',
   ]);
 
   const instances = await createInstances('processWithAnIncident', 1, 2);

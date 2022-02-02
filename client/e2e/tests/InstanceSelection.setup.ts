@@ -8,9 +8,9 @@ import {deploy, createInstances} from '../setup-utils';
 
 const setup = async () => {
   await deploy([
-    './e2e/tests/resources/withoutIncidentsProcess_v_1.bpmn',
-    './e2e/tests/resources/processWithAnIncident.bpmn',
-    './e2e/tests/resources/orderProcess_v_1.bpmn',
+    'withoutIncidentsProcess_v_1.bpmn',
+    'processWithAnIncident.bpmn',
+    'orderProcess_v_1.bpmn',
   ]);
 
   await createInstances('withoutIncidentsProcess', 1, 10);

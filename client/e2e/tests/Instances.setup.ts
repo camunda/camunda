@@ -7,14 +7,14 @@
 import {deploy, createSingleInstance} from '../setup-utils';
 
 const setup = async () => {
-  await deploy(['./e2e/tests/resources/orderProcess_v_1.bpmn']);
+  await deploy(['orderProcess_v_1.bpmn']);
 
   const instanceWithoutAnIncident = await createSingleInstance(
     'orderProcess',
     1
   );
 
-  await deploy(['./e2e/tests/resources/processWithAnIncident.bpmn']);
+  await deploy(['processWithAnIncident.bpmn']);
 
   const instanceWithAnIncident = await createSingleInstance(
     'processWithAnIncident',

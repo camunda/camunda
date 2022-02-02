@@ -7,7 +7,7 @@
 import {deploy, createSingleInstance} from '../setup-utils';
 
 const setup = async () => {
-  await deploy(['./e2e/tests/resources/onlyIncidentsProcess_v_1.bpmn']);
+  await deploy(['onlyIncidentsProcess_v_1.bpmn']);
   const instance = await createSingleInstance('onlyIncidentsProcess', 1, {
     testData: 'something',
   });

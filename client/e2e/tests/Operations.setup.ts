@@ -9,10 +9,7 @@ import {createOperation} from './api';
 import {wait} from './utils/wait';
 
 async function setup() {
-  await deploy([
-    './e2e/tests/resources/operationsProcessA.bpmn',
-    './e2e/tests/resources/operationsProcessB.bpmn',
-  ]);
+  await deploy(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
 
   const [singleOperationInstance, batchOperationInstances] = await Promise.all([
     createSingleInstance('operationsProcessA', 1),

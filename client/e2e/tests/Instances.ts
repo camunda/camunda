@@ -223,7 +223,7 @@ test('Wait for process creation', async (t) => {
       .ok();
   }
 
-  await deploy(['./e2e/tests/resources/newProcess.bpmn']);
+  await deploy(['newProcess.bpmn']);
 
   await t.expect(screen.queryByTestId('diagram').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).notOk();

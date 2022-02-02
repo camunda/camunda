@@ -8,10 +8,7 @@ import {ZBWorkerTaskHandler} from 'zeebe-node';
 import {deploy, createSingleInstance, completeTask} from '../setup-utils';
 
 export async function setup() {
-  await deploy([
-    './e2e/tests/resources/manyFlowNodeInstancesProcess.bpmn',
-    './e2e/tests/resources/bigProcess.bpmn',
-  ]);
+  await deploy(['manyFlowNodeInstancesProcess.bpmn', 'bigProcess.bpmn']);
 
   const manyFlowNodeInstancesProcessInstance = await createSingleInstance(
     'manyFlowNodeInstancesProcess',

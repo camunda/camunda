@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings
+  xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>camunda-nexus</id>
+      <mirrorOf>*</mirrorOf>
+      <name>Camunda Nexus</name>
+      <url>https://camunda.jfrog.io/artifactory/internal/</url>
+    </mirror>
+  </mirrors>
+
+  <servers>
+    <server>
+      <id>camunda-nexus</id>
+      <username>${env.NEXUS_USR}</username>
+      <password>${env.NEXUS_PSW}</password>
+    </server>
+  </servers>
+</settings>

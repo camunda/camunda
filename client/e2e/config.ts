@@ -10,6 +10,7 @@ const config = {
     username: 'demo',
     password: 'demo',
   },
+  e2eBasePath: process.env.E2E_BASE_PATH || './e2e',
 };
 
 export {config};

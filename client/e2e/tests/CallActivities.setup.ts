@@ -7,10 +7,7 @@
 import {deploy, createSingleInstance} from '../setup-utils';
 
 export async function setup() {
-  await deploy([
-    './e2e/tests/resources/callActivityProcess.bpmn',
-    './e2e/tests/resources/calledProcess.bpmn',
-  ]);
+  await deploy(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
   return {
     callActivityProcessInstance: await createSingleInstance(
