@@ -11,6 +11,7 @@ import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
+import {DrdPanel} from './DrdPanel';
 import {Container} from './styled';
 
 const DecisionInstance: React.FC = observer(() => {
@@ -28,6 +29,7 @@ const DecisionInstance: React.FC = observer(() => {
       <Header />
       <DecisionPanel />
       <VariablesPanel />
+      <DrdPanel />
     </Container>
   );
 });
