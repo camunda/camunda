@@ -215,9 +215,9 @@ export default withErrorHandling(
                       }
                     >
                       {variables &&
-                        variables.map(({name}) => (
+                        variables.map(({name, label}) => (
                           <Typeahead.Option key={name} value={name}>
-                            {name}
+                            {label || name}
                           </Typeahead.Option>
                         ))}
                     </Typeahead>

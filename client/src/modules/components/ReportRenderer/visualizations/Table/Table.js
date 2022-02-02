@@ -7,11 +7,12 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import update from 'immutability-helper';
 
-import {getReportResult} from 'services';
+import {getReportResult, loadVariables} from 'services';
 import {Table as TableRenderer, LoadingIndicator, NoDataNotice} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getWebappEndpoints} from 'config';
 import {t} from 'translation';
+import {showError} from 'notifications';
 
 import ColumnRearrangement from './ColumnRearrangement';
 import processCombinedData from './processCombinedData';
@@ -24,6 +25,7 @@ import './Table.scss';
 export function Table(props) {
   const {report, updateReport, mightFail, loadReport} = props;
   const {
+    reportType,
     combined,
     data: {view, groupBy, configuration, definitions},
     result,
@@ -35,12 +37,27 @@ export function Table(props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [objectVariable, setObjectVariable] = useState();
+  const [processVariables, setProcessVariables] = useState();
+  const processVariableReport =
+    reportType === 'process' &&
+    (view?.properties?.[0] === 'rawData' || groupBy?.type === 'variable');
 
   useEffect(() => {
     if (needEndpoint) {
       mightFail(getWebappEndpoints(), setCamundaEndpoints);
     }
   }, [mightFail, needEndpoint]);
+
+  useEffect(() => {
+    if (processVariableReport) {
+      const payload = definitions.map(({key, versions, tenantIds}) => ({
+        processDefinitionKey: key,
+        processDefinitionVersions: versions,
+        tenantIds: tenantIds,
+      }));
+      mightFail(loadVariables(payload), setProcessVariables, showError);
+    }
+  }, [definitions, processVariableReport, mightFail, reportType]);
 
   const updateSorting = async (by, order) => {
     setLoading(true);
@@ -68,7 +85,7 @@ export function Table(props) {
     [loadReport]
   );
 
-  if (needEndpoint && camundaEndpoints === null) {
+  if ((needEndpoint && camundaEndpoints === null) || (processVariableReport && !processVariables)) {
     return <LoadingIndicator />;
   }
 
@@ -89,7 +106,7 @@ export function Table(props) {
   } else {
     let tableData;
     if (view.properties[0] === 'rawData') {
-      tableData = processRawData(props, camundaEndpoints, onVariableView);
+      tableData = processRawData(props, camundaEndpoints, processVariables, onVariableView);
       tableData.fetchData = fetchData;
       tableData.loading = loading;
       tableData.defaultPageSize = result.pagination.limit;
@@ -99,7 +116,7 @@ export function Table(props) {
         tableData.error = <NoDataNotice type="error">{t('report.table.pageError')}</NoDataNotice>;
       }
     } else {
-      tableData = processDefaultData(props);
+      tableData = processDefaultData(props, processVariables);
       tableData.loading = loading;
     }
 

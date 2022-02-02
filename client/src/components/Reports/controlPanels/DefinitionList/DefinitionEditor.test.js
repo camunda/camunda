@@ -116,3 +116,16 @@ it('should pass all tenants ids to the renameVariableModal', () => {
 
   expect(node.find(RenameVariablesModal).prop('availableTenants')).toEqual(['a', 'b']);
 });
+
+it('should invoke onChange when confirming the renamed variable modal', () => {
+  const spy = jest.fn();
+  const node = shallow(<DefinitionEditor {...props} onChange={spy} />);
+  runAllEffects();
+
+  node.find('.actionBar').find(Button).simulate('click');
+
+  node.find(RenameVariablesModal).prop('onChange')();
+
+  expect(spy).toHaveBeenCalled();
+  expect(node.find(RenameVariablesModal)).not.toExist();
+});

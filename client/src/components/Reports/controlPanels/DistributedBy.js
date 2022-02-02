@@ -39,7 +39,8 @@ export default function DistributedBy({report, onChange, variables}) {
     )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
-        const matchQuery = ({name}) => name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchQuery = ({name, label}) =>
+          (label || name).toLowerCase().includes(searchQuery.toLowerCase());
 
         return (
           <Select.Submenu
@@ -63,17 +64,17 @@ export default function DistributedBy({report, onChange, variables}) {
                 onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
               />
             </div>
-            {variables?.map?.(({name}, idx) => {
+            {variables?.map?.(({name, label}, idx) => {
               return (
                 <Select.Option
                   className={classnames({
-                    hidden: !matchQuery({name}),
+                    hidden: !matchQuery({name, label}),
                   })}
                   key={idx}
                   value={key + '_' + name}
-                  label={name}
+                  label={label || name}
                 >
-                  {formatters.getHighlightedText(name, searchQuery)}
+                  {formatters.getHighlightedText(label || name, searchQuery)}
                 </Select.Option>
               );
             })}

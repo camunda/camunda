@@ -16,7 +16,13 @@ import {updateVariables} from './service';
 
 import './RenameVariablesModal.scss';
 
-export function RenameVariablesModal({onClose, mightFail, definitionKey, availableTenants}) {
+export function RenameVariablesModal({
+  onClose,
+  onChange,
+  mightFail,
+  definitionKey,
+  availableTenants,
+}) {
   const [variables, setVariables] = useState();
   const [query, setQuery] = useState('');
   const [renamedVariables, setRenamedVariables] = useState(new Map());
@@ -54,7 +60,7 @@ export function RenameVariablesModal({onClose, mightFail, definitionKey, availab
   function updateVariableNames() {
     mightFail(
       updateVariables(definitionKey, Array.from(renamedVariables.values())),
-      onClose,
+      onChange,
       showError
     );
   }

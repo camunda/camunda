@@ -165,7 +165,7 @@ describe('Process table', () => {
 
   it('should invoke the variable view callback function when viewing an object variable', () => {
     const spy = jest.fn();
-    const {body} = processRawData({report: {reportType: 'process', data, result}}, {}, spy);
+    const {body} = processRawData({report: {reportType: 'process', data, result}}, {}, [], spy);
 
     body[0][4].props.onClick();
 

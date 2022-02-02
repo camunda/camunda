@@ -57,6 +57,7 @@ export default function processRawData(
     },
   },
   endpoints = {},
+  processVariables = [],
   onVariableView
 ) {
   const instanceProps = instanceColumns[reportType].filter((entry) =>
@@ -124,11 +125,11 @@ export default function processRawData(
       return {id: key, label, title: label};
     })
     .concat(
-      variableNames.map((variable) => ({
+      variableNames.map((name) => ({
         type: 'variables',
-        id: 'variable:' + variable,
-        label: getLabelWithType(variable, 'variable'),
-        title: variable,
+        id: 'variable:' + name,
+        label: getLabelWithType(getVariableLabel(processVariables, name) || name, 'variable'),
+        title: name,
       }))
     )
     .concat(
@@ -194,4 +195,8 @@ function getVariableValues(variableKeys, variableValues, onVariableClick) {
 
     return '';
   });
+}
+
+function getVariableLabel(variables, name) {
+  return variables.find((variable) => variable.name === name)?.label;
 }

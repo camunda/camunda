@@ -15,7 +15,14 @@ const config = {
   decision: decisionOptions,
 };
 
-export function createReportUpdate(reportType, report, type, newValue, payloadAdjustment) {
+export function createReportUpdate(
+  reportType,
+  report,
+  type,
+  newValue,
+  payloadAdjustment,
+  additionalData
+) {
   const options = config[reportType];
   let newPayload = options[type].find(({key}) => key === newValue).payload(report);
 
@@ -88,9 +95,13 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
   }
 
   // update x label on group and view update
-  if (['view', 'group'].indexOf(type)) {
+  if (['view', 'group'].indexOf(type) !== -1) {
     if (['variable', 'inputVariable', 'outputVariable'].includes(newReport.groupBy.type)) {
-      newReport.configuration.xLabel = newReport.groupBy.value.name;
+      const {name, type} = newReport.groupBy.value;
+      const variable = additionalData.variables[newReport.groupBy.type]?.find(
+        (variable) => variable.name === name && variable.type === type
+      );
+      newReport.configuration.xLabel = variable?.label || name;
     } else {
       newReport.configuration.xLabel = options.group
         .find(({matcher}) => matcher(newReport))

@@ -36,9 +36,16 @@ it('should update the payload when selecting a new report setting', () => {
 
 it('should augment change with custom payload adjustment', () => {
   expect(
-    createReportUpdate('process', report, 'group', 'variable', {
-      groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
-    }).groupBy.$set
+    createReportUpdate(
+      'process',
+      report,
+      'group',
+      'variable',
+      {
+        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+      },
+      {variables: []}
+    ).groupBy.$set
   ).toEqual({type: 'variable', value: {name: 'boolVar', type: 'Boolean'}});
 });
 
@@ -104,13 +111,35 @@ it('should update y axis labels', () => {
 });
 
 it('should update x axis labels', () => {
-  expect(createReportUpdate('process', report, 'group', 'endDate').configuration.$set.xLabel).toBe(
-    'End Date'
-  );
   expect(
-    createReportUpdate('process', report, 'group', 'variable', {
-      groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+    createReportUpdate('process', report, 'group', 'endDate', null, {
+      variables: [],
     }).configuration.$set.xLabel
+  ).toBe('End Date');
+  expect(
+    createReportUpdate(
+      'process',
+      report,
+      'group',
+      'variable',
+      {
+        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+      },
+      {variables: []}
+    ).configuration.$set.xLabel
+  ).toBe('boolVar');
+
+  expect(
+    createReportUpdate(
+      'process',
+      report,
+      'group',
+      'variable',
+      {
+        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+      },
+      {variables: [{name: 'boolVar', type: 'Boolean', label: 'boolVarLabel'}]}
+    ).configuration.$set.xLabel
   ).toBe('boolVar');
 });
 

@@ -51,7 +51,8 @@ export default function GroupBy({type, report, onChange, variables}) {
     )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
-        const matchQuery = ({name}) => name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchQuery = ({name, label}) =>
+          (label || name).toLowerCase().includes(searchQuery.toLowerCase());
 
         return (
           <Select.Submenu
@@ -75,17 +76,17 @@ export default function GroupBy({type, report, onChange, variables}) {
                 onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
               />
             </div>
-            {variables?.[key]?.map(({name}, idx) => {
+            {variables?.[key]?.map(({name, label}, idx) => {
               return (
                 <Select.Option
                   className={classnames({
-                    hidden: !matchQuery({name}),
+                    hidden: !matchQuery({name, label}),
                   })}
                   key={idx}
                   value={key + '_' + name}
-                  label={name}
+                  label={label || name}
                 >
-                  {formatters.getHighlightedText(name, searchQuery)}
+                  {formatters.getHighlightedText(label || name, searchQuery)}
                 </Select.Option>
               );
             })}
@@ -146,7 +147,14 @@ export default function GroupBy({type, report, onChange, variables}) {
           }
 
           onChange(
-            createReportUpdate(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
+            createReportUpdate(
+              reportType,
+              report,
+              'group',
+              type,
+              {groupBy: {value: {$set: value}}},
+              {variables}
+            )
           );
         }}
         value={getValue(selectedOption.key, report.groupBy)}
@@ -159,15 +167,22 @@ export default function GroupBy({type, report, onChange, variables}) {
           className="removeGrouping"
           onClick={() =>
             onChange(
-              createReportUpdate(reportType, report, 'group', 'none', {
-                groupBy: {
-                  $set:
-                    selectedOption.key === 'process'
-                      ? {type: 'none', value: null}
-                      : convertDistributionToGroup(report.distributedBy),
+              createReportUpdate(
+                reportType,
+                report,
+                'group',
+                'none',
+                {
+                  groupBy: {
+                    $set:
+                      selectedOption.key === 'process'
+                        ? {type: 'none', value: null}
+                        : convertDistributionToGroup(report.distributedBy),
+                  },
+                  distributedBy: {$set: {type: 'none', value: null}},
                 },
-                distributedBy: {$set: {type: 'none', value: null}},
-              })
+                {variables}
+              )
             )
           }
         >

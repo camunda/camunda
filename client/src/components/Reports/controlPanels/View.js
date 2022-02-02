@@ -32,7 +32,11 @@ export default function View({type, report, onChange, variables}) {
           };
         }
 
-        onChange(createReportUpdate(reportType, report, 'view', type, adjustment));
+        onChange(
+          createReportUpdate(reportType, report, 'view', type, adjustment, {
+            variables: {variable: variables},
+          })
+        );
       }}
       value={getValue(selectedOption?.key, report.view)}
       disabled={report.definitions.length === 0 || !report.definitions[0].key}
@@ -52,10 +56,10 @@ export default function View({type, report, onChange, variables}) {
                 label={label()}
                 disabled={!enabled(report) || !numberVariables || !numberVariables?.length}
               >
-                {numberVariables?.map(({name}, idx) => {
+                {numberVariables?.map(({name, label}, idx) => {
                   return (
                     <Select.Option key={idx} value={key + '_' + name}>
-                      {name}
+                      {label || name}
                     </Select.Option>
                   );
                 })}

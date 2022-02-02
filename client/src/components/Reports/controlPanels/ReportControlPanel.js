@@ -390,7 +390,11 @@ export default withErrorHandling(
                   )}
                 </li>
                 {shouldDisplayMeasure && (
-                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
+                  <Measure
+                    report={data}
+                    onChange={(change) => updateReport(change, true)}
+                    variables={{variable: variables}}
+                  />
                 )}
                 <GroupBy
                   type="process"

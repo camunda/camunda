@@ -11,7 +11,7 @@ import {sortColumns} from './service';
 
 const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 
-export default function processDefaultData({report}) {
+export default function processDefaultData({report}, processVariables) {
   const {data, result, reportType} = report;
   const {
     configuration: {
@@ -38,7 +38,11 @@ export default function processDefaultData({report}) {
   if (reportType === 'process' && (groupBy.type === 'duration' || groupBy.type.includes('Date'))) {
     head.push(viewString + ' ' + groupString);
   } else if (view.entity === 'processInstance' && groupBy.type === 'variable') {
-    head.push(`${viewString} ${t('report.table.rawData.variable')}: ${groupBy.value.name}`);
+    head.push(
+      `${viewString} ${t('report.table.rawData.variable')}: ${
+        getVariableLabel(processVariables, groupBy.value) || groupBy.value.name
+      }`
+    );
   } else if (['inputVariable', 'outputVariable'].includes(groupBy.type)) {
     head.push(`${t('report.groupBy.' + groupBy.type)}: ${groupBy.value.name}`);
   } else if (view.entity === 'incident' && groupBy.type === 'flowNodes') {
@@ -90,4 +94,8 @@ export default function processDefaultData({report}) {
   const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
 
   return {head: sortedHead, body: sortedBody};
+}
+
+function getVariableLabel(variables, {name, type}) {
+  return variables.find((variable) => variable.name === name && variable.type === type)?.label;
 }
