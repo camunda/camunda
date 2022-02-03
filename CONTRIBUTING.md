@@ -70,14 +70,15 @@ describes:
 
 ## Create a Pull Request
 
-The `develop` branch contains the current in-development state of the project. To work on an issue,
+The `main` branch contains the current in-development state of the project. To work on an issue,
 follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-1. Checkout the `develop` branch and pull the latest changes.
+1. Checkout the `main` branch and pull the latest changes.
+
    ```
-   git checkout develop
+   git checkout main
    git pull
    ```
 1. Create a new branch with the naming scheme `issueId-description`.
@@ -109,7 +110,7 @@ follow the following steps:
    git push --force-with-lease
    ```
 1. To start the review process create a new pull request on GitHub from your
-   branch to the `develop` branch. Give it a meaningful name and describe
+   branch to the `main` branch. Give it a meaningful name and describe
    your changes in the body of the pull request. Lastly add a link to the issue
    this pull request closes, i.e. by writing in the description `closes #123`
 1. Assign the pull request to one developer to review, if you are not sure who
@@ -124,15 +125,70 @@ follow the following steps:
     1. If no changes are requested the reviewer will initiate a merge by adding a
        comment with the content `bors r+`.
 1. When a merge is initiated, a bot will merge your branch with the latest
-   develop and run the CI on it.
+   main and run the CI on it.
     1. If everything goes well the branch is merged and deleted and the issue
        and pull request are cloesed.
-    2. If there are merge conflicts the author of the pull request has to
-       manually rebase `develop` into the issue branch and retrigger a merge
+    1. If there are merge conflicts the author of the pull request has to
+       manually rebase `main` into the issue branch and retrigger a merge
        attempt.
-    3. If there are CI errors the author of the pull request has to check if
+    1. If there are CI errors the author of the pull request has to check if
        they are caused by its changes and address them. If they are flaky tests
        a merge can be retried with a comment with the content `bors retry`.
+
+## Reviewing a pull request
+
+Before doing your first review, please have a look at this [guide](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
+
+As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
+
+The review should result in:
+- approving the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍
+- requesting changes if there are major issues ❌
+- commenting if there are open questions ❓
+
+### Review emoji code
+
+The following emojis can be used in a review to express the intention of a comment.
+For example, to distinguish a required change from an optional suggestion.
+
+- 👍 or `:+1:`: This is great! It always feels good when somebody likes your work. Show them!
+- ❓ or `:question:`: I have a question. Please clarify.
+- ❌ or `:x:`: This has to change. It’s possibly an error or strongly violates existing conventions.
+- 🔧 or `:wrench:`: This is a well-meant suggestion or minor issue. Take it or leave it. Nothing major that blocks merging.
+- 💭 or `:thought_balloon:`: I’m just thinking out loud here. Something doesn’t necessarily have to change, but I want to make sure to share my thoughts.
+
+_Inspired by [Microsofts emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)._
+
+## Backporting changes
+
+Some changes need to be copied to older versions. We use the
+[backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process.
+Please follow these steps to backport your changes:
+
+1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates
+   that we want to backport this pull request to the `stable/1.0` branch).
+   - if the pull request is _not yet_ merged, it will be automatically backported when bors has
+     finished merging the pull request.
+   - if the pull request is _already_ merged, create a comment on the pull request that contains
+     `/backport` to trigger the automatic backporting.
+2. The Github Actions bot comments on the pull request once it finishes:
+   - When _successful_, a new backport pull request was automatically created. Simply **approve and
+     merge it** by adding a review with a `bors merge` comment.
+   - If it _failed_, please follow these **manual steps**:
+     1. Locally checkout the target branch (e.g. `stable/1.0`).
+     2. Make sure it's up to date with origin (i.e. `git pull`).
+     3. Checkout a new branch for your backported changes (e.g. `git checkout -b
+        backport-123-to-stable/1.0`).
+     4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+        conflicts.
+     5. Push your cherry-picked changes `git push`.
+     6. Create a pull request for your backport branch:
+        - Make sure it is clear that this backports in the title (e.g. `[Backport stable/1.0] Title
+          of the original PR`).
+        - Make sure to change the target of the pull request to the correct branch (e.g.
+          `stable/1.0`).
+        - Refer to the pull request in the description to link it (e.g. `backports #123`)
+        - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
 
 ## Commit Message Guidelines
 

@@ -11,19 +11,19 @@ test -z "$(git ls-files --exclude-standard --others)" || \
 # Ensure you are on zeebe-cluster
 kubectx gke_zeebe-io_europe-west1-b_zeebe-cluster
 
-# switch do develop
-git checkout develop
+# switch do main
+git checkout main
 
 # get latest changes
 git fetch
-git pull origin develop
+git pull origin main
 
 # switch to cw branch
 git checkout medic-cw-benchmarks
 git pull origin medic-cw-benchmarks
 
 # update kw branch
-git merge develop --no-edit
+git merge main --no-edit
 git push origin medic-cw-benchmarks
 
 # create new kw image and deploy benchmark

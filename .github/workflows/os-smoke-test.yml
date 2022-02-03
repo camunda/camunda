@@ -2,9 +2,9 @@ name: OS Support Smoke Test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main, staging, trying ]
   pull_request:
-    branches: [ develop ]
+    branches: [ stable/1.2 ]
 
 jobs:
   build:
@@ -28,7 +28,7 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Build with Maven
-        run: mvn -B -pl qa/integration-tests -am install -DskipTests -DskipChecks
+      - name: Build relevant modules
+        run: mvn -B -am -pl qa/integration-tests install -DskipTests -DskipChecks -T1C
       - name: Run smoke test
         run: mvn -B -pl qa/integration-tests verify -P smoke-test -DskipUTs -DskipChecks
