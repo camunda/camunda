@@ -6,14 +6,14 @@
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
-def developBranchName = 'develop'
-def isDevelopBranch = env.BRANCH_NAME == developBranchName
-def latestStableBranchName = 'stable/1.1'
+def mainBranchName = 'main'
+def isMainBranch = env.BRANCH_NAME == mainBranchName
+def latestStableBranchName = 'stable/1.3'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
-//for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
-def daysToKeep = isDevelopBranch ? '7' : '-1'
-def numToKeep = isDevelopBranch ? '-1' : '10'
+// for the main branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
+def daysToKeep = isMainBranch ? '7' : '-1'
+def numToKeep = isMainBranch ? '-1' : '10'
 
 // single step timeouts - remember to be generous to avoid occasional slow downs, e.g. waiting to be
 // scheduled by Kubernetes, slow downloads of remote docker images, etc.
@@ -25,9 +25,9 @@ def longTimeoutMinutes = 45
 def itAgentUnstashDirectory = '.tmp/it'
 def itFlakyTestStashName = 'it-flakyTests'
 
-// the develop branch should be run at midnight to do a nightly build including QA test run
+// the main branch should be run at midnight to do a nightly build including QA test run
 // the latest stable branch is run two hour later at 01:00 AM.
-def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 2 * * *' : ''
+def cronTrigger = isMainBranch ? '0 0 * * *' : isLatestStable ? '0 2 * * *' : ''
 
 // since we report the build status to CI analytics at the very end, when the build is finished, we
 // need to share the result of the flaky test analysis between different stages, so using a global
@@ -336,7 +336,7 @@ pipeline {
                     expression { params.RUN_QA }
                     allOf {
                         anyOf {
-                            branch developBranchName
+                            branch mainBranchName
                             branch latestStableBranchName
                         }
                         triggeredBy 'TimerTrigger'
@@ -389,7 +389,7 @@ pipeline {
         }
 
         stage('Upload') {
-            when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
+            when { allOf { branch mainBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
                     timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
@@ -404,7 +404,7 @@ pipeline {
 
             parallel {
                 stage('Docker') {
-                    when { branch developBranchName }
+                    when { branch mainBranchName }
 
                     environment {
                         VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
@@ -417,7 +417,7 @@ pipeline {
                                     string(name: 'BRANCH', value: env.BRANCH_NAME),
                                     string(name: 'VERSION', value: env.VERSION),
                                     booleanParam(name: 'IS_LATEST', value: false),
-                                    booleanParam(name: 'PUSH', value: isDevelopBranch)
+                                    booleanParam(name: 'PUSH', value: isMainBranch)
                                 ]
                             }
                         }
@@ -454,7 +454,7 @@ pipeline {
 
         failure {
             script {
-                if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
+                if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
                     return
                 }
                 sendZeebeSlackMessage()
@@ -463,7 +463,7 @@ pipeline {
 
         changed {
             script {
-                if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
+                if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
                     return
                 }
                 if (currentBuild.currentResult == 'FAILURE') {
@@ -531,9 +531,9 @@ def templatePodspec(String podspecPath, flags = [:]) {
         /* Criteria for using stable node pools:
          * - staging branch: to have smooth staging builds and avoid unnecessary retries
          * - params.RUN_QA: during QA stage the node must wait for the result. This can take several hours. Therefore a stable node is needed
-         * - env.isDevelopBranch: the core requirement is to have a stable node for nightly builds, which also rn QA (see above)
+         * - env.isMainBranch: the core requirement is to have a stable node for nightly builds, which also rn QA (see above)
          */
-        useStableNodePool: isBorsStagingBranch() || params.RUN_QA || env.isDevelopBranch
+        useStableNodePool: isBorsStagingBranch() || params.RUN_QA || env.isMainBranch
     ]
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags

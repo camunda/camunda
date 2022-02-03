@@ -1702,7 +1702,7 @@
             <groupId>com.diffplug.spotless</groupId>
             <artifactId>spotless-maven-plugin</artifactId>
             <configuration>
-              <ratchetFrom>origin/develop</ratchetFrom>
+              <ratchetFrom>origin/main</ratchetFrom>
             </configuration>
             <executions>
               <execution>

@@ -2,9 +2,9 @@ name: OS Support Smoke Test
 
 on:
   push:
-    branches: [ develop, staging, trying ]
+    branches: [ main, staging, trying ]
   pull_request:
-    branches: [ develop ]
+    branches: [ main ]
 
 jobs:
   smoke-test:
