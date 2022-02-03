@@ -10,7 +10,7 @@ pipelineJob('zeebe-docs') {
     }
 
     parameters {
-        stringParam('BRANCH', 'develop', 'Which zeebe-io/zeebe branch to build and push?')
+        stringParam('BRANCH', 'main', 'Which zeebe-io/zeebe branch to build and push?')
         booleanParam('LIVE', false, 'Deploy to https://docs.zeebe.io intead of https://stage.docs.zeebe.io?')
     }
 }
