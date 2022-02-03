@@ -20,9 +20,9 @@ def seedJob = job('seed-job-zeebe') {
         github 'camunda-cloud/zeebe', 'https'
         credentials 'github-cloud-zeebe-app'
       }
-      branch 'develop'
+      branch 'main'
       extensions {
-        localBranch 'develop'
+        localBranch 'main'
         pathRestriction {
           includedRegions(dslScriptPathToMonitor)
           excludedRegions('')
@@ -37,7 +37,7 @@ def seedJob = job('seed-job-zeebe') {
     }
   }
 
-  label 'develop'
+  label 'main'
   jdk '(Default)'
 
   steps {
