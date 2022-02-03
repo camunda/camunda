@@ -22,7 +22,7 @@ def seedJob = job('seed-job-zeebe') {
       }
       branch 'develop'
       extensions {
-        localBranch 'master'
+        localBranch 'develop'
         pathRestriction {
           includedRegions(dslScriptPathToMonitor)
           excludedRegions('')
@@ -37,7 +37,7 @@ def seedJob = job('seed-job-zeebe') {
     }
   }
 
-  label 'master'
+  label 'develop'
   jdk '(Default)'
 
   steps {
