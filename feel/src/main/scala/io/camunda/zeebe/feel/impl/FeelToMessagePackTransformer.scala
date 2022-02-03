@@ -11,7 +11,7 @@ import io.camunda.zeebe.feel.impl.Loggers.LOGGER
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter
 import org.agrona.concurrent.UnsafeBuffer
 import org.agrona.{DirectBuffer, ExpandableArrayBuffer}
-import org.camunda.feel.syntaxtree.{Val, _}
+import org.camunda.feel.syntaxtree._
 
 class FeelToMessagePackTransformer {
 
@@ -58,14 +58,14 @@ class FeelToMessagePackTransformer {
             case entryBuffer: DirectBuffer => writer.writeRaw(entryBuffer)
             case other => {
               writer.writeNil()
-              LOGGER.warn("No FEEL to MessagePack transformation for '{}'. Using 'null' for context entry with key '{}'.", other, key)
+              LOGGER.trace("No FEEL to MessagePack transformation for '{}'. Using 'null' for context entry with key '{}'.", other, key)
             }
           }
         }
       }
       case other => {
         writer.writeNil()
-        LOGGER.warn("No FEEL to MessagePack transformation for '{}'. Using 'null' instead.", other)
+        LOGGER.trace("No FEEL to MessagePack transformation for '{}'. Using 'null' instead.", other)
       }
     }
   }
