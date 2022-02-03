@@ -76,14 +76,15 @@ describes:
 
 ## Starting on an issue
 
-The `develop` branch contains the current in-development state of the project. To work on an issue,
+The `main` branch contains the current in-development state of the project. To work on an issue,
 follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-1. Checkout the `develop` branch and pull the latest changes.
+1. Checkout the `main` branch and pull the latest changes.
+
    ```
-   git checkout develop
+   git checkout main
    git pull
    ```
 1. Create a new branch with the naming scheme `issueId-description`.
@@ -119,7 +120,7 @@ follow the following steps:
 Before opening your first pull request, please have a look at this [guide](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
 
 1. To start the review process create a new pull request on GitHub from your
-   branch to the `develop` branch. Give it a meaningful name and describe
+   branch to the `main` branch. Give it a meaningful name and describe
    your changes in the body of the pull request. Lastly add a link to the issue
    this pull request closes, i.e. by writing in the description `closes #123`
 2. Assign the pull request to one developer to review, if you are not sure who
@@ -135,11 +136,11 @@ Before opening your first pull request, please have a look at this [guide](https
     2. If no changes are requested the reviewer will initiate a merge by adding a
        comment with the content `bors merge`.
 5. When a merge is initiated, a bot will merge your branch with the latest
-   develop and run the CI on it.
+   main and run the CI on it.
     1. If everything goes well the branch is merged and deleted and the issue
        and pull request are closed.
     2. If there are merge conflicts the author of the pull request has to
-       manually rebase `develop` into the issue branch and retrigger a merge
+       manually rebase `main` into the issue branch and retrigger a merge
        attempt.
     3. If there are CI errors the author of the pull request has to check if
        they are caused by its changes and address them. If they are flaky tests
