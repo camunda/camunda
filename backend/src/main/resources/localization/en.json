@@ -1254,7 +1254,7 @@
     "csvLimit": {
       "Warning": "Warning: CSV will not contain all requested data",
       "info": "This download will contain the first {exportLimit} of {totalCount} records. Filter your data, or ask your administrator to increase the system limit to resolve this issue.",
-      "exportApi": "You can also use the <a href='{docsLink}'>data export API</a> to export larger amount of data from Optimize."
+      "exportApi": "You can also use the <a href='{docsLink}'>data export API</a> to export larger amounts of data from Optimize."
     },
     "unit": {
       "automatic": "automatic",
