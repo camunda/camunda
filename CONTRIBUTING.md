@@ -70,11 +70,8 @@ describes:
 
 ## Create a Pull Request
 
-Zeebe follows a
-[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) process.
-The `develop` branch contains the current in-development state of the project. The `master` branch contains the latest stable release.
-
-To work on an issue, follow the following steps:
+The `develop` branch contains the current in-development state of the project. To work on an issue,
+follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).

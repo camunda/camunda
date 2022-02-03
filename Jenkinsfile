@@ -6,8 +6,6 @@
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
-def masterBranchName = 'master'
-def isMasterBranch = env.BRANCH_NAME == masterBranchName
 def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def latestStableBranchName = 'stable/1.2'
@@ -391,7 +389,7 @@ pipeline {
                                 build job: 'zeebe-docker', parameters: [
                                     string(name: 'BRANCH', value: env.BRANCH_NAME),
                                     string(name: 'VERSION', value: env.VERSION),
-                                    booleanParam(name: 'IS_LATEST', value: isMasterBranch),
+                                    booleanParam(name: 'IS_LATEST', value: false),
                                     booleanParam(name: 'PUSH', value: isDevelopBranch)
                                 ]
                             }
