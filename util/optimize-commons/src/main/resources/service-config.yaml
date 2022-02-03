@@ -8,7 +8,7 @@ security:
       domain: ${CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN:}
       customDomain: ${CAMUNDA_OPTIMIZE_AUTH0_DOMAIN:}
       userIdAttributeName: 'name'
-      organizationClaimName: 'https://camunda.com/organizations'
+      organizationClaimName: 'https://camunda.com/orgs'
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
     ccsm:
