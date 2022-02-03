@@ -125,11 +125,11 @@ follow the following steps:
     1. If no changes are requested the reviewer will initiate a merge by adding a
        comment with the content `bors r+`.
 1. When a merge is initiated, a bot will merge your branch with the latest
-   develop and run the CI on it.
+   main and run the CI on it.
     1. If everything goes well the branch is merged and deleted and the issue
        and pull request are cloesed.
     1. If there are merge conflicts the author of the pull request has to
-       manually rebase `develop` into the issue branch and retrigger a merge
+       manually rebase `main` into the issue branch and retrigger a merge
        attempt.
     1. If there are CI errors the author of the pull request has to check if
        they are caused by its changes and address them. If they are flaky tests
