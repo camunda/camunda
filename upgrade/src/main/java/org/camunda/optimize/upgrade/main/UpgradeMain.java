@@ -66,6 +66,7 @@ public class UpgradeMain {
       for (UpgradePlan upgradePlan : upgradePlans) {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
+      upgradeProcedure.schemaUpgradeClient.initializeSchema();
 
       log.info("Update finished successfully.");
 

@@ -28,6 +28,7 @@ public abstract class PositionBasedImportIndexHandler
   implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
 
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
+  private OffsetDateTime timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
   private long persistedPositionOfLastEntity = 0;
   private long pendingPositionOfLastEntity = 0;
   protected ZeebeDataSourceDto dataSource;
@@ -41,6 +42,7 @@ public abstract class PositionBasedImportIndexHandler
     indexToStore.setDataSourceDto(dataSource);
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
+    indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
     return indexToStore;
   }
@@ -54,12 +56,14 @@ public abstract class PositionBasedImportIndexHandler
       updateLastPersistedEntityPosition(loadedImportIndex.getPositionOfLastEntity());
       updatePendingLastEntityPosition(loadedImportIndex.getPositionOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
+      updateTimestampOfLastPersistedEntity(loadedImportIndex.getTimestampOfLastEntity());
     }
   }
 
   @Override
   public void resetImportIndex() {
     lastImportExecutionTimestamp = BEGINNING_OF_TIME;
+    timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
     persistedPositionOfLastEntity = 0;
     pendingPositionOfLastEntity = 0;
   }
@@ -86,6 +90,10 @@ public abstract class PositionBasedImportIndexHandler
 
   public void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
     this.lastImportExecutionTimestamp = timestamp;
+  }
+
+  public void updateTimestampOfLastPersistedEntity(final OffsetDateTime timestamp) {
+    this.timestampOfLastPersistedEntity = timestamp;
   }
 
 }

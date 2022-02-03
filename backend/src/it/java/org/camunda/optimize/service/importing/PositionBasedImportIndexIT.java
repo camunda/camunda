@@ -21,6 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class PositionBasedImportIndexIT extends AbstractZeebeIT {
 
+  public static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(
+    Instant.EPOCH,
+    ZoneId.systemDefault()
+  );
+
   @Test
   public void importPositionIsZeroIfNothingIsImportedYet() {
     // when
@@ -31,10 +36,8 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     assertThat(positionBasedHandlers).hasSize(8)
       .allSatisfy(handler -> {
         assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
-        assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(OffsetDateTime.ofInstant(
-          Instant.EPOCH,
-          ZoneId.systemDefault()
-        ));
+        assertThat(handler.getTimestampOfLastPersistedEntity()).isEqualTo(BEGINNING_OF_TIME);
+        assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(BEGINNING_OF_TIME);
       });
   }
 
@@ -49,6 +52,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     final List<Long> positionsBeforeRestart = getCurrentHandlerPositions();
+    final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
 
     // when
     embeddedOptimizeExtension.stopOptimize();
@@ -60,6 +64,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     assertThat(getCurrentHandlerPositions())
       .anySatisfy(position -> assertThat(position).isPositive())
       .isEqualTo(positionsBeforeRestart);
+    assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
   }
 
   @Test
@@ -78,6 +83,8 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
 
     // then
     assertThat(getCurrentHandlerPositions()).allSatisfy(position -> assertThat(position).isZero());
+    assertThat(getLastImportedEntityTimestamps())
+      .allSatisfy(timestamp -> assertThat(timestamp).isEqualTo(BEGINNING_OF_TIME));
   }
 
   private void deployZeebeData() {
@@ -94,6 +101,13 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     return embeddedOptimizeExtension.getAllPositionBasedImportHandlers()
       .stream()
       .map(PositionBasedImportIndexHandler::getPersistedPositionOfLastEntity)
+      .collect(Collectors.toList());
+  }
+
+  private List<OffsetDateTime> getLastImportedEntityTimestamps() {
+    return embeddedOptimizeExtension.getAllPositionBasedImportHandlers()
+      .stream()
+      .map(PositionBasedImportIndexHandler::getTimestampOfLastPersistedEntity)
       .collect(Collectors.toList());
   }
 

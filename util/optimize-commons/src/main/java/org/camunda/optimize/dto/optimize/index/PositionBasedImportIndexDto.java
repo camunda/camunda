@@ -22,6 +22,7 @@ public class PositionBasedImportIndexDto implements OptimizeDto {
     Instant.EPOCH,
     ZoneId.systemDefault()
   );
+  protected OffsetDateTime timestampOfLastEntity = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected long positionOfLastEntity = 0;
   protected String esTypeIndexRefersTo;
   protected DataSourceDto dataSourceDto;

@@ -39,8 +39,8 @@ public abstract class TimestampBasedEngineImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    final Optional<TimestampBasedImportIndexDto> dto = importIndexReader
-      .getImportIndex(getElasticsearchDocID(), getEngineAlias());
+    final Optional<TimestampBasedImportIndexDto> dto =
+      importIndexReader.getImportIndex(getElasticsearchDocID(), getEngineAlias());
     if (dto.isPresent()) {
       TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
