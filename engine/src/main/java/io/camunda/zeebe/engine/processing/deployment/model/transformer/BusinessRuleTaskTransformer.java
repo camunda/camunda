@@ -14,27 +14,22 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
-import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 
-public final class JobWorkerElementTransformer<T extends FlowElement>
-    implements ModelElementTransformer<T> {
+public final class BusinessRuleTaskTransformer
+    implements ModelElementTransformer<BusinessRuleTask> {
 
-  private final Class<T> type;
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
 
-  public JobWorkerElementTransformer(final Class<T> type) {
-    this.type = type;
+  @Override
+  public Class<BusinessRuleTask> getType() {
+    return BusinessRuleTask.class;
   }
 
   @Override
-  public Class<T> getType() {
-    return type;
-  }
-
-  @Override
-  public void transform(final T element, final TransformContext context) {
+  public void transform(final BusinessRuleTask element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableJobWorkerElement jobWorkerElement =
