@@ -13,7 +13,10 @@ import 'dmn-js-shared/assets/css/dmn-js-shared.css';
 import {startMocking} from 'modules/mock-server/browser';
 import {tracking} from 'modules/tracking';
 
-if (process.env.NODE_ENV === 'development') {
+if (
+  process.env.NODE_ENV === 'development' ||
+  window.location.host.match(/camunda\.cloud$/) !== null
+) {
   startMocking();
 }
 
