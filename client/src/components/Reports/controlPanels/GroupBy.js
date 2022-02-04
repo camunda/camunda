@@ -147,14 +147,7 @@ export default function GroupBy({type, report, onChange, variables}) {
           }
 
           onChange(
-            createReportUpdate(
-              reportType,
-              report,
-              'group',
-              type,
-              {groupBy: {value: {$set: value}}},
-              {variables}
-            )
+            createReportUpdate(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
           );
         }}
         value={getValue(selectedOption.key, report.groupBy)}
@@ -167,22 +160,15 @@ export default function GroupBy({type, report, onChange, variables}) {
           className="removeGrouping"
           onClick={() =>
             onChange(
-              createReportUpdate(
-                reportType,
-                report,
-                'group',
-                'none',
-                {
-                  groupBy: {
-                    $set:
-                      selectedOption.key === 'process'
-                        ? {type: 'none', value: null}
-                        : convertDistributionToGroup(report.distributedBy),
-                  },
-                  distributedBy: {$set: {type: 'none', value: null}},
+              createReportUpdate(reportType, report, 'group', 'none', {
+                groupBy: {
+                  $set:
+                    selectedOption.key === 'process'
+                      ? {type: 'none', value: null}
+                      : convertDistributionToGroup(report.distributedBy),
                 },
-                {variables}
-              )
+                distributedBy: {$set: {type: 'none', value: null}},
+              })
             )
           }
         >
