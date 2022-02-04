@@ -65,7 +65,7 @@ class DmnEvaluationTest {
     final var parsedDrg = decisionEngine.parse(inputStream);
 
     // when
-    final var result = decisionEngine.evaluateDecisionById(parsedDrg, "jedi-or-sith", null);
+    final var result = decisionEngine.evaluateDecisionById(parsedDrg, "jedi_or_sith", null);
 
     // then
     assertThat(result.isFailure())
@@ -92,7 +92,7 @@ class DmnEvaluationTest {
     final var result =
         decisionEngine.evaluateDecisionById(
             parsedDrg,
-            "jedi-or-sith",
+            "jedi_or_sith",
             new VariablesContext(Map.of("lightsaberColor", asMsgPack("\"blue\""))));
 
     // then
@@ -122,7 +122,7 @@ class DmnEvaluationTest {
     final var result =
         decisionEngine.evaluateDecisionById(
             parsedDrg,
-            "jedi-or-sith",
+            "jedi_or_sith",
             new VariablesContext(Map.of("lightsaberColor", asMsgPack("\"blue\""))));
 
     // then

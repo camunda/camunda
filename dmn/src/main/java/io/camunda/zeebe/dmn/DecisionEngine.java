@@ -15,8 +15,8 @@ import java.io.InputStream;
  * ParsedDecision decisions} and their requirements.
  *
  * <p>A parsed decision requirements graph can be used to evaluate a decision with a given {@link
- * DecisionContext variable context}. If successful, it leads to a {@link DecisionResult decision
- * result}.
+ * DecisionContext variable context}. If successful, it leads to a {@link DecisionEvaluationResult
+ * decision result}.
  */
 public interface DecisionEngine {
 
@@ -45,7 +45,7 @@ public interface DecisionEngine {
    * @return the result of evaluating the decision, or the evaluation failure if the decision could
    *     not be evaluated successfully
    */
-  DecisionResult evaluateDecisionById(
+  DecisionEvaluationResult evaluateDecisionById(
       ParsedDecisionRequirementsGraph decisionRequirementsGraph,
       String decisionId,
       DecisionContext context);
