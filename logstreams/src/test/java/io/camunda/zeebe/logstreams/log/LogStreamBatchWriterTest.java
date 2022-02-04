@@ -11,6 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
@@ -27,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -425,5 +428,46 @@ public final class LogStreamBatchWriterTest {
 
     // then
     assertThat(pos).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldGetSingleFragmentBatchFramedLength() {
+    // given
+    final var logStream = logStreamRule.getLogStream();
+    final var unframedRecordLength = EVENT_VALUE_1.capacity() + EVENT_METADATA_1.capacity();
+    final var reader = logStream.newLogStreamReader();
+    write(w -> w.event().value(EVENT_VALUE_1).metadata(EVENT_METADATA_1).done());
+    final var record = reader.next();
+    final var framedRecordLength = record.getLength();
+
+    // when
+    final var expectedLength = LogBufferAppender.claimedBatchLength(1, framedRecordLength);
+    final var batchFramedLength = writer.getBatchFramedLength(unframedRecordLength);
+
+    // then
+    assertThat(batchFramedLength).isEqualTo(expectedLength);
+  }
+
+  @Test
+  public void shouldGetMultiFragmentBatchFramedLength() {
+    // given
+    final var logStream = logStreamRule.getLogStream();
+    final var reader = logStream.newLogStreamReader();
+    writer.event().value(EVENT_VALUE_1).metadata(EVENT_METADATA_1).done();
+    final var expectedLength =
+        writer.getBatchFramedLength(EVENT_VALUE_2.capacity() + EVENT_METADATA_2.capacity());
+    writer.event().value(EVENT_VALUE_2).metadata(EVENT_METADATA_2).done();
+
+    // when
+    assertThat(writer.tryWrite()).isPositive();
+    Awaitility.await("until events are available for reading").until(reader::hasNext);
+    final var firstEvent = reader.next();
+    final var secondEvent = reader.next();
+
+    // then
+    final int eventFramedLength =
+        DataFrameDescriptor.alignedFramedLength(firstEvent.getLength())
+            + DataFrameDescriptor.alignedFramedLength(secondEvent.getLength());
+    assertThat(eventFramedLength).isEqualTo(expectedLength);
   }
 }

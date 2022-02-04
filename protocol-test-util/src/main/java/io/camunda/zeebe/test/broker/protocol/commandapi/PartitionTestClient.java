@@ -230,7 +230,7 @@ public final class PartitionTestClient {
             .command()
             .put("scopeKey", scopeKey)
             .put("updateSemantics", updateSemantics)
-            .put("document", MsgPackUtil.asMsgPack(document).byteArray())
+            .put("variables", MsgPackUtil.asMsgPack(document).byteArray())
             .done()
             .sendAndAwait();
 

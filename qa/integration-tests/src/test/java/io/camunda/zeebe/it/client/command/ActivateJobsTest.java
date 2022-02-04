@@ -13,8 +13,14 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.Strings;
+import java.util.Map;
+import org.agrona.BitUtil;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -76,5 +82,65 @@ public final class ActivateJobsTest {
     // then
     final ActivateJobsResponse response = responseFuture.join();
     assertThat(response.getJobs()).isEmpty();
+  }
+
+  /** This test guarantees that the job activation will only */
+  @Test
+  public void shouldStreamAllJobsEvenIf() {
+    // given
+    final var maxMessageSize =
+        (int) BROKER_RULE.getBrokerCfg().getNetwork().getMaxMessageSizeInBytes();
+    final var processId = Strings.newRandomValidBpmnId();
+    final var taskType = Strings.newRandomValidBpmnId();
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(taskType))
+            .endEvent()
+            .done();
+    final var processDefinitionKey = CLIENT_RULE.deployProcess(process);
+    final var client = CLIENT_RULE.getClient();
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variables(Map.of("foo", "x".repeat(maxMessageSize / 3 + 1)))
+        .send()
+        .join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variables(Map.of("foo", "x".repeat(maxMessageSize / 3 + 1)))
+        .send()
+        .join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variables(Map.of("bar", "x".repeat(maxMessageSize / 3 + 1)))
+        .send()
+        .join();
+    final var firstJobBatch =
+        client.newActivateJobsCommand().jobType(taskType).maxJobsToActivate(10).send().join();
+    final var secondJobBatch =
+        client.newActivateJobsCommand().jobType(taskType).maxJobsToActivate(10).send().join();
+
+    // then
+    assertThat(firstJobBatch.getJobs()).hasSize(2);
+    assertThat(firstJobBatch.getJobs().get(0).getVariablesAsMap()).containsOnlyKeys("foo");
+    assertThat(firstJobBatch.getJobs().get(1).getVariablesAsMap()).containsOnlyKeys("foo");
+    assertThat(secondJobBatch.getJobs()).hasSize(1);
+    assertThat(secondJobBatch.getJobs().get(0).getVariablesAsMap()).containsOnlyKeys("bar");
+  }
+
+  private int getMaxDispatcherFragmentLength() {
+    final var maxDispatcherFragmentSize =
+        (int) BROKER_RULE.getBrokerCfg().getNetwork().getMaxMessageSizeInBytes();
+    final var dispatcherFrameLength =
+        BitUtil.align(
+            LogBufferAppender.claimedBatchLength(1, maxDispatcherFragmentSize)
+                - maxDispatcherFragmentSize,
+            DataFrameDescriptor.FRAME_ALIGNMENT);
+    return maxDispatcherFragmentSize - dispatcherFrameLength;
   }
 }

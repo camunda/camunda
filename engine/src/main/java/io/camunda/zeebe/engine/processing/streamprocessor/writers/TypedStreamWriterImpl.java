@@ -129,4 +129,32 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     appendRecord(key, RecordType.EVENT, intent, value);
   }
+
+  /**
+   * Use this to know whether you can add an event of the given length to the underlying batch
+   * writer.
+   *
+   * @param eventLength the length of the event that will be added to the batch
+   * @return true if an event of length {@code eventLength} can be added to this batch such that it
+   *     can later be written
+   */
+  @Override
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return batchWriter.getBatchFramedLength(eventLength) <= batchWriter.getMaxFragmentLength();
+  }
+
+  /**
+   * This is not actually accurate, as the frame length needs to also be aligned by the same amount
+   * of bytes as the batch. However, this would break concerns here, i.e. the writer here would have
+   * to become Dispatcher aware.
+   *
+   * @return a near approximate maximum, frame-aware, event length
+   */
+  @Override
+  public int getMaxEventLength() {
+    final var maxFragmentLength = batchWriter.getMaxFragmentLength();
+    final var frameLength = batchWriter.getBatchFramedLength(maxFragmentLength) - maxFragmentLength;
+
+    return maxFragmentLength - frameLength;
+  }
 }

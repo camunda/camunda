@@ -50,11 +50,11 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
  * <p>Usage:
  *
  * <pre>{@code
- * @ExtendWith(ZeebeStateExtension)
+ * @ExtendWith(ZeebeStateExtension.class)
  * public class Test {
  *   private ZeebeDb db; //will be injected
  *   private TransactionContext txContext; //will be injected
- *   private MutableZeebeState state //will be injected
+ *   private MutableZeebeState state; //will be injected
  *
  *   ...
  * }

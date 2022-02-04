@@ -23,6 +23,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.camunda.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.Protocol;
@@ -95,6 +96,14 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   }
 
   @Override
+  public int getBatchFramedLength(final int eventLength) {
+    final var nextEventCount = eventCount + 1;
+    final var nextEventLength = this.eventLength + eventLength;
+    final var batchLength = nextEventLength + (nextEventCount * HEADER_BLOCK_LENGTH);
+    return LogBufferAppender.claimedBatchLength(nextEventCount, batchLength);
+  }
+
+  @Override
   public LogEntryBuilder keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);
   }
@@ -105,6 +114,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
     return this;
   }
 
+  @Override
   public LogEntryBuilder sourceIndex(final int index) {
     sourceIndex = index;
     return this;

@@ -28,6 +28,16 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
   /** Discard all non-written batch data. */
   void reset();
 
+  /**
+   * Returns the actual number of bytes that will be written when adding a {@link LoggedEvent} to
+   * the current batch and writing it.
+   *
+   * @param eventLength the length of the event
+   * @return the framed length of the batch, i.e. the actual number of bytes required to write this
+   *     batch with the additional event
+   */
+  int getBatchFramedLength(final int eventLength);
+
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
     /** Use the default values as key. */
