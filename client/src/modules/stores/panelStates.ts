@@ -26,7 +26,6 @@ class PanelStates {
 
     this.state.isFiltersCollapsed = isFiltersCollapsed;
     this.state.isOperationsCollapsed = isOperationsCollapsed;
-
     makeAutoObservable(this);
   }
 

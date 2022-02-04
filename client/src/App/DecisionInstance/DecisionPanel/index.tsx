@@ -40,7 +40,7 @@ const DecisionPanel: React.FC = observer(() => {
     };
   }, []);
 
-  return <Container ref={decisionViewerRef} />;
+  return <Container data-testid="decision-panel" ref={decisionViewerRef} />;
 });
 
 export {DecisionPanel};

@@ -10,7 +10,7 @@ import {Container, Handle} from './styled';
 const minWidth = 540;
 const maxWidthRatio = 3 / 5;
 
-const DrdPanel: React.FC = () => {
+const DrdPanel: React.FC = ({children}) => {
   const handleRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startDimensions = useRef<{x?: number; width?: number}>({
@@ -63,12 +63,10 @@ const DrdPanel: React.FC = () => {
   }, []);
 
   return (
-    <>
-      <Container ref={containerRef}>
-        <Handle ref={handleRef} />
-        <div>DrdPanel</div>
-      </Container>
-    </>
+    <Container ref={containerRef} data-testid="drd-panel">
+      <Handle ref={handleRef} />
+      {children}
+    </Container>
   );
 };
 

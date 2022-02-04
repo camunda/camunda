@@ -8,11 +8,13 @@ import {useEffect} from 'react';
 import {useParams} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {drdStore} from 'modules/stores/drd';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
 import {DrdPanel} from './DrdPanel';
 import {Container} from './styled';
+import {Drd} from './Drd';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
@@ -25,12 +27,22 @@ const DecisionInstance: React.FC = observer(() => {
   }, [decisionInstanceId]);
 
   return (
-    <Container>
-      <Header />
-      <DecisionPanel />
-      <VariablesPanel />
-      <DrdPanel />
-    </Container>
+    <>
+      {drdStore.state.panelState === 'maximized' ? (
+        <Drd />
+      ) : (
+        <Container>
+          <Header />
+          <DecisionPanel />
+          <VariablesPanel />
+          {drdStore.state.panelState === 'minimized' && (
+            <DrdPanel>
+              <Drd />
+            </DrdPanel>
+          )}
+        </Container>
+      )}
+    </>
   );
 });
 

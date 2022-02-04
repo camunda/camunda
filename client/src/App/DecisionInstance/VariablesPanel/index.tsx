@@ -15,7 +15,7 @@ const VariablesPanel: React.FC = () => {
   >('inputs-and-outputs');
 
   return (
-    <Container>
+    <Container data-testid="decision-instance-variables-panel">
       <Header>
         <Tab
           onClick={() => {
