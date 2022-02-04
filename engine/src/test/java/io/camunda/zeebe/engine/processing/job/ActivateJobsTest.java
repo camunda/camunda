@@ -456,63 +456,6 @@ public final class ActivateJobsTest {
         .isEqualTo(Map.of("foo", "x".repeat(variablesSize), "bar", "x".repeat(variablesSize)));
   }
 
-  // regression test https://github.com/camunda-cloud/zeebe/issues/5525
-  @Test
-  public void shouldActivateJobsUpToMaxMessageSize() {
-    // given
-    final var maxMessageSize = ByteValue.ofMegabytes(4);
-    final var headerSize = ByteValue.ofKilobytes(2);
-    final var maxRecordSize = maxMessageSize - headerSize;
-
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var processInstanceKey2 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // since the variable update will write the variable twice, we need to split this off
-    final var variablesSize = (int) maxRecordSize / 2;
-    await("until the job is created")
-        .untilAsserted(
-            () ->
-                assertThat(
-                        jobRecords(JobIntent.CREATED)
-                            .withType(taskType)
-                            .filter(r -> processInstanceKey == r.getValue().getProcessInstanceKey())
-                            .limit(1))
-                    .hasSize(1));
-    ENGINE
-        .variables()
-        .withDocument(Map.of("foo", "x".repeat(variablesSize)))
-        .ofScope(processInstanceKey)
-        .update();
-    ENGINE
-        .variables()
-        .withDocument(Map.of("bar", "x".repeat(variablesSize)))
-        .ofScope(processInstanceKey2)
-        .update();
-    ENGINE
-        .variables()
-        .withDocument(Map.of("foo", "x".repeat(1192)))
-        .ofScope(processInstanceKey2)
-        .update();
-    ENGINE
-        .variables()
-        .withDocument(Map.of("baz", "x".repeat(1)))
-        .ofScope(processInstanceKey2)
-        .update();
-
-    // when
-    final var firstBatch =
-        ENGINE.jobs().withType(taskType).withMaxJobsToActivate(2).activate().getValue();
-    final var secondBatch =
-        ENGINE.jobs().withType(taskType).withMaxJobsToActivate(2).activate().getValue();
-
-    // then
-    assertThat(firstBatch.getJobKeys()).hasSize(1);
-    assertThat(secondBatch.getJobKeys())
-        .hasSize(1)
-        .doesNotContainAnyElementsOf(firstBatch.getJobKeys());
-  }
-
   private Record<JobRecordValue> completeJob(final long jobKey) {
     return ENGINE.job().withKey(jobKey).complete();
   }
