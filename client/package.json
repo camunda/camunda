@@ -67,7 +67,7 @@
     "@types/jest": "27.4.0",
     "@types/jsoneditor": "9.5.1",
     "@types/lodash": "4.14.178",
-    "@types/mixpanel-browser": "2.36.0",
+    "@types/mixpanel-browser": "2.38.0",
     "@types/node": "16.11.22",
     "@types/node-fetch": "2.5.12",
     "@types/react": "17.0.38",

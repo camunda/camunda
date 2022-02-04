@@ -3576,10 +3576,10 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.5.tgz#1001cc5e6a3704b83c236027e77f2f58ea010f40"
   integrity sha512-Klz949h02Gz2uZCMGwDUSDS1YBlTdDDgbWHi+81l29tQALUtvz4rAYi5uoVhE5Lagoq6DeqAUlbrHvW/mXDgdQ==
 
-"@types/mixpanel-browser@2.36.0":
-  version "2.36.0"
-  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.36.0.tgz#7d46fc51d7f22d1d09d5521404d156a96a54f306"
-  integrity sha512-aEuQOhK8rEE8TtUbF19H9z/pEYz1xg3/1fpu9qufXpqsR/PHLc1QnrO21BFwHmFytOFaRwEgCPqUhpy/rfIWIA==
+"@types/mixpanel-browser@2.38.0":
+  version "2.38.0"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.38.0.tgz#b3e28e1ba06c10a9f88510b88f1ac9d1b2adfc42"
+  integrity sha512-TR8rvsILnqXA7oiiGOxuMGXwvDeCoQDonXJB5UR+TYvEAFpiK8ReFj5LhZT+Xhm3NpI9aPoju30jB2ssorSUww==
 
 "@types/node-fetch@2.5.12", "@types/node-fetch@^2.5.7":
   version "2.5.12"
