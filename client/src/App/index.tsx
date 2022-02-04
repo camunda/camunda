@@ -19,7 +19,6 @@ import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {Routes} from 'modules/routes';
 import {HashRouterMigrator} from './HashRouterMigrator';
-import {IS_DMN} from 'modules/feature-flags';
 import {AuthenticatedRoute} from './AuthenticatedRoute';
 import {Header} from './Header';
 import {SessionWatcher} from './SessionWatcher';
@@ -69,30 +68,26 @@ const App: React.FC = () => {
                 <Instance />
               </>
             </AuthenticatedRoute>
-            {IS_DMN && (
+            <AuthenticatedRoute
+              exact
+              path={Routes.decisions()}
+              redirectPath={Routes.login()}
+            >
               <>
-                <AuthenticatedRoute
-                  exact
-                  path={Routes.decisions()}
-                  redirectPath={Routes.login()}
-                >
-                  <>
-                    <Header />
-                    <Decisions />
-                  </>
-                </AuthenticatedRoute>
-                <AuthenticatedRoute
-                  exact
-                  path={Routes.decisionInstance()}
-                  redirectPath={Routes.decisionInstance()}
-                >
-                  <>
-                    <Header />
-                    <DecisionInstance />
-                  </>
-                </AuthenticatedRoute>
+                <Header />
+                <Decisions />
               </>
-            )}
+            </AuthenticatedRoute>
+            <AuthenticatedRoute
+              exact
+              path={Routes.decisionInstance()}
+              redirectPath={Routes.login()}
+            >
+              <>
+                <Header />
+                <DecisionInstance />
+              </>
+            </AuthenticatedRoute>
           </Switch>
         </BrowserRouter>
       </NotificationProvider>
