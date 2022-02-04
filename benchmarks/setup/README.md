@@ -34,7 +34,7 @@ to configure your benchmark.
 ### How to configure a Benchmark
 
 The benchmark configuration is completely done via the `zeebe-values.yaml` file.
-If there is a property missing which you want to change please open an issue in https://github.com/zeebe-io/zeebe-cluster-helm
+If there is a property missing which you want to change please open an issue in https://github.com/camunda-community-hub/camunda-cloud-helm
 
 #### Use different Zeebe Snapshot
 
@@ -56,18 +56,19 @@ Change the `zeebe-values.yaml` file in order to use the new created image.
 The changes should look similar to this:
 
 ```yaml
-image:
-  repository: gcr.io/zeebe-io/zeebe
-  tag: <TAG>
-  pullPolicy: Always
+global
+  image:
+    repository: gcr.io/zeebe-io/zeebe
+    tag: <TAG>
+    pullPolicy: Always
 ```
 
 ### How to run a Benchmark
 
 After you setup your benchmark namespace and made changes to your configuration.
-You can start your benchmark just with `make clean all`.
+You can start your benchmark just with `make clean zeebe starter worker`.
 
-This will deploy the `zeebe-cluster` and `elastic` helm charts.
+This will deploy the `zeebe`, `zeebe-gateway` and `elastic` helm charts.
 Furthermore the starters and workers should be started.
 
 ### How to clean up a Benchmark

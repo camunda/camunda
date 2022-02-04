@@ -10,7 +10,7 @@ zeebe:
 	-kubectl apply -n $(namespace) -f curator-configmap.yaml
 
 # Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
-# To apply the templates use k apply -f zeebe-cluster/templates/
+# To apply the templates use k apply -f ccsm-helm/templates/
 .PHONY: template
 template:
 	-helm template $(namespace) camunda-cloud/ccsm-helm -f zeebe-values.yaml --skip-crds --output-dir .
