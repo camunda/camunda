@@ -1047,3 +1047,29 @@ test('group by process', async (t) => {
   await t.expect(e.distributedBySelect.textContent).contains('Process');
   await t.expect(e.reportChart.visible).ok();
 });
+
+test('variable renaming', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+
+  await u.selectView(t, 'Variable', 'amount');
+
+  await t.click(e.definitionEditor);
+  await t.click(e.renameVariablesBtn);
+  await t.typeText(e.newNameInput('amount'), 'renamed amount', {replace: true});
+  await t.click(e.updateVariableBtn);
+  await t.click(e.definitionEditor);
+
+  await t.expect(e.viewSelect.textContent).contains('renamed amount');
+  await t.expect(e.numberReportInfo.textContent).contains('renamed amount');
+
+  // remove the added label since the label changes are global
+  // and may affect other tests
+  await t.click(e.definitionEditor);
+  await t.click(e.renameVariablesBtn);
+  await t.selectText(e.newNameInput('amount')).pressKey('delete');
+  await t.click(e.updateVariableBtn);
+  await t.click(e.definitionEditor);
+
+  await t.expect(e.viewSelect.textContent).contains('amount');
+});
