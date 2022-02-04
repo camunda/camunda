@@ -26,6 +26,11 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableReference;
 import org.agrona.collections.ObjectHashSet;
 
+/**
+ * Collects jobs to be activated as part of a {@link JobBatchRecord}. Activate-able jobs are read
+ * from the {@link JobState}, resolving and setting their variables from the {@link VariableState},
+ * and added to the given batch record.
+ */
 final class JobBatchCollector {
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
@@ -33,6 +38,14 @@ final class JobBatchCollector {
   private final VariableState variableState;
   private final Predicate<Integer> canWriteEventOfLength;
 
+  /**
+   * @param jobState the state from which jobs are collected
+   * @param variableState the state from which variables are resolved and collected
+   * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
+   *     TypedRecord} containing the {@link JobBatchRecord} will be writable or not. The predicate
+   *     takes in the size of the record, and should return true if it can write such a record, and
+   *     false otherwise
+   */
   JobBatchCollector(
       final JobState jobState,
       final VariableState variableState,
@@ -42,6 +55,17 @@ final class JobBatchCollector {
     this.canWriteEventOfLength = canWriteEventOfLength;
   }
 
+  /**
+   * Collects jobs to be added to the given {@code record}. The jobs and their keys are added
+   * directly to the given record.
+   *
+   * <p>This method will fail only if it could not activate anything because the batch would be too
+   * large, but there was at least one job to activate. On failure, it will return that job and its
+   * key. On success, it will return the amount of jobs activated.
+   *
+   * @param record the batch activate command; jobs and their keys will be added directly into it
+   * @return the amount of activated jobs on success, or a job which was too large to activate
+   */
   Either<LargeJob, Integer> collectJobs(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
