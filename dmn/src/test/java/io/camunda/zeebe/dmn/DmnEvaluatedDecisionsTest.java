@@ -108,6 +108,8 @@ class DmnEvaluatedDecisionsTest {
     assertThat(result.getEvaluatedDecisions())
         .hasSize(2)
         .extracting(EvaluatedDecision::decisionId, EvaluatedDecision::decisionName)
+        .describedAs(
+            "Expect to contain all evaluated decisions in the order of their evaluation, starting with the required decision")
         .containsExactly(
             tuple("jedi_or_sith", "Jedi or Sith"), tuple("force_user", "Which force user?"));
 
