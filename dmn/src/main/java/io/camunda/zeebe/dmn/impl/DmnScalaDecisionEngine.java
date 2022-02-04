@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
-import io.camunda.zeebe.dmn.DecisionResult;
+import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
@@ -81,7 +81,7 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
   }
 
   @Override
-  public DecisionResult evaluateDecisionById(
+  public DecisionEvaluationResult evaluateDecisionById(
       final ParsedDecisionRequirementsGraph decisionRequirementsGraph,
       final String decisionId,
       final DecisionContext context) {

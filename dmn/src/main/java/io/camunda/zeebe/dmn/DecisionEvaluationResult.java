@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
  *
  * @see DecisionEngine
  */
-public interface DecisionResult {
+public interface DecisionEvaluationResult {
 
   /** @return {@code true} if the evaluation was not successful, otherwise {@code false} */
   boolean isFailure();

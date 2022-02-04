@@ -166,7 +166,7 @@ class DmnEvaluatedDecisionsTest {
           new DecisionTest("relation", DecisionType.RELATION, "[{'is':'okay'}]"));
     }
 
-    private DecisionResult evaluateDecision(final String decisionId) {
+    private DecisionEvaluationResult evaluateDecision(final String decisionId) {
       final var inputStream = getClass().getResourceAsStream(DECISION_TYPES_DRG);
       final var parsedDrg = decisionEngine.parse(inputStream);
 
