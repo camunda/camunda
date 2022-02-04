@@ -10,8 +10,8 @@ package io.camunda.zeebe.dmn;
 import org.agrona.DirectBuffer;
 
 /**
- * An evaluated output of a decision table that belongs to a matched rule. It contains details of
- * the output and the value of the evaluated output expression.
+ * An evaluated output of a decision table that belongs to a {@link MatchedRule matched rule}. It
+ * contains details of the output and the value of the evaluated output expression.
  */
 public interface EvaluatedOutput {
 

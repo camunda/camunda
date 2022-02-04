@@ -34,16 +34,16 @@ public interface EvaluatedDecision {
   DirectBuffer decisionOutput();
 
   /**
-   * If the decision is a decision table then it returns the evaluated inputs. The inputs are not
-   * available for other types of decision.
+   * If the decision is a decision table then it returns the {@link EvaluatedInput evaluated
+   * inputs}. The inputs are not available for other types of decision.
    *
    * @return the evaluated inputs, or an empty list if the decision is not a decision table
    */
   List<EvaluatedInput> evaluatedInputs();
 
   /**
-   * If the decision is a decision table then it returns the matched rules. The matched rules are
-   * not available for other types of decision.
+   * If the decision is a decision table then it returns the matched rules. The {@link MatchedRule
+   * matched rules} are not available for other types of decision.
    *
    * @return the matched rules, or an empty list if the decision is not a decision table
    */

@@ -34,9 +34,10 @@ public interface DecisionEvaluationResult {
   DirectBuffer getOutput();
 
   /**
-   * Returns the details of the evaluated decision and its required decisions. The order depends on
-   * the evaluation order, starting from the required decisions. If the evaluation is not successful
-   * then it contains the successful evaluated decisions and the decision that was not successful.
+   * Returns the {@link EvaluatedDecision details} of the evaluated decision and its required
+   * decisions. The order depends on the evaluation order, starting from the required decisions. If
+   * the evaluation is not successful then it contains the successful evaluated decisions and the
+   * decision that was not successful.
    *
    * @return details of the evaluated decisions
    */
