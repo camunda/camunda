@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.bpmn.event.StartEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.task.BusinessRuleTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.JobWorkerTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ManualTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
@@ -37,7 +38,8 @@ public final class BpmnElementProcessors {
   public BpmnElementProcessors(final BpmnBehaviors bpmnBehaviors) {
     // tasks
     processors.put(BpmnElementType.SERVICE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.BUSINESS_RULE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
+    processors.put(
+        BpmnElementType.BUSINESS_RULE_TASK, new BusinessRuleTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SCRIPT_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SEND_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.USER_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
