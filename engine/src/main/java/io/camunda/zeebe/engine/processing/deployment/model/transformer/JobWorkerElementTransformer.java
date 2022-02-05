@@ -9,12 +9,13 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
 public final class JobWorkerElementTransformer<T extends FlowElement>
     implements ModelElementTransformer<T> {
@@ -40,10 +41,10 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
     final ExecutableJobWorkerElement jobWorkerElement =
         process.getElementById(element.getId(), ExecutableJobWorkerElement.class);
 
-    final var jobWorkerProperties = new JobWorkerProperties();
-    jobWorkerElement.setJobWorkerProperties(jobWorkerProperties);
+    final var taskDefinition = element.getSingleExtensionElement(ZeebeTaskDefinition.class);
+    taskDefinitionTransformer.transform(jobWorkerElement, context, taskDefinition);
 
-    taskDefinitionTransformer.transform(element, jobWorkerProperties, context);
-    taskHeadersTransformer.transform(element, jobWorkerProperties);
+    final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+    taskHeadersTransformer.transform(jobWorkerElement, taskHeaders, element);
   }
 }

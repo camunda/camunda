@@ -8,11 +8,13 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -20,24 +22,32 @@ public final class TaskHeadersTransformer {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
-  public void transform(final FlowElement element, final JobWorkerProperties jobWorkerProperties) {
-    final ZeebeTaskHeaders taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+  public void transform(
+      final ExecutableJobWorkerElement element,
+      final ZeebeTaskHeaders taskHeaders,
+      final FlowElement task) {
 
-    if (taskHeaders != null) {
-      final Map<String, String> validHeaders =
-          taskHeaders.getHeaders().stream()
-              .filter(this::isValidHeader)
-              .collect(Collectors.toMap(ZeebeHeader::getKey, ZeebeHeader::getValue));
+    if (taskHeaders == null) {
+      return;
+    }
 
-      if (validHeaders.size() < taskHeaders.getHeaders().size()) {
-        LOG.warn(
-            "Ignoring invalid headers for task '{}'. Must have non-empty key and value.",
-            element.getName());
-      }
+    final var jobWorkerProperties =
+        Optional.ofNullable(element.getJobWorkerProperties()).orElse(new JobWorkerProperties());
+    element.setJobWorkerProperties(jobWorkerProperties);
 
-      if (!validHeaders.isEmpty()) {
-        jobWorkerProperties.setTaskHeaders(validHeaders);
-      }
+    final Map<String, String> validHeaders =
+        taskHeaders.getHeaders().stream()
+            .filter(this::isValidHeader)
+            .collect(Collectors.toMap(ZeebeHeader::getKey, ZeebeHeader::getValue));
+
+    if (validHeaders.size() < taskHeaders.getHeaders().size()) {
+      LOG.warn(
+          "Ignoring invalid headers for task '{}'. Must have non-empty key and value.",
+          task.getName());
+    }
+
+    if (!validHeaders.isEmpty()) {
+      jobWorkerProperties.setTaskHeaders(validHeaders);
     }
   }
 

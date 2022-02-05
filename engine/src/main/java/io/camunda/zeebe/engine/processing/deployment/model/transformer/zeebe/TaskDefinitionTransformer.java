@@ -9,19 +9,26 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
-import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import java.util.Optional;
 
 public final class TaskDefinitionTransformer {
 
   public void transform(
-      final FlowElement element,
-      final JobWorkerProperties jobWorkerProperties,
-      final TransformContext context) {
-    final ZeebeTaskDefinition taskDefinition =
-        element.getSingleExtensionElement(ZeebeTaskDefinition.class);
+      final ExecutableJobWorkerElement element,
+      final TransformContext context,
+      final ZeebeTaskDefinition taskDefinition) {
+
+    if (taskDefinition == null) {
+      return;
+    }
+
+    final var jobWorkerProperties =
+        Optional.ofNullable(element.getJobWorkerProperties()).orElse(new JobWorkerProperties());
+    element.setJobWorkerProperties(jobWorkerProperties);
 
     final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
     final Expression jobTypeExpression =

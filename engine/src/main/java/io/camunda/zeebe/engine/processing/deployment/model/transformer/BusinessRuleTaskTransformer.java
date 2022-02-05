@@ -9,12 +9,13 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
 public final class BusinessRuleTaskTransformer
     implements ModelElementTransformer<BusinessRuleTask> {
@@ -32,13 +33,13 @@ public final class BusinessRuleTaskTransformer
   public void transform(final BusinessRuleTask element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
-    final ExecutableJobWorkerElement jobWorkerElement =
+    final var executableTask =
         process.getElementById(element.getId(), ExecutableJobWorkerElement.class);
 
-    final var jobWorkerProperties = new JobWorkerProperties();
-    jobWorkerElement.setJobWorkerProperties(jobWorkerProperties);
+    final var taskDefinition = element.getSingleExtensionElement(ZeebeTaskDefinition.class);
+    taskDefinitionTransformer.transform(executableTask, context, taskDefinition);
 
-    taskDefinitionTransformer.transform(element, jobWorkerProperties, context);
-    taskHeadersTransformer.transform(element, jobWorkerProperties);
+    final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+    taskHeadersTransformer.transform(executableTask, taskHeaders, element);
   }
 }
