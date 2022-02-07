@@ -28,6 +28,7 @@ import java.util.EnumSet;
 import java.util.concurrent.Callable;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -102,6 +103,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     addGzipHandler(context);
     context.setErrorHandler(new NotFoundErrorHandler());
 
+    addJavaScriptLicenseEnricher(context);
     addLicenseFilter(context);
     addNoCachingFilter(context);
     addEventIngestionQoSFilter(context);
@@ -206,6 +208,16 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.addFilter(
       licenseFilterHolder,
       "/*",
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC)
+    );
+  }
+
+  private void addJavaScriptLicenseEnricher(final ServletContextHandler context) {
+    FilterHolder licenseEnricherFilterHolder = new FilterHolder();
+    licenseEnricherFilterHolder.setFilter(new JavaScriptMainLicenseEnricherFilter(this));
+    context.addFilter(
+      licenseEnricherFilterHolder,
+      STATIC_RESOURCE_PATH + "/*",
       EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC)
     );
   }

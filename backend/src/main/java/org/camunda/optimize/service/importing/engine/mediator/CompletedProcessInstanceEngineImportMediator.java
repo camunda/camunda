@@ -24,18 +24,15 @@ import java.util.List;
 public class CompletedProcessInstanceEngineImportMediator
   extends TimestampBasedImportMediator<CompletedProcessInstanceImportIndexHandler, HistoricProcessInstanceDto> {
 
-  private CompletedProcessInstanceFetcher engineEntityFetcher;
+  private final CompletedProcessInstanceFetcher engineEntityFetcher;
 
   public CompletedProcessInstanceEngineImportMediator(final CompletedProcessInstanceImportIndexHandler importIndexHandler,
                                                       final CompletedProcessInstanceFetcher engineEntityFetcher,
                                                       final CompletedProcessInstanceImportService importService,
                                                       final ConfigurationService configurationService,
                                                       final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

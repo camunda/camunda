@@ -226,13 +226,18 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .map(SingleProcessReportDefinitionRequestDto.class::cast)
             .collect(toList());
         final List<ProcessVariableNameResponseDto> varNamesForReportsToRemain =
-          processVariableService.getVariableNamesForReportDefinitions(allReportsForIdsOmitXml);
+          processVariableService.getVariableNamesForReportDefinitions(allReportsForIdsOmitXml)
+            .stream()
+            // since the filter is being applied across variables with same name and type in different definitions
+            // independently of the label, we can exclude the label from here.
+            .peek(variableName -> variableName.setLabel(null))
+            .collect(Collectors.toList());
         final List<DashboardVariableFilterDto> filtersToRemove =
           extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).stream()
             .filter(variableFilter -> {
               final DashboardVariableFilterDataDto filterData = variableFilter.getData();
               final ProcessVariableNameResponseDto processVariableForFilter =
-                new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType());
+                new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType(), null);
               return !varNamesForReportsToRemain.contains(processVariableForFilter) &&
                 filters.contains(processVariableForFilter);
             })
@@ -284,10 +289,16 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return currentUserRole;
   }
 
+  public List<IdResponseDto> getAllDashboardIdsInCollection(final String collectionId) {
+    return getDashboardDefinitionsInCollectionAsService(collectionId).stream()
+      .map(dashboard -> new IdResponseDto(dashboard.getId()))
+      .collect(toList());
+  }
+
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
     Optional<DashboardDefinitionRestDto> dashboard = dashboardReader.getDashboard(dashboardId);
 
-    if (!dashboard.isPresent()) {
+    if (dashboard.isEmpty()) {
       log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
       throw new NotFoundException("Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
     }
@@ -297,6 +308,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public List<DashboardDefinitionRestDto> getDashboardDefinitionsAsService(final Set<String> dashboardIds) {
     return dashboardReader.getDashboards(dashboardIds);
+  }
+
+  public List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(final String collectionId) {
+    return dashboardReader.getDashboardsForCollection(collectionId);
   }
 
   public void updateDashboard(final DashboardDefinitionRestDto updatedDashboard, final String userId) {
@@ -325,10 +340,34 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     dashboardWriter.updateDashboard(updateDto, dashboardId);
   }
 
-  public void deleteDashboard(final String dashboardId, final String userId) {
+  public void deleteDashboard(final String dashboardId) {
+    final DashboardDefinitionRestDto dashboardDefinitionDto = getDashboardDefinitionAsService(dashboardId);
+    deleteDashboard(dashboardId, dashboardDefinitionDto);
+  }
+
+  public void deleteDashboardAsUser(final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
+    deleteDashboard(dashboardId, dashboardDefinitionDto);
+  }
 
+  public void validateDashboardFilters(final String userId,
+                                       final List<DashboardFilterDto<?>> availableFilters,
+                                       final List<ReportLocationDto> reportsInDashboard) {
+    if (!CollectionUtils.isEmpty(availableFilters)) {
+      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
+        availableFilters
+          .stream()
+          .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
+      validateFiltersHaveData(availableFilters);
+      validateDateAndStateFilters(filtersByClass);
+      validateIdentityFilters(filtersByClass);
+      validateVariableFilters(filtersByClass);
+      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
+    }
+  }
+
+  private void deleteDashboard(final String dashboardId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
     dashboardRelationService.handleDeleted(dashboardDefinitionDto);
     dashboardWriter.deleteDashboard(dashboardId);
   }
@@ -347,22 +386,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private void validateDashboardFilters(final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
     validateDashboardFilters(userId, dashboardDefinitionDto.getAvailableFilters(), dashboardDefinitionDto.getReports());
-  }
-
-  public void validateDashboardFilters(final String userId,
-                                       final List<DashboardFilterDto<?>> availableFilters,
-                                       final List<ReportLocationDto> reportsInDashboard) {
-    if (!CollectionUtils.isEmpty(availableFilters)) {
-      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
-        availableFilters
-          .stream()
-          .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
-      validateFiltersHaveData(availableFilters);
-      validateDateAndStateFilters(filtersByClass);
-      validateIdentityFilters(filtersByClass);
-      validateVariableFilters(filtersByClass);
-      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
-    }
   }
 
   private void validateFiltersHaveData(final List<DashboardFilterDto<?>> availableFilters) {
@@ -390,11 +413,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final Map<String, List<VariableType>> possibleVarTypesByName =
         processVariableService.getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
           .stream().collect(
-          groupingBy(
-            ProcessVariableNameResponseDto::getName,
-            Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())
-          )
-        );
+            groupingBy(
+              ProcessVariableNameResponseDto::getName,
+              Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())
+            )
+          );
       final List<DashboardFilterDto<?>> invalidFilters = variableFilters.stream()
         .filter(isInvalidVariableFilter(possibleVarTypesByName))
         .collect(toList());

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan;
 
+import com.vdurmont.semver4j.Semver;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +15,14 @@ import org.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class UpgradePlanRegistry {
 
-  private final Map<String, UpgradePlan> upgradePlans = new HashMap<>();
+  private final Map<Semver, UpgradePlan> upgradePlans = new HashMap<>();
 
   public UpgradePlanRegistry(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
     try (ScanResult scanResult = new ClassGraph()
@@ -48,8 +51,12 @@ public class UpgradePlanRegistry {
     }
   }
 
-  public UpgradePlan getUpgradePlanForTargetVersion(final String targetVersion) {
-    return upgradePlans.get(targetVersion);
+  public List<UpgradePlan> getSequentialUpgradePlansToTargetVersion(final String targetVersion) {
+    return upgradePlans.entrySet().stream()
+      .filter(entry -> entry.getKey().isLowerThanOrEqualTo(new Semver(targetVersion)))
+      .sorted(Map.Entry.comparingByKey())
+      .map(Map.Entry::getValue)
+      .collect(Collectors.toList());
   }
 
 }

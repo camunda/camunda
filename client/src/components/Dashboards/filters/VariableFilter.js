@@ -4,22 +4,44 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 
 import SelectionFilter from './SelectionFilter';
 import DateFilter from './DateFilter';
 import BooleanFilter from './BooleanFilter';
+import {getVariableNames} from './service';
 
 import './VariableFilter.scss';
 
-export default function VariableFilter({
+export function VariableFilter({
   filter,
   config,
   setFilter,
   children,
   reports,
   resetTrigger,
+  mightFail,
 }) {
+  const [variableLabel, setVariableLabel] = useState();
+
+  useEffect(() => {
+    const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
+    mightFail(
+      getVariableNames(reportIds),
+      (variables) => {
+        setVariableLabel(
+          variables.find(
+            (variable) => variable.type === config.type && variable.name === config.name
+          )?.label
+        );
+      },
+      showError
+    );
+  }, [reports, mightFail, config.type, config.name]);
+
   let TypeComponent;
   switch (config.type) {
     case 'Date':
@@ -35,7 +57,7 @@ export default function VariableFilter({
   return (
     <div className="VariableFilter__Dashboard">
       <div className="title">
-        {config.name}
+        {variableLabel || config.name}
         {children}
       </div>
       <TypeComponent
@@ -49,3 +71,5 @@ export default function VariableFilter({
     </div>
   );
 }
+
+export default withErrorHandling(VariableFilter);

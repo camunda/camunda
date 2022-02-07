@@ -41,6 +41,7 @@ export class Dashboard extends React.Component {
       serverError: null,
       isAuthorizedToShare: false,
       sharingEnabled: false,
+      refreshRateSeconds: null,
     };
   }
 
@@ -96,6 +97,7 @@ export class Dashboard extends React.Component {
         }) ?? [],
       availableFilters: [],
       isAuthorizedToShare: true,
+      refreshRateSeconds: null,
     });
   };
 
@@ -111,6 +113,7 @@ export class Dashboard extends React.Component {
           owner,
           reports,
           availableFilters,
+          refreshRateSeconds,
         } = response;
 
         this.setState({
@@ -123,6 +126,7 @@ export class Dashboard extends React.Component {
           reports: reports || [],
           availableFilters: availableFilters || [],
           isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId()),
+          refreshRateSeconds,
         });
       },
       (err) => {
@@ -141,22 +145,39 @@ export class Dashboard extends React.Component {
     });
   };
 
-  updateDashboard = (id, name, reports, availableFilters, stayInEditMode) => {
+  updateDashboard = (id, name, reports, availableFilters, refreshRateSeconds, stayInEditMode) => {
     return new Promise((resolve, reject) => {
       this.props.mightFail(
         updateEntity('dashboard', id, {
           name,
           reports,
           availableFilters,
+          refreshRateSeconds,
         }),
         () =>
-          resolve(this.updateDashboardState(id, name, reports, availableFilters, stayInEditMode)),
+          resolve(
+            this.updateDashboardState(
+              id,
+              name,
+              reports,
+              availableFilters,
+              refreshRateSeconds,
+              stayInEditMode
+            )
+          ),
         (error) => reject(showError(error))
       );
     });
   };
 
-  updateDashboardState = async (id, name, reports, availableFilters, stayInEditMode) => {
+  updateDashboardState = async (
+    id,
+    name,
+    reports,
+    availableFilters,
+    refreshRateSeconds,
+    stayInEditMode
+  ) => {
     const user = await this.props.getUser();
     const redirect = this.isNew() ? `../${id}/` : './';
 
@@ -167,6 +188,7 @@ export class Dashboard extends React.Component {
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
       lastModified: getFormattedNowDate(),
       lastModifier: user.name,
+      refreshRateSeconds,
     };
 
     if (stayInEditMode) {
@@ -178,7 +200,7 @@ export class Dashboard extends React.Component {
     this.setState(update);
   };
 
-  saveChanges = (name, reports, availableFilters, stayInEditMode) => {
+  saveChanges = (name, reports, availableFilters, refreshRateSeconds, stayInEditMode) => {
     return new Promise(async (resolve, reject) => {
       if (this.isNew()) {
         const collectionId = getCollection(this.props.location.pathname);
@@ -212,16 +234,36 @@ export class Dashboard extends React.Component {
         });
 
         this.props.mightFail(
-          createEntity('dashboard', {collectionId, name, reports: savedReports, availableFilters}),
+          createEntity('dashboard', {
+            collectionId,
+            name,
+            reports: savedReports,
+            availableFilters,
+            refreshRateSeconds,
+          }),
           (id) =>
             resolve(
-              this.updateDashboardState(id, name, savedReports, availableFilters, stayInEditMode)
+              this.updateDashboardState(
+                id,
+                name,
+                savedReports,
+                availableFilters,
+                refreshRateSeconds,
+                stayInEditMode
+              )
             ),
           (error) => reject(showError(error))
         );
       } else {
         resolve(
-          this.updateDashboard(this.getId(), name, reports, availableFilters, stayInEditMode)
+          this.updateDashboard(
+            this.getId(),
+            name,
+            reports,
+            availableFilters,
+            refreshRateSeconds,
+            stayInEditMode
+          )
         );
       }
     });
@@ -249,6 +291,7 @@ export class Dashboard extends React.Component {
       isAuthorizedToShare,
       reports,
       availableFilters,
+      refreshRateSeconds,
     } = this.state;
 
     if (serverError) {
@@ -265,6 +308,7 @@ export class Dashboard extends React.Component {
 
     const commonProps = {
       name,
+      refreshRateSeconds,
       lastModified,
       lastModifier,
       owner,

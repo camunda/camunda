@@ -33,6 +33,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -434,8 +435,13 @@ public class DefinitionService implements ConfigurationReloadable {
       .findFirst();
   }
 
-  private Map<String, DefinitionOptimizeResponseDto> getCachedTenantToLatestDefinitionMap(final DefinitionType type,
-                                                                                          final String definitionKey) {
+  public boolean definitionExists(final DefinitionType type,
+                                  final String definitionKey) {
+    return !getCachedTenantToLatestDefinitionMap(type, definitionKey).isEmpty();
+  }
+
+  public Map<String, DefinitionOptimizeResponseDto> getCachedTenantToLatestDefinitionMap(final DefinitionType type,
+                                                                                         final String definitionKey) {
     if (DefinitionType.PROCESS.equals(type)) {
       return latestProcessDefinitionCache.get(definitionKey);
     }

@@ -32,7 +32,11 @@ export default function View({type, report, onChange, variables}) {
           };
         }
 
-        onChange(createReportUpdate(reportType, report, 'view', type, adjustment));
+        onChange(
+          createReportUpdate(reportType, report, 'view', type, adjustment, {
+            variables: {variable: variables},
+          })
+        );
       }}
       value={getValue(selectedOption?.key, report.view)}
       disabled={report.definitions.length === 0 || !report.definitions[0].key}
@@ -41,24 +45,24 @@ export default function View({type, report, onChange, variables}) {
         .filter(({visible, key}) => visible(report) && key !== 'none')
         .map(({key, enabled, label}) => {
           if (key === 'variable') {
+            const numberVariables = variables?.filter(({type}) =>
+              ['Float', 'Integer', 'Short', 'Long', 'Double'].includes(type)
+            );
+
             return (
               <Select.Submenu
                 key="variable"
                 value="variable"
                 label={label()}
-                disabled={!enabled(report)}
+                disabled={!enabled(report) || !numberVariables || !numberVariables?.length}
               >
-                {variables
-                  ?.filter(({type}) =>
-                    ['Float', 'Integer', 'Short', 'Long', 'Double'].includes(type)
-                  )
-                  .map(({name}, idx) => {
-                    return (
-                      <Select.Option key={idx} value={key + '_' + name}>
-                        {name}
-                      </Select.Option>
-                    );
-                  })}
+                {numberVariables?.map(({name, label}, idx) => {
+                  return (
+                    <Select.Option key={idx} value={key + '_' + name}>
+                      {label || name}
+                    </Select.Option>
+                  );
+                })}
               </Select.Submenu>
             );
           }

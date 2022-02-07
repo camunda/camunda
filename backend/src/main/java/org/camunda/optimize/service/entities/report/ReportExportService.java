@@ -34,9 +34,15 @@ public class ReportExportService {
   private final ReportReader reportReader;
   private final ReportAuthorizationService reportAuthorizationService;
 
-  public List<ReportDefinitionExportDto> getReportExportDtos(final String userId,
-                                                             final Set<String> reportIds) {
-    log.debug("Exporting all reports with IDs {}.", reportIds);
+  public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
+    log.debug("Exporting all reports with IDs {} for export via API.", reportIds);
+    final List<ReportDefinitionDto<?>> reportDefinitions = retrieveReportDefinitionsOrFailIfMissing(reportIds);
+    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).collect(toList());
+  }
+
+  public List<ReportDefinitionExportDto> getReportExportDtosAsUser(final String userId,
+                                                                   final Set<String> reportIds) {
+    log.debug("Exporting all reports with IDs {} as user {}.", reportIds, userId);
     final List<ReportDefinitionDto<?>> reportDefinitions = retrieveReportDefinitionsOrFailIfMissing(reportIds);
     validateReportAuthorizationsOrFail(userId, reportDefinitions);
     return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).collect(toList());

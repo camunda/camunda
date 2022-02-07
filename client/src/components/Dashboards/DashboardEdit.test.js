@@ -13,6 +13,7 @@ import {showPrompt} from 'prompt';
 
 import {FiltersEdit} from './filters';
 
+import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardEdit} from './DashboardEdit';
 
 jest.mock('saveGuard', () => ({
@@ -150,4 +151,21 @@ it('should not prompt to save the dashboard when going to the edit mode when the
 
   expect(showPrompt).not.toHaveBeenCalled();
   expect(historySpy).toHaveBeenCalledWith('report/1/edit?returnTo=dashboard/1/edit');
+});
+
+it('should save basic dashboard info', async () => {
+  const saveSpy = jest.fn();
+  const intervalSeconds = 60;
+  const stayInEditMode = false;
+  const dashboardName = 'dashboardName';
+
+  const node = shallow(<DashboardEdit initialReports={[]} saveChanges={saveSpy} />);
+
+  node.find(AutoRefreshSelect).simulate('change', intervalSeconds * 1000);
+  node.find(EntityNameForm).simulate('change', {target: {value: dashboardName}});
+  node.find(EntityNameForm).simulate('save', stayInEditMode);
+
+  await flushPromises();
+
+  expect(saveSpy).toHaveBeenCalledWith(dashboardName, [], [], intervalSeconds, stayInEditMode);
 });

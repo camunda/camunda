@@ -61,7 +61,7 @@ public class ExportRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final List<ReportDefinitionExportDto> jsonReports =
-      entityExportService.getReportExportDtos(userId, Sets.newHashSet(reportId));
+      entityExportService.getReportExportDtosAsUser(userId, Sets.newHashSet(reportId));
 
     return createJsonResponse(fileName, jsonReports);
   }
@@ -75,7 +75,7 @@ public class ExportRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final List<OptimizeEntityExportDto> jsonDashboards =
-      entityExportService.getCompleteDashboardExport(userId, Sets.newHashSet(dashboardId));
+      entityExportService.getCompleteDashboardExportAsUser(userId, Sets.newHashSet(dashboardId));
 
     return createJsonResponse(fileName, jsonDashboards);
   }

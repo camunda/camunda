@@ -7,8 +7,10 @@ package org.camunda.optimize.dto.engine;
 
 import lombok.Data;
 
+import java.util.Optional;
+
 @Data
-public class HistoricVariableInstanceDto implements EngineDto {
+public class HistoricVariableInstanceDto implements TenantSpecificEngineDto {
   private String id;
   private String name;
   private String type;
@@ -17,4 +19,8 @@ public class HistoricVariableInstanceDto implements EngineDto {
   private String processDefinitionId;
   private String processInstanceId;
   private String tenantId;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 }

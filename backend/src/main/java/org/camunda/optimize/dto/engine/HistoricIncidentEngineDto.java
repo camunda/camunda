@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Data
-public class HistoricIncidentEngineDto implements EngineDto {
+public class HistoricIncidentEngineDto implements TenantSpecificEngineDto {
 
   protected String id;
   protected String processDefinitionKey;

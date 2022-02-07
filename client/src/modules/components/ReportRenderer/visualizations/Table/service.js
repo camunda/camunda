@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {post} from 'request';
 import {NoDataNotice} from 'components';
 import {reportConfig, formatters} from 'services';
 import {t} from 'translation';
@@ -232,4 +233,24 @@ export function getLabelWithType(name, type) {
       {name}
     </>
   );
+}
+
+export async function loadObjectValues(
+  name,
+  processInstanceId,
+  processDefinitionKey,
+  processDefinitionVersions,
+  tenantIds
+) {
+  const response = await post(`api/variables/values`, {
+    name,
+    processInstanceId,
+    processDefinitionKey,
+    processDefinitionVersions,
+    tenantIds,
+    type: 'object',
+  });
+
+  const values = await response.json();
+  return values[0];
 }

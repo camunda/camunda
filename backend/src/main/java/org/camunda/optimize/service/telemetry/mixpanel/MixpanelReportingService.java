@@ -10,12 +10,12 @@ import org.camunda.optimize.service.telemetry.TelemetryReportingService;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelClient;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEvent;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventName;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(CamundaCloudCondition.class)
+@Conditional(CCSaaSCondition.class)
 @AllArgsConstructor
 public class MixpanelReportingService implements TelemetryReportingService {
   private final MixpanelDataService mixpanelDataService;
@@ -25,6 +25,12 @@ public class MixpanelReportingService implements TelemetryReportingService {
   public void sendTelemetryData() {
     mixpanelClient.importEvent(
       new MixpanelEvent(MixpanelEventName.HEARTBEAT, mixpanelDataService.getMixpanelHeartbeatProperties())
+    );
+  }
+
+  public void sendEntityEvent(final MixpanelEventName eventName, final String entityId) {
+    mixpanelClient.importEvent(
+      new MixpanelEvent(eventName, mixpanelDataService.getMixpanelEntityEventProperties(entityId))
     );
   }
 

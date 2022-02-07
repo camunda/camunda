@@ -37,14 +37,13 @@ public class ESVersionChecker {
   private static List<String> supportedVersions = new ArrayList<>();
 
   static {
-    supportedVersions.add("7.8.0");
-    supportedVersions.add("7.9.0");
     supportedVersions.add("7.10.0");
     supportedVersions.add("7.11.0");
     supportedVersions.add("7.12.0");
     supportedVersions.add("7.13.0");
     supportedVersions.add("7.14.0");
     supportedVersions.add("7.15.0");
+    supportedVersions.add("7.16.2");
   }
 
   private static final Comparator<String> MAJOR_COMPARATOR = Comparator.comparingInt(major -> Integer.parseInt(

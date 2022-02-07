@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum MixpanelEventName {
   HEARTBEAT,
+  ALERT_NEW_TRIGGERED,
+  ALERT_REMINDER_TRIGGERED,
+  ALERT_RESOLVED_TRIGGERED,
   ;
 
   @JsonValue

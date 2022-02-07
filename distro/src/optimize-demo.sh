@@ -39,7 +39,7 @@ trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 cd $(dirname "$0")
 BASEDIR=$(pwd)
 
-mkdir -p $BASEDIR/log
+mkdir -p "$BASEDIR/log"
 
 # we need to set the JAVA_HOME environment variable so that ElasticSearch can
 # use that one later on for the execution.
@@ -51,9 +51,9 @@ else
   JAVA_PATH=${JAVA_PATH%"/bin/java"}
 fi
 # make the JAVA_HOME variable available for ElasticSearch
-export JAVA_HOME=${JAVA_PATH}
+export ES_JAVA_HOME=${JAVA_PATH}
 
-if [ ! -x "$JAVA_HOME/bin/java" ]; then
+if [ ! -x "$ES_JAVA_HOME/bin/java" ]; then
   echo "Could not find any Java installation on your machine. Please make sure that Java is installed and the JAVA_HOME environment variable is set!" >&2
   exit 1
 fi
@@ -62,11 +62,11 @@ fi
 export ES_JAVA_OPTS="-Xms1g -Xmx1g"
 
 echo
-echo "Starting Elasticsearch ${elasticsearch.version}...";
+echo "Starting Elasticsearch ${elasticsearch.demo.version}...";
 echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
 echo
 ELASTICSEARCH_LOG_FILE=$BASEDIR/log/elasticsearch.log
-bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.version}/bin/elasticsearch" </dev/null > $ELASTICSEARCH_LOG_FILE 2>&1 &
+bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.demo.version}/bin/elasticsearch" </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
 
 URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
 checkStartup $URL "Elasticsearch"
@@ -77,7 +77,7 @@ echo "(Hint: you can find the log output in the 'optimize*.log' files in the 'lo
 echo
 OPTIMIZE_STARTUP_LOG_FILE=$BASEDIR/log/optimize-startup.log
 SCRIPT_PATH="./optimize-startup.sh"
-bash "$SCRIPT_PATH" "$@" </dev/null > $OPTIMIZE_STARTUP_LOG_FILE 2>&1 &
+bash "$SCRIPT_PATH" "$@" </dev/null > "$OPTIMIZE_STARTUP_LOG_FILE" 2>&1 &
 
 # Check if Optimize has been started
 URL="http://localhost:8090"

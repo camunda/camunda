@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan;
 
+import com.vdurmont.semver4j.Semver;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,10 +23,10 @@ public class UpgradePlan {
   private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
   @Getter
   @Setter
-  private String toVersion;
+  private Semver toVersion;
   @Getter
   @Setter
-  private String fromVersion;
+  private Semver fromVersion;
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
     this.upgradeSteps.add(upgradeStep);

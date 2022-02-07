@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MediaType;
+import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -33,6 +35,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public abstract class DataGenerator<ModelType extends ModelInstance> implements Runnable {
 
@@ -43,10 +49,17 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   private MessageEventCorrelater messageEventCorrelater;
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   protected List<String> tenants = new ArrayList<>();
+  private final List<String> objectVarNames =
+    List.of("Meggle", "Omran", "Helene", "Andrea", "Asia", "Giuliano", "Josh", "Kyrylo", "Eric", "Cigdem");
+  private final List<String> objectVarHobbies =
+    List.of("Optimizing", "Garlic eating", "Knitting", "Sleeping", "Competitive duck herding",
+            "Candy Crush", "Ferret racing", "Planking", "Tapdancing", "Armwrestling"
+    );
 
   protected final SimpleEngineClient engineClient;
   private final UserAndGroupProvider userAndGroupProvider;
   private final AtomicInteger startedInstanceCount = new AtomicInteger(0);
+  private final ObjectMapper objectMapper;
 
   public DataGenerator(final SimpleEngineClient engineClient,
                        final Integer nVersions,
@@ -54,6 +67,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     this.nVersions = nVersions == null ? generateVersionNumber() : nVersions;
     this.engineClient = engineClient;
     this.userAndGroupProvider = userAndGroupProvider;
+    this.objectMapper = new ObjectMapper().setDateFormat(new SimpleDateFormat(OPTIMIZE_DATE_FORMAT));
     generateTenants();
   }
 
@@ -88,7 +102,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     try {
       this.tenants.stream()
         .filter(Objects::nonNull)
-        .forEach(tenantId -> engineClient.createTenant(tenantId));
+        .forEach(engineClient::createTenant);
       createMessageEventCorrelater();
       List<String> definitionIds = deployDiagrams(instance);
       deployAdditionalDiagrams();
@@ -113,37 +127,80 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     // diagram in you process by executing call activity or a dmn table.
   }
 
-  private Map<String, Object> createSimpleVariables() {
-    Map<String, Object> person = new HashMap<>();
-    person.put("name", "Kermit");
-    person.put("age", 50);
-    ObjectMapper objectMapper = new ObjectMapper();
+  private Map<String, Object> createDefaultVariables() {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("person", createPersonObjectVariable());
+    variables.put("stringVar", "aStringValue");
+    variables.put("boolVar", RandomUtils.nextBoolean());
+    variables.put("integerVar", RandomUtils.nextInt());
+    variables.put("shortVar", (short) RandomUtils.nextInt());
+    variables.put("longVar", RandomUtils.nextLong());
+    variables.put("doubleVar", RandomUtils.nextDouble());
+    variables.put("dateVar", new Date(RandomUtils.nextInt()));
+    variables.put("numberList", createListVariable(List.of(
+      RandomUtils.nextInt(0, 100),
+      -RandomUtils.nextInt(0, 100),
+      RandomUtils.nextInt(0, 100)
+    )));
+    variables.put("dateList", createListVariable(List.of(
+      new Date(OffsetDateTime.now().minusYears(RandomUtils.nextInt(0, 20)).toInstant().toEpochMilli()),
+      new Date(OffsetDateTime.now().plusYears(RandomUtils.nextInt(0, 20)).toInstant().toEpochMilli())
+    )));
+    return variables;
+  }
+
+  private VariableDto createPersonObjectVariable() {
+    final Map<String, Object> person = new HashMap<>();
+    person.put("name", objectVarNames.get(RandomUtils.nextInt(0, objectVarNames.size())));
+    person.put("age", RandomUtils.nextInt(25, 45));
+    person.put(
+      "hobbies",
+      Stream.of(
+        objectVarHobbies.get(RandomUtils.nextInt(0, objectVarHobbies.size())),
+        objectVarHobbies.get(RandomUtils.nextInt(0, objectVarHobbies.size()))
+      ).collect(toSet())
+    );
+    person.put(
+      "favouriteDay",
+      new Date(OffsetDateTime.now().minusYears(RandomUtils.nextInt(10, 100)).toInstant().toEpochMilli())
+    );
+    final Map<String, Boolean> skillsMap = Map.of(
+      "read", RandomUtils.nextBoolean(),
+      "write", RandomUtils.nextBoolean()
+    );
+    person.put("skills", skillsMap);
+
     String personAsString = null;
     try {
       personAsString = objectMapper.writeValueAsString(person);
     } catch (JsonProcessingException e) {
       logger.warn("Could not serialize object variable!", e);
     }
-    VariableDto objectVariableDto = new VariableDto();
-    objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
-    objectVariableDto.setValue(personAsString);
     VariableDto.ValueInfo info = new VariableDto.ValueInfo();
     info.setObjectTypeName("java.lang.Object");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
-    objectVariableDto.setValueInfo(info);
 
+    return new VariableDto()
+      .setType(EngineConstants.VARIABLE_TYPE_OBJECT)
+      .setValue(personAsString)
+      .setValueInfo(info);
+  }
 
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("person", objectVariableDto);
-    int integer = RandomUtils.nextInt();
-    variables.put("stringVar", "aStringValue");
-    variables.put("boolVar", RandomUtils.nextBoolean());
-    variables.put("integerVar", RandomUtils.nextInt());
-    variables.put("shortVar", (short) integer);
-    variables.put("longVar", RandomUtils.nextLong());
-    variables.put("doubleVar", RandomUtils.nextDouble());
-    variables.put("dateVar", new Date(RandomUtils.nextInt()));
-    return variables;
+  public VariableDto createListVariable(final List<Object> listValues) {
+    String listVarAsString = null;
+    try {
+      listVarAsString = objectMapper.writeValueAsString(listValues);
+    } catch (JsonProcessingException e) {
+      logger.warn("Could not serialize object variable!", e);
+    }
+    VariableDto.ValueInfo info = new VariableDto.ValueInfo();
+    info.setObjectTypeName("java.util.ArrayList");
+    info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
+
+    return new VariableDto()
+      .setType(EngineConstants.VARIABLE_TYPE_OBJECT)
+      .setValue(listVarAsString)
+      .setValueInfo(info);
   }
 
   private void createMessageEventCorrelater() {
@@ -177,7 +234,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
           .range(0, batchSizes.get(ithBatch))
           .forEach(i -> {
             final Map<String, Object> variables = createVariables();
-            variables.putAll(createSimpleVariables());
+            variables.putAll(createDefaultVariables());
             startInstanceWithBackoff(definitionId, variables);
             try {
               Thread.sleep(5L);

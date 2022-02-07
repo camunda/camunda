@@ -7,8 +7,10 @@ package org.camunda.optimize.service.entities.dashboard;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
@@ -25,7 +27,10 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
 
 @AllArgsConstructor
 @Component
@@ -35,6 +40,10 @@ public class DashboardImportService {
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final DashboardWriter dashboardWriter;
   private final DashboardService dashboardService;
+
+  public void validateAllDashboardsOrFail(final List<DashboardDefinitionExportDto> dashboardsToImport) {
+    validateAllDashboardsOrFail(null, dashboardsToImport);
+  }
 
   public void validateAllDashboardsOrFail(final String userId,
                                           final List<DashboardDefinitionExportDto> dashboardsToImport) {
@@ -61,10 +70,16 @@ public class DashboardImportService {
     }
   }
 
+  public void importDashboardsIntoCollection(final String collectionId,
+                                             final List<DashboardDefinitionExportDto> dashboardsToImport,
+                                             final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
+    importDashboardsIntoCollection(null, collectionId, dashboardsToImport, originalIdToNewIdMap);
+  }
+
   public void importDashboardsIntoCollection(final String userId,
                                              final String collectionId,
                                              final List<DashboardDefinitionExportDto> dashboardsToImport,
-                                             final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                             final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     dashboardsToImport.forEach(exportedDto -> importDashboardIntoCollection(
       userId,
       collectionId,
@@ -76,16 +91,20 @@ public class DashboardImportService {
   private void importDashboardIntoCollection(final String userId,
                                              final String collectionId,
                                              final DashboardDefinitionExportDto dashboardToImport,
-                                             final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                             final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     // adjust the ID of each report resource within dashboard, filtering out external resources where the ID is a URL
     dashboardToImport.getReports().stream()
       .filter(reportLocationDto -> IdGenerator.isValidId(reportLocationDto.getId()))
       .forEach(
         reportLocationDto -> reportLocationDto.setId(originalIdToNewIdMap.get(reportLocationDto.getId()).getId())
       );
+    final IdResponseDto idResponse = dashboardWriter.createNewDashboard(
+      Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+      createDashboardDefinition(collectionId, dashboardToImport)
+    );
     originalIdToNewIdMap.put(
       dashboardToImport.getId(),
-      dashboardWriter.createNewDashboard(userId, createDashboardDefinition(collectionId, dashboardToImport))
+      new EntityIdResponseDto(idResponse.getId(), EntityType.DASHBOARD)
     );
   }
 

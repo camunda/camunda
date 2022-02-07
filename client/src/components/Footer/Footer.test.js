@@ -8,14 +8,14 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Footer from './Footer';
-import {getOptimizeVersion, isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeVersion, getOptimizeProfile} from 'config';
 
 import ConnectionStatus from './ConnectionStatus';
 
 jest.mock('config', () => {
   return {
     getOptimizeVersion: jest.fn(),
-    isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+    getOptimizeProfile: jest.fn().mockReturnValue('platform'),
   };
 });
 
@@ -31,7 +31,7 @@ it('includes the version number retrieved from back-end', async () => {
 });
 
 it('should not show status in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<Footer />);
 
   node.setState({

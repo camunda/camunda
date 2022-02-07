@@ -62,7 +62,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
 
   @Test
   public void cleanupAfterIdentitySync() {
-    final PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    final PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
     try {
       // given a collection with permissions for users/groups
       userIdentityCacheService.stopScheduledSync();
@@ -132,7 +132,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
 
   @Test
   public void cleanupAfterIdentitySyncRemovesLastManager() {
-    final PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    final PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
     try {
       // given
       userIdentityCacheService.startScheduledSync();
@@ -168,7 +168,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
   @Test
   public void noCleanupOnOnEmptyIdentityCache() {
     // given
-    PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
     final String userid = "testUser";
     authorizationClient.addUserAndGrantOptimizeAccess(userid);
 
@@ -209,7 +209,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
   public void noCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataResponseDto expectedIdentity,
                                                    final ErrorResponseMock mockedResp) {
     // given
-    PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
 
     switch (expectedIdentity.getType()) {
       case USER:
@@ -252,8 +252,8 @@ public class CollectionRoleCleanupIT extends AbstractIT {
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
-  private PlatformUserIdentityCacheService getUserIdentityCacheService() {
-    return embeddedOptimizeExtension.getUserIdentityCacheService();
+  private PlatformUserIdentityCache getUserIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserIdentityCache();
   }
 
   private static Stream<IdentityWithMetadataResponseDto> identities() {

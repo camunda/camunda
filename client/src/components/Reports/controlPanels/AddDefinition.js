@@ -33,8 +33,15 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
     );
   }, [mightFail, collection, type]);
 
-  function isNameUnique(name) {
-    return availableDefinitions.filter((definition) => definition.name === name).length === 1;
+  function formatDefinitionLabel(key, name) {
+    if (!name) {
+      return key;
+    }
+
+    const isNameUnique =
+      availableDefinitions.filter((definition) => definition.name === name).length === 1;
+
+    return isNameUnique ? name : `${name} (${key})`;
   }
 
   return (
@@ -72,7 +79,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                 const hasDefinition = (definition) => definition.key === key;
                 return {
                   id: key,
-                  label: isNameUnique(name) ? name : `${name} (${key})`,
+                  label: formatDefinitionLabel(key, name),
                   checked:
                     selectedDefinitions.some(hasDefinition) || definitions.some(hasDefinition),
                   disabled:
@@ -101,7 +108,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                   type,
                   selectedDefinitions.map(({key}) => ({
                     key,
-                    versions: ['latest'],
+                    versions: ['all'],
                   })),
                   collection
                 ),
@@ -111,7 +118,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                       key,
                       name,
                       displayName: name,
-                      versions: ['latest'],
+                      versions: ['all'],
                       tenantIds: tenantInfo[idx].tenants.map(({id}) => id),
                       identifier: getRandomId(),
                     }))

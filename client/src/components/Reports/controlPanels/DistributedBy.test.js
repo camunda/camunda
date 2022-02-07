@@ -7,14 +7,14 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Select} from 'components';
+import {Select, Input} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import DistributedBy from './DistributedBy';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('services', () => {
@@ -34,7 +34,7 @@ jest.mock('services', () => {
 
 const config = {
   type: 'process',
-  variables: {variable: []},
+  variables: [],
   onChange: jest.fn(),
   report: {
     groupBy: {type: 'group'},
@@ -136,10 +136,65 @@ it('should have a button to remove the distribution', () => {
 });
 
 it('should hide assignee option in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<DistributedBy {...config} />);
 
   await runAllEffects();
 
   expect(node.find({value: 'assignee'})).not.toExist();
+});
+
+it('should filter variables based on search query', () => {
+  const node = shallow(<DistributedBy {...config} variables={[{name: 'a'}, {name: 'b'}]} />);
+
+  expect(node.find({value: 'variable_a'})).not.toHaveClassName('hidden');
+  expect(node.find({value: 'variable_b'})).not.toHaveClassName('hidden');
+
+  node.find(Input).simulate('change', {target: {value: 'b'}});
+
+  expect(node.find({value: 'variable_a'})).toHaveClassName('hidden');
+  expect(node.find({value: 'variable_b'})).not.toHaveClassName('hidden');
+
+  node.find(Input).simulate('change', {target: {value: 'notFoundValue'}});
+
+  expect(node.find({disabled: true}).children()).toIncludeText('No variables found');
+});
+
+it('should not fail if variables are null', () => {
+  reportConfig.process.group = [
+    {
+      key: 'none',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('None'),
+    },
+    {
+      key: 'group1',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Group 1'),
+    },
+    {
+      key: 'variable',
+      matcher: jest.fn().mockReturnValue(true),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Variable'),
+    },
+  ];
+
+  const node = shallow(
+    <DistributedBy
+      {...config}
+      report={{
+        ...config.report,
+        groupBy: {value: {name: 'a'}},
+      }}
+      variables={null}
+    />
+  );
+
+  expect(node.find({label: 'Variable'}).prop('disabled')).toBe(true);
 });

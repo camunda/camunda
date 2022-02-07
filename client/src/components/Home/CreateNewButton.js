@@ -9,7 +9,7 @@ import React, {useEffect, useState} from 'react';
 import {Dropdown} from 'components';
 import {t} from 'translation';
 import {withUser} from 'HOC';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 export function CreateNewButton({
   createCollection,
@@ -20,11 +20,11 @@ export function CreateNewButton({
   user,
   primary,
 }) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -41,11 +41,7 @@ export function CreateNewButton({
         </Dropdown.Option>
       )}
       <Dropdown.Option onClick={createDashboard}>{t('home.createBtn.dashboard')}</Dropdown.Option>
-      {isOptimizeCloud ? (
-        <Dropdown.Option onClick={createProcessReport}>
-          {t('home.createBtn.report.default')}
-        </Dropdown.Option>
-      ) : (
+      {optimizeProfile === 'platform' ? (
         <Dropdown.Submenu label={t('home.createBtn.report.default')}>
           <Dropdown.Option onClick={createProcessReport}>
             {t('home.createBtn.report.process')}
@@ -57,6 +53,10 @@ export function CreateNewButton({
             {t('home.createBtn.report.decision')}
           </Dropdown.Option>
         </Dropdown.Submenu>
+      ) : (
+        <Dropdown.Option onClick={createProcessReport}>
+          {t('home.createBtn.report.default')}
+        </Dropdown.Option>
       )}
       {user?.authorizations.includes('import_export') && (
         <Dropdown.Option onClick={importEntity}>{t('common.importJSON')}</Dropdown.Option>

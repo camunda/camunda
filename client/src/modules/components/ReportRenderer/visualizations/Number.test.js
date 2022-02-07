@@ -4,17 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
+import {loadVariables} from 'services';
 
-import {reportConfig} from 'services';
-
-import Number from './Number';
+import {Number} from './Number';
 import ProgressBar from './ProgressBar';
 
 jest.mock('services', () => {
   return {
+    loadVariables: jest.fn().mockReturnValue([]),
     formatters: {
       convertDurationToSingleNumber: () => 12,
       frequency: (data) => data,
@@ -35,6 +35,10 @@ jest.mock('services', () => {
 
 jest.mock('./ProgressBar', () => () => <div>ProgressBar</div>);
 
+beforeEach(() => {
+  loadVariables.mockClear();
+});
+
 const report = {
   reportType: 'process',
   combined: false,
@@ -48,6 +52,10 @@ const report = {
     visualization: 'Number',
   },
   result: {measures: [{property: 'frequency', data: 1234}]},
+};
+
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should display the number provided per data property', () => {
@@ -115,4 +123,59 @@ it('should show multiple measures', () => {
 
   expect(node.find('.data').length).toBe(2);
   expect(node.find('.label').length).toBe(2);
+});
+
+it('should show the variable name', () => {
+  const variable = {name: 'foo', type: 'String'};
+  const node = shallow(
+    <Number
+      report={{
+        reportType: 'process',
+        result: {
+          measures: [{data: 123, aggregationType: 'avg', property: variable}],
+        },
+        data: {
+          configuration: {targetValue: {active: false}},
+          view: {
+            entity: 'variable',
+            properties: [variable],
+          },
+          visualization: 'Number',
+        },
+      }}
+      {...props}
+    />
+  );
+
+  runLastEffect();
+
+  expect(node).toIncludeText('foo - Avg');
+});
+
+it('should show the variable label if it exists', () => {
+  const variable = {name: 'foo', type: 'String'};
+  loadVariables.mockReturnValueOnce([{...variable, label: 'FooLabel'}]);
+  const node = shallow(
+    <Number
+      report={{
+        reportType: 'process',
+        result: {
+          measures: [{data: 123, aggregationType: 'avg', property: variable}],
+        },
+        data: {
+          configuration: {targetValue: {active: false}},
+          view: {
+            entity: 'variable',
+            properties: [variable],
+          },
+          visualization: 'Number',
+        },
+      }}
+      {...props}
+    />
+  );
+
+  runLastEffect();
+
+  expect(node).toIncludeText('FooLabel - Avg');
 });

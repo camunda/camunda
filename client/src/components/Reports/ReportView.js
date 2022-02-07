@@ -18,8 +18,9 @@ import {
   InstanceCount,
   ReportDetails,
   DownloadButton,
+  AlertsDropdown,
 } from 'components';
-import {isSharingEnabled, isOptimizeCloudEnvironment} from 'config';
+import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
 
@@ -31,12 +32,12 @@ export default class ReportView extends React.Component {
   state = {
     deleting: null,
     sharingEnabled: false,
-    isOptimizeCloud: true,
+    optimizeProfile: null,
   };
 
   async componentDidMount() {
     this.setState({
-      isOptimizeCloud: await isOptimizeCloudEnvironment(),
+      optimizeProfile: await getOptimizeProfile(),
       sharingEnabled: await isSharingEnabled(),
     });
   }
@@ -59,7 +60,7 @@ export default class ReportView extends React.Component {
 
   render() {
     const {report, error} = this.props;
-    const {redirect, sharingEnabled, isOptimizeCloud, deleting} = this.state;
+    const {redirect, sharingEnabled, optimizeProfile, deleting} = this.state;
 
     const {id, name, currentUserRole} = report;
 
@@ -91,7 +92,7 @@ export default class ReportView extends React.Component {
                   </Button>
                 </>
               )}
-              {!isOptimizeCloud && (
+              {optimizeProfile === 'platform' && (
                 <Popover
                   main
                   className="tool-button share-button"
@@ -109,6 +110,10 @@ export default class ReportView extends React.Component {
                   />
                 </Popover>
               )}
+              {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
+                report?.data?.visualization === 'number' && (
+                  <AlertsDropdown numberReport={report} />
+                )}
               {this.shouldShowCSVDownload() && (
                 <DownloadButton
                   main

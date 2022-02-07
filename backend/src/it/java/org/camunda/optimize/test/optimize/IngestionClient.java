@@ -29,8 +29,7 @@ public class IngestionClient {
   private static final Random RANDOM = new Random();
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
-  private final Supplier<String> variableAccessTokenSupplier;
-  private final Supplier<String> eventAccessTokenSupplier;
+  private final Supplier<String> accessTokenSupplier;
 
   public Response ingestVariablesAndReturnResponse(final List<ExternalProcessVariableRequestDto> variables) {
     return ingestVariablesAndReturnResponse(variables, getVariableIngestionToken());
@@ -54,7 +53,7 @@ public class IngestionClient {
   public void ingestEventBatch(final List<CloudEventRequestDto> eventDtos) {
     requestExecutorSupplier.get()
       .withoutAuthentication()
-      .buildIngestEventBatch(eventDtos, eventAccessTokenSupplier.get()).execute();
+      .buildIngestEventBatch(eventDtos, accessTokenSupplier.get()).execute();
   }
 
   public List<CloudEventRequestDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {
@@ -106,6 +105,6 @@ public class IngestionClient {
   }
 
   public String getVariableIngestionToken() {
-    return variableAccessTokenSupplier.get();
+    return accessTokenSupplier.get();
   }
 }

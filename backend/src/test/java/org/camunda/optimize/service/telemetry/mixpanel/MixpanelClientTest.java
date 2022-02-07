@@ -110,7 +110,7 @@ public class MixpanelClientTest {
         assertThat(plainCredentials.split(":")).containsExactly(username, secret);
       });
     final MixpanelEvent recordedMixpanelEvent = readMixpanelEventFromRequest(requestCaptor);
-    assertThat(recordedMixpanelEvent.getEvent()).isEqualTo(MixpanelEventName.HEARTBEAT);
+    assertThat(recordedMixpanelEvent.getEvent()).isEqualTo(MixpanelEvent.EVENT_NAME_PREFIX + MixpanelEventName.HEARTBEAT);
     assertThat(recordedMixpanelEvent.getProperties()).isEqualTo(mixpanelEventProperties);
   }
 

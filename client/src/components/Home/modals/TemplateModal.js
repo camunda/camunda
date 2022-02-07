@@ -98,6 +98,26 @@ export function TemplateModal({
     }
   }, [template, selectedDefinitions]);
 
+  // resize diagram containers on window resize to ensure there are 3 diagrams visible at any time
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      if (diagramArea.current && selectedDefinitions.length) {
+        Array.from(diagramArea.current.children).forEach((child) => {
+          child.style.height =
+            getDiagramHeight(xmlData.length, diagramArea.current?.clientHeight) + 'px';
+        });
+      }
+    });
+
+    if (diagramArea.current) {
+      resizeObserver.observe(diagramArea.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [xmlData.length, selectedDefinitions.length]);
+
   const validSelection =
     name && ((xmlData.length > 0 && selectedDefinitions.length > 0) || !template);
 
@@ -126,14 +146,7 @@ export function TemplateModal({
           </div>
           <div className="diagramArea" ref={diagramArea}>
             {xmlData.map(({xml, key, name}, idx) => (
-              <div
-                key={xmlData.length + idx}
-                style={{
-                  height:
-                    getDiagramHeight(xmlData.length, diagramArea.current?.clientHeight) + 'px',
-                }}
-                className="diagramContainer"
-              >
+              <div key={idx} className="diagramContainer">
                 <div className="title">{name || key}</div>
                 <BPMNDiagram xml={xml} emptyText={t('templates.noXmlHint')} />
                 <DiagramScrollLock />

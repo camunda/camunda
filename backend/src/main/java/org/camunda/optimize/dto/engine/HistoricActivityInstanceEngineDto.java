@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Data
-public class HistoricActivityInstanceEngineDto implements EngineDto {
+public class HistoricActivityInstanceEngineDto implements TenantSpecificEngineDto {
 
   protected String id; // aka FlowNodeInstanceDto.flowNodeInstanceId
   protected String parentActivityInstanceId;

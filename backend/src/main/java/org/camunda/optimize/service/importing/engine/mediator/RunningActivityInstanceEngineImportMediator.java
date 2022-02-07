@@ -24,18 +24,15 @@ import java.util.List;
 public class RunningActivityInstanceEngineImportMediator
   extends TimestampBasedImportMediator<RunningActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto> {
 
-  private RunningActivityInstanceFetcher engineEntityFetcher;
+  private final RunningActivityInstanceFetcher engineEntityFetcher;
 
   public RunningActivityInstanceEngineImportMediator(final RunningActivityInstanceImportIndexHandler importIndexHandler,
                                                      final RunningActivityInstanceFetcher engineEntityFetcher,
                                                      final RunningActivityInstanceImportService importService,
                                                      final ConfigurationService configurationService,
                                                      final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

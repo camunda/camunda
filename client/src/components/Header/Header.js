@@ -9,9 +9,10 @@ import {Link, withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {getHeader, isOptimizeCloudEnvironment} from 'config';
+import {getHeader, getOptimizeProfile, isEnterpriseMode} from 'config';
 import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
+import {Tooltip} from 'components';
 
 import HeaderNav from './HeaderNav';
 import HelpMenu from './HelpMenu';
@@ -24,6 +25,7 @@ import './Header.scss';
 export function Header({mightFail, location, noActions}) {
   const [config, setConfig] = useState({});
   const [showEventBased, setShowEventBased] = useState(false);
+  const [enterpriseMode, setEnterpiseMode] = useState(true);
 
   useEffect(() => {
     mightFail(getHeader(), setConfig, () =>
@@ -31,9 +33,10 @@ export function Header({mightFail, location, noActions}) {
     );
 
     mightFail(
-      Promise.all([isEventBasedProcessEnabled(), isOptimizeCloudEnvironment()]),
-      ([enabled, isOptimizeCloud]) => {
-        setShowEventBased(enabled && !isOptimizeCloud);
+      Promise.all([isEventBasedProcessEnabled(), getOptimizeProfile(), isEnterpriseMode()]),
+      ([enabled, optimizeProfile, isEnterpriseMode]) => {
+        setShowEventBased(enabled && optimizeProfile === 'platform');
+        setEnterpiseMode(isEnterpriseMode);
       },
       showError
     );
@@ -74,6 +77,35 @@ export function Header({mightFail, location, noActions}) {
               />
             )}
           </HeaderNav>
+          {!enterpriseMode && (
+            <div className="licenseWarning">
+              <Tooltip
+                content={
+                  <>
+                    {t('license.referTo')}{' '}
+                    <a
+                      href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('license.terms')}
+                    </a>{' '}
+                    {t('common.or')}{' '}
+                    <a
+                      href="https://camunda.com/contact/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('license.contactSales')}
+                    </a>
+                  </>
+                }
+                delay={500}
+              >
+                <div className="warning">{t('license.nonProduction')}</div>
+              </Tooltip>
+            </div>
+          )}
           <HelpMenu />
           <UserMenu />
         </>

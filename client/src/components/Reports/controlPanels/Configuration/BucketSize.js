@@ -8,7 +8,7 @@ import React, {useMemo, useState} from 'react';
 import debounce from 'debounce';
 
 import {LabeledInput, Switch, Input, Message, Select} from 'components';
-import {numberParser} from 'services';
+import {numberParser, formatters} from 'services';
 import {t} from 'translation';
 
 import './BucketSize.scss';
@@ -16,6 +16,7 @@ import './BucketSize.scss';
 export default function BucketSize({
   report: {
     data: {configuration, groupBy, distributedBy},
+    result,
   },
   onChange,
 }) {
@@ -66,9 +67,35 @@ export default function BucketSize({
         <legend>
           <Switch
             checked={active}
-            onChange={(evt) =>
-              onChange({[customBucket]: {active: {$set: evt.target.checked}}}, true)
-            }
+            onChange={({target: {checked}}) => {
+              const change = {[customBucket]: {active: {$set: checked}}};
+
+              if (checked) {
+                const values = getValues(result.measures[0].data, isDistributedByVariable);
+                if (values.length > 1) {
+                  const bucketSize = (Math.max(...values) - Math.min(...values)) / 10;
+                  const baseline = Math.min(...values);
+                  if (isGroupedByDuration) {
+                    const [bucketSizeDuration, bucketSizeUnit] = toDuration(bucketSize);
+                    const [baselineDuration, baselineUnit] = toDuration(baseline);
+                    change[customBucket] = {
+                      $set: {
+                        active: checked,
+                        bucketSize: bucketSizeDuration,
+                        bucketSizeUnit: bucketSizeUnit,
+                        baseline: baselineDuration,
+                        baselineUnit: baselineUnit,
+                      },
+                    };
+                  } else {
+                    change[customBucket].bucketSize = {$set: bucketSize};
+                    change[customBucket].baseline = {$set: baseline};
+                  }
+                }
+              }
+
+              onChange(change, true);
+            }}
             label={t('report.config.bucket.bucketSize')}
           />
         </legend>
@@ -82,7 +109,7 @@ export default function BucketSize({
               setSizeValid(valid);
               applyChanges('bucketSize', evt.target.value, valid);
             }}
-            defaultValue={removeTrailingZeros(bucketSize)}
+            defaultValue={active ? removeTrailingZeros(bucketSize) : '-'}
           />
           {isGroupedByDuration && (
             <Select
@@ -97,7 +124,7 @@ export default function BucketSize({
             </Select>
           )}
         </div>
-        {!sizeValid && <Message error>{t('common.errors.postiveNum')}</Message>}
+        {!sizeValid && <Message error>{t('common.errors.positiveNum')}</Message>}
         <div className="inputGroup">
           <LabeledInput
             label={t('report.config.bucket.baseline')}
@@ -111,7 +138,7 @@ export default function BucketSize({
               setBaseValid(valid);
               applyChanges('baseline', evt.target.value, valid);
             }}
-            defaultValue={removeTrailingZeros(baseline)}
+            defaultValue={active ? removeTrailingZeros(baseline) : '-'}
           />
           {isGroupedByDuration && (
             <Select
@@ -135,4 +162,33 @@ export default function BucketSize({
 
 function removeTrailingZeros(val) {
   return val.replace(/\.0+$/, '');
+}
+
+function getValues(data, isNested = false) {
+  const values = [];
+  data.forEach(({key, value}) => {
+    if (isNested) {
+      values.push(...getValues(value));
+    } else if (key !== 'missing') {
+      values.push(Number.parseFloat(key));
+    }
+  });
+  return values;
+}
+
+const unitFormats = {
+  millis: 'millisecond',
+  seconds: 'second',
+  minutes: 'minute',
+  hours: 'hour',
+  days: 'day',
+  weeks: 'week',
+  months: 'month',
+  years: 'year',
+};
+
+function toDuration(valueMs) {
+  const {value, unit} = formatters.convertDurationToObject(Math.floor(valueMs));
+
+  return [value, unitFormats[unit]];
 }

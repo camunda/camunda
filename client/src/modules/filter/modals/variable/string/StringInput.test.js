@@ -218,3 +218,17 @@ it('should not show previous contains value as custom value after switching oper
 
   expect(node.find('Checklist').prop('allItems')).not.toContain('A');
 });
+
+it('should parse existing values correctly without creating duplicates', async () => {
+  const node = shallow(
+    <StringInput
+      {...props}
+      config={{getValues: () => ['A', 'B']}}
+      filter={{operator: 'in', values: [null, 'A']}}
+    />
+  );
+
+  await flushPromises();
+
+  expect(node.find('Checklist').prop('allItems')).toEqual([null, 'A', 'B']);
+});

@@ -4,7 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post, put, get, del} from 'request';
+import {del, get, post, put} from 'request';
+import {track} from 'tracking';
 
 export async function loadEntity(type, id) {
   const response = await get(`api/${type}/` + id);
@@ -15,7 +16,7 @@ export async function loadEntity(type, id) {
 export async function createEntity(type, initialValues = {}) {
   const response = await post('api/' + type, initialValues);
   const json = await response.json();
-
+  track(createEventName('create', type), {entityId: json.id});
   return json.id;
 }
 
@@ -26,11 +27,15 @@ export async function copyReport(id) {
 }
 
 export async function updateEntity(type, id, data, options = {}) {
-  return await put(`api/${type}/${id}`, data, options);
+  const response = await put(`api/${type}/${id}`, data, options);
+  track(createEventName('update', type), {entityId: id});
+  return response;
 }
 
 export async function deleteEntity(type, id) {
-  return await del(`api/${type}/${id}`, {force: true});
+  const response = await del(`api/${type}/${id}`, {force: true});
+  track(createEventName('delete', type), {entityId: id});
+  return response;
 }
 
 export async function loadReports(collection) {
@@ -40,4 +45,8 @@ export async function loadReports(collection) {
   }
   const response = await get(url);
   return await response.json();
+}
+
+function createEventName(action, entityType) {
+  return action + entityType.charAt(0).toUpperCase() + entityType.slice(1);
 }

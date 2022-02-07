@@ -8,18 +8,19 @@ import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {reportConfig, createReportUpdate} from 'services';
-import {Select, Button, Icon} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {formatters, reportConfig, createReportUpdate} from 'services';
+import {Select, Button, Icon, Input} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -46,23 +47,52 @@ export default function GroupBy({type, report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+        (optimizeProfile === 'platform' ? true : !['assignee', 'candidateGroup'].includes(key))
     )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
+        const matchQuery = ({name, label}) =>
+          (label || name).toLowerCase().includes(searchQuery.toLowerCase());
+
         return (
           <Select.Submenu
             key={key}
             label={label()}
             disabled={!enabled(report) || !variables || !variables[key]?.length}
+            onClose={() => setSearchQuery('')}
           >
-            {variables?.[key]?.map(({name}, idx) => {
+            <div className="searchContainer">
+              <Icon className="searchIcon" type="search" />
+              <Input
+                type="text"
+                className="searchInput"
+                placeholder={t('report.groupBy.searchForVariable')}
+                value={searchQuery}
+                onChange={({target: {value}}) => setSearchQuery(value)}
+                onClick={(evt) => evt.stopPropagation()}
+                onKeyDown={(evt) => evt.stopPropagation()}
+                // We progmatically trigger a click on the variable submenu on focus
+                // This prevents closing it when moving the mouse outside it
+                onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
+              />
+            </div>
+            {variables?.[key]?.map(({name, label}, idx) => {
               return (
-                <Select.Option key={idx} value={key + '_' + name}>
-                  {name}
+                <Select.Option
+                  className={classnames({
+                    hidden: !matchQuery({name, label}),
+                  })}
+                  key={idx}
+                  value={key + '_' + name}
+                  label={label || name}
+                >
+                  {formatters.getHighlightedText(label || name, searchQuery)}
                 </Select.Option>
               );
             })}
+            {variables?.[key]?.filter(matchQuery).length === 0 && (
+              <Select.Option disabled>{t('common.filter.variableModal.noVariables')}</Select.Option>
+            )}
           </Select.Submenu>
         );
       } else if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(key)) {
@@ -117,7 +147,14 @@ export default function GroupBy({type, report, onChange, variables}) {
           }
 
           onChange(
-            createReportUpdate(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
+            createReportUpdate(
+              reportType,
+              report,
+              'group',
+              type,
+              {groupBy: {value: {$set: value}}},
+              {variables}
+            )
           );
         }}
         value={getValue(selectedOption.key, report.groupBy)}
@@ -130,15 +167,22 @@ export default function GroupBy({type, report, onChange, variables}) {
           className="removeGrouping"
           onClick={() =>
             onChange(
-              createReportUpdate(reportType, report, 'group', 'none', {
-                groupBy: {
-                  $set:
-                    selectedOption.key === 'process'
-                      ? {type: 'none', value: null}
-                      : convertDistributionToGroup(report.distributedBy),
+              createReportUpdate(
+                reportType,
+                report,
+                'group',
+                'none',
+                {
+                  groupBy: {
+                    $set:
+                      selectedOption.key === 'process'
+                        ? {type: 'none', value: null}
+                        : convertDistributionToGroup(report.distributedBy),
+                  },
+                  distributedBy: {$set: {type: 'none', value: null}},
                 },
-                distributedBy: {$set: {type: 'none', value: null}},
-              })
+                {variables}
+              )
             )
           }
         >

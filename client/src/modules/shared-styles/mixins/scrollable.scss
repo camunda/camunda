@@ -1,5 +1,5 @@
 @mixin scrollable {
-  overflow-y: scroll;
+  overflow-y: auto;
 
   &::-webkit-scrollbar {
     -webkit-appearance: none;

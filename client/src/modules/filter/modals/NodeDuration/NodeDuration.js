@@ -159,11 +159,6 @@ export class NodeDuration extends React.Component {
     const {close, filterData, definitions} = this.props;
     const {loading, focus, nodeNames, values, applyTo, xml} = this.state;
 
-    let errorMessage = !this.hasSomethingChanged() ? t('report.heatTarget.noChangeWarning') : '';
-    if (!this.areAllFieldsNumbers()) {
-      errorMessage += t('report.heatTarget.invalidValue');
-    }
-
     const activeNodes = Object.keys(this.cleanUpValues());
     const empty = activeNodes.length === 0;
     if (focus) {
@@ -200,7 +195,9 @@ export class NodeDuration extends React.Component {
               />
             </>
           )}
-          {!this.validChanges() && !loading && <Message error>{errorMessage}</Message>}
+          {!this.areAllFieldsNumbers() && !loading && (
+            <Message error>{t('report.heatTarget.invalidValue')}</Message>
+          )}
         </Modal.Content>
         <Modal.Actions>
           <Button main onClick={close}>

@@ -16,15 +16,13 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -40,9 +38,10 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Component
 @Slf4j
 public class ElasticsearchMetadataService {
-  private static final String ERROR_MESSAGE_ES_REQUEST = "Could not write Optimize metadata (version and " +
-    "installationID) to Elasticsearch.";
-
+  private static final String ERROR_MESSAGE_ES_REQUEST =
+    "Could not write Optimize metadata (version and installationID) to Elasticsearch.";
+  private static final String ERROR_MESSAGE_READING_METADATA_DOC =
+    "Failed retrieving the Optimize metadata document from elasticsearch!";
   private static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
 
   private final ObjectMapper objectMapper;
@@ -76,27 +75,23 @@ public class ElasticsearchMetadataService {
   }
 
   public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
-    final SearchRequest searchRequest = new SearchRequest(METADATA_INDEX_NAME);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery());
-    searchRequest.source(searchSourceBuilder);
-    final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest);
-      long totalHits = searchResponse.getHits().getTotalHits().value;
-      if (totalHits == 1) {
-        MetadataDto parsed = objectMapper.readValue(
-          searchResponse.getHits().getAt(0).getSourceAsString(),
-          MetadataDto.class
-        );
-        return Optional.ofNullable(parsed);
-      } else if (totalHits > 1) {
-        throw new OptimizeRuntimeException("Metadata search returned [" + totalHits + "] hits");
+      final boolean metaDataIndexExists = esClient.exists(METADATA_INDEX_NAME);
+      if (!metaDataIndexExists) {
+        log.info("Optimize Metadata index wasn't found, thus no metadata available.");
+        return Optional.empty();
       }
+
+      final GetResponse getMetadataResponse = esClient.get(new GetRequest(METADATA_INDEX_NAME, MetadataIndex.ID));
+      if (!getMetadataResponse.isExists()) {
+        log.warn("Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
+        return Optional.empty();
+      }
+      return Optional.ofNullable(objectMapper.readValue(getMetadataResponse.getSourceAsString(), MetadataDto.class));
     } catch (IOException | ElasticsearchException e) {
-      log.info("Was not able to retrieve metadata index!");
+      log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
+      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
-    return Optional.empty();
   }
 
   public void upsertMetadata(final OptimizeElasticsearchClient esClient, final String schemaVersion) {

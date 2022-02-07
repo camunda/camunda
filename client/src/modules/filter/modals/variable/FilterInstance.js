@@ -81,7 +81,7 @@ export default function FilterInstance({
         <div
           tabIndex="0"
           className={classnames('sectionTitle', {clickable: isValid})}
-          onClick={isValid && toggleExpanded}
+          onClick={isValid ? toggleExpanded : undefined}
           onKeyDown={(evt) => {
             if (
               (evt.key === ' ' || evt.key === 'Enter') &&
@@ -121,15 +121,13 @@ export default function FilterInstance({
           placeholder={t('common.filter.variableModal.inputPlaceholder')}
           noValuesMessage={t('common.filter.variableModal.noVariables')}
         >
-          {variables.map((variable) => (
+          {variables.map(({name, label, type}) => (
             <Typeahead.Option
-              key={variable.name + '_' + variable.type}
-              value={variable.name + '_' + variable.type}
-              disabled={filters.some(
-                (filter) => filter.name === variable.name && filter.type === variable.type
-              )}
+              key={name + '_' + type}
+              value={name + '_' + type}
+              disabled={filters.some((filter) => filter.name === name && filter.type === type)}
             >
-              {variable.name}
+              {label || name}
             </Typeahead.Option>
           ))}
         </Typeahead>

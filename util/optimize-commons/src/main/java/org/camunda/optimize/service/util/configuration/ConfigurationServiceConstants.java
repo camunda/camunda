@@ -115,6 +115,8 @@ public class ConfigurationServiceConstants {
 
   public static final String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
 
+  public static final String OPTIMIZE_API_CONFIGURATION = "$.api";
+
   public static final String TELEMETRY_CONFIGURATION = "$.telemetry";
 
   public static final String EXTERNAL_VARIABLE_CONFIGURATION = "$.externalVariable";
@@ -125,6 +127,8 @@ public class ConfigurationServiceConstants {
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";
+  public static final String CCSM_PROFILE = "ccsm";
+  public static final String PLATFORM_PROFILE = "platform";
   //@formatter:on
 
 }

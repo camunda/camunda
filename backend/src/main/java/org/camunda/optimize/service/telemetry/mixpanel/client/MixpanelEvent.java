@@ -14,6 +14,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MixpanelEvent {
-  private MixpanelEventName event;
+  public static final String EVENT_NAME_PREFIX = "optimize:";
+
+  private String event;
   private MixpanelEventProperties properties;
+
+  public MixpanelEvent(final MixpanelEventName eventName, final MixpanelEventProperties properties) {
+    this.event = EVENT_NAME_PREFIX + eventName;
+    this.properties = properties;
+  }
 }

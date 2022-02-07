@@ -14,37 +14,36 @@ import AggregationType from './AggregationType';
 
 import './Measure.scss';
 
-export default function Measure({report, onChange}) {
+export default function Measure({report, onChange, variables}) {
   const selectedView = reportConfig.process.view.find(({matcher}) => matcher(report));
+
+  function updateMeasure(newMeasures) {
+    onChange(
+      createReportUpdate(
+        'process',
+        report,
+        'view',
+        selectedView.key,
+        {
+          view: {properties: {$set: newMeasures}},
+        },
+        {variables}
+      )
+    );
+  }
 
   if (report.view.properties?.length === 2) {
     return (
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <SelectionPreview
-            onClick={() =>
-              onChange(
-                createReportUpdate('process', report, 'view', selectedView.key, {
-                  view: {properties: {$set: ['duration']}},
-                })
-              )
-            }
-          >
+          <SelectionPreview onClick={() => updateMeasure(['duration'])}>
             <span>{t('report.view.count')}</span>
           </SelectionPreview>
         </li>
         <li className="Measure select">
           <span className="label"></span>
-          <SelectionPreview
-            onClick={() =>
-              onChange(
-                createReportUpdate('process', report, 'view', selectedView.key, {
-                  view: {properties: {$set: ['frequency']}},
-                })
-              )
-            }
-          >
+          <SelectionPreview onClick={() => updateMeasure(['frequency'])}>
             <span>
               {report.view.entity === 'incident'
                 ? t('report.view.resolutionDuration')
@@ -62,13 +61,7 @@ export default function Measure({report, onChange}) {
           <span className="label">{t('report.measure')}</span>
           <Select
             value={report.view.properties[0]}
-            onChange={(property) =>
-              onChange(
-                createReportUpdate('process', report, 'view', selectedView.key, {
-                  view: {properties: {$set: [property]}},
-                })
-              )
-            }
+            onChange={(property) => updateMeasure([property])}
           >
             <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
             <Select.Option value="duration">
@@ -80,15 +73,7 @@ export default function Measure({report, onChange}) {
           <AggregationType report={report} onChange={onChange} />
         </li>
         <li className="addMeasure">
-          <Button
-            onClick={() =>
-              onChange(
-                createReportUpdate('process', report, 'view', selectedView.key, {
-                  view: {properties: {$set: ['frequency', 'duration']}},
-                })
-              )
-            }
-          >
+          <Button onClick={() => updateMeasure(['frequency', 'duration'])}>
             + {t('report.addMeasure')}
           </Button>
         </li>

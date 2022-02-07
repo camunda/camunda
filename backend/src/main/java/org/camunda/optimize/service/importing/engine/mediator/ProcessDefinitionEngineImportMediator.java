@@ -32,11 +32,8 @@ public class ProcessDefinitionEngineImportMediator
                                                final ProcessDefinitionImportService importService,
                                                final ConfigurationService configurationService,
                                                final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

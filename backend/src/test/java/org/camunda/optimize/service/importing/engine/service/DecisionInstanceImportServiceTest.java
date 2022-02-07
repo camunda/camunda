@@ -158,10 +158,18 @@ public class DecisionInstanceImportServiceTest {
     final HistoricDecisionInputInstanceDto objectTypeInput = new HistoricDecisionInputInstanceDto();
     objectTypeInput.setId(UUID.randomUUID().toString());
     objectTypeInput.setClauseId(UUID.randomUUID().toString());
-    objectTypeInput.setClauseName("clauseName");
-    objectTypeInput.setType("customType");
-    objectTypeInput.setValue("{}");
+    objectTypeInput.setClauseName("clauseName_object");
+    objectTypeInput.setType(VariableType.OBJECT.getId());
+    objectTypeInput.setValue(null);
     historicDecisionInstanceDto.getInputs().add(objectTypeInput);
+
+    final HistoricDecisionInputInstanceDto customTypeInput = new HistoricDecisionInputInstanceDto();
+    customTypeInput.setId(UUID.randomUUID().toString());
+    customTypeInput.setClauseId(UUID.randomUUID().toString());
+    customTypeInput.setClauseName("clauseName");
+    customTypeInput.setType("customType");
+    customTypeInput.setValue("{}");
+    historicDecisionInstanceDto.getInputs().add(customTypeInput);
 
 
     // when
@@ -169,7 +177,7 @@ public class DecisionInstanceImportServiceTest {
       historicDecisionInstanceDto).orElseThrow(() -> new OptimizeIntegrationTestException("Could not map entity"));
 
     // then
-    assertThat(decisionInstanceDto.getInputs()).hasSize(historicDecisionInstanceDto.getInputs().size() - 2);
+    assertThat(decisionInstanceDto.getInputs()).hasSize(historicDecisionInstanceDto.getInputs().size() - 3);
     assertAllInputsWithAllFieldsAvailable(historicDecisionInstanceDto, decisionInstanceDto);
   }
 
@@ -195,12 +203,23 @@ public class DecisionInstanceImportServiceTest {
     objectTypeOutput.setId(UUID.randomUUID().toString());
     objectTypeOutput.setClauseId(UUID.randomUUID().toString());
     objectTypeOutput.setClauseName("clauseName_object");
-    objectTypeOutput.setType("customType");
-    objectTypeOutput.setValue("{}");
+    objectTypeOutput.setType(VariableType.OBJECT.getId());
+    objectTypeOutput.setValue(null);
     objectTypeOutput.setRuleId(UUID.randomUUID().toString());
     objectTypeOutput.setRuleOrder(1);
     objectTypeOutput.setVariableName("varName_object");
     historicDecisionInstanceDto.getOutputs().add(objectTypeOutput);
+
+    final HistoricDecisionOutputInstanceDto customTypeOutput = new HistoricDecisionOutputInstanceDto();
+    customTypeOutput.setId(UUID.randomUUID().toString());
+    customTypeOutput.setClauseId(UUID.randomUUID().toString());
+    customTypeOutput.setClauseName("clauseName_object");
+    customTypeOutput.setType("customType");
+    customTypeOutput.setValue("{}");
+    customTypeOutput.setRuleId(UUID.randomUUID().toString());
+    customTypeOutput.setRuleOrder(1);
+    customTypeOutput.setVariableName("varName_object");
+    historicDecisionInstanceDto.getOutputs().add(customTypeOutput);
 
 
     // when
@@ -208,7 +227,7 @@ public class DecisionInstanceImportServiceTest {
       historicDecisionInstanceDto).orElseThrow(() -> new OptimizeIntegrationTestException("Could not map entity"));
 
     // then
-    assertThat(decisionInstanceDto.getOutputs()).hasSize(historicDecisionInstanceDto.getOutputs().size() - 2);
+    assertThat(decisionInstanceDto.getOutputs()).hasSize(historicDecisionInstanceDto.getOutputs().size() - 3);
     assertAllOutputsWithAllFieldsAvailable(historicDecisionInstanceDto, decisionInstanceDto);
   }
 

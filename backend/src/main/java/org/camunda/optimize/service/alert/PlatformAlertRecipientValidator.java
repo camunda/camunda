@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 

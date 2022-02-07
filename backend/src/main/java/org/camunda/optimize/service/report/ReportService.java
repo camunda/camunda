@@ -48,6 +48,7 @@ import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -153,6 +154,13 @@ public class ReportService implements CollectionReferencingService {
     return copyAndMoveReport(reportId, userId, collectionId, newReportName, new HashMap<>());
   }
 
+  public List<IdResponseDto> getAllReportIdsInCollection(final String collectionId) {
+    return reportReader.getReportsForCollectionOmitXml(collectionId)
+      .stream()
+      .map(report -> new IdResponseDto(report.getId()))
+      .collect(toList());
+  }
+
   public List<ReportDefinitionDto> getAllAuthorizedReportsForIds(final String userId, final List<String> reportIds) {
     return reportReader.getAllReportsForIdsOmitXml(reportIds)
       .stream()
@@ -195,6 +203,12 @@ public class ReportService implements CollectionReferencingService {
     return copyAndMoveReport(
       originalReportDefinition, userId, newName, newCollectionId, existingReportCopies, keepSubReportNames
     );
+  }
+
+  public ReportDefinitionDto<ReportDataDto> getReportDefinition(final String reportId) {
+    return reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
+                                                 + "from Elasticsearch. Report does not exist."));
   }
 
   public AuthorizedReportDefinitionResponseDto getReportDefinition(final String reportId, final String userId) {
@@ -360,11 +374,13 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.updateSingleDecisionReport(reportUpdate);
   }
 
-  public void deleteReport(String userId, String reportId, boolean force) {
-    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId)
-      .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
-                                                 + "from Elasticsearch. Report does not exist."));
+  public void deleteReport(final String reportId) {
+    final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
+    removeReportAndAssociatedResources(reportId, reportDefinition);
+  }
 
+  public void deleteReportAsUser(final String userId, final String reportId, final boolean force) {
+    final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
     getReportWithEditAuthorization(userId, reportDefinition);
 
     if (!force) {
@@ -375,6 +391,14 @@ public class ReportService implements CollectionReferencingService {
       }
     }
     removeReportAndAssociatedResources(reportId, reportDefinition);
+  }
+
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  private <T extends ReportDataDto> ReportDefinitionDto<T> getReportOrFail(final String reportId) {
+    return reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException(
+        "Was not able to retrieve report with id [" + reportId + "] from Elasticsearch. Report does not exist."
+      ));
   }
 
   private void removeReportAndAssociatedResources(final String reportId, final ReportDefinitionDto reportDefinition) {
@@ -565,7 +589,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   private void ensureCompliesWithCollectionScope(final CollectionDefinitionDto collection,
-                                                final SingleReportDefinitionDto<?> report) {
+                                                 final SingleReportDefinitionDto<?> report) {
     ensureCompliesWithCollectionScope(report.getData().getDefinitions(), report.getDefinitionType(), collection);
   }
 

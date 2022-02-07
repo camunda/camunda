@@ -132,7 +132,7 @@ export const convertDurationToObject = (value) => {
   const [divisor, unit] = Object.keys(timeUnits)
     .map((key) => [timeUnits[key].value, key])
     .sort(([a], [b]) => b - a)
-    .find(([divisor]) => ~~(value / divisor) === value / divisor);
+    .find(([divisor]) => value % divisor === 0);
 
   return {
     value: (value / divisor).toString(),

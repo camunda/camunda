@@ -179,7 +179,7 @@ export default class VariableFilter extends React.Component {
     );
   }
 
-  getVariableName = (variable) => (variable ? variable.name : null);
+  getVariableName = (variable) => (variable ? variable.label || variable.name : null);
 
   createFilter = (evt) => {
     evt.preventDefault();

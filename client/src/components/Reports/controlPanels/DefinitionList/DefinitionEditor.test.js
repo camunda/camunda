@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {Input, BPMNDiagram, Button} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
+import RenameVariablesModal from './RenameVariablesModal';
 import {DefinitionEditor} from './DefinitionEditor';
 import {loadVersions} from './service';
 
@@ -43,7 +44,7 @@ const props = {
     key: 'definitionA',
     name: 'Definition A',
     displayName: 'Definition A',
-    versions: ['latest'],
+    versions: ['all'],
     tenantIds: [null],
   },
   tenantInfo: [
@@ -104,20 +105,27 @@ it('should allow opening the diagram in a bigger modal', () => {
   expect(node.find('.diagramModal').find(BPMNDiagram).prop('xml')).toBe(loadProcessDefinitionXml());
 });
 
-it('should allow removing the definition', () => {
-  const spy = jest.fn();
-  const node = shallow(<DefinitionEditor {...props} onRemove={spy} />);
+it('should pass all tenants ids to the renameVariableModal', () => {
+  const tenantInfo = [
+    {id: 'a', name: 'A'},
+    {id: 'b', name: 'B'},
+  ];
+  const node = shallow(<DefinitionEditor {...props} tenantInfo={tenantInfo} />);
 
   node.find('.actionBar').find(Button).simulate('click');
 
-  expect(spy).toHaveBeenCalled();
+  expect(node.find(RenameVariablesModal).prop('availableTenants')).toEqual(['a', 'b']);
 });
 
-it('should allow copying the definition', () => {
+it('should invoke onChange when confirming the renamed variable modal', () => {
   const spy = jest.fn();
-  const node = shallow(<DefinitionEditor {...props} onCopy={spy} />);
+  const node = shallow(<DefinitionEditor {...props} onChange={spy} />);
+  runAllEffects();
 
-  node.find('.actionBar').find(Button).at(0).simulate('click');
+  node.find('.actionBar').find(Button).simulate('click');
+
+  node.find(RenameVariablesModal).prop('onChange')();
 
   expect(spy).toHaveBeenCalled();
+  expect(node.find(RenameVariablesModal)).not.toExist();
 });

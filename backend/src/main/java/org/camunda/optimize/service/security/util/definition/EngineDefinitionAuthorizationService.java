@@ -23,7 +23,7 @@ import org.camunda.optimize.service.security.EngineAuthorizations;
 import org.camunda.optimize.service.security.ResolvedResourceTypeAuthorizations;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;

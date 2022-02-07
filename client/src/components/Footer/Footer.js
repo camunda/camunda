@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {getOptimizeVersion, isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeVersion, getOptimizeProfile} from 'config';
 import {t} from 'translation';
 import {Tooltip} from 'components';
 
@@ -17,18 +17,18 @@ import './Footer.scss';
 export default class Footer extends React.Component {
   state = {
     optimizeVersion: null,
-    isOptimizeCloudEnvironment: true,
+    optimizeProfile: null,
   };
 
   async componentDidMount() {
     this.setState({
       optimizeVersion: await getOptimizeVersion(),
-      isOptimizeCloudEnvironment: await isOptimizeCloudEnvironment(),
+      optimizeProfile: await getOptimizeProfile(),
     });
   }
 
   render() {
-    const {isOptimizeCloudEnvironment, optimizeVersion} = this.state;
+    const {optimizeProfile, optimizeVersion} = this.state;
 
     const timezoneInfo =
       t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -36,7 +36,7 @@ export default class Footer extends React.Component {
     return (
       <footer className="Footer">
         <div className="content">
-          {!isOptimizeCloudEnvironment && <ConnectionStatus />}
+          {optimizeProfile === 'platform' && <ConnectionStatus />}
           <Tooltip content={timezoneInfo} overflowOnly>
             <div className="timezone">{timezoneInfo}</div>
           </Tooltip>

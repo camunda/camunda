@@ -180,12 +180,20 @@ Object {
       "foo",
       "12",
       "",
+      <ForwardRef(Button)
+        className="ObjectViewBtn"
+        link={true}
+        onClick={[Function]}
+      >
+        View
+      </ForwardRef(Button)>,
     ],
     Array [
       "abc",
       "xyz",
       "",
       "true",
+      "",
     ],
   ],
   "head": Array [
@@ -225,6 +233,20 @@ Object {
         var2
       </React.Fragment>,
       "title": "var2",
+      "type": "variables",
+    },
+    Object {
+      "id": "variable:var3",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var3
+      </React.Fragment>,
+      "title": "var3",
       "type": "variables",
     },
   ],

@@ -5,6 +5,10 @@
 
     .Checklist {
       border-bottom: 1px solid var(--silver-darken-87);
+
+      .itemsList {
+        max-height: calc(100vh - 550px);
+      }
     }
   }
 

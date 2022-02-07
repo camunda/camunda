@@ -33,14 +33,14 @@ public class ExportClient {
       .execute();
   }
 
-  public Response exportReportAsJson(final String reportId, final String fileName) {
+  public Response exportReportAsJsonAsDemo(final String reportId, final String fileName) {
     return getRequestExecutor()
       .buildExportReportRequest(reportId, fileName)
       .execute();
   }
 
-  public List<ReportDefinitionExportDto> exportReportAsJsonAndReturnExportDtos(final String reportId,
-                                                                               final String fileName) {
+  public List<ReportDefinitionExportDto> exportReportAsJsonAndReturnExportDtosAsDemo(final String reportId,
+                                                                                     final String fileName) {
     return getRequestExecutor()
       .buildExportReportRequest(reportId, fileName)
       .executeAndReturnList(ReportDefinitionExportDto.class, Response.Status.OK.getStatusCode());
@@ -56,14 +56,15 @@ public class ExportClient {
       .execute();
   }
 
-  public Response exportDashboard(final String dashboardId, final String fileName) {
+  public Response exportDashboardDefinitionAsDemo(final String dashboardId, final String fileName) {
     return getRequestExecutor()
       .buildExportDashboardRequest(dashboardId, fileName)
       .execute();
   }
 
-  public List<OptimizeEntityExportDto> exportDashboardAndReturnExportDtos(final String dashboardId,
-                                                                          final String fileName) {
+
+  public List<OptimizeEntityExportDto> exportDashboardAndReturnExportDtosAsDemo(final String dashboardId,
+                                                                                final String fileName) {
     return getRequestExecutor()
       .buildExportDashboardRequest(dashboardId, fileName)
       .executeAndReturnList(OptimizeEntityExportDto.class, Response.Status.OK.getStatusCode());

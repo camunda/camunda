@@ -115,6 +115,7 @@ public class EngineConstants {
 
   // variable types
   public static final String VARIABLE_TYPE_OBJECT = "Object";
+  public static final String VARIABLE_TYPE_JSON = "Json";
   public static final String VARIABLE_SERIALIZATION_DATA_FORMAT = "serializationDataFormat";
 
   // flownode types, relates to engine ActivityTypes enum

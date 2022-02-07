@@ -11,6 +11,13 @@ import {Dropdown} from 'components';
 
 import Select from './Select';
 
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  formatters: {
+    getHighlightedText: () => 'got highlight',
+  },
+}));
+
 it('should render without crashing', () => {
   shallow(<Select />);
 });
@@ -48,7 +55,7 @@ it('should select option onClick and add checked property', () => {
     </Select>
   );
 
-  node.find('Option').simulate('click', {target: {getAttribute: () => '1'}});
+  node.find('Option').simulate('click', {target: {closest: () => ({getAttribute: () => '1'})}});
   expect(spy).toHaveBeenCalledWith('1');
 
   node.setProps({value: '1'});
@@ -67,7 +74,7 @@ it('should select submenu option onClick and set checked property on the submenu
     </Select>
   );
 
-  node.find('Option').simulate('click', {target: {getAttribute: () => '1'}});
+  node.find('Option').simulate('click', {target: {closest: () => ({getAttribute: () => '1'})}});
   expect(spy).toHaveBeenCalledWith('1');
 
   node.setProps({value: '1'});
@@ -81,4 +88,19 @@ it('should allow a custom label', () => {
   const node = shallow(<Select label="Custom Select Label" />);
 
   expect(node.find(Dropdown).prop('label')).toBe('Custom Select Label');
+});
+
+it('should use label attribute to calculate Select button label if provided', () => {
+  const node = shallow(
+    <Select>
+      <Select.Submenu label="submenu">
+        <Select.Option value="1" label="Option One">
+          <b>Option</b>One
+        </Select.Option>
+      </Select.Submenu>
+    </Select>
+  );
+
+  node.setProps({value: '1'});
+  expect(node.find('Dropdown').prop('label')).toBe('submenu : Option One');
 });

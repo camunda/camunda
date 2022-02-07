@@ -176,10 +176,10 @@ test('add, edit and delete sources', async (t) => {
 
   // add source by definition
   await t.click(e.addButton);
+  await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByDefinition.png');
   const definitionName = 'Hiring Demo 5 Tenants';
   await t.typeText(e.searchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
-  await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByDefinition.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.processItem.textContent).contains(definitionName);

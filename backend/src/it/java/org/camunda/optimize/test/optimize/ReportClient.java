@@ -311,9 +311,14 @@ public class ReportClient {
   }
 
   public String createSingleDecisionReport(DecisionReportDataDto data) {
+    return createSingleDecisionReport(data, null);
+  }
+
+  public String createSingleDecisionReport(final DecisionReportDataDto data, final String collectionId) {
     SingleDecisionReportDefinitionRequestDto definitionDto = new SingleDecisionReportDefinitionRequestDto();
     definitionDto.setName(TEST_REPORT_NAME);
     definitionDto.setData(data);
+    definitionDto.setCollectionId(collectionId);
     return getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(definitionDto)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())

@@ -25,7 +25,7 @@ import java.util.List;
 public class DecisionDefinitionEngineImportMediator
   extends TimestampBasedImportMediator<DecisionDefinitionImportIndexHandler, DecisionDefinitionEngineDto> {
 
-  private DecisionDefinitionFetcher engineEntityFetcher;
+  private final DecisionDefinitionFetcher engineEntityFetcher;
 
 
   public DecisionDefinitionEngineImportMediator(final DecisionDefinitionImportIndexHandler importIndexHandler,
@@ -33,11 +33,8 @@ public class DecisionDefinitionEngineImportMediator
                                                 final DecisionDefinitionImportService importService,
                                                 final ConfigurationService configurationService,
                                                 final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

@@ -42,16 +42,25 @@ const stateFilters = [...instanceStateFilters, ...flowNodeStateFilters, ...incid
 export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
 
-  getVariableName = (type, nameOrId, variableExists) => {
-    if (isDecisionVariable(type) && this.props.variables?.[type]) {
-      if (variableExists) {
-        const {name, id} = this.props.variables[type].find(({id}) => id === nameOrId);
-        return name || id;
-      }
-      return t('report.missingVariable');
+  getProcessVariableName = (name, type, variableExists) => {
+    if (variableExists) {
+      const variable =
+        this.props.variables?.find(
+          (variable) => variable.name === name && variable.type === type
+        ) || {};
+
+      return variable.label || variable.name;
     }
 
-    return nameOrId;
+    return t('report.missingVariable');
+  };
+
+  getDecisionVariableName = (variableId, type, variableExists) => {
+    if (variableExists) {
+      const {name, id} = this.props.variables?.[type].find(({id}) => id === variableId) || {};
+      return name || id;
+    }
+    return t('report.missingVariable');
   };
 
   appliedToSnippet = ({appliedTo}) => {
@@ -159,8 +168,8 @@ export default class FilterList extends React.Component {
         if (filter.type.toLowerCase().includes('variable')) {
           const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
           const filters = filter.type === 'multipleVariable' ? filter.data?.data : [filter.data];
-          const variableExists = filters.every((filterData) =>
-            checkVariableExistence(filter.type, filterData.name, this.props.variables)
+          const variableExists = filters.every(({name, type}) =>
+            checkVariableExistence(filter.type, name, type, this.props.variables)
           );
 
           let warning;
@@ -181,7 +190,10 @@ export default class FilterList extends React.Component {
                 }}
               >
                 {filters.map(({name, type, data}, idx) => {
-                  const variableName = this.getVariableName(filter.type, name, variableExists);
+                  const variableName = isDecisionVariable(filter.type)
+                    ? this.getDecisionVariableName(name, filter.type, variableExists)
+                    : this.getProcessVariableName(name, type, variableExists);
+
                   return (
                     <div key={idx}>
                       {type === 'Date' ? (
@@ -415,16 +427,18 @@ function isDecisionVariable(type) {
   return ['inputVariable', 'outputVariable'].includes(type);
 }
 
-function checkVariableExistence(type, name, variables) {
-  if (!variables || (isDecisionVariable(type) && !variables[type])) {
+function checkVariableExistence(filterType, variableNameOrId, variableType, variables) {
+  if (!variables || (isDecisionVariable(filterType) && !variables[filterType])) {
     return true;
   }
 
-  if (isDecisionVariable(type)) {
-    return variables[type].some((variable) => variable.id === name);
+  if (isDecisionVariable(filterType)) {
+    return variables[filterType].some((variable) => variable.id === variableNameOrId);
   }
 
-  return variables.some((variable) => variable.name === name);
+  return variables.some(
+    (variable) => variable.name === variableNameOrId && variable.type === variableType
+  );
 }
 
 function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {

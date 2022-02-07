@@ -23,7 +23,7 @@ import static org.camunda.optimize.dto.optimize.importing.UserOperationType.isSu
 import static org.camunda.optimize.dto.optimize.importing.UserOperationType.isSuspensionByInstanceIdOperation;
 
 public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJob<UserOperationLogEntryDto> {
-  private RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private final RunningProcessInstanceWriter runningProcessInstanceWriter;
 
   public UserOperationLogElasticsearchImportJob(final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                 Runnable callback) {

@@ -28,11 +28,17 @@ export default function createPlugins({updateReport, report: {combined, data, re
   ) {
     const dataPoints = result.data.map(({key}) => key);
 
+    const groupByFilterType = {
+      evaluationDateTime: 'evaluationDateTime',
+      startDate: 'instanceStartDate',
+      endDate: 'instanceEndDate',
+    };
+
     plugins.push(
       zoomIn({
         updateReport,
         filters: data.filter,
-        type: data.groupBy.type,
+        type: groupByFilterType[data.groupBy.type],
         valueRange: {
           min: parseISO(dataPoints[0]),
           max: parseISO(dataPoints[dataPoints.length - 1]),

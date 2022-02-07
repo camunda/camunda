@@ -10,7 +10,7 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {NoDataNotice} from 'components';
 
-import processRawData from './processRawData';
+import processRawData, {OBJECT_VARIABLE_IDENTIFIER} from './processRawData';
 
 describe('Process table', () => {
   const data = {
@@ -22,6 +22,7 @@ describe('Process table', () => {
           'processDefinitionId',
           'variable:var1',
           'variable:var2',
+          'variable:var3',
         ],
         excludedColumns: [],
         columnOrder: [],
@@ -37,6 +38,7 @@ describe('Process table', () => {
         variables: {
           var1: 12,
           var2: null,
+          var3: OBJECT_VARIABLE_IDENTIFIER,
         },
       },
       {
@@ -159,6 +161,16 @@ describe('Process table', () => {
     }).body[0][0];
 
     expect(cell).toBe('123');
+  });
+
+  it('should invoke the variable view callback function when viewing an object variable', () => {
+    const spy = jest.fn();
+    const {body} = processRawData({report: {reportType: 'process', data, result}}, {}, [], spy);
+
+    body[0][4].props.onClick();
+
+    const {processInstanceId, processDefinitionKey} = result.data[0];
+    expect(spy).toHaveBeenCalledWith('var3', processInstanceId, processDefinitionKey);
   });
 });
 

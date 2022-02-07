@@ -37,7 +37,9 @@ export default function Checklist({
   const allSelected = data.every(({checked}) => checked);
   const allDeselected = selectedItems.length === 0;
 
-  const filteredData = data.filter(({label}) => label.toLowerCase().includes(query.toLowerCase()));
+  const filteredData = data.filter(({label, id}) =>
+    (label || id)?.toLowerCase().includes(query.toLowerCase())
+  );
   const allSelectedInView = filteredData.every(({checked}) => checked);
 
   const updateItems = (itemId, checked) => {
@@ -132,7 +134,7 @@ export default function Checklist({
                 key={id}
                 type="checkbox"
                 checked={checked}
-                label={label}
+                label={label || id}
                 onChange={({target: {checked}}) => updateItems(id, checked)}
               />
             ))}

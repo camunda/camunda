@@ -5,10 +5,12 @@
  */
 
 import React from 'react';
+
 import {Dropdown} from 'components';
 import classnames from 'classnames';
-import {ignoreFragments} from './service';
 import {t} from 'translation';
+
+import {ignoreFragments} from './service';
 
 export default class Select extends React.Component {
   renderChildrenWithProps = (children) => {
@@ -35,7 +37,7 @@ export default class Select extends React.Component {
 
     React.Children.forEach(ignoreFragments(children), (child) => {
       if (child?.props.value === this.props.value) {
-        label = child.props.children;
+        label = child.props.label || child.props.children;
       } else if (child?.type === Select.Submenu && child?.props.children) {
         const sublabel = this.getLabel(child.props.children);
         if (sublabel) {
@@ -48,7 +50,7 @@ export default class Select extends React.Component {
   };
 
   onChange = (evt) => {
-    const value = evt.target.getAttribute('value');
+    const value = evt.target?.closest('[value]')?.getAttribute('value');
     if (value && this.props.onChange) {
       this.props.onChange(value);
     }

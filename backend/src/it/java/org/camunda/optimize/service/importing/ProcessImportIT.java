@@ -246,6 +246,31 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void processDefinitionsForExcludedTenantsAreNotPresent() {
+    // given
+    final String randomTenantId = "reallyAwesomeTenantId";
+    final String excludedTenantId1 = "excludedTenantId";
+    final String excludedTenantId2 = "notAwesomeAtAllTenantId";
+    deployProcessDefinitionWithTenant(excludedTenantId1);
+    deployProcessDefinitionWithTenant(excludedTenantId2);
+    deployProcessDefinitionWithTenant(randomTenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setExcludedTenants(List.of(excludedTenantId2, excludedTenantId1));
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> storedDefinitions = elasticSearchIntegrationTestExtension
+      .getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
+    assertThat(storedDefinitions)
+      .hasSize(1)
+      .extracting(DefinitionOptimizeResponseDto::getTenantId)
+      .isEqualTo(List.of(randomTenantId));
+  }
+
+  @Test
   public void allProcessInstanceDataIsAvailable() {
     // given
     deployAndStartSimpleServiceTaskProcess();

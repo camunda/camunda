@@ -13,7 +13,7 @@ Object {
   "processDefinitionKey": "key",
   "processDefinitionName": "Definition Name",
   "processDefinitionVersions": Array [
-    "latest",
+    "all",
   ],
   "tenantIds": Array [
     null,

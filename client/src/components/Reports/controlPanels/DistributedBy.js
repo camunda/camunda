@@ -8,16 +8,17 @@ import classnames from 'classnames';
 import {useState, useEffect} from 'react';
 
 import {t} from 'translation';
-import {reportConfig, createReportUpdate} from 'services';
-import {Select, Button, Icon} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {reportConfig, createReportUpdate, formatters} from 'services';
+import {Select, Button, Icon, Input} from 'components';
+import {getOptimizeProfile} from 'config';
 
 export default function DistributedBy({report, onChange, variables}) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -34,23 +35,52 @@ export default function DistributedBy({report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+        (optimizeProfile === 'platform' ? true : !['assignee', 'candidateGroup'].includes(key))
     )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
+        const matchQuery = ({name, label}) =>
+          (label || name).toLowerCase().includes(searchQuery.toLowerCase());
+
         return (
           <Select.Submenu
             key="variable"
             label={label()}
             disabled={!enabled(report) || !variables || !variables?.length}
+            onClose={() => setSearchQuery('')}
           >
-            {variables?.map?.(({name}, idx) => {
+            <div className="searchContainer">
+              <Icon className="searchIcon" type="search" />
+              <Input
+                type="text"
+                className="searchInput"
+                placeholder={t('report.groupBy.searchForVariable')}
+                value={searchQuery}
+                onChange={({target: {value}}) => setSearchQuery(value)}
+                onClick={(evt) => evt.stopPropagation()}
+                onKeyDown={(evt) => evt.stopPropagation()}
+                // We progmatically trigger a click on the variable submenu on focus
+                // This prevents closing it when moving the mouse outside it
+                onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
+              />
+            </div>
+            {variables?.map?.(({name, label}, idx) => {
               return (
-                <Select.Option key={idx} value={key + '_' + name}>
-                  {name}
+                <Select.Option
+                  className={classnames({
+                    hidden: !matchQuery({name, label}),
+                  })}
+                  key={idx}
+                  value={key + '_' + name}
+                  label={label || name}
+                >
+                  {formatters.getHighlightedText(label || name, searchQuery)}
                 </Select.Option>
               );
             })}
+            {variables?.filter(matchQuery).length === 0 && (
+              <Select.Option disabled>{t('common.filter.variableModal.noVariables')}</Select.Option>
+            )}
           </Select.Submenu>
         );
       } else if (['startDate', 'endDate'].includes(key)) {

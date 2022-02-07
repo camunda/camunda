@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 
 @Slf4j
@@ -96,7 +98,7 @@ public class LicenseFilter implements Filter {
 
   private boolean isCloudEnvironment() {
     return Arrays.stream(awareDelegate.getApplicationContext().getEnvironment().getActiveProfiles())
-      .anyMatch(CLOUD_PROFILE::equalsIgnoreCase);
+      .anyMatch(profile -> CLOUD_PROFILE.equalsIgnoreCase(profile) || CCSM_PROFILE.equalsIgnoreCase(profile));
   }
 
   private static boolean isStatusRequest(String requestPath) {
@@ -112,7 +114,7 @@ public class LicenseFilter implements Filter {
   }
 
   private static boolean isStaticResource(String requestPath) {
-    return requestPath.contains("^/static/.+")
+    return requestPath.contains("^" + STATIC_RESOURCE_PATH + "/.+")
       || EXCLUDED_EXTENSIONS.stream().anyMatch(ext -> requestPath.endsWith("." + ext));
   }
 

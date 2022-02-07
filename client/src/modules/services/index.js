@@ -35,6 +35,7 @@ export {
   loadRawData,
   getReportResult,
   processResult,
+  isAlertCompatibleReport,
 } from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
@@ -52,3 +53,5 @@ export function getCollection(path) {
   const collectionMatch = /\/collection\/([^/]+)/g.exec(path);
   return collectionMatch && collectionMatch[1];
 }
+
+export {loadAlerts, addAlert, removeAlert, editAlert} from './alertService';

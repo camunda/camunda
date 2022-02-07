@@ -16,7 +16,7 @@ jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
     {
       key: 'definitionA',
-      versions: ['latest'],
+      versions: ['all'],
       tenants: [
         {id: 'a', name: 'Tenant A'},
         {id: 'b', name: 'Tenant B'},
@@ -35,7 +35,7 @@ const props = {
       key: 'definitionA',
       name: 'Definition A',
       displayName: 'Definition A',
-      versions: ['latest'],
+      versions: ['all'],
       tenantIds: ['a', 'b'],
     },
   ],
@@ -61,11 +61,6 @@ it('should allow copying definitions', () => {
 
   node.find(Button).first().simulate('click');
   expect(spy).toHaveBeenCalled();
-
-  spy.mockClear();
-
-  node.find(DefinitionEditor).first().simulate('copy');
-  expect(spy).toHaveBeenCalled();
 });
 
 it('should not allow copy if limit of 10 definitions is reached', () => {
@@ -76,12 +71,11 @@ it('should not allow copy if limit of 10 definitions is reached', () => {
         key: 'definitionA',
         name: 'Definition A',
         displayName: 'Definition A',
-        versions: ['latest'],
+        versions: ['all'],
         tenantIds: ['a', 'b'],
       })}
     />
   );
 
   expect(node.find({type: 'copy-small'})).not.toExist();
-  expect(node.find(DefinitionEditor).first().prop('onCopy')).toBe(false);
 });

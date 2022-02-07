@@ -22,18 +22,15 @@ import java.util.List;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TenantImportMediator extends BackoffImportMediator<TenantImportIndexHandler, TenantEngineDto> {
 
-  private TenantFetcher engineEntityFetcher;
+  private final TenantFetcher engineEntityFetcher;
 
   public TenantImportMediator(final TenantImportIndexHandler importIndexHandler,
                               final TenantFetcher engineEntityFetcher,
                               final TenantImportService tenantImportService,
                               final ConfigurationService configurationService,
                               final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, tenantImportService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = tenantImportService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override
@@ -42,12 +39,14 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
     final List<TenantEngineDto> newEntities = importIndexHandler.filterNewOrChangedTenants(entities);
 
     if (!newEntities.isEmpty()) {
-      importService.executeImport(newEntities, importCompleteCallback);
+      importService.executeImport(filterEntitiesFromExcludedTenants(newEntities), importCompleteCallback);
       importIndexHandler.addImportedTenants(newEntities);
     } else {
       importCompleteCallback.run();
     }
-
+    // It is correct to check here for newEntities (as opposed to the filtered entities) for the case in which the
+    // current page only contained data from excluded tenants. In this case filteredEntities would be empty, but
+    // potentially more pages with tenant data could exist
     return !newEntities.isEmpty();
   }
 

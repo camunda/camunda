@@ -7,11 +7,10 @@ package org.camunda.optimize.dto.optimize.rest.analysis;
 
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
-import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.QueryParam;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @NoArgsConstructor
 public class ProcessDefinitionParametersRequestDto extends ProcessDefinitionParametersDto {
@@ -31,6 +30,20 @@ public class ProcessDefinitionParametersRequestDto extends ProcessDefinitionPara
   @QueryParam("tenantIds")
   public void setTenantIds(List<String> tenantIds) {
     this.tenantIds = normalizeNullTenants(tenantIds);
+  }
+
+  @Override
+  @QueryParam("minimumDeviationFromAvg")
+  @DefaultValue("50")
+  public void setMinimumDeviationFromAvg(final long minimumDeviationFromAvg) {
+    this.minimumDeviationFromAvg = minimumDeviationFromAvg;
+  }
+
+  @Override
+  @QueryParam("disconsiderAutomatedTasks")
+  @DefaultValue("false")
+  public void setDisconsiderAutomatedTasks(final boolean disconsiderAutomatedTasks) {
+    this.disconsiderAutomatedTasks = disconsiderAutomatedTasks;
   }
 
 }

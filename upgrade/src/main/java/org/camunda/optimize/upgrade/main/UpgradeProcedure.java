@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.main;
 
+import com.vdurmont.semver4j.Semver;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
@@ -41,27 +42,31 @@ public class UpgradeProcedure {
   }
 
   public void performUpgrade(final UpgradePlan upgradePlan) {
+    final Semver targetVersion = upgradePlan.getToVersion();
     final Optional<String> optionalSchemaVersion = schemaUpgradeClient.getSchemaVersion();
 
     if (optionalSchemaVersion.isPresent()) {
-      final String schemaVersion = optionalSchemaVersion.get();
-      validateVersions(schemaVersion, upgradePlan);
-
-      if (!upgradePlan.getToVersion().equals(schemaVersion)) {
+      final Semver schemaVersion = new Semver(optionalSchemaVersion.get());
+      if (schemaVersion.isLowerThan(targetVersion)) {
+        validateVersions(schemaVersion, upgradePlan);
         try {
           upgradeStepLogService.initializeOrUpdate(schemaUpgradeClient);
           executeUpgradePlan(upgradePlan);
         } catch (Exception e) {
           log.error(
-            "Error while executing upgrade from {} to {}", upgradePlan.getFromVersion(), upgradePlan.getToVersion(), e
+            "Error while executing update from {} to {}", upgradePlan.getFromVersion(), targetVersion, e
           );
           throw new UpgradeRuntimeException("Upgrade failed.", e);
         }
       } else {
-        log.info("Target optionalSchemaVersion is already present, no upgrade to perform.");
+        log.info(
+          "Target schemaVersion or a newer version is already present, no update to perform to {}.", targetVersion
+        );
       }
     } else {
-      log.info("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
+      log.info(
+        "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to {}.", targetVersion
+      );
     }
   }
 
@@ -71,14 +76,14 @@ public class UpgradeProcedure {
     for (UpgradeStep step : upgradeSteps) {
       final UpgradeStepLogEntryDto logEntryDto = UpgradeStepLogEntryDto.builder()
         .indexName(getIndexNameForStep(step))
-        .optimizeVersion(upgradePlan.getToVersion())
+        .optimizeVersion(upgradePlan.getToVersion().toString())
         .stepType(step.getType())
         .stepNumber(currentStepCount)
         .build();
       final Optional<Instant> stepAppliedDate = upgradeStepLogService.getStepAppliedDate(
         schemaUpgradeClient, logEntryDto
       );
-      if (!stepAppliedDate.isPresent()) {
+      if (stepAppliedDate.isEmpty()) {
         log.info(
           "Starting step {}/{}: {} on index: {}",
           currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), getIndexNameForStep(step)
@@ -107,13 +112,14 @@ public class UpgradeProcedure {
       currentStepCount++;
     }
     schemaUpgradeClient.initializeSchema();
-    schemaUpgradeClient.updateOptimizeVersion(upgradePlan.getFromVersion(), upgradePlan.getToVersion());
+    schemaUpgradeClient
+      .updateOptimizeVersion(upgradePlan.getFromVersion().toString(), upgradePlan.getToVersion().toString());
   }
 
-  private void validateVersions(final String schemaVersion, final UpgradePlan upgradePlan) {
-    upgradeValidationService.validateESVersion(esClient, upgradePlan.getToVersion());
+  private void validateVersions(final Semver schemaVersion, final UpgradePlan upgradePlan) {
+    upgradeValidationService.validateESVersion(esClient, upgradePlan.getToVersion().toString());
     upgradeValidationService.validateSchemaVersions(
-      schemaVersion, upgradePlan.getFromVersion(), upgradePlan.getToVersion()
+      schemaVersion.getValue(), upgradePlan.getFromVersion().getValue(), upgradePlan.getToVersion().getValue()
     );
   }
 

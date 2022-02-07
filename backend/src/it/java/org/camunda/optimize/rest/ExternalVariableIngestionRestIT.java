@@ -155,7 +155,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     final String accessToken = "aToken";
-    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(accessToken);
 
     // when
     final Response response =
@@ -172,7 +172,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     final String accessToken = "aToken";
-    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(accessToken);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -191,7 +191,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     final String accessToken = "aToken";
-    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(accessToken);
 
     // when
     final Response ingestResponse =

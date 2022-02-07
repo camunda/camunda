@@ -121,6 +121,24 @@ public class VariablesClient {
     return getProcessVariableValues(requestDto);
   }
 
+  public VariableDto createObjectVariableDto(final boolean isNativeJsonVar,
+                                             final Map<String, Object> variable) {
+    if (isNativeJsonVar) {
+      return createNativeJsonVariableDto(variable);
+    } else {
+      return createMapJsonObjectVariableDto(variable);
+    }
+  }
+
+  public VariableDto createObjectVariableDto(final boolean isNativeJsonVar,
+                                             final List<Object> variable) {
+    if (isNativeJsonVar) {
+      return createNativeJsonVariableDto(variable);
+    } else {
+      return createListJsonObjectVariableDto(variable);
+    }
+  }
+
   @SneakyThrows
   public VariableDto createMapJsonObjectVariableDto(final Map<String, Object> variable) {
     return createJsonObjectVariableDto(
@@ -148,6 +166,24 @@ public class VariablesClient {
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
     objectVariableDto.setValueInfo(info);
     return objectVariableDto;
+  }
+
+  @SneakyThrows
+  public VariableDto createNativeJsonVariableDto(final Map<String, Object> variable) {
+    return createNativeJsonVariableDto(objectMapper.writeValueAsString(variable));
+  }
+
+  @SneakyThrows
+  public VariableDto createNativeJsonVariableDto(final List<Object> variable) {
+    return createNativeJsonVariableDto(objectMapper.writeValueAsString(variable));
+  }
+
+  @SneakyThrows
+  public VariableDto createNativeJsonVariableDto(final String value) {
+    VariableDto nativeJsonVariableDto = new VariableDto();
+    nativeJsonVariableDto.setType(EngineConstants.VARIABLE_TYPE_JSON);
+    nativeJsonVariableDto.setValue(value);
+    return nativeJsonVariableDto;
   }
 
   public List<String> getDecisionInputVariableValues(final DecisionVariableValueRequestDto variableValueRequestDto) {

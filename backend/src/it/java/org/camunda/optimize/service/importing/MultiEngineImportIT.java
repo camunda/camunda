@@ -6,23 +6,32 @@
 package org.camunda.optimize.service.importing;
 
 import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
+import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class MultiEngineImportIT extends AbstractMultiEngineIT {
 
@@ -148,6 +157,59 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   }
 
   @Test
+  public void tenantProcessesAreOnlyExcludedFromTheCorrectEngine() {
+    // given
+    final String firstTenantId = "tenantId1";
+    final String tenantName = "My New Tenant";
+    final String excludedTenantId = "tenantId2";
+    addSecondEngineToConfiguration();
+    engineIntegrationExtension.createTenant(firstTenantId, tenantName);
+    engineIntegrationExtension.createTenant(excludedTenantId, tenantName);
+    secondaryEngineIntegrationExtension.createTenant(firstTenantId, tenantName);
+    secondaryEngineIntegrationExtension.createTenant(excludedTenantId, tenantName);
+
+    ProcessDefinitionEngineDto shallBePresent1 =
+      deployProcessDefinitionWithTenantAndEngine(firstTenantId, engineIntegrationExtension);
+    ProcessDefinitionEngineDto shallBePresent2 =
+      deployProcessDefinitionWithTenantAndEngine(excludedTenantId, engineIntegrationExtension);
+    ProcessDefinitionEngineDto shallBePresent3 =
+      deployProcessDefinitionWithTenantAndEngine(firstTenantId, secondaryEngineIntegrationExtension);
+
+    deployProcessDefinitionWithTenantAndEngine(excludedTenantId, secondaryEngineIntegrationExtension);
+
+    // Workaround to solve odd behavior from the configuredEnginesMap key being different from the getEngineName()
+    // value inside the matching object
+    HashMap<String, String> workaroundMapping = new HashMap<>();
+    final Map<String, EngineConfiguration> configuredEngines =
+      embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines();
+    configuredEngines
+      .keySet()
+      .forEach(key -> workaroundMapping.put(configuredEngines.get(key).getName(), key));
+
+    embeddedOptimizeExtension.getConfigurationService()
+      .getConfiguredEngines().get(workaroundMapping.get(secondaryEngineIntegrationExtension.getEngineName()))
+      .setExcludedTenants(List.of(excludedTenantId));
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> storedDefinitions = elasticSearchIntegrationTestExtension
+      .getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
+    assertThat(storedDefinitions)
+      .hasSize(3)
+      .extracting(def -> def.getDataSource().getName(), DefinitionOptimizeResponseDto::getId)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(workaroundMapping.get(engineIntegrationExtension.getEngineName()), shallBePresent1.getId()),
+        Tuple.tuple(workaroundMapping.get(engineIntegrationExtension.getEngineName()), shallBePresent2.getId()),
+        Tuple.tuple(workaroundMapping.get(secondaryEngineIntegrationExtension.getEngineName()), shallBePresent3.getId())
+      );
+  }
+
+  @Test
   public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
     deployAllPossibleEngineDataForAllEngines();
@@ -174,6 +236,12 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       );
       assertThat(timestamp).isAfter(OffsetDateTime.now().minusHours(1));
     }
+  }
+
+  private ProcessDefinitionEngineDto deployProcessDefinitionWithTenantAndEngine(String tenantId,
+                                                                                EngineIntegrationExtension engine) {
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    return engine.deployProcessAndGetProcessDefinition(processModel, tenantId);
   }
 
   private void deployAllPossibleEngineDataForAllEngines() {

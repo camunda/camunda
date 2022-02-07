@@ -15,16 +15,16 @@ import {
   DashboardRenderer,
   LastModifiedInfo,
   Icon,
-  Dropdown,
   Popover,
   Deleter,
   EntityName,
   DiagramScrollLock,
+  AlertsDropdown,
 } from 'components';
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import {
   getSharedDashboard,
@@ -34,7 +34,7 @@ import {
 } from './service';
 import {FiltersView} from './filters';
 
-import {AutoRefreshBehavior, AutoRefreshIcon} from './AutoRefresh';
+import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
 
 import './DashboardView.scss';
 
@@ -54,15 +54,14 @@ export function DashboardView(props) {
     owner,
     loadDashboard,
     onDelete,
+    refreshRateSeconds,
   } = props;
-
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(null);
-  const [autoRefreshHandle, setAutoRefreshHandle] = useState();
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(refreshRateSeconds * 1000);
   const [deleting, setDeleting] = useState(null);
   const [filtersShown, setFiltersShown] = useState(availableFilters?.length > 0);
   const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
   const fullScreenHandle = useFullScreenHandle();
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   const themeRef = useRef(theme);
 
@@ -83,7 +82,7 @@ export function DashboardView(props) {
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -91,14 +90,6 @@ export function DashboardView(props) {
     if (theme === 'dark') {
       toggleTheme();
     }
-  }
-
-  function setAutorefresh(timeout) {
-    clearInterval(autoRefreshHandle);
-    if (timeout) {
-      setAutoRefreshHandle(setInterval(loadDashboard, timeout));
-    }
-    setAutoRefreshInterval(timeout);
   }
 
   function getShareTooltip() {
@@ -109,17 +100,6 @@ export function DashboardView(props) {
       return t('dashboard.cannotShare');
     }
     return '';
-  }
-
-  function autoRefreshOption(interval, label) {
-    return (
-      <Dropdown.Option
-        active={autoRefreshInterval === interval}
-        onClick={() => setAutorefresh(interval)}
-      >
-        {label}
-      </Dropdown.Option>
-    );
   }
 
   return (
@@ -139,11 +119,7 @@ export function DashboardView(props) {
                 <React.Fragment>
                   {currentUserRole === 'editor' && (
                     <>
-                      <Link
-                        className="tool-button edit-button"
-                        to="edit"
-                        onClick={() => setAutorefresh(null)}
-                      >
+                      <Link className="tool-button edit-button" to="edit">
                         <Button main tabIndex="-1">
                           <Icon type="edit" />
                           {t('common.edit')}
@@ -159,7 +135,7 @@ export function DashboardView(props) {
                       </Button>
                     </>
                   )}
-                  {!isOptimizeCloud && (
+                  {optimizeProfile === 'platform' && (
                     <Popover
                       main
                       className="tool-button share-button"
@@ -204,7 +180,9 @@ export function DashboardView(props) {
                   <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
                 </Button>
               )}
-
+              {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
+                <AlertsDropdown dashboardReports={reports} />
+              )}
               <Button
                 main
                 onClick={() =>
@@ -217,23 +195,11 @@ export function DashboardView(props) {
                   ? t('dashboard.leaveFullscreen')
                   : t('dashboard.enterFullscreen')}
               </Button>
-              <Dropdown
-                main
-                label={
-                  <React.Fragment>
-                    <AutoRefreshIcon interval={autoRefreshInterval} /> {t('dashboard.autoRefresh')}
-                  </React.Fragment>
-                }
-                active={!!autoRefreshInterval}
-              >
-                {autoRefreshOption(null, t('common.off'))}
-                {autoRefreshOption(1 * 60 * 1000, '1 ' + t('common.unit.minute.label'))}
-                {autoRefreshOption(5 * 60 * 1000, '5 ' + t('common.unit.minute.label-plural'))}
-                {autoRefreshOption(10 * 60 * 1000, '10 ' + t('common.unit.minute.label-plural'))}
-                {autoRefreshOption(15 * 60 * 1000, '15 ' + t('common.unit.minute.label-plural'))}
-                {autoRefreshOption(30 * 60 * 1000, '30 ' + t('common.unit.minute.label-plural'))}
-                {autoRefreshOption(60 * 60 * 1000, '60 ' + t('common.unit.minute.label-plural'))}
-              </Dropdown>
+              <AutoRefreshSelect
+                refreshRateMs={autoRefreshInterval}
+                onChange={setAutoRefreshInterval}
+                onRefresh={loadDashboard}
+              />
             </div>
           </div>
         </div>

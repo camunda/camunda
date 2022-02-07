@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.7.0</version>
+    <version>3.8.0-alpha1</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -13,7 +13,7 @@
   <properties>
     <jetty.version>9.4.44.v20210927</jetty.version>
     <jersey.version>2.35</jersey.version>
-    <spring.security.version>5.6.0</spring.security.version>
+    <spring.security.version>5.6.1</spring.security.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
@@ -75,6 +75,13 @@
       <artifactId>zeebe-client-java</artifactId>
       <version>${zeebe.version}</version>
       <scope>test</scope>
+    </dependency>
+
+    <!-- IAM-->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cloud-iam-sdk</artifactId>
+      <version>${iam.version}</version>
     </dependency>
 
     <!-- Javax XML -->
@@ -206,7 +213,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.18.2</version>
+      <version>3.18.3</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -273,7 +280,7 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <version>3.2.0</version>
+      <version>3.3.0</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -283,7 +290,7 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <version>1.4.190</version>
+      <version>${h2.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -409,6 +416,10 @@
     </resources>
     <testResources>
       <testResource>
+        <directory>src/it/webapp</directory>
+        <targetPath>webapp</targetPath>
+      </testResource>
+      <testResource>
         <directory>src/it/resources</directory>
         <filtering>true</filtering>
         <includes>
@@ -445,13 +456,13 @@
         <dependency>
           <groupId>com.h2database</groupId>
           <artifactId>h2</artifactId>
-          <version>1.4.196</version>
+          <version>${h2.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.3.1</version>
+          <version>42.3.2</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -666,7 +677,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
-            <version>3.2.0</version>
+            <version>3.2.2</version>
             <executions>
               <execution>
                 <id>create-invalid-optimize-testplugin-invalidVersion</id>

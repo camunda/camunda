@@ -15,6 +15,7 @@ import {withErrorHandling, withUser} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter, BulkDeleter, Tooltip} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
+import {getOptimizeProfile} from 'config';
 
 import {loadCollectionEntities, importEntity, removeEntities, checkConflicts} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
@@ -44,12 +45,14 @@ export class Collection extends React.Component {
     entities: null,
     sorting: null,
     isLoading: true,
+    optimizeProfile: null,
   };
 
   fileInput = React.createRef();
 
-  componentDidMount() {
+  async componentDidMount() {
     this.loadCollection();
+    this.setState({optimizeProfile: await getOptimizeProfile()});
   }
 
   componentDidUpdate(prevProps) {
@@ -116,6 +119,7 @@ export class Collection extends React.Component {
       entities,
       sorting,
       isLoading,
+      optimizeProfile,
     } = this.state;
 
     const {user, match} = this.props;
@@ -162,12 +166,16 @@ export class Collection extends React.Component {
             <li className={classnames({active: homeTab})}>
               <Link to=".">{t('home.collectionTitleWithAmpersand')}</Link>
             </li>
-            <li className={classnames({active: alertTab})}>
-              <Link to="alerts">{t('alert.label-plural')}</Link>
-            </li>
-            <li className={classnames({active: userTab})}>
-              <Link to="users">{t('common.user.label-plural')}</Link>
-            </li>
+            {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
+              <>
+                <li className={classnames({active: alertTab})}>
+                  <Link to="alerts">{t('alert.label-plural')}</Link>
+                </li>
+                <li className={classnames({active: userTab})}>
+                  <Link to="users">{t('common.user.label-plural')}</Link>
+                </li>
+              </>
+            )}
             <li className={classnames({active: sourcesTab})}>
               <Link to="sources">{t('home.sources.title')}</Link>
             </li>

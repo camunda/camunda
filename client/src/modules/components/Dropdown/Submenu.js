@@ -117,6 +117,10 @@ export default class Submenu extends React.Component {
     if (!prevProps.open && this.props.open) {
       document.activeElement.querySelector('[tabindex="0"]')?.focus();
     }
+
+    if (prevProps.open && !this.props.open) {
+      this.props.onClose?.();
+    }
   }
 
   initilizeHeaderAndFooterRefs() {
@@ -130,7 +134,6 @@ export default class Submenu extends React.Component {
 
   calculatePlacement = () => {
     const styles = {};
-    let scrollable = false;
     const container = this.containerRef.current;
     const submenu = container.querySelector('.childrenContainer');
     if (submenu) {
@@ -159,12 +162,10 @@ export default class Submenu extends React.Component {
 
         styles.top = '-' + shiftDistance + 'px';
         styles.maxHeight = footerTop - headerBottom - 2 * margin;
-        if (submenu.clientHeight > styles.maxHeight) {
-          scrollable = true;
-        }
       }
     }
-    this.setState({styles, scrollable});
+
+    this.setState({styles});
   };
 
   render() {
@@ -174,6 +175,7 @@ export default class Submenu extends React.Component {
         disabled={this.props.disabled}
         className={classnames('Submenu', {
           open: this.props.open,
+          fixed: this.props.fixed,
         })}
         ref={this.containerRef}
         onClick={this.onClick}
@@ -189,7 +191,7 @@ export default class Submenu extends React.Component {
         <Icon type="right" className="rightIcon" />
         {this.props.open && (
           <div
-            className={classnames('childrenContainer', {scrollable: this.state.scrollable})}
+            className="childrenContainer"
             style={this.state.styles}
             onKeyDown={this.onKeyDown}
             onClick={this.props.closeParent}

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,6 +36,8 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
+import static org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -203,11 +206,16 @@ public class CSVUtils {
     return currentKey.replace(prefix, "");
   }
 
+  @SuppressWarnings(UNCHECKED_CAST)
   private static List<String> extractAllPrefixedVariableKeys(List<RawDataProcessInstanceDto> rawData) {
     Set<String> variableKeys = new HashSet<>();
     for (RawDataProcessInstanceDto pi : rawData) {
-      if (pi.getVariables() != null) {
-        variableKeys.addAll(pi.getVariables().keySet());
+      final Map<String, Object> variables = pi.getVariables();
+      if (variables != null) {
+        variables.entrySet().stream()
+          .filter(entry -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(entry.getValue()))
+          .map(Map.Entry::getKey)
+          .forEach(variableKeys::add);
       }
     }
     return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(toList());
@@ -261,6 +269,7 @@ public class CSVUtils {
   private static Optional<String> getVariableValue(final RawDataProcessInstanceDto instanceDto, String variableKey) {
     return Optional.ofNullable(instanceDto.getVariables())
       .map(variables -> variables.get(stripOffPrefix(variableKey, VARIABLE_PREFIX)))
+      .filter(variable -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(variable))
       .map(Object::toString);
   }
 

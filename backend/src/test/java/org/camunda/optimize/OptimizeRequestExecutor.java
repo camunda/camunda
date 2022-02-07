@@ -47,6 +47,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
@@ -121,7 +122,14 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static org.camunda.optimize.rest.JsonExportRestService.EXPORT_REPORT_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DEFINITION_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.IMPORT_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.LABELS_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.REPORT_EXPORT_DEFINITION_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.REPORT_SUB_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -917,6 +925,23 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+    this.path = "variables/labels";
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(definitionVariableLabelsDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
+    this.path = PUBLIC_PATH + LABELS_SUB_PATH;
+    this.method = POST;
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(definitionVariableLabelsDto);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildProcessVariableValuesForReportsRequest(ProcessVariableReportValuesRequestDto valuesRequestDto) {
     this.path = "variables/values/reports";
     this.method = POST;
@@ -1035,7 +1060,7 @@ public class OptimizeRequestExecutor {
     this.path = "import/";
     this.body = getBody(exportedDtos);
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     return this;
   }
 
@@ -1052,9 +1077,78 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildJsonExportRequest(String reportId) {
-    this.path = EXPORT_REPORT_PATH + "/" + reportId + "/result/json";
+  public OptimizeRequestExecutor buildPublicExportJsonReportResultRequest(String reportId) {
+    this.path = PUBLIC_PATH + EXPORT_SUB_PATH + "/report/" + reportId + "/result/json";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicExportJsonReportDefinitionRequest(final List<String> reportIds,
+                                                                              final String accessToken) {
+    return buildPublicExportJsonEntityDefinitionRequest(reportIds, REPORT_EXPORT_DEFINITION_SUB_PATH, accessToken);
+  }
+
+  public OptimizeRequestExecutor buildPublicExportJsonDashboardDefinitionRequest(final List<String> dashboardIds,
+                                                                                 final String accessToken) {
+    return buildPublicExportJsonEntityDefinitionRequest(
+      dashboardIds,
+      DASHBOARD_EXPORT_DEFINITION_SUB_PATH,
+      accessToken
+    );
+  }
+
+  public OptimizeRequestExecutor buildPublicImportEntityDefinitionsRequest(final String collectionId,
+                                                                           final Set<OptimizeEntityExportDto> exportedDtos,
+                                                                           final String accessToken) {
+    this.path = PUBLIC_PATH + IMPORT_SUB_PATH;
+    this.body = getBody(exportedDtos);
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    setCollectionIdQueryParam(collectionId);
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicImportEntityDefinitionsRequest(final Entity<?> importRequestBody,
+                                                                           final String collectionId,
+                                                                           final String accessToken) {
+    this.path = PUBLIC_PATH + IMPORT_SUB_PATH;
+    this.body = importRequestBody;
+    this.method = POST;
+    setCollectionIdQueryParam(collectionId);
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicDeleteReportRequest(final String id, final String accessToken) {
+    this.path = PUBLIC_PATH + REPORT_SUB_PATH + "/" + id;
+    this.method = DELETE;
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicGetAllReportIdsInCollectionRequest(final String collectionId,
+                                                                               final String accessToken) {
+    this.path = PUBLIC_PATH + REPORT_SUB_PATH;
+    this.method = GET;
+    setCollectionIdQueryParam(collectionId);
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicGetAllDashboardIdsInCollectionRequest(final String collectionId,
+                                                                                  final String accessToken) {
+    this.path = PUBLIC_PATH + DASHBOARD_SUB_PATH;
+    this.method = GET;
+    setCollectionIdQueryParam(collectionId);
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicDeleteDashboardRequest(final String id, final String accessToken) {
+    this.path = PUBLIC_PATH + DASHBOARD_SUB_PATH + "/" + id;
+    this.method = DELETE;
+    setAccessToken(accessToken);
     return this;
   }
 
@@ -1209,11 +1303,21 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
                                                               List<String> version,
                                                               List<String> tenantIds) {
+    return buildFlowNodeOutliersRequest(key, version, tenantIds, 0, false);
+  }
+
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
+                                                              List<String> version,
+                                                              List<String> tenantIds,
+                                                              final long minimalDeviationInMs,
+                                                              final boolean onlyHumanTasks) {
     this.path = "analysis/flowNodeOutliers";
     this.method = GET;
     this.addSingleQueryParam("processDefinitionKey", key);
     this.addSingleQueryParam("processDefinitionVersions", version);
     this.addSingleQueryParam("tenantIds", tenantIds);
+    this.addSingleQueryParam("minimumDeviationFromAvg", minimalDeviationInMs);
+    this.addSingleQueryParam("disconsiderAutomatedTasks", onlyHumanTasks);
     return this;
   }
 
@@ -1282,7 +1386,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCopyReportRequest(String id, String collectionId) {
     this.path = "report/" + id + "/copy";
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     return this;
   }
 
@@ -1293,7 +1397,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCopyDashboardRequest(String id, String collectionId) {
     this.path = "dashboard/" + id + "/copy";
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     return this;
   }
 
@@ -1589,6 +1693,25 @@ public class OptimizeRequestExecutor {
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(externalVariables);
     return this;
+  }
+
+  private OptimizeRequestExecutor buildPublicExportJsonEntityDefinitionRequest(final List<String> entityIds,
+                                                                               final String entityExportSubpath,
+                                                                               final String accessToken) {
+    this.path = PUBLIC_PATH + entityExportSubpath;
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(entityIds);
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  private void setAccessToken(final String accessToken) {
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+  }
+
+  private void setCollectionIdQueryParam(final String collectionId) {
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
   }
 
   private Entity getBody(Object entity) {

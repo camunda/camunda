@@ -55,3 +55,5 @@ export {Tooltip} from './Tooltip';
 export {SelectionPreview} from './SelectionPreview';
 export {DownloadButton} from './DownloadButton';
 export {BulkDeleter} from './BulkDeleter';
+export {AlertModal} from './AlertModal';
+export {AlertsDropdown} from './AlertsDropdown';

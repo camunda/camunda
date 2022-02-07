@@ -8,14 +8,14 @@ import React, {useState, useEffect} from 'react';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -48,7 +48,7 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
       >
         {t('common.filter.types.duration')}
       </Dropdown.Option>
-      {!isOptimizeCloud && (
+      {optimizeProfile === 'platform' && (
         <>
           <Dropdown.Option
             disabled={processDefinitionIsNotSelected}

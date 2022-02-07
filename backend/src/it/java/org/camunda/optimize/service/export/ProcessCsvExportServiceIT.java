@@ -339,6 +339,46 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(actualContent).isEqualTo(stringExpected);
   }
 
+  @Test
+  public void reportExcludesRawObjectVariableColumn() {
+    // given
+    final Map<String, Object> objectVarMap = new HashMap<>();
+    objectVarMap.put("firstName", "Kermit");
+    objectVarMap.put("age", 50);
+    final VariableDto objectVar = variablesClient.createMapJsonObjectVariableDto(objectVarMap);
+    HashMap<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVar);
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    final OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), shiftedStartDate);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0L);
+    importAllEngineEntitiesFromScratch();
+    final ProcessReportDataDto report = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+
+    final String reportId = createAndStoreDefaultReportDefinition(report);
+
+    // when
+    final Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    final String actualContent = getResponseContentAsString(response);
+    final String stringExpected = getExpectedContentAsString(
+      processInstance,
+      "/csv/process/single/raw_process_data_object_variable.csv"
+    );
+
+    assertThat(actualContent).isEqualTo(stringExpected);
+  }
+
   private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance, String expectedCSV) {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${PI_ID}", processInstance.getId());

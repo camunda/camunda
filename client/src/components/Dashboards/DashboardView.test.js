@@ -8,13 +8,14 @@ import React, {runAllEffects, runAllCleanups} from 'react';
 import {shallow} from 'enzyme';
 import {useFullScreenHandle} from 'react-full-screen';
 
-import {Dropdown} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {AlertsDropdown} from 'components';
+import {getOptimizeProfile} from 'config';
 
+import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardView} from './DashboardView';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('react-full-screen', () => {
@@ -61,12 +62,21 @@ it('should render a sharing popover', async () => {
 });
 
 it('should hide sharing popover in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<DashboardView />);
 
   await runAllEffects();
 
   expect(node.find('Popover.share-button')).not.toExist();
+});
+
+it('should hide alert dropdown in ccsm environment', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = shallow(<DashboardView />);
+
+  await runAllEffects();
+
+  expect(node.find(AlertsDropdown)).not.toExist();
 });
 
 it('should enter fullscreen mode', () => {
@@ -86,27 +96,20 @@ it('should leave fullscreen mode', () => {
   expect(useFullScreenHandle().exit).toHaveBeenCalled();
 });
 
-it('should activate auto refresh mode and set it to numeric value', () => {
+it('should set auto refresh value and pass it to the refresh behavior addon', () => {
   const node = shallow(<DashboardView />);
 
-  node.find(Dropdown.Option).last().simulate('click');
+  node.find(AutoRefreshSelect).simulate('change', 'number');
 
-  expect(typeof node.find(Dropdown).prop('label').props.children[0].props.interval).toBe('number');
+  expect(node.find(AutoRefreshSelect).prop('refreshRateMs')).toBe('number');
+  expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
 });
 
-it('should deactivate autorefresh mode', () => {
-  const node = shallow(<DashboardView />);
+it('should pass the refresh interval prop to the refreshSelect and refresh bahavior components', () => {
+  const intervalSeconds = 60;
+  const node = shallow(<DashboardView refreshRateSeconds={intervalSeconds} />);
 
-  node.find(Dropdown.Option).last().simulate('click');
-  node.find(Dropdown.Option).first().simulate('click');
-
-  expect(node.find(Dropdown).prop('label').props.children[0].props.interval).toBe(null);
-});
-
-it('should add an autorefresh addon when autorefresh mode is active', () => {
-  const node = shallow(<DashboardView />);
-  node.find(Dropdown.Option).last().simulate('click');
-
+  expect(node.find(AutoRefreshSelect).prop('refreshRateMs')).toBe(intervalSeconds * 1000);
   expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
 });
 

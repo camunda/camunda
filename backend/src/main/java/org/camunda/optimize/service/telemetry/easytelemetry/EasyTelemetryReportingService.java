@@ -8,7 +8,7 @@ package org.camunda.optimize.service.telemetry.easytelemetry;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.telemetry.TelemetryReportingService;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.springframework.context.annotation.Conditional;

@@ -22,19 +22,11 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 
 import {loadTenants, loadVersions} from './service';
+import RenameVariablesModal from './RenameVariablesModal';
 
 import './DefinitionEditor.scss';
 
-export function DefinitionEditor({
-  mightFail,
-  collection,
-  type,
-  definition,
-  tenantInfo,
-  onChange,
-  onRemove,
-  onCopy,
-}) {
+export function DefinitionEditor({mightFail, collection, type, definition, tenantInfo, onChange}) {
   const {key, versions, tenantIds} = definition;
   const firstVersion = versions[0];
   const firstTenant = tenantIds[0];
@@ -48,6 +40,7 @@ export function DefinitionEditor({
   const [loadingXml, setLoadingXml] = useState(true);
   const [displayName, setDisplayName] = useState(definition.displayName);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
+  const [variableModalOpen, setVariableModalOpen] = useState(false);
 
   useEffect(() => {
     mightFail(loadVersions(type, collection, key), setAvailableVersions, showError);
@@ -159,15 +152,25 @@ export function DefinitionEditor({
         </Button>
       </div>
       <div className="actionBar">
-        {onCopy && (
-          <Button small onClick={onCopy}>
-            <Icon type="copy-small" />
-            {t('common.addACopy')}
-          </Button>
-        )}
-        <Button small onClick={onRemove}>
-          <Icon type="close-small" />
-          {t('common.removeEntity', {entity: t(`common.${type}.label`)})}
+        <Button
+          small
+          onClick={() => {
+            setVariableModalOpen(true);
+          }}
+        >
+          <Icon type="edit" />
+          {t('report.definition.variables.rename')}
+          {variableModalOpen && (
+            <RenameVariablesModal
+              definitionKey={definition.key}
+              availableTenants={tenantInfo?.map(({id}) => id)}
+              onChange={() => {
+                onChange(definition);
+                setVariableModalOpen(false);
+              }}
+              onClose={() => setVariableModalOpen(false)}
+            />
+          )}
         </Button>
       </div>
       <Modal

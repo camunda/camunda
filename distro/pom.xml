@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.7.0</version>
+    <version>3.8.0-alpha1</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
@@ -14,6 +14,7 @@
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <sonar.skip>true</sonar.skip>
+    <elasticsearch.demo.version>7.16.2</elasticsearch.demo.version>
   </properties>
 
   <dependencies>
@@ -74,7 +75,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.3.0</version>
         <executions>
           <!--Check if the version is alpha or snapshot, use develop if true, else leave docs.version = project.version-->
           <execution>
@@ -110,7 +111,7 @@
       <plugin>
         <groupId>com.googlecode.maven-download-plugin</groupId>
         <artifactId>download-maven-plugin</artifactId>
-        <version>1.6.7</version>
+        <version>1.6.8</version>
         <executions>
           <execution>
             <phase>process-resources</phase>
@@ -118,7 +119,7 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${elasticsearch.version}-no-jdk-windows-x86_64.zip</url>
+              <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-no-jdk-windows-x86_64.zip</url>
               <unpack>true</unpack>
               <outputDirectory>${project.build.directory}</outputDirectory>
             </configuration>

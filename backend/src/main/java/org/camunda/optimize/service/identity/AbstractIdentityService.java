@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -18,7 +17,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -33,12 +31,9 @@ public abstract class AbstractIdentityService {
     ImmutableList.copyOf(AuthorizationType.values());
 
   protected final ConfigurationService configurationService;
-  protected final UserIdentityCache syncedIdentityCache;
 
-  protected AbstractIdentityService(final ConfigurationService configurationService,
-                                    final UserIdentityCache syncedIdentityCache) {
+  protected AbstractIdentityService(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
-    this.syncedIdentityCache = syncedIdentityCache;
   }
 
   public abstract Optional<UserDto> getUserById(final String userId);
@@ -49,9 +44,9 @@ public abstract class AbstractIdentityService {
 
   public abstract boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity);
 
-  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
-    syncedIdentityCache.addIdentity(identity);
-  }
+  public abstract IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
+                                                                            final String searchString,
+                                                                            final int maxResults);
 
   public boolean isSuperUserIdentity(final String userId) {
     return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId) ||
@@ -81,22 +76,6 @@ public abstract class AbstractIdentityService {
       // as well as for the case that it does exist, but the user doesn't have the rights to see the result
       .map(identityDto -> isUserAuthorizedToAccessIdentity(userId, identityDto) ? identityDto : null);
   }
-  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
-                                                                   final String searchString,
-                                                                   final int maxResults) {
-    final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
-    IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(
-      searchString, IdentityType.values(), maxResults
-    );
-    while (!result.getResult().isEmpty()
-      && filteredIdentities.size() < maxResults) {
-      // continue searching until either the maxResult number of hits has been found or
-      // the end of the cache has been reached
-      filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
-      result = syncedIdentityCache.searchIdentitiesAfter(searchString, IdentityType.values(), maxResults, result);
-    }
-    return new IdentitySearchResultResponseDto(filteredIdentities.size(), filteredIdentities);
-  }
 
   public void validateUserAuthorizedToAccessRoleOrFail(final String userId, final IdentityDto identityDto) {
     if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
@@ -119,7 +98,7 @@ public abstract class AbstractIdentityService {
     return identityDto.map(IdentityWithMetadataResponseDto::getName);
   }
 
-  private List<IdentityWithMetadataResponseDto> filterIdentitySearchResultByUserAuthorizations(
+  protected List<IdentityWithMetadataResponseDto> filterIdentitySearchResultByUserAuthorizations(
     final String userId,
     final IdentitySearchResultResponseDto result) {
     return result.getResult()

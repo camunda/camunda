@@ -68,6 +68,22 @@ it('should show the definition key if the name is not unique', () => {
   expect(formattedEntries[2].label).toBe('Definition A (definitionA2)');
 });
 
+it('should show the definition key if the name is null ', () => {
+  loadDefinitions.mockReturnValueOnce([
+    {key: 'key0', name: 'name0'},
+    {key: 'key1', name: null},
+  ]);
+  const node = shallow(
+    <AddDefinition {...props} definitions={[{key: 'testDefKey', name: null}]} />
+  );
+  runLastEffect();
+
+  const formattedEntries = node.find('Checklist').prop('formatter')();
+
+  expect(formattedEntries[0].label).toBe('name0');
+  expect(formattedEntries[1].label).toBe('key1');
+});
+
 it('should call back with definitions to add', () => {
   const spy = jest.fn();
   const node = shallow(
@@ -80,7 +96,7 @@ it('should call back with definitions to add', () => {
   loadTenants.mockReturnValueOnce([
     {
       key: 'definitionA',
-      versions: ['latest'],
+      versions: ['all'],
       tenants: [{id: null, name: 'Not Defined'}],
     },
   ]);
@@ -91,7 +107,7 @@ it('should call back with definitions to add', () => {
       key: 'definitionA',
       name: 'Definition A',
       displayName: 'Definition A',
-      versions: ['latest'],
+      versions: ['all'],
       tenantIds: [null],
       identifier: 'randomID',
     },

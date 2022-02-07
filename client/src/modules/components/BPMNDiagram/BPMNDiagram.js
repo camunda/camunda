@@ -24,9 +24,14 @@ const availableViewers = [];
 export default themed(
   withErrorHandling(
     class BPMNDiagram extends React.Component {
-      state = {
-        loaded: false,
-      };
+      constructor(props) {
+        super(props);
+
+        this.state = {
+          loaded: false,
+        };
+        this.resizeObserver = new ResizeObserver(this.fitDiagram);
+      }
 
       storeContainer = (container) => {
         this.container = container;
@@ -161,20 +166,19 @@ export default themed(
 
       componentDidMount() {
         this.importXML(this.props.xml);
-
-        const dashboardObject = this.container.closest('.grid-entry.react-draggable');
-        if (dashboardObject) {
-          // if the diagram is on a dashboard, react to changes of the dashboard objects size
-          new MutationObserver(this.fitDiagram).observe(dashboardObject, {attributes: true});
-        }
+        this.resizeObserver.observe(this.container);
       }
 
       componentWillUnmount() {
         this.unattach(this.props.xml, this.props.theme);
+        this.resizeObserver.disconnect();
       }
 
       fitDiagram = () => {
-        if (this.viewer) {
+        // if we resize the browsers window so that the diagram height is 0,
+        // bpmn.js fit function crashes in firefox
+        // that's why we need to check that the container height is greater that 0
+        if (this.viewer && this.container.clientHeight > 0) {
           const canvas = this.viewer.get('canvas');
 
           canvas.resized();

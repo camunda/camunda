@@ -9,8 +9,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Optional;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class DecisionDefinitionEngineDto extends DefinitionEngineDto {
@@ -20,7 +18,6 @@ public class DecisionDefinitionEngineDto extends DefinitionEngineDto {
   protected String name;
   protected int version;
   protected String resource;
-  protected String tenantId;
   protected String decisionRequirementsDefinitionId;
   protected String decisionRequirementsDefinitionKey;
   protected Integer historyTimeToLive;
@@ -29,9 +26,5 @@ public class DecisionDefinitionEngineDto extends DefinitionEngineDto {
   @JsonIgnore
   public String getVersionAsString() {
     return String.valueOf(version);
-  }
-
-  public Optional<String> getTenantId() {
-    return Optional.ofNullable(tenantId);
   }
 }

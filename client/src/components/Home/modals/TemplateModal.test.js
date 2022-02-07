@@ -19,6 +19,16 @@ jest.mock('services', () => {
   };
 });
 
+beforeEach(() => {
+  Object.defineProperty(global, 'ResizeObserver', {
+    writable: true,
+    value: jest.fn().mockImplementation(() => ({
+      observe: jest.fn(() => 'Mocking works'),
+      disconnect: jest.fn(),
+    })),
+  });
+});
+
 const props = {
   onClose: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),

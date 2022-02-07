@@ -67,7 +67,7 @@ import java.util.stream.IntStream;
 @Slf4j
 public class Generator {
   private static final String DEFAULT_USER = "demo";
-  private static final String INGESTION_SECRET = "secret";
+  private static final String API_SECRET = "secret";
 
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final SimpleEngineClient client =
@@ -96,7 +96,7 @@ public class Generator {
     reportClient = new ReportClient(() -> requestExecutor);
     alertClient = new AlertClient(() -> requestExecutor);
     dashboardClient = new DashboardClient(() -> requestExecutor);
-    ingestionClient = new IngestionClient(() -> requestExecutor, () -> INGESTION_SECRET, () -> INGESTION_SECRET);
+    ingestionClient = new IngestionClient(() -> requestExecutor, () -> API_SECRET);
     eventProcessClient = new EventProcessClient(() -> requestExecutor);
   }
 

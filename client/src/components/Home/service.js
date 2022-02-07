@@ -67,23 +67,6 @@ export async function checkDeleteSourceConflicts(collection, scopeId) {
   return await response.json();
 }
 
-export async function loadAlerts(collection) {
-  const response = await get(`api/collection/${collection}/alerts`);
-  return await response.json();
-}
-
-export async function addAlert(alert) {
-  return await post(`api/alert`, alert);
-}
-
-export async function editAlert(id, alert) {
-  return await put(`api/alert/${id}`, alert);
-}
-
-export async function removeAlert(id) {
-  return await del(`api/alert/${id}`);
-}
-
 export async function copyEntity(type, id, name, collectionId) {
   const query = {name};
 

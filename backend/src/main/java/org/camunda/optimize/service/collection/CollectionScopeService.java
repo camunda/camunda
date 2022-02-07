@@ -204,7 +204,7 @@ public class CollectionScopeService {
     reportsAffectedByScopeUpdate
       .stream()
       .map(SingleReportDefinitionDto::getId)
-      .forEach(reportId -> reportService.deleteReport(userId, reportId, true));
+      .forEach(reportId -> reportService.deleteReportAsUser(userId, reportId, true));
   }
 
   public Set<ConflictedItemDto> getAllConflictsOnScopeDeletion(final String userId,

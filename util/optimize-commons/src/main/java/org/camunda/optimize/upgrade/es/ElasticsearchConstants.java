@@ -78,6 +78,7 @@ public class ElasticsearchConstants {
   public static final String TENANT_INDEX_NAME = "tenant";
   public static final String EXTERNAL_EVENTS_INDEX_NAME = "event";
   public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
+  public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
 
   public static final String ZEEBE_PROCESS_DEFINITION_INDEX_NAME = "process";
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";

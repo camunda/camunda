@@ -59,6 +59,10 @@
       }
     }
   }
+
+  .Table thead input[type='checkbox'].hidden {
+    visibility: hidden;
+  }
 }
 
 .sourcesModalTenantPopover {

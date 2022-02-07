@@ -59,6 +59,22 @@ Services can be shutdown again using
 docker-compose down
 ```
 
+You can also run Optimize in CCSM mode by running the following command
+
+```
+docker-compose -f docker-compose.ccsm.yml up -d
+```
+
+This will start all the components of IAM, Elasticsearch, Zeebe, and Optimize. Optimize will be available at localhost:8090. 
+
+Optimize then needs to be started in CCSM mode, and with the following environment variables:
+```
+SPRING_PROFILES_ACTIVE=ccsm;
+CAMUNDA_OPTIMIZE_IAM_ISSUER_URL=[IAM host]
+CAMUNDA_OPTIMIZE_IAM_CLIENTID=optimize;
+CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET=[must match the one in docker-compose.iam.yml]
+```
+
 ## F.A.Q
 
 # Docker is telling me that I do not have the rights to pull the images

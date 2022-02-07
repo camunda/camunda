@@ -9,8 +9,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Optional;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ProcessDefinitionEngineDto extends DefinitionEngineDto {
@@ -23,15 +21,10 @@ public class ProcessDefinitionEngineDto extends DefinitionEngineDto {
   protected String resource;
   protected String diagram;
   protected boolean suspended;
-  protected String tenantId;
   protected String versionTag;
 
   @JsonIgnore
   public String getVersionAsString() {
     return String.valueOf(version);
-  }
-
-  public Optional<String> getTenantId() {
-    return Optional.ofNullable(tenantId);
   }
 }

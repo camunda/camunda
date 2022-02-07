@@ -21,6 +21,6 @@ export function isNonNegativeNumber(value) {
   }
 }
 
-export function isPostiveInt(value) {
-  return isNonNegativeNumber(value) && Number.isInteger(+value);
+export function isPositiveInt(value) {
+  return isNonNegativeNumber(value) && Number.isInteger(+value) && +value > 0;
 }

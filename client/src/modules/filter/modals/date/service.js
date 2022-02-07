@@ -120,7 +120,7 @@ export function isValid({
     case 'after':
       return valid;
     case 'custom':
-      return numberParser.isPostiveInt(customNum);
+      return numberParser.isPositiveInt(customNum);
     default:
       return includeUndefined || excludeUndefined;
   }

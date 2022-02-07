@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.main;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.vdurmont.semver4j.Semver;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
@@ -34,7 +35,8 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @RegisterExtension
   protected final LogCapturer logCapturer = LogCapturer.create().captureForType(UpgradeProcedure.class);
 
-  private final UpgradePlan upgradePlan = new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
+  private final UpgradePlan previousVersionMajorMinorUpgradePlan =
+    new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
 
   @Test
   public void upgradeBreaksOnUnsupportedExistingSchemaVersion() {
@@ -43,7 +45,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     setMetadataVersion(metadataIndexVersion);
 
     // when
-    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan))
       // then
       .isInstanceOf(UpgradeRuntimeException.class)
       .hasMessage(String.format(
@@ -62,7 +64,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
 
     // when
-    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
@@ -74,7 +76,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     setMetadataVersion(getMajorAndMinor(PreviousVersion.PREVIOUS_VERSION) + ".1");
 
     // when
-    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
@@ -86,11 +88,33 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     setMetadataVersion(Version.VERSION);
 
     // when
-    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
-    logCapturer.assertContains("Target optionalSchemaVersion is already present, no upgrade to perform.");
+    logCapturer.assertContains(
+      "Target schemaVersion or a newer version is already present, no update to perform to "
+        + previousVersionMajorMinorUpgradePlan.getToVersion().getValue()
+        + "."
+    );
+  }
+
+  @Test
+  public void upgradeDoesNotFailOnSchemaVersionNewerAsTargetVersion() {
+    // given
+    final String metadataVersion = new Semver(Version.VERSION).withIncPatch().getValue();
+    setMetadataVersion(metadataVersion);
+
+    // when
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
+
+    // then
+    assertThat(getMetadataVersion()).isEqualTo(metadataVersion);
+    logCapturer.assertContains(
+      "Target schemaVersion or a newer version is already present, no update to perform to "
+        + previousVersionMajorMinorUpgradePlan.getToVersion().getValue()
+        + "."
+    );
   }
 
   @Test
@@ -99,10 +123,14 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     cleanAllDataFromElasticsearch();
 
     // when
-    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
 
     // then
-    logCapturer.assertContains("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
+    logCapturer.assertContains(
+      "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to "
+        + previousVersionMajorMinorUpgradePlan.getToVersion().getValue()
+        + "."
+    );
   }
 
   @Test

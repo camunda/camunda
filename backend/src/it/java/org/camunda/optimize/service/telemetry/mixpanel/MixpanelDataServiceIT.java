@@ -7,6 +7,7 @@ package org.camunda.optimize.service.telemetry.mixpanel;
 
 import lombok.NonNull;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.junit.jupiter.api.Test;
@@ -15,20 +16,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MixpanelDataServiceIT extends AbstractIT {
 
+  private static final String CLUSTER_ID = "IT-cluster";
+  private static final String STAGE = "IT";
+  private static final String ORGANIZATION_ID = "orgId";
+
   @Test
   public void heartbeatEventData() {
     // given
     final MixpanelConfiguration mixpanelConfiguration = getMixpanelConfiguration();
-    final String organizationId = "orgId";
-    final String stage = "IT";
-    mixpanelConfiguration.getProperties().setStage(stage);
-    mixpanelConfiguration.getProperties().setOrganizationId(organizationId);
-    final String clusterId = "IT-cluster";
-    mixpanelConfiguration.getProperties().setClusterId(clusterId);
+    mixpanelConfiguration.getProperties().setStage(STAGE);
+    mixpanelConfiguration.getProperties().setOrganizationId(ORGANIZATION_ID);
+    mixpanelConfiguration.getProperties().setClusterId(CLUSTER_ID);
 
     reportClient.createEmptySingleProcessReport();
-    reportClient.createEmptySingleProcessReport();
+    final String collectionId = collectionClient.createNewCollection();
+    final String reportInCollectionId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     reportClient.createEmptySingleDecisionReport();
+    dashboardClient.createEmptyDashboard();
+    alertClient.createAlertForReport(reportInCollectionId);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -41,11 +46,37 @@ public class MixpanelDataServiceIT extends AbstractIT {
     assertThat(mixpanelHeartbeatProperties.getDistinctId()).isEmpty();
     assertThat(mixpanelHeartbeatProperties.getInsertId()).isNotEmpty();
     assertThat(mixpanelHeartbeatProperties.getProduct()).isEqualTo("optimize");
-    assertThat(mixpanelHeartbeatProperties.getStage()).isEqualTo(stage);
-    assertThat(mixpanelHeartbeatProperties.getOrganizationId()).isEqualTo(organizationId);
-    assertThat(mixpanelHeartbeatProperties.getClusterId()).isEqualTo(clusterId);
+    assertThat(mixpanelHeartbeatProperties.getStage()).isEqualTo(STAGE);
+    assertThat(mixpanelHeartbeatProperties.getOrganizationId()).isEqualTo(ORGANIZATION_ID);
+    assertThat(mixpanelHeartbeatProperties.getClusterId()).isEqualTo(CLUSTER_ID);
     assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getDashboardCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getAlertCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void entityEventData() {
+    // given
+    final MixpanelConfiguration mixpanelConfiguration = getMixpanelConfiguration();
+    mixpanelConfiguration.getProperties().setStage(STAGE);
+    mixpanelConfiguration.getProperties().setOrganizationId(ORGANIZATION_ID);
+    mixpanelConfiguration.getProperties().setClusterId(CLUSTER_ID);
+
+    // when
+    final String entityId = "id";
+    final MixpanelEntityEventProperties mixpanelEntityEventProperties =
+      getMixpanelDataService().getMixpanelEntityEventProperties(entityId);
+
+    // then
+    assertThat(mixpanelEntityEventProperties.getTime()).isLessThanOrEqualTo(System.currentTimeMillis());
+    assertThat(mixpanelEntityEventProperties.getDistinctId()).isEmpty();
+    assertThat(mixpanelEntityEventProperties.getInsertId()).isNotEmpty();
+    assertThat(mixpanelEntityEventProperties.getProduct()).isEqualTo("optimize");
+    assertThat(mixpanelEntityEventProperties.getStage()).isEqualTo(STAGE);
+    assertThat(mixpanelEntityEventProperties.getOrganizationId()).isEqualTo(ORGANIZATION_ID);
+    assertThat(mixpanelEntityEventProperties.getClusterId()).isEqualTo(CLUSTER_ID);
+    assertThat(mixpanelEntityEventProperties.getEntityId()).isEqualTo(entityId);
   }
 
   private MixpanelConfiguration getMixpanelConfiguration() {

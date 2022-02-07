@@ -11,10 +11,14 @@ security:
       organizationClaimName: 'https://camunda.com/organizations'
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
+    ccsm:
+      issuerUrl: ${CAMUNDA_OPTIMIZE_IAM_ISSUER_URL:}
+      clientId: ${CAMUNDA_OPTIMIZE_IAM_CLIENTID:}
+      clientSecret: ${CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET:}
     cookie:
       same-site:
-        # decides if the optimize auth cookie has the same site cookie flag set
-        enabled: true
+        # decides if the Optimize auth cookie has the same site cookie flag set
+        enabled: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED:true}
       secure: auto
     token:
       # Optimize uses token-based authentication to keep track of which users are
@@ -22,13 +26,18 @@ security:
       lifeMin: 60
       # Optional secret used to sign authentication tokens, it's recommended to use at least a 64 character secret.
       # If set `null` a random secret will be generated with each startup of Optimize.
-      secret: null
+      secret: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET:null}
     # List of user ids that are granted full permission to all collections, reports & dashboards
     # Note: For reports these users are still required to be granted access to the corresponding process/decision
     # definitions in Camunda Platform Admin
     superUserIds: ${OPTIMIZE_SUPER_USER_IDS:[]}
     # List of group ids that are granted full permission to all collections, reports & dashboards
     superGroupIds: []
+
+  # Configuration relating to the use of Optimize
+  license:
+    # True if Optimize is running in enterprise mode, or false if in trial mode
+    enterprise: ${CAMUNDA_OPTIMIZE_ENTERPRISE:true}
 
   # Here you can define HTTP response headers that Optimize can send in its responses
   # to increase the security of your application.
@@ -61,6 +70,12 @@ security:
     # Find more details: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
     Content-Security-Policy: base-uri 'self'
 
+# A global access token used by all public APIs of Optimize
+api:
+  # Secret token to be provided on public APIs of Optimize.
+  # If set `null` an error will be thrown on any API access
+  accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
+
 container:
   # A host name or IP address, to identify a specific network interface on
   # which to listen.
@@ -84,7 +99,7 @@ container:
     connections:
       max: 10
   # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
-  accessUrl: null
+  accessUrl: ${CONTAINER_ACCESS_URL:null}
 
 # Configuration for fetching user data
 users:
@@ -104,7 +119,10 @@ engines:
   'camunda-bpm':
     # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
     name: default
-    # A default tenant to the be injected on data from this engine where no tenant is configured in the engine itself.
+    # List of tenant IDs to be excluded when importing data. When left empty, data from all tenants will be imported.
+    # Please note that the defaultTenant cannot be excluded (and therefore also not the entities with "null" as tenant)
+    excludedTenants: []
+    # A default tenant to be injected on data from this engine where no tenant is configured in the engine itself.
     # This property is only relevant in the context of a `One Process Engine Per Tenant`.
     # For details consult the Multi-Tenancy documentation.
     defaultTenant:
@@ -146,7 +164,7 @@ engines:
 engine-commons:
   connection:
     #Maximum time without connection to the engine, Optimize should wait
-    #until a time out is triggered. A value of zero means to wait an
+    #until a timeout is triggered. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
   read:
@@ -157,13 +175,13 @@ engine-commons:
 
 zeebe:
   # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
-  enabled: false
+  enabled: ${CAMUNDA_OPTIMIZE_ZEEBE_ENABLED:false}
   # The name suffix of the exported Zeebe records. This must match the record-prefix configured in the exporter of the instance
-  name: 'zeebe-record'
+  name: '${CAMUNDA_OPTIMIZE_ZEEBE_NAME:zeebe-record}'
   # The number of partitions configured for the Zeebe record source
-  partitionCount: 1
+  partitionCount: ${CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT:1}
   # The max page size for importing Zeebe data
-  maxImportPageSize: 10000
+  maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:10000}
 
 import:
   data:
@@ -188,7 +206,7 @@ import:
       # Determines the page size for historic variable instance fetching.
       maxPageSize: 10000
       # Controls whether Optimize fetches the serialized value of object variables from the Camunda Runtime REST API.
-      # By default this is active for backwards compatibility. If no variable plugin to handle object
+      # By default, this is active for backwards compatibility. If no variable plugin to handle object
       # variables is installed, it can be turned off to reduce the overhead of the variable import.
       includeObjectVariableValue: true
     user-task-instance:
@@ -284,7 +302,7 @@ import:
 es:
   connection:
     # Maximum time without connection to Elasticsearch, Optimize should
-    # wait until a time out triggers.
+    # wait until a timeout triggers.
     timeout: 10000
     # Maximum size of the Elasticsearch response consumer heap buffer.
     responseConsumerBufferLimitInMb: 100
@@ -311,20 +329,20 @@ es:
   # Elasticsearch security settings
   security:
     # the basic auth (x-pack) username
-    username: null
+    username: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME:null}
     # the basic auth (x-pack) password
-    password: null
+    password: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD:null}
     # SSL/HTTPS secured connection settings
     ssl:
       # path to a PEM encoded file containing the certificate (or certificate chain)
       # that will be presented to clients when they connect.
-      certificate: null
+      certificate: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_SSL_CERTIFICATE:null}
       # A list of paths to PEM encoded CA certificate files that should be trusted, e.g. ['/path/to/ca.crt'].
       # Note: if you are using a public CA that is already trusted by the Java runtime,
       # you do not need to set the certificate_authorities.
-      certificate_authorities: []
+      certificate_authorities: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES:[]}
       # used to enable or disable TLS/SSL for the HTTP connection
-      enabled: false
+      enabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED:false}
 
   # Maximum time in seconds a request to elasticsearch should last, before a timeout
   # triggers.
@@ -446,14 +464,9 @@ export:
     limit: 1000
     delimiter: ","
 
-  json:
-    # Secret token to be provided on the JSON REST Export API when exporting data.
-    # If set `null` an error will be thrown and JSON Exports will be blocked
-    accessToken: ${OPTIMIZE_JSON_EXPORT_ACCESS_TOKEN:null}
-
 sharing:
   # decides if the sharing feature of Optimize can be used in the UI.
-  enabled: true
+  enabled: ${CAMUNDA_OPTIMIZE_SHARING_ENABLED:true}
 
 historyCleanup:
   # cron expression for when the cleanup should run
@@ -515,7 +528,7 @@ ui:
     # a hex encoded color that should be used as background color for the header. Default color is white.
     backgroundColor: '#FFFFFF'
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
-  logoutHidden: false
+  logoutHidden: ${CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN:false}
 
 eventBasedProcess:
   # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
@@ -527,9 +540,6 @@ eventBasedProcess:
     enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
     maxPageSize: 5000
   eventIngestion:
-    # Secret token to be provided on the Ingestion REST API when ingesting data.
-    # If set `null` a random token will be generated with each startup of Optimize and logged.
-    accessToken: ${OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN:null}
     # Content length limit for an ingestion REST API Bulk request in bytes.
     # Requests will be rejected when exceeding that limit.
     # Defaults to 10MB.
@@ -603,9 +613,6 @@ externalVariable:
     # Determines the page size for the external variable import, that got ingested via the external variable API
     maxPageSize: 10000
   variableIngestion:
-    # Secret token to be provided to the external variable ingestion API.
-    # If set to `null`, a random token will be generated with each startup of Optimize and logged.
-    accessToken: ${OPTIMIZE_VARIABLE_INGESTION_ACCESS_TOKEN:null}
     # Content length limit for the external variable ingestion request in bytes.
     # Requests will be rejected when exceeding that limit. Defaults to 10MB.
     maxBatchRequestBytes: 10485760

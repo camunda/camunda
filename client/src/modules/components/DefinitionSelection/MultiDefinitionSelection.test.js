@@ -51,7 +51,7 @@ const props = {
     },
     {
       key: 'bar',
-      name: 'Bar',
+      name: null,
     },
   ],
   selectedDefinitions: [],
@@ -83,8 +83,8 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
   expect(loadTenants).toHaveBeenCalledWith(
     'process',
     [
-      {key: 'foo', versions: ['latest']},
-      {key: 'bar', versions: ['latest']},
+      {key: 'foo', versions: ['all']},
+      {key: 'bar', versions: ['all']},
     ],
     props.location.pathname
   );
@@ -94,14 +94,14 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
       key: 'foo',
       name: 'Foo',
       tenantIds: ['a', 'b'],
-      versions: ['latest'],
+      versions: ['all'],
     },
     {
       identifier: 'randomID',
       key: 'bar',
-      name: 'Bar',
+      name: null,
       tenantIds: ['a'],
-      versions: ['latest'],
+      versions: ['all'],
     },
   ]);
 });
@@ -118,4 +118,10 @@ it('should invoke onChange when removing definition', () => {
 
   node.find(MultiSelect).simulate('remove', 'foo');
   expect(spy).toHaveBeenCalledWith([]);
+});
+
+it('should display key of definition if name is null', () => {
+  const node = shallow(<MultiDefinitionSelection {...props} />);
+
+  expect(node.find({value: 'bar'}).text()).toBe('bar');
 });

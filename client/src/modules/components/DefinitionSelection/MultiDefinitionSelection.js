@@ -40,7 +40,7 @@ export function MultiDefinitionSelection({
         'process',
         newDefinitions.map(({key}) => ({
           key,
-          versions: ['latest'],
+          versions: ['all'],
         })),
         getCollection(location.pathname)
       ),
@@ -49,7 +49,7 @@ export function MultiDefinitionSelection({
           newDefinitions.map(({key, name}, idx) => ({
             key,
             name,
-            versions: ['latest'],
+            versions: ['all'],
             tenantIds: tenantInfo[idx].tenants.map(({id}) => id),
             identifier: getRandomId(),
           }))
@@ -76,10 +76,10 @@ export function MultiDefinitionSelection({
     >
       {availableDefinitions
         .filter((def) => !selectedDefinitions.some(({key}) => key === def.key))
-        .map((definition) => {
+        .map(({name, key}) => {
           return (
-            <MultiSelect.Option key={definition.key} value={definition.key} label={definition.name}>
-              {definition.name}
+            <MultiSelect.Option key={key} value={key} label={name || key}>
+              {name || key}
             </MultiSelect.Option>
           );
         })}

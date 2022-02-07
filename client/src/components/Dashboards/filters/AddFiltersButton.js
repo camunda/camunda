@@ -16,7 +16,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {showPrompt} from 'prompt';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 export function AddFiltersButton({
   availableFilters,
@@ -29,11 +29,11 @@ export function AddFiltersButton({
   const [openModalAfterReportUpdate, setOpenModalAfterReportUpdate] = useState(null);
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -121,7 +121,7 @@ export function AddFiltersButton({
             {t('dashboard.filter.types.variable')}
           </Dropdown.Option>
         </Tooltip>
-        {!isOptimizeCloud &&
+        {optimizeProfile === 'platform' &&
           ['assignee', 'candidateGroup'].map((type) => (
             <Tooltip
               key={type}

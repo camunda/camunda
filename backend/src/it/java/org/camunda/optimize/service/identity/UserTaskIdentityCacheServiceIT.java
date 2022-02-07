@@ -55,7 +55,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
 
   @RegisterExtension
   protected final LogCapturer assigneeCandidateCacheServiceLogger =
-    LogCapturer.create().captureForType(PlatformUserTaskIdentityCacheService.class);
+    LogCapturer.create().captureForType(PlatformUserTaskIdentityCache.class);
 
   @RegisterExtension
   protected final LogCapturer identityLinkLogImportJobLog =
@@ -101,7 +101,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
     getUserTaskIdentityCacheConfiguration().setMaxEntryLimit(1L);
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
 
-    final PlatformUserTaskIdentityCacheService assigneeIdentityCacheService = getUserTaskIdentityCacheService();
+    final PlatformUserTaskIdentityCache assigneeIdentityCacheService = getUserTaskIdentityCacheService();
     assertThatThrownBy(assigneeIdentityCacheService::synchronizeIdentities)
       // then
       .isInstanceOf(MaxEntryLimitHitException.class);
@@ -457,8 +457,8 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
       .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
   }
 
-  private PlatformUserTaskIdentityCacheService getUserTaskIdentityCacheService() {
-    return embeddedOptimizeExtension.getUserTaskIdentityCacheService();
+  private PlatformUserTaskIdentityCache getUserTaskIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserTaskIdentityCache();
   }
 
   private UserTaskIdentityCacheConfiguration getUserTaskIdentityCacheConfiguration() {

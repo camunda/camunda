@@ -82,7 +82,11 @@ export default class StringInput extends React.Component {
       const sortedAddedValues = [...this.props.filter.values].sort();
 
       sortedAddedValues.forEach((value) => {
-        if ((value < maxAvailableValue || valuesAreComplete) && !availableValues.includes(value)) {
+        if (
+          (value < maxAvailableValue || valuesAreComplete) &&
+          !availableValues.includes(value) &&
+          value !== null
+        ) {
           availableValues.push(value);
         }
       });

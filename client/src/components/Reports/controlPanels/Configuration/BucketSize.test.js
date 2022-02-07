@@ -21,12 +21,19 @@ const report = {
     configuration: {
       customBucket: {
         active: false,
-        bucketSize: '10',
+        bucketSize: '10.0',
         bucketSizeUnit: 'minute',
-        baseline: '0',
+        baseline: '0.0',
         baselineUnit: 'minute',
       },
     },
+  },
+  result: {
+    measures: [
+      {
+        data: [{key: '1'}, {key: '2'}, {key: 'missing'}],
+      },
+    ],
   },
 };
 
@@ -48,14 +55,14 @@ it('should render bucket options', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should active the bucket size when enabling the switch', () => {
+it('should invoke onChange when triggering the activation switch', () => {
   const spy = jest.fn();
 
   const node = shallow(<BucketSize report={report} onChange={spy} />);
 
   node.find('Switch').prop('onChange')({target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith({customBucket: {active: {$set: true}}}, true);
+  expect(spy.mock.calls[0][0].customBucket.active).toEqual({$set: true});
 });
 
 it('should reevaluate the report when changing the size or baseline to a valid value', () => {
@@ -93,4 +100,16 @@ it('should include a unit selection when report is distributed by number variabl
   const node = shallow(<BucketSize report={distributedByVariableReport} />);
 
   expect(node.find('.BucketSize')).toExist();
+});
+
+it('should find an apropriate bucket size and baseline when enabling the switch the first time', () => {
+  const spy = jest.fn();
+  const node = shallow(<BucketSize report={report} onChange={spy} />);
+
+  node.find('Switch').prop('onChange')({target: {checked: true}});
+
+  expect(spy).toHaveBeenCalledWith(
+    {customBucket: {active: {$set: true}, baseline: {$set: 1}, bucketSize: {$set: 0.1}}},
+    true
+  );
 });

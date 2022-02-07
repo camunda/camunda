@@ -268,7 +268,13 @@ export default withErrorHandling(
         this.loadFlowNodeNames(newDefinitions[0]),
       ]);
 
-      change.configuration = {xml: {$set: xml}};
+      change.configuration = {
+        xml: {$set: xml},
+        // disable bucket size config on definition update
+        // reason: every definition has different data and needs a different bucket size
+        customBucket: {active: {$set: false}},
+        distributeByCustomBucket: {active: {$set: false}},
+      };
 
       const variableConfig = this.getVariableConfig();
       if (variableConfig && !this.variableExists(variableConfig.name)) {
@@ -384,7 +390,11 @@ export default withErrorHandling(
                   )}
                 </li>
                 {shouldDisplayMeasure && (
-                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
+                  <Measure
+                    report={data}
+                    onChange={(change) => updateReport(change, true)}
+                    variables={{variable: variables}}
+                  />
                 )}
                 <GroupBy
                   type="process"

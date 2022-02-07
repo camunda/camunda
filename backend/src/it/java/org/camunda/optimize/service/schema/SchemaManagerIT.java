@@ -111,7 +111,7 @@ public class SchemaManagerIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
-    assertThat(mappings).hasSize(26);
+    assertThat(mappings).hasSize(27);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }

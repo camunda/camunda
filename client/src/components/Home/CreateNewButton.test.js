@@ -8,12 +8,12 @@ import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import {CreateNewButton} from './CreateNewButton';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 it('should match snapshot', async () => {
@@ -33,7 +33,7 @@ it('should not show the collection option if it is in a collection', async () =>
 });
 
 it('should not show decision and combined report options in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
 
   const node = shallow(<CreateNewButton />);
 

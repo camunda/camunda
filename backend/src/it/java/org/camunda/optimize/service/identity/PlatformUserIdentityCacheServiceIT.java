@@ -94,7 +94,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractIT {
       getIdentitySyncConfiguration().setMaxEntryLimit(1L);
 
       // then
-      final PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+      final PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
       assertThatThrownBy(userIdentityCacheService::synchronizeIdentities)
         .isInstanceOf(MaxEntryLimitHitException.class);
       assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
@@ -359,8 +359,8 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractIT {
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
-  private PlatformUserIdentityCacheService getUserIdentityCacheService() {
-    return embeddedOptimizeExtension.getUserIdentityCacheService();
+  private PlatformUserIdentityCache getUserIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserIdentityCache();
   }
 
   private UserIdentityCacheConfiguration getIdentitySyncConfiguration() {

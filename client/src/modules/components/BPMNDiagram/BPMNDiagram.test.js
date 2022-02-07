@@ -93,6 +93,16 @@ jest.mock('bpmn-js/lib/Viewer', () => {
   };
 });
 
+beforeEach(() => {
+  Object.defineProperty(global, 'ResizeObserver', {
+    writable: true,
+    value: jest.fn().mockImplementation(() => ({
+      observe: jest.fn(() => 'Mocking works'),
+      disconnect: jest.fn(),
+    })),
+  });
+});
+
 const diagramXml = 'some diagram XML';
 
 it('should create a Viewer', async () => {
@@ -150,12 +160,12 @@ it('should handle rapid xml updates well', async () => {
   expect(node.instance().viewer.attachTo).toHaveBeenCalledTimes(1);
 });
 
-it('should resize the diagram to fit the container initially', async () => {
+it('should attach a resize observer', async () => {
   const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
   await flushPromises();
 
-  expect(node.instance().viewer.canvas.resized).toHaveBeenCalled();
+  expect(ResizeObserver).toHaveBeenCalledWith(node.instance().fitDiagram);
 });
 
 it('should not render children when diagram is not loaded', async () => {
@@ -196,17 +206,6 @@ it('should pass viewer instance to children', async () => {
   node.setState({loaded: true});
 
   expect(node.find('p').prop('viewer')).toBe(node.instance().viewer);
-});
-
-it('should register an Mutation Observer if its on a Dashboard', () => {
-  mount(
-    <div className="DashboardObject">
-      <BPMNDiagram {...props} xml={diagramXml} />
-    </div>
-  );
-
-  // we can maybe have some meaningful assertion here once jsdom supports MutationObservers:
-  // https://github.com/tmpvar/jsdom/issues/639
 });
 
 it('should re-use viewer instances', async () => {
@@ -287,6 +286,7 @@ it('should trigger diagram zoom when zoom function is called', async () => {
 
 it('should reset the canvas zoom to viewport when fit diagram function is called', async () => {
   const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  node.instance().storeContainer({clientHeight: 100});
 
   await flushPromises();
 

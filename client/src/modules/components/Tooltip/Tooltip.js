@@ -92,9 +92,13 @@ export default function Tooltip({
           },
           onMouseLeave: (evt) => {
             hoverElement.current = null;
-            setHovering(false);
-            setStyle();
             window.clearTimeout(timeout);
+            setTimeout(
+              window.setTimeout(() => {
+                setHovering(false);
+                setStyle();
+              }, delay)
+            );
             child.props.onMouseLeave && child.props.onMouseLeave(evt);
           },
         })
@@ -110,6 +114,8 @@ export default function Tooltip({
             )}
             style={style}
             ref={tooltip}
+            onMouseEnter={() => window.clearTimeout(timeout)}
+            onMouseLeave={() => setHovering(false)}
           >
             {content}
           </div>,

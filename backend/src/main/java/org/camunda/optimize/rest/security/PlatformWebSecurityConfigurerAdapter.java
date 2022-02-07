@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +30,7 @@ import javax.ws.rs.core.HttpHeaders;
 import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
@@ -43,11 +44,10 @@ import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static org.camunda.optimize.rest.JsonExportRestService.EXPORT_REPORT_PATH;
-import static org.camunda.optimize.rest.JsonExportRestService.REPORT_DATA_SUB_PATH;
 import static org.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.ProcessVariableRestService.PROCESS_VARIABLES_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 import static org.camunda.optimize.rest.SharingRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.EVALUATE_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
@@ -65,6 +65,7 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
 
   private static final String CSV_SUFFIX = ".csv";
   private static final String SUB_PATH_ANY = "/*";
+  private static final String DEEP_SUB_PATH_ANY = "/**";
 
   private final AuthCookieService authCookieService;
   private final SessionService sessionService;
@@ -101,7 +102,7 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
       .and()
       .authorizeRequests()
         // static resources
-        .antMatchers("/", "/index*", "/static/**", "/*.js", "/*.ico").permitAll()
+        .antMatchers("/", "/index*", STATIC_RESOURCE_PATH + "/**", "/*.js", "/*.ico").permitAll()
         // websocket
         .antMatchers(STATUS_WEBSOCKET_PATH).permitAll()
         // common public api resources
@@ -116,9 +117,11 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
         // public ingestion api
         .antMatchers(createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH)).permitAll()
         .antMatchers(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH)).permitAll()
-        // public json exporter
-        .antMatchers(createApiPath(EXPORT_REPORT_PATH, REPORT_DATA_SUB_PATH)).permitAll()
-        // public share related resources
+        // public api
+        .antMatchers(createApiPath(PUBLIC_PATH, DEEP_SUB_PATH_ANY)).permitAll()
+      // modify variable label endpoint
+        .antMatchers(createApiPath("PUBLIC_PATH", DEEP_SUB_PATH_ANY)).permitAll()
+      // public share related resources
         .antMatchers(EXTERNAL_SUB_PATH).permitAll()
         .antMatchers(
           HttpMethod.GET,

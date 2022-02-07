@@ -35,7 +35,7 @@ export default function OptionsList({
       if (filter && typedOption && (label || children) === filter) {
         return false; // remove options that exactly match the typed option
       }
-      return (label || children).toLowerCase().includes(filter.toLowerCase());
+      return (label || children)?.toLowerCase().includes(filter.toLowerCase());
     });
   }
 

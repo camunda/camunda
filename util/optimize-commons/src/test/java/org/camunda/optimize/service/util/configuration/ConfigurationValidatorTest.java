@@ -146,6 +146,30 @@ public class ConfigurationValidatorTest {
   }
 
   @Test
+  public void deprecatedAccessTokenConfigs() {
+    // given
+    ConfigurationService configurationService =
+      createConfiguration("config-samples/config-deprecated-access-tokens.yaml");
+    String[] deprecatedLocations = {"deprecated-config.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+
+    // when
+    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+
+    // then
+    assertThat(deprecations)
+      .hasSize(2)
+      .containsEntry(
+        "eventBasedProcess.eventIngestion.accessToken",
+        generateExpectedDocUrl("/technical-guide/setup/configuration/#public-api")
+      )
+      .containsEntry(
+        "externalVariable.variableIngestion.accessToken",
+        generateExpectedDocUrl("/technical-guide/setup/configuration/#public-api")
+      );
+  }
+
+  @Test
   public void testNonDeprecatedArrayLeafKey_allFine() {
     // given
     String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};

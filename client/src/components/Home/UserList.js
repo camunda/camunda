@@ -10,7 +10,7 @@ import {t} from 'translation';
 import {Button, EntityList, Deleter, BulkDeleter} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
@@ -25,12 +25,12 @@ export default withErrorHandling(
       deleting: null,
       editing: null,
       addingUser: false,
-      isOptimizeCloud: true,
+      optimizeProfile: null,
     };
 
     async componentDidMount() {
       this.getUsers();
-      this.setState({isOptimizeCloud: await isOptimizeCloudEnvironment()});
+      this.setState({optimizeProfile: await getOptimizeProfile()});
     }
 
     getUsers = () => {
@@ -65,9 +65,10 @@ export default withErrorHandling(
     closeEditUserModal = () => this.setState({editing: null});
 
     render() {
-      const {users, deleting, editing, addingUser, isOptimizeCloud} = this.state;
+      const {users, deleting, editing, addingUser, optimizeProfile} = this.state;
       const {readOnly, collection} = this.props;
-      const title = isOptimizeCloud ? t('home.userTitle') : t('home.userGroupsTitle');
+      const title =
+        optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle');
 
       return (
         <div className="UserList">
@@ -156,7 +157,7 @@ export default withErrorHandling(
             })}
           />
           <AddUserModal
-            isOptimizeCloud={isOptimizeCloud}
+            optimizeProfile={optimizeProfile}
             open={addingUser}
             existingUsers={users}
             onClose={this.closeAddUserModal}

@@ -35,6 +35,7 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOL
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_SERIALIZATION_DATA_FORMAT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_JSON;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_OBJECT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -59,17 +60,10 @@ public class ObjectVariableService {
   public List<ProcessVariableDto> convertObjectVariablesForImport(final List<ProcessVariableUpdateDto> variables) {
     List<ProcessVariableDto> resultList = new ArrayList<>();
     for (ProcessVariableUpdateDto variableUpdateDto : variables) {
-      if (isNonNullObjectVariableWithOneValue(variableUpdateDto)) {
-        final Optional<String> serializationDataFormat =
-          Optional.ofNullable(String.valueOf(variableUpdateDto.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
-        if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
+      if (isNonNullNativeJsonVariable(variableUpdateDto) || isNonNullObjectVariable(variableUpdateDto)) {
+        if (isSupportedSerializationFormat(variableUpdateDto)) {
           flattenJsonObjectVariableAndAddToResult(variableUpdateDto, resultList);
           formatJsonObjectVariableAndAddToResult(variableUpdateDto, resultList);
-        } else {
-          log.warn("Object variable '{}' will not be imported due to unsupported serializationDataFormat: {}. " +
-                     "Object variables must have serializationDataFormat application/json.",
-                   variableUpdateDto.getName(), serializationDataFormat.orElse("no format specified")
-          );
         }
       } else {
         resultList.add(
@@ -263,8 +257,29 @@ public class ObjectVariableService {
                            .collect(toList()));
   }
 
-  private boolean isNonNullObjectVariableWithOneValue(final ProcessVariableUpdateDto originVariable) {
+  private boolean isNonNullNativeJsonVariable(final ProcessVariableUpdateDto originVariable) {
+    return originVariable.getValue() != null && VARIABLE_TYPE_JSON.equalsIgnoreCase(originVariable.getType());
+  }
+
+  private boolean isNonNullObjectVariable(final ProcessVariableUpdateDto originVariable) {
     return originVariable.getValue() != null && VARIABLE_TYPE_OBJECT.equalsIgnoreCase(originVariable.getType());
   }
 
+  private boolean isSupportedSerializationFormat(final ProcessVariableUpdateDto originVariable) {
+    if (isNonNullNativeJsonVariable(originVariable)) {
+      return true; // serializationFormat is irrelevant for native JSON variables
+    } else {
+      final Optional<String> serializationDataFormat =
+        Optional.ofNullable(String.valueOf(originVariable.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
+      if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
+        return true;
+      } else {
+        log.warn("Object variable '{}' will not be imported due to unsupported serializationDataFormat: {}. " +
+                   "Object variables must have serializationDataFormat application/json.",
+                 originVariable.getName(), serializationDataFormat.orElse("no format specified")
+        );
+        return false;
+      }
+    }
+  }
 }

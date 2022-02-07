@@ -15,6 +15,7 @@ public class OptimizeResourceConstants {
   public static final String REST_API_PATH = "/api";
   public static final String INDEX_PAGE = "/";
   public static final String INDEX_HTML_PAGE = "/index.html";
+  public static final String STATIC_RESOURCE_PATH = "/static";
 
   public static final String STATUS_WEBSOCKET_PATH = "/ws/status";
 

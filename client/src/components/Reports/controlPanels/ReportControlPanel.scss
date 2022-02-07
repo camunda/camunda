@@ -14,7 +14,6 @@
     flex: 1;
     @include scrollable;
     overflow-x: hidden;
-    overflow-y: auto;
   }
 
   .sectionTitle {

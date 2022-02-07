@@ -17,6 +17,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -38,6 +39,15 @@ public class AlertReader {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+
+  public long getAlertCount() {
+    final CountRequest countRequest = new CountRequest(ALERT_INDEX_NAME);
+    try {
+      return esClient.count(countRequest).getCount();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve alert count!", e);
+    }
+  }
 
   public List<AlertDefinitionDto> getStoredAlerts() {
     log.debug("getting all stored alerts");

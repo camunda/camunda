@@ -106,3 +106,15 @@ it('should not crash when not providing a mouseDown handler', () => {
 
   node.find(Dropdown.Option).simulate('mousedown');
 });
+
+it('should not crash when providing null children', () => {
+  const node = shallow(
+    <OptionsList {...props}>
+      <Typeahead.Option id="test_option" value="1">
+        {null}
+      </Typeahead.Option>
+    </OptionsList>
+  );
+
+  node.find(Dropdown.Option).simulate('mousedown');
+});

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +25,13 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
   protected abstract List<DTO> getEntitiesLastTimestamp();
 
   protected abstract int getMaxPageSize();
+
+  protected TimestampBasedImportMediator(final ConfigurationService configurationService,
+                                         final BackoffCalculator idleBackoffCalculator,
+                                         final T importIndexHandler,
+                                         final ImportService<DTO> importService) {
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
+  }
 
   @Override
   protected boolean importNextPage(final Runnable importCompleteCallback) {
@@ -43,7 +54,7 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
 
       final OffsetDateTime currentPageLastEntityTimestamp =
         getTimestamp(entitiesNextPage.get(entitiesNextPage.size() - 1));
-      importService.executeImport(allEntities, () -> {
+      importService.executeImport(filterEntitiesFromExcludedTenants(allEntities), () -> {
         importIndexHandler.updateTimestampOfLastEntity(currentPageLastEntityTimestamp);
         importCompleteCallback.run();
       });
@@ -54,7 +65,7 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
       importIndexHandler.updatePendingTimestampOfLastEntity(currentPageLastEntityTimestamp);
     } else if (entitiesLastTimestamp.size() > countOfImportedEntitiesWithLastEntityTimestamp) {
       countOfImportedEntitiesWithLastEntityTimestamp = entitiesLastTimestamp.size();
-      importService.executeImport(entitiesLastTimestamp, importCompleteCallback);
+      importService.executeImport(filterEntitiesFromExcludedTenants(entitiesLastTimestamp), importCompleteCallback);
     } else {
       importCompleteCallback.run();
     }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.query;
 
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.analysis.function.Gaussian;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -22,12 +23,15 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.ANOTHER_FLOW_NODE_ID_TEST;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.FLOW_NODE_ID_TEST;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.SPLITTING_GATEWAY_LABEL;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_2_NAME;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_NORMAL;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_OUTLIER;
@@ -42,6 +46,13 @@ public class OutlierAnalysisIT extends AbstractIT {
   private static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
   private static final String START_EVENT_ID = "start";
   private static final String END_EVENT_ID = "end";
+  private static final String USER_TASK_ID_ONE = "user_task_1";
+  private static final String USER_TASK_ID_TWO = "user_task_2";
+  private static final String SERVICE_TASK_ID_ONE = "ServiceTask1";
+  private static final String SERVICE_TASK_ID_TWO = "ServiceTask2";
+  private static final String MANUAL_TASK_ID = "manual_task";
+  private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
+  private static final String MERGING_GATEWAY_ID = "mergingGateway";
 
   @Test
   public void outlierDetectionNormalDistribution() {
@@ -136,9 +147,9 @@ public class OutlierAnalysisIT extends AbstractIT {
 
     // then
     assertThat(outlierTest)
-      .hasSize(2)
-      // FLOW_NODE_ID_TEST is not part of the result as there are no outliers
-      .containsOnlyKeys(START_EVENT_ID, END_EVENT_ID);
+      .isEmpty();
+      // FLOW_NODE_ID_TEST is not part of the result as there are no outliers and start and end event are not
+      // computed in the outlier analysis
   }
 
   @Test
@@ -175,13 +186,14 @@ public class OutlierAnalysisIT extends AbstractIT {
   }
 
   @Test
-  public void outlierAnalysisWorksEvenIfBucketLimitIsBeingHit() {
+  public void outlierAnalysisRespectsBucketLimit() {
     // given the bucket limit is set to something smaller than the amount of flow nodes present
     final int bucketLimit = 1;
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST,
+                                                                                           ANOTHER_FLOW_NODE_ID_TEST));
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
@@ -201,8 +213,8 @@ public class OutlierAnalysisIT extends AbstractIT {
       Collections.singletonList(null)
     );
 
-    // then still all buckets are there
-    assertThat(outlierTest).hasSize(3);
+    // then only one bucket will be there
+    assertThat(outlierTest).hasSize(1);
   }
 
   @Test
@@ -228,10 +240,10 @@ public class OutlierAnalysisIT extends AbstractIT {
 
   @Test
   public void moreThan10Activities() {
-    // 10 is the default terms limit of elasticearch, this ensures the default does not apply
+    // 10 is the default terms limit of elasticsearch, this ensures the default does not apply
 
     // given
-    final String[] activityIds = IntStream.range(0, 10).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new);
+    final String[] activityIds = IntStream.range(0, 12).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new);
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getBpmnModelInstance(activityIds)
     );
@@ -255,6 +267,8 @@ public class OutlierAnalysisIT extends AbstractIT {
     );
 
     // then
+    // 12 because the start and end event are no longer considered for the outlier analysis, so really only the 12
+    // activities that I created above
     assertThat(outlierTest.size()).isEqualTo(12);
   }
 
@@ -474,6 +488,120 @@ public class OutlierAnalysisIT extends AbstractIT {
       .containsExactlyInAnyOrder(expectedOutlierInstanceIds.stream().map(s -> "\"" + s + "\"").toArray(String[]::new));
   }
 
+  @Test
+  public void standardFilterWorks() {
+    // given
+    // a model with several task types
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstanceWithDifferentTaskTypes());
+
+    final String[] activityIds = List.of(START_EVENT_ID, SPLITTING_GATEWAY_ID,USER_TASK_ID_ONE,SERVICE_TASK_ID_ONE,MERGING_GATEWAY_ID,
+                                         END_EVENT_ID, USER_TASK_ID_TWO,SERVICE_TASK_ID_TWO,MANUAL_TASK_ID).toArray(String[]::new);
+
+    // a couple of normally distributed instances
+    outlierDistributionClient.startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
+    );
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(SPLITTING_GATEWAY_LABEL, true);
+    // a single instance where we turn all flow nodes into outliers
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
+
+    // then
+    // I expect that all gateways, as well as start and end nodes and also the tasks that are on the side of the
+    // gateway that doesn't get executed to not be considered in the outlier analysis
+   assertThat(outlierTest.keySet()).containsExactlyInAnyOrder(USER_TASK_ID_ONE, MANUAL_TASK_ID,
+                                                                      SERVICE_TASK_ID_ONE);
+  }
+
+  @Test
+  public void humanTaskFilterWorks() {
+    // given
+    // a model with several flow types
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstanceWithDifferentTaskTypes());
+
+    final String[] activityIds = List.of(START_EVENT_ID, SPLITTING_GATEWAY_ID,USER_TASK_ID_ONE,SERVICE_TASK_ID_ONE,MERGING_GATEWAY_ID,
+                                         END_EVENT_ID, USER_TASK_ID_TWO,SERVICE_TASK_ID_TWO,MANUAL_TASK_ID).toArray(String[]::new);
+
+    // a couple of normally distributed instances
+    outlierDistributionClient.startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
+    );
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(SPLITTING_GATEWAY_LABEL, true);
+    // a single all flow nodes higher outlier instance
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      0,
+      true
+    );
+
+    // then
+    // I expect that only the relevant user or manual tasks are contained
+    assertThat(outlierTest.keySet()).containsExactlyInAnyOrder(USER_TASK_ID_ONE, MANUAL_TASK_ID);
+  }
+  @Test
+  public void minimalDeviationTimeFilterWorks() {
+    // given
+    // a model with several flow types
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstanceWithDifferentTaskTypes());
+
+    final String[] activityIds = List.of(START_EVENT_ID, SPLITTING_GATEWAY_ID,USER_TASK_ID_ONE,SERVICE_TASK_ID_ONE,MERGING_GATEWAY_ID,
+                                         END_EVENT_ID, USER_TASK_ID_TWO,SERVICE_TASK_ID_TWO,MANUAL_TASK_ID).toArray(String[]::new);
+
+    // a couple of normally distributed instances
+    outlierDistributionClient.startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
+    );
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(SPLITTING_GATEWAY_LABEL, true);
+    // a single all flow nodes higher outlier instance
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    // Setting a really high minimum deviation
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      100_000_000,
+      false
+    );
+
+    // then
+    // I expect all outliers to be ignored
+    assertThat(outlierTest).isEmpty();
+  }
+
 
   private BpmnModelInstance getBpmnModelInstance(String... activityId) {
     StartEventBuilder builder = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
@@ -484,6 +612,30 @@ public class OutlierAnalysisIT extends AbstractIT {
         .camundaExpression("${true}");
     }
     return builder.endEvent(END_EVENT_ID).done();
+  }
+
+  @SneakyThrows
+  protected static BpmnModelInstance getBpmnModelInstanceWithDifferentTaskTypes() {
+    return Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+      .startEvent(START_EVENT_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .name(SPLITTING_GATEWAY_LABEL)
+      .condition("yes", "${" + SPLITTING_GATEWAY_LABEL + "}")
+      .userTask(USER_TASK_ID_ONE)
+      .name(USER_TASK_ID_ONE)
+      .manualTask(MANUAL_TASK_ID)
+      .serviceTask(SERVICE_TASK_ID_ONE)
+      .camundaExpression("${true}")
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .endEvent(END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .condition("no", "${" + SPLITTING_GATEWAY_LABEL + "}")
+      .userTask(USER_TASK_ID_TWO)
+      .name(USER_TASK_ID_TWO)
+      .serviceTask(SERVICE_TASK_ID_TWO)
+      .camundaExpression("${true}")
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
   }
 
 }

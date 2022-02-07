@@ -109,4 +109,5 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
+
 }

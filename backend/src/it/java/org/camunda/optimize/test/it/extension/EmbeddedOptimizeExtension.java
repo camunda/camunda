@@ -31,8 +31,8 @@ import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
 import org.camunda.optimize.service.identity.PlatformIdentityService;
-import org.camunda.optimize.service.identity.PlatformUserIdentityCacheService;
-import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCacheService;
+import org.camunda.optimize.service.identity.PlatformUserIdentityCache;
+import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -549,12 +549,12 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getTelemetryService();
   }
 
-  public PlatformUserIdentityCacheService getUserIdentityCacheService() {
-    return getOptimize().getPlatformUserIdentityCacheService();
+  public PlatformUserIdentityCache getUserIdentityCache() {
+    return getOptimize().getPlatformUserIdentityCache();
   }
 
-  public PlatformUserTaskIdentityCacheService getUserTaskIdentityCacheService() {
-    return getOptimize().getPlatformUserTaskIdentityCacheService();
+  public PlatformUserTaskIdentityCache getUserTaskIdentityCache() {
+    return getOptimize().getPlatformUserTaskIdentityCache();
   }
 
   public EventIndexRolloverService getEventIndexRolloverService() {

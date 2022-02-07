@@ -15,7 +15,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.IdentityAuthorizationService;
 import org.camunda.optimize.service.security.SessionListener;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 @Component
 @Slf4j
 @Conditional(CamundaPlatformCondition.class)
-public class PlatformIdentityService extends AbstractIdentityService
+public class PlatformIdentityService extends AbstractCachedIdentityService
   implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
 

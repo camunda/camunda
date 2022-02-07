@@ -135,6 +135,7 @@ public class ReportConstants {
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
   public static final String OBJECT_TYPE = "Object";
+  public static final String JSON_TYPE = "Json";
 
   public static final String GROUP_NONE_KEY = "____none";
 
@@ -147,8 +148,10 @@ public class ReportConstants {
     VariableType.BOOLEAN,
     VariableType.DATE
   );
+
   public static final List<VariableType> ALL_SUPPORTED_PROCESS_VARIABLE_TYPES =
     ImmutableList.copyOf(VariableType.values());
+
   public static final List<VariableType> ALL_SUPPORTED_DECISION_VARIABLE_TYPES = List.of(
     VariableType.STRING,
     VariableType.SHORT,

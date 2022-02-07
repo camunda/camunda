@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import ReportRenderer from './ReportRenderer';
 import CombinedReportRenderer from './CombinedReportRenderer';
 import NoDataNotice from './NoDataNotice';
+import SetupNotice from './SetupNotice';
 
 const reportTemplate = {
   combined: false,
@@ -19,6 +20,7 @@ const reportTemplate = {
       {
         key: 'aKey',
         versions: ['1'],
+        tenantIds: [null],
       },
     ],
     view: {
@@ -128,6 +130,26 @@ describe('SetupNotice', () => {
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
 
     expect(node).toMatchSnapshot();
+  });
+
+  it('should show setup notice if there are no tenants', () => {
+    const newReport = {
+      ...reportTemplate,
+      data: {
+        ...reportTemplate.data,
+        definitions: [
+          {
+            key: 'aKey',
+            versions: ['all'],
+            tenantIds: [],
+          },
+        ],
+      },
+    };
+
+    const node = shallow(<ReportRenderer report={newReport} updateReport />);
+
+    expect(node.find(SetupNotice)).toExist();
   });
 
   it('should instruct to add view option if not available', () => {

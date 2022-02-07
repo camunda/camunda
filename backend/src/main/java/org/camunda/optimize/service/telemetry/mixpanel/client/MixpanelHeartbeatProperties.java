@@ -16,14 +16,22 @@ public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
   private long processReportCount;
   @JsonProperty("decisionReportCount")
   private long decisionReportCount;
+  @JsonProperty("dashboardCount")
+  private long dashboardCount;
+  @JsonProperty("alertCount")
+  private long alertCount;
 
   public MixpanelHeartbeatProperties(final long processReportCount,
                                      final long decisionReportCount,
+                                     final long dashboardCount,
+                                     final long alertCount,
                                      final String stage,
                                      final String organizationId,
                                      final String clusterId) {
     super(stage, organizationId, clusterId);
     this.processReportCount = processReportCount;
     this.decisionReportCount = decisionReportCount;
+    this.dashboardCount = dashboardCount;
+    this.alertCount = alertCount;
   }
 }

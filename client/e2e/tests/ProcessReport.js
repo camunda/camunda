@@ -212,6 +212,19 @@ test('drag raw data table columns', async (t) => {
   await t.expect(originalPositionText).eql(newPositionText);
 });
 
+test('view a variable object in rawdata table', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+
+  await t.scrollIntoView(e.objectViewBtn);
+
+  await t.click(e.objectViewBtn);
+  await t.expect(e.objectVariableModal.visible).ok();
+
+  await t.click(e.closeModalButton);
+});
+
 test('drag distributed table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
@@ -833,7 +846,7 @@ test('distribute by variable', async (t) => {
   await t.click(e.dropdownOption('Variable'));
   await t.click(e.submenuOption('approved'));
   await t
-    .resizeWindow(1650, 960)
+    .resizeWindow(1650, 900)
     .takeElementScreenshot(e.reportRenderer, 'process/single-report/distributedByVar.png')
     .maximizeWindow();
 

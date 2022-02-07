@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Data
-public class HistoricVariableUpdateInstanceDto implements EngineDto {
+public class HistoricVariableUpdateInstanceDto implements TenantSpecificEngineDto {
   private String id;
   private String variableInstanceId;
   private String variableName;

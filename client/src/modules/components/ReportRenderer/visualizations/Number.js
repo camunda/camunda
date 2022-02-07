@@ -4,19 +4,45 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useCallback} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import fitty from 'fitty';
 
-import {formatters, reportConfig} from 'services';
+import {formatters, loadVariables, reportConfig} from 'services';
+import {LoadingIndicator} from 'components';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 
 import ProgressBar from './ProgressBar';
 
 import './Number.scss';
 
-export default function Number({report, formatter}) {
+export function Number({report, formatter, mightFail}) {
   const {data, result, reportType} = report;
   const {targetValue, precision} = data.configuration;
+  const [processVariable, setProcessVariable] = useState();
+  const processVariableReport = reportType === 'process' && data.view.entity === 'variable';
+
+  useEffect(() => {
+    if (processVariableReport) {
+      const {name, type} = data.view.properties[0];
+      const payload =
+        data.definitions?.map(({key, versions, tenantIds}) => ({
+          processDefinitionKey: key,
+          processDefinitionVersions: versions,
+          tenantIds: tenantIds,
+        })) || [];
+      mightFail(
+        loadVariables(payload),
+        (variables) => {
+          setProcessVariable(
+            variables.find((variable) => variable.name === name && variable.type === type) || {}
+          );
+        },
+        showError
+      );
+    }
+  }, [data.definitions, processVariableReport, mightFail, data.view.properties]);
 
   const containerRef = useCallback((node) => {
     if (node) {
@@ -48,14 +74,18 @@ export default function Number({report, formatter}) {
     );
   }
 
+  if (processVariableReport && !processVariable) {
+    return <LoadingIndicator />;
+  }
+
   return (
     <div className="Number">
       <div className="container" ref={containerRef}>
         {result.measures.map((measure, idx) => {
           let viewString;
 
-          if (data.view.entity === 'variable') {
-            viewString = data.view.properties[0].name;
+          if (processVariableReport) {
+            viewString = processVariable.label || data.view.properties[0].name;
           } else {
             const config = reportConfig[reportType];
             const view = config.view.find(({matcher}) => matcher(data));
@@ -90,3 +120,5 @@ export default function Number({report, formatter}) {
     </div>
   );
 }
+
+export default withErrorHandling(Number);

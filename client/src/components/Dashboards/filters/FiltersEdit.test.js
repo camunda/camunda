@@ -48,7 +48,7 @@ it('should allow editing variable filters', () => {
     <FiltersEdit {...props} availableFilters={[{type: 'variable', data: {name: 'varName'}}]} />
   );
 
-  node.find('VariableFilter .editButton').simulate('click');
+  node.find('.editButton').simulate('click');
 
   expect(node.find('.dashboardVariableFilter')).toExist();
   expect(node.find('.dashboardVariableFilter').prop('filterData')).toEqual({
@@ -65,7 +65,7 @@ it('should include a checkbox to allow custom values', () => {
     />
   );
 
-  node.find('VariableFilter .editButton').simulate('click');
+  node.find('.editButton').simulate('click');
 
   const postText = shallow(
     node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'})

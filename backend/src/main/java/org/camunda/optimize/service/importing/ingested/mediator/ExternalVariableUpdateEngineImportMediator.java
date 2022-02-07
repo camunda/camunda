@@ -34,11 +34,8 @@ public class ExternalVariableUpdateEngineImportMediator
                                                     final ExternalVariableUpdateImportService importService,
                                                     final ConfigurationService configurationService,
                                                     final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.entityFetcher = entityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

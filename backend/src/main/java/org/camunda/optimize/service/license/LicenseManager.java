@@ -51,7 +51,7 @@ public class LicenseManager {
   private final OptimizeElasticsearchClient esClient;
 
   private String optimizeLicense;
-  private Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
+  private final Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
 
   @PostConstruct
   public void init() {
@@ -68,21 +68,37 @@ public class LicenseManager {
     }
   }
 
-  private String readFileToString() throws IOException {
-    InputStream inputStream = this.getClass()
-      .getClassLoader()
-      .getResourceAsStream(LicenseManager.OPTIMIZE_LICENSE_FILE);
-    if (inputStream == null) {
-      return null;
+  public String getOptimizeLicense() {
+    return optimizeLicense;
+  }
+
+  public LicenseInformationResponseDto validateLicenseStoredInOptimize() {
+    validateLicenseExists();
+    return validateOptimizeLicense(optimizeLicense);
+  }
+
+  public LicenseInformationResponseDto validateOptimizeLicense(String licenseAsString) {
+    if (licenseAsString == null) {
+      throw new OptimizeInvalidLicenseException(
+        "Could not validate given license. Please try to provide another license!");
     }
 
-    ByteArrayOutputStream result = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024];
-    int length;
-    while ((length = inputStream.read(buffer)) != -1) {
-      result.write(buffer, 0, length);
+    try {
+      LicenseKey licenseKey = new LicenseKeyImpl(licenseAsString);
+      // check that the license key is a legacy key
+      if (licenseKey.getLicenseType() == LicenseType.OPTIMIZE) {
+        licenseKey.validate();
+      } else {
+        licenseKey.validate(requiredUnifiedKeyMap);
+      }
+      return licenseKeyToDto(licenseKey);
+    } catch (InvalidLicenseException e) {
+      throw new OptimizeInvalidLicenseException(e);
     }
-    return result.toString(StandardCharsets.UTF_8.name());
+  }
+
+  public void setOptimizeLicense(String optimizeLicense) {
+    this.optimizeLicense = optimizeLicense;
   }
 
   public void storeLicense(String licenseAsString) {
@@ -124,8 +140,21 @@ public class LicenseManager {
     }
   }
 
-  public String getOptimizeLicense() {
-    return optimizeLicense;
+  private String readFileToString() throws IOException {
+    InputStream inputStream = this.getClass()
+      .getClassLoader()
+      .getResourceAsStream(LicenseManager.OPTIMIZE_LICENSE_FILE);
+    if (inputStream == null) {
+      return null;
+    }
+
+    ByteArrayOutputStream result = new ByteArrayOutputStream();
+    byte[] buffer = new byte[1024];
+    int length;
+    while ((length = inputStream.read(buffer)) != -1) {
+      result.write(buffer, 0, length);
+    }
+    return result.toString(StandardCharsets.UTF_8.name());
   }
 
   private String retrieveStoredOptimizeLicense() {
@@ -168,26 +197,6 @@ public class LicenseManager {
     }
   }
 
-  public LicenseInformationResponseDto validateOptimizeLicense(String licenseAsString) {
-    if (licenseAsString == null) {
-      throw new OptimizeInvalidLicenseException(
-        "Could not validate given license. Please try to provide another license!");
-    }
-
-    try {
-      LicenseKey licenseKey = new LicenseKeyImpl(licenseAsString);
-      // check that the license key is a legacy key
-      if (licenseKey.getLicenseType() == LicenseType.OPTIMIZE) {
-        licenseKey.validate();
-      } else {
-        licenseKey.validate(requiredUnifiedKeyMap);
-      }
-      return licenseKeyToDto(licenseKey);
-    } catch (InvalidLicenseException e) {
-      throw new OptimizeInvalidLicenseException(e);
-    }
-  }
-
   private LicenseInformationResponseDto licenseKeyToDto(LicenseKey licenseKey) {
     LicenseInformationResponseDto dto = new LicenseInformationResponseDto();
     dto.setCustomerId(licenseKey.getCustomerId());
@@ -196,15 +205,6 @@ public class LicenseManager {
       dto.setValidUntil(OffsetDateTime.ofInstant(licenseKey.getValidUntil().toInstant(), ZoneId.systemDefault()));
     }
     return dto;
-  }
-
-  public LicenseInformationResponseDto validateLicenseStoredInOptimize() {
-    validateLicenseExists();
-    return validateOptimizeLicense(optimizeLicense);
-  }
-
-  public void setOptimizeLicense(String optimizeLicense) {
-    this.optimizeLicense = optimizeLicense;
   }
 
 }

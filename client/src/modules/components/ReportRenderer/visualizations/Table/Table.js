@@ -7,24 +7,27 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import update from 'immutability-helper';
 
-import {getReportResult} from 'services';
+import {getReportResult, loadVariables} from 'services';
 import {Table as TableRenderer, LoadingIndicator, NoDataNotice} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getWebappEndpoints} from 'config';
 import {t} from 'translation';
+import {showError} from 'notifications';
 
 import ColumnRearrangement from './ColumnRearrangement';
 import processCombinedData from './processCombinedData';
 import processDefaultData from './processDefaultData';
 import processRawData from './processRawData';
+import ObjectVariableModal from './ObjectVariableModal';
 
 import './Table.scss';
 
 export function Table(props) {
   const {report, updateReport, mightFail, loadReport} = props;
   const {
+    reportType,
     combined,
-    data: {view, groupBy, configuration},
+    data: {view, groupBy, configuration, definitions},
     result,
   } = report;
 
@@ -33,12 +36,28 @@ export function Table(props) {
   const [camundaEndpoints, setCamundaEndpoints] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [objectVariable, setObjectVariable] = useState();
+  const [processVariables, setProcessVariables] = useState();
+  const processVariableReport =
+    reportType === 'process' &&
+    (view?.properties?.[0] === 'rawData' || groupBy?.type === 'variable');
 
   useEffect(() => {
     if (needEndpoint) {
       mightFail(getWebappEndpoints(), setCamundaEndpoints);
     }
   }, [mightFail, needEndpoint]);
+
+  useEffect(() => {
+    if (processVariableReport) {
+      const payload = definitions.map(({key, versions, tenantIds}) => ({
+        processDefinitionKey: key,
+        processDefinitionVersions: versions,
+        tenantIds: tenantIds,
+      }));
+      mightFail(loadVariables(payload), setProcessVariables, showError);
+    }
+  }, [definitions, processVariableReport, mightFail, reportType]);
 
   const updateSorting = async (by, order) => {
     setLoading(true);
@@ -66,9 +85,20 @@ export function Table(props) {
     [loadReport]
   );
 
-  if (needEndpoint && camundaEndpoints === null) {
+  if ((needEndpoint && camundaEndpoints === null) || (processVariableReport && !processVariables)) {
     return <LoadingIndicator />;
   }
+
+  const onVariableView = (name, processInstanceId, processDefinitionKey) => {
+    const {versions, tenantIds} = definitions.find(({key}) => key === processDefinitionKey);
+    setObjectVariable({
+      name,
+      processInstanceId,
+      processDefinitionKey,
+      versions,
+      tenantIds,
+    });
+  };
 
   let tableProps;
   if (combined) {
@@ -76,7 +106,7 @@ export function Table(props) {
   } else {
     let tableData;
     if (view.properties[0] === 'rawData') {
-      tableData = processRawData(props, camundaEndpoints);
+      tableData = processRawData(props, camundaEndpoints, processVariables, onVariableView);
       tableData.fetchData = fetchData;
       tableData.loading = loading;
       tableData.defaultPageSize = result.pagination.limit;
@@ -86,7 +116,7 @@ export function Table(props) {
         tableData.error = <NoDataNotice type="error">{t('report.table.pageError')}</NoDataNotice>;
       }
     } else {
-      tableData = processDefaultData(props);
+      tableData = processDefaultData(props, processVariables);
       tableData.loading = loading;
     }
 
@@ -102,19 +132,29 @@ export function Table(props) {
   const isHyper = getReportResult(report)?.type === 'hyperMap';
 
   return (
-    <ColumnRearrangement
-      enabled={updateReport && (isHyper || !report.combined)}
-      onChange={(oldIdx, newIdx) => {
-        const list = tableProps.head.map((el) => el.id || el);
-        // add the column at the specified position
-        list.splice(newIdx + 1, 0, list[oldIdx]);
-        // remove the original column
-        list.splice(oldIdx + (oldIdx > newIdx), 1);
-        updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
-      }}
-    >
-      <TableRenderer {...tableProps} />
-    </ColumnRearrangement>
+    <>
+      <ColumnRearrangement
+        enabled={updateReport && (isHyper || !report.combined)}
+        onChange={(oldIdx, newIdx) => {
+          const list = tableProps.head.map((el) => el.id || el);
+          // add the column at the specified position
+          list.splice(newIdx + 1, 0, list[oldIdx]);
+          // remove the original column
+          list.splice(oldIdx + (oldIdx > newIdx), 1);
+          updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
+        }}
+      >
+        <TableRenderer {...tableProps} />
+      </ColumnRearrangement>
+      {objectVariable && (
+        <ObjectVariableModal
+          variable={objectVariable}
+          onClose={() => {
+            setObjectVariable();
+          }}
+        />
+      )}
+    </>
   );
 }
 

@@ -28,6 +28,7 @@ public class ConfigurationServiceTest {
 
   private static final int DEFAULT_AUTH_TOKEN_LIFEMIN = 5;
   private static final int CUSTOM_AUTH_TOKEN_LIFEMIN = 6;
+  private static final String TOKEN_SECRET = "someSecret";
   private static final Boolean DEFAULT_FIRST_ENGINE_IMPORT_ENABLED = false;
   private static final Boolean CUSTOM_FIRST_ENGINE_IMPORT_ENABLED = true;
   private static final Boolean DEFAULT_SECOND_ENGINE_IMPORT_ENABLED = true;
@@ -45,13 +46,20 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_PACKAGE_2 = "pack2";
   private static final String DEFAULT_PACKAGE_3 = "";
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
-  private static final String EVENT_INGESTION_SECRET = "eventIngestionSecret";
-  private static final String VARIABLE_INGESTION_SECRET = "varIngestionSecret";
+  private static final String API_SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
   private static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
   private static final String CUSTOM_SUPER_USER_IDS = "[demo, kermit]";
   private static final String CUSTOM_SUPER_GROUP_IDS = "[demoGroup, kermitGroup]";
-
+  private static final Boolean CUSTOM_ZEEBE_ENABLED = true;
+  private static final String CUSTOM_ZEEBE_RECORD_PREFIX = "custom-record-prefix";
+  private static final int CUSTOM_ZEEBE_PARTITION_COUNT = 2;
+  private static final int CUSTOM_ZEEBE_IMPORT_PAGE_SIZE = 5;
+  private static final String CUSTOM_ES_USERNAME = "username";
+  private static final String CUSTOM_ES_PASSWORD = "password";
+  private static final Boolean CUSTOM_ES_SSL_ENABLED = true;
+  private static final Boolean CUSTOM_SHARING_ENABLED = true;
+  private static final Boolean CUSTOM_UI_LOGOUT_HIDDEN = true;
 
   @RegisterExtension
   @Order(1)
@@ -171,11 +179,22 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     environmentVariablesExtension.set("PACKAGE_2", CUSTOM_PACKAGE_2);
     environmentVariablesExtension.set("PACKAGE_3", CUSTOM_PACKAGE_3);
-    environmentVariablesExtension.set("EVENT_INGESTION_SECRET", EVENT_INGESTION_SECRET);
-    environmentVariablesExtension.set("VARIABLE_INGESTION_SECRET", VARIABLE_INGESTION_SECRET);
+    environmentVariablesExtension.set("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
     environmentVariablesExtension.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     environmentVariablesExtension.set("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -196,12 +215,24 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
-    System.setProperty("EVENT_INGESTION_SECRET", EVENT_INGESTION_SECRET);
-    System.setProperty("VARIABLE_INGESTION_SECRET", VARIABLE_INGESTION_SECRET);
+    System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
+    System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
+    System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -223,6 +254,18 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("PACKAGE_3", "wrong");
     environmentVariablesExtension.set("SECRET", "wrong");
     environmentVariablesExtension.set("ACCESS_URL", "wrong");
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -232,12 +275,24 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
-    System.setProperty("EVENT_INGESTION_SECRET", EVENT_INGESTION_SECRET);
-    System.setProperty("VARIABLE_INGESTION_SECRET", VARIABLE_INGESTION_SECRET);
+    System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
+    System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
+    System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -267,12 +322,22 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
-    System.setProperty("EVENT_INGESTION_SECRET", EVENT_INGESTION_SECRET);
-    System.setProperty("VARIABLE_INGESTION_SECRET", VARIABLE_INGESTION_SECRET);
+    System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
+    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
+    System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -358,14 +423,23 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getVariableImportPluginBasePackages()).contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEmpty();
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedGroupIds()).isEmpty();
-    // event ingestion and variable ingestion accessTokens will be generated by default, so both should never be the default
-    // "secret" or null
-    assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken())
-      .isNotNull().isNotEqualTo(EVENT_INGESTION_SECRET);
-    assertThat(underTest.getVariableIngestionConfiguration().getAccessToken()).isNotNull().isNotEqualTo(
-      VARIABLE_INGESTION_SECRET);
-
+    assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isNull();
     assertThat(underTest.getContainerAccessUrl()).isNotPresent();
+    assertThat(underTest.getSecurityConfiguration().getLicense().isEnterprise()).isFalse();
+    assertThat(underTest.getSecurityConfiguration().getAuth().getCookieConfiguration().isSameSiteFlagEnabled())
+      .isTrue();
+    assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret()).isEmpty();
+    assertThat(underTest.getConfiguredZeebe().isEnabled()).isFalse();
+    assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo("zeebe-record");
+    assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(1);
+    assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(10000);
+    assertThat(underTest.getElasticsearchSecurityUsername()).isNull();
+    assertThat(underTest.getElasticsearchSecurityPassword()).isNull();
+    assertThat(underTest.getElasticsearchSecuritySSLCertificate()).isNull();
+    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities()).isEmpty();
+    assertThat(underTest.getElasticsearchSecuritySSLEnabled()).isFalse();
+    assertThat(underTest.getSharingEnabled()).isTrue();
+    assertThat(underTest.getUiConfiguration().isLogoutHidden()).isFalse();
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
@@ -391,12 +465,24 @@ public class ConfigurationServiceTest {
     assertThat(
       underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"
     ));
-    assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isEqualTo(
-      EVENT_INGESTION_SECRET);
-    assertThat(underTest.getVariableIngestionConfiguration().getAccessToken()).isEqualTo(VARIABLE_INGESTION_SECRET);
+    assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isEqualTo(API_SECRET);
     assertThat(underTest.getContainerAccessUrl()).isPresent().get().isEqualTo(ACCESS_URL);
     assertThat(underTest.getAuthConfiguration().getSuperUserIds())
       .isEqualTo(ImmutableList.of("demo", "kermit"));
+    assertThat(underTest.getSecurityConfiguration().getAuth().getCookieConfiguration().isSameSiteFlagEnabled())
+      .isTrue();
+    assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret()).isPresent()
+      .get()
+      .isEqualTo(TOKEN_SECRET);
+    assertThat(underTest.getConfiguredZeebe().isEnabled()).isEqualTo(CUSTOM_ZEEBE_ENABLED);
+    assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo(CUSTOM_ZEEBE_RECORD_PREFIX);
+    assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(CUSTOM_ZEEBE_PARTITION_COUNT);
+    assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE);
+    assertThat(underTest.getElasticsearchSecurityUsername()).isEqualTo(CUSTOM_ES_USERNAME);
+    assertThat(underTest.getElasticsearchSecurityPassword()).isEqualTo(CUSTOM_ES_PASSWORD);
+    assertThat(underTest.getElasticsearchSecuritySSLEnabled()).isEqualTo(CUSTOM_ES_SSL_ENABLED);
+    assertThat(underTest.getSharingEnabled()).isEqualTo(CUSTOM_SHARING_ENABLED);
+    assertThat(underTest.getUiConfiguration().isLogoutHidden()).isEqualTo(CUSTOM_UI_LOGOUT_HIDDEN);
   }
 
 }

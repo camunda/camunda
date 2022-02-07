@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.test.it.extension;
 
-import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -30,10 +29,11 @@ import org.testcontainers.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
-  private static final String ZEEBE_VERSION = IntegrationTestConfigurationUtil.getZeebeVersion();
+  private static final String ZEEBE_VERSION = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
 
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;
@@ -55,6 +55,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   public ZeebeExtension() {
     Testcontainers.exposeHostPorts(9200);
     this.zeebeContainer = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + ZEEBE_VERSION))
+      .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
       .withCopyFileToContainer(
         MountableFile.forClasspathResource(ZEEBE_CONFIG_PATH),
         "/usr/local/zeebe/config/application.yml"
@@ -116,6 +117,11 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       .local(local)
       .send()
       .join();
+  }
+
+  public void setClock(Instant pinAt) throws IOException, InterruptedException {
+    final ClockActuatorClient clockClient = new ClockActuatorClient(zeebeContainer.getExternalMonitoringAddress());
+    clockClient.pinZeebeTime(pinAt);
   }
 
   public ProcessInstanceEvent startProcessInstanceForProcess(String processId) {

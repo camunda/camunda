@@ -63,7 +63,7 @@ export default function ReportTemplateModal({onClose}) {
             groupBy: {type: 'none', value: null},
             visualization: 'number',
             configuration: {
-              yLabel: t('report.view.pi') + ' ' + t('report.view.duration'),
+              precision: 3,
             },
           },
         },

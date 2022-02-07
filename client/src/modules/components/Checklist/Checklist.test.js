@@ -83,6 +83,16 @@ it('should filter items based on search', () => {
   expect(node.find({label: 'item 2'})).not.toExist();
 });
 
+it('should display the id if the label is null', () => {
+  props.formatter.mockReturnValueOnce([
+    {id: 'item1', checked: false, label: null, disabled: false},
+  ]);
+
+  const node = shallow(<Checklist {...props} />);
+
+  expect(node.find({label: 'item1'})).toExist();
+});
+
 it('should select all items in view', () => {
   props.formatter.mockReturnValueOnce([]);
   const node = shallow(<Checklist {...props} />);

@@ -34,6 +34,7 @@ public class ReportEvaluationInfo {
   private PaginationDto pagination;
   private boolean isCsvExport;
   private boolean isSharedReport;
+  private boolean isJsonExport;
 
   public void postFetchSavedReport(final ReportReader reportReader) {
     if (reportId != null) {
@@ -86,6 +87,11 @@ public class ReportEvaluationInfo {
 
     public ReportEvaluationInfoBuilder isCsvExport(final boolean isExport) {
       this.reportEvaluationInfo.setCsvExport(isExport);
+      return this;
+    }
+
+    public ReportEvaluationInfoBuilder isJsonExport(final boolean isExport) {
+      this.reportEvaluationInfo.setJsonExport(isExport);
       return this;
     }
 

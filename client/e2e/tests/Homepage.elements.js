@@ -53,3 +53,4 @@ export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const bulkMenu = Selector('.bulkMenu');
 export const bulkDelete = Selector('.bulkMenu .DropdownOption');
 export const listItem = Selector('.ListItem');
+export const definitionSelection = Selector('.DefinitionSelection');

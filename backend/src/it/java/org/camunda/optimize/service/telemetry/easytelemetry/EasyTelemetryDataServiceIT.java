@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.junit.jupiter.api.Test;
@@ -127,7 +126,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
     // given
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + METADATA_INDEX_NAME + "/_search");
+      .withPath("/.*-" + METADATA_INDEX_NAME + "/_doc/" + MetadataIndex.ID);
     esMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));

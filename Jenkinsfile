@@ -6,20 +6,25 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim";
+MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim"
 
-static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
+static PROJECT_DOCKER_IMAGE() { return 'gcr.io/ci-30-162810/camunda-optimize' }
+static TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
 
 static String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
+maintenanceBranchRegex = /^maintenance\/(?<version>\d+\.\d+)$/
+mainBranchRegex = /^master$/
+
+
 String storeNumOfBuilds() {
-  return env.BRANCH_NAME == 'master' ? '30' : '10'
+  isMainOrMaintenanceBranch() ? '30' : '10'
 }
 
 String storeNumOfArtifacts() {
-  return env.BRANCH_NAME == 'master' ? '5' : '1'
+  isMainOrMaintenanceBranch() ? '5' : '1'
 }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
@@ -30,7 +35,7 @@ CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 String basePodSpec(Integer mavenForkCount = 1, Integer mavenCpuLimit = 3, String mavenDockerImage = MAVEN_DOCKER_IMAGE) {
   // assuming 1Gig for each fork + management overhead
-  String mavenMemoryLimit = mavenCpuLimit + 4;
+  String mavenMemoryLimit = mavenCpuLimit + 4
   return """
 apiVersion: v1
 kind: Pod
@@ -57,6 +62,10 @@ spec:
     emptyDir: {}
   - name: docker-storage
     emptyDir: {}
+  - name: es-it-data
+    emptyDir:
+      medium: Memory
+      sizeLimit: 1Gi
   imagePullSecrets:
   - name: registry-camunda-cloud
   initContainers:
@@ -97,9 +106,9 @@ spec:
     """
 }
 
-String dockerInDockerSpec(Integer dockerCpuLimit = 4){
-String dockerMemoryLimit = dockerCpuLimit + 4;
-return """
+String dockerInDockerSpec(Integer dockerCpuLimit = 4) {
+  String dockerMemoryLimit = dockerCpuLimit + 4;
+  return """
   - name: docker
     image: docker:20.10.5-dind
     args:
@@ -132,7 +141,7 @@ return """
 
 String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2, boolean deployDefaultInvoiceProcess = true) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
-  Integer jvmMemory = memoryLimitInGb - 1;
+  Integer jvmMemory = memoryLimitInGb - 1
   String additionalEnv = usePostgres ? """
       - name: DB_DRIVER
         value: "org.postgresql.Driver"
@@ -196,8 +205,10 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         cpu: ${cpuLimit}
         memory: ${memoryLimitInGb}Gi
     volumeMounts:
-    - name: es-snapshot
-      mountPath: /var/tmp
+      - name: es-snapshot
+        mountPath: /var/tmp
+      - name: es-it-data
+        mountPath: /opt/elasticsearch/volatile
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -220,6 +231,10 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         value: 1000
       - name: path.repo
         value: /var/tmp
+      - name: path.data
+        value: /opt/elasticsearch/volatile/data
+      - name: path.logs
+        value: /opt/elasticsearch/volatile/logs
    """
 }
 
@@ -308,15 +323,15 @@ String gcloudContainerSpec() {
 
 String upgradeTestPodSpec(String camBpmVersion, String esVersion, String prevEsVersion) {
   return basePodSpec(1, 2) +
-          camBpmContainerSpec(camBpmVersion) +
-          elasticSearchUpgradeContainerSpec(prevEsVersion)+
-          elasticSearchContainerSpec(esVersion, 2, 2)
+      camBpmContainerSpec(camBpmVersion) +
+      elasticSearchUpgradeContainerSpec(prevEsVersion) +
+      elasticSearchContainerSpec(esVersion, 2, 2)
 }
 
 String itLatestPodSpec(String camBpmVersion, String esVersion) {
-  return basePodSpec(8, 16) +
-          camBpmContainerSpec(camBpmVersion, false, 6, 4) +
-          elasticSearchContainerSpec(esVersion, 6, 4)
+  return basePodSpec(8, 10) +
+      camBpmContainerSpec(camBpmVersion, false, 6, 4) +
+      elasticSearchContainerSpec(esVersion, 8, 8)
 }
 
 String itZeebePodSpec(String camBpmVersion, String esVersion) {
@@ -330,10 +345,10 @@ String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled Chrome (large) and install Maven (small)
   // manually for performance reasons
   return basePodSpec(1, 6, 'selenium/node-chrome:3.141.59-xenon') +
-          camBpmContainerSpec(camBpmVersion, true, 2, 2, false) +
-          elasticSearchContainerSpec(esVersion) +
-          postgresContainerSpec() +
-          gcloudContainerSpec()
+      camBpmContainerSpec(camBpmVersion, true, 2, 2, false) +
+      elasticSearchContainerSpec(esVersion) +
+      postgresContainerSpec() +
+      gcloudContainerSpec()
 }
 
 pipeline {
@@ -419,7 +434,9 @@ pipeline {
         stage('SonarQube - Java') {
           when {
             not {
-              branch 'master'
+              expression {
+                isMainOrMaintenanceBranch()
+              }
             }
           }
           agent {
@@ -560,7 +577,9 @@ pipeline {
       parallel {
         stage('Deploy to Nexus') {
           when {
-            branch 'master'
+            expression {
+              isMainOrMaintenanceBranch()
+            }
           }
           steps {
             container('maven') {
@@ -573,35 +592,40 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
+              isMainOrMaintenanceBranch() || isMainOrMaintenanceBranch(CHANGE_BRANCH)
+            }
           }
           environment {
-            VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
+            CRED_GCR_REGISTRY = credentials('docker-registry-ci3')
+            CRED_REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
+            DOCKER_BRANCH_TAG = getBranchSlug()
+            DOCKER_IMAGE = PROJECT_DOCKER_IMAGE()
+            DOCKER_IMAGE_TEAM = TEAM_DOCKER_IMAGE()
+            DOCKER_LATEST_TAG = getLatestTag()
+            DOCKER_TAG = getImageTag()
+            PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
             SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
-            IMAGE_TAG = getImageTag()
-            GCR_REGISTRY = credentials('docker-registry-ci3')
-            REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
+            VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
           }
           steps {
             container('docker') {
               sh("""
-              echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-              echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
+              echo '${CRED_GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+              echo '${CRED_REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
-              docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
+              docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
                 --build-arg SKIP_DOWNLOAD=true \
                 --build-arg VERSION=${VERSION} \
                 --build-arg SNAPSHOT=${SNAPSHOT} \
                 .
 
-              docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
+              docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+              docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}
+              docker push ${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}
 
-              docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:${env.BRANCH_NAME}
-              docker push registry.camunda.cloud/team-optimize/optimize:${env.BRANCH_NAME}
-
-              if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
-                docker push ${PROJECT_DOCKER_IMAGE()}:latest
+              if [ "${PUSH_LATEST_TAG}" = "TRUE" ]; then
+                docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
+                docker push ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
               fi
               """)
             }
@@ -615,8 +639,8 @@ pipeline {
     changed {
       // Do not send email if the slave disconnected
       script {
-        if (!agentDisconnected()){
-          sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+        if (!agentDisconnected()) {
+          sendNotification(currentBuild.result, null, null, [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
         }
       }
     }
@@ -642,11 +666,15 @@ String getBranchSlug() {
 }
 
 String getImageTag() {
-  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
+  if (isMainOrMaintenanceBranch()) {
+    return getGitCommitHash()
+  }
+
+  "branch-${getBranchSlug()}"
 }
 
 String getBranchName() {
-  return (env.BRANCH_NAME == 'master') ? env.BRANCH_NAME : env.CHANGE_BRANCH
+  return isMainOrMaintenanceBranch() ? env.BRANCH_NAME : env.CHANGE_BRANCH
 }
 
 void integrationTestSteps(String engineVersion = 'latest', String excludedGroups = '', String includedGroups = '') {
@@ -689,4 +717,28 @@ void runMaven(String cmd) {
   configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
+}
+
+Boolean isMaintenanceBranch(String branchToMatch = env.BRANCH_NAME) {
+  return (branchToMatch =~ maintenanceBranchRegex) as Boolean
+}
+
+boolean isMainBranch(String branchToMatch = env.BRANCH_NAME) {
+  branchToMatch ==~ mainBranchRegex
+}
+
+String getMaintenanceVersion() {
+  java.util.regex.Matcher matcher = (env.BRANCH_NAME =~ maintenanceBranchRegex)
+  if (matcher) {
+    matcher.matches()
+    return matcher.group('version')
+  }
+}
+
+String getLatestTag() {
+  return isMaintenanceBranch() ? "${getMaintenanceVersion()}-latest" : "latest"
+}
+
+boolean isMainOrMaintenanceBranch(branchToMatch = env.BRANCH_NAME) {
+  isMaintenanceBranch(branchToMatch) || isMainBranch(branchToMatch)
 }

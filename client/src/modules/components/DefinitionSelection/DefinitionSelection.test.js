@@ -132,17 +132,21 @@ it('should load versions and tenants when key is selected', async () => {
   await flushPromises();
 
   expect(loadVersions).toHaveBeenCalledWith(props.type, undefined, 'foo');
-  expect(loadTenants).toHaveBeenCalledWith(props.type, [{key: 'foo', versions: ['3']}], undefined);
+  expect(loadTenants).toHaveBeenCalledWith(
+    props.type,
+    [{key: 'foo', versions: ['all']}],
+    undefined
+  );
 });
 
-it('should update to most recent version when key is selected', async () => {
+it('should update to all version when key is selected', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
   await node.find(Typeahead).simulate('change', 'foo');
   await flushPromises();
 
-  expect(spy.mock.calls[0][0].versions).toEqual(['3']);
+  expect(spy.mock.calls[0][0].versions).toEqual(['all']);
 });
 
 it('should store specifically selected versions', async () => {
@@ -388,7 +392,7 @@ describe('tenants', () => {
       key: 'foo',
       name: 'Foo',
       tenantIds: ['a', 'b', 'c'],
-      versions: ['3'],
+      versions: ['all'],
       identifier: 'definition',
     });
   });
@@ -423,7 +427,7 @@ it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions 
       key: 'foo',
       name: 'Foo',
       tenantIds: ['a', 'b', 'c'],
-      versions: ['3'],
+      versions: ['all'],
     },
   ]);
 });

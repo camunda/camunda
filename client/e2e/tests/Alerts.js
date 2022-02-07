@@ -41,6 +41,9 @@ test('create, edit, copy and remove an alert', async (t) => {
     replace: true,
   });
 
+  await t.click(Alert.webhookDropdown);
+  await t.click(Collection.typeaheadOption('testWebhook'));
+
   await t.click(Alert.reportTypeahead);
   await t.click(Alert.reportTypeaheadOption('Number Report'));
 

@@ -76,6 +76,7 @@ public class TimestampBasedImportMediatorTest {
       return null;
     }).when(importService).executeImport(any(), any(Runnable.class));
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
+    Mockito.lenient().when(importIndexHandler.getEngineAlias()).thenReturn("camunda-bpm");
   }
 
   @Test

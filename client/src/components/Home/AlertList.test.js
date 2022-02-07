@@ -7,12 +7,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList} from 'components';
-import {loadReports} from 'services';
+import {EntityList, AlertModal} from 'components';
+import {loadReports, loadAlerts, addAlert} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
-import AlertModal from './modals/AlertModal';
-import {loadAlerts, addAlert} from './service';
 import {getWebhooks} from 'config';
 import CopyAlertModal from './modals/CopyAlertModal';
 
@@ -43,26 +41,24 @@ jest.mock('services', () => {
       },
       {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'},
     ]),
+    loadAlerts: jest.fn().mockReturnValue([
+      {
+        id: 'alertID',
+        emails: ['test@hotmail.com'],
+        name: 'Some Alert',
+        lastModifier: 'Admin',
+        lastModified: '2017-11-11T11:11:11.1111+0200',
+        reportId: '2',
+        webhook: null,
+      },
+    ]),
+    addAlert: jest.fn(),
+    editAlert: jest.fn(),
+    removeAlert: jest.fn(),
   };
 });
 
 jest.mock('config', () => ({getWebhooks: jest.fn().mockReturnValue(['webhook1', 'webhook2'])}));
-jest.mock('./service', () => ({
-  loadAlerts: jest.fn().mockReturnValue([
-    {
-      id: 'alertID',
-      emails: ['test@hotmail.com'],
-      name: 'Some Alert',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reportId: '2',
-      webhook: null,
-    },
-  ]),
-  addAlert: jest.fn(),
-  editAlert: jest.fn(),
-  removeAlert: jest.fn(),
-}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),

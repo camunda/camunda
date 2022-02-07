@@ -1,9 +1,18 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should add an autorefresh addon when autorefresh mode is active 1`] = `
+exports[`should pass the refresh interval prop to the refreshSelect and refresh bahavior components 1`] = `
 Array [
   <AutoRefreshBehavior
-    interval={3600000}
+    interval={60000}
+  />,
+  <DiagramScrollLock />,
+]
+`;
+
+exports[`should set auto refresh value and pass it to the refresh behavior addon 1`] = `
+Array [
+  <AutoRefreshBehavior
+    interval="number"
   />,
   <DiagramScrollLock />,
 ]

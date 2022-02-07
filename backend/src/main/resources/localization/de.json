@@ -35,7 +35,11 @@
     "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
     "licenseKey": "Lizenzschlüssel",
     "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
-    "submit": "Absenden"
+    "submit": "Absenden",
+    "nonProduction": "Lizenz: Kein Produktivbetrieb",
+    "referTo": "Für mehr Informationen zum Produktivbetrieb lesen Sie bitte unsere",
+    "terms": "Allgemeinen Geschäftsbedingungen (AGB)",
+    "contactSales": "wenden Sie sich an den Vertrieb"
   },
   "saveGuard": {
     "header": "Ungespeicherte Änderungen",
@@ -336,7 +340,8 @@
       "month": "Monat",
       "week": "Woche",
       "day": "Tag",
-      "hour": "Stunde"
+      "hour": "Stunde",
+      "searchForVariable": "Suche nach Variablen…"
     },
     "visualization": {
       "label": "Visualisierung",
@@ -364,7 +369,6 @@
         "value": "Tatsächlicher Wert",
         "target": "Sollwert"
       },
-      "noChangeWarning": "Bitte ändern Sie mindestens einen Wert",
       "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
@@ -394,7 +398,15 @@
       "process": "Prozessdefinition",
       "process-plural": "Prozessdefinitionen",
       "decision": "Entscheidungsdefinition",
-      "decision-plural": "Entscheidungsdefinitionen"
+      "decision-plural": "Entscheidungsdefinitionen",
+      "variables": {
+        "rename": "Variablen umbenennen",
+        "variableName": "Variablennamen",
+        "type": "Typ",
+        "newName": "Neuer Name",
+        "renameInfo": "Sie können einen Alias bereitstellen, um jeden Ihrer Variablennamen in der Benutzeroberfläche zu überschreiben.",
+        "renameWarning": "Warnung! Änderungen werden über alle Berichte für diese Prozessdefinition aktualisiert. Dies kann sich auf andere Benutzer auswirken."
+      }
     },
     "noDefinitionMessage": {
       "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
@@ -444,7 +456,8 @@
         "variable": "Var",
         "multipleVariable": "Var",
         "inputVariable": "EingabeVar",
-        "outputVariable": "AusgabeVar"
+        "outputVariable": "AusgabeVar",
+        "objectVariable": "Objektvariable"
       },
       "pageError": "Nur die ersten 10.000 Instanzen können angezeigt werden"
     },
@@ -513,7 +526,7 @@
         "goalValue": "Zielwert",
         "baseline": "Grundlinie",
         "target": "Ziel",
-        "invalidInput": "Muss eine nicht-negative Zahl sein",
+        "invalidInput": "Einen positiven Zahlenwert eingeben",
         "lessThanTargetError": "Ziel muss größer als die Grundlinie sein"
       },
       "pointMarkers": {
@@ -579,11 +592,12 @@
       "humanBottleneckAnalysis": "Engpassanalyse für Benutzeraufgaben",
       "humanBottleneckAnalysis_subTitle": "Beheben Sie Engpässe, um die Gesamtprozesszeit zu reduzieren",
       "portfolioPerformance": "Portfolio-Performance-Übersicht",
-      "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen (Alpha)",
+      "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen",
+      "operationsMonitoring": "Betriebsüberwachung",
+      "operationsMonitoring_subTitle": "Aktive Prozesse und Vorfälle überwachen",
       "completedInstances": "Abgeschlossene Prozessinstanzen",
       "runningInstances": "Laufende Prozessinstanzen",
       "aggregateDuration": "Aggregierte Prozessdauer (ToDo: Aggregationen alternativer Dauer anzeigen)",
-      "activeProcessIncidents": "Aktive Zwischenfälle",
       "flownodeDuration": "Welche Prozessschritte nehmen zu viel Zeit in Anspruch? (ToDo: Zielwerte für diese Prozessschritte hinzufügen)",
       "controlChart": "Ist mein Prozess unter Kontrolle?",
       "flownodeFrequency": "Wie oft wird jeder Prozessschritt ausgeführt?",
@@ -613,7 +627,14 @@
       "processAcceleration": "Werden meine Prozesse schneller?",
       "taskAutomation": "Wie schnell automatisieren wir Benutzeraufgaben?",
       "incidentHandling": "Lösen wir Vorfälle schnell genug?",
-      "taskLifecycle": "Wie lange warten Aufgaben auf eine Zuweisung?"
+      "taskLifecycle": "Wie lange warten Aufgaben auf eine Zuweisung?",
+      "longRunningProcesses": "Langlaufende Prozessinstanzen",
+      "activeIncidentsByProcess": "Aktive Vorfälle nach Prozess",
+      "processSnapshot": "Prozess-Schnappschuss",
+      "incidentSnapshot": "Vorfall-Schnappschuss",
+      "processHistory": "Prozesshistorie",
+      "incidentHistory": "Vorfallhistorie",
+      "durationSLI": "Prozessdauer SLI-Tracking"
     },
     "addButton": {
       "addReport": "Einen Report hinzufügen",
@@ -701,7 +722,10 @@
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
     "inactiveStatus": "Alarm inaktiv",
-    "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu"
+    "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
+    "existingAlerts": "Vorhandene Alarme",
+    "updated": "\"{name}\" aktualisiert.",
+    "removed": "\"{name}\" entfernt."
   },
   "analysis": {
     "branchAnalysis": "Verlaufsanalyse",
@@ -794,6 +818,7 @@
     "enabled": "aktiviert",
     "disabled": "deaktiviert",
     "and": "und",
+    "or": "oder",
     "off": "Aus",
     "none": "Keine",
     "all": "Alle",
@@ -818,6 +843,8 @@
     "open": "Öffnen",
     "for": "für",
     "download": "Herunterladen",
+    "view": "Anzeigen",
+    "viewDocumentation": "Dokumentation anzeigen",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -828,7 +855,9 @@
     },
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
-      "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
+      "number": "Eine Zahl eingeben",
+      "positiveNum": "Einen positiven Zahlenwert eingeben",
+      "positiveInt": "Einen positiven ganzzahligen Wert eingeben"
     },
     "instance": {
       "label": "Instanz",
@@ -1039,9 +1068,8 @@
           "instanceEndDate": "Prozessinstanzen <b>beendet</b>",
           "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
         },
-        "invalidInput": "Bitte geben Sie einen positiven ganzzahligen Wert ein",
         "to": "bis",
-        "invalidDate": "Bitte gültiges Datum eingeben",
+        "invalidDate": "Gültiges Datum eingeben",
         "preview": {
           "this": {
             "week": "In der aktuellen",
@@ -1225,7 +1253,8 @@
     },
     "csvLimit": {
       "Warning": "Warnung: CSV wird nicht alle angeforderten Daten enthalten",
-      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Wenden Sie sich an Ihren Administrator, um dieses Systemlimit zu erhöhen oder filtern Sie Ihre Daten, um dieses Problem zu beheben."
+      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Filtern Sie Ihre Daten, oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben",
+      "exportApi": "Sie können auch die <a href='{docsLink}'>Datenexport-API</a> verwenden, um größere Datenmengen aus Optimize zu exportieren."
     },
     "unit": {
       "automatic": "Automatisch",

@@ -5,28 +5,42 @@
  */
 package org.camunda.optimize.service.entities;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.entities.dashboard.DashboardImportService;
 import org.camunda.optimize.service.entities.report.ReportImportService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.springframework.stereotype.Component;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
@@ -39,25 +53,53 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SIN
 @Slf4j
 public class EntityImportService {
 
+  public static final String API_IMPORT_OWNER_NAME = "System User";
+
   private final AbstractIdentityService identityService;
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
-  private final AuthorizedCollectionService collectionService;
+  private final AuthorizedCollectionService authorizedCollectionService;
+  private final CollectionService collectionService;
+  private final ConfigurationService configurationService;
 
-  public List<IdResponseDto> importEntities(final String userId,
-                                            final String collectionId,
-                                            final Set<OptimizeEntityExportDto> entitiesToImport) {
-    validateUserAuthorizedToImportEntitiesOrFail(userId);
-    validateCollectionAccessOrFail(userId, collectionId);
+  public List<EntityIdResponseDto> importEntities(final String collectionId,
+                                                  final Set<OptimizeEntityExportDto> entitiesToImport) {
     validateCompletenessOrFail(entitiesToImport);
 
     final List<ReportDefinitionExportDto> reportsToImport = retrieveAllReportsToImport(entitiesToImport);
     final List<DashboardDefinitionExportDto> dashboardsToImport = retrieveAllDashboardsToImport(entitiesToImport);
 
-    reportImportService.validateAllReportsOrFail(userId, collectionId, reportsToImport);
+    final CollectionDefinitionDto collection =
+      getAndValidateCollectionExistsAndIsAccessibleOrFail(null, collectionId);
+    reportImportService.validateAllReportsOrFail(collection, reportsToImport);
+    dashboardImportService.validateAllDashboardsOrFail(dashboardsToImport);
+
+    final Map<String, EntityIdResponseDto> originalIdToNewIdMap = new HashMap<>();
+    reportImportService.importReportsIntoCollection(collectionId, reportsToImport, originalIdToNewIdMap);
+    dashboardImportService.importDashboardsIntoCollection(
+      collectionId,
+      dashboardsToImport,
+      originalIdToNewIdMap
+    );
+
+    return new ArrayList<>(originalIdToNewIdMap.values());
+  }
+
+  public List<EntityIdResponseDto> importEntitiesAsUser(final String userId,
+                                                        final String collectionId,
+                                                        final Set<OptimizeEntityExportDto> entitiesToImport) {
+    validateUserAuthorizedToImportEntitiesOrFail(userId);
+    final CollectionDefinitionDto collection =
+      getAndValidateCollectionExistsAndIsAccessibleOrFail(userId, collectionId);
+    validateCompletenessOrFail(entitiesToImport);
+
+    final List<ReportDefinitionExportDto> reportsToImport = retrieveAllReportsToImport(entitiesToImport);
+    final List<DashboardDefinitionExportDto> dashboardsToImport = retrieveAllDashboardsToImport(entitiesToImport);
+
+    reportImportService.validateAllReportsOrFail(userId, collection, reportsToImport);
     dashboardImportService.validateAllDashboardsOrFail(userId, dashboardsToImport);
 
-    final Map<String, IdResponseDto> originalIdToNewIdMap = new HashMap<>();
+    final Map<String, EntityIdResponseDto> originalIdToNewIdMap = new HashMap<>();
     reportImportService.importReportsIntoCollection(userId, collectionId, reportsToImport, originalIdToNewIdMap);
     dashboardImportService.importDashboardsIntoCollection(
       userId,
@@ -67,6 +109,45 @@ public class EntityImportService {
     );
 
     return new ArrayList<>(originalIdToNewIdMap.values());
+  }
+
+
+  public Set<OptimizeEntityExportDto> readExportDtoOrFailIfInvalid(final String exportedDtoJson) {
+    if (StringUtils.isEmpty(exportedDtoJson)) {
+      throw new OptimizeImportFileInvalidException(
+        "Could not import entity because the provided file is null or empty."
+      );
+    }
+
+    final ObjectMapper objectMapper = new ObjectMapperFactory(
+      new OptimizeDateTimeFormatterFactory().getObject(),
+      configurationService
+    ).createOptimizeMapper();
+
+    try {
+      //@formatter:off
+      final Set<OptimizeEntityExportDto> exportDtos =
+        objectMapper.readValue(exportedDtoJson, new TypeReference<Set<OptimizeEntityExportDto>>() {});
+      //@formatter:on
+      final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+      Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
+      exportDtos.forEach(exportDto -> violations.addAll(validator.validate(exportDto)));
+      if (!violations.isEmpty()) {
+        throw new OptimizeImportFileInvalidException(
+          String.format(
+            "Could not import entities because the provided file contains invalid OptimizeExportDtos. " +
+              "Errors: %s",
+            violations.stream()
+              .map(c -> c.getPropertyPath() + " " + c.getMessage())
+              .collect(joining(","))
+          ));
+      }
+      return exportDtos;
+    } catch (JsonProcessingException e) {
+      throw new OptimizeImportFileInvalidException(
+        "Could not import entities because the provided file is not a valid list of OptimizeEntityExportDtos." +
+          " Error:" + e.getMessage());
+    }
   }
 
   private List<ReportDefinitionExportDto> retrieveAllReportsToImport(final Set<OptimizeEntityExportDto> entitiesToImport) {
@@ -85,11 +166,15 @@ public class EntityImportService {
       .collect(toList());
   }
 
-  private void validateCollectionAccessOrFail(final String userId,
-                                              final String collectionId) {
-    if (collectionId != null) {
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    }
+  private CollectionDefinitionDto getAndValidateCollectionExistsAndIsAccessibleOrFail(final String userId,
+                                                                                      final String collectionId) {
+    return Optional.ofNullable(collectionId)
+      .map(collId ->
+             Optional.ofNullable(userId)
+               .map(user -> authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(user, collId)
+                 .getDefinitionDto())
+               .orElse(collectionService.getCollectionDefinition(collId)))
+      .orElse(null);
   }
 
   private void validateCompletenessOrFail(final Set<OptimizeEntityExportDto> entitiesToImport) {
