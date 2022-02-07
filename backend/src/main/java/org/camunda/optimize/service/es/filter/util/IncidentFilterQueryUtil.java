@@ -114,6 +114,14 @@ public class IncidentFilterQueryUtil {
     return createOpenIncidentTermQuery(boolQuery());
   }
 
+  public static BoolQueryBuilder createDeletedIncidentTermQuery() {
+    return createDeletedIncidentTermQuery(boolQuery());
+  }
+
+  private static BoolQueryBuilder createDeletedIncidentTermQuery(final BoolQueryBuilder boolQuery) {
+    return boolQuery.must(termQuery(INCIDENTS + "." + INCIDENT_STATUS, IncidentStatus.DELETED.getId()));
+  }
+
   private static BoolQueryBuilder createOpenIncidentTermQuery(final BoolQueryBuilder boolQuery) {
     return boolQuery.must(termQuery(INCIDENTS + "." + INCIDENT_STATUS, IncidentStatus.OPEN.getId()));
   }

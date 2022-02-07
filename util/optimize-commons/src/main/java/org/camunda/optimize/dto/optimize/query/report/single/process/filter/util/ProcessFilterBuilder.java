@@ -56,6 +56,10 @@ public class ProcessFilterBuilder {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
 
+  public DeletedIncidentFilterBuilder withDeletedIncident() {
+    return DeletedIncidentFilterBuilder.construct(this);
+  }
+
   public OpenIncidentFilterBuilder withOpenIncident() {
     return OpenIncidentFilterBuilder.construct(this);
   }
