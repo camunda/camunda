@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.http.HttpStatus;
 import io.camunda.operate.entities.OperationType;
@@ -427,12 +428,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     long epochMilli;
   }
 
-  protected void deployProcesses(String... processResources) {
-    Stream.of(processResources)
-        .forEach(resource ->
-            tester.deployProcess(resource)
+  protected List<Long> deployProcesses(String... processResources) {
+    return Stream.of(processResources)
+        .map(resource ->
+            tester
+                .deployProcess(resource)
                 .and()
                 .waitUntil()
-                .processIsDeployed());
+                .processIsDeployed()
+                .getProcessDefinitionKey()
+        ).collect(Collectors.toList());
   }
 }

@@ -171,8 +171,11 @@ public class ElasticsearchProcessDefinitionDao implements ProcessDefinitionDao {
     String by = query.getSortBy();
     String order = query.getSortOrder().name();
     if (by != null && !by.isEmpty()) {
-      searchSourceBuilder.sort(SortBuilders.fieldSort(by).order(SortOrder.fromString(order)));
+      searchSourceBuilder
+          .sort(SortBuilders.fieldSort(by).order(SortOrder.fromString(order)));
     }
+    // always sort at least by key - needed for searchAfter method of paging
+    searchSourceBuilder.sort(SortBuilders.fieldSort("key").order(SortOrder.ASC ));
   }
 
   protected List<ProcessDefinition> searchFor(final SearchSourceBuilder searchSource)

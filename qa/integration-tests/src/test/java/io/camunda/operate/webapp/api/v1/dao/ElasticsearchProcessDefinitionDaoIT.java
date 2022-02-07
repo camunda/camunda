@@ -39,6 +39,7 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
   private ProcessDefinition processDefinition;
   private Long key;
   private String processDefinitionAsXML;
+  private List<Long> processDefinitionKeys;
 
   @Test
   public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
@@ -137,13 +138,13 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
 
   @Test
   public void shouldPagedWithSearchAfterSizeAndSorted() throws Exception {
-    given(() -> deployProcesses(
+    given(() -> processDefinitionKeys = deployProcesses(
         "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn",
         "error-end-event.bpmn","intermediate-throw-event.bpmn","message-end-event.bpmn"));
 
     when(() ->
         processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
-            .setSize(3).setSearchAfter(new Object[]{"errorProcess"})
+            .setSize(3).setSearchAfter(new Object[]{"errorProcess", processDefinitionKeys.get(2).toString()})
             .setSortBy(BPMN_PROCESS_ID).setSortOrder(SortOrder.DESC))
     );
     then(() -> {
@@ -157,13 +158,13 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
 
   @Test
   public void shouldPagedWithSearchAfterSizeAndSortedAsc() throws Exception {
-    given(() -> deployProcesses(
+    given(() -> processDefinitionKeys = deployProcesses(
         "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn",
         "error-end-event.bpmn","intermediate-throw-event.bpmn","message-end-event.bpmn"));
 
     when(() ->
         processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
-            .setSize(3).setSearchAfter(new Object[]{"errorProcess"})
+            .setSize(3).setSearchAfter(new Object[]{"errorProcess", processDefinitionKeys.get(3)})
             .setSortBy(BPMN_PROCESS_ID).setSortOrder(SortOrder.ASC))
     );
     then(() -> {
