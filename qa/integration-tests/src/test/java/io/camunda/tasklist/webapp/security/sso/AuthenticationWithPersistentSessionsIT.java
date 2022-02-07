@@ -75,7 +75,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "test"})
-public class AuthenticationWithPersistentSessionsTest implements AuthenticationTestable {
+public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
 
@@ -95,13 +95,13 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
   @Autowired private ObjectMapper objectMapper;
   private final BiFunction<String, String, Tokens> orgExtractor;
 
-  public AuthenticationWithPersistentSessionsTest(BiFunction<String, String, Tokens> orgExtractor) {
+  public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
   }
 
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
-    return List.of(AuthenticationWithPersistentSessionsTest::tokensWithOrgAsMapFrom);
+    return List.of(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
   }
 
   @Before

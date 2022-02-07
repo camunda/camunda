@@ -73,7 +73,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "test"})
-public class AuthenticationTest implements AuthenticationTestable {
+public class AuthenticationIT implements AuthenticationTestable {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
 
@@ -93,13 +93,13 @@ public class AuthenticationTest implements AuthenticationTestable {
   @Autowired private ObjectMapper objectMapper;
   private final BiFunction<String, String, Tokens> orgExtractor;
 
-  public AuthenticationTest(BiFunction<String, String, Tokens> orgExtractor) {
+  public AuthenticationIT(BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
   }
 
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
-    return List.of(AuthenticationTest::tokensWithOrgAsMapFrom);
+    return List.of(AuthenticationIT::tokensWithOrgAsMapFrom);
   }
 
   @Before

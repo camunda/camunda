@@ -55,7 +55,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({AUTH_PROFILE, "test"})
-public class AuthenticationWithPersistentSessionTest extends TasklistIntegrationTest
+public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTest
     implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";

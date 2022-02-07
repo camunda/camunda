@@ -35,7 +35,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over GraphQL API /currentUser to get current user */
 @ActiveProfiles({AUTH_PROFILE, "test"})
-public class AuthenticationTest extends TasklistIntegrationTest implements AuthenticationTestable {
+public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";
   private static final String CURRENT_USER_QUERY = "{currentUser{ userId \n displayName }}";
