@@ -140,14 +140,18 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<Void> goInactive() {
+  public CompletableFuture<Void> goInactive(final long term) {
     final CompletableFuture<Void> future = new AtomixFuture<>();
     context
         .getThreadContext()
         .execute(
             () -> {
-              context.transition(Role.INACTIVE);
-              future.complete(null);
+              if (term == context.getTerm()) {
+                context.transition(Role.INACTIVE);
+                future.complete(null);
+              } else {
+                future.completeExceptionally(new RuntimeException("TODO"));
+              }
             });
     return future;
   }

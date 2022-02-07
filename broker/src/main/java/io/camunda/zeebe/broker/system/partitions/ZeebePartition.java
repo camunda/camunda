@@ -359,7 +359,7 @@ public final class ZeebePartition extends Actor
           context.getPartitionId(),
           context.getCurrentRole(),
           context.getCurrentTerm());
-      context.getRaftPartition().goInactive();
+      context.getRaftPartition().goInactive(context.getCurrentTerm());
     }
   }
 
@@ -368,7 +368,7 @@ public final class ZeebePartition extends Actor
     healthMetrics.setDead();
     zeebePartitionHealth.onUnrecoverableFailure(error);
     transitionToInactive();
-    context.getRaftPartition().goInactive();
+    context.getRaftPartition().goInactive(context.getCurrentTerm());
     failureListeners.forEach((l) -> l.onUnrecoverableFailure(report));
     context.notifyListenersOfBecomingInactive();
   }

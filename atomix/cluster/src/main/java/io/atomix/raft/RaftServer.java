@@ -313,7 +313,7 @@ public interface RaftServer {
    *
    * @return A completable future to be completed once the server is inactive.
    */
-  CompletableFuture<Void> goInactive();
+  CompletableFuture<Void> goInactive(final long term);
 
   /**
    * Returns the current Raft context.

@@ -191,8 +191,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .build();
   }
 
-  public CompletableFuture<Void> goInactive() {
-    return server.goInactive();
+  public CompletableFuture<Void> goInactive(final long term) {
+    return server.goInactive(term);
   }
 
   /**

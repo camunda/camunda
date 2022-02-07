@@ -220,7 +220,7 @@ public class ZeebePartitionTest {
             });
     when(raft.getRole()).thenReturn(Role.FOLLOWER);
     when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
-    when(raft.goInactive())
+    when(raft.goInactive(anyLong()))
         .then(
             invocation -> {
               partition.onNewRole(Role.INACTIVE, 2);
@@ -236,7 +236,7 @@ public class ZeebePartitionTest {
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toFollower(0L);
-    order.verify(raft).goInactive();
+    order.verify(raft).goInactive(anyLong());
     order.verify(transition).toInactive(anyLong());
   }
 
@@ -266,7 +266,7 @@ public class ZeebePartitionTest {
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toLeader(0L);
     order.verify(transition).toInactive(anyLong());
-    order.verify(raft).goInactive();
+    order.verify(raft).goInactive(anyLong());
   }
 
   @Test
