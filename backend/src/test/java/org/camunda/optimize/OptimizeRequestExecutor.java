@@ -642,15 +642,9 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildAddRolesToCollectionRequest(final String collectionId,
                                                                   final CollectionRoleRequestDto... roleToAdd) {
-    buildAddRolesToCollectionRequest(collectionId, Arrays.asList(roleToAdd));
-    return this;
-  }
-
-  private OptimizeRequestExecutor buildAddRolesToCollectionRequest(final String collectionId,
-                                                                   final List<CollectionRoleRequestDto> rolesToAdd) {
     this.path = "collection/" + collectionId + "/role/";
     this.method = POST;
-    this.body = getBody(rolesToAdd);
+    this.body = getBody(Arrays.asList(roleToAdd));
     return this;
   }
 

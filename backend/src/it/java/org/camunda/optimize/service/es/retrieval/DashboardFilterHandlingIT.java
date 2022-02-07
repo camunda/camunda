@@ -416,12 +416,8 @@ public class DashboardFilterHandlingIT extends AbstractIT {
   }
 
   @Test
-  public void dashboardVariableFiltersDoesNotGetRemovedFromDahboardOnReportDeleteIfFilterExistsForSameVariableInOtherReports() {
+  public void dashboardVariableFiltersDoesNotGetRemovedFromDashboardOnReportDeleteIfFilterExistsForSameVariableInOtherReports() {
     // given
-    embeddedOptimizeExtension.getConfigurationService()
-      .getOptimizeApiConfiguration()
-      .setAccessToken(("aToken"));
-
     final ProcessInstanceEngineDto firstDeployedInstance = deployInstanceWithVariables(ImmutableMap.of(BOOL_VAR, true));
     final String firstReportId = createAndSaveReportForDeployedInstance(firstDeployedInstance).getId();
     final ProcessInstanceEngineDto secondDeployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
@@ -743,18 +739,16 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     return stateFilterDto;
   }
 
-  private void addVariableLabelsToProcessDefinition(final LabelDto label, final ProcessInstanceEngineDto deployedProcessInstance) {
+  private void addVariableLabelsToProcessDefinition(final LabelDto label,
+                                                    final ProcessInstanceEngineDto deployedProcessInstance) {
     DefinitionVariableLabelsDto definitionLabelDto = new DefinitionVariableLabelsDto(
       deployedProcessInstance.getProcessDefinitionKey(),
       List.of(label)
     );
-    executeUpdateProcessVariableLabelRequest(definitionLabelDto, "aToken");
-  }
-
-  public void executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto, String accessToken) {
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto)
+      .buildProcessVariableLabelRequest(definitionLabelDto)
       .execute();
   }
+
 }
