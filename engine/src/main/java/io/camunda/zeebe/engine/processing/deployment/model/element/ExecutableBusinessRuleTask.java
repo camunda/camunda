@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask {
+public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
+    implements ExecutableCalledDecision {
 
   private String decisionId;
   private String resultVariable;
@@ -16,18 +17,22 @@ public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask {
     super(id);
   }
 
+  @Override
   public String getDecisionId() {
     return decisionId;
   }
 
+  @Override
   public void setDecisionId(final String decisionId) {
     this.decisionId = decisionId;
   }
 
+  @Override
   public String getResultVariable() {
     return resultVariable;
   }
 
+  @Override
   public void setResultVariable(final String resultVariable) {
     this.resultVariable = resultVariable;
   }

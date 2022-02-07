@@ -7,22 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 
 public final class CalledDecisionTransformer {
 
   public void transform(
-      final ExecutableBusinessRuleTask businessRuleTask, final ZeebeCalledDecision calledDecision) {
+      final ExecutableCalledDecision executableElement, final ZeebeCalledDecision calledDecision) {
 
     if (calledDecision == null) {
       return;
     }
 
     final var decisionId = calledDecision.getDecisionId();
-    businessRuleTask.setDecisionId(decisionId);
+    executableElement.setDecisionId(decisionId);
 
     final var resultVariable = calledDecision.getResultVariable();
-    businessRuleTask.setResultVariable(resultVariable);
+    executableElement.setResultVariable(resultVariable);
   }
 }

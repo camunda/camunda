@@ -10,6 +10,11 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnDecisionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 
 public final class BusinessRuleTaskProcessor
@@ -19,7 +24,7 @@ public final class BusinessRuleTaskProcessor
   private final BusinessRuleTaskBehavior jobWorkerTaskBehavior;
 
   public BusinessRuleTaskProcessor(final BpmnBehaviors bpmnBehaviors) {
-    calledDecisionBehavior = new CalledDecisionBehavior();
+    calledDecisionBehavior = new CalledDecisionBehavior(bpmnBehaviors);
     jobWorkerTaskBehavior = new JobWorkerTaskBehavior(bpmnBehaviors);
   }
 
@@ -59,22 +64,66 @@ public final class BusinessRuleTaskProcessor
 
   private static final class CalledDecisionBehavior implements BusinessRuleTaskBehavior {
 
+    private final BpmnDecisionBehavior decisionBehavior;
+    private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+    private final BpmnIncidentBehavior incidentBehavior;
+    private final BpmnStateTransitionBehavior stateTransitionBehavior;
+    private final BpmnVariableMappingBehavior variableMappingBehavior;
+
+    public CalledDecisionBehavior(final BpmnBehaviors bpmnBehaviors) {
+      decisionBehavior = bpmnBehaviors.decisionBehavior();
+      eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+      incidentBehavior = bpmnBehaviors.incidentBehavior();
+      stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+      variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    }
+
     @Override
     public void onActivate(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext activating) {
-      // todo: implement
+        final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+      variableMappingBehavior
+          .applyInputMappings(context, element)
+          .flatMap(ok -> decisionBehavior.evaluateDecision(element, context))
+          .ifRightOrLeft(
+              ok -> {
+                final var activated = stateTransitionBehavior.transitionToActivated(context);
+                stateTransitionBehavior.completeElement(activated);
+              },
+              failure -> incidentBehavior.createIncident(failure, context));
     }
 
     @Override
     public void onComplete(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext completing) {
-      // todo: implement
+        final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+      variableMappingBehavior
+          .applyOutputMappings(context, element)
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+              failure -> incidentBehavior.createIncident(failure, context));
     }
 
     @Override
     public void onTerminate(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext terminating) {
-      // todo: implement
+        final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+
+      incidentBehavior.resolveIncidents(context);
+
+      eventSubscriptionBehavior
+          .findEventTrigger(context)
+          .ifPresentOrElse(
+              eventTrigger -> {
+                final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+                eventSubscriptionBehavior.activateTriggeredEvent(
+                    context.getElementInstanceKey(),
+                    terminated.getFlowScopeKey(),
+                    eventTrigger,
+                    terminated);
+              },
+              () -> {
+                final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+                stateTransitionBehavior.onElementTerminated(element, terminated);
+              });
     }
   }
 
