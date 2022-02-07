@@ -4,7 +4,6 @@ Our awesome community is what makes us who we are. We’re extremely proud that 
 backgrounds. We want to provide each and every one of you with a consistently great experience, so we created this Community Code of Conduct. We want to
 ensure that mutual support will always be guaranteed and that we create an environment in which we can grow together.
 
-
 ## Scope
 
 We expect all members of the Camunda community, including administrators, users, facilitators, and vendors to abide by this Code of Conduct at all times.
@@ -14,7 +13,6 @@ The Camunda Code of Conduct applies to all Camunda events. This includes officia
 The Camunda Community Code of Conduct also applies to any Camunda online space. This includes Slack workspaces, discussion forums, websites, code repositories, mailing lists and more. The Camunda Community Code of Conduct also applies to private correspondence between community members through our online spaces.
 
 We trust all of our community members will help to create a safe and welcoming environment for everyone.
-
 
 ## Our Standards
 

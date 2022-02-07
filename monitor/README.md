@@ -3,8 +3,8 @@
 ## Metrics
 
 Zeebe exports several metrics to facilitate monitoring a cluster.
-Currently, metrics are exported using Prometheus. You can find 
-documentation about the different metrics 
+Currently, metrics are exported using Prometheus. You can find
+documentation about the different metrics
 [here](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/operations/metrics).
 
 ### Testing
@@ -21,26 +21,26 @@ port 9090. The Prometheus instance is configured to scrape the brokers every 5 s
 namespace and pod label as `local` and `broker-*`.
 
 > Remember that docker-compose does not remove volumes on the down command, so if you are completely done with it you
-> will need to run either `docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml down -v` 
+> will need to run either `docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml down -v`
 > or `docker volume prune`
 
 ### Grafana
 
 You can find [here](grafana/zeebe.json) a pre-built Grafana dashboard to
-visualize most metrics. This is the dashboard that we use to test and 
+visualize most metrics. This is the dashboard that we use to test and
 monitor our own Zeebe installations.
 
-> NOTE: this dashboard is used for development and can serve as a 
-starting point for your own dashboard, but may not be tailored for your
-particular use case.
+> NOTE: this dashboard is used for development and can serve as a
+> starting point for your own dashboard, but may not be tailored for your
+> particular use case.
 
-See the Grafana documentation on 
+See the Grafana documentation on
 [how to import a dashboard](https://grafana.com/docs/grafana/latest/reference/export_import/#importing-a-dashboard).
 
 #### Variables
 
-The dashboard at the moment has most visualizations scoped to the 
-following variables: `namespace` (the k8s namespace), `pod` (the k8s pod), 
+The dashboard at the moment has most visualizations scoped to the
+following variables: `namespace` (the k8s namespace), `pod` (the k8s pod),
 and [partition](https://docs.camunda.io/docs/product-manuals/zeebe/technical-concepts/partitions).
 
 #### Contributing

@@ -1,4 +1,5 @@
 ---
+
 name: General issue
 about: General changes to the project
 title: ''

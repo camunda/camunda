@@ -22,10 +22,10 @@ else
     PROPERTIES+=("-Dsonar.branch.name=${GIT_BRANCH}")
   fi
 
-  if [ "${GIT_BRANCH}" == "master" ] || [ "${GIT_BRANCH}" == "develop" ]; then
+  if [ "${GIT_BRANCH}" == "main" ]; then
     TARGET_BRANCH="${GIT_BRANCH}"
   else
-    TARGET_BRANCH="develop"
+    TARGET_BRANCH="main"
     PROPERTIES+=("-Dsonar.branch.target=${TARGET_BRANCH}")
   fi
 

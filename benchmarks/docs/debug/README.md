@@ -52,14 +52,14 @@ For error and warn level logs, this is even more important, as these are expecte
 
 ### Changing log level dynamically in a running cluster
 
-Zeebe brokers expose a spring endpoint for configuring loggers dynamically. 
+Zeebe brokers expose a spring endpoint for configuring loggers dynamically.
 See [spring docs](https://docs.spring.io/spring-boot/docs/current/actuator-api/html/#loggers).
 
 To change the log level of a broker in our benchmark clusters, first port-forward to the broker.
 
 `kubectl port-forward zeebe-0 9600:9600`
 
-Then execute the following in your local machine. 
+Then execute the following in your local machine.
 Change `io.atomix` to the required logger and set the "configuredLevel" to the required level.
 
 ```
@@ -102,6 +102,7 @@ Normally in our benchmarks we use docker images with only the JRE, which means y
 the pod installed. In order to do a heap dump you would need to install the jdk to use jmap for example.
 
 To do that run the following:
+
 ```sh
     # add stretch backports to get java 11
     echo 'deb http://ftp.debian.org/debian stretch-backports main' | tee /etc/apt/sources.list.d/stretch-backports.list
@@ -184,3 +185,4 @@ Metrics provide valuable insights regarding the health of the application for op
 application is behaving. They provide a cheap, cost-effective way of getting a point-in-time snapshot of the application, and how all the moving parts correlate.
 
 > TODO: describe useful metrics/patterns and correlation, specifically related to Zeebe, that we use when debugging
+

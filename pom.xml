@@ -60,4 +60,29 @@
     <url>https://github.com/camunda-cloud/zeebe</url>
   </scm>
 
+  <build>
+    <plugins>
+      <!-- While other files are generally placed in a special directory, markdown files are not.
+      To make sure all markdown files are formatted, we need to rely on the **/*.md pattern.
+      This pattern will match all *.md files in all subdirectories (also in all submodules).
+      So, we need to define it in the root-pom only to avoid formatting the files more than once.-->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <markdown>
+            <includes>
+              <include>**/*.md</include>
+            </includes>
+            <excludes>
+              <exclude>**/target/**/*.md</exclude>
+              <exclude>clients/go/vendor/**/*.md</exclude>
+            </excludes>
+            <flexmark></flexmark>
+          </markdown>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

@@ -15,9 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
-import io.camunda.zeebe.test.util.actuator.ClockActuatorClient;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.clock.ZeebeClock;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -50,8 +50,7 @@ final class ControlledActorClockEndpointIT {
   private ZeebeClient zeebeClient;
   private final HttpClient httpClient = HttpClient.newHttpClient();
   private final ObjectMapper mapper = new ObjectMapper();
-
-  private ClockActuatorClient clockActuatorClient;
+  private ZeebeClock zeebeClock;
 
   @BeforeEach
   void startContainers() {
@@ -68,7 +67,7 @@ final class ControlledActorClockEndpointIT {
   @Test
   void testPinningTime() throws IOException, InterruptedException {
     // given - Zeebe actor clock is pinned
-    final var pinnedAt = clockActuatorClient.pinZeebeTime(Instant.now().minus(Duration.ofDays(3)));
+    final var pinnedAt = zeebeClock.pinTime(Instant.now().minus(Duration.ofDays(3)));
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
 
     // when - producing records
@@ -83,11 +82,12 @@ final class ControlledActorClockEndpointIT {
   }
 
   @Test
-  void testOffsetTime() throws IOException, InterruptedException {
+  void testOffsetTime() {
     // given - Zeebe actor clock is offset
-    final var beforeRecords = Instant.now();
-    final var offsetZeebeTime = clockActuatorClient.offsetZeebeTime(Duration.ofHours(5));
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
+    final var offset = Duration.ofHours(5);
+    final var beforeRecords = Instant.now();
+    zeebeClock.addTime(offset);
 
     // when - producing records
     zeebeClient.newDeployCommand().addProcessModel(process, "process.bpmn").send().join();
@@ -105,8 +105,8 @@ final class ControlledActorClockEndpointIT {
                         final var timestamp = Instant.ofEpochMilli(record.getTimestamp());
                         final var afterRecords = Instant.now();
                         assertThat(timestamp)
-                            .isBefore(afterRecords.plus(offsetZeebeTime))
-                            .isAfter(beforeRecords.plus(offsetZeebeTime));
+                            .isBefore(afterRecords.plus(offset))
+                            .isAfter(beforeRecords.plus(offset));
                       });
             });
   }
@@ -163,7 +163,7 @@ final class ControlledActorClockEndpointIT {
             .usePlaintext()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .build();
-    clockActuatorClient = new ClockActuatorClient(zeebeContainer.getExternalMonitoringAddress());
+    zeebeClock = ZeebeClock.newDefaultClock(zeebeContainer);
   }
 
   /**

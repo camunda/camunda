@@ -4,8 +4,7 @@ on:
     tags:
       - v*
     branches:
-      - master
-      - develop
+      - main
   pull_request:
 jobs:
   golangci:

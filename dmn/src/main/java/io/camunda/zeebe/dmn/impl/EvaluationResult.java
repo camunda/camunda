@@ -7,16 +7,21 @@
  */
 package io.camunda.zeebe.dmn.impl;
 
-import io.camunda.zeebe.dmn.DecisionResult;
+import io.camunda.zeebe.dmn.DecisionEvaluationResult;
+import io.camunda.zeebe.dmn.EvaluatedDecision;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 /** A successfully evaluated decision */
-public final class EvaluatedDecision implements DecisionResult {
+public final class EvaluationResult implements DecisionEvaluationResult {
 
   private final DirectBuffer output;
+  private final List<EvaluatedDecision> evaluatedDecisions;
 
-  public EvaluatedDecision(final DirectBuffer output) {
+  public EvaluationResult(
+      final DirectBuffer output, final List<EvaluatedDecision> evaluatedDecisions) {
     this.output = output;
+    this.evaluatedDecisions = evaluatedDecisions;
   }
 
   @Override
@@ -32,5 +37,10 @@ public final class EvaluatedDecision implements DecisionResult {
   @Override
   public DirectBuffer getOutput() {
     return output;
+  }
+
+  @Override
+  public List<EvaluatedDecision> getEvaluatedDecisions() {
+    return evaluatedDecisions;
   }
 }

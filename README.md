@@ -1,6 +1,5 @@
 # Zeebe - Workflow Engine for Microservices Orchestration
 
-
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe)
 
 Zeebe provides visibility into and control over business processes that span multiple microservices. It is the engine that powers [Camunda Cloud](https://camunda.com/products/cloud/workflow-engine/).
@@ -30,7 +29,7 @@ Here is a diagram illustrating the lifecycle of minor releases over a 13-month p
 
 ## Status
 
-To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda-cloud/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda-cloud/zeebe/commits/develop).
+To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda-cloud/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda-cloud/zeebe/commits/main).
 
 ## Helpful Links
 
@@ -52,7 +51,6 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Configuration](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/index)
 * [Java Client](https://docs.camunda.io/docs/product-manuals/clients/java-client/index)
 * [Go Client](https://docs.camunda.io/docs/product-manuals/clients/go-client/index)
-
 
 ## Contributing
 

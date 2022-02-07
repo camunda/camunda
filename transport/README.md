@@ -5,11 +5,10 @@ Simple asynchronous Message Transport over TCP/IP.
 **Features**
 
 * Multi-Protocol:
-    * Single Message
-    * Request-Response
+  * Single Message
+  * Request-Response
 * Asynchronous
 * Pipelining for high throughput (many interactions can share single TCP connection)
-
 * [Web Site](https://zeebe.io)
 * [Documentation](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
@@ -43,7 +42,6 @@ This way, multiple independent messages can be streamed through a single TCP cha
 ```
 
 The pipelining allows using TCP effectively: potentially many messages can be packed into a single TCP segment.
-
 
 ## Single Message Protocol
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dmn;
 
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 /**
@@ -15,7 +16,7 @@ import org.agrona.DirectBuffer;
  *
  * @see DecisionEngine
  */
-public interface DecisionResult {
+public interface DecisionEvaluationResult {
 
   /** @return {@code true} if the evaluation was not successful, otherwise {@code false} */
   boolean isFailure();
@@ -31,4 +32,14 @@ public interface DecisionResult {
 
   /** @return the output of the decision if it was made successfully, otherwise {@code null} */
   DirectBuffer getOutput();
+
+  /**
+   * Returns the {@link EvaluatedDecision details} of the evaluated decision and its required
+   * decisions. The order depends on the evaluation order, starting from the required decisions. If
+   * the evaluation is not successful then it contains the successful evaluated decisions and the
+   * decision that was not successful.
+   *
+   * @return details of the evaluated decisions
+   */
+  List<EvaluatedDecision> getEvaluatedDecisions();
 }

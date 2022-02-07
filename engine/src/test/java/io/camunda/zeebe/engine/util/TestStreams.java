@@ -295,7 +295,7 @@ public final class TestStreams {
   }
 
   public void pauseProcessing(final String streamName) {
-    streamContextMap.get(streamName).streamProcessor.pauseProcessing();
+    streamContextMap.get(streamName).streamProcessor.pauseProcessing().join();
     LOG.info("Paused processing for stream {}", streamName);
   }
 
