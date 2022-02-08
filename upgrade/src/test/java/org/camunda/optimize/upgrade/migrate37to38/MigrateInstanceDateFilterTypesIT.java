@@ -54,11 +54,9 @@ public class MigrateInstanceDateFilterTypesIT extends AbstractUpgrade37IT {
   public void reportInstanceDateFiltersAreMigrated() {
     // given
     executeBulk("steps/3.7/report/37-process-reports-with-date-filters.json");
-    final List<UpgradePlan> upgradePlans =
-      new UpgradePlanRegistry(upgradeDependencies).getSequentialUpgradePlansToTargetVersion(TO_VERSION);
 
     // when
-    upgradePlans.forEach(plan -> upgradeProcedure.performUpgrade(plan));
+    performUpgrade();
 
     // then
     assertThat(getAllDocumentsOfIndexAs(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), ReportDefinitionDto.class))

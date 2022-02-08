@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade.migrate37to38;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade37To380PlanFactory;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
@@ -25,10 +27,9 @@ public class MigratePositionBasedIndexIT extends AbstractUpgrade37IT {
   public void addLastEntityTimestampToPositionBasedIndex() {
     // given
     executeBulk("steps/3.7/positionimportindex/37-position-import-index.json");
-    final UpgradePlan upgradePlan = new Upgrade37To380PlanFactory().createUpgradePlan(upgradeDependencies);
 
     // when
-    upgradeProcedure.performUpgrade(upgradePlan);
+    performUpgrade();
 
     // then
     assertThat(getAllDocumentsOfIndex(

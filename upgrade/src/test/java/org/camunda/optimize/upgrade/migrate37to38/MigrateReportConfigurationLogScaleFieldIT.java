@@ -5,13 +5,10 @@
  */
 package org.camunda.optimize.upgrade.migrate37to38;
 
-import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,11 +20,9 @@ public class MigrateReportConfigurationLogScaleFieldIT extends AbstractUpgrade37
     // given
     executeBulk("steps/3.7/report/37-process-reports-with-date-filters.json");
     executeBulk("steps/3.7/report/37-decision-reports.json");
-    final List<UpgradePlan> upgradePlans =
-      new UpgradePlanRegistry(upgradeDependencies).getSequentialUpgradePlansToTargetVersion(TO_VERSION);
 
     // when
-    upgradePlans.forEach(plan -> upgradeProcedure.performUpgrade(plan));
+    performUpgrade();
 
     // then
     assertThat(getAllDocumentsOfIndex(SINGLE_PROCESS_REPORT_INDEX.getIndexName())).hasSize(4)
