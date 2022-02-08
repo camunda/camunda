@@ -10,7 +10,7 @@ import {CmContext} from '@camunda-cloud/common-ui-react';
 
 const CommonUiContext: React.FC = () => {
   const theme = useTheme();
-  //@ts-expect-error
+
   return <CmContext theme={theme.cmTheme} />;
 };
 

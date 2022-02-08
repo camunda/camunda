@@ -141,7 +141,7 @@ const CrossButton = styled.button`
       position: absolute;
       right: 21px;
       top: 19px;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       opacity: ${opacity.default};
 
       &:hover {
@@ -168,7 +168,7 @@ const ModalBody = styled(Panel.Body)`
 
     return css`
       padding: 14px 29px 14px 19px;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       background-color: ${colors.backgroundColor};
     `;
   }}

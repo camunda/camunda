@@ -18,15 +18,13 @@ const DisplayText = styled.div`
 
 const Container = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.variablesPanel.pendingVariable;
-
     return css`
       display: flex;
       padding-right: 16px;
       align-items: center;
       width: 100%;
       min-width: 400px;
-      color: ${colors.color};
+      color: ${theme.colors.text01};
     `;
   }}
 `;

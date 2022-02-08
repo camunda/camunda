@@ -14,10 +14,8 @@ type Props = {
 
 const ColumnHeader = styled.span`
   ${({theme}) => {
-    const colors = theme.colors.columnHeader;
-
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       cursor: default;
     `;
   }}
@@ -25,10 +23,8 @@ const ColumnHeader = styled.span`
 
 const SortColumnHeader = styled.button<Props>`
   ${({theme, disabled}) => {
-    const colors = theme.colors.columnHeader;
-
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       cursor: ${disabled ? 'default' : 'pointer'};
 
       padding: 0;

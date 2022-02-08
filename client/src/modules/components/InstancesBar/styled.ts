@@ -27,12 +27,10 @@ type WrapperProps = {
 
 const Wrapper = styled.div<WrapperProps>`
   ${({theme, size}) => {
-    const colors = theme.colors.modules.instancesBar.wrapper;
-
     return css`
       display: flex;
       padding: 0;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       font-family: IBM Plex Sans;
       line-height: 1.71;
       ${FONT_STYLES[size]}

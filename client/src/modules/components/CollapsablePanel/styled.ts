@@ -175,7 +175,7 @@ const ExpandButton = styled.button`
       height: 100%;
       padding: 11px;
       background: ${colors.backgroundColor};
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       border: none;
       border-radius: inherit;
       opacity: 0.9;

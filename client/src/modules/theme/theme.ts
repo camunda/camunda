@@ -90,11 +90,13 @@ const LIGHT_COLORS = {
   logo: '#666666',
 } as const;
 
-const theme = Object.freeze({
+const theme = {
   dark: {
     cmTheme: 'Dark',
     colors: {
       ...DARK_COLORS,
+      text01: SEMANTIC_COLORS.white,
+      text02: SEMANTIC_COLORS.white,
       metricPanel: {
         skeletonBar: {
           backgroundColor: SEMANTIC_COLORS.badge02,
@@ -116,9 +118,6 @@ const theme = Object.freeze({
         },
         metricPanelWrapper: {
           color: rgba(SEMANTIC_COLORS.white, 0.9),
-        },
-        tileTitle: {
-          color: SEMANTIC_COLORS.white,
         },
         skeleton: {
           block: {
@@ -143,7 +142,6 @@ const theme = Object.freeze({
       header: {
         separator: rgba(SEMANTIC_COLORS.white, 0.5),
         breadcrumb: {
-          color: SEMANTIC_COLORS.white,
           borderColor: DARK_COLORS.ui04,
         },
         user: {
@@ -155,9 +153,7 @@ const theme = Object.freeze({
         skeleton: {
           backgroundColor: rgba(SEMANTIC_COLORS.badge02, 0.2),
         },
-        color: SEMANTIC_COLORS.white,
         license: {
-          color: SEMANTIC_COLORS.white,
           backgroundColor: DARK_COLORS.ui04,
           borderColor: DARK_COLORS.ui06,
           arrowStyle: {
@@ -171,13 +167,6 @@ const theme = Object.freeze({
         },
       },
       variablesPanel: {
-        color: SEMANTIC_COLORS.white,
-        header: {
-          color: SEMANTIC_COLORS.white,
-        },
-        pendingVariable: {
-          color: SEMANTIC_COLORS.white,
-        },
         footer: {
           backgroundColor: DARK_COLORS.ui05,
         },
@@ -192,9 +181,6 @@ const theme = Object.freeze({
         },
         placeholder: {
           color: SEMANTIC_COLORS.grey,
-        },
-        td: {
-          color: SEMANTIC_COLORS.white,
         },
         tHead: {
           borderColor: DARK_COLORS.ui04,
@@ -231,9 +217,6 @@ const theme = Object.freeze({
       },
       flowNodeInstancesTree: {
         bar: {
-          nodeIcon: {
-            color: SEMANTIC_COLORS.white,
-          },
           container: {
             borderColor: DARK_COLORS.ui04,
             selected: {
@@ -242,7 +225,6 @@ const theme = Object.freeze({
           },
           nodeName: {
             borderColor: DARK_COLORS.ui04,
-            color: SEMANTIC_COLORS.white,
             selected: {
               borderColor: rgba(SEMANTIC_COLORS.white, 0.25),
             },
@@ -255,7 +237,6 @@ const theme = Object.freeze({
           },
         },
         timeStampLabel: {
-          color: SEMANTIC_COLORS.white,
           backgroundColor: rgba(LIGHT_COLORS.ui02, 0.15),
         },
         connectionDot: {
@@ -276,7 +257,6 @@ const theme = Object.freeze({
           backgroundColor: DARK_COLORS.ui03,
         },
         label: {
-          color: SEMANTIC_COLORS.white,
           backgroundColor: DARK_COLORS.ui04,
         },
         moreDropdown: {
@@ -293,9 +273,6 @@ const theme = Object.freeze({
         },
       },
       incidentsTable: {
-        index: {
-          color: SEMANTIC_COLORS.white,
-        },
         firstTh: {
           before: {
             backgroundColor: DARK_COLORS.ui04,
@@ -353,9 +330,6 @@ const theme = Object.freeze({
       },
       emptyMessage: {
         color: SEMANTIC_COLORS.grey,
-      },
-      columnHeader: {
-        color: SEMANTIC_COLORS.white,
       },
       list: {
         selectionStatusIndicator: {
@@ -425,7 +399,6 @@ const theme = Object.freeze({
         input: {
           backgroundColor: DARK_COLORS.ui02,
           borderColor: DARK_COLORS.button02,
-          color: SEMANTIC_COLORS.white,
           labelColor: SEMANTIC_COLORS.white,
           focusInner: DARK_COLORS.focusInner,
         },
@@ -515,9 +488,6 @@ const theme = Object.freeze({
             backgroundColor: DARK_COLORS.ui01,
             pre: {
               color: rgba(SEMANTIC_COLORS.white, 0.9),
-              before: {
-                color: SEMANTIC_COLORS.white,
-              },
             },
           },
         },
@@ -527,20 +497,10 @@ const theme = Object.freeze({
           },
           expandButton: {
             backgroundColor: DARK_COLORS.ui03,
-            color: SEMANTIC_COLORS.white,
           },
         },
         collapseButton: {
           borderColor: DARK_COLORS.ui04,
-          icons: {
-            color: SEMANTIC_COLORS.white,
-            active: {
-              color: SEMANTIC_COLORS.white,
-            },
-          },
-        },
-        copyright: {
-          color: SEMANTIC_COLORS.white,
         },
         diagram: {
           popoverOverlay: {
@@ -554,7 +514,6 @@ const theme = Object.freeze({
             },
             popOver: {
               backgroundColor: DARK_COLORS.ui04,
-              color: SEMANTIC_COLORS.white,
               borderColor: DARK_COLORS.ui06,
             },
           },
@@ -562,19 +521,15 @@ const theme = Object.freeze({
             statistic: {
               active: {
                 backgroundColor: SEMANTIC_COLORS.allIsWell,
-                color: SEMANTIC_COLORS.white,
               },
               incidents: {
                 backgroundColor: SEMANTIC_COLORS.incidentsAndErrors,
-                color: SEMANTIC_COLORS.white,
               },
               completed: {
                 backgroundColor: LIGHT_COLORS.button02,
-                color: SEMANTIC_COLORS.white,
               },
               canceled: {
                 backgroundColor: SEMANTIC_COLORS.badge02,
-                color: SEMANTIC_COLORS.white,
               },
             },
           },
@@ -595,7 +550,6 @@ const theme = Object.freeze({
             ul: {
               borderColor: DARK_COLORS.ui06,
               backgroundColor: DARK_COLORS.ui04,
-              color: SEMANTIC_COLORS.white,
             },
             topPointer: {
               borderColor: DARK_COLORS.ui06,
@@ -631,28 +585,16 @@ const theme = Object.freeze({
             },
           },
         },
-        emptyPanel: {
-          color: SEMANTIC_COLORS.white,
-        },
-        flowNodeIcon: {
-          color: SEMANTIC_COLORS.white,
-        },
         iconButton: {
           icon: {
             default: {
               svg: {
                 color: SEMANTIC_COLORS.white,
               },
-              before: {
-                backgroundColor: SEMANTIC_COLORS.transparent,
-              },
             },
             foldable: {
               svg: {
                 color: LIGHT_COLORS.ui02,
-              },
-              before: {
-                backgroundColor: SEMANTIC_COLORS.transparent,
               },
             },
           },
@@ -697,9 +639,6 @@ const theme = Object.freeze({
         },
         incidentOperation: {
           operationSpinner: {
-            default: {
-              borderColor: SEMANTIC_COLORS.white,
-            },
             selected: {
               borderColor: SEMANTIC_COLORS.white,
             },
@@ -713,9 +652,6 @@ const theme = Object.freeze({
           color: rgba(SEMANTIC_COLORS.white, 0.9),
         },
         instancesBar: {
-          wrapper: {
-            color: SEMANTIC_COLORS.white,
-          },
           greyTextStyle: {
             color: SEMANTIC_COLORS.white,
           },
@@ -731,13 +667,11 @@ const theme = Object.freeze({
             borderColor: DARK_COLORS.ui06,
           },
           crossButton: {
-            color: SEMANTIC_COLORS.white,
             active: {
               color: SEMANTIC_COLORS.white,
             },
           },
           modalBody: {
-            color: SEMANTIC_COLORS.white,
             backgroundColor: DARK_COLORS.ui01,
           },
           modalFooter: {
@@ -777,11 +711,9 @@ const theme = Object.freeze({
           panelFooter: {
             borderColor: DARK_COLORS.ui04,
             backgroundColor: DARK_COLORS.ui03,
-            color: SEMANTIC_COLORS.white,
           },
           panelHeader: {
             backgroundColor: DARK_COLORS.ui03,
-            color: SEMANTIC_COLORS.white,
             borderColor: DARK_COLORS.ui04,
           },
           borderColor: DARK_COLORS.ui04,
@@ -794,7 +726,6 @@ const theme = Object.freeze({
             backgroundColor: DARK_COLORS.ui05,
           },
           active: {
-            color: SEMANTIC_COLORS.white,
             borderColor: SEMANTIC_COLORS.primaryButton03,
             backgroundColor: SEMANTIC_COLORS.selections,
           },
@@ -821,7 +752,6 @@ const theme = Object.freeze({
         select: {
           default: {
             backgroundColor: '#3e3f45',
-            color: SEMANTIC_COLORS.white,
           },
           disabled: {
             backgroundColor: rgba('#3e3f45', 0.4),
@@ -844,13 +774,9 @@ const theme = Object.freeze({
           },
         },
         stateIcon: {
-          canceledIcon: {
-            color: SEMANTIC_COLORS.white,
-          },
           completedIcon: {
             color: LIGHT_COLORS.button02,
           },
-          color: SEMANTIC_COLORS.white,
         },
         table: {
           th: {
@@ -1062,6 +988,8 @@ const theme = Object.freeze({
     cmTheme: 'Light',
     colors: {
       ...LIGHT_COLORS,
+      text01: DARK_COLORS.ui04,
+      text02: DARK_COLORS.ui06,
       metricPanel: {
         skeletonBar: {
           backgroundColor: LIGHT_COLORS.ui06,
@@ -1082,9 +1010,6 @@ const theme = Object.freeze({
           backgroundColor: LIGHT_COLORS.ui04,
         },
         metricPanelWrapper: {
-          color: LIGHT_COLORS.ui06,
-        },
-        tileTitle: {
           color: LIGHT_COLORS.ui06,
         },
         skeleton: {
@@ -1110,7 +1035,6 @@ const theme = Object.freeze({
       header: {
         separator: LIGHT_COLORS.ui05,
         breadcrumb: {
-          color: LIGHT_COLORS.ui06,
           borderColor: LIGHT_COLORS.ui05,
         },
         user: {
@@ -1122,9 +1046,7 @@ const theme = Object.freeze({
         skeleton: {
           backgroundColor: rgba(LIGHT_COLORS.ui06, 0.09),
         },
-        color: LIGHT_COLORS.ui06,
         license: {
-          color: DARK_COLORS.ui04,
           backgroundColor: LIGHT_COLORS.ui02,
           borderColor: LIGHT_COLORS.ui05,
           arrowStyle: {
@@ -1138,13 +1060,6 @@ const theme = Object.freeze({
         },
       },
       variablesPanel: {
-        color: DARK_COLORS.ui04,
-        header: {
-          color: DARK_COLORS.ui04,
-        },
-        pendingVariable: {
-          color: DARK_COLORS.ui04,
-        },
         footer: {
           backgroundColor: LIGHT_COLORS.button05,
         },
@@ -1159,9 +1074,6 @@ const theme = Object.freeze({
         },
         placeholder: {
           color: LIGHT_COLORS.ui06,
-        },
-        td: {
-          color: DARK_COLORS.ui04,
         },
         tHead: {
           borderColor: LIGHT_COLORS.ui05,
@@ -1198,9 +1110,6 @@ const theme = Object.freeze({
       },
       flowNodeInstancesTree: {
         bar: {
-          nodeIcon: {
-            color: LIGHT_COLORS.ui06,
-          },
           container: {
             borderColor: LIGHT_COLORS.ui05,
             selected: {
@@ -1209,7 +1118,6 @@ const theme = Object.freeze({
           },
           nodeName: {
             borderColor: LIGHT_COLORS.ui05,
-            color: LIGHT_COLORS.ui06,
             selected: {
               borderColor: rgba(LIGHT_COLORS.ui06, 0.25),
             },
@@ -1222,7 +1130,6 @@ const theme = Object.freeze({
           },
         },
         timeStampLabel: {
-          color: LIGHT_COLORS.ui06,
           backgroundColor: rgba(LIGHT_COLORS.ui04, 0.55),
         },
         connectionDot: {
@@ -1243,7 +1150,6 @@ const theme = Object.freeze({
           backgroundColor: LIGHT_COLORS.ui02,
         },
         label: {
-          color: LIGHT_COLORS.ui06,
           backgroundColor: LIGHT_COLORS.ui05,
         },
         moreDropdown: {
@@ -1260,9 +1166,6 @@ const theme = Object.freeze({
         },
       },
       incidentsTable: {
-        index: {
-          color: LIGHT_COLORS.ui06,
-        },
         firstTh: {
           before: {
             backgroundColor: LIGHT_COLORS.ui05,
@@ -1319,9 +1222,6 @@ const theme = Object.freeze({
         },
       },
       emptyMessage: {
-        color: LIGHT_COLORS.ui06,
-      },
-      columnHeader: {
         color: LIGHT_COLORS.ui06,
       },
       list: {
@@ -1383,16 +1283,9 @@ const theme = Object.freeze({
         },
       },
       login: {
-        logo: {
-          color: LIGHT_COLORS.ui06,
-        },
-        loginTitle: {
-          color: LIGHT_COLORS.ui06,
-        },
         input: {
           backgroundColor: LIGHT_COLORS.ui04,
           borderColor: LIGHT_COLORS.ui03,
-          color: DARK_COLORS.ui04,
           labelColor: LIGHT_COLORS.ui06,
           focusInner: DARK_COLORS.focusInner,
         },
@@ -1482,9 +1375,6 @@ const theme = Object.freeze({
             backgroundColor: LIGHT_COLORS.ui04,
             pre: {
               color: LIGHT_COLORS.ui06,
-              before: {
-                color: LIGHT_COLORS.ui06,
-              },
             },
           },
         },
@@ -1494,20 +1384,10 @@ const theme = Object.freeze({
           },
           expandButton: {
             backgroundColor: LIGHT_COLORS.ui02,
-            color: LIGHT_COLORS.ui06,
           },
         },
         collapseButton: {
           borderColor: LIGHT_COLORS.ui05,
-          icons: {
-            color: DARK_COLORS.ui06,
-            active: {
-              color: DARK_COLORS.ui04,
-            },
-          },
-        },
-        copyright: {
-          color: LIGHT_COLORS.ui06,
         },
         diagram: {
           popoverOverlay: {
@@ -1521,7 +1401,6 @@ const theme = Object.freeze({
             },
             popOver: {
               backgroundColor: LIGHT_COLORS.ui02,
-              color: LIGHT_COLORS.ui06,
               borderColor: LIGHT_COLORS.ui05,
             },
           },
@@ -1529,19 +1408,15 @@ const theme = Object.freeze({
             statistic: {
               active: {
                 backgroundColor: SEMANTIC_COLORS.allIsWell,
-                color: SEMANTIC_COLORS.white,
               },
               incidents: {
                 backgroundColor: SEMANTIC_COLORS.incidentsAndErrors,
-                color: SEMANTIC_COLORS.white,
               },
               completed: {
                 backgroundColor: LIGHT_COLORS.button02,
-                color: SEMANTIC_COLORS.white,
               },
               canceled: {
                 backgroundColor: SEMANTIC_COLORS.badge02,
-                color: SEMANTIC_COLORS.white,
               },
             },
           },
@@ -1562,7 +1437,6 @@ const theme = Object.freeze({
             ul: {
               borderColor: LIGHT_COLORS.ui05,
               backgroundColor: LIGHT_COLORS.ui02,
-              color: LIGHT_COLORS.ui06,
             },
             topPointer: {
               borderColor: LIGHT_COLORS.ui05,
@@ -1597,28 +1471,16 @@ const theme = Object.freeze({
             },
           },
         },
-        emptyPanel: {
-          color: LIGHT_COLORS.ui06,
-        },
-        flowNodeIcon: {
-          color: LIGHT_COLORS.ui06,
-        },
         iconButton: {
           icon: {
             default: {
               svg: {
                 color: DARK_COLORS.ui04,
               },
-              before: {
-                backgroundColor: SEMANTIC_COLORS.transparent,
-              },
             },
             foldable: {
               svg: {
                 color: DARK_COLORS.ui04,
-              },
-              before: {
-                backgroundColor: SEMANTIC_COLORS.transparent,
               },
             },
           },
@@ -1663,9 +1525,6 @@ const theme = Object.freeze({
         },
         incidentOperation: {
           operationSpinner: {
-            default: {
-              borderColor: LIGHT_COLORS.ui06,
-            },
             selected: {
               borderColor: SEMANTIC_COLORS.selections,
             },
@@ -1679,9 +1538,6 @@ const theme = Object.freeze({
           color: rgba(DARK_COLORS.ui03, 0.9),
         },
         instancesBar: {
-          wrapper: {
-            color: LIGHT_COLORS.ui06,
-          },
           greyTextStyle: {
             color: SEMANTIC_COLORS.badge02,
           },
@@ -1697,13 +1553,11 @@ const theme = Object.freeze({
             borderColor: LIGHT_COLORS.ui05,
           },
           crossButton: {
-            color: LIGHT_COLORS.ui06,
             active: {
               color: DARK_COLORS.ui04,
             },
           },
           modalBody: {
-            color: LIGHT_COLORS.ui06,
             backgroundColor: LIGHT_COLORS.ui04,
           },
           modalFooter: {
@@ -1743,11 +1597,9 @@ const theme = Object.freeze({
           panelFooter: {
             borderColor: LIGHT_COLORS.ui05,
             backgroundColor: LIGHT_COLORS.ui02,
-            color: LIGHT_COLORS.ui06,
           },
           panelHeader: {
             backgroundColor: LIGHT_COLORS.ui02,
-            color: LIGHT_COLORS.ui06,
             borderColor: LIGHT_COLORS.ui05,
           },
           borderColor: LIGHT_COLORS.ui05,
@@ -1760,7 +1612,6 @@ const theme = Object.freeze({
             backgroundColor: LIGHT_COLORS.ui05,
           },
           active: {
-            color: SEMANTIC_COLORS.white,
             borderColor: SEMANTIC_COLORS.primaryButton03,
             backgroundColor: SEMANTIC_COLORS.selections,
           },
@@ -1787,7 +1638,6 @@ const theme = Object.freeze({
         select: {
           default: {
             backgroundColor: LIGHT_COLORS.ui01,
-            color: DARK_COLORS.ui06,
           },
           disabled: {
             backgroundColor: rgba(LIGHT_COLORS.ui01, 0.4),
@@ -1810,13 +1660,9 @@ const theme = Object.freeze({
           },
         },
         stateIcon: {
-          canceledIcon: {
-            color: DARK_COLORS.ui04,
-          },
           completedIcon: {
             color: LIGHT_COLORS.button02,
           },
-          color: LIGHT_COLORS.ui06,
         },
         table: {
           th: {
@@ -2024,6 +1870,6 @@ const theme = Object.freeze({
       incidentsOverlay: incidentsOverlayLightBackgroundImage,
     },
   },
-});
+} as const;
 
 export {theme};

@@ -23,7 +23,7 @@ const Input = styled.input`
       border: solid 1px ${colors.borderColor};
       font-family: IBM Plex Sans;
       font-size: 15px;
-      color: ${colors.color};
+      color: ${theme.colors.text01};
 
       background-color: ${colors.backgroundColor};
 

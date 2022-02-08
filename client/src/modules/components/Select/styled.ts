@@ -17,7 +17,7 @@ const Select = styled.select`
       border: solid 1px ${theme.colors.ui05};
       border-radius: 3px;
       background-color: ${colors.default.backgroundColor};
-      color: ${colors.default.color};
+      color: ${theme.colors.text02};
       font-family: IBM Plex Sans, Arial;
       font-size: 13px;
       box-shadow: ${shadows.box};

@@ -48,7 +48,7 @@ const Label = styled.span`
     const colors = theme.colors.incidentsFilter.label;
 
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       position: relative;
       width: 120px;
       padding-right: 17px;

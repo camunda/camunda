@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 const MENU_WIDTH = 165;
 const MENU_RIGHT_OFFSET = 52;
@@ -34,7 +34,7 @@ const DropdownContainer = styled.div<DropdownContainerProps>`
   }}
 `;
 
-const dropdownButtonStyles = ({theme}: any) => {
+const dropdownButtonStyles: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.createOperationDropdown.dropdownButtonStyles;
 
   return css`

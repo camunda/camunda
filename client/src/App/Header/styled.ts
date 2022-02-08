@@ -10,14 +10,12 @@ const HEADER_HEIGHT = 57;
 
 const Menu = styled.ul`
   ${({theme}) => {
-    const colors = theme.colors.header;
-
     return css`
       display: flex;
       flex-wrap: wrap;
       font-size: 15px;
       font-weight: 500;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
     `;
   }}
 `;

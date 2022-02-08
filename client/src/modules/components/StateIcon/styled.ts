@@ -51,18 +51,15 @@ const CompletedIcon = styled(StateCompleted)`
 
 const CanceledIcon = styled(Stop)`
   ${({theme}) => {
-    const colors = theme.colors.modules.stateIcon.canceledIcon;
-
     return css`
       ${iconPosition};
-      color: ${colors.color};
+      color: ${theme.colors.text01};
     `;
   }}
 `;
 
 const AliasIcon = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.modules.stateIcon;
     const opacity = theme.opacity.modules.stateIcon.aliasIcon;
 
     return css`
@@ -70,7 +67,7 @@ const AliasIcon = styled.div`
       height: 15px;
       width: 15px;
       border-radius: 50%;
-      background: ${colors.color};
+      background: ${theme.colors.text02};
       opacity: ${opacity};
     `;
   }}

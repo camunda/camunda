@@ -51,7 +51,7 @@ const Icon = styled.div<IconProps>`
         z-index: -1;
         ${setSize}
 
-        background-color: ${colors.icon[variant].before.backgroundColor};
+        background-color: ${theme.colors.transparent};
       }
     `;
   }}

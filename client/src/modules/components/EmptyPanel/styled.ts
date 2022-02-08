@@ -27,12 +27,10 @@ type LabelProps = {
 
 const Label = styled.span<LabelProps>`
   ${({theme, type}) => {
-    const colors = theme.colors.modules.emptyPanel;
-
     return css`
       ${type === 'info'
         ? css`
-            color: ${colors.color};
+            color: ${theme.colors.text02};
             opacity: 0.8;
           `
         : css`

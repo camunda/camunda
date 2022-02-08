@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
-const colors = ({theme}: any) => {
+const colors: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.modules.skeleton;
   const opacity = theme.opacity.modules.skeleton;
 

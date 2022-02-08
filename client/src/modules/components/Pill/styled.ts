@@ -50,7 +50,7 @@ const Pill = styled.button<PillProps>`
       border-radius: 16px;
       font-size: 13px;
       padding: ${variant === 'FILTER' ? '3px 3px 3px 10px' : '3px 10px'};
-      color: ${isActive ? colors.active.color : colors.default.color};
+      color: ${isActive ? theme.colors.white : colors.default.color};
       border-style: solid;
       border-width: 1px;
       border-color: ${isActive

@@ -10,11 +10,10 @@ import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 
 const NodeIcon = styled(BasicFlowNodeIcon)`
   ${({theme, isSelected}) => {
-    const colors = theme.colors.flowNodeInstancesTree.bar.nodeIcon;
     const opacity = theme.opacity.flowNodeInstancesTree.bar.nodeIcon;
 
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       opacity: ${isSelected ? opacity.selected : opacity.default};
     `;
   }}
@@ -78,7 +77,7 @@ const NodeName = styled.span<NodeNameProps>`
       padding-left: 5px;
       border-left: 1px solid
         ${isSelected ? colors.selected.borderColor : colors.borderColor};
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       opacity: ${isSelected ? opacity.selected : opacity.default};
 
       ${isBold

@@ -39,7 +39,7 @@ const CollapseButton = styled.button`
         height: 16px;
         object-fit: contain;
         opacity: ${opacity.icons.default};
-        color: ${colors.icons.color};
+        color: ${theme.colors.text02};
 
         &:hover {
           opacity: ${opacity.icons.hover};
@@ -47,7 +47,7 @@ const CollapseButton = styled.button`
 
         &:active {
           opacity: 1;
-          color: ${colors.icons.active.color};
+          color: ${theme.colors.text01};
         }
       }
     `;

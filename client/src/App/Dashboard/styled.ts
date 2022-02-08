@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
 const HEADER_HEIGHT = 57;
@@ -36,7 +36,7 @@ const TileWrapper = styled.div`
   );
 `;
 
-const PanelStyles = ({theme}: any) => {
+const PanelStyles: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.dashboard.panelStyles;
   const shadow = theme.shadows.dashboard.panelStyles;
 
@@ -84,7 +84,6 @@ const Tile = styled.div`
 
 const TileTitle = styled.h2`
   ${({theme}) => {
-    const colors = theme.colors.dashboard.tileTitle;
     const opacity = theme.opacity.dashboard.tileTitle;
 
     return css`
@@ -95,7 +94,7 @@ const TileTitle = styled.h2`
       font-size: 16px;
       font-weight: 600;
       line-height: 2;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       opacity: ${opacity};
     `;
   }}

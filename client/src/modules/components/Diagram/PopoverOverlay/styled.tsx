@@ -87,7 +87,7 @@ const Popover = styled.div`
     return css`
       width: 354px;
       background-color: ${colors.backgroundColor};
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       font-size: 12px;
       border: 1px solid ${colors.borderColor};
       border-radius: 3px;

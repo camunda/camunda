@@ -34,7 +34,7 @@ const LicenseNoteBox = styled.div`
       padding: 12px 12px 10px 12px;
 
       font-size: 14px;
-      color: ${licenseColors.color};
+      color: ${theme.colors.text01};
       background-color: ${licenseColors.backgroundColor};
 
       border-radius: 3px;

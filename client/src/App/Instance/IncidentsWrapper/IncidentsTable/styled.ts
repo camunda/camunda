@@ -18,8 +18,6 @@ const FirstCell = styled.div`
 
 const Index = styled.span`
   ${({theme}) => {
-    const colors = theme.colors.incidentsTable.index;
-
     return css`
       position: absolute;
       top: 0;
@@ -28,7 +26,7 @@ const Index = styled.span`
       text-align: right;
       font-size: 11px;
       opacity: 0.6;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
     `;
   }}
 `;

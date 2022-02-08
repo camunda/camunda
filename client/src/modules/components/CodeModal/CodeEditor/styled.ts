@@ -58,7 +58,7 @@ const Pre = styled.pre`
           line-height: 17px;
           counter-increment: line;
           content: counter(line);
-          color: ${colors.before.color};
+          color: ${theme.colors.text02};
           display: inline-block;
           width: 35px;
           opacity: ${opacity};

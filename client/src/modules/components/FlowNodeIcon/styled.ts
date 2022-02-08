@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import {ReactComponent as FlowNodeProcess} from 'modules/components/Icon/flow-node-process-root.svg';
 
@@ -57,12 +57,10 @@ import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/f
 
 import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
 
-const newIconStyle = ({theme}: any) => {
-  const colors = theme.colors.modules.flowNodeIcon;
-
+const newIconStyle: ThemedInterpolationFunction = ({theme}) => {
   return css`
     position: relative;
-    color: ${colors.color};
+    color: ${theme.colors.text02};
     top: 0px;
     left: 3px;
   `;

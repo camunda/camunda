@@ -88,7 +88,7 @@ const Ul = styled.ul<Props>`
       border: 1px solid ${colors.borderColor};
       border-radius: 3px;
       background-color: ${colors.backgroundColor};
-      color: ${colors.color};
+      color: ${theme.colors.text02};
     `;
   }}
 `;

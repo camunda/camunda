@@ -4,13 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import {ReactComponent as Retry} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as Delete} from 'modules/components/Icon/delete.svg';
 
-const iconStyle = ({theme}: any) => {
+const iconStyle: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.modules.operationItems.iconStyle;
 
   return css`

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import {ReactComponent as RetryOperation} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as CancelOperation} from 'modules/components/Icon/stop.svg';
@@ -80,7 +80,7 @@ const OperationIcon = styled.div`
   margin-top: 10px;
 `;
 
-const iconStyle = ({theme}: any) => {
+const iconStyle: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.operationsEntry.iconStyle;
   const opacity = theme.opacity.operationsEntry.iconStyle;
 

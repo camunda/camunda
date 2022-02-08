@@ -17,7 +17,7 @@ const TimeStamp = styled.span<TimeStampProps>`
     return css`
       margin-left: 14px;
       padding: 2px 4px;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       background: ${isSelected ? colors.backgroundColor : theme.colors.label};
       font-size: 11px;
       border-radius: 2px;

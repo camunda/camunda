@@ -28,26 +28,22 @@ const LoginHeader = styled.div`
 
 const Logo = styled(BaseLogo)`
   ${({theme}) => {
-    const colors = theme.colors.login.logo;
-
     return css`
       margin-bottom: 12px;
       width: 96px;
       height: 33px;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
     `;
   }}
 `;
 
 const LoginTitle = styled.span`
   ${({theme}) => {
-    const colors = theme.colors.login.loginTitle;
-
     return css`
       font-family: IBM Plex Sans;
       font-size: 28px;
       font-weight: normal;
-      color: ${colors.color};
+      color: ${theme.colors.text02};
     `;
   }}
 `;

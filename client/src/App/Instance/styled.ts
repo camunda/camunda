@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 import SplitPane from 'modules/components/SplitPane';
@@ -67,7 +67,7 @@ const NodeContainer = styled.div`
   }}
 `;
 
-const pseudoBorder = ({theme}: any) => {
+const pseudoBorder: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.instance.pseudoBorder;
 
   return css`

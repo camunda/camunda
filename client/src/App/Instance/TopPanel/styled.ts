@@ -4,12 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import StateIconDefault from 'modules/components/StateIcon';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
-const pseudoBorder = ({theme}: any) => {
+const pseudoBorder: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.topPanel.pseudoBorder;
 
   return css`

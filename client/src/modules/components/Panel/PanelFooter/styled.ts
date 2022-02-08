@@ -20,7 +20,7 @@ const Footer = styled.div`
       padding-right: 20px;
       border-top: solid 1px ${colors.borderColor};
       background-color: ${colors.backgroundColor};
-      color: ${colors.color};
+      color: ${theme.colors.text02};
     `;
   }}
 `;

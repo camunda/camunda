@@ -8,11 +8,10 @@ import styled, {css} from 'styled-components';
 
 const Copyright = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.modules.copyright;
     const opacity = theme.opacity.modules.copyright;
 
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       opacity: ${opacity};
       font-size: 12px;
     `;

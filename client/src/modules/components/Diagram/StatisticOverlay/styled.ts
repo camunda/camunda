@@ -29,7 +29,7 @@ const Statistic = styled.div<StatisticProps>`
       border-radius: 12px;
       transform: translateX(-50%);
       background-color: ${colors.backgroundColor};
-      color: ${colors.color};
+      color: ${theme.colors.white};
     `;
   }}
 `;

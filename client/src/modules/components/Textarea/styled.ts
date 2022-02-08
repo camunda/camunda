@@ -4,11 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import BasicTextareaAutosize from 'react-textarea-autosize';
 
-const TextareaStyles = ({theme}: any) => {
+const TextareaStyles: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.modules.textarea;
 
   return css`

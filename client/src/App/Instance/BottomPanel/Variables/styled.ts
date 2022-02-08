@@ -77,10 +77,8 @@ const Placeholder = styled.span`
 
 const TD = styled.td`
   ${({theme}) => {
-    const colors = theme.colors.variables.td;
-
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text01};
 
       &:not(:nth-child(2)) {
         white-space: nowrap;
@@ -304,14 +302,12 @@ const EditButtonsContainer = styled.div`
 
 const Header = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.variablesPanel.header;
-
     return css`
       margin-top: 8px;
       margin-left: 20px;
       font-size: 16px;
       font-weight: 500;
-      color: ${colors.color};
+      color: ${theme.colors.text01};
     `;
   }}
 `;

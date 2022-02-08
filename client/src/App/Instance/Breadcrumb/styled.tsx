@@ -12,7 +12,7 @@ const Container = styled.div`
     const colors = theme.colors.header.breadcrumb;
 
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       padding: 4px 20px;
       display: flex;
       font-size: 13px;
@@ -32,10 +32,8 @@ const ellipsisCss = css`
 
 const Link = styled(LinkComponent)`
   ${({theme}) => {
-    const colors = theme.colors.header.breadcrumb;
-
     return css`
-      color: ${colors.color};
+      color: ${theme.colors.text02};
       text-decoration: none;
       ${ellipsisCss};
     `;

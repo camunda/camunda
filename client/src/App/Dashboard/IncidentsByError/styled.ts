@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import BaseInstancesBar, {Wrapper, Bar} from 'modules/components/InstancesBar';
 
 const Li = styled.li`
@@ -21,7 +21,7 @@ const VersionLi = styled.li`
   padding: 0;
 `;
 
-const InstancesBarStyles = ({theme}: any) => {
+const InstancesBarStyles: ThemedInterpolationFunction = ({theme}) => {
   return css`
     ${Bar} {
       border-radius: 2px;
