@@ -98,10 +98,15 @@ class Tracking {
 
       document.head.appendChild(osanoScriptElement);
 
+      setTimeout(resolve, 1000);
+
       osanoScriptElement.onload = () => {
         if (window.Osano?.cm?.analytics) {
           this.#mixpanel?.opt_in_tracking();
         }
+        resolve();
+      };
+      osanoScriptElement.onerror = () => {
         resolve();
       };
     });
