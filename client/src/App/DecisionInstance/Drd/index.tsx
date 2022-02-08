@@ -4,7 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {useEffect, useRef} from 'react';
+import {autorun} from 'mobx';
+import {DrdViewer} from 'modules/dmn-js/DrdViewer';
+import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
+import {Container} from './styled';
 
 const Drd: React.FC = () => {
   const {
@@ -12,8 +17,32 @@ const Drd: React.FC = () => {
     state: {panelState},
   } = drdStore;
 
+  const drdViewer = useRef<DrdViewer | null>(null);
+  const drdViewerRef = useRef<HTMLDivElement | null>(null);
+
+  if (drdViewer.current === null) {
+    drdViewer.current = new DrdViewer();
+  }
+
+  useEffect(() => {
+    autorun(() => {
+      if (
+        drdViewerRef.current !== null &&
+        decisionXmlStore.state.xml !== null
+      ) {
+        drdViewer.current!.render(
+          drdViewerRef.current,
+          decisionXmlStore.state.xml
+        );
+      }
+    });
+    return () => {
+      drdViewer.current?.reset();
+    };
+  }, []);
+
   return (
-    <div data-testid="drd">
+    <Container data-testid="drd">
       <div>
         DrdPanel
         {panelState === 'minimized' && (
@@ -36,7 +65,8 @@ const Drd: React.FC = () => {
           X
         </button>
       </div>
-    </div>
+      <div data-testid="drd-viewer" ref={drdViewerRef} />
+    </Container>
   );
 };
 

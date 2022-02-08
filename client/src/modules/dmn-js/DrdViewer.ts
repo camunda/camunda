@@ -6,42 +6,39 @@
 
 import {Viewer} from './Viewer';
 
-class DecisionViewer {
+class DrdViewer {
   #xml: string | null = null;
   #viewer: Viewer | null = null;
-  #decisionViewId: string | null = null;
 
-  render = async (
-    container: HTMLElement,
-    xml: string,
-    decisionViewId: string
-  ) => {
+  render = async (container: HTMLElement, xml: string) => {
     if (this.#viewer === null) {
-      this.#viewer = new Viewer('decisionTable', {container});
+      this.#viewer = new Viewer('drd', {
+        container,
+        drd: {
+          additionalModules: [
+            {
+              definitionPropertiesView: ['value', null],
+            },
+          ],
+        },
+      });
     }
 
     if (this.#xml !== xml) {
       await this.#viewer.importXML(xml);
       this.#xml = xml;
-    }
 
-    if (this.#decisionViewId !== decisionViewId) {
-      const view = this.#viewer.getViews().find((view) => {
-        return view.id === decisionViewId;
-      });
-      if (view !== undefined) {
-        this.#viewer.open(view);
-        this.#decisionViewId = decisionViewId;
-      }
+      const canvas = this.#viewer.getActiveViewer().get('canvas');
+      canvas.resized();
+      canvas.zoom('fit-viewport', 'auto');
     }
   };
 
   reset = () => {
     this.#xml = null;
-    this.#decisionViewId = null;
     this.#viewer?.destroy();
     this.#viewer = null;
   };
 }
 
-export {DecisionViewer};
+export {DrdViewer};

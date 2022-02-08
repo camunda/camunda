@@ -5,16 +5,12 @@
  */
 
 import styled from 'styled-components';
-import {HEADER_HEIGHT} from 'App/Header/styled';
-
-const DecisionInstanceContainer = styled.div`
-  height: 100%;
-  display: grid;
-  grid-template-rows: 50px 1fr 1fr;
-`;
 
 const Container = styled.div`
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  height: 100%;
+  width: 100%;
 `;
 
-export {Container, DecisionInstanceContainer};
+export {Container};

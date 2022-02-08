@@ -7160,7 +7160,7 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
-dmn-js-decision-table@11.1.1:
+dmn-js-decision-table@^11.1.1:
   version "11.1.1"
   resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-11.1.1.tgz#fe979c80ebb9738a447e5f1a2cf022117fc2d34b"
   integrity sha512-mSdePb1jeVsyy1aIVBSgdckancCMZPGn+ybiyUbF2ol7zCxDfQd3Xb/G3N0LmoP1lLZv2nqUBgEA5fPTZXAFLA==
@@ -7173,6 +7173,33 @@ dmn-js-decision-table@11.1.1:
     min-dash "^3.5.2"
     min-dom "^3.1.3"
     selection-ranges "^3.0.2"
+    table-js "^7.2.0"
+
+dmn-js-drd@^11.1.2:
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-11.1.2.tgz#c0abb2e47b87ddbd8317b0307a24a653d6babef1"
+  integrity sha512-AB+8JRgEnWg8PWlAVaJ7YAT2w2dVtOEfo/h+P+87qJdjkj+DRBPaFkaFSG/tcgjTLL121/dYJZZFTCKmLOdoUw==
+  dependencies:
+    diagram-js "^7.8.2"
+    diagram-js-direct-editing "^1.6.3"
+    dmn-js-shared "^11.1.1"
+    inherits "^2.0.1"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
+    object-refs "^0.3.0"
+    tiny-svg "^2.2.1"
+
+dmn-js-literal-expression@^11.1.1:
+  version "11.1.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-11.1.1.tgz#405914cb329672bd0d86a194dc9b14341c5d9472"
+  integrity sha512-q7Je3G5MJMRTYqNmibsPn2b5ur7OP5c2hWIlHpnaPu6CF3+iw4AiVlTIsEDSbmwOvw/N4UW4tBXTJ7V3kmbytw==
+  dependencies:
+    diagram-js "^7.8.2"
+    dmn-js-shared "^11.1.1"
+    escape-html "^1.0.3"
+    inferno "~5.6.2"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
     table-js "^7.2.0"
 
 dmn-js-shared@^11.1.1:
@@ -7190,6 +7217,16 @@ dmn-js-shared@^11.1.1:
     selection-ranges "^3.0.2"
     selection-update "^0.1.2"
     table-js "^7.2.0"
+
+dmn-js@^11.1.2:
+  version "11.1.2"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-11.1.2.tgz#08f1ce73b32706e5d249775e950139848f84ca87"
+  integrity sha512-i9fzn6o8Q4KK6tpBM0kN3fjvbnTFFUH6SpnZnAzSwpW47T5nwFLPd6HkpmLYrpTRCUawdMW/DNWmp73h12ipBw==
+  dependencies:
+    dmn-js-decision-table "^11.1.1"
+    dmn-js-drd "^11.1.2"
+    dmn-js-literal-expression "^11.1.1"
+    dmn-js-shared "^11.1.1"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"
@@ -16862,7 +16899,7 @@ tiny-invariant@^1.0.2:
   resolved "https://registry.yarnpkg.com/tiny-invariant/-/tiny-invariant-1.1.0.tgz#634c5f8efdc27714b7f386c35e6760991d230875"
   integrity sha512-ytxQvrb1cPc9WBEI/HSeYYoGD0kWnGEOR8RY6KomWLBVhqz0RgTwVO9dLrGz7dC+nN9llyI7OKAgRq8Vq4ZBSw==
 
-tiny-svg@^2.2.2:
+tiny-svg@^2.2.1, tiny-svg@^2.2.2:
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-2.2.2.tgz#9d9825c2e0ccb5e259bb1ae7d7ac79194e086657"
   integrity sha512-u6zCuMkDR/3VAh83X7hDRn/pi0XhwG2ycuNS0cTFtQjGdOG2tSvEb8ds65VeGWc3H6PUjJKeunueXqgkZqtMsg==

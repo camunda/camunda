@@ -13,7 +13,7 @@ import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
 import {DrdPanel} from './DrdPanel';
-import {Container} from './styled';
+import {Container, DecisionInstanceContainer} from './styled';
 import {Drd} from './Drd';
 
 const DecisionInstance: React.FC = observer(() => {
@@ -27,11 +27,11 @@ const DecisionInstance: React.FC = observer(() => {
   }, [decisionInstanceId]);
 
   return (
-    <>
+    <Container>
       {drdStore.state.panelState === 'maximized' ? (
         <Drd />
       ) : (
-        <Container>
+        <DecisionInstanceContainer>
           <Header />
           <DecisionPanel />
           <VariablesPanel />
@@ -40,9 +40,9 @@ const DecisionInstance: React.FC = observer(() => {
               <Drd />
             </DrdPanel>
           )}
-        </Container>
+        </DecisionInstanceContainer>
       )}
-    </>
+    </Container>
   );
 });
 
