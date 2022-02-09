@@ -13,7 +13,7 @@ import {
   IReactionDisposer,
 } from 'mobx';
 import {logger} from 'modules/logger';
-import {fetchDecisionInstance} from 'modules/api/decsions';
+import {fetchDecisionInstance} from 'modules/api/decisions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {decisionXmlStore} from './decisionXml';
 import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';

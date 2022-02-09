@@ -28,6 +28,8 @@ type InstanceEntityState =
   | 'INCIDENT'
   | 'TERMINATED';
 
+type DecisionInstanceEntityState = 'COMPLETED' | 'FAILED';
+
 interface OperationEntity {
   id: string;
   name: null | string;
@@ -65,4 +67,13 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
+}
+
+interface DecisionInstanceEntity {
+  id: string;
+  name: string;
+  version: number;
+  evaluationTime: string;
+  processInstanceId: string | null;
+  state: DecisionInstanceEntityState;
 }

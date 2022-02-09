@@ -5,6 +5,11 @@
  */
 
 import {request} from 'modules/request';
+import {DecisionRequestFilters} from 'modules/utils/filter';
+
+type DecisionInstancesQuery = {
+  query: DecisionRequestFilters;
+};
 
 async function fetchDecisionXML(decisionDefinitionId: string) {
   return request({
@@ -20,4 +25,12 @@ async function fetchDecisionInstance(decisionInstanceId: string) {
   });
 }
 
-export {fetchDecisionXML, fetchDecisionInstance};
+async function fetchDecisionInstances(payload: DecisionInstancesQuery) {
+  return request({
+    url: '/api/decision-instances',
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export {fetchDecisionXML, fetchDecisionInstance, fetchDecisionInstances};

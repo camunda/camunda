@@ -67,6 +67,16 @@ type RequestFilters = {
   processIds?: string[];
 };
 
+type DecisionRequestFilters = {
+  completed?: boolean;
+  failed?: boolean;
+  ids?: string[];
+  processInstanceId?: string;
+  evaluationDateAfter?: string;
+  evaluationDateBefore?: string;
+  decisionIds?: string[];
+};
+
 const FILTER_FIELDS: FilterFieldsType[] = [
   'process',
   'version',
@@ -377,4 +387,9 @@ export {
   getSorting,
   deleteSearchParams,
 };
-export type {FiltersType, FilterFieldsType, RequestFilters};
+export type {
+  FiltersType,
+  FilterFieldsType,
+  RequestFilters,
+  DecisionRequestFilters,
+};

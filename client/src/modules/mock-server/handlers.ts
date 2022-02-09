@@ -7,14 +7,19 @@
 import {RequestHandler, rest} from 'msw';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
+import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 
 const handlers: RequestHandler[] = [
-  rest.get('/api/decision-instances/:decisionInstanceId', (req, res, ctx) => {
+  rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) => {
     return res(ctx.json(mockDecisionInstance));
   }),
 
-  rest.get('/api/decisions/:decisionDefinitionId/xml', (req, res, ctx) => {
+  rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) => {
     return res(ctx.body(mockDmnXml));
+  }),
+
+  rest.post('/api/decision-instances', (_, res, ctx) => {
+    return res(ctx.json(mockDecisionInstances));
   }),
 ];
 

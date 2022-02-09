@@ -5,7 +5,7 @@
  */
 
 import {makeObservable, override, action, observable} from 'mobx';
-import {fetchDecisionXML} from 'modules/api/decsions';
+import {fetchDecisionXML} from 'modules/api/decisions';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
