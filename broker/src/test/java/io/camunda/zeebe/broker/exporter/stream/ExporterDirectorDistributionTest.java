@@ -143,6 +143,7 @@ public final class ExporterDirectorDistributionTest {
 
     activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
     Awaitility.await("Active Director has distributed positions and passive has received it")
+        .conditionEvaluationListener(new ClockShifter(activeExporters.getClock()))
         .untilAsserted(
             () ->
                 assertThat(passiveExporterState.getPosition(EXPORTER_ID_2))
