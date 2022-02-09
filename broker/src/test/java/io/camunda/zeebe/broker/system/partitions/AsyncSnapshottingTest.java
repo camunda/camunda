@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -30,14 +32,14 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.awaitility.Awaitility;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public final class AsyncSnapshotingTest {
+public final class AsyncSnapshottingTest {
 
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
@@ -93,7 +95,8 @@ public final class AsyncSnapshotingTest {
         .thenReturn(CompletableActorFuture.completed(32L));
 
     when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
+        .thenReturn(CompletableActorFuture.completed(99L))
+        .thenReturn(CompletableActorFuture.completed(100L));
   }
 
   private void createAsyncSnapshotDirectorOfProcessingMode() {
@@ -114,37 +117,37 @@ public final class AsyncSnapshotingTest {
   public void shouldValidSnapshotWhenCommitPositionGreaterEquals() {
     // given
     createAsyncSnapshotDirectorOfProcessingMode();
-    asyncSnapshotDirector.forceSnapshot();
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
 
     // when
     setCommitPosition(100L);
 
     // then
-    Awaitility.await()
-        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
+    assertThat(snapshot.join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
   }
 
   @Test
   public void shouldTakeSnapshotsOneByOne() {
     // given
     createAsyncSnapshotDirectorOfProcessingMode();
-    asyncSnapshotDirector.forceSnapshot();
+    final var firstSnapshot = asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(99L);
-    Awaitility.await()
-        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
-    final PersistedSnapshot oldSnapshot = persistedSnapshotStore.getLatestSnapshot().orElseThrow();
+    assertThat(firstSnapshot.join()).isNotNull();
+    final var firstSnapshotIndex = firstSnapshot.join().getIndex();
 
     // when
-    asyncSnapshotDirector.forceSnapshot();
+    final var secondSnapshot = asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(100L);
 
     // then
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                assertThat(persistedSnapshotStore.getCurrentSnapshotIndex())
-                    .describedAs("New snapshot is taken")
-                    .isGreaterThan(oldSnapshot.getIndex()));
+    assertThat(secondSnapshot.join())
+        .describedAs("Second snapshot is taken")
+        .isNotNull()
+        .describedAs("Second snapshot has a higher index")
+        .extracting(PersistedSnapshot::getIndex, as(InstanceOfAssertFactories.LONG))
+        .isGreaterThan(firstSnapshotIndex);
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(secondSnapshot.join());
   }
 
   @Test
@@ -157,22 +160,21 @@ public final class AsyncSnapshotingTest {
 
     when(mockStreamProcessor.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
+    final var initialFailure = new RuntimeException("getLastWrittenPositionAsync fails");
     when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(
-            CompletableActorFuture.completedExceptionally(
-                new RuntimeException("getLastWrittenPositionAsync fails")));
+        .thenReturn(CompletableActorFuture.completedExceptionally(initialFailure));
     setCommitPosition(commitPosition);
-    asyncSnapshotDirector.forceSnapshot();
-    verify(mockStreamProcessor, timeout(5000).times(1)).getLastWrittenPositionAsync();
+    assertThatThrownBy(() -> asyncSnapshotDirector.forceSnapshot().join()).hasCause(initialFailure);
+    verify(mockStreamProcessor, timeout(10000).times(1)).getLastWrittenPositionAsync();
 
     // when
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    asyncSnapshotDirector.forceSnapshot();
 
     // then
-    Awaitility.await()
-        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
+    assertThat(asyncSnapshotDirector.forceSnapshot().join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
+    verify(mockStreamProcessor, timeout(10000).times(2)).getLastWrittenPositionAsync();
   }
 
   @Test
@@ -183,34 +185,34 @@ public final class AsyncSnapshotingTest {
     final long lastWrittenPosition = 26L;
     final long commitPosition = 100L;
 
+    final var initialFailure = new RuntimeException("getLastProcessedPositionAsync fails");
     when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(
-            CompletableActorFuture.completedExceptionally(
-                new RuntimeException("getLastProcessedPositionAsync fails")));
+        .thenReturn(CompletableActorFuture.completedExceptionally(initialFailure));
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    asyncSnapshotDirector.forceSnapshot();
+
+    assertThatThrownBy(() -> asyncSnapshotDirector.forceSnapshot().join()).hasCause(initialFailure);
     verify(mockStreamProcessor, timeout(5000).times(1)).getLastProcessedPositionAsync();
 
     // when
     when(mockStreamProcessor.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    asyncSnapshotDirector.forceSnapshot();
+    final var secondSnapshot = asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(commitPosition);
 
     // then
-    Awaitility.await()
-        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
+    assertThat(secondSnapshot.join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(secondSnapshot.join());
   }
 
   @Test
   public void shouldPersistSnapshotWithoutWaitingForCommitWhenInReplayMode() {
     // when
     createAsyncSnapshotDirectorOfReplayMode();
-    asyncSnapshotDirector.forceSnapshot();
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
 
     // then
-    Awaitility.await()
-        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
+    assertThat(snapshot.join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
   }
 }
