@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -165,6 +166,14 @@ class EitherTest {
     final var leftConsumer = new VerifiableConsumer();
     Either.left(value).ifRightOrLeft(new FailConsumer(), leftConsumer);
     assertThat(leftConsumer.hasBeenExecuted).isTrue();
+  }
+
+  @DisplayName("Only an Either of Optional with a value present is a Right")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyAnEitherOfPresentOptionalIsRight(final Object value) {
+    assertThat(Either.ofOptional(Optional.of(value)).orElse(null)).isEqualTo(Either.right(value));
+    assertThat(Either.ofOptional(Optional.empty()).orElse(value)).isEqualTo(Either.left(value));
   }
 
   /** Simple Consumer that knows whether it's been executed. */
