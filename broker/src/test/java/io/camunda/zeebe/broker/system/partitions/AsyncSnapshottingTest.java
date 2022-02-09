@@ -124,7 +124,7 @@ public final class AsyncSnapshottingTest {
 
     // then
     assertThat(snapshot.join()).isNotNull();
-    assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
   }
 
   @Test
@@ -147,7 +147,7 @@ public final class AsyncSnapshottingTest {
         .describedAs("Second snapshot has a higher index")
         .extracting(PersistedSnapshot::getIndex, as(InstanceOfAssertFactories.LONG))
         .isGreaterThan(firstSnapshotIndex);
-    assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(secondSnapshot.join());
   }
 
   @Test
@@ -202,7 +202,7 @@ public final class AsyncSnapshottingTest {
 
     // then
     assertThat(secondSnapshot.join()).isNotNull();
-    assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(secondSnapshot.join());
   }
 
   @Test
@@ -213,6 +213,6 @@ public final class AsyncSnapshottingTest {
 
     // then
     assertThat(snapshot.join()).isNotNull();
-    assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
   }
 }
