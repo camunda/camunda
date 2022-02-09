@@ -5,16 +5,17 @@
  */
 
 import {useState} from 'react';
-import {VariableHeader} from './styled';
+import {VariableHeader, VariableNameField, VariableValueField} from './styled';
 import {observer} from 'mobx-react';
-import {TextField} from 'modules/components/TextField';
 import {
+  validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValueComplete,
 } from '../validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {OptionalFilter} from './OptionalFilter';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -27,20 +28,27 @@ const Variable: React.FC = observer(() => {
       filterList={['variableName', 'variableValue']}
     >
       <VariableHeader appearance="emphasis">Variable</VariableHeader>
-      <Field name="variableName" validate={validateVariableNameComplete}>
+      <Field
+        name="variableName"
+        validate={mergeValidators(
+          validateVariableNameCharacters,
+          validateVariableNameComplete
+        )}
+      >
         {({input, meta}) => (
-          <TextField
+          <VariableNameField
             {...input}
             type="text"
             data-testid="filter-variable-name"
             label="Name"
+            autoFocus
             shouldDebounceError={!meta.dirty && formState.dirty}
           />
         )}
       </Field>
       <Field name="variableValue" validate={validateVariableValueComplete}>
         {({input, meta}) => (
-          <TextField
+          <VariableValueField
             {...input}
             type="text"
             placeholder="in JSON format"

@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 import Panel from 'modules/components/Panel';
-import {CmText, CmDropdown} from '@camunda-cloud/common-ui-react';
+import {CmText, CmDropdown, CmSelect} from '@camunda-cloud/common-ui-react';
 
 const FiltersForm = styled.form`
   width: 100%;
@@ -36,27 +36,38 @@ const ResetButtonContainer = styled(Panel.Footer)`
 `;
 
 const Fields = styled.div`
-  overflow-y: auto;
-  flex-grow: 1;
+  ${({theme}) => {
+    return css`
+      overflow-y: auto;
+      flex-grow: 1;
+      padding: 23px 20px 8px 20px;
+      background-color: ${theme.colors.itemEven};
+    `;
+  }}
 `;
 
 const ProcessHeader = styled(CmText)`
   display: block;
-  padding: 24px 0 8px 20px;
+  padding-bottom: 5px;
 `;
 
 const StatesHeader = styled(CmText)`
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 `;
 
 const InstanceStates = styled.div`
-  padding-left: 20px;
+  padding-top: 17px;
 `;
 
 const MoreFiltersDropdown = styled(CmDropdown)`
   display: flex;
   justify-content: flex-end;
+  margin: 0 3px 16px 0;
+`;
+
+const Select = styled(CmSelect)`
+  padding-bottom: 5px;
 `;
 
 export {
@@ -68,4 +79,5 @@ export {
   InstanceStates,
   OrderedFilters,
   MoreFiltersDropdown,
+  Select,
 };

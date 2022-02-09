@@ -9,7 +9,7 @@ import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
 
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import {CmSelect} from '@camunda-cloud/common-ui-react';
+import {Select} from './styled';
 
 const FlowNodeField: React.FC = observer(() => {
   const {flowNodeFilterOptions} = instancesDiagramStore;
@@ -22,7 +22,7 @@ const FlowNodeField: React.FC = observer(() => {
   return (
     <Field name="flowNodeId">
       {({input}) => (
-        <CmSelect
+        <Select
           placeholder="--"
           label="Flow Node"
           data-testid="filter-flow-node"

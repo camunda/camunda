@@ -316,7 +316,7 @@ test('End Date filter', async (t) => {
   // wait for filter to be applied
   await t
     .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
+      within(screen.queryByTestId('instances-list')).queryAllByRole('row').count
     )
     .eql(1);
 

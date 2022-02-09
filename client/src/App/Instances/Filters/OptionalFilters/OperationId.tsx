@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {TextField} from 'modules/components/TextField';
+import {OperationIdField} from './styled';
 import {
   validateOperationIdCharacters,
   validateOperationIdComplete,
@@ -24,12 +24,13 @@ const OperationId: React.FC = () => {
         )}
       >
         {({input}) => (
-          <TextField
+          <OperationIdField
             {...input}
             type="text"
             data-testid="filter-operation-id"
             label="Operation Id"
             shouldDebounceError={false}
+            autoFocus
           />
         )}
       </Field>

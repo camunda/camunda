@@ -7,13 +7,12 @@
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
 
-import {Group} from './styled';
-import {CmCheckbox} from '@camunda-cloud/common-ui-react';
+import {Container, Group, GroupCheckbox, Checkbox} from './styled';
 
 type GroupItem = {
   label: string;
   name: string;
-  icon: React.ComponentProps<typeof CmCheckbox>['icon'];
+  icon: React.ComponentProps<typeof Checkbox>['icon'];
 };
 
 type Props = {
@@ -31,8 +30,8 @@ const CheckboxGroup: React.FC<Props> = ({dataTestId, groupLabel, items}) => {
   const isIndeterminate = fieldValues.some((value) => value);
 
   return (
-    <>
-      <CmCheckbox
+    <Container>
+      <GroupCheckbox
         label={groupLabel}
         id={groupLabel}
         data-testid={dataTestId}
@@ -50,7 +49,7 @@ const CheckboxGroup: React.FC<Props> = ({dataTestId, groupLabel, items}) => {
         {items.map(({label, name, icon}) => (
           <Field name={name} component="input" type="checkbox" key={name}>
             {({input}) => (
-              <CmCheckbox
+              <Checkbox
                 {...input}
                 label={label}
                 checked={input.checked}
@@ -62,7 +61,7 @@ const CheckboxGroup: React.FC<Props> = ({dataTestId, groupLabel, items}) => {
           </Field>
         ))}
       </Group>
-    </>
+    </Container>
   );
 };
 

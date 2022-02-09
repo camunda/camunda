@@ -120,12 +120,12 @@ const Filters: React.FC = observer(() => {
                     {
                       label: 'Completed',
                       name: 'completed',
-                      icon: {icon: 'state:completed', color: 'medium'},
+                      icon: {icon: 'state:completed', color: 'medLight'},
                     },
                     {
                       label: 'Canceled',
                       name: 'canceled',
-                      icon: {icon: 'stop', color: 'dark'},
+                      icon: {icon: 'stop', color: 'medDark'},
                     },
                   ]}
                 />

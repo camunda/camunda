@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {TextField} from 'modules/components/TextField';
+import {ErrorMessageField} from './styled';
 import {Field} from 'react-final-form';
 import {OptionalFilter} from './OptionalFilter';
 
@@ -13,12 +13,13 @@ const ErrorMessage: React.FC = () => {
     <OptionalFilter name="errorMessage" filterList={['errorMessage']}>
       <Field name="errorMessage">
         {({input}) => (
-          <TextField
+          <ErrorMessageField
             {...input}
             type="text"
             data-testid="filter-error-message"
             label="Error Message"
             shouldDebounceError={false}
+            autoFocus
           />
         )}
       </Field>

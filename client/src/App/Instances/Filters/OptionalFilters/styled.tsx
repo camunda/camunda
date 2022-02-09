@@ -6,6 +6,7 @@
 
 import styled, {css} from 'styled-components';
 import {CmText, CmIcon} from '@camunda-cloud/common-ui-react';
+import {TextField} from 'modules/components/TextField';
 
 type RowProps = {
   order: number;
@@ -16,14 +17,13 @@ const Row = styled.div<RowProps>`
     return css`
       width: 100%;
       height: fit-content;
-      padding-left: 20px;
       position: relative;
       order: ${order};
 
       &:hover > cm-icon {
         position: absolute;
         display: block;
-        right: 0;
+        right: 8px;
         top: 0px;
         cursor: pointer;
       }
@@ -33,6 +33,7 @@ const Row = styled.div<RowProps>`
 
 const VariableHeader = styled(CmText)`
   display: block;
+  padding-bottom: 5px;
 `;
 
 const Delete = styled(CmIcon)`
@@ -40,4 +41,48 @@ const Delete = styled(CmIcon)`
   display: none;
 `;
 
-export {Row, VariableHeader, Delete};
+const VariableNameField = styled(TextField)`
+  padding-bottom: 5px;
+`;
+
+const VariableValueField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+const IdsField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+const OperationIdField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+const ParentInstanceIdField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+const ErrorMessageField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+const StartDateField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+const EndDateField = styled(TextField)`
+  padding-bottom: 21px;
+`;
+
+export {
+  Row,
+  VariableHeader,
+  Delete,
+  VariableValueField,
+  VariableNameField,
+  IdsField,
+  OperationIdField,
+  ParentInstanceIdField,
+  ErrorMessageField,
+  StartDateField,
+  EndDateField,
+};

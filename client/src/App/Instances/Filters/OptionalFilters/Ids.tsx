@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {TextField} from 'modules/components/TextField';
 import {
   validateIdsCharacters,
   validateIdsNotTooLong,
@@ -13,6 +12,7 @@ import {
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Field} from 'react-final-form';
 import {OptionalFilter} from './OptionalFilter';
+import {IdsField} from './styled';
 
 const Ids: React.FC = () => {
   return (
@@ -26,7 +26,7 @@ const Ids: React.FC = () => {
         )}
       >
         {({input}) => (
-          <TextField
+          <IdsField
             {...input}
             type="multiline"
             data-testid="filter-instance-ids"
@@ -34,6 +34,7 @@ const Ids: React.FC = () => {
             placeholder="separated by space or comma"
             rows={1}
             shouldDebounceError={false}
+            autoFocus
           />
         )}
       </Field>

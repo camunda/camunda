@@ -9,7 +9,7 @@ import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {processesStore} from 'modules/stores/processes';
-import {CmSelect} from '@camunda-cloud/common-ui-react';
+import {Select} from './styled';
 
 const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcess} = processesStore;
@@ -34,7 +34,7 @@ const ProcessVersionField: React.FC = observer(() => {
     <Field name="version">
       {({input}) => {
         return (
-          <CmSelect
+          <Select
             label="Version"
             data-testid="filter-process-version"
             onCmInput={(event) => {

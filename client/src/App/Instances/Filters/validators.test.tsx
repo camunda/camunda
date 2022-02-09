@@ -17,6 +17,7 @@ import {
   validateParentInstanceIdCharacters,
   validateParentInstanceIdNotTooLong,
   validateParentInstanceIdComplete,
+  validateVariableNameCharacters,
 } from './validators';
 
 describe('validators', () => {
@@ -290,6 +291,49 @@ describe('validators', () => {
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
+  });
+
+  it('should validate variable name characters without delay', () => {
+    const mockMeta = {
+      blur: jest.fn(),
+      change: jest.fn(),
+      focus: jest.fn(),
+    };
+
+    ['abc', '123'].forEach((variableName) => {
+      expect(
+        validateVariableNameCharacters(
+          variableName,
+          {newVariables: [{name: variableName}]},
+          {
+            ...mockMeta,
+            name: 'newVariables[0].name',
+          }
+        )
+      ).toBeUndefined();
+
+      [
+        '"',
+        ' ',
+        'test ',
+        '"test"',
+        'test\twith\ttab',
+        'line\nbreak',
+        'carriage\rreturn',
+        'form\ffeed',
+      ].forEach((variableName) => {
+        expect(
+          validateVariableNameCharacters(
+            variableName,
+            {newVariables: [{name: variableName}]},
+            {
+              ...mockMeta,
+              name: 'newVariables[0].name',
+            }
+          )
+        ).toBe('Name is invalid');
+      });
+    });
   });
 
   it('should validate variable name without delay', () => {

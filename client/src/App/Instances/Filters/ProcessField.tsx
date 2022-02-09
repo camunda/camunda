@@ -9,7 +9,7 @@ import {Field, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {processesStore} from 'modules/stores/processes';
-import {CmSelect} from '@camunda-cloud/common-ui-react';
+import {Select} from './styled';
 
 const ProcessField: React.FC = observer(() => {
   const {processes, versionsByProcess} = processesStore;
@@ -24,7 +24,7 @@ const ProcessField: React.FC = observer(() => {
   return (
     <Field name="process">
       {({input}) => (
-        <CmSelect
+        <Select
           label="Name"
           data-testid="filter-process-name"
           disabled={processes.length === 0}

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {TextField} from 'modules/components/TextField';
+import {StartDateField} from './styled';
 import {validateDateCharacters, validateDateComplete} from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Field} from 'react-final-form';
@@ -18,13 +18,14 @@ const StartDate: React.FC = () => {
         validate={mergeValidators(validateDateCharacters, validateDateComplete)}
       >
         {({input}) => (
-          <TextField
+          <StartDateField
             {...input}
             type="text"
             data-testid="filter-start-date"
             label="Start Date"
             placeholder="YYYY-MM-DD hh:mm:ss"
             shouldDebounceError={false}
+            autoFocus
           />
         )}
       </Field>

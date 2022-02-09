@@ -651,6 +651,61 @@ describe('Filters', () => {
     expect(screen.getByTitle(/reset filters/i)).toBeEnabled();
   });
 
+  it('should not submit an invalid form after deleting an optional filter', async () => {
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/'],
+    });
+
+    render(<Filters />, {
+      wrapper: getWrapper(MOCK_HISTORY),
+    });
+    expect(MOCK_HISTORY.location.search).toBe('');
+
+    displayOptionalFilter('Start Date');
+    userEvent.type(screen.getByTestId('filter-start-date'), 'a');
+
+    expect(
+      await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+    ).toBeInTheDocument();
+
+    expect(MOCK_HISTORY.location.search).toBe('');
+    displayOptionalFilter('End Date');
+    userEvent.click(screen.getByTestId('delete-endDate'));
+
+    expect(MOCK_HISTORY.location.search).toBe('');
+  });
+
+  it('should be able to submit form after deleting an invalid optional filter', async () => {
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/instances?active=true&incidents=true'],
+    });
+
+    render(<Filters />, {
+      wrapper: getWrapper(MOCK_HISTORY),
+    });
+    expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
+
+    displayOptionalFilter('Start Date');
+    userEvent.type(screen.getByTestId('filter-start-date'), 'a');
+
+    expect(
+      await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+    ).toBeInTheDocument();
+
+    expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
+
+    userEvent.click(screen.getByTestId('delete-startDate'));
+
+    displayOptionalFilter('Error Message');
+    userEvent.type(screen.getByTestId('filter-error-message'), 'test');
+
+    await waitFor(() =>
+      expect(MOCK_HISTORY.location.search).toBe(
+        '?active=true&incidents=true&errorMessage=test'
+      )
+    );
+  });
+
   describe('Interaction with other fields during validation', () => {
     it('validation for Instance IDs field should not affect other fields validation errors', async () => {
       const MOCK_HISTORY = createMemoryHistory({
@@ -1149,7 +1204,7 @@ describe('Filters', () => {
           endDate: '2021-02-23 18:17:18',
           flowNodeId: 'ServiceTask_0kt6c5i',
           variableName: 'foo',
-          variableValue: 'bar',
+          variableValue: '"bar"',
           operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
           active: 'true',
           incidents: 'true',
@@ -1196,7 +1251,7 @@ describe('Filters', () => {
                 endDate: '2021-02-23 18:17:18',
                 flowNodeId: 'ServiceTask_0kt6c5i',
                 variableName: 'foo',
-                variableValue: 'bar',
+                variableValue: '"bar"',
                 operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
                 active: 'true',
                 incidents: 'true',
@@ -1224,7 +1279,7 @@ describe('Filters', () => {
                 endDate: '2021-02-23 18:17:18',
                 flowNodeId: 'ServiceTask_0kt6c5i',
                 variableName: 'foo',
-                variableValue: 'bar',
+                variableValue: '"bar"',
                 operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
                 active: 'true',
                 incidents: 'true',
@@ -1250,7 +1305,7 @@ describe('Filters', () => {
                 endDate: '2021-02-23 18:17:18',
                 flowNodeId: 'ServiceTask_0kt6c5i',
                 variableName: 'foo',
-                variableValue: 'bar',
+                variableValue: '"bar"',
                 operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
                 active: 'true',
                 incidents: 'true',
@@ -1275,7 +1330,7 @@ describe('Filters', () => {
                 endDate: '2021-02-23 18:17:18',
                 flowNodeId: 'ServiceTask_0kt6c5i',
                 variableName: 'foo',
-                variableValue: 'bar',
+                variableValue: '"bar"',
                 operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
                 active: 'true',
                 incidents: 'true',
@@ -1299,7 +1354,7 @@ describe('Filters', () => {
                 version: '1',
                 flowNodeId: 'ServiceTask_0kt6c5i',
                 variableName: 'foo',
-                variableValue: 'bar',
+                variableValue: '"bar"',
                 operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
                 active: 'true',
                 incidents: 'true',
@@ -1369,7 +1424,7 @@ describe('Filters', () => {
           endDate: '2021-02-23 18:17:18',
           flowNodeId: 'ServiceTask_0kt6c5i',
           variableName: 'foo',
-          variableValue: 'bar',
+          variableValue: '"bar"',
           operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
           active: 'true',
           incidents: 'true',

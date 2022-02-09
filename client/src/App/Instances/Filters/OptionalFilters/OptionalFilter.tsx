@@ -10,9 +10,8 @@ import {
   OptionalFilter as OptionalFilterType,
 } from 'modules/stores/visibleFilters';
 import {observer} from 'mobx-react';
-import {useFormState} from 'react-final-form';
+import {useForm} from 'react-final-form';
 import {FilterFieldsType} from 'modules/utils/filter';
-import {useFilters} from '../useFilters';
 
 type Props = {
   name: OptionalFilterType;
@@ -23,8 +22,7 @@ type Props = {
 const OptionalFilter: React.FC<Props> = observer(
   ({name, children, filterList}) => {
     const {visibleFilters} = visibleFiltersStore.state;
-    const formState = useFormState();
-    const filters = useFilters();
+    const form = useForm();
 
     return (
       <Row order={visibleFilters.indexOf(name)}>
@@ -32,16 +30,13 @@ const OptionalFilter: React.FC<Props> = observer(
           icon="delete"
           data-testid={`delete-${name}`}
           onClick={() => {
-            let updatedFilters = Object.assign({}, formState.values);
+            visibleFiltersStore.hideFilter(name);
 
             filterList.forEach((filter) => {
-              if (updatedFilters.hasOwnProperty(filter)) {
-                delete updatedFilters[filter];
-              }
+              form.change(filter, undefined);
             });
 
-            filters.setFiltersToURL(updatedFilters);
-            visibleFiltersStore.hideFilter(name);
+            form.submit();
           }}
         />
         {children}

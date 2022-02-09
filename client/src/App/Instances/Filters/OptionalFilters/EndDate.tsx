@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {TextField} from 'modules/components/TextField';
+import {EndDateField} from './styled';
 import {validateDateCharacters, validateDateComplete} from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Field} from 'react-final-form';
@@ -18,13 +18,14 @@ const EndDate: React.FC = () => {
         validate={mergeValidators(validateDateCharacters, validateDateComplete)}
       >
         {({input}) => (
-          <TextField
+          <EndDateField
             {...input}
             type="text"
             data-testid="filter-end-date"
             label="End Date"
             placeholder="YYYY-MM-DD hh:mm:ss"
             shouldDebounceError={false}
+            autoFocus
           />
         )}
       </Field>

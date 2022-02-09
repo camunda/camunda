@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {TextField} from 'modules/components/TextField';
+import {ParentInstanceIdField} from './styled';
 import {
   validateParentInstanceIdComplete,
   validateParentInstanceIdNotTooLong,
@@ -26,12 +26,13 @@ const ParentInstanceIds: React.FC = () => {
         )}
       >
         {({input}) => (
-          <TextField
+          <ParentInstanceIdField
             {...input}
             type="text"
             data-testid="filter-parent-instance-id"
             label="Parent Instance Id"
             shouldDebounceError={false}
+            autoFocus
           />
         )}
       </Field>

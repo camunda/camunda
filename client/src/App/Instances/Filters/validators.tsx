@@ -100,6 +100,16 @@ const validateDateCharacters: FieldValidator<
   }
 };
 
+const validateVariableNameCharacters: FieldValidator<string | undefined> = (
+  variableName = ''
+) => {
+  if (variableName.includes('"') || variableName.match(new RegExp('[\\s]+'))) {
+    return 'Name is invalid';
+  }
+
+  return;
+};
+
 const validateVariableNameComplete: FieldValidator<
   FiltersType['variableName']
 > = promisifyValidator(
@@ -167,6 +177,7 @@ export {
   validateDateComplete,
   validateOperationIdCharacters,
   validateOperationIdComplete,
+  validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValueComplete,
 };
