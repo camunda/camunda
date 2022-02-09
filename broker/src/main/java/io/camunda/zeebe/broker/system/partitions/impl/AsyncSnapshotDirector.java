@@ -27,7 +27,6 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -58,7 +57,7 @@ public final class AsyncSnapshotDirector extends Actor
   private Long lastWrittenPosition;
   private TransientSnapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
-  private CompletableActorFuture<Optional<PersistedSnapshot>> snapshotFuture;
+  private CompletableActorFuture<PersistedSnapshot> snapshotFuture;
   private boolean persistingSnapshot;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
@@ -194,11 +193,11 @@ public final class AsyncSnapshotDirector extends Actor
   /**
    * Directly take a snapshot, independently of the scheduled snapshots.
    *
-   * @return A future that is completed successfully when the snapshot was taken or if the snapshot
-   *     was skipped.
+   * @return A future that is completed successfully when the snapshot was taken. If the snapshot
+   *     was skipped, the future is also completed successfully but with a null.
    */
-  public CompletableActorFuture<Optional<PersistedSnapshot>> forceSnapshot() {
-    final var newSnapshotFuture = new CompletableActorFuture<Optional<PersistedSnapshot>>();
+  public CompletableActorFuture<PersistedSnapshot> forceSnapshot() {
+    final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
     actor.call(() -> prepareTakingSnapshot(newSnapshotFuture));
     return newSnapshotFuture;
   }
@@ -219,10 +218,10 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void prepareTakingSnapshot(
-      final CompletableActorFuture<Optional<PersistedSnapshot>> newSnapshotFuture) {
+      final CompletableActorFuture<PersistedSnapshot> newSnapshotFuture) {
     if (snapshotFuture != null) {
       LOG.debug("Already taking snapshot, skipping this request for a new snapshot");
-      newSnapshotFuture.complete(Optional.empty());
+      newSnapshotFuture.complete(null);
       return;
     }
 
@@ -235,7 +234,7 @@ public final class AsyncSnapshotDirector extends Actor
             if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
               LOG.debug(
                   "We will skip taking this snapshot, because we haven't processed something yet.");
-              snapshotFuture.complete(Optional.empty());
+              snapshotFuture.complete(null);
               snapshotFuture = null;
               return;
             }
@@ -343,7 +342,7 @@ public final class AsyncSnapshotDirector extends Actor
                 LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
               }
             } else {
-              snapshotFuture.complete(Optional.of(snapshot));
+              snapshotFuture.complete(snapshot);
             }
             lastWrittenPosition = null;
             snapshotFuture = null;
