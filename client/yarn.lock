@@ -7218,7 +7218,7 @@ dmn-js-shared@^11.1.1:
     selection-update "^0.1.2"
     table-js "^7.2.0"
 
-dmn-js@^11.1.2:
+dmn-js@11.1.2:
   version "11.1.2"
   resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-11.1.2.tgz#08f1ce73b32706e5d249775e950139848f84ca87"
   integrity sha512-i9fzn6o8Q4KK6tpBM0kN3fjvbnTFFUH6SpnZnAzSwpW47T5nwFLPd6HkpmLYrpTRCUawdMW/DNWmp73h12ipBw==
