@@ -117,9 +117,6 @@ zeebe-gateway:
 
 operate:
   enabled: false
-  global:
-    image:
-      repository: camunda/operate
 
 tasklist:
   enabled: false
