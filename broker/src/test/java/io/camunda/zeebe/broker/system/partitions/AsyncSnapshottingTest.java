@@ -133,8 +133,8 @@ public final class AsyncSnapshottingTest {
     createAsyncSnapshotDirectorOfProcessingMode();
     final var firstSnapshot = asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(99L);
-    assertThat(firstSnapshot.join()).isPresent();
-    final var firstSnapshotIndex = firstSnapshot.join().orElseThrow().getIndex();
+    assertThat(firstSnapshot.join()).isNotNull();
+    final var firstSnapshotIndex = firstSnapshot.join().getIndex();
 
     // when
     final var secondSnapshot = asyncSnapshotDirector.forceSnapshot();
@@ -143,10 +143,9 @@ public final class AsyncSnapshottingTest {
     // then
     assertThat(secondSnapshot.join())
         .describedAs("Second snapshot is taken")
-        .isPresent()
-        .get()
-        .extracting(PersistedSnapshot::getIndex, as(InstanceOfAssertFactories.LONG))
+        .isNotNull()
         .describedAs("Second snapshot has a higher index")
+        .extracting(PersistedSnapshot::getIndex, as(InstanceOfAssertFactories.LONG))
         .isGreaterThan(firstSnapshotIndex);
     assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
   }
@@ -202,7 +201,7 @@ public final class AsyncSnapshottingTest {
     setCommitPosition(commitPosition);
 
     // then
-    assertThat(secondSnapshot.join()).isPresent();
+    assertThat(secondSnapshot.join()).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
   }
 
@@ -213,7 +212,7 @@ public final class AsyncSnapshottingTest {
     final var snapshot = asyncSnapshotDirector.forceSnapshot();
 
     // then
-    assertThat(snapshot.join()).isPresent();
+    assertThat(snapshot.join()).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
   }
 }
