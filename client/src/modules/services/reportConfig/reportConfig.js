@@ -90,7 +90,7 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
   }
 
   // update x label on group and view update
-  if (['view', 'group'].indexOf(type) !== -1) {
+  if (['view', 'group'].includes(type)) {
     if (['variable', 'inputVariable', 'outputVariable'].includes(newReport.groupBy.type)) {
       const {name, type} = newReport.groupBy.value;
       newReport.configuration.xLabel = getVariableLabel(name, type);

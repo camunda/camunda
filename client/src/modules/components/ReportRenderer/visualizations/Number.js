@@ -24,6 +24,8 @@ export function Number({report, formatter, mightFail}) {
   const processVariableReport = reportType === 'process' && data.view.entity === 'variable';
 
   useEffect(() => {
+    // We need to load the variables in order to resolve the variable label
+    // will be removed once OPT-5961 is done
     if (processVariableReport) {
       const {name, type} = data.view.properties[0];
       const payload =

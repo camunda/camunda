@@ -88,20 +88,18 @@ describe('Process table', () => {
   });
 
   it('should make the processInstanceId a link', () => {
-    const cell = processRawData(
-      {
-        report: {
-          reportType: 'process',
-          result: {data: [{processInstanceId: '123', engineName: '1'}]},
-          data: {
-            configuration: {
-              tableColumns: {includedColumns: ['processInstanceId', 'engineName'], columnOrder: []},
-            },
+    const cell = processRawData({
+      report: {
+        reportType: 'process',
+        result: {data: [{processInstanceId: '123', engineName: '1'}]},
+        data: {
+          configuration: {
+            tableColumns: {includedColumns: ['processInstanceId', 'engineName'], columnOrder: []},
           },
         },
       },
-      {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
-    ).body[0][0];
+      camundaEndpoints: {1: {endpoint: 'http://camunda.com', engineName: 'a'}},
+    }).body[0][0];
 
     expect(cell.type).toBe('a');
     expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/123');
@@ -165,7 +163,14 @@ describe('Process table', () => {
 
   it('should invoke the variable view callback function when viewing an object variable', () => {
     const spy = jest.fn();
-    const {body} = processRawData({report: {reportType: 'process', data, result}}, {}, [], spy);
+    const {body} = processRawData({
+      report: {
+        reportType: 'process',
+        data,
+        result,
+      },
+      onVariableView: spy,
+    });
 
     body[0][4].props.onClick();
 
@@ -228,18 +233,16 @@ describe('Decision table', () => {
       },
     };
 
-    const cell = processRawData(
-      {
-        report: {
-          reportType: 'decision',
-          result: {
-            data: [{decisionInstanceId: '123', processInstanceId: '456', engineName: 'a'}],
-          },
-          data,
+    const cell = processRawData({
+      report: {
+        reportType: 'decision',
+        result: {
+          data: [{decisionInstanceId: '123', processInstanceId: '456', engineName: 'a'}],
         },
+        data,
       },
-      {a: {endpoint: 'http://camunda.com', engineName: 'a'}}
-    ).body[0];
+      camundaEndpoints: {a: {endpoint: 'http://camunda.com', engineName: 'a'}},
+    }).body[0];
 
     expect(cell[0].type).toBe('a');
     expect(cell[0].props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');

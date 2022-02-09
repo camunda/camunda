@@ -17,7 +17,7 @@ const props = {
   toggleExpanded: jest.fn(),
   onRemove: jest.fn(),
   filter: {},
-  variables: [testVar],
+  variables: [{...testVar, label: 'testVarLabel'}],
   updateFilterData: jest.fn(),
   config: {},
   applyTo: [],
@@ -65,7 +65,7 @@ it('should show the header of the filter if there exists a filter after it', () 
   node.setProps({filter: testFilter, filters: [testFilter, {}]});
   runAllEffects();
 
-  expect(node.find('.sectionTitle .highlighted')).toIncludeText(testVar.name);
+  expect(node.find('.sectionTitle .highlighted')).toIncludeText(props.variables[0].label);
 });
 
 it('should show the filter header on the last collapsed filter', () => {

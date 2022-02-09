@@ -54,6 +54,12 @@ const report = {
   result: {measures: [{property: 'frequency', data: 1234}]},
 };
 
+const variable = {name: 'foo', type: 'String'};
+const variableReport = update(report, {
+  data: {view: {$set: {entity: 'variable', properties: [variable]}}},
+  result: {measures: {$set: [{data: 123, aggregationType: 'avg', property: variable}]}},
+});
+
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
@@ -126,26 +132,7 @@ it('should show multiple measures', () => {
 });
 
 it('should show the variable name', () => {
-  const variable = {name: 'foo', type: 'String'};
-  const node = shallow(
-    <Number
-      report={{
-        reportType: 'process',
-        result: {
-          measures: [{data: 123, aggregationType: 'avg', property: variable}],
-        },
-        data: {
-          configuration: {targetValue: {active: false}},
-          view: {
-            entity: 'variable',
-            properties: [variable],
-          },
-          visualization: 'Number',
-        },
-      }}
-      {...props}
-    />
-  );
+  const node = shallow(<Number report={variableReport} {...props} />);
 
   runLastEffect();
 
@@ -153,27 +140,8 @@ it('should show the variable name', () => {
 });
 
 it('should show the variable label if it exists', () => {
-  const variable = {name: 'foo', type: 'String'};
   loadVariables.mockReturnValueOnce([{...variable, label: 'FooLabel'}]);
-  const node = shallow(
-    <Number
-      report={{
-        reportType: 'process',
-        result: {
-          measures: [{data: 123, aggregationType: 'avg', property: variable}],
-        },
-        data: {
-          configuration: {targetValue: {active: false}},
-          view: {
-            entity: 'variable',
-            properties: [variable],
-          },
-          visualization: 'Number',
-        },
-      }}
-      {...props}
-    />
-  );
+  const node = shallow(<Number report={variableReport} {...props} />);
 
   runLastEffect();
 

@@ -92,7 +92,8 @@ export default function FilterInstance({
             }
           }}
         >
-          <span className="highlighted">{filter.name}</span> {t('common.filter.list.operators.is')}…
+          <span className="highlighted">{getVariableLabel(variables, filter)}</span>{' '}
+          {t('common.filter.list.operators.is')}…
           {!collapsed && (
             <Tooltip content={t('common.delete')}>
               <Button
@@ -144,5 +145,11 @@ export default function FilterInstance({
         />
       )}
     </section>
+  );
+}
+
+function getVariableLabel(variables, {name, type}) {
+  return (
+    variables.find((variable) => variable.name === name && variable.type === type)?.label || name
   );
 }

@@ -164,10 +164,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
             <RenameVariablesModal
               definitionKey={definition.key}
               availableTenants={tenantInfo?.map(({id}) => id)}
-              onChange={() => {
-                onChange(definition);
-                setVariableModalOpen(false);
-              }}
+              onChange={() => onChange(definition)}
               onClose={() => setVariableModalOpen(false)}
             />
           )}

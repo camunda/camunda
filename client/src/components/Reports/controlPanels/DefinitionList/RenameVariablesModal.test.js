@@ -46,10 +46,16 @@ it('should load all variables for the specified definition', () => {
 });
 
 it('should invoke updateVariable when confirming the modal with the list of updated variables', () => {
-  const spy = jest.fn();
+  const changeSpy = jest.fn();
+  const closeSpy = jest.fn();
   const definitionKey = '123';
   const node = shallow(
-    <RenameVariablesModal definitionKey={definitionKey} onChange={spy} {...props} />
+    <RenameVariablesModal
+      definitionKey={definitionKey}
+      onChange={changeSpy}
+      onClose={closeSpy}
+      {...props}
+    />
   );
 
   runLastEffect();
@@ -65,7 +71,8 @@ it('should invoke updateVariable when confirming the modal with the list of upda
   expect(updateVariables).toHaveBeenCalledWith(definitionKey, [
     {variableLabel: 'new name', variableName: 'variable1', variableType: 'String'},
   ]);
-  expect(spy).toHaveBeenCalled();
+  expect(changeSpy).toHaveBeenCalled();
+  expect(closeSpy).toHaveBeenCalled();
 });
 
 it('should invoke onClose when closing the modal', () => {

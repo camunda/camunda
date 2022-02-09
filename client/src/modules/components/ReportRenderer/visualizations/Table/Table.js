@@ -31,16 +31,19 @@ export function Table(props) {
     result,
   } = report;
 
-  const needEndpoint = result && !combined && view?.properties[0] === 'rawData';
+  const isRawDataReport = view?.properties?.[0] === 'rawData';
+  const needEndpoint = result && !combined && isRawDataReport;
+  const processVariableReport =
+    reportType === 'process' && (isRawDataReport || groupBy?.type === 'variable');
 
-  const [camundaEndpoints, setCamundaEndpoints] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [objectVariable, setObjectVariable] = useState();
   const [processVariables, setProcessVariables] = useState();
-  const processVariableReport =
-    reportType === 'process' &&
-    (view?.properties?.[0] === 'rawData' || groupBy?.type === 'variable');
+  const [camundaEndpoints, setCamundaEndpoints] = useState(null);
+
+  const isLoadingEndpoints = needEndpoint && camundaEndpoints === null;
+  const isLoadingVariables = processVariableReport && !processVariables;
 
   useEffect(() => {
     if (needEndpoint) {
@@ -85,7 +88,7 @@ export function Table(props) {
     [loadReport]
   );
 
-  if ((needEndpoint && camundaEndpoints === null) || (processVariableReport && !processVariables)) {
+  if (isLoadingEndpoints || isLoadingVariables) {
     return <LoadingIndicator />;
   }
 
@@ -105,8 +108,8 @@ export function Table(props) {
     tableProps = processCombinedData(props);
   } else {
     let tableData;
-    if (view.properties[0] === 'rawData') {
-      tableData = processRawData(props, camundaEndpoints, processVariables, onVariableView);
+    if (isRawDataReport) {
+      tableData = processRawData({report, camundaEndpoints, processVariables, onVariableView});
       tableData.fetchData = fetchData;
       tableData.loading = loading;
       tableData.defaultPageSize = result.pagination.limit;
