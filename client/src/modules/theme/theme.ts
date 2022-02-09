@@ -406,6 +406,11 @@ const theme = {
       decisionPanel: {
         background: LIGHT_COLORS.ui04,
       },
+      drdPanel: {
+        background: DARK_COLORS.ui02,
+        boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
+        borderColor: DARK_COLORS.ui04,
+      },
       modules: {
         badge: {
           filters: {
@@ -1292,6 +1297,11 @@ const theme = {
       },
       decisionPanel: {
         background: LIGHT_COLORS.ui04,
+      },
+      drdPanel: {
+        background: SEMANTIC_COLORS.white,
+        boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
+        borderColor: LIGHT_COLORS.ui05,
       },
       modules: {
         badge: {

@@ -5,7 +5,7 @@
  */
 
 import {useLayoutEffect, useRef} from 'react';
-import {Container, Handle} from './styled';
+import {Container, Handle, Panel} from './styled';
 
 const minWidth = 540;
 const maxWidthRatio = 3 / 5;
@@ -63,9 +63,11 @@ const DrdPanel: React.FC = ({children}) => {
   }, []);
 
   return (
-    <Container ref={containerRef} data-testid="drd-panel">
+    <Container>
       <Handle ref={handleRef} />
-      {children}
+      <Panel data-testid="drd-panel" ref={containerRef}>
+        {children}
+      </Panel>
     </Container>
   );
 };

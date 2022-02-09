@@ -4,12 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {autorun} from 'mobx';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
-import {Container} from './styled';
+import {Container, PanelHeader} from './styled';
 
 const Drd: React.FC = () => {
   const {
@@ -20,8 +20,12 @@ const Drd: React.FC = () => {
   const drdViewer = useRef<DrdViewer | null>(null);
   const drdViewerRef = useRef<HTMLDivElement | null>(null);
 
+  const [definitionsName, setDefinitionsName] = useState<string | null>(null);
+
   if (drdViewer.current === null) {
-    drdViewer.current = new DrdViewer();
+    drdViewer.current = new DrdViewer(({name}) => {
+      setDefinitionsName(name);
+    });
   }
 
   useEffect(() => {
@@ -43,28 +47,33 @@ const Drd: React.FC = () => {
 
   return (
     <Container data-testid="drd">
-      <div>
-        DrdPanel
-        {panelState === 'minimized' && (
+      <PanelHeader>
+        <div>{definitionsName}</div>
+        <div>
+          {panelState === 'minimized' && (
+            <button
+              title="Maximize DRD Panel"
+              onClick={() => setPanelState('maximized')}
+            >
+              Maximize
+            </button>
+          )}
+          {panelState === 'maximized' && (
+            <button
+              title="Minimize DRD Panel"
+              onClick={() => setPanelState('minimized')}
+            >
+              Minimize
+            </button>
+          )}
           <button
-            title="Maximize DRD Panel"
-            onClick={() => setPanelState('maximized')}
+            title="Close DRD Panel"
+            onClick={() => setPanelState('closed')}
           >
-            Maximize
+            X
           </button>
-        )}
-        {panelState === 'maximized' && (
-          <button
-            title="Minimize DRD Panel"
-            onClick={() => setPanelState('minimized')}
-          >
-            Minimize
-          </button>
-        )}
-        <button title="Close DRD Panel" onClick={() => setPanelState('closed')}>
-          X
-        </button>
-      </div>
+        </div>
+      </PanelHeader>
       <div data-testid="drd-viewer" ref={drdViewerRef} />
     </Container>
   );

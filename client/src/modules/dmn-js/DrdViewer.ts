@@ -6,9 +6,18 @@
 
 import {Viewer} from './Viewer';
 
+type Definitions = {
+  name: string;
+};
+
 class DrdViewer {
   #xml: string | null = null;
   #viewer: Viewer | null = null;
+  #onDefinitionsChange?: (definitions: Definitions) => void;
+
+  constructor(onDefinitionsChange?: (definitions: Definitions) => void) {
+    this.#onDefinitionsChange = onDefinitionsChange;
+  }
 
   render = async (container: HTMLElement, xml: string) => {
     if (this.#viewer === null) {
@@ -28,6 +37,7 @@ class DrdViewer {
       await this.#viewer.importXML(xml);
       this.#xml = xml;
 
+      this.#onDefinitionsChange?.(this.#viewer.getDefinitions());
       const canvas = this.#viewer.getActiveViewer().get('canvas');
       canvas.resized();
       canvas.zoom('fit-viewport', 'auto');

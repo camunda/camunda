@@ -4,13 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 const Container = styled.div`
-  background: white;
   display: flex;
   position: absolute;
-  width: 540px;
   height: 100%;
   right: 0;
 `;
@@ -21,4 +19,18 @@ const Handle = styled.div`
   height: 100%;
 `;
 
-export {Container, Handle};
+const Panel = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.drdPanel;
+
+    return css`
+      background: ${colors.background};
+      border-radius: 3px;
+      box-shadow: 0 2px 4px 0 ${colors.boxShadow};
+      width: 540px;
+      border-left: solid 1px ${colors.borderColor};
+    `;
+  }}
+`;
+
+export {Container, Handle, Panel};

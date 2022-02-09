@@ -5,6 +5,7 @@
  */
 
 import styled from 'styled-components';
+import BasePanelHeader from 'modules/components/Panel/PanelHeader';
 
 const Container = styled.div`
   display: grid;
@@ -13,4 +14,9 @@ const Container = styled.div`
   width: 100%;
 `;
 
-export {Container};
+const PanelHeader = styled(BasePanelHeader)`
+  display: flex;
+  justify-content: space-between;
+`;
+
+export {Container, PanelHeader};

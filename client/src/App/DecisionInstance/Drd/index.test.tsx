@@ -37,5 +37,6 @@ describe('<Drd />', () => {
     await waitFor(() =>
       expect(screen.getByText('Default View mock')).toBeInTheDocument()
     );
+    expect(screen.getByText('Definitions Name Mock')).toBeInTheDocument();
   });
 });

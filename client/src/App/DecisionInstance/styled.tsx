@@ -9,8 +9,9 @@ import {HEADER_HEIGHT} from 'App/Header/styled';
 
 const DecisionInstanceContainer = styled.div`
   height: 100%;
+  position: relative;
   display: grid;
-  grid-template-rows: 50px 1fr 1fr;
+  grid-template-rows: 56px 1fr 1fr;
 `;
 
 const Container = styled.div`
