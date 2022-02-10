@@ -119,8 +119,6 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
         .antMatchers(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH)).permitAll()
         // public api
         .antMatchers(createApiPath(PUBLIC_PATH, DEEP_SUB_PATH_ANY)).permitAll()
-      // modify variable label endpoint
-        .antMatchers(createApiPath("PUBLIC_PATH", DEEP_SUB_PATH_ANY)).permitAll()
       // public share related resources
         .antMatchers(EXTERNAL_SUB_PATH).permitAll()
         .antMatchers(
