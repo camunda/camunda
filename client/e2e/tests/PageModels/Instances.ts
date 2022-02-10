@@ -5,173 +5,112 @@
  */
 
 import {within, screen} from '@testing-library/testcafe';
-import {IS_NEW_FILTERS_FORM} from '../../../src/modules/feature-flags';
 import {t} from 'testcafe';
 
 class InstancesPage {
   Filters = {
     active: {
-      field: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-active').shadowRoot()
-          ).queryByRole('checkbox')
-        : screen.queryByRole('checkbox', {name: 'Active'}),
+      field: within(
+        screen.queryByTestId('filter-active').shadowRoot()
+      ).queryByRole('checkbox'),
     },
 
     incidents: {
-      field: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-incidents').shadowRoot()
-          ).queryByRole('checkbox')
-        : screen.queryByRole('checkbox', {name: 'Incidents'}),
+      field: within(
+        screen.queryByTestId('filter-incidents').shadowRoot()
+      ).queryByRole('checkbox'),
     },
 
     runningInstances: {
-      field: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-running-instances').shadowRoot()
-          ).queryByRole('checkbox')
-        : screen.queryByRole('checkbox', {name: 'Running Instances'}),
+      field: within(
+        screen.queryByTestId('filter-running-instances').shadowRoot()
+      ).queryByRole('checkbox'),
     },
 
     finishedInstances: {
-      field: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-finished-instances').shadowRoot()
-          ).queryByRole('checkbox')
-        : screen.queryByRole('checkbox', {name: 'Finished Instances'}),
+      field: within(
+        screen.queryByTestId('filter-finished-instances').shadowRoot()
+      ).queryByRole('checkbox'),
     },
 
     completed: {
-      field: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-completed').shadowRoot()
-          ).queryByRole('checkbox')
-        : screen.queryByRole('checkbox', {name: 'Completed'}),
+      field: within(
+        screen.queryByTestId('filter-completed').shadowRoot()
+      ).queryByRole('checkbox'),
     },
 
     canceled: {
-      field: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-canceled').shadowRoot()
-          ).queryByRole('checkbox')
-        : screen.queryByRole('checkbox', {name: 'Canceled'}),
+      field: within(
+        screen.queryByTestId('filter-canceled').shadowRoot()
+      ).queryByRole('checkbox'),
     },
 
     errorMessage: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-error-message')
-        : screen.queryByRole('textbox', {name: 'Error Message'}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-error-message').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: 'Error Message'}),
+      field: screen.queryByTestId('filter-error-message'),
+      value: within(
+        screen.queryByTestId('filter-error-message').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     parentInstanceId: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-parent-instance-id')
-        : screen.queryByRole('textbox', {name: 'Parent Instance Id'}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-parent-instance-id').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: 'Parent Instance Id'}),
+      field: screen.queryByTestId('filter-parent-instance-id'),
+      value: within(
+        screen.queryByTestId('filter-parent-instance-id').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     startDate: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-start-date')
-        : screen.queryByRole('textbox', {name: /start date/i}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-start-date').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: /start date/i}),
+      field: screen.queryByTestId('filter-start-date'),
+      value: within(
+        screen.queryByTestId('filter-start-date').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     endDate: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-end-date')
-        : screen.queryByRole('textbox', {name: /end date/i}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-end-date').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: /end date/i}),
+      field: screen.queryByTestId('filter-end-date'),
+      value: within(
+        screen.queryByTestId('filter-end-date').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     operationId: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-operation-id')
-        : screen.queryByRole('textbox', {name: /operation id/i}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-operation-id').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: /operation id/i}),
+      field: screen.queryByTestId('filter-operation-id'),
+      value: within(
+        screen.queryByTestId('filter-operation-id').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     variableName: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-variable-name')
-        : screen.queryByRole('textbox', {name: /variable/i}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-variable-name').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: /variable/i}),
+      field: screen.queryByTestId('filter-variable-name'),
+      value: within(
+        screen.queryByTestId('filter-variable-name').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     variableValue: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-variable-value')
-        : screen.queryByRole('textbox', {name: /value/i}),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-variable-value').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {name: /value/i}),
+      field: screen.queryByTestId('filter-variable-value'),
+      value: within(
+        screen.queryByTestId('filter-variable-value').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     instanceIds: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-instance-ids')
-        : screen.queryByRole('textbox', {
-            name: 'Instance Id(s) separated by space or comma',
-          }),
-      value: IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('filter-instance-ids').shadowRoot()
-          ).queryByRole('textbox')
-        : screen.queryByRole('textbox', {
-            name: 'Instance Id(s) separated by space or comma',
-          }),
+      field: screen.queryByTestId('filter-instance-ids'),
+      value: within(
+        screen.queryByTestId('filter-instance-ids').shadowRoot()
+      ).queryByRole('textbox'),
     },
 
     processName: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-process-name')
-        : screen.queryByRole('combobox', {
-            name: 'Process',
-          }),
+      field: screen.queryByTestId('filter-process-name'),
     },
 
     processVersion: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-process-version')
-        : screen.queryByRole('combobox', {
-            name: 'Process Version',
-          }),
+      field: screen.queryByTestId('filter-process-version'),
     },
 
     flowNode: {
-      field: IS_NEW_FILTERS_FORM
-        ? screen.queryByTestId('filter-flow-node')
-        : screen.queryByRole('combobox', {
-            name: /flow node/i,
-          }),
+      field: screen.queryByTestId('filter-flow-node'),
     },
   };
 
@@ -183,50 +122,34 @@ class InstancesPage {
     text: string,
     options?: TypeActionOptions
   ) => {
-    if (IS_NEW_FILTERS_FORM) {
-      await t.typeText(
-        within(field.shadowRoot()).queryByRole('textbox'),
-        text,
-        options
-      );
-    } else {
-      await t.typeText(field, text, options);
-    }
+    await t.typeText(
+      within(field.shadowRoot()).queryByRole('textbox'),
+      text,
+      options
+    );
   };
 
   selectProcess = async (name: string) => {
     await t.click(
-      IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-          ).queryByText(name)
-        : within(this.Filters.processName.field).queryByRole('option', {
-            name,
-          })
+      within(
+        screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+      ).queryByText(name)
     );
   };
 
   selectVersion = async (version: string) => {
     await t.click(
-      IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('cm-flyout-process-version').shadowRoot()
-          ).queryByText(version)
-        : within(this.Filters.processVersion.field).queryByRole('option', {
-            name: version,
-          })
+      within(
+        screen.queryByTestId('cm-flyout-process-version').shadowRoot()
+      ).queryByText(version)
     );
   };
 
   selectFlowNode = async (name: string) => {
     await t.click(
-      IS_NEW_FILTERS_FORM
-        ? within(
-            screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
-          ).queryByText(name)
-        : within(this.Filters.flowNode.field).queryByRole('option', {
-            name,
-          })
+      within(
+        screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
+      ).queryByText(name)
     );
   };
 }

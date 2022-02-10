@@ -9,7 +9,6 @@ import {setup} from './InstanceSelection.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {instancesPage as InstancesPage} from './PageModels/Instances';
 
@@ -55,9 +54,7 @@ test('Selection of instances are removed on filter selection', async (t) => {
     .getAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.instanceIds.field,
@@ -79,9 +76,7 @@ test('Selection of instances are removed on filter selection', async (t) => {
   const errorMessage =
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Error Message');
-  }
+  await displayOptionalFilter('Error Message');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.errorMessage.field,

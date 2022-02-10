@@ -5,18 +5,13 @@
  */
 
 import {within} from '@testing-library/testcafe';
-import {IS_NEW_FILTERS_FORM} from '../../../src/modules/feature-flags';
 import {t} from 'testcafe';
 
 const validateSelectValue = async (
   field: Selector | SelectorPromise,
   text: string
 ) => {
-  if (IS_NEW_FILTERS_FORM) {
-    await t.expect(within(field.shadowRoot()).queryByText(text).exists).ok();
-  } else {
-    await t.expect(field.value).eql(text);
-  }
+  await t.expect(within(field.shadowRoot()).queryByText(text).exists).ok();
 };
 
 export {validateSelectValue};

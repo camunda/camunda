@@ -10,7 +10,6 @@ import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {instancesPage as InstancesPage} from './PageModels/Instances';
 import {instancePage as InstancePage} from './PageModels/Instance';
@@ -436,10 +435,8 @@ test('Add variables', async (t) => {
     })
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-    await displayOptionalFilter('Variable');
-  }
+  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Variable');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.variableName.field,

@@ -12,7 +12,6 @@ import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {instancesPage as InstancesPage} from './PageModels/Instances';
@@ -35,11 +34,9 @@ fixture('Filters')
         })
       );
 
-    if (IS_NEW_FILTERS_FORM) {
-      await setFlyoutTestAttribute('processName');
-      await setFlyoutTestAttribute('processVersion');
-      await setFlyoutTestAttribute('flowNode');
-    }
+    await setFlyoutTestAttribute('processName');
+    await setFlyoutTestAttribute('processVersion');
+    await setFlyoutTestAttribute('flowNode');
   });
 
 test('Navigating in header should affect filters and url correctly', async (t) => {
@@ -82,9 +79,7 @@ test('Instance IDs filter', async (t) => {
     .queryAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.instanceIds.field,
@@ -132,13 +127,8 @@ test('Instance IDs filter', async (t) => {
     )
     .gt(1);
 
-  if (IS_NEW_FILTERS_FORM) {
-    // instance ids filter is hidden
-    await t.expect(InstancesPage.Filters.instanceIds.field.exists).notOk();
-  } else {
-    // filter has been reset
-    await t.expect(InstancesPage.Filters.instanceIds.value.value).eql('');
-  }
+  // instance ids filter is hidden
+  await t.expect(InstancesPage.Filters.instanceIds.field.exists).notOk();
 
   // changes reflected in the url
   await t
@@ -160,9 +150,7 @@ test('Parent Instance Id filter', async (t) => {
 
   await t.click(InstancesPage.Filters.completed.field);
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Parent Instance Id');
-  }
+  await displayOptionalFilter('Parent Instance Id');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.parentInstanceId.field,
@@ -195,13 +183,8 @@ test('Parent Instance Id filter', async (t) => {
     )
     .gt(1);
 
-  if (IS_NEW_FILTERS_FORM) {
-    // parent id filter is hidden
-    await t.expect(InstancesPage.Filters.parentInstanceId.field.exists).notOk();
-  } else {
-    // filter has been reset
-    await t.expect(InstancesPage.Filters.parentInstanceId.value.value).eql('');
-  }
+  // parent id filter is hidden
+  await t.expect(InstancesPage.Filters.parentInstanceId.field.exists).notOk();
 });
 
 test('Error Message filter', async (t) => {
@@ -214,9 +197,7 @@ test('Error Message filter', async (t) => {
   const errorMessage =
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Error Message');
-  }
+  await displayOptionalFilter('Error Message');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.errorMessage.field,
@@ -255,13 +236,8 @@ test('Error Message filter', async (t) => {
     )
     .eql(instanceCount);
 
-  if (IS_NEW_FILTERS_FORM) {
-    // error message filter is hidden
-    await t.expect(InstancesPage.Filters.errorMessage.field.exists).notOk();
-  } else {
-    // filter has been reset
-    await t.expect(InstancesPage.Filters.errorMessage.value.value).eql('');
-  }
+  // error message filter is hidden
+  await t.expect(InstancesPage.Filters.errorMessage.field.exists).notOk();
 
   // changes reflected in the url
   await t
@@ -281,9 +257,7 @@ test('End Date filter', async (t) => {
     initialData: {instanceToCancel},
   } = t.fixtureCtx;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.instanceIds.field,
@@ -332,9 +306,7 @@ test('End Date filter', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('End Date');
-  }
+  await displayOptionalFilter('End Date');
 
   await t.click(InstancesPage.Filters.finishedInstances.field);
 
@@ -372,13 +344,8 @@ test('End Date filter', async (t) => {
     )
     .eql(instanceCount);
 
-  if (IS_NEW_FILTERS_FORM) {
-    // end date filter is hidden
-    await t.expect(InstancesPage.Filters.endDate.field.exists).notOk();
-  } else {
-    // filter has been reset
-    await t.expect(InstancesPage.Filters.endDate.value.value).eql('');
-  }
+  // end date filter is hidden
+  await t.expect(InstancesPage.Filters.endDate.field.exists).notOk();
 
   // changes reflected in the url
   await t
@@ -394,9 +361,7 @@ test('End Date filter', async (t) => {
 });
 
 test('Variable filter', async (t) => {
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Variable');
-  }
+  await displayOptionalFilter('Variable');
 
   await t.expect(screen.queryByTestId('instances-list').exists).ok();
 
@@ -449,16 +414,9 @@ test('Variable filter', async (t) => {
     )
     .eql(instanceCount);
 
-  if (IS_NEW_FILTERS_FORM) {
-    // variable name and value filters are hidden
-    await t.expect(InstancesPage.Filters.variableName.field.exists).notOk();
-    await t.expect(InstancesPage.Filters.variableValue.field.exists).notOk();
-  } else {
-    // filter has been reset
-    await t.expect(InstancesPage.Filters.variableName.value.value).eql('');
-
-    await t.expect(InstancesPage.Filters.variableValue.value.value).eql('');
-  }
+  // variable name and value filters are hidden
+  await t.expect(InstancesPage.Filters.variableName.field.exists).notOk();
+  await t.expect(InstancesPage.Filters.variableValue.field.exists).notOk();
 
   await t
     .expect(await getPathname())
@@ -477,9 +435,7 @@ test('Operation ID filter', async (t) => {
     initialData: {instanceToCancelForOperations},
   } = t.fixtureCtx;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.instanceIds.field,
@@ -519,9 +475,7 @@ test('Operation ID filter', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Operation Id');
-  }
+  await displayOptionalFilter('Operation Id');
 
   await t.click(InstancesPage.Filters.finishedInstances.field);
   await InstancesPage.typeText(
@@ -562,13 +516,8 @@ test('Operation ID filter', async (t) => {
     )
     .eql(instanceCount);
 
-  if (IS_NEW_FILTERS_FORM) {
-    // operation id filter is hidden
-    await t.expect(InstancesPage.Filters.operationId.field.exists).notOk();
-  } else {
-    // filter has been reset
-    await t.expect(InstancesPage.Filters.operationId.value.value).eql('');
-  }
+  // operation id filter is hidden
+  await t.expect(InstancesPage.Filters.operationId.field.exists).notOk();
 
   await t
     .expect(await getPathname())
@@ -769,14 +718,10 @@ test('Process Filter', async (t) => {
 
   await InstancesPage.selectProcess('Process With Multiple Versions');
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'Version 2'
-    );
-  } else {
-    await validateSelectValue(InstancesPage.Filters.processVersion.field, '2');
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.processVersion.field,
+    'Version 2'
+  );
 
   await t
     .expect(await getPathname())
@@ -796,19 +741,8 @@ test('Process Filter', async (t) => {
   // select all versions, see that diagram disappeared and selected instances are removed
   await t.click(InstancesPage.Filters.processVersion.field);
 
-  if (IS_NEW_FILTERS_FORM) {
-    await InstancesPage.selectVersion('All');
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'All'
-    );
-  } else {
-    await InstancesPage.selectVersion('All versions');
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'all'
-    );
-  }
+  await InstancesPage.selectVersion('All');
+  await validateSelectValue(InstancesPage.Filters.processVersion.field, 'All');
 
   await t
     .expect(screen.queryByTestId('diagram').exists)
@@ -870,11 +804,7 @@ test('Process Filter', async (t) => {
   await t.click(InstancesPage.Filters.processName.field);
   await InstancesPage.selectProcess('Order process');
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
-  } else {
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
-  }
+  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
 
   await t
     .expect(await getPathname())
@@ -901,34 +831,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
     )
     .ok();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(
-        InstancesPage.Filters.processVersion.field.getAttribute('disabled')
-      )
-      .eql('true')
-      .expect(InstancesPage.Filters.flowNode.field.getAttribute('disabled'))
-      .eql('true');
+  await t
+    .expect(InstancesPage.Filters.processVersion.field.getAttribute('disabled'))
+    .eql('true')
+    .expect(InstancesPage.Filters.flowNode.field.getAttribute('disabled'))
+    .eql('true');
 
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'All'
-    );
+  await validateSelectValue(InstancesPage.Filters.processVersion.field, 'All');
 
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
-  } else {
-    await t
-      .expect(
-        InstancesPage.Filters.processVersion.field.hasAttribute('disabled')
-      )
-      .ok()
-      .expect(InstancesPage.Filters.flowNode.field.hasAttribute('disabled'))
-      .ok();
-
-    await validateSelectValue(InstancesPage.Filters.processVersion.field, '');
-
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
-  }
+  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
 
   await t
     .expect(await getPathname())
@@ -957,26 +868,16 @@ test('Process Filter - Interaction with diagram', async (t) => {
     )
     .notOk();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
-      .eql('false');
+  await t
+    .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+    .eql('false');
 
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'Version 1'
-    );
+  await validateSelectValue(
+    InstancesPage.Filters.processVersion.field,
+    'Version 1'
+  );
 
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
-  } else {
-    await t
-      .expect(InstancesPage.Filters.processName.field.hasAttribute('disabled'))
-      .notOk();
-
-    await validateSelectValue(InstancesPage.Filters.processVersion.field, '1');
-
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
-  }
+  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
 
   await t
     .expect(await getPathname())
@@ -1002,17 +903,10 @@ test('Process Filter - Interaction with diagram', async (t) => {
     )
     .ok();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'Ship Articles'
-    );
-  } else {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'shipArticles'
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'Ship Articles'
+  );
 
   await t
     .expect(await getPathname())
@@ -1039,17 +933,10 @@ test('Process Filter - Interaction with diagram', async (t) => {
     )
     .notOk();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'Check payment'
-    );
-  } else {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'checkPayment'
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'Check payment'
+  );
 
   await t
     .expect(await getPathname())
@@ -1083,11 +970,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
       })
     );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
-  } else {
-    await validateSelectValue(InstancesPage.Filters.flowNode.field, '');
-  }
+  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
 });
 
 test('Should set filters from url', async (t) => {
@@ -1120,30 +1003,18 @@ test('Should set filters from url', async (t) => {
     })}`
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.processName.field,
-      'Process With Multiple Versions'
-    );
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'Version 2'
-    );
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'Always fails'
-    );
-  } else {
-    await validateSelectValue(
-      InstancesPage.Filters.processName.field,
-      'processWithMultipleVersions'
-    );
-    await validateSelectValue(InstancesPage.Filters.processVersion.field, '2');
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'alwaysFails'
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.processName.field,
+    'Process With Multiple Versions'
+  );
+  await validateSelectValue(
+    InstancesPage.Filters.processVersion.field,
+    'Version 2'
+  );
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'Always fails'
+  );
 
   await t
     .expect(InstancesPage.Filters.instanceIds.value.value)
@@ -1191,30 +1062,18 @@ test('Should set filters from url', async (t) => {
     })
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.processName.field,
-      'Process With Multiple Versions'
-    );
-    await validateSelectValue(
-      InstancesPage.Filters.processVersion.field,
-      'Version 2'
-    );
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'Always fails'
-    );
-  } else {
-    await validateSelectValue(
-      InstancesPage.Filters.processName.field,
-      'processWithMultipleVersions'
-    );
-    await validateSelectValue(InstancesPage.Filters.processVersion.field, '2');
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'alwaysFails'
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.processName.field,
+    'Process With Multiple Versions'
+  );
+  await validateSelectValue(
+    InstancesPage.Filters.processVersion.field,
+    'Version 2'
+  );
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'Always fails'
+  );
 
   await t
     .expect(InstancesPage.Filters.instanceIds.value.value)
@@ -1247,101 +1106,94 @@ test('Should set filters from url', async (t) => {
   });
 });
 
-(IS_NEW_FILTERS_FORM ? test : test.skip)(
-  'Should order optional filters',
-  async (t) => {
-    await displayOptionalFilter('Error Message');
-    await displayOptionalFilter('Parent Instance Id');
-    await displayOptionalFilter('End Date');
-    await displayOptionalFilter('Variable');
-    await displayOptionalFilter('Start Date');
-    await displayOptionalFilter('Instance Id(s)');
-    await displayOptionalFilter('Operation Id');
+test('Should order optional filters', async (t) => {
+  await displayOptionalFilter('Error Message');
+  await displayOptionalFilter('Parent Instance Id');
+  await displayOptionalFilter('End Date');
+  await displayOptionalFilter('Variable');
+  await displayOptionalFilter('Start Date');
+  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Operation Id');
 
-    await t
-      .expect(
-        InstancesPage.Filters.operationId.field.parent().getAttribute('order')
-      )
-      .eql('6');
-    await t
-      .expect(
-        InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
-      )
-      .eql('5');
-    await t
-      .expect(
-        InstancesPage.Filters.startDate.field.parent().getAttribute('order')
-      )
-      .eql('4');
-    await t
-      .expect(
-        InstancesPage.Filters.variableName.field.parent().getAttribute('order')
-      )
-      .eql('3');
-    await t
-      .expect(
-        InstancesPage.Filters.endDate.field.parent().getAttribute('order')
-      )
-      .eql('2');
-    await t
-      .expect(
-        InstancesPage.Filters.parentInstanceId.field
-          .parent()
-          .getAttribute('order')
-      )
-      .eql('1');
-    await t
-      .expect(
-        InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
-      )
-      .eql('0');
+  await t
+    .expect(
+      InstancesPage.Filters.operationId.field.parent().getAttribute('order')
+    )
+    .eql('6');
+  await t
+    .expect(
+      InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
+    )
+    .eql('5');
+  await t
+    .expect(
+      InstancesPage.Filters.startDate.field.parent().getAttribute('order')
+    )
+    .eql('4');
+  await t
+    .expect(
+      InstancesPage.Filters.variableName.field.parent().getAttribute('order')
+    )
+    .eql('3');
+  await t
+    .expect(InstancesPage.Filters.endDate.field.parent().getAttribute('order'))
+    .eql('2');
+  await t
+    .expect(
+      InstancesPage.Filters.parentInstanceId.field
+        .parent()
+        .getAttribute('order')
+    )
+    .eql('1');
+  await t
+    .expect(
+      InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
+    )
+    .eql('0');
 
-    await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
 
-    await displayOptionalFilter('Variable');
-    await displayOptionalFilter('Start Date');
-    await displayOptionalFilter('Parent Instance Id');
-    await displayOptionalFilter('Operation Id');
-    await displayOptionalFilter('End Date');
-    await displayOptionalFilter('Error Message');
-    await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Variable');
+  await displayOptionalFilter('Start Date');
+  await displayOptionalFilter('Parent Instance Id');
+  await displayOptionalFilter('Operation Id');
+  await displayOptionalFilter('End Date');
+  await displayOptionalFilter('Error Message');
+  await displayOptionalFilter('Instance Id(s)');
 
-    await t
-      .expect(
-        InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
-      )
-      .eql('6');
-    await t
-      .expect(
-        InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
-      )
-      .eql('5');
-    await t
-      .expect(
-        InstancesPage.Filters.endDate.field.parent().getAttribute('order')
-      )
-      .eql('4');
-    await t
-      .expect(
-        InstancesPage.Filters.operationId.field.parent().getAttribute('order')
-      )
-      .eql('3');
-    await t
-      .expect(
-        InstancesPage.Filters.parentInstanceId.field
-          .parent()
-          .getAttribute('order')
-      )
-      .eql('2');
-    await t
-      .expect(
-        InstancesPage.Filters.startDate.field.parent().getAttribute('order')
-      )
-      .eql('1');
-    await t
-      .expect(
-        InstancesPage.Filters.variableName.field.parent().getAttribute('order')
-      )
-      .eql('0');
-  }
-);
+  await t
+    .expect(
+      InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
+    )
+    .eql('6');
+  await t
+    .expect(
+      InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
+    )
+    .eql('5');
+  await t
+    .expect(InstancesPage.Filters.endDate.field.parent().getAttribute('order'))
+    .eql('4');
+  await t
+    .expect(
+      InstancesPage.Filters.operationId.field.parent().getAttribute('order')
+    )
+    .eql('3');
+  await t
+    .expect(
+      InstancesPage.Filters.parentInstanceId.field
+        .parent()
+        .getAttribute('order')
+    )
+    .eql('2');
+  await t
+    .expect(
+      InstancesPage.Filters.startDate.field.parent().getAttribute('order')
+    )
+    .eql('1');
+  await t
+    .expect(
+      InstancesPage.Filters.variableName.field.parent().getAttribute('order')
+    )
+    .eql('0');
+});

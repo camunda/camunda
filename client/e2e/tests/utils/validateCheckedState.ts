@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IS_NEW_FILTERS_FORM} from '../../../src/modules/feature-flags';
 import {t} from 'testcafe';
 
 const validateCheckedState = async ({
@@ -14,21 +13,12 @@ const validateCheckedState = async ({
   checked: Array<Selector | SelectorPromise>;
   unChecked: Array<Selector | SelectorPromise>;
 }) => {
-  if (IS_NEW_FILTERS_FORM) {
-    checked.forEach(async (filter) => {
-      await t.expect(filter.hasClass('checked')).ok();
-    });
-    unChecked.forEach(async (filter) => {
-      await t.expect(filter.hasClass('checked')).notOk();
-    });
-  } else {
-    checked.forEach(async (filter) => {
-      await t.expect(filter.checked).ok();
-    });
-    unChecked.forEach(async (filter) => {
-      await t.expect(filter.checked).notOk();
-    });
-  }
+  checked.forEach(async (filter) => {
+    await t.expect(filter.hasClass('checked')).ok();
+  });
+  unChecked.forEach(async (filter) => {
+    await t.expect(filter.hasClass('checked')).notOk();
+  });
 };
 
 export {validateCheckedState};

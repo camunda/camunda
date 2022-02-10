@@ -13,7 +13,6 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {validateCheckedState} from './utils/validateCheckedState';
@@ -33,9 +32,7 @@ fixture('Instances')
       })
     );
 
-    if (IS_NEW_FILTERS_FORM) {
-      await setFlyoutTestAttribute('processName');
-    }
+    await setFlyoutTestAttribute('processName');
   });
 
 test('Instances Page Initial Load', async (t) => {
@@ -70,9 +67,7 @@ test('Instances Page Initial Load', async (t) => {
     )
     .ok();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.instanceIds.field,
@@ -109,9 +104,7 @@ test('Select flow node in diagram', async (t) => {
     })
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   // Filter by Instance ID
   await InstancesPage.typeText(
@@ -135,17 +128,10 @@ test('Select flow node in diagram', async (t) => {
     within(screen.queryByTestId('diagram')).queryByText('Ship Articles')
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'Ship Articles'
-    );
-  } else {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      shipArticlesTaskId
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'Ship Articles'
+  );
 
   await t
     .expect(
@@ -173,17 +159,10 @@ test('Select flow node in diagram', async (t) => {
     within(screen.queryByTestId('diagram')).queryByText('Check payment')
   );
 
-  if (IS_NEW_FILTERS_FORM) {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      'Check payment'
-    );
-  } else {
-    await validateSelectValue(
-      InstancesPage.Filters.flowNode.field,
-      checkPaymentTaskId
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.flowNode.field,
+    'Check payment'
+  );
 
   await t
     .expect(
@@ -213,15 +192,9 @@ test('Wait for process creation', async (t) => {
   await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
-      .eql('true');
-  } else {
-    await t
-      .expect(InstancesPage.Filters.processName.field.hasAttribute('disabled'))
-      .ok();
-  }
+  await t
+    .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+    .eql('true');
 
   await deploy(['newProcess.bpmn']);
 
@@ -235,23 +208,12 @@ test('Wait for process creation', async (t) => {
     )
     .ok();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await t
-      .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
-      .eql('false');
+  await t
+    .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+    .eql('false');
 
-    await validateSelectValue(
-      InstancesPage.Filters.processName.field,
-      'Test Process'
-    );
-  } else {
-    await t
-      .expect(InstancesPage.Filters.processName.field.hasAttribute('disabled'))
-      .notOk();
-
-    await validateSelectValue(
-      InstancesPage.Filters.processName.field,
-      'testProcess'
-    );
-  }
+  await validateSelectValue(
+    InstancesPage.Filters.processName.field,
+    'Test Process'
+  );
 });

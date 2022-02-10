@@ -9,7 +9,6 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './InstancesTable.setup';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {instancesPage as InstancesPage} from './PageModels/Instances';
@@ -30,9 +29,7 @@ fixture('InstancesTable')
         })
       );
 
-    if (IS_NEW_FILTERS_FORM) {
-      await setFlyoutTestAttribute('processName');
-    }
+    await setFlyoutTestAttribute('processName');
   });
 
 test('Sorting', async (t) => {
@@ -46,9 +43,7 @@ test('Sorting', async (t) => {
     instances.processB_v_2[0].processInstanceKey,
   ].sort();
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   await InstancesPage.typeText(
     InstancesPage.Filters.instanceIds.field,

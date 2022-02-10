@@ -9,7 +9,6 @@ import {demoUser} from './utils/Roles';
 import {config} from '../config';
 import {setup} from './Operations.setup';
 import {DATE_REGEX} from './constants';
-import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {instancesPage as InstancesPage} from './PageModels/Instances';
 import {instancePage as InstancePage} from './PageModels/Instance';
@@ -44,9 +43,7 @@ test('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   // filter by instance id
   await InstancesPage.typeText(
@@ -150,9 +147,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     screen.queryByTestId('operations-list')
   ).getAllByRole('listitem');
 
-  if (IS_NEW_FILTERS_FORM) {
-    await displayOptionalFilter('Instance Id(s)');
-  }
+  await displayOptionalFilter('Instance Id(s)');
 
   // filter by instance ids
   await InstancesPage.typeText(

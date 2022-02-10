@@ -16,13 +16,11 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processesStore} from 'modules/stores/processes';
 import {Filters} from './Filters';
-import {FiltersLegacy} from './FiltersLegacy';
 import {getFilters, deleteSearchParams} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
 import * as Styled from './styled';
 import {useLocation, useHistory} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
-import {IS_NEW_FILTERS_FORM} from 'modules/feature-flags';
 
 const Instances: React.FC = observer(() => {
   const location = useLocation();
@@ -103,7 +101,7 @@ const Instances: React.FC = observer(() => {
     <Styled.Instances>
       <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
       <Styled.Content>
-        {IS_NEW_FILTERS_FORM ? <Filters /> : <FiltersLegacy />}
+        <Filters />
         <Styled.Separator />
         <Styled.SplitPane
           titles={{top: 'Process', bottom: 'Instances'}}
