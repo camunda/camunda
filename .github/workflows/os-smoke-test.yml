@@ -14,7 +14,7 @@ jobs:
     # This name is hard-referenced from bors.toml
     # Remember to update that if this name, or the matrix.os changes
     name: Run smoke tests on ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
