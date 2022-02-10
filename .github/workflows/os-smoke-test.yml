@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ stable/1.3 ]
 
+env:
+  JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
+
 jobs:
   build:
     name: Run smoke tests on ${{ matrix.os }}
