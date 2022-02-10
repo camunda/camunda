@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeObservable, observable, action, override} from 'mobx';
+import {makeObservable, observable, action, override, computed} from 'mobx';
 
 import {fetchDecisionInstances} from 'modules/api/decisions';
 import {logger} from 'modules/logger';
@@ -35,6 +35,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
       handleFetchSuccess: action,
       handleFetchError: action,
       setDecisionInstances: action,
+      areDecisionInstancesEmpty: computed,
     });
   }
 
@@ -80,6 +81,13 @@ class DecisionInstances extends NetworkReconnectionHandler {
   setDecisionInstances = (decisionInstances: DecisionInstanceEntity[]) => {
     this.state.decisionInstances = decisionInstances;
   };
+
+  get areDecisionInstancesEmpty() {
+    return (
+      this.state.status === 'fetched' &&
+      this.state.decisionInstances.length === 0
+    );
+  }
 
   reset() {
     super.reset();
