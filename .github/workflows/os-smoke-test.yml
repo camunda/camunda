@@ -6,16 +6,19 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
+
 jobs:
   smoke-test:
     # This name is hard-referenced from bors.toml
     # Remember to update that if this name, or the matrix.os changes
     name: Run smoke tests on ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
+        os: [ macos-latest, windows-2022, ubuntu-latest ]
 
     steps:
       - uses: actions/checkout@v2
@@ -27,12 +30,12 @@ jobs:
           cache: 'maven'
 
       - name: Clear broken cache parts (windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: JesseTG/rm@v1.0.2
         with:
           path: C:\Users\runneradmin\.m2\repository\org\agrona\agrona
       - name: Clear broken cache parts (windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: JesseTG/rm@v1.0.2
         with:
           path: C:\Users\runneradmin\.m2\repository\uk\co\real-logic\sbe-tool
@@ -57,6 +60,6 @@ jobs:
         with:
           path: /Users/runner/.m2/repository/uk/co/real-logic/sbe-tool
       - name: Build relevant modules
-        run: mvn -B -am -pl qa/integration-tests install -DskipTests -DskipChecks -T1C
+        run: mvn -B -am -pl qa/integration-tests install -DskipTests -DskipChecks "-Dmaven.javadoc.skip=true" -T1C
       - name: Run smoke test
         run: mvn -B -pl qa/integration-tests verify -P smoke-test -DskipUTs -DskipChecks

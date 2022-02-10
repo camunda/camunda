@@ -1,7 +1,7 @@
 status = [
   "continuous-integration/jenkins/branch",
   "Run smoke tests on macos-latest",
-  "Run smoke tests on windows-latest",
+  "Run smoke tests on windows-2022",
   "Run smoke tests on ubuntu-latest"
 ]
 
