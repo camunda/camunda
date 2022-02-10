@@ -6,6 +6,5 @@
 
 const IS_NEXT_DIAGRAM = false;
 const IS_DMN = false;
-const IS_NEW_FILTERS_FORM = false;
 
-export {IS_NEW_FILTERS_FORM, IS_NEXT_DIAGRAM, IS_DMN};
+export {IS_NEXT_DIAGRAM, IS_DMN};
