@@ -16,7 +16,6 @@ import java.util.Set;
 
 public interface DataSourceDefinitionAuthorizationService {
 
-
   default boolean isAuthorizedToAccessDefinition(final String userId,
                                                 final DefinitionType definitionType,
                                                 final String definitionKey,

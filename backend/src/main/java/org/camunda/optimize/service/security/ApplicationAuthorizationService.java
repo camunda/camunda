@@ -8,6 +8,7 @@ package org.camunda.optimize.service.security;
 import java.util.List;
 
 public interface ApplicationAuthorizationService {
+
   boolean isUserAuthorizedToAccessOptimize(String userId);
 
   boolean isGroupAuthorizedToAccessOptimize(String groupId);
@@ -15,4 +16,5 @@ public interface ApplicationAuthorizationService {
   List<String> getAuthorizedEnginesForUser(String userId);
 
   List<String> getAuthorizedEnginesForGroup(String groupId);
+
 }
