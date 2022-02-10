@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
+        os: [ macos-latest, windows-2022, ubuntu-latest ]
 
     steps:
       - uses: actions/checkout@v2
@@ -25,12 +25,12 @@ jobs:
           cache: 'maven'
 
       - name: Clear broken cache parts (windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: JesseTG/rm@v1.0.2
         with:
           path: C:\Users\runneradmin\.m2\repository\org\agrona\agrona
       - name: Clear broken cache parts (windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: JesseTG/rm@v1.0.2
         with:
           path: C:\Users\runneradmin\.m2\repository\uk\co\real-logic\sbe-tool
