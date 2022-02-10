@@ -141,7 +141,7 @@ spec:
                 }
 
                 container('golang') {
-                    sh '.ci/scripts/release/post-github.sh'
+                    sh '.ci/scripts/release/post-release-go.sh'
                 }
             }
         }
