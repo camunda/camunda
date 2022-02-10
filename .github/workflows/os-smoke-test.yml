@@ -55,6 +55,6 @@ jobs:
         with:
           path: /Users/runner/.m2/repository/uk/co/real-logic/sbe-tool
       - name: Build relevant modules
-        run: mvn -B -am -pl qa/integration-tests install -DskipTests -DskipChecks -T1C
+        run: mvn -B -am -pl qa/integration-tests install -DskipTests -DskipChecks "-Dmaven.javadoc.skip=true" -T1C
       - name: Run smoke test
         run: mvn -B -pl qa/integration-tests verify -P smoke-test -DskipUTs -DskipChecks
