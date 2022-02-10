@@ -12,7 +12,7 @@ env:
 jobs:
   build:
     name: Run smoke tests on ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
