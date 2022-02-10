@@ -40,7 +40,7 @@ import {StartDate} from './OptionalFilters/StartDate';
 import {EndDate} from './OptionalFilters/EndDate';
 import {Variable} from './OptionalFilters/Variable';
 import {OperationId} from './OptionalFilters/OperationId';
-import {useFilters} from './useFilters';
+import {useFilters} from 'modules/hooks/useFilters';
 
 const Filters: React.FC = observer(() => {
   const location = useLocation();

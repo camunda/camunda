@@ -5,7 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import EmptyMessage from '../EmptyMessage';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 
 const EmptyMessageWrapper = styled.div`

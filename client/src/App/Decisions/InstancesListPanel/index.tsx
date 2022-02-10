@@ -9,6 +9,7 @@ import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {useEffect} from 'react';
 import {Skeleton} from './Skeleton';
 import Table from 'modules/components/Table';
+import {InstancesMessage} from 'modules/components/InstancesMessage';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
@@ -34,22 +35,8 @@ const InstancesListPanel: React.FC = observer(() => {
           </Table.TR>
         </Table.THead>
         {['initial', 'first-fetch'].includes(status) && <Skeleton />}
-        {status === 'error' && (
-          <Table.TBody>
-            <Table.TR>
-              <Table.TD>Instances could not be fetched</Table.TD>
-            </Table.TR>
-          </Table.TBody>
-        )}
-        {areDecisionInstancesEmpty && (
-          <Table.TBody>
-            <Table.TR>
-              <Table.TD>
-                There are no Instances matching this filter set
-              </Table.TD>
-            </Table.TR>
-          </Table.TBody>
-        )}
+        {status === 'error' && <InstancesMessage type="error" />}
+        {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
         <Table.TBody>
           {decisionInstances.map((instance) => {
             return (

@@ -6,7 +6,7 @@
 
 import React, {useEffect, useState, useRef} from 'react';
 import Table from 'modules/components/Table';
-import {Message} from './Message';
+import {InstancesMessage} from 'modules/components/InstancesMessage';
 import {EXPAND_STATE} from 'modules/constants';
 import {Skeleton} from './Skeleton';
 import * as Styled from './styled';
@@ -17,6 +17,7 @@ import {autorun} from 'mobx';
 import {Header} from './Header';
 import {Instances} from './Instances';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {useFilters} from 'modules/hooks/useFilters';
 
 const ROW_HEIGHT = 38;
 
@@ -31,6 +32,7 @@ const List: React.FC<ListProps> = observer((props) => {
   let listRef: any = useRef();
   const prevExpandState = usePrevious(props.expandState);
   const [entriesPerPage, setEntriesPerPage] = useState(0);
+  const filters = useFilters();
 
   const {
     areProcessInstancesEmpty,
@@ -75,9 +77,12 @@ const List: React.FC<ListProps> = observer((props) => {
           {['initial', 'first-fetch'].includes(status) && (
             <Skeleton {...props} rowsToDisplay={entriesPerPage} />
           )}
-          {status === 'error' && <Message type="error" />}
+          {status === 'error' && <InstancesMessage type="error" />}
           {status === 'fetched' && areProcessInstancesEmpty && (
-            <Message type="empty" />
+            <InstancesMessage
+              type="empty"
+              areInstanceStateFiltersApplied={filters.areProcessInstanceStatesApplied()}
+            />
           )}
           {status === 'refetching' ? null : (
             <InfiniteScroller

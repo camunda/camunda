@@ -7,26 +7,23 @@
 import * as Styled from './styled';
 import Table from 'modules/components/Table';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {getFilters} from 'modules/utils/filter';
-import {useLocation} from 'react-router-dom';
-import EmptyMessage from '../../../EmptyMessage';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
 
 const {TBody, TD} = Table;
 
 type Props = {
   type: 'error' | 'empty';
+  areInstanceStateFiltersApplied?: boolean;
 };
 
-const Message: React.FC<Props> = ({type}) => {
-  const location = useLocation();
-  const filters = getFilters(location.search);
-
+const InstancesMessage: React.FC<Props> = ({
+  type,
+  areInstanceStateFiltersApplied,
+}) => {
   const getEmptyListMessage = () => {
-    const {active, incidents, completed, canceled} = filters;
-
     let msg = 'There are no Instances matching this filter set';
 
-    if (!active && !incidents && !completed && !canceled) {
+    if (!areInstanceStateFiltersApplied) {
       msg += '\n To see some results, select at least one Instance state';
     }
 
@@ -36,7 +33,7 @@ const Message: React.FC<Props> = ({type}) => {
   return (
     <TBody>
       <Styled.EmptyTR>
-        <TD colSpan={6}>
+        <TD colSpan="100%">
           {type === 'error' && (
             <EmptyMessage
               message={
@@ -59,4 +56,4 @@ const Message: React.FC<Props> = ({type}) => {
   );
 };
 
-export {Message};
+export {InstancesMessage};

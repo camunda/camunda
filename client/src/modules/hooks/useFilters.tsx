@@ -24,7 +24,17 @@ const useFilters = () => {
 
   const getFiltersFromUrl = () => getFilters(history.location.search);
 
-  return {setFiltersToURL, getFiltersFromUrl};
+  const areProcessInstanceStatesApplied = () => {
+    const filters = getFilters(history.location.search);
+    return (
+      filters.active ||
+      filters.incidents ||
+      filters.completed ||
+      filters.canceled
+    );
+  };
+
+  return {setFiltersToURL, getFiltersFromUrl, areProcessInstanceStatesApplied};
 };
 
 export {useFilters};

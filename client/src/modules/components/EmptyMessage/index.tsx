@@ -11,7 +11,7 @@ type Props = {
   message: string | React.ReactNode;
 };
 
-export default function EmptyMessage({message, ...props}: Props) {
+const EmptyMessage: React.FC<Props> = ({message, ...props}) => {
   return (
     <Styled.EmptyMessage {...props}>
       {typeof message === 'string'
@@ -21,4 +21,6 @@ export default function EmptyMessage({message, ...props}: Props) {
         : message}
     </Styled.EmptyMessage>
   );
-}
+};
+
+export {EmptyMessage};
