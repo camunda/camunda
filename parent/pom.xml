@@ -92,7 +92,7 @@
     <version.testcontainers>1.16.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
-    <version.feel-scala>1.14.1</version.feel-scala>
+    <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>4.5.0</version.rest-assured>
     <version.spring>5.3.15</version.spring>
