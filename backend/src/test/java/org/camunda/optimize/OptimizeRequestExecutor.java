@@ -494,6 +494,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest() {
+    this.path = "process/goals";
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
     this.path = "entities/delete";
     this.method = POST;

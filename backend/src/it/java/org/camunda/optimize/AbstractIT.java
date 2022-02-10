@@ -124,5 +124,4 @@ public abstract class AbstractIT {
     optimizeRequestExecutorSupplier,
     () -> embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken()
   );
-
 }

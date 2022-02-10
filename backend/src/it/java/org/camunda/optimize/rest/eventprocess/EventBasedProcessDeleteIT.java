@@ -193,7 +193,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
       STARTED_EVENT, FINISHED_EVENT
     );
-    String eventProcessDefinitionKeyToDelete = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String eventProcessDefinitionKeyToDelete =
+      eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
     String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
     publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
@@ -627,14 +628,20 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey)
     );
 
-    List<String> eventProcessIds = Arrays.asList(firstDeletingEventProcessDefinitionKey, secondDeletingEventProcessDefinitionKey);
+    List<String> eventProcessIds = Arrays.asList(
+      firstDeletingEventProcessDefinitionKey,
+      secondDeletingEventProcessDefinitionKey
+    );
 
     // when
     eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then
-    assertGetMappingRequestStatusCode(firstDeletingEventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+      firstDeletingEventProcessDefinitionKey,
+      Response.Status.NOT_FOUND.getStatusCode()
+    );
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
@@ -650,7 +657,10 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(firstDeletingEventProcessDefinitionKey)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
-    assertGetMappingRequestStatusCode(firstDeletingEventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+      firstDeletingEventProcessDefinitionKey,
+      Response.Status.NOT_FOUND.getStatusCode()
+    );
     assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1)
       .containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
