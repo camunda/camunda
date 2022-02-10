@@ -1,0 +1,14 @@
+@import 'shared-styles/shared-styles.scss';
+
+.Processes {
+  height: 100%;
+
+  .EntityList .goalInfo {
+    font-size: 14px;
+
+    .highlighted {
+      @include highlighted;
+      display: inline;
+    }
+  }
+}

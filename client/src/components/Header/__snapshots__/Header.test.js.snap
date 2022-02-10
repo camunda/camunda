@@ -46,6 +46,16 @@ exports[`matches the snapshot 1`] = `
     <withRouter(NavItem)
       active={
         Array [
+          "/processes/",
+          "/processes/*",
+        ]
+      }
+      linksTo="/processes"
+      name="Processes"
+    />
+    <withRouter(NavItem)
+      active={
+        Array [
           "/analysis/",
           "/analysis/*",
         ]

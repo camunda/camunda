@@ -3,6 +3,7 @@
   "navigation": {
     "homepage": "Home",
     "analysis": "Analyse",
+    "processes": "Prozesse",
     "events": "Eventbasierte Prozesse",
     "telemetry": "Telemetrie-Einstellungen",
     "logout": "Abmelden",
@@ -159,6 +160,14 @@
     },
     "empty": "Es wurde noch nichts erstellt",
     "welcome": "Willkommen"
+  },
+  "processes": {
+    "title": "Prozesse",
+    "empty": "Es sind noch keine Prozesse importiert",
+    "owner": "Eigentümer",
+    "timeGoal": "Ziel: Zeit",
+    "displayData": "Ziele zeigen Daten von Instanzen an",
+    "endedThisMonth": "die im aktuellen Monat beendet wurden"
   },
   "events": {
     "new": "Neuer Prozess",

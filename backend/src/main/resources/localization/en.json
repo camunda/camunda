@@ -3,6 +3,7 @@
   "navigation": {
     "homepage": "Home",
     "analysis": "Analysis",
+    "processes": "Processes",
     "events": "Event Based Processes",
     "telemetry": "Telemetry Settings",
     "logout": "Logout",
@@ -159,6 +160,14 @@
     },
     "empty": "There are no items created yet",
     "welcome": "Welcome"
+  },
+  "processes": {
+    "title": "Processes",
+    "empty": "There are no processes imported yet",
+    "owner": "Owner",
+    "timeGoal": "Goal: Time",
+    "displayData": "Goals display data from instances",
+    "endedThisMonth": "ended in the current month"
   },
   "events": {
     "new": "New Process",

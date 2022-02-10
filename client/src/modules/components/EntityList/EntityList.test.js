@@ -328,3 +328,9 @@ it('should pass the selection state to action', () => {
 
   expect(spy).toHaveBeenCalledWith(true);
 });
+
+it('should display extra text in the header if specified', () => {
+  const node = shallow(<EntityList {...props} headerText="foo" />);
+
+  expect(node.find('.header .headerText')).toIncludeText('foo');
+});

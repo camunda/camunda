@@ -21,6 +21,7 @@ import {
   License,
   WithLicense,
   Logout,
+  Processes,
 } from './components';
 
 import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
@@ -102,6 +103,7 @@ class App extends React.Component {
                         path="/(report|dashboard|collection|events/processes)/*"
                         render={this.renderEntity}
                       />
+                      <PrivateRoute path="/processes" component={Processes} />
                       <Route path="/license" component={License} />
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />
