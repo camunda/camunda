@@ -116,9 +116,15 @@ describe('Decisions List', () => {
     expect(
       within(firstDecisionInstance).getByText('test decision instance 1')
     ).toBeInTheDocument();
+    expect(
+      within(firstDecisionInstance).getByTestId('completed-icon-1')
+    ).toBeInTheDocument();
 
     expect(
       within(secondDecisionInstance).getByText('test decision instance 2')
+    ).toBeInTheDocument();
+    expect(
+      within(secondDecisionInstance).getByTestId('failed-icon-2')
     ).toBeInTheDocument();
   });
 });

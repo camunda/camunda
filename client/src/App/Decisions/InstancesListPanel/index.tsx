@@ -10,6 +10,7 @@ import {useEffect} from 'react';
 import {Skeleton} from './Skeleton';
 import Table from 'modules/components/Table';
 import {InstancesMessage} from 'modules/components/InstancesMessage';
+import {Name, State} from './styled';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
@@ -41,7 +42,23 @@ const InstancesListPanel: React.FC = observer(() => {
           {decisionInstances.map((instance) => {
             return (
               <Table.TR key={instance.id}>
-                <Table.TD>{instance.name}</Table.TD>
+                <Name>
+                  {instance.state === 'COMPLETED' && (
+                    <State
+                      icon="state:completed"
+                      color="medLight"
+                      data-testid={`completed-icon-${instance.id}`}
+                    />
+                  )}
+                  {instance.state === 'FAILED' && (
+                    <State
+                      icon="state:incident"
+                      color="danger"
+                      data-testid={`failed-icon-${instance.id}`}
+                    />
+                  )}
+                  {instance.name}
+                </Name>
                 <Table.TD>{instance.id}</Table.TD>
                 <Table.TD>{instance.version}</Table.TD>
                 <Table.TD>{instance.evaluationTime}</Table.TD>
