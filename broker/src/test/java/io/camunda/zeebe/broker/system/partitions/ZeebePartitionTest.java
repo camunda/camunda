@@ -16,6 +16,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +25,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -203,6 +205,35 @@ public class ZeebePartitionTest {
     order.verify(transition).toLeader(1);
     order.verify(raft).stepDown();
     order.verify(transition).toFollower(1);
+  }
+
+  @Test
+  public void shouldNotTriggerTransitionOnPartitionTransitionException()
+      throws InterruptedException {
+    // given
+    when(transition.toLeader(anyLong()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new RecoverablePartitionTransitionException("something went wrong")));
+
+    when(raft.getRole()).thenReturn(Role.LEADER);
+    when(raft.term()).thenReturn(2L);
+    when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
+    when(ctx.getCurrentTerm()).thenReturn(1L);
+
+    // when
+    schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.LEADER, 2);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder order = inOrder(transition, raft);
+    // expected transition supposed to fail
+    order.verify(transition).toLeader(2);
+    // after failing leader transition no other
+    // transitions are triggered
+    order.verify(raft, times(0)).goInactive();
+    order.verify(transition, times(0)).toFollower(anyLong());
   }
 
   @Test
