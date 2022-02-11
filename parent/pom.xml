@@ -99,7 +99,7 @@
     <version.spring-boot>2.6.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.2</version.config>
-    <version.kryo>5.2.1</version.kryo>
+    <version.kryo>5.3.0</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jqwik>1.6.4</version.jqwik>
