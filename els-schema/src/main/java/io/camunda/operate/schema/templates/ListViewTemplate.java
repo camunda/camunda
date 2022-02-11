@@ -47,7 +47,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
 
   public static final String JOIN_RELATION = "joinRelation";
   public static final String PROCESS_INSTANCE_JOIN_RELATION = "processInstance";
-  public static final String ACTIVITIES_JOIN_RELATION = "activity";
+  public static final String ACTIVITIES_JOIN_RELATION = "activity";     //now we call it flow node instance
   public static final String VARIABLES_JOIN_RELATION = "variable";
 
   @Override

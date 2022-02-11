@@ -8,13 +8,23 @@ package io.camunda.operate.util;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.throwAwayNullElements;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static java.util.Arrays.asList;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
+import io.camunda.operate.schema.templates.EventTemplate;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,15 +32,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.EventTemplate;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -51,6 +60,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,11 +258,30 @@ public abstract class ElasticsearchUtil {
         }
         final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         final BulkItemResponse[] items = bulkItemResponses.getItems();
-        for (BulkItemResponse responseItem : items) {
+        for (int i = 0; i< items.length; i++) {
+          BulkItemResponse responseItem = items[i];
           if (responseItem.isFailed() && !isEventConflictError(responseItem)) {
-            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getIndex(), responseItem.getId(),
-                responseItem.getFailureMessage()), responseItem.getFailure().getCause());
-            throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
+
+            if (isMissingIncident(responseItem)) {
+              //the case when incident was already archived to dated index, but must be updated
+              final DocWriteRequest<?> request = bulkRequest.requests().get(i);
+              String incidentId = extractIncidentId(responseItem.getFailure().getMessage());
+              final String indexName = getIndexNames(request.index() + "alias", asList(incidentId),
+                  esClient).get(incidentId);
+              request.index(indexName);
+              if (indexName == null) {
+                logger.warn("Index is not known for incident: " + incidentId);
+              }
+              esClient.update((UpdateRequest)request, RequestOptions.DEFAULT);
+            } else {
+              logger.error(String
+                  .format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(),
+                      responseItem.getIndex(), responseItem.getId(),
+                      responseItem.getFailureMessage()), responseItem.getFailure().getCause());
+              throw new PersistenceException(
+                  "Operation failed: " + responseItem.getFailureMessage(),
+                  responseItem.getFailure().getCause(), responseItem.getItemId());
+            }
           }
         }
         logger.debug("************* FLUSH BULK FINISH *************");
@@ -260,6 +289,19 @@ public abstract class ElasticsearchUtil {
         throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }
     }
+  }
+
+  public static String extractIncidentId(final String errorMessage) {
+    final Pattern fniPattern = Pattern
+        .compile(".*\\[_doc\\]\\[(\\d*)\\].*");
+    final Matcher matcher = fniPattern.matcher(errorMessage);
+    matcher.matches();
+    return matcher.group(1);
+  }
+
+  private static boolean isMissingIncident(final BulkItemResponse responseItem) {
+    return responseItem.getIndex().contains(IncidentTemplate.INDEX_NAME)
+        && responseItem.getFailure().getStatus().equals(RestStatus.NOT_FOUND);
   }
 
   private static boolean isEventConflictError(final BulkItemResponse responseItem) {
@@ -478,6 +520,78 @@ public abstract class ElasticsearchUtil {
     };
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
+  }
+
+  public static Map<String, String> getIndexNames(String aliasName,
+      Collection<String> ids, RestHighLevelClient esClient) {
+
+    Map<String, String> indexNames = new HashMap<>();
+
+    final SearchRequest piRequest = new SearchRequest(aliasName)
+        .source(new SearchSourceBuilder()
+            .query(idsQuery().addIds(ids.toArray(String[]::new)))
+            .fetchSource(false)
+        );
+    try {
+      scrollWith(piRequest, esClient, sh -> {
+        indexNames.putAll(
+            Arrays.stream(sh.getHits()).collect(Collectors.toMap(hit -> {
+              return hit.getId();
+            }, hit -> {
+              return hit.getIndex();
+            })));
+      });
+    } catch (IOException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
+    return indexNames;
+  }
+
+  public static Map<String, String> getIndexNames(AbstractTemplateDescriptor template,
+      Collection<String> ids, RestHighLevelClient esClient) {
+
+    Map<String, String> indexNames = new HashMap<>();
+
+    final SearchRequest piRequest = ElasticsearchUtil.createSearchRequest(template)
+        .source(new SearchSourceBuilder()
+            .query(idsQuery().addIds(ids.toArray(String[]::new)))
+            .fetchSource(false)
+        );
+    try {
+      scrollWith(piRequest, esClient, sh -> {
+        indexNames.putAll(
+            Arrays.stream(sh.getHits()).collect(Collectors.toMap(hit -> {
+              return hit.getId();
+            }, hit -> {
+              return hit.getIndex();
+            })));
+      });
+    } catch (IOException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
+    return indexNames;
+  }
+
+  public static Map<String, List<String>> getIndexNamesAsList(AbstractTemplateDescriptor template,
+      Collection<String> ids, RestHighLevelClient esClient) {
+
+    Map<String, List<String>> indexNames = new HashMap<>();
+
+    final SearchRequest piRequest = ElasticsearchUtil.createSearchRequest(template)
+        .source(new SearchSourceBuilder()
+            .query(idsQuery().addIds(ids.toArray(String[]::new)))
+            .fetchSource(false)
+        );
+    try {
+      scrollWith(piRequest, esClient, sh -> {
+        Arrays.stream(sh.getHits()).forEach(hit ->
+            CollectionUtil.addToMap(indexNames, hit.getId(), hit.getIndex())
+        );
+      });
+    } catch (IOException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
+    return indexNames;
   }
 
 }

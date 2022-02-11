@@ -7,10 +7,6 @@ package io.camunda.operate.schema.indices;
 
 import io.camunda.operate.schema.Versionable;
 
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public interface IndexDescriptor extends Versionable {
 
   String getIndexName();

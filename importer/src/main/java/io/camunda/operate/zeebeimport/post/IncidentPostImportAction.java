@@ -10,8 +10,13 @@ import static io.camunda.operate.entities.IncidentState.RESOLVED;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
 import static io.camunda.operate.schema.templates.IncidentTemplate.TREE_PATH;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
+import static io.camunda.operate.util.ElasticsearchUtil.getIndexNames;
+import static io.camunda.operate.util.ElasticsearchUtil.getIndexNamesAsList;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollFieldToList;
@@ -32,8 +37,8 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
 import java.time.Instant;
@@ -52,10 +57,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.TermVectorsRequest;
-import org.elasticsearch.client.core.TermVectorsResponse;
-import org.elasticsearch.client.core.TermVectorsResponse.TermVector;
-import org.elasticsearch.client.core.TermVectorsResponse.TermVector.Term;
+import org.elasticsearch.client.indices.AnalyzeRequest;
+import org.elasticsearch.client.indices.AnalyzeResponse;
+import org.elasticsearch.client.indices.AnalyzeResponse.AnalyzeToken;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -111,29 +115,16 @@ public class IncidentPostImportAction implements PostImportAction {
     BulkRequest bulkProcessAndFlowNodeInstanceUpdate = new BulkRequest();
     BulkRequest bulkIncidentUpdate = new BulkRequest();
 
-    QueryBuilder partitionQ = termQuery(PARTITION_ID, partitionId);
-    //first partition will also process older data with partitionId = 0
-    if (partitionId == 1) {
-      partitionQ = termsQuery(PARTITION_ID, "0", String.valueOf(partitionId));
-    }
-    final SearchRequest request = ElasticsearchUtil.createSearchRequest(incidentTemplate).source(
-        new SearchSourceBuilder().query(
-            joinWithAnd(
-                termQuery(IncidentTemplate.PENDING, true),
-                partitionQ
-            )
-        )
-            .size(operateProperties.getZeebeElasticsearch().getBatchSize())
-    );
-    List<IncidentEntity> incidents;
-    final SearchResponse response;
+    Map<String, String> incidentIndices = new HashMap<>();
+    List<IncidentEntity> incidents = getPendingIncidents(incidentIndices);
     try {
-      response = esClient.search(request, RequestOptions.DEFAULT);
-      incidents = mapSearchHits(response.getHits().getHits(), objectMapper,
-          IncidentEntity.class);
       Set<Long> flowNodeInstanceIds = new HashSet<>();
+      Map<String, List<String>> flowNodeInstanceIndices = new HashMap<>();
+      Map<String, List<String>> flowNodeInstanceInListViewIndices = new HashMap<>();
       Map<Long, String> processInstanceTreePaths = new HashMap<>();
-      searchForInstances(incidents, flowNodeInstanceIds, processInstanceTreePaths);
+      Map<String, String> processInstanceIndices = new HashMap<>();
+      searchForInstances(incidents, flowNodeInstanceIds, flowNodeInstanceIndices,
+          flowNodeInstanceInListViewIndices, processInstanceTreePaths, processInstanceIndices);
       for (IncidentEntity incident: incidents) {
         if (instanceExists(incident.getFlowNodeInstanceKey(), flowNodeInstanceIds) &&
             instanceExists(incident.getProcessInstanceKey(), processInstanceTreePaths.keySet())) {
@@ -150,8 +141,7 @@ public class IncidentPostImportAction implements PostImportAction {
 
           List<String> treePathsWithIncidents;
           if (incident.getState().equals(RESOLVED)) {
-            final List<String> treePathTerms = getTreePathTerms(
-                String.valueOf(incident.getProcessInstanceKey()));
+            final List<String> treePathTerms = getTreePathTerms(treePath);
             treePathTerms.add(incidentTreePath);
             treePathsWithIncidents = getTreePathsWithOtherIncidents(treePathTerms,
                 incident.getKey());
@@ -163,12 +153,14 @@ public class IncidentPostImportAction implements PostImportAction {
                 .collect(Collectors.toSet());
           }
 
-          updateProcessInstancesState(incident.getState(), piIds, piIdsWithIncidents,
+          updateProcessInstancesState(incident.getState(), piIds, processInstanceIndices, piIdsWithIncidents,
               bulkProcessAndFlowNodeInstanceUpdate);
           final List<String> fniIds = new TreePath(incidentTreePath).extractFlowNodeInstanceIds();
-          updateFlowNodeInstancesState(incident.getState(), fniIds, fniIdsWithIncidents, bulkProcessAndFlowNodeInstanceUpdate);
+          updateFlowNodeInstancesState(incident.getState(), fniIds, flowNodeInstanceIndices,
+              flowNodeInstanceInListViewIndices, fniIdsWithIncidents, bulkProcessAndFlowNodeInstanceUpdate);
 
-          updateIncidents(incident.getId(), incident.getState(), incidentTreePath, bulkIncidentUpdate);
+          updateIncidents(incident.getId(), incidentIndices.get(incident.getId()),
+              incident.getState(), incidentTreePath, bulkIncidentUpdate);
         }
       }
 
@@ -186,14 +178,54 @@ public class IncidentPostImportAction implements PostImportAction {
     return incidents;
   }
 
-  private List<String> getTreePathTerms(final String processInstanceId) {
-    TermVectorsRequest request = new TermVectorsRequest(listViewTemplate.getFullQualifiedName(),
-        processInstanceId);
-    request.setFields(TREE_PATH);
+  private List<IncidentEntity> getPendingIncidents(final Map<String, String> incidentIndices) {
+    QueryBuilder partitionQ = termQuery(PARTITION_ID, partitionId);
+    //first partition will also process older data with partitionId = 0
+    if (partitionId == 1) {
+      partitionQ = termsQuery(PARTITION_ID, "0", String.valueOf(partitionId));
+    }
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(incidentTemplate).source(
+        new SearchSourceBuilder().query(
+            joinWithAnd(
+                termQuery(IncidentTemplate.PENDING, true),
+                partitionQ
+            )
+        )
+            .sort(IncidentTemplate.KEY)
+            .size(operateProperties.getZeebeElasticsearch().getBatchSize())
+    );
+    List<IncidentEntity> incidents = new ArrayList<>();
+    final SearchResponse response;
     try {
-      final TermVectorsResponse termvectors = esClient.termvectors(request, RequestOptions.DEFAULT);
-      return termvectors.getTermVectorsList().stream().map(TermVector::getTerms).flatMap(terms -> terms
-          .stream().map(Term::getTerm)).collect(Collectors.toList());
+      response = esClient.search(request, RequestOptions.DEFAULT);
+      mapSearchHits(response.getHits().getHits(),
+          sh -> {
+            incidents
+                .add(fromSearchHit(sh.getSourceAsString(), objectMapper, IncidentEntity.class));
+            incidentIndices.put(sh.getId(), sh.getIndex());
+            return null;
+          });
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while processing pending incidents: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+    return incidents;
+  }
+
+  private List<String> getTreePathTerms(final String treePath) {
+    AnalyzeRequest request = AnalyzeRequest.withField(
+        listViewTemplate.getFullQualifiedName(),
+        ListViewTemplate.TREE_PATH,
+        treePath
+    );
+    try {
+      final AnalyzeResponse analyzeResponse = esClient.indices()
+          .analyze(request, RequestOptions.DEFAULT);
+
+      return analyzeResponse.getTokens().stream().map(AnalyzeToken::getTerm)
+          .collect(Collectors.toList());
     } catch (IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred when requesting term vectors for tree_path");
@@ -209,7 +241,7 @@ public class IncidentPostImportAction implements PostImportAction {
         .mustNot(termQuery(KEY, incidentKey));
 
     final SearchRequest searchRequest = ElasticsearchUtil
-        .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
+        .createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder().query(query)
             .fetchSource(TREE_PATH, null));
 
@@ -225,7 +257,8 @@ public class IncidentPostImportAction implements PostImportAction {
   }
 
   private void updateProcessInstancesState(final IncidentState state, final List<String> piIds,
-      final Set<String> piIdsWithIncidents, final BulkRequest bulkUpdateRequest) {
+      Map<String, String> processInstanceIndices, final Set<String> piIdsWithIncidents,
+      final BulkRequest bulkUpdateRequest) {
 
     final List<String> piIds2Update = new ArrayList<>(piIds);
 
@@ -238,8 +271,12 @@ public class IncidentPostImportAction implements PostImportAction {
       piIds2Update.removeAll(piIdsWithIncidents);
     }
 
+    if (!processInstanceIndices.keySet().containsAll(piIds)) {
+      processInstanceIndices = getIndexNames(listViewTemplate, piIds, esClient);
+    }
+
     for (String piId: piIds2Update) {
-      bulkUpdateRequest.add(new UpdateRequest(listViewTemplate.getFullQualifiedName(), piId)
+      bulkUpdateRequest.add(new UpdateRequest(processInstanceIndices.get(piId), piId)
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT));
     }
@@ -247,6 +284,8 @@ public class IncidentPostImportAction implements PostImportAction {
   }
 
   private void updateFlowNodeInstancesState(final IncidentState state, final List<String> fniIds,
+      Map<String, List<String>> flowNodeInstanceIndices,
+      Map<String, List<String>> flowNodeInstanceInListViewIndices,
       final Set<String> fniIdsWithIncidents, final BulkRequest bulkUpdateRequest) {
 
     final List<String> fniIds2Update = new ArrayList<>(fniIds);
@@ -260,28 +299,40 @@ public class IncidentPostImportAction implements PostImportAction {
       fniIds2Update.removeAll(fniIdsWithIncidents);
     }
 
+    if (!flowNodeInstanceIndices.keySet().containsAll(fniIds)) {
+      flowNodeInstanceIndices = getIndexNamesAsList(flowNodeInstanceTemplate, fniIds, esClient);
+    }
+
+    if (!flowNodeInstanceInListViewIndices.keySet().containsAll(fniIds)) {
+      flowNodeInstanceInListViewIndices = getIndexNamesAsList(listViewTemplate, fniIds, esClient);
+    }
+
     for (String fniId : fniIds2Update) {
-      bulkUpdateRequest.add(new UpdateRequest(flowNodeInstanceTemplate.getFullQualifiedName(), fniId)
-          .doc(updateFields)
-          .retryOnConflict(UPDATE_RETRY_COUNT));
-      bulkUpdateRequest.add(new UpdateRequest(listViewTemplate.getFullQualifiedName(), fniId)
-          .doc(updateFields)
-          .retryOnConflict(UPDATE_RETRY_COUNT));
+      flowNodeInstanceIndices.get(fniId).forEach(index -> {
+        bulkUpdateRequest.add(new UpdateRequest(index, fniId)
+            .doc(updateFields)
+            .retryOnConflict(UPDATE_RETRY_COUNT));
+      });
+      flowNodeInstanceInListViewIndices.get(fniId).forEach(index -> {
+        bulkUpdateRequest.add(new UpdateRequest(index, fniId)
+            .doc(updateFields)
+            .retryOnConflict(UPDATE_RETRY_COUNT));
+      });
     }
   }
 
-  private void updateIncidents(final String incidentId, final IncidentState state,
-      final String incidentTreePath, final BulkRequest bulkUpdateRequest) {
+  private void updateIncidents(final String incidentId, final String index,
+      final IncidentState state, final String incidentTreePath, final BulkRequest bulkUpdateRequest) {
     if (state.equals(ACTIVE)) {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(IncidentTemplate.PENDING, false);
       updateFields.put(IncidentTemplate.TREE_PATH, incidentTreePath);
-      bulkUpdateRequest.add(new UpdateRequest(incidentTemplate.getFullQualifiedName(), incidentId)
+      bulkUpdateRequest.add(new UpdateRequest(index, incidentId)
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT));
     } else {
       //delete resolved incident
-      bulkUpdateRequest.add(new DeleteRequest().index(incidentTemplate.getFullQualifiedName())
+      bulkUpdateRequest.add(new DeleteRequest().index(index)
           .id(incidentId));
     }
 
@@ -292,7 +343,9 @@ public class IncidentPostImportAction implements PostImportAction {
   }
 
   private void searchForInstances(final List<IncidentEntity> incidents,
-      final Set<Long> flowNodeInstanceIds, final Map<Long, String> processInstanceTreePaths)
+      final Set<Long> flowNodeInstanceIds, final Map<String, List<String>> flowNodeInstanceIndices,
+      final Map<String, List<String>> flowNodeInstanceInListViewIndices,
+      final Map<Long, String> processInstanceTreePaths, final Map<String, String> processInstanceIndices)
       throws IOException {
     //find process instances (if they exist) that correspond to given incidents
     final SearchRequest piRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate)
@@ -309,7 +362,12 @@ public class IncidentPostImportAction implements PostImportAction {
           }, hit -> {
             return (String) hit.getSourceAsMap().get(ListViewTemplate.TREE_PATH);
           })));
-
+      processInstanceIndices.putAll(
+          Arrays.stream(sh.getHits()).collect(Collectors.toMap(hit -> {
+            return hit.getId();
+          }, hit -> {
+            return hit.getIndex();
+          })));
     });
 
     //find flow node instances (if they exist) that correspond to given incidents
@@ -324,6 +382,24 @@ public class IncidentPostImportAction implements PostImportAction {
       flowNodeInstanceIds
           .addAll(Arrays.stream(sh.getHits()).map(hit -> Long.valueOf(hit.getId()))
               .collect(Collectors.toList()));
+      Arrays.stream(sh.getHits()).forEach(hit ->
+          CollectionUtil.addToMap(flowNodeInstanceIndices, hit.getId(), hit.getIndex())
+      );
+    });
+
+    //find flow node instances in list view
+    final SearchRequest fniInListViewRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate)
+        .source(new SearchSourceBuilder()
+            .query(joinWithAnd(idsQuery()
+                .addIds(incidents.stream().map(i -> String.valueOf(i.getFlowNodeInstanceKey()))
+                    .toArray(String[]::new)),
+                termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION)))
+            .fetchSource(false)
+        );
+    scrollWith(fniInListViewRequest, esClient, sh -> {
+      Arrays.stream(sh.getHits()).forEach(hit ->
+          CollectionUtil.addToMap(flowNodeInstanceInListViewIndices, hit.getId(), hit.getIndex())
+      );
     });
   }
 
