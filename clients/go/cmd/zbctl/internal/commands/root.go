@@ -46,13 +46,15 @@ var clientCacheFlag string
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
 	Short: "zeebe command line interface",
-	Long: `zbctl is a command line interface designed to create and read resources inside zeebe broker.
-It is designed for regular maintenance jobs such as:
+	Long: `zbctl is a command line interface for Camunda Cloud designed to create and read resources inside a Zeebe broker.
+It can be used for regular development and maintenance tasks such as:
 	* deploying processes,
-	* creating jobs and process instances
+	* creating process instances and job workers
 	* activating, completing or failing jobs
-	* update variables and retries
-	* view cluster status`,
+	* updating variables and job retries
+	* viewing cluster status
+
+Documentation: https://docs.camunda.io/docs/apis-clients/cli-client/index/`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// silence help here instead of as a parameter because we only want to suppress it on a 'Zeebe' error and not if
 		// parsing args fails
