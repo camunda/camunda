@@ -6,10 +6,10 @@
 package org.camunda.optimize.service.importing.ingested.mediator;
 
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.ingested.fetcher.ExternalVariableUpdateInstanceFetcher;
-import org.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.ingested.service.ExternalVariableUpdateImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

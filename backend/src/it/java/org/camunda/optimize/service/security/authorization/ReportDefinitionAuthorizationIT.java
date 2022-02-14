@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -401,7 +400,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     SingleProcessReportDefinitionRequestDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
       null,
       PROCESS_KEY,
-      Lists.emptyList()
+      Collections.emptyList()
     );
 
     reportClient.createSingleProcessReportAsUser(reportDefinitionDto, KERMIT_USER, KERMIT_USER);
@@ -411,7 +410,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void getUnauthorizedEventProcessReport() {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
     updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
@@ -428,7 +432,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void getEventProcessReport() {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
 
     // when
     Response response = embeddedOptimizeExtension
@@ -444,7 +453,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void evaluateUnauthorizedEventProcessReport() {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
     updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
@@ -462,7 +476,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
 
     // when
     reportClient.evaluateNumberReportById(reportId);
@@ -472,7 +491,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void updateUnauthorizedEventProcessReport() {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
     updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
@@ -490,7 +514,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void updateEventProcessReport() {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
 
     // when
     ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -504,7 +533,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void deleteUnauthorizedEventProcessReport() {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
     updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
@@ -522,7 +556,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
-    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+    String reportId = reportClient.createSingleReport(
+      null,
+      DefinitionType.PROCESS,
+      PROCESS_KEY,
+      Collections.emptyList()
+    );
 
     // when
     Response response = reportClient.deleteReport(reportId, false);

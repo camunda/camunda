@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
@@ -19,15 +20,23 @@ import java.util.Optional;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
 
 @RequiredArgsConstructor
+@Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public abstract class TimestampBasedIngestedDataImportIndexHandler
+public class ExternalVariableUpdateImportIndexHandler
   extends TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> {
+
+  public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID = "externalVariableUpdateImportIndex";
+
+  private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
+  private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
 
   @Autowired
   private TimestampBasedImportIndexReader importIndexReader;
 
-  private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
-  private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
+  @Override
+  public String getEngineAlias() {
+    return ENGINE_ALIAS_OPTIMIZE;
+  }
 
   @Override
   public TimestampBasedImportIndexDto getIndexStateDto() {
@@ -48,10 +57,9 @@ public abstract class TimestampBasedIngestedDataImportIndexHandler
     }
   }
 
-  /**
-   * States the Elasticsearch document name where the index information should be stored.
-   */
-  protected abstract String getElasticsearchDocId();
+  private String getElasticsearchDocId() {
+    return EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
+  }
 
   @Override
   protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {

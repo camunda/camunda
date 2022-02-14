@@ -5,21 +5,17 @@
  */
 package org.camunda.optimize.service.importing.ingested.handler;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ScanResult;
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.TimestampBasedIngestedDataImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -27,39 +23,23 @@ import java.util.Map;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IngestedImportIndexHandlerProvider {
 
-  private static final List<Class<?>> TIMESTAMP_BASED_HANDLER_CLASSES;
-
-  static {
-    try (ScanResult scanResult = new ClassGraph()
-      .enableClassInfo()
-      .acceptPackages(IngestedImportIndexHandlerProvider.class.getPackage().getName())
-      .scan()) {
-      TIMESTAMP_BASED_HANDLER_CLASSES = scanResult.getSubclasses(TimestampBasedIngestedDataImportIndexHandler.class.getName())
-        .loadClasses();
-    }
-  }
-
   private final BeanFactory beanFactory;
 
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
-  private List<TimestampBasedIngestedDataImportIndexHandler> timestampBasedIngestedDataHandlers;
+  private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
 
   @PostConstruct
   public void init() {
     allHandlers = new HashMap<>();
-    timestampBasedIngestedDataHandlers = new ArrayList<>();
 
-    TIMESTAMP_BASED_HANDLER_CLASSES
-      .forEach(clazz -> {
-        final TimestampBasedIngestedDataImportIndexHandler importIndexHandlerInstance =
-          (TimestampBasedIngestedDataImportIndexHandler) getImportIndexHandlerInstance(clazz);
-        timestampBasedIngestedDataHandlers.add(importIndexHandlerInstance);
-        allHandlers.put(clazz.getSimpleName(), importIndexHandlerInstance);
-      });
+    final ExternalVariableUpdateImportIndexHandler importIndexHandlerInstance =
+      getImportIndexHandlerInstance(ExternalVariableUpdateImportIndexHandler.class);
+    externalVariableUpdateImportIndexHandler = importIndexHandlerInstance;
+    allHandlers.put(ExternalVariableUpdateImportIndexHandler.class.getSimpleName(), importIndexHandlerInstance);
   }
 
-  public List<TimestampBasedIngestedDataImportIndexHandler> getTimestampBasedIngestedDataHandlers() {
-    return timestampBasedIngestedDataHandlers;
+  public ExternalVariableUpdateImportIndexHandler getTimestampBasedIngestedDataHandlers() {
+    return externalVariableUpdateImportIndexHandler;
   }
 
   public <C extends ImportIndexHandler<?, ?>> C getImportIndexHandler(Class<C> clazz) {
