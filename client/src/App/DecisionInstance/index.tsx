@@ -8,6 +8,7 @@ import {useEffect} from 'react';
 import {useParams} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {drdDataStore} from 'modules/stores/drdData';
 import {drdStore} from 'modules/stores/drd';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
@@ -21,8 +22,10 @@ const DecisionInstance: React.FC = observer(() => {
 
   useEffect(() => {
     decisionInstanceStore.init(decisionInstanceId);
+    drdDataStore.fetchDrdData(decisionInstanceId);
     return () => {
       decisionInstanceStore.reset();
+      drdDataStore.reset();
     };
   }, [decisionInstanceId]);
 

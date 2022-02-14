@@ -33,4 +33,15 @@ async function fetchDecisionInstances(payload: DecisionInstancesQuery) {
   });
 }
 
-export {fetchDecisionXML, fetchDecisionInstance, fetchDecisionInstances};
+async function fetchDrdData(decisionInstanceId: string) {
+  return request({
+    url: `/api/decision-instances/${decisionInstanceId}/drd-data`,
+  });
+}
+
+export {
+  fetchDecisionXML,
+  fetchDecisionInstance,
+  fetchDecisionInstances,
+  fetchDrdData,
+};
