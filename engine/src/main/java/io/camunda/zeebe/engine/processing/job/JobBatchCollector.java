@@ -81,13 +81,14 @@ final class JobBatchCollector {
         (key, jobRecord) -> {
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
-          final long deadline = record.getTimestamp() + value.getTimeout();
+          final var deadline = record.getTimestamp() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
           setJobVariables(requestedVariables, jobRecord, jobRecord.getElementInstanceKey());
 
           // the expected length is based on the current record's length plus the length of the job
-          // record we would add to the batch and the number of bytes required to add the job
-          // key to the batch. if we ever add more, this should be updated accordingly.
+          // record we would add to the batch, the number of bytes taken by the additional job key,
+          // as well as one byte required per job key for its type header. if we ever add more, this
+          // should be updated accordingly.
           final var jobRecordLength = jobRecord.getLength();
           final var expectedEventLength = record.getLength() + jobRecordLength + Long.BYTES + 1;
           if (activatedCount.value <= maxActivatedCount
@@ -98,7 +99,7 @@ final class JobBatchCollector {
             // if no jobs were activated, then the current job is simply too large, and we cannot
             // activate it
             if (activatedCount.value == 0) {
-              unwritableJob.set(new LargeJob(key, jobRecord, jobRecordLength));
+              unwritableJob.set(new LargeJob(key, jobRecord));
             }
 
             value.setTruncated(true);
@@ -164,5 +165,5 @@ final class JobBatchCollector {
     return variables;
   }
 
-  record LargeJob(long key, JobRecord record, int length) {}
+  record LargeJob(long key, JobRecord record) {}
 }
