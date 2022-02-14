@@ -319,37 +319,35 @@ public class DecisionInstanceFrequencyGroupByEvaluationDateIT extends AbstractDe
     // given
     final OffsetDateTime beforeStart = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     final ChronoUnit chronoUnit = ChronoUnit.valueOf(groupByDateUnit.name().toUpperCase() + "S");
-    OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
     // third bucket
-    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
-    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition("key");
+    final String decisionDefinitionVersion = String.valueOf(decisionDefinitionDto.getVersion());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minus(2, chronoUnit);
-    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(beforeStart, thirdBucketEvaluationDate);
 
     // second empty bucket
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minus(1, chronoUnit);
 
     // first bucket
-    lastEvaluationDateFilter = beforeStart;
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, decisionDefinitionVersion1, groupByDateUnit
+      decisionDefinitionDto, decisionDefinitionVersion, groupByDateUnit
     ).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit));
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(beforeStart, chronoUnit));
     assertThat(resultData.get(0).getValue()).isEqualTo(2.);
     assertThat(resultData.get(1).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit));
