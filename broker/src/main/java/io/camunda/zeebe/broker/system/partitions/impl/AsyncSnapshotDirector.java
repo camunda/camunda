@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
@@ -56,7 +57,7 @@ public final class AsyncSnapshotDirector extends Actor
   private Long lastWrittenPosition;
   private TransientSnapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
-  private boolean takingSnapshot;
+  private CompletableActorFuture<PersistedSnapshot> snapshotFuture;
   private boolean persistingSnapshot;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
@@ -124,7 +125,7 @@ public final class AsyncSnapshotDirector extends Actor
         snapshotRate,
         failure);
 
-    resetStateOnFailure();
+    resetStateOnFailure(failure);
     healthReport = HealthReport.unhealthy(this).withIssue(failure);
 
     for (final var listener : listeners) {
@@ -133,7 +134,7 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   /**
-   * Create an AsyncSnapshotDirector that can take snapshot when the Streamprocessor is in
+   * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in
    * continuous replay mode.
    *
    * @param nodeId id of this broker
@@ -185,12 +186,20 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
-    prepareTakingSnapshot();
+    actor.runAtFixedRate(snapshotRate, () -> prepareTakingSnapshot(new CompletableActorFuture<>()));
+    prepareTakingSnapshot(new CompletableActorFuture<>());
   }
 
-  public void forceSnapshot() {
-    actor.call(this::prepareTakingSnapshot);
+  /**
+   * Directly take a snapshot, independently of the scheduled snapshots.
+   *
+   * @return A future that is completed successfully when the snapshot was taken. If the snapshot
+   *     was skipped, the future is also completed successfully but with a null.
+   */
+  public CompletableActorFuture<PersistedSnapshot> forceSnapshot() {
+    final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
+    actor.call(() -> prepareTakingSnapshot(newSnapshotFuture));
+    return newSnapshotFuture;
   }
 
   @Override
@@ -208,12 +217,15 @@ public final class AsyncSnapshotDirector extends Actor
     actor.run(() -> listeners.remove(failureListener));
   }
 
-  private void prepareTakingSnapshot() {
-    if (takingSnapshot) {
+  private void prepareTakingSnapshot(
+      final CompletableActorFuture<PersistedSnapshot> newSnapshotFuture) {
+    if (snapshotFuture != null) {
+      LOG.debug("Already taking snapshot, skipping this request for a new snapshot");
+      newSnapshotFuture.complete(null);
       return;
     }
 
-    takingSnapshot = true;
+    snapshotFuture = newSnapshotFuture;
     final var futureLastProcessedPosition = streamProcessor.getLastProcessedPositionAsync();
     actor.runOnCompletion(
         futureLastProcessedPosition,
@@ -222,7 +234,8 @@ public final class AsyncSnapshotDirector extends Actor
             if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
               LOG.debug(
                   "We will skip taking this snapshot, because we haven't processed something yet.");
-              takingSnapshot = false;
+              snapshotFuture.complete(null);
+              snapshotFuture = null;
               return;
             }
 
@@ -231,7 +244,8 @@ public final class AsyncSnapshotDirector extends Actor
 
           } else {
             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
-            takingSnapshot = false;
+            snapshotFuture.completeExceptionally(error);
+            snapshotFuture = null;
           }
         });
   }
@@ -247,7 +261,7 @@ public final class AsyncSnapshotDirector extends Actor
             } else {
               LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
             }
-            resetStateOnFailure();
+            resetStateOnFailure(snapshotTakenError);
             return;
           }
 
@@ -271,7 +285,7 @@ public final class AsyncSnapshotDirector extends Actor
       persistingSnapshot = false;
       persistSnapshotIfLastWrittenPositionCommitted();
     } else {
-      resetStateOnFailure();
+      resetStateOnFailure(error);
       LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
     }
   }
@@ -318,6 +332,7 @@ public final class AsyncSnapshotDirector extends Actor
       snapshotPersistFuture.onComplete(
           (snapshot, persistError) -> {
             if (persistError != null) {
+              snapshotFuture.completeExceptionally(persistError);
               if (persistError instanceof SnapshotNotFoundException) {
                 LOG.warn(
                     "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
@@ -326,18 +341,24 @@ public final class AsyncSnapshotDirector extends Actor
               } else {
                 LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
               }
+            } else {
+              snapshotFuture.complete(snapshot);
             }
             lastWrittenPosition = null;
-            takingSnapshot = false;
+            snapshotFuture = null;
             pendingSnapshot = null;
             persistingSnapshot = false;
           });
     }
   }
 
-  private void resetStateOnFailure() {
+  private void resetStateOnFailure(final Throwable failure) {
+    if (snapshotFuture != null && !snapshotFuture.isDone()) {
+      snapshotFuture.completeExceptionally(failure);
+    }
+
     lastWrittenPosition = null;
-    takingSnapshot = false;
+    snapshotFuture = null;
     if (pendingSnapshot != null) {
       pendingSnapshot.abort();
       pendingSnapshot = null;

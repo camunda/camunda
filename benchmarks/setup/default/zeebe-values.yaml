@@ -1,11 +1,13 @@
 global:
   image:
-    repository: camunda/zeebe
     tag: SNAPSHOT
     pullPolicy: Always
 
 zeebe:
-
+  # Image configuration to configure the zeebe image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
@@ -78,6 +80,10 @@ zeebe:
 zeebe-gateway:
   # Replicas defines how many standalone gateways are deployed
   replicas: 3
+  # Image configuration to configure the zeebe-gateway image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
   # LogLevel defines the log level which is used by the gateway
   logLevel: debug
 
@@ -111,9 +117,6 @@ zeebe-gateway:
 
 operate:
   enabled: false
-  global:
-    image:
-      repository: camunda/operate
 
 tasklist:
   enabled: false

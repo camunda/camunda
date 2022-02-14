@@ -69,7 +69,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile Phase phase = Phase.INITIAL;
 
   private CompletableActorFuture<Void> openFuture;
-  private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
+  private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
@@ -190,10 +190,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    if (isOpened.compareAndSet(true, false)) {
-      closeFuture = new CompletableActorFuture<>();
-      actor.close();
-    }
+    isOpened.set(false);
+    actor.close();
     return closeFuture;
   }
 
@@ -205,10 +203,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public void onActorFailed() {
     phase = Phase.FAILED;
-    closeFuture = CompletableActorFuture.completed(null);
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
+    closeFuture.complete(null);
   }
 
   private boolean shouldProcessNext() {
