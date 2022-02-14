@@ -7,44 +7,46 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.CalledDecisionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
-import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
-public final class JobWorkerElementTransformer<T extends FlowElement>
-    implements ModelElementTransformer<T> {
+public final class BusinessRuleTaskTransformer
+    implements ModelElementTransformer<BusinessRuleTask> {
 
-  private final Class<T> type;
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final CalledDecisionTransformer calledDecisionTransformer =
+      new CalledDecisionTransformer();
 
-  public JobWorkerElementTransformer(final Class<T> type) {
-    this.type = type;
+  @Override
+  public Class<BusinessRuleTask> getType() {
+    return BusinessRuleTask.class;
   }
 
   @Override
-  public Class<T> getType() {
-    return type;
-  }
-
-  @Override
-  public void transform(final T element, final TransformContext context) {
+  public void transform(final BusinessRuleTask element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
-    final ExecutableJobWorkerElement jobWorkerElement =
-        process.getElementById(element.getId(), ExecutableJobWorkerElement.class);
+    final var executableTask =
+        process.getElementById(element.getId(), ExecutableBusinessRuleTask.class);
 
     final var taskDefinition = element.getSingleExtensionElement(ZeebeTaskDefinition.class);
-    taskDefinitionTransformer.transform(jobWorkerElement, context, taskDefinition);
+    taskDefinitionTransformer.transform(executableTask, context, taskDefinition);
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
-    taskHeadersTransformer.transform(jobWorkerElement, taskHeaders, element);
+    taskHeadersTransformer.transform(executableTask, taskHeaders, element);
+
+    final var calledDecision = element.getSingleExtensionElement(ZeebeCalledDecision.class);
+    calledDecisionTransformer.transform(executableTask, calledDecision);
   }
 }

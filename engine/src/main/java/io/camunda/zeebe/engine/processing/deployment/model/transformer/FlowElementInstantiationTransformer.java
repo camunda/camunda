@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
@@ -59,7 +60,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES = new HashMap<>();
 
     ELEMENT_FACTORIES.put(Activity.class, ExecutableActivity::new);
-    ELEMENT_FACTORIES.put(BusinessRuleTask.class, ExecutableJobWorkerTask::new);
+    ELEMENT_FACTORIES.put(BusinessRuleTask.class, ExecutableBusinessRuleTask::new);
     ELEMENT_FACTORIES.put(BoundaryEvent.class, ExecutableBoundaryEvent::new);
     ELEMENT_FACTORIES.put(CallActivity.class, ExecutableCallActivity::new);
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
