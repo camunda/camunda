@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.job.JobBatchCollector.LargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.ByteValue;
+import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
@@ -78,20 +80,19 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
-    jobBatchCollector
-        .collectJobs(record)
-        .ifRightOrLeft(
-            activatedCount -> activateJobBatch(record, value, jobBatchKey, activatedCount),
-            largeJob -> raiseIncidentJobTooLargeForMessageSize(largeJob.key(), largeJob.record()));
+    final Either<LargeJob, Integer> result = jobBatchCollector.collectJobs(record);
+    final var activatedJobCount = result.getOrElse(0);
+    result.ifLeft(
+        largeJob -> raiseIncidentJobTooLargeForMessageSize(largeJob.key(), largeJob.record()));
+
+    activateJobBatch(record, value, jobBatchKey, activatedJobCount);
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record) {
     final RejectionType rejectionType;
     final String rejectionReason;
-
     final JobBatchRecord value = record.getValue();
-
-    final String format = "Expected to activate job batch with %s to be %s, but it was %s";
+    final var format = "Expected to activate job batch with %s to be %s, but it was %s";
 
     if (value.getMaxJobsToActivate() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
@@ -129,17 +130,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(final long jobKey, final JobRecord job) {
-
     final String messageSize = ByteValue.prettyPrint(stateWriter.getMaxEventLength());
-
     final DirectBuffer incidentMessage =
         wrapString(
             String.format(
                 "The job with key '%s' can not be activated because it is larger than the configured message size (%s). "
                     + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
                 jobKey, messageSize));
-
-    final IncidentRecord incidentEvent =
+    final var incidentEvent =
         new IncidentRecord()
             .setErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)
             .setErrorMessage(incidentMessage)
