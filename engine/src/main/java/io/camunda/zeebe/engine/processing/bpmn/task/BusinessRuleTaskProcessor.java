@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnDecisionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
@@ -36,28 +37,30 @@ public final class BusinessRuleTaskProcessor
   @Override
   public void onActivate(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    eventBehaviorOf(element).onActivate(element, context);
+    eventBehaviorOf(element, context).onActivate(element, context);
   }
 
   @Override
   public void onComplete(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    eventBehaviorOf(element).onComplete(element, context);
+    eventBehaviorOf(element, context).onComplete(element, context);
   }
 
   @Override
   public void onTerminate(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    eventBehaviorOf(element).onTerminate(element, context);
+    eventBehaviorOf(element, context).onTerminate(element, context);
   }
 
-  private BusinessRuleTaskBehavior eventBehaviorOf(final ExecutableBusinessRuleTask element) {
+  private BusinessRuleTaskBehavior eventBehaviorOf(
+      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
     if (element.getDecisionId() != null) {
       return calledDecisionBehavior;
     } else if (element.getJobWorkerProperties() != null) {
       return jobWorkerTaskBehavior;
     } else {
-      throw new IllegalArgumentException(
+      throw new BpmnProcessingException(
+          context,
           "Expected to process business rule task, but could not determine processing behavior");
     }
   }
