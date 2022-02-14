@@ -486,7 +486,7 @@ public interface Either<L, R> {
 
     private final Optional<R> right;
 
-    public EitherOptional(final Optional<R> right) {
+    private EitherOptional(final Optional<R> right) {
       this.right = right;
     }
 
