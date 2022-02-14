@@ -157,7 +157,7 @@ public final class BusinessRuleTaskProcessor
     }
   }
 
-  /** Extract different behaviors depending on the type of event. */
+  /** Extract different behaviors depending on the type of task. */
   private interface BusinessRuleTaskBehavior {
     void onActivate(ExecutableBusinessRuleTask element, BpmnElementContext activating);
 
