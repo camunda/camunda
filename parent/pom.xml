@@ -77,7 +77,7 @@
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.19.4</version.protobuf>
-    <version.protobuf-common>2.7.3</version.protobuf-common>
+    <version.protobuf-common>2.7.4</version.protobuf-common>
     <version.micrometer>1.8.2</version.micrometer>
     <version.rocksdbjni>6.28.2</version.rocksdbjni>
     <version.sbe>1.25.1</version.sbe>
