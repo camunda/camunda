@@ -34,6 +34,7 @@ public final class BusinessRuleTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
+  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String RESULT_VARIABLE = "result";
@@ -54,7 +55,7 @@ public final class BusinessRuleTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+        .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
                 t -> t.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable(RESULT_VARIABLE)))
@@ -100,7 +101,7 @@ public final class BusinessRuleTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+        .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
                 t -> t.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable(RESULT_VARIABLE)))
@@ -131,7 +132,7 @@ public final class BusinessRuleTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+        .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
                 t -> t.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable(RESULT_VARIABLE)))
@@ -161,7 +162,7 @@ public final class BusinessRuleTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+        .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
                 t ->
