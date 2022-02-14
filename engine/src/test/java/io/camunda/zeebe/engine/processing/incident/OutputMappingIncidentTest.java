@@ -53,9 +53,6 @@ public class OutputMappingIncidentTest {
   @Parameter(3)
   public boolean createsJob;
 
-  @Parameter(4)
-  public Map<String, Object> variables;
-
   @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
@@ -73,8 +70,7 @@ public class OutputMappingIncidentTest {
                         .endEvent()
                         .done()),
             "serviceTaskId",
-            true,
-            Map.of()
+            true
           },
           {
             "Intermediate throw event",
@@ -88,8 +84,7 @@ public class OutputMappingIncidentTest {
                         .endEvent()
                         .done()),
             "intermediateThrowEventId",
-            false,
-            Map.of()
+            false
           },
           {
             "Business rule task",
@@ -104,12 +99,12 @@ public class OutputMappingIncidentTest {
                             b ->
                                 b.zeebeCalledDecisionId("jedi-or-sith")
                                     .zeebeResultVariable("result")
+                                    .zeebeInputExpression("\"blue\"", "lightsaberColor")
                                     .zeebeOutputExpression("foo", "bar"))
                         .endEvent()
                         .done()),
             "businessRuleTaskId",
-            false,
-            Map.of("lightsaberColor", "blue")
+            false
           }
         });
   }
@@ -120,8 +115,7 @@ public class OutputMappingIncidentTest {
     deployment.deploy();
 
     // when
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     if (createsJob) {
       ENGINE.job().withType("type").ofInstance(processInstanceKey).complete();
@@ -161,8 +155,7 @@ public class OutputMappingIncidentTest {
     // given
     deployment.deploy();
 
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     if (createsJob) {
       ENGINE.job().withType("type").ofInstance(processInstanceKey).complete();
@@ -203,8 +196,7 @@ public class OutputMappingIncidentTest {
   public void shouldResolveIncidentIfProcessCancelled() {
     deployment.deploy();
 
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     if (createsJob) {
       ENGINE.job().withType("type").ofInstance(processInstanceKey).complete();
