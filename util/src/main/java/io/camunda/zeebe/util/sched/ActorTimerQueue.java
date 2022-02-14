@@ -17,17 +17,14 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
   private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
 
   private final TimerHandler timerHandler =
-      new TimerHandler() {
-        @Override
-        public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId) {
-          final TimerSubscription timer = timerJobMap.remove(timerId);
+      (timeUnit, now, timerId) -> {
+        final TimerSubscription timer = timerJobMap.remove(timerId);
 
-          if (timer != null) {
-            timer.onTimerExpired(timeUnit, now);
-          }
-
-          return true;
+        if (timer != null) {
+          timer.onTimerExpired(timeUnit, now);
         }
+
+        return true;
       };
 
   public ActorTimerQueue(final ActorClock clock) {
@@ -52,6 +49,13 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
 
     final long timerId = scheduleTimer(deadline);
     timer.setTimerId(timerId);
+    if (timerJobMap.containsKey(timerId)) {
+      throw new IllegalStateException(
+          "Failed scheduling, timer with id "
+              + timerId
+              + " already exists: "
+              + timerJobMap.get(timerId));
+    }
 
     timerJobMap.put(timerId, timer);
   }
