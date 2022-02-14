@@ -99,7 +99,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final GatewayStub gatewayStub,
       final ScheduledExecutorService executorService) {
     this.config = config;
-    this.jsonMapper = config.getJsonMapper();
+    jsonMapper = config.getJsonMapper();
     this.channel = channel;
     asyncStub = gatewayStub;
     this.executorService = executorService;
@@ -289,7 +289,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job) {
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final ActivatedJob job) {
     return newUpdateRetriesCommand(job.getKey());
   }
 
@@ -322,7 +322,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CompleteJobCommandStep1 newCompleteCommand(ActivatedJob job) {
+  public CompleteJobCommandStep1 newCompleteCommand(final ActivatedJob job) {
     return newCompleteCommand(job.getKey());
   }
 
@@ -332,17 +332,17 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(ActivatedJob job) {
+  public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
     return newFailCommand(job.getKey());
   }
 
   @Override
-  public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
+  public ThrowErrorCommandStep1 newThrowErrorCommand(final long jobKey) {
     return jobClient.newThrowErrorCommand(jobKey);
   }
 
   @Override
-  public ThrowErrorCommandStep1 newThrowErrorCommand(ActivatedJob job) {
+  public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
     return newThrowErrorCommand(job.getKey());
   }
 }

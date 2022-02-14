@@ -123,6 +123,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     return interceptors;
   }
 
+  @Override
   public JsonMapper getJsonMapper() {
     return jsonMapper;
   }
