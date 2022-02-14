@@ -49,8 +49,11 @@ public final class ClientProperties {
   /** @see ZeebeClientBuilder#caCertificatePath(String) */
   public static final String CA_CERTIFICATE_PATH = "zeebe.client.security.certpath";
 
-  /** @see io.camunda.zeebe.client.ZeebeClientBuilder#keepAlive(Duration) */
+  /** @see ZeebeClientBuilder#keepAlive(Duration) */
   public static final String KEEP_ALIVE = "zeebe.client.keepalive";
+
+  /** @see ZeebeClientBuilder#overrideAuthority(String) */
+  public static final String OVERRIDE_AUTHORITY = "zeebe.client.overrideauthority";
 
   /** @see ZeebeClientCloudBuilderStep1#withClusterId(java.lang.String) */
   public static final String CLOUD_CLUSTER_ID = "zeebe.client.cloud.clusterId";

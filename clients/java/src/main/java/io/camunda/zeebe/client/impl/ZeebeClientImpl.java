@@ -161,6 +161,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
       }
 
       channelBuilder.useTransportSecurity().sslContext(sslContext);
+      if (config.getAuthority() != null) {
+        channelBuilder.overrideAuthority(config.getAuthority());
+      }
     } else {
       channelBuilder.usePlaintext();
     }

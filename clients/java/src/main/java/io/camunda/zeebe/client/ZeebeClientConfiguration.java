@@ -61,4 +61,7 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper) */
   JsonMapper getJsonMapper();
+
+  /** @see ZeebeClientBuilder#overrideAuthority(String) */
+  String getAuthority();
 }
