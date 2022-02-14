@@ -157,7 +157,7 @@ public final class BusinessRuleTaskTest {
   }
 
   @Test
-  public void shouldWriteResultAsLocalVariableWhenOutputMappingsDefined() {
+  public void shouldUseResultInOutputMappings() {
     // given
     ENGINE
         .deployment()
@@ -194,31 +194,7 @@ public final class BusinessRuleTaskTest {
         .extracting(Record::getValue)
         .extracting(VariableRecordValue::getScopeKey, VariableRecordValue::getValue)
         .containsExactly(taskInstanceKey, "\"Jedi\"");
-  }
 
-  @Test
-  public void shouldUseResultInOutputMappings() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
-        .withXmlResource(
-            processWithBusinessRuleTask(
-                t ->
-                    t.zeebeCalledDecisionId("jedi-or-sith")
-                        .zeebeResultVariable(RESULT_VARIABLE)
-                        .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
-        .deploy();
-
-    // when
-    final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("lightsaberColor", "blue")
-            .create();
-
-    // then
     Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
