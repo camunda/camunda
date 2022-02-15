@@ -71,7 +71,7 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * Visits the key-value pairs, which are stored in the column family. The ordering depends on the
    * key.
    *
-   * <p>Similar to {@link #forEach(BiConsumer)}.
+   * <p>Similar to {@link #forEach(Consumer)}.
    *
    * @param consumer the consumer which accepts the key-value pairs
    */
