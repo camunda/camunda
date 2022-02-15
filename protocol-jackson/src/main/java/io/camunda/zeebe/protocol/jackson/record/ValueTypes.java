@@ -137,7 +137,7 @@ final class ValueTypes {
   private ValueTypes() {}
 
   static ValueTypeInfo<?> getTypeInfo(final ValueType valueType) {
-    final var typeInfo = TYPES.get(valueType);
+    final ValueTypeInfo<?> typeInfo = TYPES.get(valueType);
     if (typeInfo == null) {
       throw new IllegalArgumentException(
           String.format(

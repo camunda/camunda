@@ -20,8 +20,7 @@ run the command: `mvn clean install -DskipTests` in the root folder.
 
 > NOTE: All Java modules in Zeebe are built and tested with JDK 17. Most modules use language level
 > 17, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
-> zeebe-gateway-protocol-impl and zeebe-protocol which use language level 8 and
-> zeebe-protocol-jackson which uses language level 11.
+> zeebe-gateway-protocol-impl, zeebe-protocol and zeebe-protocol-jackson which use language level 8
 >
 > NOTE: The Go client and zbctl are built and tested with Go 1.15
 >

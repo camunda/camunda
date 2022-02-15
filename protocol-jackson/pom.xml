@@ -16,7 +16,7 @@
   <name>Zeebe Protocol Jackson</name>
 
   <properties>
-    <version.java>11</version.java>
+    <version.java>8</version.java>
   </properties>
 
   <dependencies>
