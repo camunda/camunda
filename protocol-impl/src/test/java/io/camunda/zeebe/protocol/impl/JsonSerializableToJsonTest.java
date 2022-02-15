@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
@@ -792,6 +794,58 @@ public final class JsonSerializableToJsonTest {
                     .setChecksum(wrapString("checksum")),
         "{'decisionRequirementsId': 'decision-requirements-id', 'decisionRequirementsName': 'decision-requirements-name', 'decisionRequirementsVersion': 1, 'decisionRequirementsKey': 2, 'namespace': 'namespace', 'resourceName': 'resource-name', 'resource': 'cmVzb3VyY2U=', 'checksum': 'Y2hlY2tzdW0=', 'duplicate': false}"
       },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// DecisionEvaluationRecord  /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "DecisionEvaluationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var record =
+                  new DecisionEvaluationRecord()
+                      .setDecisionKey(1L)
+                      .setDecisionId("decision-id")
+                      .setDecisionName("decision-name")
+                      .setDecisionVersion(1)
+                      .setDecisionRequirementsKey(2L)
+                      .setDecisionRequirementsId("decision-requirements-id")
+                      .setDecisionOutput(toMessagePack("'decision-output'"))
+                      .setProcessDefinitionKey(3L)
+                      .setBpmnProcessId("bpmn-process-id")
+                      .setDecisionVersion(1)
+                      .setProcessInstanceKey(4L)
+                      .setElementInstanceKey(5L)
+                      .setElementId("element-id");
+
+              final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
+              evaluatedDecisionRecord
+                  .setDecisionId("decision-id")
+                  .setDecisionName("decision-name")
+                  .setDecisionType("DECISION_TABLE")
+                  .setDecisionOutput(toMessagePack("'decision-output'"));
+
+              evaluatedDecisionRecord
+                  .evaluatedInputs()
+                  .add()
+                  .setInputId("input-id")
+                  .setInputName("input-name")
+                  .setInputValue(toMessagePack("'input-value'"));
+
+              final var matchedRuleRecord = evaluatedDecisionRecord.matchedRules().add();
+              matchedRuleRecord.setRuleId("rule-id").setRuleIndex(1);
+
+              matchedRuleRecord
+                  .evaluatedOutputs()
+                  .add()
+                  .setOutputId("output-id")
+                  .setOutputName("output-name")
+                  .setOutputValue(toMessagePack("'output-value'"));
+
+              return record;
+            },
+        "{'decisionKey':1,'decisionId':'decision-id','decisionName':'decision-name','decisionVersion':1,'decisionRequirementsKey':2,'decisionRequirementsId':'decision-requirements-id','decisionOutput':'\"decision-output\"','processDefinitionKey':3,'bpmnProcessId':'bpmn-process-id','processInstanceKey':4,'elementInstanceKey':5,'elementId':'element-id','evaluatedDecisions':[{'decisionId':'decision-id','decisionName':'decision-name','decisionOutput':'\"decision-output\"','decisionType':'DECISION_TABLE','evaluatedInputs':[{'inputId':'input-id','inputName':'input-name','inputValue':'\"input-value\"'}],'matchedRules':[{'ruleId':'rule-id','ruleIndex':1,'evaluatedOutputs':[{'outputId':'output-id','outputName':'output-name','outputValue':'\"output-value\"'}]}]}]}"
+      },
     };
   }
 
@@ -818,5 +872,10 @@ public final class JsonSerializableToJsonTest {
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static DirectBuffer toMessagePack(final String json) {
+    final byte[] messagePack = MsgPackConverter.convertToMsgPack(json);
+    return BufferUtil.wrapArray(messagePack);
   }
 }
