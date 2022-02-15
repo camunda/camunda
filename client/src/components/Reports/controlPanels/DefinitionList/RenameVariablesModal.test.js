@@ -35,7 +35,7 @@ const props = {
 
 it('should load all variables for the specified definition', () => {
   const processDefinitionKey = '123';
-  const node = shallow(<RenameVariablesModal definitionKey={processDefinitionKey} {...props} />);
+  const node = shallow(<RenameVariablesModal {...props} definitionKey={processDefinitionKey} />);
 
   runLastEffect();
 
@@ -77,7 +77,7 @@ it('should invoke updateVariable when confirming the modal with the list of upda
 
 it('should invoke onClose when closing the modal', () => {
   const spy = jest.fn();
-  const node = shallow(<RenameVariablesModal onClose={spy} {...props} />);
+  const node = shallow(<RenameVariablesModal {...props} onClose={spy} />);
 
   node.find({main: true}).at(0).simulate('click');
 
