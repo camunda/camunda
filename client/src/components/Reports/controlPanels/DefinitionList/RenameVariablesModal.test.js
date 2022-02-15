@@ -51,10 +51,10 @@ it('should invoke updateVariable when confirming the modal with the list of upda
   const definitionKey = '123';
   const node = shallow(
     <RenameVariablesModal
+      {...props}
       definitionKey={definitionKey}
       onChange={changeSpy}
       onClose={closeSpy}
-      {...props}
     />
   );
 
