@@ -140,7 +140,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
    */
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
-    return batchWriter.getBatchFramedLength(eventLength) <= batchWriter.getMaxFragmentLength();
+    return batchWriter.canWriteAdditionalEvent(eventLength);
   }
 
   /**
@@ -148,13 +148,10 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
    * of bytes as the batch. However, this would break concerns here, i.e. the writer here would have
    * to become Dispatcher aware.
    *
-   * @return a near approximate maximum, frame-aware, event length
+   * @return an approximate value of the max fragment length
    */
   @Override
   public int getMaxEventLength() {
-    final var maxFragmentLength = batchWriter.getMaxFragmentLength();
-    final var frameLength = batchWriter.getBatchFramedLength(maxFragmentLength) - maxFragmentLength;
-
-    return maxFragmentLength - frameLength;
+    return batchWriter.getMaxFragmentLength();
   }
 }
