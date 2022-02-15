@@ -62,7 +62,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
-      assertThat(configuration.getAuthority()).isNull();
+      assertThat(configuration.getOverrideAuthority()).isNull();
     }
   }
 
@@ -164,7 +164,7 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getAuthority()).isEqualTo("virtualhost");
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
   }
 
   @Test
@@ -178,7 +178,7 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getAuthority()).isEqualTo("virtualhost");
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
   }
 
   @Test

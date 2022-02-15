@@ -59,7 +59,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
-  private String authority;
+  private String overrideAuthority;
 
   @Override
   public String getGatewayAddress() {
@@ -132,8 +132,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
-  public String getAuthority() {
-    return authority;
+  public String getOverrideAuthority() {
+    return overrideAuthority;
   }
 
   @Override
@@ -288,7 +288,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder overrideAuthority(final String authority) {
-    this.authority = authority;
+    overrideAuthority = authority;
     return this;
   }
 
@@ -334,7 +334,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
-    appendProperty(sb, "overriddenAuthority", authority);
+    appendProperty(sb, "overrideAuthority", overrideAuthority);
 
     return sb.toString();
   }

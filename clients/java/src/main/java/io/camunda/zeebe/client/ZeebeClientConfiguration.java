@@ -63,5 +63,5 @@ public interface ZeebeClientConfiguration {
   JsonMapper getJsonMapper();
 
   /** @see ZeebeClientBuilder#overrideAuthority(String) */
-  String getAuthority();
+  String getOverrideAuthority();
 }
