@@ -54,7 +54,7 @@
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.11.0</version.error-prone>
     <version.grpc>1.44.0</version.grpc>
-    <version.gson>2.8.9</version.gson>
+    <version.gson>2.9.0</version.gson>
     <version.guava>31.0.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
