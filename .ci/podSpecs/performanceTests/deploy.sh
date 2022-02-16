@@ -32,7 +32,8 @@ done
 
 # Import data in postgresql
 POD_NAME=$(kubectl get po -n "$NAMESPACE" | grep postgres | cut -f1 -d' ')
-kubectl exec -n "$NAMESPACE" "$POD_NAME" -c gcloud -it -- gsutil -q -m cp "gs://optimize-data/${SQL_DUMP}" /db_dump/dump.sqlc
+gsutil -q -m cp "gs://optimize-data/${SQL_DUMP}" "/tmp/dump.sqlc"
+kubectl -n "$NAMESPACE" cp "/tmp/dump.sqlc" "$POD_NAME:/db_dump/dump.sqlc"
 kubectl exec -n "$NAMESPACE" "$POD_NAME" -c postgresql -it -- pg_restore --clean --if-exists -v -j 16 -h localhost -U camunda -d engine /db_dump/dump.sqlc
 
 # Spawning elasticsearch

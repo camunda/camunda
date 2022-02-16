@@ -19,7 +19,6 @@ spec:
   - key: "${NODE_POOL()}"
     operator: "Exists"
     effect: "NoSchedule"
-  serviceAccountName: ci-optimize-camunda-cloud
   volumes:
   - name: import
     emptyDir: {}
@@ -72,6 +71,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
+      serviceAccount 'ci-optimize-camunda-cloud'
       yaml kubectlAgent()
     }
   }

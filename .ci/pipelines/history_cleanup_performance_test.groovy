@@ -21,7 +21,6 @@ spec:
      effect: "NoSchedule"
   imagePullSecrets:
     - name: registry-camunda-cloud
-  serviceAccountName: ci-optimize-camunda-cloud
   containers:
   - name: gcloud
     image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
@@ -69,6 +68,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
+      serviceAccount 'ci-optimize-camunda-cloud'
       yaml gCloudAndMavenAgent()
     }
   }
