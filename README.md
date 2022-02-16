@@ -83,4 +83,4 @@ The Zeebe Gateway Protocol (API) as published in the
 [gateway-protocol](/gateway-protocol/src/main/proto/gateway.proto) is licensed
 under the [Zeebe Community License 1.1](/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt). Using gRPC tooling to generate stubs for
 the protocol does not constitute creating a derivative work under the Zeebe Community License 1.1 and no licensing restrictions are imposed on the
-resulting stub code by the [Zeebe Community License 1.1](https://github.com/camunda-cloud/zeebe/blob/main/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt).
+resulting stub code by the Zeebe Community License 1.1.
