@@ -181,17 +181,17 @@ public final class BpmnDecisionBehavior {
     final var decisionEvaluationEvent =
         new DecisionEvaluationRecord()
             .setDecisionKey(decision.getDecisionKey())
-            .setDecisionId(bufferAsString(decision.getDecisionId()))
-            .setDecisionName(bufferAsString(decision.getDecisionName()))
+            .setDecisionId(decision.getDecisionId())
+            .setDecisionName(decision.getDecisionName())
             .setDecisionVersion(decision.getVersion())
             .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-            .setDecisionRequirementsId(bufferAsString(decision.getDecisionRequirementsId()))
+            .setDecisionRequirementsId(decision.getDecisionRequirementsId())
             .setDecisionOutput(decisionResult.getOutput())
             .setProcessDefinitionKey(context.getProcessDefinitionKey())
-            .setBpmnProcessId(bufferAsString(context.getBpmnProcessId()))
+            .setBpmnProcessId(context.getBpmnProcessId())
             .setProcessInstanceKey(context.getProcessInstanceKey())
             .setElementInstanceKey(context.getElementInstanceKey())
-            .setElementId(bufferAsString(context.getElementId()));
+            .setElementId(context.getElementId());
 
     decisionResult
         .getEvaluatedDecisions()

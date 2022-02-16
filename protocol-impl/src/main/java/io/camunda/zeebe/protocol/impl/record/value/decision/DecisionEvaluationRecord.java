@@ -83,12 +83,22 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
+  public DecisionEvaluationRecord setDecisionId(final DirectBuffer decisionId) {
+    decisionIdProp.setValue(decisionId);
+    return this;
+  }
+
   @Override
   public String getDecisionName() {
     return bufferAsString(decisionNameProp.getValue());
   }
 
   public DecisionEvaluationRecord setDecisionName(final String decisionName) {
+    decisionNameProp.setValue(decisionName);
+    return this;
+  }
+
+  public DecisionEvaluationRecord setDecisionName(final DirectBuffer decisionName) {
     decisionNameProp.setValue(decisionName);
     return this;
   }
@@ -109,6 +119,12 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   }
 
   public DecisionEvaluationRecord setDecisionRequirementsId(final String decisionRequirementsId) {
+    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+    return this;
+  }
+
+  public DecisionEvaluationRecord setDecisionRequirementsId(
+      final DirectBuffer decisionRequirementsId) {
     decisionRequirementsIdProp.setValue(decisionRequirementsId);
     return this;
   }
@@ -143,6 +159,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
+  public DecisionEvaluationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
@@ -169,6 +190,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   }
 
   public DecisionEvaluationRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public DecisionEvaluationRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
     return this;
   }
