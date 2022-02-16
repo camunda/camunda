@@ -28,6 +28,16 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
   /** Discard all non-written batch data. */
   void reset();
 
+  /**
+   * Returns whether an additional event of length {@code length} could be written to the batch or
+   * not.
+   *
+   * @param length the length of the event's value and metadata summed, i.e. {@link
+   *     LoggedEvent#getValueLength()} + {@link LoggedEvent#getMetadataLength()}
+   * @return true if the additional event could be written, false otherwise
+   */
+  boolean canWriteAdditionalEvent(final int length);
+
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
     /** Use the default values as key. */
