@@ -31,6 +31,11 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
     events.add(new RecordedEvent<>(key, intent, value));
   }
 
+  @Override
+  public int getMaxEventLength() {
+    return Integer.MAX_VALUE;
+  }
+
   public static final class RecordedEvent<T extends RecordValue> {
 
     public final long key;

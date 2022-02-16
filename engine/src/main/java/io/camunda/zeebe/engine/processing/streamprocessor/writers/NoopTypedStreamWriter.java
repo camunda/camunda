@@ -33,6 +33,11 @@ public final class NoopTypedStreamWriter implements TypedStreamWriter {
   }
 
   @Override
+  public int getMaxEventLength() {
+    return Integer.MAX_VALUE;
+  }
+
+  @Override
   public void appendNewCommand(final Intent intent, final RecordValue value) {
     // no op implementation
   }
