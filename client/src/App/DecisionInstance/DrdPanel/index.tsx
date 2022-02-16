@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {drdStore} from 'modules/stores/drd';
 import {useLayoutEffect, useRef} from 'react';
 import {Container, Handle, Panel} from './styled';
 
@@ -18,7 +19,23 @@ const DrdPanel: React.FC = ({children}) => {
     width: undefined,
   });
 
+  const setPanelWidth = (width: number) => {
+    if (containerRef.current === null) {
+      return;
+    }
+    const maxWidth = Math.floor(document.body.clientWidth * maxWidthRatio);
+    const newWidth = Math.min(Math.max(width, minWidth), maxWidth);
+
+    containerRef.current.style.width = `${newWidth}px`;
+  };
+
   useLayoutEffect(() => {
+    const {panelWidth} = drdStore.state;
+
+    if (panelWidth !== null) {
+      setPanelWidth(panelWidth);
+    }
+
     const handleResize = (event: MouseEvent) => {
       const {x: startX, width: startWidth} = startDimensions.current;
 
@@ -30,14 +47,8 @@ const DrdPanel: React.FC = ({children}) => {
         return;
       }
 
-      const newWidth = startWidth - (event.clientX - startX);
-      const maxWidth = document.body.clientWidth * maxWidthRatio;
-
-      if (newWidth < minWidth || newWidth > maxWidth) {
-        return;
-      }
-
-      containerRef.current.style.width = `${newWidth}px`;
+      const resizeWidth = startWidth - (event.clientX - startX);
+      setPanelWidth(resizeWidth);
     };
 
     const handleResizeStart = (event: MouseEvent) => {
@@ -49,6 +60,7 @@ const DrdPanel: React.FC = ({children}) => {
       startDimensions.current.x = event.clientX;
       startDimensions.current.width = containerRef.current.clientWidth;
       document.body.style.cursor = 'ew-resize';
+      containerRef.current?.classList.add('resizing');
       window.addEventListener('mouseup', handleResizeStop);
       window.addEventListener('mousemove', handleResize);
     };
@@ -56,7 +68,13 @@ const DrdPanel: React.FC = ({children}) => {
     const handleResizeStop = () => {
       window.removeEventListener('mousemove', handleResize);
       window.removeEventListener('mouseup', handleResizeStop);
+      containerRef.current?.classList.remove('resizing');
       document.body.style.cursor = 'unset';
+      const width = containerRef.current?.clientWidth;
+
+      if (width !== undefined) {
+        drdStore.setPanelWidth(width);
+      }
     };
 
     handleRef.current?.addEventListener('mousedown', handleResizeStart);
@@ -64,10 +82,10 @@ const DrdPanel: React.FC = ({children}) => {
 
   return (
     <Container>
-      <Handle ref={handleRef} />
       <Panel data-testid="drd-panel" ref={containerRef}>
         {children}
       </Panel>
+      <Handle ref={handleRef} />
     </Container>
   );
 };

@@ -15,6 +15,8 @@ const Container = styled.div`
 
 const Handle = styled.div`
   cursor: ew-resize;
+  position: absolute;
+  left: -5px;
   width: 10px;
   height: 100%;
 `;
@@ -24,11 +26,13 @@ const Panel = styled.div`
     const colors = theme.colors.drdPanel;
 
     return css`
-      background: ${colors.background};
-      border-radius: 3px;
       box-shadow: 0 2px 4px 0 ${colors.boxShadow};
       width: 540px;
       border-left: solid 1px ${colors.borderColor};
+
+      &.resizing {
+        border-left-color: ${theme.colors.selections};
+      }
     `;
   }}
 `;

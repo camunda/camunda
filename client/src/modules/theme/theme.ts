@@ -415,7 +415,7 @@ const theme = {
       },
       drdPanel: {
         background: DARK_COLORS.ui02,
-        boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
+        boxShadow: rgba(SEMANTIC_COLORS.black, 0.5),
         borderColor: DARK_COLORS.ui04,
       },
       modules: {
@@ -550,6 +550,11 @@ const theme = {
           },
           defaultFillColor: DARK_COLORS.ui02,
           defaultStrokeColor: SEMANTIC_COLORS.grey,
+        },
+        drdDiagram: {
+          text: SEMANTIC_COLORS.white,
+          background: DARK_COLORS.ui02,
+          stroke: SEMANTIC_COLORS.grey,
         },
         dropdown: {
           menu: {
@@ -1313,7 +1318,7 @@ const theme = {
         background: LIGHT_COLORS.ui04,
       },
       drdPanel: {
-        background: SEMANTIC_COLORS.white,
+        background: LIGHT_COLORS.ui04,
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
         borderColor: LIGHT_COLORS.ui05,
       },
@@ -1449,6 +1454,11 @@ const theme = {
           },
           defaultFillColor: LIGHT_COLORS.ui04,
           defaultStrokeColor: LIGHT_COLORS.ui06,
+        },
+        drdDiagram: {
+          text: DARK_COLORS.ui01,
+          background: LIGHT_COLORS.ui04,
+          stroke: LIGHT_COLORS.ui06,
         },
         dropdown: {
           menu: {
