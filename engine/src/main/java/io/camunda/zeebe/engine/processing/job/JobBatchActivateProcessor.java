@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.job.JobBatchCollector.LargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -18,13 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
-import io.camunda.zeebe.msgpack.value.DocumentValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -33,46 +28,32 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.ByteValue;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
+import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.ObjectHashSet;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final StateWriter stateWriter;
-  private final VariableState variableState;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-
-  private final JobState jobState;
+  private final JobBatchCollector jobBatchCollector;
   private final KeyGenerator keyGenerator;
-  private final long maxRecordLength;
-  private final long maxJobBatchLength;
-
-  private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
   private final JobMetrics jobMetrics;
 
   public JobBatchActivateProcessor(
       final Writers writers,
       final ZeebeState state,
       final KeyGenerator keyGenerator,
-      final long maxRecordLength,
       final JobMetrics jobMetrics) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    jobBatchCollector =
+        new JobBatchCollector(
+            state.getJobState(), state.getVariableState(), stateWriter::canWriteEventOfLength);
 
-    jobState = state.getJobState();
-    variableState = state.getVariableState();
     this.keyGenerator = keyGenerator;
-
-    this.maxRecordLength = maxRecordLength;
-    maxJobBatchLength = maxRecordLength - Long.BYTES;
     this.jobMetrics = jobMetrics;
   }
 
@@ -97,95 +78,21 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   private void activateJobs(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
-
     final long jobBatchKey = keyGenerator.nextKey();
 
-    final AtomicInteger amount = new AtomicInteger(value.getMaxJobsToActivate());
-    collectJobsToActivate(record, amount);
+    final Either<LargeJob, Integer> result = jobBatchCollector.collectJobs(record);
+    final var activatedJobCount = result.getOrElse(0);
+    result.ifLeft(
+        largeJob -> raiseIncidentJobTooLargeForMessageSize(largeJob.key(), largeJob.record()));
 
-    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
-    responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
-
-    final var activatedJobsCount = record.getValue().getJobKeys().size();
-    jobMetrics.jobActivated(value.getType(), activatedJobsCount);
-  }
-
-  private void collectJobsToActivate(
-      final TypedRecord<JobBatchRecord> record, final AtomicInteger amount) {
-    final JobBatchRecord value = record.getValue();
-    final ValueArray<JobRecord> jobIterator = value.jobs();
-    final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
-
-    // collect jobs for activation
-    variableNames.clear();
-    final ValueArray<StringValue> jobBatchVariables = value.variables();
-
-    jobBatchVariables.forEach(
-        v -> {
-          final MutableDirectBuffer nameCopy = new UnsafeBuffer(new byte[v.getValue().capacity()]);
-          nameCopy.putBytes(0, v.getValue(), 0, v.getValue().capacity());
-          variableNames.add(nameCopy);
-        });
-
-    jobState.forEachActivatableJobs(
-        value.getTypeBuffer(),
-        (key, jobRecord) -> {
-          int remainingAmount = amount.get();
-          final long deadline = record.getTimestamp() + value.getTimeout();
-          jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
-
-          // fetch and set variables, required here to already have the full size of the job record
-          final long elementInstanceKey = jobRecord.getElementInstanceKey();
-          if (elementInstanceKey >= 0) {
-            final DirectBuffer variables = collectVariables(variableNames, elementInstanceKey);
-            jobRecord.setVariables(variables);
-          } else {
-            jobRecord.setVariables(DocumentValue.EMPTY_DOCUMENT);
-          }
-
-          if (remainingAmount >= 0
-              && (record.getLength() + jobRecord.getLength()) <= maxJobBatchLength) {
-
-            remainingAmount = amount.decrementAndGet();
-            jobKeyIterator.add().setValue(key);
-            final JobRecord arrayValueJob = jobIterator.add();
-
-            // clone job record since buffer is reused during iteration
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
-            jobRecord.write(buffer, 0);
-            arrayValueJob.wrap(buffer);
-          } else {
-            value.setTruncated(true);
-
-            if (value.getJobs().isEmpty()) {
-              raiseIncidentJobTooLargeForMessageSize(key, jobRecord);
-            }
-
-            return false;
-          }
-
-          return remainingAmount > 0;
-        });
-  }
-
-  private DirectBuffer collectVariables(
-      final Collection<DirectBuffer> variableNames, final long elementInstanceKey) {
-    final DirectBuffer variables;
-    if (variableNames.isEmpty()) {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey);
-    } else {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey, variableNames);
-    }
-    return variables;
+    activateJobBatch(record, value, jobBatchKey, activatedJobCount);
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record) {
     final RejectionType rejectionType;
     final String rejectionReason;
-
     final JobBatchRecord value = record.getValue();
-
-    final String format = "Expected to activate job batch with %s to be %s, but it was %s";
+    final var format = "Expected to activate job batch with %s to be %s, but it was %s";
 
     if (value.getMaxJobsToActivate() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
@@ -212,18 +119,25 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
   }
 
+  private void activateJobBatch(
+      final TypedRecord<JobBatchRecord> record,
+      final JobBatchRecord value,
+      final long jobBatchKey,
+      final Integer activatedCount) {
+    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
+    jobMetrics.jobActivated(value.getType(), activatedCount);
+  }
+
   private void raiseIncidentJobTooLargeForMessageSize(final long jobKey, final JobRecord job) {
-
-    final String messageSize = ByteValue.prettyPrint(maxRecordLength);
-
+    final String messageSize = ByteValue.prettyPrint(stateWriter.getMaxEventLength());
     final DirectBuffer incidentMessage =
         wrapString(
             String.format(
                 "The job with key '%s' can not be activated because it is larger than the configured message size (%s). "
                     + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
                 jobKey, messageSize));
-
-    final IncidentRecord incidentEvent =
+    final var incidentEvent =
         new IncidentRecord()
             .setErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)
             .setErrorMessage(incidentMessage)
