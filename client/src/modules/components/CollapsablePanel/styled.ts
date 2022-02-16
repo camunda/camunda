@@ -175,12 +175,12 @@ const ExpandButton = styled.button`
       height: 100%;
       padding: 11px;
       background: ${colors.backgroundColor};
-      color: ${theme.colors.text02};
+      color: ${theme.colors.text01};
       border: none;
       border-radius: inherit;
       opacity: 0.9;
-      font-size: 15px;
-      font-weight: bold;
+      font-size: 16px;
+      font-weight: 600;
       position: relative;
     `;
   }}

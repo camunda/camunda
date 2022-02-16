@@ -58,6 +58,7 @@ const Pills = styled.div`
 const PaneHeader = styled(SplitPane.Pane.Header)`
   display: flex;
   align-items: center;
+  padding: 9px 10px 9px 20px;
 
   ${({expandState}) => {
     return css`

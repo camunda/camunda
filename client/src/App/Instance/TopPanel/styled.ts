@@ -49,6 +49,7 @@ const SplitPaneHeader = styled(SplitPaneComponent.Pane.Header)`
   align-items: center;
   z-index: 4;
   border-bottom: none;
+  padding: 9px 10px 9px 20px;
 `;
 
 const Table = styled.table`

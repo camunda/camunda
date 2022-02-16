@@ -12,11 +12,11 @@ const Header = styled.div`
 
     return css`
       background-color: ${colors.backgroundColor};
-      color: ${theme.colors.text02};
+      color: ${theme.colors.text01};
       border-bottom: solid 1px ${colors.borderColor};
-      font-size: 15px;
-      font-weight: bold;
-      padding: 9px 10px;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 8px 10px;
       padding-left: 20px;
       min-height: 38px;
       display: flex;

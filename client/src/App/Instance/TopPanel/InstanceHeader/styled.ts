@@ -52,6 +52,7 @@ const Th = styled.th`
 
 const Td = styled.td`
   font-weight: 500;
+  font-size: 15px;
 `;
 
 const StateIconWrapper = styled.div`
