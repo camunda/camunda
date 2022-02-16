@@ -22,4 +22,16 @@ public class DecisionRecordStream
   protected DecisionRecordStream supply(final Stream<Record<DecisionRecordValue>> wrappedStream) {
     return new DecisionRecordStream(wrappedStream);
   }
+
+  public DecisionRecordStream withDecisionId(final String decisionId) {
+    return valueFilter(v -> v.getDecisionId().equals(decisionId));
+  }
+
+  public DecisionRecordStream withDecisionName(final String decisionName) {
+    return valueFilter(v -> v.getDecisionName().equals(decisionName));
+  }
+
+  public DecisionRecordStream withDecisionKey(final long decisionKey) {
+    return valueFilter(v -> v.getDecisionKey() == decisionKey);
+  }
 }

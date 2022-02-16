@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -254,6 +255,11 @@ public final class RecordingExporter implements Exporter {
   public static DecisionRequirementsRecordStream decisionRequirementsRecords() {
     return new DecisionRequirementsRecordStream(
         records(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsRecordValue.class));
+  }
+
+  public static DecisionEvaluationRecordStream decisionEvaluationRecords() {
+    return new DecisionEvaluationRecordStream(
+        records(ValueType.DECISION_EVALUATION, DecisionEvaluationRecordValue.class));
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

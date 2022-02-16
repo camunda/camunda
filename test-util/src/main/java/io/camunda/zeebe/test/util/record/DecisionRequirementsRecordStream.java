@@ -16,7 +16,7 @@ public class DecisionRequirementsRecordStream
         DecisionRequirementsRecordValue, DecisionRequirementsRecordStream> {
 
   public DecisionRequirementsRecordStream(
-      Stream<Record<DecisionRequirementsRecordValue>> wrappedStream) {
+      final Stream<Record<DecisionRequirementsRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
@@ -24,5 +24,24 @@ public class DecisionRequirementsRecordStream
   protected DecisionRequirementsRecordStream supply(
       final Stream<Record<DecisionRequirementsRecordValue>> wrappedStream) {
     return new DecisionRequirementsRecordStream(wrappedStream);
+  }
+
+  public DecisionRequirementsRecordStream withDecisionRequirementsKey(
+      final long decisionRequirementsKey) {
+    return valueFilter(v -> v.getDecisionRequirementsKey() == decisionRequirementsKey);
+  }
+
+  public DecisionRequirementsRecordStream withDecisionRequirementsId(
+      final String decisionRequirementsId) {
+    return valueFilter(v -> v.getDecisionRequirementsId().equals(decisionRequirementsId));
+  }
+
+  public DecisionRequirementsRecordStream withDecisionRequirementsName(
+      final String decisionRequirementsName) {
+    return valueFilter(v -> v.getDecisionRequirementsName().equals(decisionRequirementsName));
+  }
+
+  public DecisionRequirementsRecordStream withResourceName(final String resourceName) {
+    return valueFilter(v -> v.getResourceName().equals(resourceName));
   }
 }
