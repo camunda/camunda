@@ -4,11 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {action, makeObservable, override} from 'mobx';
+import {
+  action,
+  IReactionDisposer,
+  makeObservable,
+  override,
+  reaction,
+} from 'mobx';
 import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 import {fetchDrdData} from 'modules/api/decisions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {logger} from 'modules/logger';
+import {decisionInstanceStore} from './decisionInstance';
 
 type DrdData = ReadonlyDeep<{
   [decisionId: string]: {
@@ -29,6 +36,7 @@ const DEFAULT_STATE: State = {
 
 class Drd extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  disposer: IReactionDisposer | null = null;
 
   constructor() {
     super();
@@ -40,6 +48,16 @@ class Drd extends NetworkReconnectionHandler {
     });
   }
 
+  init = () => {
+    this.disposer = reaction(
+      () => decisionInstanceStore.state.decisionInstance?.decisionDefinitionId,
+      (decisionDefinitionId) => {
+        if (decisionDefinitionId !== undefined) {
+          this.fetchDrdData(decisionInstanceStore.state.decisionInstanceId);
+        }
+      }
+    );
+  };
   fetchDrdData = this.retryOnConnectionLost(
     async (decisionInstanceId: DecisionInstanceEntity['id']) => {
       try {
@@ -72,6 +90,7 @@ class Drd extends NetworkReconnectionHandler {
 
   reset() {
     super.reset();
+    this.disposer?.();
     this.state = {...DEFAULT_STATE};
   }
 }

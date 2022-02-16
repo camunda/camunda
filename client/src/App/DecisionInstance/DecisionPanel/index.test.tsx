@@ -12,6 +12,7 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionPanel} from '.';
+import {decisionXmlStore} from 'modules/stores/decisionXml';
 
 describe('<DecisionPanel />', () => {
   beforeEach(() => {
@@ -24,10 +25,12 @@ describe('<DecisionPanel />', () => {
       )
     );
 
-    decisionInstanceStore.init('337423841237089');
+    decisionXmlStore.init();
+    decisionInstanceStore.fetchDecisionInstance('337423841237089');
   });
 
   afterEach(() => {
+    decisionXmlStore.reset();
     decisionInstanceStore.reset();
   });
 

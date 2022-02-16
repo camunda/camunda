@@ -4,18 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {
-  makeObservable,
-  override,
-  action,
-  observable,
-  when,
-  IReactionDisposer,
-} from 'mobx';
+import {makeObservable, override, action, observable} from 'mobx';
 import {logger} from 'modules/logger';
 import {fetchDecisionInstance} from 'modules/api/decisions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {decisionXmlStore} from './decisionXml';
 import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 
 type Instance = ReadonlyDeep<{
@@ -41,17 +33,18 @@ type Instance = ReadonlyDeep<{
 
 type State = {
   decisionInstance: Instance | null;
+  decisionInstanceId: string | null;
   status: 'initial' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   decisionInstance: null,
+  decisionInstanceId: null,
   status: 'initial',
 };
 
 class DecisionInstance extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
-  decisionXmlStoreDisposer: IReactionDisposer | null = null;
 
   constructor() {
     super();
@@ -63,25 +56,13 @@ class DecisionInstance extends NetworkReconnectionHandler {
     });
   }
 
-  init = (decisionInstanceId: string) => {
-    this.decisionXmlStoreDisposer = when(
-      () => this.state.decisionInstance !== null,
-      () => {
-        decisionXmlStore.init(
-          this.state.decisionInstance!.decisionDefinitionId
-        );
-      }
-    );
-    this.fetchDecisionInstance(decisionInstanceId);
-  };
-
   fetchDecisionInstance = this.retryOnConnectionLost(
     async (decisionInstanceId: string) => {
       try {
         const response = await fetchDecisionInstance(decisionInstanceId);
 
         if (response.ok) {
-          this.handleFetchSuccess(await response.json());
+          this.handleFetchSuccess(await response.json(), decisionInstanceId);
         } else {
           this.handleFetchFailure();
         }
@@ -91,8 +72,12 @@ class DecisionInstance extends NetworkReconnectionHandler {
     }
   );
 
-  handleFetchSuccess = (decisionInstance: Instance) => {
+  handleFetchSuccess = (
+    decisionInstance: Instance,
+    decisionInstanceId: string
+  ) => {
     this.state.decisionInstance = decisionInstance;
+    this.state.decisionInstanceId = decisionInstanceId;
     this.state.status = 'fetched';
   };
 
@@ -107,8 +92,6 @@ class DecisionInstance extends NetworkReconnectionHandler {
 
   reset() {
     super.reset();
-    this.decisionXmlStoreDisposer?.();
-    decisionXmlStore.reset();
     this.state = {...DEFAULT_STATE};
   }
 }

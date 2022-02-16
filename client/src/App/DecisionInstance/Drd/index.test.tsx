@@ -10,6 +10,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Drd} from '.';
 
@@ -24,11 +25,13 @@ describe('<Drd />', () => {
       )
     );
 
-    decisionInstanceStore.init('337423841237089');
+    decisionXmlStore.init();
+    decisionInstanceStore.fetchDecisionInstance('337423841237089');
   });
 
   afterEach(() => {
     decisionInstanceStore.reset();
+    decisionXmlStore.reset();
   });
 
   it('should render DRD', async () => {

@@ -16,17 +16,24 @@ import {VariablesPanel} from './VariablesPanel';
 import {DrdPanel} from './DrdPanel';
 import {Container, DecisionInstanceContainer} from './styled';
 import {Drd} from './Drd';
+import {decisionXmlStore} from 'modules/stores/decisionXml';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
 
   useEffect(() => {
-    decisionInstanceStore.init(decisionInstanceId);
-    drdDataStore.fetchDrdData(decisionInstanceId);
+    decisionXmlStore.init();
+    drdDataStore.init();
+
     return () => {
       decisionInstanceStore.reset();
       drdDataStore.reset();
+      decisionXmlStore.reset();
     };
+  }, []);
+
+  useEffect(() => {
+    decisionInstanceStore.fetchDecisionInstance(decisionInstanceId);
   }, [decisionInstanceId]);
 
   return (

@@ -29,7 +29,7 @@ const Drd: React.FC = () => {
   }
 
   useEffect(() => {
-    autorun(() => {
+    const disposer = autorun(() => {
       if (
         drdViewerRef.current !== null &&
         decisionXmlStore.state.xml !== null
@@ -41,6 +41,7 @@ const Drd: React.FC = () => {
       }
     });
     return () => {
+      disposer();
       drdViewer.current?.reset();
     };
   }, []);

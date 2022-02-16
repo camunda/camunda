@@ -24,7 +24,7 @@ describe('decisionInstanceStore', () => {
 
     expect(decisionInstanceStore.state.status).toBe('initial');
 
-    decisionInstanceStore.init('22517947328274621');
+    decisionInstanceStore.fetchDecisionInstance('22517947328274621');
 
     await waitFor(() =>
       expect(decisionInstanceStore.state.status).toBe('fetched')
