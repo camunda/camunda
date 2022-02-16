@@ -62,6 +62,44 @@ class TransactionalColumnFamily<
 
   @Override
   public void put(final KeyType key, final ValueType value) {
+    upsert(key, value);
+  }
+
+  @Override
+  public void insert(final KeyType key, final ValueType value) {
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          columnFamilyContext.writeValue(value);
+
+          assertDoesNotExist(transaction);
+          transaction.put(
+              transactionDb.getDefaultNativeHandle(),
+              columnFamilyContext.getKeyBufferArray(),
+              columnFamilyContext.getKeyLength(),
+              columnFamilyContext.getValueBufferArray(),
+              value.getLength());
+        });
+  }
+
+  @Override
+  public void update(final KeyType key, final ValueType value) {
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          columnFamilyContext.writeValue(value);
+          assertExists(transaction);
+          transaction.put(
+              transactionDb.getDefaultNativeHandle(),
+              columnFamilyContext.getKeyBufferArray(),
+              columnFamilyContext.getKeyLength(),
+              columnFamilyContext.getValueBufferArray(),
+              value.getLength());
+        });
+  }
+
+  @Override
+  public void upsert(final KeyType key, final ValueType value) {
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
@@ -185,6 +223,30 @@ class TransactionalColumnFamily<
                 }));
 
     return isEmpty.get();
+  }
+
+  private void assertDoesNotExist(final ZeebeTransaction transaction) throws Exception {
+    final var value =
+        transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            columnFamilyContext.getKeyBufferArray(),
+            columnFamilyContext.getKeyLength());
+    if (value != null) {
+      throw new IllegalStateException("Key already exists");
+    }
+  }
+
+  private void assertExists(final ZeebeTransaction transaction) throws Exception {
+    final var value =
+        transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            columnFamilyContext.getKeyBufferArray(),
+            columnFamilyContext.getKeyLength());
+    if (value == null) {
+      throw new IllegalStateException("Key does not exist");
+    }
   }
 
   /**
