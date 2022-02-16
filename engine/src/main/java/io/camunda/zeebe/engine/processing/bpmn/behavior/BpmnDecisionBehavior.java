@@ -11,12 +11,18 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
+import io.camunda.zeebe.dmn.EvaluatedDecision;
+import io.camunda.zeebe.dmn.EvaluatedInput;
+import io.camunda.zeebe.dmn.EvaluatedOutput;
+import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
@@ -24,6 +30,10 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.decision.EvaluatedDecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.decision.MatchedRuleRecord;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -38,15 +48,21 @@ public final class BpmnDecisionBehavior {
   private final DecisionState decisionState;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableState variableState;
+  private final StateWriter stateWriter;
+  private final KeyGenerator keyGenerator;
 
   public BpmnDecisionBehavior(
       final DecisionEngine decisionEngine,
       final ZeebeState zeebeState,
-      final EventTriggerBehavior eventTriggerBehavior) {
+      final EventTriggerBehavior eventTriggerBehavior,
+      final StateWriter stateWriter,
+      final KeyGenerator keyGenerator) {
     this.decisionEngine = decisionEngine;
     decisionState = zeebeState.getDecisionState();
     variableState = zeebeState.getVariableState();
     this.eventTriggerBehavior = eventTriggerBehavior;
+    this.stateWriter = stateWriter;
+    this.keyGenerator = keyGenerator;
   }
 
   /**
@@ -60,8 +76,17 @@ public final class BpmnDecisionBehavior {
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
 
+    // todo(#8571): avoid parsing drg every time
+    final var decisionOrFailure = findDecisionById(element.getDecisionId());
     final var resultOrFailure =
-        findDrgInState(element)
+        decisionOrFailure
+            .flatMap(this::findDrgByDecision)
+            .mapLeft(
+                failure ->
+                    new Failure(
+                        "Expected to evaluate decision id '%s', but %s"
+                            .formatted(element.getDecisionId(), failure.getMessage())))
+            .flatMap(drg -> parseDrg(drg.getResource()))
             .flatMap(drg -> evaluateDecisionInDrg(drg, element.getDecisionId(), scopeKey));
 
     // The output mapping behavior determines what to do with the decision result. Since the output
@@ -70,25 +95,16 @@ public final class BpmnDecisionBehavior {
     // happens on element completion. We don't want to re-evaluate the decision for output mapping
     // related incidents.
     resultOrFailure.ifRight(
-        result ->
-            triggerProcessEventWithResultVariable(context, element.getResultVariable(), result));
+        result -> {
+          triggerProcessEventWithResultVariable(context, element.getResultVariable(), result);
+
+          final var decision = decisionOrFailure.get();
+          writeDecisionEvaluationEvent(decision, result, context);
+        });
 
     // the failure must have the correct error type and scope, and we only want to declare this once
     return resultOrFailure.mapLeft(
         failure -> new Failure(failure.getMessage(), ErrorType.CALLED_ELEMENT_ERROR, scopeKey));
-  }
-
-  // todo(#8571): avoid parsing drg every time
-  private Either<Failure, ParsedDecisionRequirementsGraph> findDrgInState(
-      final ExecutableCalledDecision element) {
-    return findDecisionById(element.getDecisionId())
-        .flatMap(this::findDrgByDecision)
-        .mapLeft(
-            failure ->
-                new Failure(
-                    "Expected to evaluate decision id '%s', but %s"
-                        .formatted(element.getDecisionId(), failure.getMessage())))
-        .flatMap(drg -> parseDrg(drg.getResource()));
   }
 
   private Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
@@ -155,5 +171,89 @@ public final class BpmnDecisionBehavior {
     writer.writeString(BufferUtil.wrapString(name));
     writer.writeRaw(value);
     return resultBuffer;
+  }
+
+  private void writeDecisionEvaluationEvent(
+      final PersistedDecision decision,
+      final DecisionEvaluationResult decisionResult,
+      final BpmnElementContext context) {
+
+    final var decisionEvaluationEvent =
+        new DecisionEvaluationRecord()
+            .setDecisionKey(decision.getDecisionKey())
+            .setDecisionId(bufferAsString(decision.getDecisionId()))
+            .setDecisionName(bufferAsString(decision.getDecisionName()))
+            .setDecisionVersion(decision.getVersion())
+            .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+            .setDecisionRequirementsId(bufferAsString(decision.getDecisionRequirementsId()))
+            .setDecisionOutput(decisionResult.getOutput())
+            .setProcessDefinitionKey(context.getProcessDefinitionKey())
+            .setBpmnProcessId(bufferAsString(context.getBpmnProcessId()))
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setElementInstanceKey(context.getElementInstanceKey())
+            .setElementId(bufferAsString(context.getElementId()));
+
+    decisionResult
+        .getEvaluatedDecisions()
+        .forEach(
+            evaluatedDecision ->
+                addDecisionToEvaluationEvent(evaluatedDecision, decisionEvaluationEvent));
+
+    final var newDecisionEvaluationKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        newDecisionEvaluationKey, DecisionEvaluationIntent.EVALUATED, decisionEvaluationEvent);
+  }
+
+  private void addDecisionToEvaluationEvent(
+      final EvaluatedDecision evaluatedDecision,
+      final DecisionEvaluationRecord decisionEvaluationEvent) {
+
+    final var evaluatedDecisionRecord = decisionEvaluationEvent.evaluatedDecisions().add();
+    evaluatedDecisionRecord
+        .setDecisionId(evaluatedDecision.decisionId())
+        .setDecisionName(evaluatedDecision.decisionName())
+        .setDecisionType(evaluatedDecision.decisionType().name())
+        .setDecisionOutput(evaluatedDecision.decisionOutput());
+
+    evaluatedDecision
+        .evaluatedInputs()
+        .forEach(
+            evaluatedInput -> addInputToEvaluationEvent(evaluatedInput, evaluatedDecisionRecord));
+
+    evaluatedDecision
+        .matchedRules()
+        .forEach(
+            matchedRule -> addMatchedRuleToEvaluationEvent(matchedRule, evaluatedDecisionRecord));
+  }
+
+  private void addInputToEvaluationEvent(
+      final EvaluatedInput evaluatedInput, final EvaluatedDecisionRecord evaluatedDecisionRecord) {
+    evaluatedDecisionRecord
+        .evaluatedInputs()
+        .add()
+        .setInputId(evaluatedInput.inputId())
+        .setInputName(evaluatedInput.inputName())
+        .setInputValue(evaluatedInput.inputValue());
+  }
+
+  private void addMatchedRuleToEvaluationEvent(
+      final MatchedRule matchedRule, final EvaluatedDecisionRecord evaluatedDecisionRecord) {
+
+    final var matchedRuleRecord = evaluatedDecisionRecord.matchedRules().add();
+    matchedRuleRecord.setRuleId(matchedRule.ruleId()).setRuleIndex(matchedRule.ruleIndex());
+
+    matchedRule
+        .evaluatedOutputs()
+        .forEach(evaluatedOutput -> addOutputToEvaluationEvent(evaluatedOutput, matchedRuleRecord));
+  }
+
+  private void addOutputToEvaluationEvent(
+      final EvaluatedOutput evaluatedOutput, final MatchedRuleRecord matchedRuleRecord) {
+    matchedRuleRecord
+        .evaluatedOutputs()
+        .add()
+        .setOutputId(evaluatedOutput.outputId())
+        .setOutputName(evaluatedOutput.outputName())
+        .setOutputValue(evaluatedOutput.outputValue());
   }
 }

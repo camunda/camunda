@@ -56,7 +56,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     this.expressionBehavior = expressionBehavior;
     decisionBehavior =
         new BpmnDecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(), zeebeState, eventTriggerBehavior);
+            DecisionEngineFactory.createDecisionEngine(),
+            zeebeState,
+            eventTriggerBehavior,
+            stateWriter,
+            zeebeState.getKeyGenerator());
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
