@@ -7,7 +7,7 @@
 const mockDecisionInstances = {
   decisionInstances: [
     {
-      id: '1',
+      id: '2251799813689541',
       name: 'test decision instance 1',
       version: 1,
       evaluationTime: '2022-02-07T10:01:51.293+0000',
@@ -15,7 +15,7 @@ const mockDecisionInstances = {
       state: 'COMPLETED',
     },
     {
-      id: '2',
+      id: '2251799813689542',
       name: 'test decision instance 2',
       version: 1,
       evaluationTime: '2022-02-07T10:01:51.293+0000',

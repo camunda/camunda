@@ -5,10 +5,13 @@
  */
 
 import styled, {css} from 'styled-components';
-import {BaseBlock, BaseCircle} from 'modules/components/Skeleton';
+import {BaseBlock} from 'modules/components/Skeleton';
 
-const Td = styled.td`
+const TD = styled.td`
   padding: 9px 0 9px 5px;
+`;
+const TR = styled.tr`
+  height: 37px;
 `;
 
 type Props = {
@@ -24,15 +27,4 @@ const Block = styled(BaseBlock)<Props>`
   }}
 `;
 
-const DecisionContainer = styled.div`
-  padding-left: 15px;
-  display: flex;
-`;
-
-const Circle = styled(BaseCircle)`
-  width: 14px;
-  height: 14px;
-  margin-right: 10px;
-`;
-
-export {Td, Block, DecisionContainer, Circle};
+export {TD, TR, Block};

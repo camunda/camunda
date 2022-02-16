@@ -331,6 +331,13 @@ const theme = {
       emptyMessage: {
         color: SEMANTIC_COLORS.grey,
       },
+      decisionsList: {
+        backgroundColor: DARK_COLORS.ui02,
+        borderColor: DARK_COLORS.ui04,
+        header: {
+          backgroundColor: DARK_COLORS.ui03,
+        },
+      },
       list: {
         selectionStatusIndicator: {
           borderColor: DARK_COLORS.ui04,
@@ -1228,6 +1235,13 @@ const theme = {
       },
       emptyMessage: {
         color: LIGHT_COLORS.ui06,
+      },
+      decisionsList: {
+        backgroundColor: LIGHT_COLORS.ui04,
+        borderColor: LIGHT_COLORS.ui05,
+        header: {
+          backgroundColor: LIGHT_COLORS.ui02,
+        },
       },
       list: {
         selectionStatusIndicator: {

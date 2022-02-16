@@ -15,6 +15,7 @@ const CircleBlock = styled(BaseCircle)`
   width: 14px;
   height: 14px;
   margin-right: 6px;
+  margin-left: 11px;
 `;
 
 const DecisionBlock = styled(BaseBlock)`

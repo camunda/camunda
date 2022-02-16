@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as Styled from './styled';
+import {TR, TD, Block} from './styled';
 
 type Column = {
   variant: 'block' | 'custom';
@@ -22,18 +22,16 @@ const TableSkeleton: React.FC<Props> = ({columns}) => {
   return (
     <tbody data-testid="table-skeleton">
       {[...new Array(NUMBER_OF_ROWS)].map((_, index) => (
-        <tr key={index}>
+        <TR key={index}>
           {columns.map(({variant, width, customSkeleton}, index) => {
             return (
-              <Styled.Td key={index}>
+              <TD key={index}>
                 {variant === 'custom' && customSkeleton}
-                {variant === 'block' && (
-                  <Styled.Block width={width ?? '100%'} />
-                )}
-              </Styled.Td>
+                {variant === 'block' && <Block width={width ?? '100%'} />}
+              </TD>
             );
           })}
-        </tr>
+        </TR>
       ))}
     </tbody>
   );

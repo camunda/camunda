@@ -12,20 +12,65 @@ type ContainerProps = {
   overflow: 'auto' | 'hidden';
 };
 const Container = styled.div<ContainerProps>`
-  ${({overflow}) => {
+  ${({theme, overflow}) => {
+    const colors = theme.colors.decisionsList;
+
     return css`
       overflow: ${overflow};
+      border: 1px solid ${colors.borderColor};
+      background-color: ${colors.backgroundColor};
     `;
   }}
 `;
 
-const Name = styled(Table.TD)`
+const Title = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.decisionsList.header;
+
+    return css`
+      background-color: ${colors.backgroundColor};
+      padding: 8px 0 8px 19px;
+      font-size: 16px;
+      font-weight: 600;
+      color: ${theme.colors.text01};
+    `;
+  }}
+`;
+
+const TD = styled(Table.TD)`
+  ${({theme}) => {
+    return css`
+      color: ${theme.colors.text01};
+    `;
+  }}
+`;
+
+const Name = styled(TD)`
   display: flex;
   align-items: center;
 `;
 
 const State = styled(CmIcon)`
-  margin-right: 11px;
+  margin-right: 10px;
+  margin-left: 11px;
 `;
 
-export {Container, Name, State};
+const DecisionColumnHeader = styled.div`
+  margin-left: 14px;
+`;
+
+const TH = styled(Table.TH)`
+  ${({theme}) => {
+    return css`
+      font-weight: 500;
+      white-space: nowrap;
+      color: ${theme.colors.text01};
+    `;
+  }}
+`;
+
+const TR = styled(Table.TR)`
+  line-height: 36px;
+`;
+
+export {Container, Title, Name, State, DecisionColumnHeader, TH, TD, TR};

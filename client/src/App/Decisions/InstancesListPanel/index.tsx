@@ -10,7 +10,17 @@ import {useEffect} from 'react';
 import {Skeleton} from './Skeleton';
 import Table from 'modules/components/Table';
 import {InstancesMessage} from 'modules/components/InstancesMessage';
-import {Container, Name, State} from './styled';
+import {
+  Container,
+  Name,
+  State,
+  Title,
+  DecisionColumnHeader,
+  TH,
+  TD,
+  TR,
+} from './styled';
+import {formatDate} from 'modules/utils/date';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
@@ -26,16 +36,18 @@ const InstancesListPanel: React.FC = observer(() => {
 
   return (
     <Container overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}>
-      <div>Instances</div>
+      <Title>Instances</Title>
       <Table>
         <Table.THead>
-          <Table.TR>
-            <Table.TH>Decision</Table.TH>
-            <Table.TH>Decision Instance Id</Table.TH>
-            <Table.TH>Version</Table.TH>
-            <Table.TH>Evaluation Time</Table.TH>
-            <Table.TH>Process Instance Id</Table.TH>
-          </Table.TR>
+          <TR>
+            <TH>
+              <DecisionColumnHeader>Decision</DecisionColumnHeader>
+            </TH>
+            <TH>Decision Instance Id</TH>
+            <TH>Version</TH>
+            <TH>Evaluation Time</TH>
+            <TH>Process Instance Id</TH>
+          </TR>
         </Table.THead>
         {shouldDisplaySkeleton && <Skeleton />}
         {status === 'error' && <InstancesMessage type="error" />}
@@ -43,7 +55,7 @@ const InstancesListPanel: React.FC = observer(() => {
         <Table.TBody>
           {decisionInstances.map((instance) => {
             return (
-              <Table.TR key={instance.id}>
+              <TR key={instance.id}>
                 <Name>
                   {instance.state === 'COMPLETED' && (
                     <State
@@ -61,11 +73,11 @@ const InstancesListPanel: React.FC = observer(() => {
                   )}
                   {instance.name}
                 </Name>
-                <Table.TD>{instance.id}</Table.TD>
-                <Table.TD>{instance.version}</Table.TD>
-                <Table.TD>{instance.evaluationTime}</Table.TD>
-                <Table.TD>{instance.processInstanceId}</Table.TD>
-              </Table.TR>
+                <TD>{instance.id}</TD>
+                <TD>{instance.version}</TD>
+                <TD>{formatDate(instance.evaluationTime)}</TD>
+                <TD>{instance.processInstanceId}</TD>
+              </TR>
             );
           })}
         </Table.TBody>
