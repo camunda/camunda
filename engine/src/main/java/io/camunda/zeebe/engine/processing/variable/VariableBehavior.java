@@ -61,6 +61,7 @@ public final class VariableBehavior {
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -70,7 +71,8 @@ public final class VariableBehavior {
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setBpmnProcessId(bpmnProcessId);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       setLocalVariable(variableRecord);
@@ -102,6 +104,7 @@ public final class VariableBehavior {
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -113,7 +116,8 @@ public final class VariableBehavior {
 
     variableRecord
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setBpmnProcessId(bpmnProcessId);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
@@ -161,6 +165,7 @@ public final class VariableBehavior {
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
       final DirectBuffer name,
       final DirectBuffer value,
       final int valueOffset,
@@ -170,6 +175,7 @@ public final class VariableBehavior {
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
+        .setBpmnProcessId(bpmnProcessId)
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 
