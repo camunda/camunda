@@ -45,10 +45,22 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return MsgPackConverter.convertToJson(valueProp.getValue());
   }
 
+  @Override
   public long getScopeKey() {
     return scopeKeyProp.getValue();
   }
 
+  public VariableRecord setScopeKey(final long scopeKey) {
+    scopeKeyProp.setValue(scopeKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
   }
@@ -58,8 +70,18 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
-  public VariableRecord setScopeKey(final long scopeKey) {
-    scopeKeyProp.setValue(scopeKey);
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public VariableRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public VariableRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
@@ -68,13 +90,13 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
-  public VariableRecord setValue(final DirectBuffer value, final int offset, final int length) {
-    valueProp.setValue(value, offset, length);
+  public VariableRecord setName(final DirectBuffer name) {
+    nameProp.setValue(name);
     return this;
   }
 
-  public VariableRecord setName(final DirectBuffer name) {
-    nameProp.setValue(name);
+  public VariableRecord setValue(final DirectBuffer value, final int offset, final int length) {
+    valueProp.setValue(value, offset, length);
     return this;
   }
 
@@ -88,27 +110,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return valueProp.getValue();
   }
 
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public VariableRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
-  }
-
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public VariableRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
   }
 }
