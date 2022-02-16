@@ -66,6 +66,36 @@ public class BusinessRuleTaskIncidentTest {
   // ----- CalledDecision related tests
 
   @Test
+  public void shouldCreateIncidentIfDecisionNotDeployed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b -> b.zeebeCalledDecisionId("unknown_decision_id").zeebeResultVariable("result")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision 'unknown_decision_id', \
+            but no decision found for id 'unknown_decision_id'\
+            """);
+  }
+
+  @Test
   public void shouldCreateIncidentIfDecisionEvaluationFailed() {
     // given
     ENGINE
