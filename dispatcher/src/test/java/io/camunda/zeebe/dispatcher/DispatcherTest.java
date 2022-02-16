@@ -134,6 +134,34 @@ public final class DispatcherTest {
   }
 
   @Test
+  public void canClaimFragmentBatch() {
+    // given
+    final int fragmentCount = 2;
+    final int batchLength = dispatcher.getMaxFragmentLength() / 2;
+
+    // when
+    final var canClaimFragmentBatch = dispatcher.canClaimFragmentBatch(fragmentCount, batchLength);
+
+    // then
+    assertThat(canClaimFragmentBatch).isTrue();
+  }
+
+  @Test
+  public void cannotClaimFragmentBatch() {
+    // given - a fragment of max length, unframed
+    final int fragmentCount = 1;
+    final int batchLength = dispatcher.getMaxFragmentLength();
+
+    // when
+    final var canClaimFragmentBatch = dispatcher.canClaimFragmentBatch(fragmentCount, batchLength);
+
+    // then
+    assertThat(canClaimFragmentBatch)
+        .as("cannot claim when the unframed, unaligned batch is the max fragment length")
+        .isFalse();
+  }
+
+  @Test
   public void shouldClaimFragment() {
     // given
     // position is 0,0
