@@ -97,7 +97,7 @@ public class OutputMappingIncidentTest {
                         .businessRuleTask(
                             "businessRuleTaskId",
                             b ->
-                                b.zeebeCalledDecisionId("jedi-or-sith")
+                                b.zeebeCalledDecisionId("jedi_or_sith")
                                     .zeebeResultVariable("result")
                                     .zeebeInputExpression("\"blue\"", "lightsaberColor")
                                     .zeebeOutputExpression("foo", "bar"))

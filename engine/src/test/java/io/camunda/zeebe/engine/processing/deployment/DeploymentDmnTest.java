@@ -185,7 +185,7 @@ public final class DeploymentDmnTest {
         .hasSize(2)
         .extracting(Record::getValue)
         .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getDecisionName)
-        .contains(tuple("jedi-or-sith", "Jedi or Sith"), tuple("force-user", "Which force user?"));
+        .contains(tuple("jedi_or_sith", "Jedi or Sith"), tuple("force_user", "Which force user?"));
 
     assertThat(decisionRecords)
         .extracting(Record::getValue)

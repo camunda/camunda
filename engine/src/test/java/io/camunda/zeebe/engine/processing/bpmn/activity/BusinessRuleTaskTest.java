@@ -58,7 +58,7 @@ public final class BusinessRuleTaskTest {
         .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
-                t -> t.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable(RESULT_VARIABLE)))
+                t -> t.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable(RESULT_VARIABLE)))
         .deploy();
 
     // when
@@ -104,7 +104,7 @@ public final class BusinessRuleTaskTest {
         .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
-                t -> t.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable(RESULT_VARIABLE)))
+                t -> t.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable(RESULT_VARIABLE)))
         .deploy();
 
     // when
@@ -135,7 +135,7 @@ public final class BusinessRuleTaskTest {
         .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
-                t -> t.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable(RESULT_VARIABLE)))
+                t -> t.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable(RESULT_VARIABLE)))
         .deploy();
 
     // when
@@ -166,7 +166,7 @@ public final class BusinessRuleTaskTest {
         .withXmlResource(
             processWithBusinessRuleTask(
                 t ->
-                    t.zeebeCalledDecisionId("jedi-or-sith")
+                    t.zeebeCalledDecisionId("jedi_or_sith")
                         .zeebeResultVariable(RESULT_VARIABLE)
                         .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
         .deploy();
