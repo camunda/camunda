@@ -46,6 +46,7 @@ spec:
         command: ["sysctl", "-w", "vm.overcommit_memory=2"]
         securityContext:
           privileged: true
+      serviceAccountName: ci-optimize-agent-camunda-cloud
       containers:
       - name: gcloud
         image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
