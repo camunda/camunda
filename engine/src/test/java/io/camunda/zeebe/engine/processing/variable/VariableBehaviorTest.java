@@ -9,56 +9,45 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
+import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValueAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ZeebeStateExtension.class)
 final class VariableBehaviorTest {
 
   private final RecordingTypedEventWriter eventWriter = new RecordingTypedEventWriter();
 
-  private ZeebeDb<ZbColumnFamilies> db;
+  @SuppressWarnings("unused") // injected by the extension
+  private MutableZeebeState zeebeState;
+
   private MutableVariableState state;
   private VariableBehavior behavior;
 
   @BeforeEach
-  void beforeEach(final @TempDir File directory) {
-    db = DefaultZeebeDbFactory.defaultFactory().createDb(directory);
-    final MutableZeebeState zeebeState = new ZeebeDbState(db, db.createContext());
-    final StateWriter stateWriter =
+  void beforeEach() {
+    final var stateWriter =
         new EventApplyingStateWriter(eventWriter, new EventAppliers(zeebeState));
 
     state = zeebeState.getVariableState();
     behavior = new VariableBehavior(state, stateWriter, zeebeState.getKeyGenerator());
-  }
-
-  @AfterEach
-  void afterEach() {
-    CloseHelper.close(db);
   }
 
   @Test
