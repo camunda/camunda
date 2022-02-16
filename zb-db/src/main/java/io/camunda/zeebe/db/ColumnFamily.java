@@ -116,9 +116,25 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   /**
    * Deletes the key-value pair with the given key from the column family.
    *
+   * @deprecated Prefer the {@link ColumnFamily#deleteExisting} which checks that the key does exist
+   *     or the unchecked {@link ColumnFamily#deleteIfExists}.
    * @param key the key which identifies the pair
    */
+  @Deprecated(forRemoval = true)
   void delete(KeyType key);
+
+  /**
+   * Deletes the key-value pair with the given key if it exists in the column family
+   *
+   * @throws IllegalStateException if the key does not exist
+   */
+  void deleteExisting(KeyType key);
+
+  /**
+   * Deletes the key-value pair if the key does exist in the column family. No-op if the key does
+   * not exist.
+   */
+  void deleteIfExists(KeyType key);
 
   /**
    * Checks for key existence in the column family.

@@ -184,6 +184,24 @@ class TransactionalColumnFamily<
 
   @Override
   public void delete(final KeyType key) {
+    deleteIfExists(key);
+  }
+
+  @Override
+  public void deleteExisting(final KeyType key) {
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          assertExists(transaction);
+          transaction.delete(
+              transactionDb.getDefaultNativeHandle(),
+              columnFamilyContext.getKeyBufferArray(),
+              columnFamilyContext.getKeyLength());
+        });
+  }
+
+  @Override
+  public void deleteIfExists(final KeyType key) {
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
