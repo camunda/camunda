@@ -110,8 +110,8 @@ public final class TypedEventImpl implements TypedRecord {
 
   @Override
   @JsonIgnore
-  public long getLength() {
-    return (long) metadata.getLength() + value.getLength();
+  public int getLength() {
+    return metadata.getLength() + value.getLength();
   }
 
   @Override
