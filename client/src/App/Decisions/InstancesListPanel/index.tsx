@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {Skeleton} from './Skeleton';
 import Table from 'modules/components/Table';
 import {InstancesMessage} from 'modules/components/InstancesMessage';
-import {Name, State} from './styled';
+import {Container, Name, State} from './styled';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
@@ -22,8 +22,10 @@ const InstancesListPanel: React.FC = observer(() => {
     decisionInstancesStore.fetchInstances();
   }, []);
 
+  const shouldDisplaySkeleton = ['initial', 'first-fetch'].includes(status);
+
   return (
-    <div>
+    <Container overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}>
       <div>Instances</div>
       <Table>
         <Table.THead>
@@ -35,7 +37,7 @@ const InstancesListPanel: React.FC = observer(() => {
             <Table.TH>Process Instance Id</Table.TH>
           </Table.TR>
         </Table.THead>
-        {['initial', 'first-fetch'].includes(status) && <Skeleton />}
+        {shouldDisplaySkeleton && <Skeleton />}
         {status === 'error' && <InstancesMessage type="error" />}
         {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
         <Table.TBody>
@@ -68,7 +70,7 @@ const InstancesListPanel: React.FC = observer(() => {
           })}
         </Table.TBody>
       </Table>
-    </div>
+    </Container>
   );
 });
 

@@ -16,6 +16,7 @@ const Container = styled.div`
 const RightContainer = styled.div`
   display: grid;
   grid-template-rows: 1fr 1fr;
+  overflow-y: hidden;
 `;
 
 export {Container, RightContainer};

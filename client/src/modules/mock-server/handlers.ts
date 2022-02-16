@@ -27,7 +27,7 @@ const handlers: RequestHandler[] = [
   }),
 
   rest.post('/api/decision-instances', (_, res, ctx) => {
-    return res(ctx.json(mockDecisionInstances));
+    return res(ctx.delay(1000), ctx.json(mockDecisionInstances));
   }),
 ];
 

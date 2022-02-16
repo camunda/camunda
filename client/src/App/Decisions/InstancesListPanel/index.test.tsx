@@ -31,9 +31,9 @@ describe('Decisions List', () => {
 
     render(<InstancesListPanel />, {wrapper: ThemeProvider});
 
-    expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
   });
 
   it('should render error message', async () => {
@@ -45,7 +45,7 @@ describe('Decisions List', () => {
 
     render(<InstancesListPanel />, {wrapper: ThemeProvider});
 
-    await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
       screen.getByText('Instances could not be fetched')
@@ -61,7 +61,7 @@ describe('Decisions List', () => {
 
     render(<InstancesListPanel />, {wrapper: ThemeProvider});
 
-    await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
       screen.getByText('There are no Instances matching this filter set')
@@ -77,7 +77,7 @@ describe('Decisions List', () => {
 
     render(<InstancesListPanel />, {wrapper: ThemeProvider});
 
-    await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
       screen.getByRole('columnheader', {
