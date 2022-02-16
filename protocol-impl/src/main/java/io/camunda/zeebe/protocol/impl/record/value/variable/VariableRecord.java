@@ -24,13 +24,15 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final LongProperty scopeKeyProp = new LongProperty("scopeKey");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
   public VariableRecord() {
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp);
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(bpmnProcessIdProp);
   }
 
   @Override
@@ -92,6 +94,21 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public VariableRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 }

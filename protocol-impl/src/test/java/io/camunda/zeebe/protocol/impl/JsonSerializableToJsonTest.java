@@ -643,15 +643,17 @@ public final class JsonSerializableToJsonTest {
               final long scopeKey = 3;
               final long processInstanceKey = 2;
               final long processDefinitionKey = 4;
+              final String bpmnProcessId = "process";
 
               return new VariableRecord()
                   .setName(wrapString(name))
                   .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
                   .setScopeKey(scopeKey)
                   .setProcessInstanceKey(processInstanceKey)
-                  .setProcessDefinitionKey(processDefinitionKey);
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId));
             },
-        "{'scopeKey':3,'processInstanceKey':2,'processDefinitionKey':4,'name':'x','value':'1'}"
+        "{'scopeKey':3,'processInstanceKey':2,'processDefinitionKey':4,'bpmnProcessId':'process','name':'x','value':'1'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

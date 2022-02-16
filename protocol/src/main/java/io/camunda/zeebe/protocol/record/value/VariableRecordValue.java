@@ -39,4 +39,7 @@ public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated
 
   /** @return the key of the process the variable belongs to */
   long getProcessDefinitionKey();
+
+  /** @return the BPMN process id this process instance belongs to. */
+  String getBpmnProcessId();
 }
