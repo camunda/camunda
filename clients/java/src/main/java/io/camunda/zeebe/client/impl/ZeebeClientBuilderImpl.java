@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
+import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
 
@@ -41,6 +42,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
+  public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
@@ -57,6 +59,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
+  private String overrideAuthority;
 
   @Override
   public String getGatewayAddress() {
@@ -123,8 +126,14 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     return interceptors;
   }
 
+  @Override
   public JsonMapper getJsonMapper() {
     return jsonMapper;
+  }
+
+  @Override
+  public String getOverrideAuthority() {
+    return overrideAuthority;
   }
 
   @Override
@@ -182,6 +191,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
     if (properties.containsKey(KEEP_ALIVE)) {
       keepAlive(properties.getProperty(KEEP_ALIVE));
+    }
+    if (properties.containsKey(OVERRIDE_AUTHORITY)) {
+      overrideAuthority(properties.getProperty(OVERRIDE_AUTHORITY));
     }
     return this;
   }
@@ -275,6 +287,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public ZeebeClientBuilder overrideAuthority(final String authority) {
+    overrideAuthority = authority;
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     applyOverrides();
     applyDefaults();
@@ -298,6 +316,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (Environment.system().isDefined(KEEP_ALIVE_VAR)) {
       keepAlive(Environment.system().get(KEEP_ALIVE_VAR));
     }
+
+    if (Environment.system().isDefined(OVERRIDE_AUTHORITY_VAR)) {
+      overrideAuthority(Environment.system().get(OVERRIDE_AUTHORITY_VAR));
+    }
   }
 
   @Override
@@ -312,6 +334,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
+    appendProperty(sb, "overrideAuthority", overrideAuthority);
 
     return sb.toString();
   }
