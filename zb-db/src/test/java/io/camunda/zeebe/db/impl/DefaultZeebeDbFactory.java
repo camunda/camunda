@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 
 public final class DefaultZeebeDbFactory {
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
-    return ZeebeRocksDbFactory.newFactory();
+    // enable consistency checks for tests
+    final var consistencyChecks = new ConsistencyChecksSettings(true);
+    return ZeebeRocksDbFactory.newFactory(new RocksDbConfiguration(), consistencyChecks);
   }
 }

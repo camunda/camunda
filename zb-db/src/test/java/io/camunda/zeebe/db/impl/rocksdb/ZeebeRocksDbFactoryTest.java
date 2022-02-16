@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
@@ -75,7 +76,8 @@ public final class ZeebeRocksDbFactoryTest {
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             ZeebeRocksDbFactory.newFactory(
-                new RocksDbConfiguration().setColumnFamilyOptions(customProperties));
+                new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
+                new ConsistencyChecksSettings());
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -108,7 +110,8 @@ public final class ZeebeRocksDbFactoryTest {
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             ZeebeRocksDbFactory.newFactory(
-                new RocksDbConfiguration().setColumnFamilyOptions(customProperties));
+                new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
+                new ConsistencyChecksSettings());
 
     // expect
     assertThatThrownBy(

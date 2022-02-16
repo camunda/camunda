@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import java.io.File;
@@ -43,19 +44,25 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private final RocksDbConfiguration rocksDbConfiguration;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
 
-  private ZeebeRocksDbFactory(final RocksDbConfiguration rocksDbConfiguration) {
+  private ZeebeRocksDbFactory(
+      final RocksDbConfiguration rocksDbConfiguration,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
+    this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> newFactory() {
-    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration());
+    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration(), new ConsistencyChecksSettings());
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> newFactory(final RocksDbConfiguration rocksDbConfiguration) {
-    return new ZeebeRocksDbFactory<>(rocksDbConfiguration);
+      ZeebeDbFactory<ColumnFamilyType> newFactory(
+          final RocksDbConfiguration rocksDbConfiguration,
+          final ConsistencyChecksSettings consistencyChecksSettings) {
+    return new ZeebeRocksDbFactory<>(rocksDbConfiguration, consistencyChecksSettings);
   }
 
   @Override
@@ -74,7 +81,11 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
       db =
           ZeebeTransactionDb.openTransactionalDb(
-              options, pathName.getAbsolutePath(), closeables, rocksDbConfiguration);
+              options,
+              pathName.getAbsolutePath(),
+              closeables,
+              rocksDbConfiguration,
+              consistencyChecksSettings);
 
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);

@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.state;
 
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import java.util.Properties;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -29,20 +29,7 @@ public final class DefaultZeebeDbFactory {
    * @return the created zeebe database factory
    */
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
-    return defaultFactory(new Properties());
-  }
-
-  /**
-   * Returns the default zeebe database factory, which is used in most of the places except for the
-   * exporters.
-   *
-   * @param userProvidedColumnFamilyOptions additional column family options
-   * @return the created zeebe database factory
-   */
-  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
-      final Properties userProvidedColumnFamilyOptions) {
-    return defaultFactory(
-        new RocksDbConfiguration().setColumnFamilyOptions(userProvidedColumnFamilyOptions));
+    return defaultFactory(new RocksDbConfiguration(), new ConsistencyChecksSettings(true));
   }
 
   /**
@@ -54,8 +41,9 @@ public final class DefaultZeebeDbFactory {
    */
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeDbFactory<ColumnFamilyNames> defaultFactory(
-          final RocksDbConfiguration rocksDbConfiguration) {
+          final RocksDbConfiguration rocksDbConfiguration,
+          final ConsistencyChecksSettings consistencyChecksSettings) {
     // one place to replace the zeebe database implementation
-    return ZeebeRocksDbFactory.newFactory(rocksDbConfiguration);
+    return ZeebeRocksDbFactory.newFactory(rocksDbConfiguration, consistencyChecksSettings);
   }
 }

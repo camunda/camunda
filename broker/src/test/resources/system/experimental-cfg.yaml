@@ -9,3 +9,5 @@ zeebe:
         preferSnapshotReplicationThreshold: 500
       queryApi:
         enabled: true
+      consistencyChecks:
+        enablePreconditions: true

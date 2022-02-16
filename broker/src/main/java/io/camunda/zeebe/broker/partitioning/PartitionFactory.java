@@ -183,9 +183,11 @@ final class PartitionFactory {
       final ConcurrencyControl concurrencyControl) {
     final var runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
+    final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
 
     return new StateControllerImpl(
-        DefaultZeebeDbFactory.defaultFactory(databaseCfg.createRocksDbConfiguration()),
+        DefaultZeebeDbFactory.defaultFactory(
+            databaseCfg.createRocksDbConfiguration(), consistencyChecks.getSettings()),
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
