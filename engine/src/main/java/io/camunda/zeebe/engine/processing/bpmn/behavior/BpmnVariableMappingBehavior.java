@@ -55,6 +55,7 @@ public final class BpmnVariableMappingBehavior {
     final long scopeKey = context.getElementInstanceKey();
     final long processDefinitionKey = context.getProcessDefinitionKey();
     final long processInstanceKey = context.getProcessInstanceKey();
+    final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
 
     if (inputMappingExpression.isPresent()) {
@@ -63,7 +64,7 @@ public final class BpmnVariableMappingBehavior {
           .map(
               result -> {
                 variableBehavior.mergeLocalDocument(
-                    scopeKey, processDefinitionKey, processInstanceKey, result);
+                    scopeKey, processDefinitionKey, processInstanceKey, bpmnProcessId, result);
                 return null;
               });
     }
@@ -83,6 +84,7 @@ public final class BpmnVariableMappingBehavior {
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
     final long processInstanceKey = record.getProcessInstanceKey();
+    final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final long scopeKey = getVariableScopeKey(context);
     final Optional<Expression> outputMappingExpression = element.getOutputMappings();
 
@@ -99,7 +101,7 @@ public final class BpmnVariableMappingBehavior {
       // set as local variables
       if (hasVariables) {
         variableBehavior.mergeLocalDocument(
-            elementInstanceKey, processDefinitionKey, processInstanceKey, variables);
+            elementInstanceKey, processDefinitionKey, processInstanceKey, bpmnProcessId, variables);
       }
 
       // apply the output mappings
@@ -108,21 +110,21 @@ public final class BpmnVariableMappingBehavior {
           .map(
               result -> {
                 variableBehavior.mergeDocument(
-                    scopeKey, processDefinitionKey, processInstanceKey, result);
+                    scopeKey, processDefinitionKey, processInstanceKey, bpmnProcessId, result);
                 return null;
               });
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
       variableBehavior.mergeDocument(
-          elementInstanceKey, processDefinitionKey, processInstanceKey, variables);
+          elementInstanceKey, processDefinitionKey, processInstanceKey, bpmnProcessId, variables);
     } else if (isConnectedToEventBasedGateway(element)
         || element.getElementType() == BpmnElementType.BOUNDARY_EVENT
         || element.getElementType() == BpmnElementType.START_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       variableBehavior.mergeDocument(
-          scopeKey, processDefinitionKey, processInstanceKey, localVariables);
+          scopeKey, processDefinitionKey, processInstanceKey, bpmnProcessId, localVariables);
     }
 
     return Either.right(null);

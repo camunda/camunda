@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import org.agrona.DirectBuffer;
 
 public final class UpdateVariableDocumentProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {
@@ -60,13 +61,22 @@ public final class UpdateVariableDocumentProcessor
 
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
+    final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
         variableBehavior.mergeLocalDocument(
-            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
+            scope.getKey(),
+            processDefinitionKey,
+            processInstanceKey,
+            bpmnProcessId,
+            value.getVariablesBuffer());
       } else {
         variableBehavior.mergeDocument(
-            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
+            scope.getKey(),
+            processDefinitionKey,
+            processInstanceKey,
+            bpmnProcessId,
+            value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =
