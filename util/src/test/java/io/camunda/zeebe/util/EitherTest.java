@@ -258,7 +258,11 @@ class EitherTest {
       assertThat(collectedEither)
           .extracting(Either::getLeft)
           .isEqualTo(
-              collection.stream().filter(Either::isLeft).map(Either::getLeft).toList().get(0));
+              collection.stream()
+                  .filter(Either::isLeft)
+                  .map(Either::getLeft)
+                  .collect(Collectors.toList())
+                  .get(0));
     }
   }
 }
