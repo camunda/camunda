@@ -52,14 +52,10 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public final class JsonSerializableToJsonTest {
+final class JsonSerializableToJsonTest {
 
   private static final String VARIABLES_JSON = "{'foo':'bar'}";
   private static final DirectBuffer VARIABLES_MSGPACK =
@@ -77,16 +73,22 @@ public final class JsonSerializableToJsonTest {
     STACK_TRACE = stringWriter.toString();
   }
 
-  @Parameter public String testName;
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("records")
+  void shouldConvertJsonSerializableToJson(
+      @SuppressWarnings("unused") final String testDisplayName,
+      final Supplier<JsonSerializable> actualRecordSupplier,
+      final String expectedJson) {
+    // given
 
-  @Parameter(1)
-  public Supplier<JsonSerializable> actualRecordSupplier;
+    // when
+    final String json = actualRecordSupplier.get().toJson();
 
-  @Parameter(2)
-  public String expectedJson;
+    // then
+    JsonUtil.assertEquality(json, expectedJson);
+  }
 
-  @Parameters(name = "{index}: {0}")
-  public static Object[][] records() {
+  private static Object[][] records() {
     return new Object[][] {
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////// Record /////////////////////////////////////////////
@@ -266,7 +268,7 @@ public final class JsonSerializableToJsonTest {
               record.setProcessInstanceKey(4321);
               return record;
             },
-        errorRecordAsJson(4321, STACK_TRACE)
+        errorRecordAsJson(4321)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// Empty ErrorRecord /////////////////////////////////////
@@ -279,7 +281,7 @@ public final class JsonSerializableToJsonTest {
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               return record;
             },
-        errorRecordAsJson(-1, STACK_TRACE)
+        errorRecordAsJson(-1)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// IncidentRecord /////////////////////////////////////////
@@ -797,23 +799,12 @@ public final class JsonSerializableToJsonTest {
     };
   }
 
-  @Test
-  public void shouldConvertJsonSerializableToJson() {
-    // given
-
-    // when
-    final String json = actualRecordSupplier.get().toJson();
-
-    // then
-    JsonUtil.assertEquality(json, expectedJson);
-  }
-
-  private static String errorRecordAsJson(final long processInstanceKey, final String stacktrace) {
+  private static String errorRecordAsJson(final long processInstanceKey) {
     final Map<String, Object> params = new HashMap<>();
     params.put("exceptionMessage", "test");
     params.put("processInstanceKey", processInstanceKey);
     params.put("errorEventPosition", 123);
-    params.put("stacktrace", stacktrace);
+    params.put("stacktrace", STACK_TRACE);
 
     try {
       return new ObjectMapper().writeValueAsString(params);
