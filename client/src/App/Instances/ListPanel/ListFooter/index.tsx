@@ -24,14 +24,12 @@ const ListFooter: React.FC<Props> = observer(({isCollapsed}) => {
     <Styled.Footer>
       {!isCollapsed && !instancesStore.areProcessInstancesEmpty && (
         <Styled.OperationButtonContainer>
-          {/* @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'. */}
           {selectedCount > 0 && (
             <CreateOperationDropdown
               label={`Apply Operation on ${pluralSuffix(
                 selectedCount,
                 'Instance'
               )}...`}
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'null' is not assignable to type 'number'.
               selectedCount={selectedCount}
             />
           )}

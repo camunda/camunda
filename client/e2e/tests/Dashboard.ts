@@ -73,10 +73,8 @@ test('Navigation to Instances View', async (t) => {
   });
 
   await t
-    .expect(
-      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
-    )
-    .eql(activeInstancesCount);
+    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .eql(`${activeInstancesCount} results found`);
 
   await t.click(
     screen
@@ -94,10 +92,8 @@ test('Navigation to Instances View', async (t) => {
   });
 
   await t
-    .expect(
-      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
-    )
-    .eql(instancesWithIncidentCount);
+    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .eql(`${instancesWithIncidentCount} results found`);
 });
 
 test('Select instances by process', async (t) => {
@@ -129,10 +125,8 @@ test('Select instances by process', async (t) => {
   });
 
   await t
-    .expect(
-      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
-    )
-    .eql(totalInstanceCount.toString());
+    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .eql(`${totalInstanceCount} results found`);
 });
 
 test('Select instances by error message', async (t) => {
@@ -157,10 +151,8 @@ test('Select instances by error message', async (t) => {
   });
 
   await t
-    .expect(
-      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
-    )
-    .eql(incidentCount);
+    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .eql(`${incidentCount} results found`);
 
   await t
     .expect(InstancesPage.Filters.errorMessage.value.value)
@@ -200,10 +192,8 @@ test('Select instances by error message (expanded)', async (t) => {
   });
 
   await t
-    .expect(
-      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
-    )
-    .eql(incidentCount);
+    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .eql(`${incidentCount} results found`);
 
   await t
     .expect(InstancesPage.Filters.errorMessage.value.value)

@@ -5,7 +5,6 @@
  */
 
 import {instancesStore} from './instances';
-import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -68,42 +67,7 @@ describe('stores/instances', () => {
     );
   });
   afterEach(() => {
-    clearStateLocally();
     instancesStore.reset();
-  });
-
-  describe('filtered instances count', () => {
-    it('should return null by default', () => {
-      expect(instancesStore.state.filteredInstancesCount).toBe(null);
-    });
-
-    // This test is skipped, because setting the local storage inside
-    // the test has no effect. See https://jira.camunda.com/browse/OPE-1004
-    it.skip('should return from local storage', () => {
-      instancesStore.reset();
-      storeStateLocally({filteredInstancesCount: 312});
-
-      expect(instancesStore.state.filteredInstancesCount).toBe(312);
-    });
-
-    it('should return store state', () => {
-      instancesStore.setInstances({
-        filteredInstancesCount: 654,
-        processInstances: [],
-      });
-
-      expect(instancesStore.state.filteredInstancesCount).toBe(654);
-    });
-
-    it('should return store state when both is set', () => {
-      storeStateLocally({filteredInstancesCount: 101});
-      instancesStore.setInstances({
-        filteredInstancesCount: 202,
-        processInstances: [],
-      });
-
-      expect(instancesStore.state.filteredInstancesCount).toBe(202);
-    });
   });
 
   it('should fetch initial instances', async () => {
@@ -318,7 +282,7 @@ describe('stores/instances', () => {
     );
   });
 
-  it('should reset store (keep the filteredInstancesCount value)', async () => {
+  it('should reset store', async () => {
     mockServer.use(
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(ctx.json(mockProcessInstances))
@@ -333,10 +297,10 @@ describe('stores/instances', () => {
     expect(instancesStore.state.processInstances).toEqual(
       mockProcessInstances.processInstances
     );
-    const filteredInstancesCount = instancesStore.state.filteredInstancesCount;
+
     instancesStore.reset();
     expect(instancesStore.state).toEqual({
-      filteredInstancesCount: filteredInstancesCount,
+      filteredInstancesCount: 0,
       processInstances: [],
       status: 'initial',
       latestFetch: null,

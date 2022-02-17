@@ -221,11 +221,6 @@ describe('Operations', () => {
 
       instancesStore.reset();
 
-      // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
-      await waitFor(() =>
-        expect(instancesStore.state.filteredInstancesCount).toBe(2)
-      );
-
       jest.clearAllTimers();
       jest.useRealTimers();
     });

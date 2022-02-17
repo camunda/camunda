@@ -8,12 +8,31 @@ import {EXPAND_STATE} from 'modules/constants';
 import SplitPane from 'modules/components/SplitPane';
 import List from './List';
 import ListFooter from './ListFooter';
-import {PaneBody} from './styled';
+import {PaneBody, Title, InstancesCount} from './styled';
+import {instancesStore} from 'modules/stores/instances';
+import {Observer} from 'mobx-react';
 
-const ListPanel = (props: any) => {
+type Props = {
+  expandState?: keyof typeof EXPAND_STATE;
+};
+
+const ListPanel: React.FC<Props> = (props) => {
   return (
     <SplitPane.Pane {...props} hasShiftableControls>
-      <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
+      <SplitPane.Pane.Header>
+        <Title>Instances</Title>
+        <Observer>
+          {() => (
+            <>
+              {instancesStore.state.filteredInstancesCount > 0 && (
+                <InstancesCount data-testid="filtered-instances-count">
+                  {instancesStore.state.filteredInstancesCount} results found
+                </InstancesCount>
+              )}
+            </>
+          )}
+        </Observer>
+      </SplitPane.Pane.Header>
 
       <PaneBody>
         <List expandState={props.expandState} />

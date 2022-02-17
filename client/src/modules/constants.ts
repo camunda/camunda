@@ -104,13 +104,6 @@ export const EXPAND_STATE = {
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 
-export const BADGE_TYPE = {
-  RUNNING_INSTANCES: 'RUNNING_INSTANCES',
-  FILTERS: 'FILTERS',
-  INCIDENTS: 'INCIDENTS',
-  SELECTIONS: 'SELECTIONS',
-} as const;
-
 export const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',
   DASHBOARD: 'Operate: Dashboard',

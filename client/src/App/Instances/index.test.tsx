@@ -95,7 +95,7 @@ describe('Instances', () => {
     expect(document.title).toBe('Operate: Instances');
   });
 
-  it('should render page components', () => {
+  it('should render page components', async () => {
     render(<Instances />, {
       wrapper: getWrapper(
         createMemoryHistory({
@@ -120,7 +120,7 @@ describe('Instances', () => {
 
     // instances table
     expect(
-      screen.getByRole('heading', {name: 'Instances'})
+      await screen.findByRole('heading', {name: /instances 912 results found/i})
     ).toBeInTheDocument();
 
     // operations

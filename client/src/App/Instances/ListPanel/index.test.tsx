@@ -134,7 +134,7 @@ describe('ListPanel', () => {
           res.once(
             ctx.json({
               processInstances: [INSTANCE, ACTIVE_INSTANCE],
-              totalCount: 0,
+              totalCount: 2,
             })
           )
         )
@@ -153,6 +153,7 @@ describe('ListPanel', () => {
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
       ).toBeInTheDocument();
+      expect(screen.getByText('2 results found')).toBeInTheDocument();
     });
 
     it('should render Footer when list is empty', async () => {
@@ -173,6 +174,7 @@ describe('ListPanel', () => {
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
       ).toBeInTheDocument();
+      expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
     });
 
     it('should render for restricted users', async () => {
@@ -427,6 +429,7 @@ describe('ListPanel', () => {
     expect(
       screen.queryByText('There are no Instances matching this filter set')
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 
   describe('getting started experience', () => {

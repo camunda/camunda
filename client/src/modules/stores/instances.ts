@@ -13,7 +13,6 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 import {
   fetchProcessInstances,
   fetchProcessInstancesByIds,
@@ -29,7 +28,7 @@ type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
-  filteredInstancesCount: null | number;
+  filteredInstancesCount: number;
   processInstances: ProcessInstanceEntity[];
   latestFetch: {
     fetchType: FetchType;
@@ -50,7 +49,7 @@ const MAX_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
-  filteredInstancesCount: null,
+  filteredInstancesCount: 0,
   processInstances: [],
   latestFetch: null,
   status: 'initial',
@@ -90,9 +89,6 @@ class Instances extends NetworkReconnectionHandler {
       instanceIdsWithActiveOperations: computed,
       setLatestFetchDetails: action,
     });
-
-    this.state.filteredInstancesCount =
-      getStateLocally().filteredInstancesCount || null;
 
     this.pollingAbortController = new AbortController();
   }
@@ -313,6 +309,7 @@ class Instances extends NetworkReconnectionHandler {
     } else {
       this.state.status = 'fetching';
     }
+    this.state.filteredInstancesCount = 0;
   };
 
   startFetchingNext = () => {
@@ -383,8 +380,6 @@ class Instances extends NetworkReconnectionHandler {
   }) => {
     this.state.processInstances = processInstances;
     this.state.filteredInstancesCount = filteredInstancesCount;
-
-    storeStateLocally({filteredInstancesCount});
   };
 
   get visibleIdsInListPanel() {
@@ -514,7 +509,6 @@ class Instances extends NetworkReconnectionHandler {
     super.reset();
     this.state = {
       ...DEFAULT_STATE,
-      filteredInstancesCount: this.state.filteredInstancesCount,
     };
     this.stopPollingActiveInstances();
     this.fetchInstancesDisposer?.();

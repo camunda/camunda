@@ -343,6 +343,9 @@ const theme = {
           borderColor: DARK_COLORS.ui04,
         },
         header: {
+          title: {
+            borderColor: DARK_COLORS.ui04,
+          },
           th: {
             borderColor: DARK_COLORS.ui04,
           },
@@ -1253,6 +1256,9 @@ const theme = {
           borderColor: LIGHT_COLORS.ui05,
         },
         header: {
+          title: {
+            borderColor: LIGHT_COLORS.ui05,
+          },
           th: {
             borderColor: LIGHT_COLORS.ui05,
           },
