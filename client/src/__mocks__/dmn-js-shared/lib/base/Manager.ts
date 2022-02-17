@@ -17,9 +17,17 @@ class Manager {
     this.container = container;
   }
   destroy = jest.fn();
-  getViews = jest.fn(() => [{id: 'invoiceClassification'}]);
-  open = jest.fn(() => {
-    this.container.innerHTML = 'Decision View mock';
+  getViews = jest.fn(() => [
+    {id: 'invoiceClassification', type: 'decisionTable'},
+    {id: 'calc-key-figures', type: 'literalExpression'},
+  ]);
+  open = jest.fn((view: View) => {
+    if (view.type === 'decisionTable') {
+      this.container.innerHTML = 'DecisionTable view mock';
+    }
+    if (view.type === 'literalExpression') {
+      this.container.innerHTML = 'LiteralExpression view mock';
+    }
   });
   importXML = jest.fn(() => {
     this.container.innerHTML = 'Default View mock';

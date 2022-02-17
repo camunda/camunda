@@ -17,7 +17,7 @@ class DecisionViewer {
     decisionViewId: string
   ) => {
     if (this.#viewer === null) {
-      this.#viewer = new Viewer('decisionTable', {container});
+      this.#viewer = new Viewer('decision', {container});
     }
 
     if (this.#xml !== xml) {

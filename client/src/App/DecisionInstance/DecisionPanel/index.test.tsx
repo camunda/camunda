@@ -6,8 +6,9 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
+import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -26,7 +27,6 @@ describe('<DecisionPanel />', () => {
     );
 
     decisionXmlStore.init();
-    decisionInstanceStore.fetchDecisionInstance('337423841237089');
   });
 
   afterEach(() => {
@@ -35,10 +35,34 @@ describe('<DecisionPanel />', () => {
   });
 
   it('should render decision table', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(invoiceClassification))
+      )
+    );
+
+    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+
     render(<DecisionPanel />, {wrapper: ThemeProvider});
 
-    await waitFor(() =>
-      expect(screen.getByText('Decision View mock')).toBeInTheDocument()
+    expect(
+      await screen.findByText('DecisionTable view mock')
+    ).toBeInTheDocument();
+  });
+
+  it('should render literal expression', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockLiteralExpression))
+      )
     );
+
+    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+
+    render(<DecisionPanel />, {wrapper: ThemeProvider});
+
+    expect(
+      await screen.findByText('LiteralExpression view mock')
+    ).toBeInTheDocument();
   });
 });

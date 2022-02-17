@@ -10,6 +10,7 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
+import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 
@@ -19,22 +20,21 @@ const handlers: RequestHandler[] = [
 
     if (decisionInstanceId === '0') {
       return res(ctx.json(assignApproverGroup));
-    } else {
-      return res(ctx.json(invoiceClassification));
     }
+    if (decisionInstanceId === '2') {
+      return res(ctx.json(mockLiteralExpression));
+    }
+    return res(ctx.json(invoiceClassification));
   }),
-
   rest.get(
     '/api/decision-instances/:decisionInstanceId/drd-data',
     (_, res, ctx) => {
       return res(ctx.json(mockDrdData));
     }
   ),
-
   rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) => {
     return res(ctx.body(mockDmnXml));
   }),
-
   rest.post('/api/decision-instances', (_, res, ctx) => {
     return res(ctx.delay(1000), ctx.json(mockDecisionInstances));
   }),

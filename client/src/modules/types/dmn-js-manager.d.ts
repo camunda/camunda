@@ -18,6 +18,7 @@ type DiagramJSViewer = {
 
 type View = {
   id: string;
+  type: 'literalExpression' | 'decisionTable';
 };
 
 declare module 'dmn-js-shared/lib/base/Manager' {

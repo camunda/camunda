@@ -12,6 +12,8 @@ import {containsDi} from 'dmn-js-shared/lib/util/DiUtil';
 // @ts-expect-error
 import DecisionTableViewer from 'dmn-js-decision-table/lib/Viewer';
 // @ts-expect-error
+import LiteralExpressionViewer from 'dmn-js-literal-expression/lib/Viewer';
+// @ts-expect-error
 import DrdViewer from 'dmn-js-drd/lib/NavigatedViewer';
 
 type Options = {
@@ -23,7 +25,7 @@ type Element = {
   decisionLogic?: {$type: string};
 };
 
-type Provider = 'decisionTable' | 'drd';
+type Provider = 'decision' | 'drd';
 
 class Viewer extends Manager {
   options: Options = {};
@@ -35,7 +37,7 @@ class Viewer extends Manager {
   }
 
   _getViewProviders() {
-    if (this.provider === 'decisionTable') {
+    if (this.provider === 'decision') {
       return [
         {
           id: 'decisionTable',
@@ -44,6 +46,16 @@ class Viewer extends Manager {
             return (
               is(element, 'dmn:Decision') &&
               is(element.decisionLogic, 'dmn:DecisionTable')
+            );
+          },
+        },
+        {
+          id: 'literalExpression',
+          constructor: LiteralExpressionViewer,
+          opens(element: Element) {
+            return (
+              is(element, 'dmn:Decision') &&
+              is(element.decisionLogic, 'dmn:LiteralExpression')
             );
           },
         },

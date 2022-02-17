@@ -52,6 +52,7 @@ class Drd extends NetworkReconnectionHandler {
     this.disposer = reaction(
       () => decisionInstanceStore.state.decisionInstance?.decisionDefinitionId,
       (decisionDefinitionId) => {
+        console.log(decisionDefinitionId);
         if (decisionDefinitionId !== undefined) {
           this.fetchDrdData(decisionInstanceStore.state.decisionInstanceId);
         }

@@ -10,7 +10,7 @@ import {observer} from 'mobx-react';
 import {DecisionViewer} from 'modules/dmn-js/DecisionViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
-import {Container} from './styled';
+import {Container, Decision} from './styled';
 
 const DecisionPanel: React.FC = observer(() => {
   const decisionViewer = useRef<DecisionViewer | null>(null);
@@ -40,7 +40,11 @@ const DecisionPanel: React.FC = observer(() => {
     };
   }, []);
 
-  return <Container data-testid="decision-panel" ref={decisionViewerRef} />;
+  return (
+    <Container data-testid="decision-panel">
+      <Decision ref={decisionViewerRef} />
+    </Container>
+  );
 });
 
 export {DecisionPanel};

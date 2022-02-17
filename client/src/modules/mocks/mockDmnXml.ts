@@ -5,7 +5,7 @@
  */
 
 const mockDmnXml = `<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.8.1">
   <decision id="invoiceClassification" name="Invoice Classification">
     <decisionTable id="decisionTable">
       <input id="clause1" label="Invoice Amount" camunda:inputVariable="">
@@ -84,8 +84,11 @@ const mockDmnXml = `<?xml version="1.0" encoding="UTF-8"?>
     </decisionTable>
   </decision>
   <decision id="invoice-assign-approver" name="Assign Approver Group">
-    <informationRequirement id="InformationRequirement_1kkeocv">
+    <informationRequirement id="InformationRequirement_12zh997">
       <requiredDecision href="#invoiceClassification" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_11lyrze">
+      <requiredDecision href="#calc-key-figures" />
     </informationRequirement>
     <decisionTable id="DecisionTable_16o85h8" hitPolicy="COLLECT">
       <input id="InputClause_0og2hn3" label="Invoice Classification" camunda:inputVariable="">
@@ -127,20 +130,39 @@ const mockDmnXml = `<?xml version="1.0" encoding="UTF-8"?>
       </rule>
     </decisionTable>
   </decision>
+  <decision id="calc-key-figures" name="Calculate Credit History Key Figures">
+    <variable id="InformationItem_0xvb23p" name="key_figures" />
+    <literalExpression id="LiteralExpression_1ataej8" expressionLanguage="feel">
+      <text>{
+  avg_score:       mean(credit_history[type = credit_type].score),
+  avg_granted_sum: mean(credit_history[type = credit_type].granted_sum)
+}</text>
+    </literalExpression>
+  </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1cuuevk">
       <dmndi:DMNShape id="DMNShape_1abvt5s" dmnElementRef="invoiceClassification">
-        <dc:Bounds height="55" width="100" x="393" y="325" />
+        <dc:Bounds height="80" width="180" x="160" y="220" />
       </dmndi:DMNShape>
       <dmndi:DMNShape id="DMNShape_1ay7af5" dmnElementRef="invoice-assign-approver">
-        <dc:Bounds height="55" width="100" x="464" y="194" />
+        <dc:Bounds height="80" width="180" x="304" y="84" />
       </dmndi:DMNShape>
-      <dmndi:DMNEdge id="DMNEdge_1wn1950" dmnElementRef="InformationRequirement_1kkeocv">
-        <di:waypoint x="458" y="325" />
-        <di:waypoint x="498" y="249" />
+      <dmndi:DMNShape id="DMNShape_0zqdj59" dmnElementRef="calc-key-figures">
+        <dc:Bounds height="80" width="180" x="460" y="220" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_0ri0mdq" dmnElementRef="InformationRequirement_12zh997">
+        <di:waypoint x="250" y="220" />
+        <di:waypoint x="364" y="184" />
+        <di:waypoint x="364" y="164" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_0h1kzla" dmnElementRef="InformationRequirement_11lyrze">
+        <di:waypoint x="550" y="220" />
+        <di:waypoint x="424" y="184" />
+        <di:waypoint x="424" y="164" />
       </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
-</definitions>`;
+</definitions>
+`;
 
 export {mockDmnXml};

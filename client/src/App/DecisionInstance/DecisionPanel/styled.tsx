@@ -38,6 +38,11 @@ const Container = styled.div`
       }
     `;
   }}
+  overflow: auto;
 `;
 
-export {Container};
+const Decision = styled.div`
+  padding: 30px 20px;
+`;
+
+export {Container, Decision};

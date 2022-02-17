@@ -15,6 +15,10 @@ const mockDrdData: DrdData = {
     decisionInstanceId: '1',
     state: 'FAILED',
   },
+  'calc-key-figures': {
+    decisionInstanceId: '2',
+    state: 'COMPLETED',
+  },
 };
 
 export {mockDrdData};
