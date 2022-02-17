@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,14 @@ public abstract class CollectionUtil {
   public static <K,V> V getOrDefaultForNullValue(Map<K,V> map, K key, V defaultValue) {
     V value = map.get(key);
     return value==null?defaultValue:value;
+  }
+
+  public static <K, T> T getOrDefaultFromMap(Map<K, T> map, K key, T defaultValue) {
+    return key == null ? defaultValue : map.getOrDefault(key, defaultValue);
+  }
+
+  public static <T> T firstOrDefault(List<T> list, T defaultValue) {
+    return list.isEmpty() ? defaultValue : list.get(0);
   }
 
   @SafeVarargs
@@ -50,12 +59,11 @@ public abstract class CollectionUtil {
     return aList == null ? Collections.emptyList() : aList;
   }
 
-  @SuppressWarnings("unchecked")
   public static <T> List<T> withoutNulls(Collection<T> aCollection) {
     if (aCollection != null) {
-      return filter(aCollection, obj -> obj != null);
+      return filter(aCollection, Objects::nonNull);
     }
-    return Collections.EMPTY_LIST;
+    return Collections.emptyList();
   }
 
   public static <T, S> Map<T,List<S>> addToMap(Map<T, List<S>> map, T key, S value) {
@@ -67,7 +75,7 @@ public abstract class CollectionUtil {
     if(keyValuePairs == null || keyValuePairs.length % 2 != 0) {
       throw new OperateRuntimeException("keyValuePairs should not be null and has a even length.");
     }
-    Map<String,Object> result = new HashMap<String, Object>();
+    Map<String,Object> result = new HashMap<>();
     for(int i=0;i<keyValuePairs.length-1;i+=2) {
       result.put(keyValuePairs[i].toString(), keyValuePairs[i+1]);
     }
@@ -95,7 +103,7 @@ public abstract class CollectionUtil {
   }
 
   public static List<String> toSafeListOfStrings(Collection<?> aCollection){
-      return map(withoutNulls(aCollection),obj -> obj.toString());
+      return map(withoutNulls(aCollection), Object::toString);
   }
 
   public static String[] toSafeArrayOfStrings(Collection<?> aCollection){
@@ -166,6 +174,6 @@ public abstract class CollectionUtil {
   }
 
   public static long countNonNullObjects(Object... objects) {
-    return Arrays.stream(objects).filter(o -> o != null).count();
+    return Arrays.stream(objects).filter(Objects::nonNull).count();
   }
 }

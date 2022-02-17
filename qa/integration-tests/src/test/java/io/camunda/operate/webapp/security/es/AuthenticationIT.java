@@ -18,6 +18,10 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Role;
@@ -53,9 +57,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {
+      SameSiteCookieTomcatContextCustomizer.class,
       TestApplicationWithNoBeans.class,
       OperateProperties.class,
       WebSecurityConfig.class,
+      OAuth2WebConfigurer.class,
+      Jwt2AuthenticationTokenConverter.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
       ElasticsearchUserService.class,
       RolePermissionService.class,
       AuthenticationRestService.class,

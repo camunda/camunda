@@ -86,6 +86,9 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private CloudProperties cloud = new CloudProperties();
 
+  @NestedConfigurationProperty
+  private OAuthClientProperties client = new OAuthClientProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -270,4 +273,13 @@ public class OperateProperties {
   public void setRoles(final List<String> roles) {
     this.roles = roles;
   }
+
+  public OAuthClientProperties getClient() {
+    return client;
+  }
+
+  public void setClient(final OAuthClientProperties client) {
+    this.client = client;
+  }
+
 }

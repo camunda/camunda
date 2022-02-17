@@ -14,9 +14,8 @@ import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.RolePermissionService;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.es.ElasticsearchUserService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class},
+    classes = {TestApplication.class, OAuth2WebConfigurer.class,
+        TestElasticsearchSchemaManager.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"}
 )

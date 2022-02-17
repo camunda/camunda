@@ -23,6 +23,10 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.RolePermissionService;
 import java.util.Base64;
@@ -59,6 +63,9 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
+        OAuth2WebConfigurer.class,
+        Jwt2AuthenticationTokenConverter.class,
+        CCSaaSJwtAuthenticationTokenValidator.class,
         SSOWebSecurityConfig.class,
         Auth0Service.class,
         SSOController.class,
@@ -82,7 +89,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles(SSO_AUTH_PROFILE)
-public class AuthenticationIT {
+public class AuthenticationIT implements AuthenticationTestable {
 
   public final static String CONTEXT_PATH = "/operate-test";
   @ClassRule
@@ -302,8 +309,7 @@ public class AuthenticationIT {
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
     HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
-    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), headers);
-    return httpEntity;
+    return new HttpEntity<>(new HashMap<>(), headers);
   }
 
   @Test
@@ -315,14 +321,6 @@ public class AuthenticationIT {
   protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
-  }
-
-  private String redirectLocationIn(ResponseEntity<?> response) {
-    return response.getHeaders().getLocation().toString();
-  }
-
-  private ResponseEntity<String> get(String path) {
-    return testRestTemplate.getForEntity(path, String.class, new HashMap<String, String>());
   }
 
   private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
@@ -356,5 +354,10 @@ public class AuthenticationIT {
 
   private static String toJSON(Map map) {
     return new JSONObject(map).toString();
+  }
+
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
   }
 }

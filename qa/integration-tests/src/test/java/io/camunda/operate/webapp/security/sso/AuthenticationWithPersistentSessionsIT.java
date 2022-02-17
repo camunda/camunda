@@ -29,7 +29,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
+import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.RolePermissionService;
@@ -67,6 +71,9 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
+        OAuth2WebConfigurer.class,
+        Jwt2AuthenticationTokenConverter.class,
+        CCSaaSJwtAuthenticationTokenValidator.class,
         SSOWebSecurityConfig.class,
         Auth0Service.class,
         SSOController.class,
@@ -94,7 +101,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles(SSO_AUTH_PROFILE)
-public class AuthenticationWithPersistentSessionsIT {
+public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
   public final static String CONTEXT_PATH = "/operate-test";
   @ClassRule
@@ -125,7 +132,7 @@ public class AuthenticationWithPersistentSessionsIT {
 
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
-    return Arrays.asList((claimName, org) -> tokensWithOrgAsMapFrom(claimName, org));
+    return Arrays.asList(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
   }
 
   @Before
@@ -291,8 +298,7 @@ public class AuthenticationWithPersistentSessionsIT {
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
     HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
-    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), headers);
-    return httpEntity;
+    return new HttpEntity<>(new HashMap<>(), headers);
   }
 
   @Test
@@ -304,14 +310,6 @@ public class AuthenticationWithPersistentSessionsIT {
   protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
-  }
-
-  private String redirectLocationIn(ResponseEntity<?> response) {
-    return response.getHeaders().getLocation().toString();
-  }
-
-  private ResponseEntity<String> get(String path) {
-    return testRestTemplate.getForEntity(path, String.class, new HashMap<String, String>());
   }
 
   private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
@@ -345,5 +343,10 @@ public class AuthenticationWithPersistentSessionsIT {
 
   private static String toJSON(Map map) {
     return new JSONObject(map).toString();
+  }
+
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
   }
 }

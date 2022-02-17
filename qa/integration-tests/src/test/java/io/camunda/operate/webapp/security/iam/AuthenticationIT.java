@@ -21,6 +21,9 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
@@ -49,6 +52,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
+        OAuth2WebConfigurer.class,
+        Jwt2AuthenticationTokenConverter.class,
+        CCSaaSJwtAuthenticationTokenValidator.class,
         IAMWebSecurityConfig.class,
         IAMController.class,
         IAMAuthentication.class,
@@ -244,9 +250,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private String redirectLocationIn(ResponseEntity<?> response) {
-    return response.getHeaders().getLocation().toString();
-  }
   @Override
   public TestRestTemplate getTestRestTemplate() {
     return testRestTemplate;

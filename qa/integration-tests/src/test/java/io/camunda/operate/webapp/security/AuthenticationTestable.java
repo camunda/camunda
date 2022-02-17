@@ -5,25 +5,31 @@
  */
 package io.camunda.operate.webapp.security;
 
-import java.util.stream.Collectors;
-import io.camunda.operate.webapp.rest.dto.UserDto;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+import static io.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
+import static io.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
+import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
+import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.operate.webapp.rest.dto.UserDto;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static io.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
-import static io.camunda.operate.webapp.security.OperateURIs.*;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
+import java.util.stream.Collectors;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 public interface AuthenticationTestable {
 
@@ -60,7 +66,7 @@ public interface AuthenticationTestable {
   }
 
   default void assertSameSiteIsSet(String cookie)  {
-    assertThat(cookie.contains("SameSite=Lax"));
+    assertThat(cookie).contains("SameSite=Lax");
   }
 
   default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
@@ -97,6 +103,14 @@ public interface AuthenticationTestable {
 
   default ResponseEntity<String> get(String path) {
     return getTestRestTemplate().getForEntity(path, String.class);
+  }
+
+  default String redirectLocationIn(ResponseEntity<?> response) {
+    final URI location = response.getHeaders().getLocation();
+    if (location != null) {
+      return location.toString();
+    }
+    return null;
   }
 
   TestRestTemplate getTestRestTemplate();

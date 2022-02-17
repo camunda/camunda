@@ -13,6 +13,10 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import org.junit.ClassRule;
@@ -35,9 +39,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
+        SameSiteCookieTomcatContextCustomizer.class,
         OperateProperties.class,
         TestApplicationWithNoBeans.class,
         AuthenticationRestService.class,
+        OAuth2WebConfigurer.class,
+        Jwt2AuthenticationTokenConverter.class,
+        CCSaaSJwtAuthenticationTokenValidator.class,
         LDAPWebSecurityConfig.class,
         LDAPUserService.class,
         RetryElasticsearchClient.class,

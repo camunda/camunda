@@ -18,6 +18,7 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.json.Json;
@@ -41,6 +42,8 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   @Autowired
   OperateProfileService errorMessageService;
 
+  @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
+
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     http.csrf().disable()
@@ -63,6 +66,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
         .invalidateHttpSession(true)
         .and()
         .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+    oAuth2WebConfigurer.configure(http);
   }
 
   protected void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response,

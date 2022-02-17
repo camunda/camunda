@@ -17,6 +17,9 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.management.ElsIndicesHealthIndicator;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import org.junit.Test;
@@ -41,6 +44,9 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateProperties.class,
       TestApplicationWithNoBeans.class,
       ElsIndicesHealthIndicator.class,
+      OAuth2WebConfigurer.class,
+      Jwt2AuthenticationTokenConverter.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
       WebSecurityConfig.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,

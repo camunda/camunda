@@ -10,6 +10,9 @@ import static io.camunda.operate.webapp.security.OperateURIs.*;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
 import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.property.OperateProperties;
@@ -17,7 +20,6 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.RolePermissionService;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +27,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -40,6 +41,9 @@ import org.springframework.util.MultiValueMap;
         AuthenticationRestService.class,
         RolePermissionService.class,
         LDAPWebSecurityConfig.class,
+        OAuth2WebConfigurer.class,
+        Jwt2AuthenticationTokenConverter.class,
+        CCSaaSJwtAuthenticationTokenValidator.class,
         LDAPUserService.class,
         OperateProfileService.class
     },
