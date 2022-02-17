@@ -232,7 +232,7 @@ public interface Either<L, R> {
   R get();
 
   /**
-   * Gets the right value, or a default value if the projected Either is a {@link Left}.
+   * Returns the right value, or a default value if this is a {@link Left}.
    *
    * @param defaultValue the default value
    * @return the right value, or the default value if this is a {@link Left}
