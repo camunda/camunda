@@ -12175,10 +12175,10 @@ mobx-react@7.2.1:
   dependencies:
     mobx-react-lite "^3.2.0"
 
-mobx@6.3.13:
-  version "6.3.13"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.3.13.tgz#93e56a57ee72369f850cf3d6398fd36ee8ef062e"
-  integrity sha512-zDDKDhYUk9QCHQUdLG+wb4Jv/nXutSLt/P8kkwHyjdbrJO4OZS6QTEsrOnrKM39puqXSrJZHdB6+yRys2NBFFA==
+mobx@6.4.0:
+  version "6.4.0"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.4.0.tgz#71beda560230527f75ad150638f061af9d9f5312"
+  integrity sha512-HluTl14lJjL1xeUfXekDstHT/RqdxtmgIQ+75eMXsy9zAwt5vOWMdrbYD/sLS3CAKTo7ctIZi6cI2aX47Fk05g==
 
 moddle-xml@^9.0.5:
   version "9.0.5"

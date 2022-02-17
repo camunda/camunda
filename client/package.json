@@ -15,7 +15,7 @@
     "jsoneditor": "9.7.2",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.43.0",
-    "mobx": "6.3.13",
+    "mobx": "6.4.0",
     "mobx-react": "7.2.1",
     "msw-storybook-addon": "1.6.0",
     "polished": "4.1.4",
