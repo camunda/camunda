@@ -6,9 +6,12 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {autorun} from 'mobx';
+import {useHistory} from 'react-router-dom';
+import {Locations} from 'modules/routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
+import {drdDataStore} from 'modules/stores/drdData';
 import {Container, PanelHeader} from './styled';
 
 const Drd: React.FC = () => {
@@ -16,16 +19,28 @@ const Drd: React.FC = () => {
     setPanelState,
     state: {panelState},
   } = drdStore;
-
   const drdViewer = useRef<DrdViewer | null>(null);
   const drdViewerRef = useRef<HTMLDivElement | null>(null);
-
   const [definitionsName, setDefinitionsName] = useState<string | null>(null);
+  const history = useHistory();
+
+  const handleDecisionSelection = (decisionId: string) => {
+    const decisionInstanceId =
+      drdDataStore.state.drdData?.[decisionId]?.decisionInstanceId;
+
+    if (decisionInstanceId === undefined) {
+      return;
+    }
+
+    history.push(
+      Locations.decisionInstance(decisionInstanceId, history.location)
+    );
+  };
 
   if (drdViewer.current === null) {
     drdViewer.current = new DrdViewer(({name}) => {
       setDefinitionsName(name);
-    });
+    }, handleDecisionSelection);
   }
 
   useEffect(() => {

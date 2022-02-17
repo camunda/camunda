@@ -27,6 +27,8 @@ class Manager {
   });
   getActiveViewer = () => ({
     get: (module: string) => mockedModules[module],
+    on: jest.fn(),
+    off: jest.fn(),
   });
   getDefinitions = jest.fn(() => {
     return {name: 'Definitions Name Mock'};

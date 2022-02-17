@@ -4,10 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const mockDecisionInstance = {
+const invoiceClassification = {
   decisionDefinitionId: '111',
   decisionId: 'invoiceClassification',
-  state: 'completed',
+  state: 'COMPLETED',
   name: 'Invoice Classification',
   version: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
@@ -50,4 +50,29 @@ const mockDecisionInstance = {
   ],
 } as const;
 
-export {mockDecisionInstance};
+const assignApproverGroup = {
+  decisionDefinitionId: '111',
+  decisionId: 'invoice-assign-approver',
+  state: 'FAILED',
+  name: 'Assign Approver Group',
+  version: '1',
+  evaluationDate: '2022-01-20T13:26:52.531+0000',
+  processInstanceId: '777',
+  inputs: [
+    {
+      id: '0',
+      name: 'Age',
+      value: '21',
+    },
+  ],
+  outputs: [
+    {
+      id: '0',
+      rule: 1,
+      name: 'paragraph',
+      value: '"sbl §382"',
+    },
+  ],
+} as const;
+
+export {invoiceClassification, assignApproverGroup};

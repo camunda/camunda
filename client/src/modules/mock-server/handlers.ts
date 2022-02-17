@@ -6,13 +6,22 @@
 
 import {RequestHandler, rest} from 'msw';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
-import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
+import {
+  assignApproverGroup,
+  invoiceClassification,
+} from 'modules/mocks/mockDecisionInstance';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 
 const handlers: RequestHandler[] = [
-  rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) => {
-    return res(ctx.json(mockDecisionInstance));
+  rest.get('/api/decision-instances/:decisionInstanceId', (req, res, ctx) => {
+    const {decisionInstanceId} = req.params;
+
+    if (decisionInstanceId === '0') {
+      return res(ctx.json(assignApproverGroup));
+    } else {
+      return res(ctx.json(invoiceClassification));
+    }
   }),
 
   rest.get(

@@ -14,10 +14,19 @@ class DrdViewer {
   #xml: string | null = null;
   #viewer: Viewer | null = null;
   #onDefinitionsChange?: (definitions: Definitions) => void;
+  #onDecisionSelection?: (decisionId: string) => void;
 
-  constructor(onDefinitionsChange?: (definitions: Definitions) => void) {
+  constructor(
+    onDefinitionsChange?: (definitions: Definitions) => void,
+    onDecisionSelection?: (decisionId: string) => void
+  ) {
     this.#onDefinitionsChange = onDefinitionsChange;
+    this.#onDecisionSelection = onDecisionSelection;
   }
+
+  #handleDecisionSelection = (event: DiagramJSEvent) => {
+    this.#onDecisionSelection?.(event.element.id);
+  };
 
   render = async (container: HTMLElement, xml: string) => {
     if (this.#viewer === null) {
@@ -34,11 +43,22 @@ class DrdViewer {
     }
 
     if (this.#xml !== xml) {
+      // Cleanup before importing
+      this.#viewer
+        .getActiveViewer()
+        ?.off('element.click', this.#handleDecisionSelection);
+
       await this.#viewer.importXML(xml);
       this.#xml = xml;
 
+      const activeViewer = this.#viewer.getActiveViewer()!;
+
+      // Initialize after importing
+      activeViewer.on('element.click', this.#handleDecisionSelection);
+
       this.#onDefinitionsChange?.(this.#viewer.getDefinitions());
-      const canvas = this.#viewer.getActiveViewer().get('canvas');
+
+      const canvas = activeViewer.get('canvas');
       canvas.resized();
       canvas.zoom('fit-viewport', 'auto');
     }

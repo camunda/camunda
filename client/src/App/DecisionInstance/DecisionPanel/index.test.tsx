@@ -7,7 +7,7 @@
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {render, screen, waitFor} from '@testing-library/react';
-import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -18,7 +18,7 @@ describe('<DecisionPanel />', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstance))
+        res.once(ctx.json(invoiceClassification))
       ),
       rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockDmnXml))

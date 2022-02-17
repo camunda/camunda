@@ -11,7 +11,7 @@ import {
   within,
 } from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
-import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
@@ -62,7 +62,7 @@ describe('<InputsAndOutputs />', () => {
   it('should load inputs and outputs', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstance))
+        res.once(ctx.json(invoiceClassification))
       )
     );
     decisionInstanceStore.fetchDecisionInstance('1');

@@ -8,7 +8,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
-import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionXmlStore} from './decisionXml';
 import {decisionInstanceStore} from './decisionInstance';
 
@@ -19,7 +19,7 @@ describe('decisionXmlStore', () => {
         res.once(ctx.text(mockDmnXml))
       ),
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstance))
+        res.once(ctx.json(invoiceClassification))
       )
     );
 

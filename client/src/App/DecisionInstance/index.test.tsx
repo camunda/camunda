@@ -8,7 +8,7 @@ import {render, screen, within} from '@testing-library/react';
 import {rest} from 'msw';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {mockServer} from 'modules/mock-server/node';
-import {mockDecisionInstance} from 'modules/mocks/mockDecisionInstance';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionInstance} from './';
@@ -44,7 +44,7 @@ describe('<DecisionInstance />', () => {
   it('should close DRD panel', () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(mockDecisionInstance))
+        res(ctx.json(invoiceClassification))
       )
     );
 
@@ -71,7 +71,7 @@ describe('<DecisionInstance />', () => {
   it('should maximize DRD panel and hide other panels', () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(mockDecisionInstance))
+        res(ctx.json(invoiceClassification))
       )
     );
 
@@ -97,7 +97,7 @@ describe('<DecisionInstance />', () => {
   it('should minimize DRD panel', () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(mockDecisionInstance))
+        res(ctx.json(invoiceClassification))
       )
     );
 
@@ -126,7 +126,7 @@ describe('<DecisionInstance />', () => {
   it('should show DRD panel on header button click', () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(mockDecisionInstance))
+        res(ctx.json(invoiceClassification))
       )
     );
 
@@ -158,7 +158,7 @@ describe('<DecisionInstance />', () => {
   it('should persist panel state', () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(mockDecisionInstance))
+        res(ctx.json(invoiceClassification))
       )
     );
 
