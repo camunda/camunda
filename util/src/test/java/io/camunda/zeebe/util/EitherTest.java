@@ -78,6 +78,15 @@ class EitherTest {
     assertThatThrownBy(() -> Either.left(value).get()).isInstanceOf(NoSuchElementException.class);
   }
 
+  @DisplayName("Only a Left value can retrieve the default value with .getOrElse(...)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyALeftValueCanReturnTheDefaultValueWithGetOrElse(final Object value) {
+    final Object defaultValue = 3;
+    assertThat(Either.right(value).getOrElse(defaultValue)).isSameAs(value);
+    assertThat(Either.left(value).getOrElse(defaultValue)).isSameAs(defaultValue);
+  }
+
   @DisplayName("Only a Left value can be retrieved with .getLeft()")
   @ParameterizedTest
   @MethodSource("parameters")
