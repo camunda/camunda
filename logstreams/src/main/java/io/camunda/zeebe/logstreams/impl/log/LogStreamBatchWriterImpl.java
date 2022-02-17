@@ -95,6 +95,13 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   }
 
   @Override
+  public boolean canWriteAdditionalEvent(final int length) {
+    final var count = eventCount + 1;
+    final var batchLength = computeBatchLength(count, eventLength + length);
+    return logWriteBuffer.canClaimFragmentBatch(count, batchLength);
+  }
+
+  @Override
   public LogEntryBuilder keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);
   }
@@ -105,6 +112,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
     return this;
   }
 
+  @Override
   public LogEntryBuilder sourceIndex(final int index) {
     sourceIndex = index;
     return this;
@@ -215,7 +223,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
   }
 
   private long claimBatchForEvents() {
-    final int batchLength = eventLength + (eventCount * HEADER_BLOCK_LENGTH);
+    final var batchLength = computeBatchLength(eventCount, eventLength);
 
     long claimedPosition;
     do {
@@ -283,5 +291,9 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
 
     bufferWriterInstance.reset();
     metadataWriterInstance.reset();
+  }
+
+  private int computeBatchLength(final int eventsCount, final int eventsLength) {
+    return eventsLength + (eventsCount * HEADER_BLOCK_LENGTH);
   }
 }

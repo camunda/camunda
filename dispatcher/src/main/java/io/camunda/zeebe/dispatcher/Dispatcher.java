@@ -169,6 +169,19 @@ public class Dispatcher extends Actor {
         LogBufferAppender.claimedBatchLength(fragmentCount, batchLength));
   }
 
+  /**
+   * Returns whether a batch of length {@code batchLength}, containing {@code fragmentCount}
+   * fragments, can be claimed by this dispatcher.
+   *
+   * @param fragmentCount the count of fragments in the batch
+   * @param batchLength the total length of the batch (all fragments included), unframed
+   * @return true if the batch can be claimed, false otherwise
+   */
+  public boolean canClaimFragmentBatch(final int fragmentCount, final int batchLength) {
+    final int framedLength = LogBufferAppender.claimedBatchLength(fragmentCount, batchLength);
+    return framedLength < maxFragmentLength;
+  }
+
   private synchronized long offer(
       final BiFunction<LogBufferPartition, Integer, Integer> claimer,
       final int fragmentCount,
