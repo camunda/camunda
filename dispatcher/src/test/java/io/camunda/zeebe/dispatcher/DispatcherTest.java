@@ -150,6 +150,19 @@ public final class DispatcherTest {
   public void cannotClaimFragmentBatch() {
     // given - a fragment of max length, unframed
     final int fragmentCount = 1;
+    final int batchLength = 2 * dispatcher.getMaxFragmentLength();
+
+    // when
+    final var canClaimFragmentBatch = dispatcher.canClaimFragmentBatch(fragmentCount, batchLength);
+
+    // then
+    assertThat(canClaimFragmentBatch).isFalse();
+  }
+
+  @Test
+  public void cannotClaimFragmentBatchOfMaxLength() {
+    // given - a fragment of max length, unframed
+    final int fragmentCount = 1;
     final int batchLength = dispatcher.getMaxFragmentLength();
 
     // when
