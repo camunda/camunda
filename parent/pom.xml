@@ -78,7 +78,7 @@
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.19.4</version.protobuf>
     <version.protobuf-common>2.7.4</version.protobuf-common>
-    <version.micrometer>1.8.2</version.micrometer>
+    <version.micrometer>1.8.3</version.micrometer>
     <version.rocksdbjni>6.28.2</version.rocksdbjni>
     <version.sbe>1.25.1</version.sbe>
     <version.scala-parser>2.1.0</version.scala-parser>
@@ -95,7 +95,7 @@
     <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>4.5.1</version.rest-assured>
-    <version.spring>5.3.15</version.spring>
+    <version.spring>5.3.16</version.spring>
     <version.spring-boot>2.6.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.2</version.config>
