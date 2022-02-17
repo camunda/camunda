@@ -232,6 +232,14 @@ public interface Either<L, R> {
   R get();
 
   /**
+   * Returns the right value, or a default value if this is a {@link Left}.
+   *
+   * @param defaultValue the default value
+   * @return the right value, or the default value if this is a {@link Left}
+   */
+  R getOrElse(R defaultValue);
+
+  /**
    * Returns the left value, if this is a {@link Left}.
    *
    * @return the left value
@@ -333,6 +341,11 @@ public interface Either<L, R> {
     }
 
     @Override
+    public R getOrElse(final R defaultValue) {
+      return value;
+    }
+
+    @Override
     public L getLeft() {
       throw new NoSuchElementException("Expected a left, but this is right");
     }
@@ -419,6 +432,11 @@ public interface Either<L, R> {
     @Override
     public R get() {
       throw new NoSuchElementException("Expected a right, but this is left");
+    }
+
+    @Override
+    public R getOrElse(final R defaultValue) {
+      return defaultValue;
     }
 
     @Override
