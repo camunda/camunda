@@ -414,7 +414,9 @@ const theme = {
         },
       },
       decisionPanel: {
-        background: LIGHT_COLORS.ui04,
+        background: DARK_COLORS.ui02,
+        text: SEMANTIC_COLORS.white,
+        border: SEMANTIC_COLORS.grey,
       },
       drdPanel: {
         background: DARK_COLORS.ui02,
@@ -1322,6 +1324,8 @@ const theme = {
       },
       decisionPanel: {
         background: LIGHT_COLORS.ui04,
+        text: DARK_COLORS.ui01,
+        border: LIGHT_COLORS.ui06,
       },
       drdPanel: {
         background: LIGHT_COLORS.ui04,
