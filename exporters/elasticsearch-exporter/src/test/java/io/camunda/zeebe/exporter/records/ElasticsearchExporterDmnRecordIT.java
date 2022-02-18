@@ -12,9 +12,11 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.exporter.AbstractElasticsearchExporterIntegrationTestCase;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -84,5 +86,35 @@ public final class ElasticsearchExporterDmnRecordIT
         RecordingExporter.decisionRequirementsRecords().getFirst();
 
     assertRecordExported(decisionRequirementsRecord);
+  }
+
+  @Test
+  public void shouldExportDecisionEvaluationRecord() {
+    // given
+    exporterBrokerRule.deployResourceFromClasspath(DMN_RESOURCE);
+
+    exporterBrokerRule.deployProcess(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask(
+                "task", t -> t.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result"))
+            .done(),
+        "process.bpmn");
+
+    // when
+    final var processInstanceKey =
+        exporterBrokerRule.createProcessInstance("process", Map.of("lightsaberColor", "blue"));
+
+    // then
+    await("index templates need to be created")
+        .atMost(Duration.ofMinutes(1))
+        .untilAsserted(this::assertIndexSettings);
+
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertRecordExported(decisionEvaluationRecord);
   }
 }
