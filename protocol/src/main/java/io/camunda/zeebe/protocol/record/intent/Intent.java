@@ -39,7 +39,8 @@ public interface Intent {
           DeploymentDistributionIntent.class,
           ProcessEventIntent.class,
           DecisionIntent.class,
-          DecisionRequirementsIntent.class);
+          DecisionRequirementsIntent.class,
+          DecisionEvaluationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -100,6 +101,8 @@ public interface Intent {
         return DecisionIntent.from(intent);
       case DECISION_REQUIREMENTS:
         return DecisionRequirementsIntent.from(intent);
+      case DECISION_EVALUATION:
+        return DecisionEvaluationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -153,6 +156,8 @@ public interface Intent {
         return DecisionIntent.valueOf(intent);
       case DECISION_REQUIREMENTS:
         return DecisionRequirementsIntent.valueOf(intent);
+      case DECISION_EVALUATION:
+        return DecisionEvaluationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

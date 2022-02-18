@@ -73,7 +73,7 @@ public class BusinessRuleTaskIncidentTest {
         .withXmlClasspathResource("/dmn/drg-force-user.dmn")
         .withXmlResource(
             processWithBusinessRuleTask(
-                b -> b.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable("result")))
+                b -> b.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result")))
         .deploy();
 
     // when
@@ -91,7 +91,7 @@ public class BusinessRuleTaskIncidentTest {
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             """
-            Expected to evaluate decision 'jedi-or-sith', \
+            Expected to evaluate decision 'jedi_or_sith', \
             but failed to evaluate expression 'lightsaberColor': \
             no variable found for name 'lightsaberColor'\
             """);
@@ -105,7 +105,7 @@ public class BusinessRuleTaskIncidentTest {
         .withXmlClasspathResource("/dmn/drg-force-user.dmn")
         .withXmlResource(
             processWithBusinessRuleTask(
-                b -> b.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable("result")))
+                b -> b.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result")))
         .deploy();
 
     // and an instance of that process is created without the required variables for the decision
@@ -146,7 +146,7 @@ public class BusinessRuleTaskIncidentTest {
         .withXmlClasspathResource("/dmn/drg-force-user.dmn")
         .withXmlResource(
             processWithBusinessRuleTask(
-                b -> b.zeebeCalledDecisionId("jedi-or-sith").zeebeResultVariable("result")))
+                b -> b.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result")))
         .deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
