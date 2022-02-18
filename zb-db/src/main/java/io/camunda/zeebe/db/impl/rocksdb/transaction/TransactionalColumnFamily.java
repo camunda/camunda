@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -41,6 +42,7 @@ class TransactionalColumnFamily<
     implements ColumnFamily<KeyType, ValueType> {
 
   private final ZeebeTransactionDb<ColumnFamilyNames> transactionDb;
+  private final ColumnFamilyNames columnFamily;
   private final TransactionContext context;
 
   private final ValueType valueInstance;
@@ -54,6 +56,7 @@ class TransactionalColumnFamily<
       final KeyType keyInstance,
       final ValueType valueInstance) {
     this.transactionDb = transactionDb;
+    this.columnFamily = columnFamily;
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
@@ -251,7 +254,8 @@ class TransactionalColumnFamily<
             columnFamilyContext.getKeyBufferArray(),
             columnFamilyContext.getKeyLength());
     if (value != null) {
-      throw new IllegalStateException("Key already exists");
+      throw new ZeebeDbInconsistentException(
+          "Key " + keyInstance + " in ColumnFamily " + columnFamily + " already exists");
     }
   }
 
@@ -263,7 +267,8 @@ class TransactionalColumnFamily<
             columnFamilyContext.getKeyBufferArray(),
             columnFamilyContext.getKeyLength());
     if (value == null) {
-      throw new IllegalStateException("Key does not exist");
+      throw new ZeebeDbInconsistentException(
+          "Key " + keyInstance + " in ColumnFamily " + columnFamily + " does not exist");
     }
   }
 

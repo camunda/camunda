@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
