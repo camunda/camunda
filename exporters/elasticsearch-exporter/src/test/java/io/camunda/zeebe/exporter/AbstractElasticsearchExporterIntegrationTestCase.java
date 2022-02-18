@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
@@ -89,6 +91,10 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   }
 
   protected void assertRecordExported(final Record<?> record) {
+    await("index templates need to be created")
+        .atMost(Duration.ofMinutes(1))
+        .untilAsserted(this::assertIndexSettings);
+
     Awaitility.await("Expected the record to be exported: " + record.toJson())
         .ignoreExceptionsInstanceOf(ElasticsearchExporterException.class)
         .untilAsserted(
