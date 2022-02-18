@@ -20,10 +20,10 @@ const Skeleton: React.FC = () => {
             </DecisionContainer>
           ),
         },
-        {variant: 'block', width: '160px'},
-        {variant: 'block', width: '80px'},
-        {variant: 'block', width: '140px'},
-        {variant: 'block', width: '160px'},
+        {variant: 'block', width: '162px'},
+        {variant: 'block', width: '17px'},
+        {variant: 'block', width: '151px'},
+        {variant: 'block', width: '162px'},
       ]}
     />
   );

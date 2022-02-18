@@ -402,7 +402,7 @@ describe('ListPanel', () => {
     instancesStore.fetchInstancesFromFilters();
 
     expect(
-      await screen.findByText('Instances could not be fetched')
+      await screen.findByText('Data could not be fetched')
     ).toBeInTheDocument();
     expect(
       screen.queryByText('There are no Instances matching this filter set')
@@ -424,7 +424,7 @@ describe('ListPanel', () => {
     });
 
     expect(
-      await screen.findByText('Instances could not be fetched')
+      await screen.findByText('Data could not be fetched')
     ).toBeInTheDocument();
     expect(
       screen.queryByText('There are no Instances matching this filter set')

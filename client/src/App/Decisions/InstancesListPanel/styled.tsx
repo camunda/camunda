@@ -5,20 +5,18 @@
  */
 
 import styled, {css} from 'styled-components';
-import {CmIcon} from '@camunda-cloud/common-ui-react';
 import Table from 'modules/components/Table';
+import StateIcon from 'modules/components/StateIcon';
 
-type ContainerProps = {
-  overflow: 'auto' | 'hidden';
-};
-const Container = styled.div<ContainerProps>`
-  ${({theme, overflow}) => {
+const Container = styled.div`
+  ${({theme}) => {
     const colors = theme.colors.decisionsList;
-
     return css`
-      overflow: ${overflow};
       border: 1px solid ${colors.borderColor};
       background-color: ${colors.backgroundColor};
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
     `;
   }}
 `;
@@ -33,6 +31,7 @@ const Title = styled.div`
       font-size: 16px;
       font-weight: 600;
       color: ${theme.colors.text01};
+      border-bottom: solid 1px ${colors.borderColor};
     `;
   }}
 `;
@@ -50,9 +49,11 @@ const Name = styled(TD)`
   align-items: center;
 `;
 
-const State = styled(CmIcon)`
+const State = styled(StateIcon)`
   margin-right: 10px;
   margin-left: 11px;
+  top: 0;
+  position: static;
 `;
 
 const DecisionColumnHeader = styled.div`
@@ -65,12 +66,60 @@ const TH = styled(Table.TH)`
       font-weight: 500;
       white-space: nowrap;
       color: ${theme.colors.text01};
+      box-shadow: inset 0 -1px 0 ${theme.colors.decisionsList.header.th.borderColor};
     `;
   }}
 `;
 
 const TR = styled(Table.TR)`
   line-height: 36px;
+  &:first-child {
+    border-top-style: hidden;
+  }
 `;
 
-export {Container, Title, Name, State, DecisionColumnHeader, TH, TD, TR};
+const TRHeader = styled(Table.TR)`
+  border-top: none;
+`;
+
+const List = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+type ScrollableContentProps = {
+  overflow: 'auto' | 'hidden';
+};
+
+const ScrollableContent = styled.div<ScrollableContentProps>`
+  ${({overflow}) => {
+    return css`
+      width: 100%;
+      height: 100%;
+      overflow-y: ${overflow};
+      flex: 1 0 0;
+    `;
+  }}
+`;
+
+const THead = styled(Table.THead)`
+  position: sticky;
+  top: 0;
+`;
+
+export {
+  Container,
+  Title,
+  Name,
+  State,
+  DecisionColumnHeader,
+  TH,
+  TD,
+  TR,
+  List,
+  ScrollableContent,
+  THead,
+  TRHeader,
+};

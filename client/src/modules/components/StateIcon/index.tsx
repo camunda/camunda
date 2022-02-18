@@ -4,13 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import {STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
 const stateIconsMap = {
+  FAILED: Styled.IncidentIcon,
   [STATE.INCIDENT]: Styled.IncidentIcon,
   [STATE.ACTIVE]: Styled.ActiveIcon,
   [STATE.COMPLETED]: Styled.CompletedIcon,
@@ -19,7 +18,7 @@ const stateIconsMap = {
 };
 
 type Props = {
-  state?: InstanceEntityState;
+  state?: InstanceEntityState | DecisionInstanceEntityState;
 };
 
 function StateIcon({state, ...props}: Props) {

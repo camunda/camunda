@@ -38,7 +38,7 @@ const InstancesMessage: React.FC<Props> = ({
             <EmptyMessage
               message={
                 <StatusMessage variant="error">
-                  Instances could not be fetched
+                  Data could not be fetched
                 </StatusMessage>
               }
               data-testid="error-message-instances-list"

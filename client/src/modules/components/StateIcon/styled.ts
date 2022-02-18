@@ -16,7 +16,7 @@ const iconPosition = css`
   top: 3px;
   margin-right: 5px;
   &:first-child {
-    margin-left: 15px;
+    margin-left: 11px;
   }
 `;
 

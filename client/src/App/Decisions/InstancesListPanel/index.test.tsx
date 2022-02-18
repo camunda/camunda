@@ -47,9 +47,7 @@ describe('Decisions List', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(
-      screen.getByText('Instances could not be fetched')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
   });
 
   it('should render empty message', async () => {
@@ -110,7 +108,7 @@ describe('Decisions List', () => {
     ).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(29);
 
     const [, firstDecisionInstance, secondDecisionInstance] = rows;
     expect(
@@ -118,7 +116,7 @@ describe('Decisions List', () => {
     ).toBeInTheDocument();
     expect(
       within(firstDecisionInstance).getByTestId(
-        'completed-icon-2251799813689541'
+        'COMPLETED-icon-2251799813689541'
       )
     ).toBeInTheDocument();
 
@@ -126,7 +124,7 @@ describe('Decisions List', () => {
       within(secondDecisionInstance).getByText('test decision instance 2')
     ).toBeInTheDocument();
     expect(
-      within(secondDecisionInstance).getByTestId('failed-icon-2251799813689542')
+      within(secondDecisionInstance).getByTestId('FAILED-icon-2251799813689542')
     ).toBeInTheDocument();
   });
 });

@@ -19,6 +19,10 @@ import {
   TH,
   TD,
   TR,
+  List,
+  ScrollableContent,
+  THead,
+  TRHeader,
 } from './styled';
 import {formatDate} from 'modules/utils/date';
 
@@ -35,53 +39,47 @@ const InstancesListPanel: React.FC = observer(() => {
   const shouldDisplaySkeleton = ['initial', 'first-fetch'].includes(status);
 
   return (
-    <Container overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}>
+    <Container>
       <Title>Instances</Title>
-      <Table>
-        <Table.THead>
-          <TR>
-            <TH>
-              <DecisionColumnHeader>Decision</DecisionColumnHeader>
-            </TH>
-            <TH>Decision Instance Id</TH>
-            <TH>Version</TH>
-            <TH>Evaluation Time</TH>
-            <TH>Process Instance Id</TH>
-          </TR>
-        </Table.THead>
-        {shouldDisplaySkeleton && <Skeleton />}
-        {status === 'error' && <InstancesMessage type="error" />}
-        {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
-        <Table.TBody>
-          {decisionInstances.map((instance) => {
-            return (
-              <TR key={instance.id}>
-                <Name>
-                  {instance.state === 'COMPLETED' && (
-                    <State
-                      icon="state:completed"
-                      color="medLight"
-                      data-testid={`completed-icon-${instance.id}`}
-                    />
-                  )}
-                  {instance.state === 'FAILED' && (
-                    <State
-                      icon="state:incident"
-                      color="danger"
-                      data-testid={`failed-icon-${instance.id}`}
-                    />
-                  )}
-                  {instance.name}
-                </Name>
-                <TD>{instance.id}</TD>
-                <TD>{instance.version}</TD>
-                <TD>{formatDate(instance.evaluationTime)}</TD>
-                <TD>{instance.processInstanceId}</TD>
-              </TR>
-            );
-          })}
-        </Table.TBody>
-      </Table>
+      <List>
+        <ScrollableContent overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}>
+          <Table>
+            <THead>
+              <TRHeader>
+                <TH>
+                  <DecisionColumnHeader>Decision</DecisionColumnHeader>
+                </TH>
+                <TH>Decision Instance Id</TH>
+                <TH>Version</TH>
+                <TH>Evaluation Time</TH>
+                <TH>Process Instance Id</TH>
+              </TRHeader>
+            </THead>
+            {shouldDisplaySkeleton && <Skeleton />}
+            {status === 'error' && <InstancesMessage type="error" />}
+            {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
+            <Table.TBody>
+              {decisionInstances.map((instance) => {
+                return (
+                  <TR key={instance.id}>
+                    <Name>
+                      <State
+                        state={instance.state}
+                        data-testid={`${instance.state}-icon-${instance.id}`}
+                      />
+                      {instance.name}
+                    </Name>
+                    <TD>{instance.id}</TD>
+                    <TD>{instance.version}</TD>
+                    <TD>{formatDate(instance.evaluationTime)}</TD>
+                    <TD>{instance.processInstanceId}</TD>
+                  </TR>
+                );
+              })}
+            </Table.TBody>
+          </Table>
+        </ScrollableContent>
+      </List>
     </Container>
   );
 });

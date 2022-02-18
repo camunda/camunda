@@ -12,6 +12,9 @@ const TD = styled.td`
 `;
 const TR = styled.tr`
   height: 37px;
+  &:first-child {
+    border-top-style: hidden;
+  }
 `;
 
 type Props = {

@@ -336,6 +336,10 @@ const theme = {
         borderColor: DARK_COLORS.ui04,
         header: {
           backgroundColor: DARK_COLORS.ui03,
+          borderColor: DARK_COLORS.ui04,
+          th: {
+            borderColor: DARK_COLORS.ui04,
+          },
         },
       },
       list: {
@@ -1251,6 +1255,10 @@ const theme = {
         borderColor: LIGHT_COLORS.ui05,
         header: {
           backgroundColor: LIGHT_COLORS.ui02,
+          borderColor: LIGHT_COLORS.ui05,
+          th: {
+            borderColor: LIGHT_COLORS.ui05,
+          },
         },
       },
       list: {
