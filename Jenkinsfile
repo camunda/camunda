@@ -151,6 +151,18 @@ pipeline {
         }
       }
     }
+    stage('Install GCR login helper') {
+      steps {
+        container('maven') {
+          sh """
+            curl -L https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.1.0/docker-credential-gcr_linux_amd64-2.1.0.tar.gz --output docker-credential-gcr.tar.gz
+            tar -zxvf docker-credential-gcr.tar.gz
+            chmod +x docker-credential-gcr
+            mv docker-credential-gcr /usr/local/bin/docker-credential-gcr
+          """
+        }
+      }
+    }
     stage('Deploy') {
       parallel {
         stage('Deploy - Docker Image') {
@@ -161,15 +173,10 @@ pipeline {
           }
           environment {
             IMAGE_TAG = getImageTag()
-            GCR_REGISTRY = credentials('docker-registry-ci3')
+            GOOGLE_APPLICATION_CREDENTIALS = credentials('docker-registry-ci3-file')
           }
           steps {
             lock('zeebe-tasklist-dockerimage-upload') {
-              container('docker') {
-                sh """
-                  echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-                """
-              }
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """

@@ -225,6 +225,10 @@
           <to>
             <image>docker.io/camunda/tasklist</image>
           </to>
+          <to>
+            <image>gcr.io/ci-30-162810/tasklist</image>
+            <credHelper>gcr</credHelper>
+          </to>
           <container>
             <jvmFlags>
               <jvmFlag>-XX:+ExitOnOutOfMemoryError</jvmFlag>
