@@ -26,18 +26,20 @@ import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 /** Tests for incidents specific for business-rule-tasks. */
 public class BusinessRuleTaskIncidentTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
   private static final String PROCESS_ID = "process";
   private static final String TASK_ELEMENT_ID = "business-rule-task";
 
+  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DECISION_ID = "jedi_or_sith";
+  private static final String RESULT_VARIABLE = "result";
+
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   private BpmnModelInstance processWithBusinessRuleTask(
@@ -66,18 +68,50 @@ public class BusinessRuleTaskIncidentTest {
   // ----- CalledDecision related tests
 
   @Test
-  public void shouldCreateIncidentIfDecisionEvaluationFailed() {
+  public void shouldCreateIncidentIfDecisionNotDeployed() {
     // given
-    ENGINE
+    engine
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
         .withXmlResource(
             processWithBusinessRuleTask(
-                b -> b.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result")))
+                b ->
+                    b.zeebeCalledDecisionId("unknown_decision_id")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
         .deploy();
 
     // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision 'unknown_decision_id', \
+            but no decision found for id 'unknown_decision_id'\
+            """);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDecisionEvaluationFailed() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final var taskActivating =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
@@ -100,16 +134,16 @@ public class BusinessRuleTaskIncidentTest {
   @Test
   public void shouldResolveIncidentAndCreateNewIncidentWhenContinuationFails() {
     // given
-    ENGINE
+    engine
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+        .withXmlClasspathResource(DMN_RESOURCE)
         .withXmlResource(
             processWithBusinessRuleTask(
-                b -> b.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result")))
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
         .deploy();
 
     // and an instance of that process is created without the required variables for the decision
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // and an incident created
     final var incidentCreated =
@@ -118,7 +152,7 @@ public class BusinessRuleTaskIncidentTest {
             .getFirst();
 
     // when we try to resolve the incident
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
 
     // then
     assertThat(
@@ -139,17 +173,68 @@ public class BusinessRuleTaskIncidentTest {
   }
 
   @Test
-  public void shouldResolveIncidentAfterDecisionEvaluationFailed() {
+  public void shouldResolveIncidentAfterDecisionNotDeployed() {
     // given
-    ENGINE
+    engine
         .deployment()
-        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
         .withXmlResource(
             processWithBusinessRuleTask(
-                b -> b.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable("result")))
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
         .deploy();
 
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Maps.of(entry("lightsaberColor", "blue")))
+            .create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... deploy dmn to resolve issue
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+
+    // ... resolve incident
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .incidentRecords()
+                .onlyEvents())
+        .extracting(Record::getKey, Record::getIntent)
+        .describedAs("created incident is resolved and no new incident is created")
+        .containsExactly(
+            tuple(incidentCreated.getKey(), IncidentIntent.CREATED),
+            tuple(incidentCreated.getKey(), IncidentIntent.RESOLVED));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .describedAs("business rule task is successfully completed")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterDecisionEvaluationFailed() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -159,14 +244,14 @@ public class BusinessRuleTaskIncidentTest {
     // when
 
     // ... update state to resolve issue
-    ENGINE
+    engine
         .variables()
         .ofScope(incidentCreated.getValue().getElementInstanceKey())
         .withDocument(Maps.of(entry("lightsaberColor", "blue")))
         .update();
 
     // ... resolve incident
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
 
     // then
     assertThat(

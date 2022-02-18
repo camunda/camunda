@@ -84,9 +84,11 @@ public final class BpmnDecisionBehavior {
             .mapLeft(
                 failure ->
                     new Failure(
-                        "Expected to evaluate decision id '%s', but %s"
+                        "Expected to evaluate decision '%s', but %s"
                             .formatted(element.getDecisionId(), failure.getMessage())))
             .flatMap(drg -> parseDrg(drg.getResource()))
+            // all the above failures have the same error type and the correct scope
+            .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
             .flatMap(drg -> evaluateDecisionInDrg(drg, element.getDecisionId(), scopeKey));
 
     resultOrFailure.ifRight(
@@ -102,9 +104,7 @@ public final class BpmnDecisionBehavior {
           writeDecisionEvaluationEvent(decision, result, context);
         });
 
-    // the failure must have the correct error type and scope, and we only want to declare this once
-    return resultOrFailure.mapLeft(
-        failure -> new Failure(failure.getMessage(), ErrorType.CALLED_ELEMENT_ERROR, scopeKey));
+    return resultOrFailure;
   }
 
   private Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
@@ -142,7 +142,8 @@ public final class BpmnDecisionBehavior {
     final var evaluationContext = new VariablesContext(MsgPackConverter.convertToMap(variables));
     final var result = decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
     if (result.isFailure()) {
-      return Either.left(new Failure(result.getFailureMessage()));
+      return Either.left(
+          new Failure(result.getFailureMessage(), ErrorType.CALLED_ELEMENT_ERROR, scopeKey));
     } else {
       return Either.right(result);
     }
