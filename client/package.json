@@ -14,7 +14,7 @@
     "final-form": "4.20.6",
     "jsoneditor": "9.7.2",
     "lodash": "4.17.21",
-    "mixpanel-browser": "2.43.0",
+    "mixpanel-browser": "2.45.0",
     "mobx": "6.4.0",
     "mobx-react": "7.3.0",
     "msw-storybook-addon": "1.6.0",
