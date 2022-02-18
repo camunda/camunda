@@ -6,7 +6,7 @@
     "@camunda-cloud/common-ui": "0.0.18-rc4",
     "@camunda-cloud/common-ui-react": "0.0.18-rc4",
     "@popperjs/core": "2.11.2",
-    "bpmn-js": "8.9.1",
+    "bpmn-js": "8.10.0",
     "bpmn-moddle": "7.1.2",
     "brace": "0.11.1",
     "date-fns": "2.28.0",
