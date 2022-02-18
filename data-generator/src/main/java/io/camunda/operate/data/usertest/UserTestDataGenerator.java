@@ -320,6 +320,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     jobWorkers.add(progressSimpleTask("peterTask"));
 
+    //TODO remove me when DMN is working end-to-end`
+    jobWorkers.add(progressSimpleTask("checkItems"));
+
     jobWorkers.addAll(progressMultiInstanceTasks());
 
     //start more instances after 1 minute
