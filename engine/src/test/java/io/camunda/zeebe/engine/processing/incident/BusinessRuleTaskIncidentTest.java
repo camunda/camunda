@@ -173,6 +173,57 @@ public class BusinessRuleTaskIncidentTest {
   }
 
   @Test
+  public void shouldResolveIncidentAfterDecisionNotDeployed() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Maps.of(entry("lightsaberColor", "blue")))
+            .create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... deploy dmn to resolve issue
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+
+    // ... resolve incident
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .incidentRecords()
+                .onlyEvents())
+        .extracting(Record::getKey, Record::getIntent)
+        .describedAs("created incident is resolved and no new incident is created")
+        .containsExactly(
+            tuple(incidentCreated.getKey(), IncidentIntent.CREATED),
+            tuple(incidentCreated.getKey(), IncidentIntent.RESOLVED));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .describedAs("business rule task is successfully completed")
+        .isTrue();
+  }
+
+  @Test
   public void shouldResolveIncidentAfterDecisionEvaluationFailed() {
     // given
     engine
