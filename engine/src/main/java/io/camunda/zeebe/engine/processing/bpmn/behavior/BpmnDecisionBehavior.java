@@ -89,13 +89,13 @@ public final class BpmnDecisionBehavior {
             .flatMap(drg -> parseDrg(drg.getResource()))
             .flatMap(drg -> evaluateDecisionInDrg(drg, element.getDecisionId(), scopeKey));
 
-    // The output mapping behavior determines what to do with the decision result. Since the output
-    // mapping may fail and raise an incident, we need to write the variable to a record. This is
-    // because we want to evaluate the decision on element activation, while the output mapping
-    // happens on element completion. We don't want to re-evaluate the decision for output mapping
-    // related incidents.
     resultOrFailure.ifRight(
         result -> {
+          // The output mapping behavior determines what to do with the decision result. Since the
+          // output mapping may fail and raise an incident, we need to write the variable to a
+          // record. This is because we want to evaluate the decision on element activation, while
+          // the output mapping happens on element completion. We don't want to re-evaluate the
+          // decision for output mapping related incidents.
           triggerProcessEventWithResultVariable(context, element.getResultVariable(), result);
 
           final var decision = decisionOrFailure.get();
