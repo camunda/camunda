@@ -27,6 +27,8 @@ async function setup() {
     )
   );
 
+  await wait();
+
   return {singleOperationInstance, batchOperationInstances};
 }
 
