@@ -12,7 +12,7 @@ import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 
 import {formatDate} from 'modules/utils/date';
-import {getSorting} from 'modules/utils/filter';
+import {getSortParams} from 'modules/utils/filter';
 import {sortIncidents} from './service';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
@@ -33,7 +33,11 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [modalContent, setModalContent] = useState<string>('');
   const [modalTitle, setModalTitle] = useState<string>('');
   const {processInstanceId} = useInstancePageParams();
-  const {sortBy, sortOrder} = getSorting('instance');
+  const {sortBy, sortOrder} = getSortParams() || {
+    sortBy: 'errorType',
+    sortOrder: 'desc',
+  };
+
   const {filteredIncidents} = incidentsStore;
 
   const handleModalClose = () => {

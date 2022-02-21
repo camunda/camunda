@@ -9,6 +9,7 @@ import {makeObservable, observable, action, override, computed} from 'mobx';
 import {fetchDecisionInstances} from 'modules/api/decisions';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {getSortParams} from 'modules/utils/filter';
 
 type State = {
   decisionInstances: DecisionInstanceEntity[];
@@ -39,9 +40,19 @@ class DecisionInstances extends NetworkReconnectionHandler {
     });
   }
 
-  fetchInstances = this.retryOnConnectionLost(async () => {
+  fetchInstancesFromFilters = this.retryOnConnectionLost(async () => {
+    this.startFetching();
+    this.fetchInstances({
+      query: {},
+      sorting: getSortParams() || {sortBy: 'evaluationTime', sortOrder: 'desc'},
+    });
+  });
+
+  fetchInstances = async (
+    payload: Parameters<typeof fetchDecisionInstances>['0']
+  ) => {
     try {
-      const response = await fetchDecisionInstances({query: {}});
+      const response = await fetchDecisionInstances(payload);
 
       if (response.ok) {
         const {decisionInstances} = await response.json();
@@ -54,7 +65,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     } catch (error) {
       this.handleFetchError(error);
     }
-  });
+  };
 
   startFetching = () => {
     if (this.state.status === 'initial') {

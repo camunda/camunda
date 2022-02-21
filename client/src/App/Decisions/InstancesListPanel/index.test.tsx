@@ -16,6 +16,15 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InstancesListPanel} from './';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
+import {MemoryRouter} from 'react-router-dom';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('Decisions List', () => {
   afterEach(() => {
@@ -29,7 +38,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: ThemeProvider});
+    render(<InstancesListPanel />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
 
@@ -43,7 +52,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: ThemeProvider});
+    render(<InstancesListPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -57,7 +66,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: ThemeProvider});
+    render(<InstancesListPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -73,7 +82,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: ThemeProvider});
+    render(<InstancesListPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -97,7 +106,7 @@ describe('Decisions List', () => {
 
     expect(
       screen.getByRole('columnheader', {
-        name: 'Evaluation Time',
+        name: /Evaluation Time/,
       })
     ).toBeInTheDocument();
 

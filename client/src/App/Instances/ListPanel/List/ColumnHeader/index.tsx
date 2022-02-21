@@ -5,7 +5,7 @@
  */
 
 import * as Styled from './styled';
-import {getSorting} from 'modules/utils/filter';
+import {getSortParams} from 'modules/utils/filter';
 import {useHistory} from 'react-router-dom';
 
 function toggleSorting(
@@ -14,7 +14,10 @@ function toggleSorting(
   table: 'instances' | 'instance'
 ) {
   const params = new URLSearchParams(search);
-  const {sortBy, sortOrder} = getSorting(table);
+  const {sortBy, sortOrder} = getSortParams() || {
+    sortBy: table === 'instances' ? 'processName' : 'errorType',
+    sortOrder: 'desc',
+  };
 
   if (params.get('sort') === null) {
     params.set('sort', `${column}+desc`);
@@ -64,7 +67,11 @@ const ColumnHeader: React.FC<Props> = ({
 }) => {
   const isSortable = sortKey !== undefined;
   const history = useHistory();
-  const {sortBy, sortOrder} = getSorting(table);
+  const {sortBy, sortOrder} = getSortParams() || {
+    sortBy: table === 'instances' ? 'processName' : 'errorType',
+    sortOrder: 'desc',
+  };
+
   const isActive = isSortable && sortKey === sortBy;
 
   if (isSortable) {

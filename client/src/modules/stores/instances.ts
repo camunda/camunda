@@ -18,7 +18,7 @@ import {
   fetchProcessInstancesByIds,
 } from 'modules/api/instances';
 import {logger} from 'modules/logger';
-import {getRequestFilters, getSorting} from 'modules/utils/filter';
+import {getRequestFilters, getSortParams} from 'modules/utils/filter';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {createOperation} from 'modules/utils/instance';
 import {hasActiveOperations} from './utils/hasActiveOperations';
@@ -117,6 +117,15 @@ class Instances extends NetworkReconnectionHandler {
       .map((instance) => instance.id);
   }
 
+  getSorting = () => {
+    return (
+      getSortParams() || {
+        sortBy: 'processName',
+        sortOrder: 'desc',
+      }
+    );
+  };
+
   setLatestFetchDetails = (
     fetchType: FetchType,
     processInstancesCount: number
@@ -188,7 +197,7 @@ class Instances extends NetworkReconnectionHandler {
       fetchType: 'prev',
       payload: {
         query: getRequestFilters(),
-        sorting: getSorting(),
+        sorting: this.getSorting(),
         searchBefore: instancesStore.state.processInstances[0]?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
       },
@@ -202,7 +211,7 @@ class Instances extends NetworkReconnectionHandler {
       fetchType: 'next',
       payload: {
         query: getRequestFilters(),
-        sorting: getSorting(),
+        sorting: this.getSorting(),
         searchAfter:
           this.state.processInstances[this.state.processInstances.length - 1]
             ?.sortValues,
@@ -218,7 +227,7 @@ class Instances extends NetworkReconnectionHandler {
       fetchType: 'initial',
       payload: {
         query: getRequestFilters(),
-        sorting: getSorting(),
+        sorting: this.getSorting(),
         pageSize: MAX_INSTANCES_PER_REQUEST,
         searchBefore: undefined,
         searchAfter: undefined,
@@ -280,7 +289,7 @@ class Instances extends NetworkReconnectionHandler {
       const response = await fetchProcessInstances({
         payload: {
           query: getRequestFilters(),
-          sorting: getSorting(),
+          sorting: this.getSorting(),
           pageSize:
             this.state.processInstances.length > 0
               ? this.state.processInstances.length
@@ -341,7 +350,7 @@ class Instances extends NetworkReconnectionHandler {
           fetchType: 'initial',
           payload: {
             query: getRequestFilters(),
-            sorting: getSorting(),
+            sorting: this.getSorting(),
             pageSize: MAX_INSTANCES_PER_REQUEST,
             searchBefore: undefined,
             searchAfter: undefined,

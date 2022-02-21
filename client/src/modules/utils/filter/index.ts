@@ -355,10 +355,10 @@ function updateFiltersSearchString(
   return newParams.toString();
 }
 
-function getSorting(page: 'instances' | 'instance' = 'instances'): {
+function getSortParams(): {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
-} {
+} | null {
   const params = new URLSearchParams(getSearchString());
   const sort = params.get('sort');
   const PARAM_PATTERN = /^\w{1,}\+(asc|desc)/;
@@ -372,10 +372,7 @@ function getSorting(page: 'instances' | 'instance' = 'instances'): {
     } as {sortBy: string; sortOrder: 'asc' | 'desc'};
   }
 
-  return {
-    sortBy: page === 'instances' ? 'processName' : 'errorType',
-    sortOrder: 'desc',
-  };
+  return null;
 }
 
 export {
@@ -384,8 +381,8 @@ export {
   parseFilterDate,
   getRequestFilters,
   updateFiltersSearchString,
-  getSorting,
   deleteSearchParams,
+  getSortParams,
 };
 export type {
   FiltersType,

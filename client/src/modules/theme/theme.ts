@@ -826,6 +826,12 @@ const theme = {
               backgroundColor: DARK_COLORS.ui03,
             },
           },
+          columnHeader: {
+            color: LIGHT_COLORS.ui02,
+            sortingActive: {
+              color: SEMANTIC_COLORS.white,
+            },
+          },
         },
         textarea: {
           backgroundColor: DARK_COLORS.ui02,
@@ -1736,6 +1742,12 @@ const theme = {
             backgroundColor: LIGHT_COLORS.ui02,
             tr: {
               backgroundColor: LIGHT_COLORS.ui02,
+            },
+          },
+          columnHeader: {
+            color: LIGHT_COLORS.ui06,
+            sortingActive: {
+              color: DARK_COLORS.ui04,
             },
           },
         },

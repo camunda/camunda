@@ -9,6 +9,10 @@ import {DecisionRequestFilters} from 'modules/utils/filter';
 
 type DecisionInstancesQuery = {
   query: DecisionRequestFilters;
+  sorting?: {
+    sortBy: string;
+    sortOrder: 'desc' | 'asc';
+  };
 };
 
 async function fetchDecisionXML(decisionDefinitionId: string) {

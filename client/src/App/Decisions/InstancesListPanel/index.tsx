@@ -25,18 +25,25 @@ import {
   TRHeader,
 } from './styled';
 import {formatDate} from 'modules/utils/date';
+import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
+import {useLocation} from 'react-router-dom';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
     state: {status, decisionInstances},
     areDecisionInstancesEmpty,
   } = decisionInstancesStore;
+  const location = useLocation();
 
   useEffect(() => {
-    decisionInstancesStore.fetchInstances();
-  }, []);
+    decisionInstancesStore.fetchInstancesFromFilters();
+  }, [location.search]);
 
   const shouldDisplaySkeleton = ['initial', 'first-fetch'].includes(status);
+
+  const isSortingDisabled =
+    areDecisionInstancesEmpty ||
+    ['initial', 'first-fetch', 'fetching'].includes(status);
 
   return (
     <Container>
@@ -47,12 +54,43 @@ const InstancesListPanel: React.FC = observer(() => {
             <THead>
               <TRHeader>
                 <TH>
-                  <DecisionColumnHeader>Decision</DecisionColumnHeader>
+                  <DecisionColumnHeader>
+                    <ColumnHeader
+                      disabled={isSortingDisabled}
+                      label="Decision"
+                      sortKey="decision"
+                    />
+                  </DecisionColumnHeader>
                 </TH>
-                <TH>Decision Instance Id</TH>
-                <TH>Version</TH>
-                <TH>Evaluation Time</TH>
-                <TH>Process Instance Id</TH>
+                <TH>
+                  <ColumnHeader
+                    disabled={isSortingDisabled}
+                    label="Decision Instance Id"
+                    sortKey="decisionInstanceId"
+                  />
+                </TH>
+                <TH>
+                  <ColumnHeader
+                    disabled={isSortingDisabled}
+                    label="Version"
+                    sortKey="version"
+                  />
+                </TH>
+                <TH>
+                  <ColumnHeader
+                    disabled={isSortingDisabled}
+                    label="Evaluation Time"
+                    sortKey="evaluationTime"
+                    isDefault
+                  />
+                </TH>
+                <TH>
+                  <ColumnHeader
+                    disabled={isSortingDisabled}
+                    label="Process Instance Id"
+                    sortKey="processInstanceId"
+                  />
+                </TH>
               </TRHeader>
             </THead>
             {shouldDisplaySkeleton && <Skeleton />}
