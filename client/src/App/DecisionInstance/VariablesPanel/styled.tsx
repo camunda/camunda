@@ -4,31 +4,72 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 const Container = styled.section`
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-rows: 38px 1fr;
+  ${({theme}) => {
+    const colors = theme.colors.decisionInstance;
+
+    return css`
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-rows: 38px 1fr;
+      background-color: ${colors.backgroundColor};
+    `;
+  }}
 `;
 
-const Tab = styled.button`
-  all: unset;
-  cursor: pointer;
-  &:not(:last-child) {
-    padding-right: 20px;
-  }
+type TabsProps = {
+  isSelected: boolean;
+};
+
+const Tab = styled.button<TabsProps>`
+  ${({theme, isSelected}) => {
+    const {colors} = theme;
+
+    return css`
+      all: unset;
+      cursor: pointer;
+
+      font-family: IBM Plex Sans;
+      font-size: 16px;
+      font-weight: normal;
+      color: ${colors.text01};
+      padding: 0 4px;
+
+      ${isSelected
+        ? css`
+            height: calc(100% - 3px);
+            border-bottom: 3px solid ${colors.selections};
+            font-weight: 600;
+          `
+        : css`
+            height: 100%;
+          `}
+
+      &:not(:last-child) {
+        margin-right: 20px;
+      }
+    `;
+  }}
 `;
 
 const Header = styled.header`
-  padding: 10px 20px;
+  ${({theme}) => {
+    const colors = theme.colors.decisionInstance.panelHeader;
+
+    return css`
+      padding: 0 20px;
+      border: 1px solid ${colors.borderColor};
+      background-color: ${colors.backgroundColor};
+    `;
+  }}
 `;
 
 const Content = styled.div`
   width: 100%;
   height: 100%;
-  padding: 0 20px;
   display: flex;
 `;
 

@@ -97,6 +97,14 @@ const theme = {
       ...DARK_COLORS,
       text01: SEMANTIC_COLORS.white,
       text02: SEMANTIC_COLORS.white,
+      decisionInstance: {
+        panelHeader: {
+          backgroundColor: DARK_COLORS.ui03,
+          borderColor: DARK_COLORS.ui04,
+        },
+        borderColor: DARK_COLORS.ui04,
+        backgroundColor: DARK_COLORS.ui02,
+      },
       metricPanel: {
         skeletonBar: {
           backgroundColor: SEMANTIC_COLORS.badge02,
@@ -1022,6 +1030,14 @@ const theme = {
       ...LIGHT_COLORS,
       text01: DARK_COLORS.ui04,
       text02: DARK_COLORS.ui06,
+      decisionInstance: {
+        panelHeader: {
+          backgroundColor: LIGHT_COLORS.ui02,
+          borderColor: LIGHT_COLORS.ui05,
+        },
+        borderColor: LIGHT_COLORS.ui05,
+        backgroundColor: LIGHT_COLORS.ui04,
+      },
       metricPanel: {
         skeletonBar: {
           backgroundColor: LIGHT_COLORS.ui06,

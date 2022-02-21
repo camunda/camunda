@@ -6,11 +6,12 @@
 
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablesPanel} from './index';
 
 describe('<VariablesPanel />', () => {
   it('should have 2 tabs', () => {
-    render(<VariablesPanel />);
+    render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     expect(
       screen.getByRole('button', {
@@ -25,7 +26,7 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should render the default tab content', () => {
-    render(<VariablesPanel />);
+    render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     expect(
       screen.getByRole('heading', {
@@ -40,7 +41,7 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should switch tab content', () => {
-    render(<VariablesPanel />);
+    render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     userEvent.click(
       screen.getByRole('button', {

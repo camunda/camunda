@@ -25,7 +25,7 @@ describe('<InputsAndOutputs />', () => {
   it('should have section panels', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.status(500))
+        res.once(ctx.json(mockDecisionInstance))
       )
     );
     decisionInstanceStore.fetchDecisionInstance('1');
@@ -34,7 +34,9 @@ describe('<InputsAndOutputs />', () => {
       wrapper: ThemeProvider,
     });
 
-    await waitForElementToBeRemoved(() => screen.getByTestId('inputs-loading'));
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('inputs-skeleton')
+    );
 
     expect(screen.getByRole('heading', {name: /inputs/i})).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: /outputs/i})).toBeInTheDocument();
@@ -50,13 +52,15 @@ describe('<InputsAndOutputs />', () => {
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
-    expect(screen.getByTestId('inputs-loading')).toBeInTheDocument();
-    expect(screen.getByTestId('outputs-loading')).toBeInTheDocument();
+    expect(screen.getByTestId('inputs-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('outputs-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(() => screen.getByTestId('inputs-loading'));
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('inputs-skeleton')
+    );
 
-    expect(screen.queryByTestId('inputs-loading')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('outputs-loading')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('inputs-skeleton')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('outputs-skeleton')).not.toBeInTheDocument();
   });
 
   it('should load inputs and outputs', async () => {
@@ -69,7 +73,9 @@ describe('<InputsAndOutputs />', () => {
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
-    await waitForElementToBeRemoved(() => screen.getByTestId('inputs-loading'));
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('inputs-skeleton')
+    );
 
     const [inputsTable, outputsTable] = screen.getAllByRole('table');
     const [inputsNameColumnHeader, inputsValueColumnHeader] =
@@ -112,7 +118,8 @@ describe('<InputsAndOutputs />', () => {
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
-    expect(await screen.findByText(/cannot load inputs/i)).toBeInTheDocument();
-    expect(await screen.findByText(/cannot load outputs/i)).toBeInTheDocument();
+    expect(
+      await screen.findAllByText(/data could not be fetched/i)
+    ).toHaveLength(2);
   });
 });

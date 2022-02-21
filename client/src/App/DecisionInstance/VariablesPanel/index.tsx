@@ -18,6 +18,7 @@ const VariablesPanel: React.FC = () => {
     <Container data-testid="decision-instance-variables-panel">
       <Header>
         <Tab
+          isSelected={selectedTab === 'inputs-and-outputs'}
           onClick={() => {
             setSelectedTab('inputs-and-outputs');
           }}
@@ -25,6 +26,7 @@ const VariablesPanel: React.FC = () => {
           Inputs and Outputs
         </Tab>
         <Tab
+          isSelected={selectedTab === 'result'}
           onClick={() => {
             setSelectedTab('result');
           }}
