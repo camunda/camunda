@@ -334,4 +334,38 @@ public final class BusinessRuleTaskTest {
                       });
             });
   }
+
+  @Test
+  public void shouldCallDecisionWithDecisionIdExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t ->
+                    t.zeebeCalledDecisionIdExpression("decisionIdVariable")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("decisionIdVariable", "jedi_or_sith"),
+                    Map.entry("lightsaberColor", "blue")))
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName(RESULT_VARIABLE)
+                .exists())
+        .as("Decision is evaluated successfully")
+        .isTrue();
+  }
 }
