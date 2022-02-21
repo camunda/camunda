@@ -96,7 +96,6 @@ class DmnEvaluationTest {
             new VariablesContext(Map.of("lightsaberColor", asMsgPack("\"blue\""))));
 
     // then
-    // then
     assertThat(result.isFailure())
         .describedAs("Expect that the result is not evaluated successfully")
         .isTrue();
