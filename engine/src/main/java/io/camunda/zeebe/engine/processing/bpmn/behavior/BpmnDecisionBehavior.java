@@ -76,7 +76,7 @@ public final class BpmnDecisionBehavior {
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
 
-    final var decisionId = element.getDecisionId();
+    final var decisionId = element.getDecisionId().getExpression();
     // todo(#8571): avoid parsing drg every time
     final var decisionOrFailure = findDecisionById(decisionId);
     final var resultOrFailure =
