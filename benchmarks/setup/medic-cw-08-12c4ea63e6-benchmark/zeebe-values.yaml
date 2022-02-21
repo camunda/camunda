@@ -25,11 +25,6 @@ zeebe:
     capabilities:
       add: ["NET_ADMIN"]
 
-  # PrometheusServiceMonitor configuration for the prometheus service monitor
-  prometheusServiceMonitor:
-    # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
-    enabled: true
-
   # JavaOpts can be used to set java options for the zeebe brokers
   JavaOpts: >-
     -XX:MaxRAMPercentage=25.0
@@ -153,3 +148,8 @@ kibana:
 # PROMETHEUS
 prometheus:
   enabled: false
+
+# PrometheusServiceMonitor configuration for the prometheus service monitor
+prometheusServiceMonitor:
+  # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
+  enabled: true
