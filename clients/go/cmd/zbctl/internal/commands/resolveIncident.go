@@ -43,7 +43,7 @@ var resolveIncidentCommand = &cobra.Command{
 	Args:    keyArg(&incidentKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		resp, err := client.NewResolveIncidentCommand().IncidentKey(incidentKey).Send(ctx)

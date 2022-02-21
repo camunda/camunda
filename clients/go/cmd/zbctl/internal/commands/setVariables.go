@@ -58,7 +58,7 @@ var setVariablesCmd = &cobra.Command{
 		}
 
 		request.Local(setVariablesLocalFlag)
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		response, err := request.Send(ctx)

@@ -14,22 +14,17 @@
 package commands
 
 import (
-	"context"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
-
-	"github.com/spf13/cobra"
+    "context"
+    "github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+    "github.com/spf13/cobra"
+    "strconv"
+    "strings"
 )
 
 var (
-	createInstanceVersionFlag        int32
-	createInstanceVariablesFlag      string
-	createInstanceWithResultFlag     []string
-	createInstanceRequestTimeoutFlag time.Duration
+	createInstanceVersionFlag    int32
+	createInstanceVariablesFlag  string
+	createInstanceWithResultFlag []string
 )
 
 var createInstanceCmd = &cobra.Command{
@@ -57,7 +52,7 @@ var createInstanceCmd = &cobra.Command{
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), createInstanceRequestTimeoutFlag)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		if createInstanceWithResultFlag == nil {
@@ -99,10 +94,6 @@ func init() {
 	createInstanceCmd.
 		Flags().
 		StringSliceVar(&createInstanceWithResultFlag, "withResult", nil, "Specify to await result of process, optional a list of variable names can be provided to limit the returned variables")
-
-	createInstanceCmd.
-		Flags().
-		DurationVar(&createInstanceRequestTimeoutFlag, "requestTimeout", zbc.DefaultRequestTimeout, "Specify the timeout for a request, example values: 300ms, 50s or 1m")
 
 	// hack to use --withResult without values
 	createInstanceCmd.Flag("withResult").NoOptDefVal = " "

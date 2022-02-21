@@ -307,7 +307,7 @@ func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool,
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	args := command
+	args := append(command, "--requestTimeout", "10s")
 	if useHostAndPort {
 		args = append(args, "--host", s.GatewayHost)
 		args = append(args, "--port", fmt.Sprint(s.GatewayPort))

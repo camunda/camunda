@@ -46,7 +46,7 @@ var deployProcessCmd = &cobra.Command{
 			zbCmd = zbCmd.AddResourceFile(args[i])
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		response, err := zbCmd.Send(ctx)
