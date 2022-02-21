@@ -126,7 +126,7 @@ var tests = []testCase{
 			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
 			strings.Fields("--insecure create instance jobProcess"),
 		},
-		cmd:        strings.Fields("create --insecure worker jobType --handler echo"),
+		cmd:        strings.Fields("create --insecure worker jobType --maxJobsHandle 1 --handler echo"),
 		goldenFile: "testdata/create_worker.golden",
 	},
 	{

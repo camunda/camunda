@@ -38,11 +38,15 @@ var (
 	createWorkerConcurrencyFlag   int
 	createWorkerPollIntervalFlag  time.Duration
 	createWorkerPollThresholdFlag float64
+	createWorkerMaxJobsHandleFlag int
 
 	createWorkerHandlerArgs []string
 )
 
 // createWorkerCmd represents the createWorker command
+var jobWorker worker.JobWorker
+var jobsHandled = 0
+var workerDoneChannel = make(chan struct{})
 var createWorkerCmd = &cobra.Command{
 	Use:   "worker <type>",
 	Short: "Create a polling job worker",
@@ -56,7 +60,7 @@ If the handler exits with an none zero exit code the job will be failed, the han
 	Run: func(cmd *cobra.Command, args []string) {
 		createWorkerHandlerArgs = strings.Split(createWorkerHandlerFlag, " ")
 
-		jobWorker := client.NewJobWorker().
+		jobWorker = client.NewJobWorker().
 			JobType(args[0]).
 			Handler(handle).
 			Name(createWorkerNameFlag).
@@ -68,7 +72,7 @@ If the handler exits with an none zero exit code the job will be failed, the han
 			PollThreshold(createWorkerPollThresholdFlag).
 			Open()
 
-		jobWorker.AwaitClose()
+		<-workerDoneChannel
 	},
 }
 
@@ -119,6 +123,11 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 	} else {
 		failJob(jobClient, job, stderr.String())
 	}
+
+	jobsHandled += 1
+	if createWorkerMaxJobsHandleFlag > 0 && jobsHandled >= createWorkerMaxJobsHandleFlag {
+		close(workerDoneChannel)
+	}
 }
 
 func completeJob(jobClient worker.JobClient, job entities.Job, variables string) {
@@ -165,4 +174,8 @@ func init() {
 	createWorkerCmd.Flags().IntVar(&createWorkerConcurrencyFlag, "concurrency", worker.DefaultJobWorkerConcurrency, "Specify the maximum number of concurrent spawned goroutines to complete jobs")
 	createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", worker.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs. Example values: 300ms, 50s or 1m")
 	createWorkerCmd.Flags().Float64Var(&createWorkerPollThresholdFlag, "pollThreshold", worker.DefaultJobWorkerPollThreshold, "Specify the threshold of buffered activated jobs before polling for new jobs, i.e. pollThreshold * maxJobsActive")
+	createWorkerCmd.Flags().IntVar(&createWorkerMaxJobsHandleFlag, "maxJobsHandle", 0, "Specify the maximum number of jobs the worker should handle before exiting; pass 0 to handle an unlimited amount")
+
+	// maxJobsHandle is mostly used for testing; we can make it public and documented if it proves useful for users as well
+	createWorkerCmd.Flags().MarkHidden("maxJobsHandle")
 }
