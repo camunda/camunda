@@ -16,44 +16,35 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InstancesListPanel} from './';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
-import {MemoryRouter} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import {Router, Route} from 'react-router';
 import userEvent from '@testing-library/user-event';
 
-const Wrapper: React.FC = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
+const createWrapper = (
+  history = createMemoryHistory({initialEntries: ['/decisions']})
+) => {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <Router history={history}>
+          <Route exact path="/decisions">
+            {children}
+          </Route>
+          <Route path="/instances/:processInstanceId">
+            <div></div>
+          </Route>
+          <Route path="/decisions/:decisionInstanceId">
+            <div></div>
+          </Route>
+        </Router>
+      </ThemeProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('Decisions List', () => {
-  const createWrapper = (
-    history = createMemoryHistory({initialEntries: ['/decisions']})
-  ) => {
-    const Wrapper: React.FC = ({children}) => {
-      return (
-        <ThemeProvider>
-          <Router history={history}>
-            <Route exact path="/decisions">
-              {children}
-            </Route>
-            <Route path="/instances/:processInstanceId">
-              <div></div>
-            </Route>
-            <Route path="/decisions/:decisionInstanceId">
-              <div></div>
-            </Route>
-          </Router>
-        </ThemeProvider>
-      );
-    };
-
-    return Wrapper;
-  };
-
   afterEach(() => {
     decisionInstancesStore.reset();
   });
