@@ -17,6 +17,9 @@ import {InstancesListPanel} from './';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {MemoryRouter} from 'react-router-dom';
+import {createMemoryHistory} from 'history';
+import {Router, Route} from 'react-router';
+import userEvent from '@testing-library/user-event';
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -27,6 +30,30 @@ const Wrapper: React.FC = ({children}) => {
 };
 
 describe('Decisions List', () => {
+  const createWrapper = (
+    history = createMemoryHistory({initialEntries: ['/decisions']})
+  ) => {
+    const Wrapper: React.FC = ({children}) => {
+      return (
+        <ThemeProvider>
+          <Router history={history}>
+            <Route exact path="/decisions">
+              {children}
+            </Route>
+            <Route path="/instances/:processInstanceId">
+              <div></div>
+            </Route>
+            <Route path="/decisions/:decisionInstanceId">
+              <div></div>
+            </Route>
+          </Router>
+        </ThemeProvider>
+      );
+    };
+
+    return Wrapper;
+  };
+
   afterEach(() => {
     decisionInstancesStore.reset();
   });
@@ -38,7 +65,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: Wrapper});
+    render(<InstancesListPanel />, {wrapper: createWrapper()});
 
     expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
 
@@ -52,7 +79,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: Wrapper});
+    render(<InstancesListPanel />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -67,7 +94,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: Wrapper});
+    render(<InstancesListPanel />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -84,7 +111,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: Wrapper});
+    render(<InstancesListPanel />, {wrapper: createWrapper()});
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -139,5 +166,70 @@ describe('Decisions List', () => {
       within(secondDecisionInstance).getByTestId('FAILED-icon-2251799813689542')
     ).toBeInTheDocument();
     expect(screen.getByText('2 results found')).toBeInTheDocument();
+  });
+
+  it('should navigate to decision instance page', async () => {
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/decisions'],
+    });
+
+    mockServer.use(
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockDecisionInstances))
+      )
+    );
+
+    render(<InstancesListPanel />, {wrapper: createWrapper(MOCK_HISTORY)});
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/decisions');
+
+    userEvent.click(
+      screen.getByRole('link', {
+        name: /view decision instance 2251799813689541/i,
+      })
+    );
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/decisions/2251799813689541');
+  });
+
+  it('should navigate to process instance page', async () => {
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/decisions'],
+    });
+
+    mockServer.use(
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            decisionInstances: [
+              {
+                id: '2251799813689541',
+                name: 'test decision instance 1',
+                version: 1,
+                evaluationTime: '2022-02-07T10:01:51.293+0000',
+                processInstanceId: '2251799813689544',
+                state: 'COMPLETED',
+              },
+            ],
+          })
+        )
+      )
+    );
+
+    render(<InstancesListPanel />, {wrapper: createWrapper(MOCK_HISTORY)});
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/decisions');
+
+    userEvent.click(
+      screen.getByRole('link', {
+        name: /view process instance 2251799813689544/i,
+      })
+    );
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances/2251799813689544');
   });
 });

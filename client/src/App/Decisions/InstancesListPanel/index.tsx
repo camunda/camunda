@@ -27,6 +27,8 @@ import {formatDate} from 'modules/utils/date';
 import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
 import {useLocation} from 'react-router-dom';
 import {Header} from './Header';
+import {Link} from 'modules/components/Link';
+import {Locations} from 'modules/routes';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
@@ -97,23 +99,54 @@ const InstancesListPanel: React.FC = observer(() => {
             {status === 'error' && <InstancesMessage type="error" />}
             {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
             <Table.TBody>
-              {decisionInstances.map((instance) => {
-                return (
-                  <TR key={instance.id}>
-                    <Name>
-                      <State
-                        state={instance.state}
-                        data-testid={`${instance.state}-icon-${instance.id}`}
-                      />
-                      {instance.name}
-                    </Name>
-                    <TD>{instance.id}</TD>
-                    <TD>{instance.version}</TD>
-                    <TD>{formatDate(instance.evaluationTime)}</TD>
-                    <TD>{instance.processInstanceId}</TD>
-                  </TR>
-                );
-              })}
+              {decisionInstances.map(
+                ({
+                  id,
+                  state,
+                  name,
+                  version,
+                  evaluationTime,
+                  processInstanceId,
+                }) => {
+                  return (
+                    <TR key={id}>
+                      <Name>
+                        <State
+                          state={state}
+                          data-testid={`${state}-icon-${id}`}
+                        />
+                        {name}
+                      </Name>
+                      <TD>
+                        <Link
+                          to={(location) =>
+                            Locations.decisionInstance(id, location)
+                          }
+                          title={`View decision instance ${id}`}
+                        >
+                          {id}
+                        </Link>
+                      </TD>
+                      <TD>{version}</TD>
+                      <TD>{formatDate(evaluationTime)}</TD>
+                      <TD>
+                        {processInstanceId !== null ? (
+                          <Link
+                            to={(location) =>
+                              Locations.instance(processInstanceId, location)
+                            }
+                            title={`View process instance ${processInstanceId}`}
+                          >
+                            {processInstanceId}
+                          </Link>
+                        ) : (
+                          'None'
+                        )}
+                      </TD>
+                    </TR>
+                  );
+                }
+              )}
             </Table.TBody>
           </Table>
         </ScrollableContent>

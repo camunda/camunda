@@ -27,7 +27,7 @@ const mockDecisionInstances = {
       name: 'test decision instance 3',
       version: 1,
       evaluationTime: '2022-02-07T10:01:51.293+0000',
-      processInstanceId: '2251799813689544',
+      processInstanceId: null,
       state: 'COMPLETED',
     },
     {
