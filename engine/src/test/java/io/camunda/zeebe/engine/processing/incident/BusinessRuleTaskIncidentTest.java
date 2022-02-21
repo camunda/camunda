@@ -37,6 +37,7 @@ public class BusinessRuleTaskIncidentTest {
 
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
+  private static final String DECISION_ID_VARIABLE = "decisionIdVariable";
   private static final String RESULT_VARIABLE = "result";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
@@ -128,6 +129,39 @@ public class BusinessRuleTaskIncidentTest {
             Expected to evaluate decision 'jedi_or_sith', \
             but failed to evaluate expression 'lightsaberColor': \
             no variable found for name 'lightsaberColor'\
+            """);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDecisionIdExpressionEvaluationFailed() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionIdExpression(DECISION_ID_VARIABLE)
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            failed to evaluate expression 'decisionIdVariable': \
+            no variable found for name 'decisionIdVariable'\
             """);
   }
 
@@ -248,6 +282,64 @@ public class BusinessRuleTaskIncidentTest {
         .variables()
         .ofScope(incidentCreated.getValue().getElementInstanceKey())
         .withDocument(Maps.of(entry("lightsaberColor", "blue")))
+        .update();
+
+    // ... resolve incident
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .incidentRecords()
+                .onlyEvents())
+        .extracting(Record::getKey, Record::getIntent)
+        .describedAs("created incident is resolved and no new incident is created")
+        .containsExactly(
+            tuple(incidentCreated.getKey(), IncidentIntent.CREATED),
+            tuple(incidentCreated.getKey(), IncidentIntent.RESOLVED));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .describedAs("business rule task is successfully completed")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterDecisionIdExpressionEvaluationFailed() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionIdExpression(DECISION_ID_VARIABLE)
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Maps.of(entry("lightsaberColor", "blue")))
+            .create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... update state to resolve issue
+    engine
+        .variables()
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry(DECISION_ID_VARIABLE, DECISION_ID)))
         .update();
 
     // ... resolve incident
