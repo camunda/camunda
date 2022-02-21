@@ -198,19 +198,28 @@ func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
 		passed := s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
-				if _, err := s.runCommand(cmd, false); err != nil {
+				if _, _, err := s.runCommand(cmd, false); err != nil {
 					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
 				}
 			}
 
-			if len(test.setupCmds) > 0 {
-				// mitigates race condition between setup commands and test command
-				<-time.After(time.Second)
+			setupCmdsCount := len(test.setupCmds)
+			if setupCmdsCount > 0 {
+				// mitigates race condition between setup commands and test command, wait 1 second
+				// per setup command
+				<-time.After(time.Duration(setupCmdsCount) * time.Second)
 			}
 
-			cmdOut, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
-			if errors.Is(err, context.DeadlineExceeded) {
-				t.Fatalf("timed out while executing command '%s': %v", strings.Join(test.cmd, " "), err)
+			cmdOut, cmdCtx, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
+			if err != nil {
+				cmdText := strings.Join(test.cmd, " ")
+				// the error returned when a process was stopped by the context is just that it was
+				// killed, which doesn't really tell us if it timed out or not
+				if errors.Is(cmdCtx.Err(), context.DeadlineExceeded) {
+					t.Fatalf("timed out while executing command '%s'", cmdText)
+				} else {
+					t.Fatalf("failed to execute command '%s': %v", cmdText, err)
+				}
 			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
@@ -303,7 +312,7 @@ func cmpIgnoreNums(x, y string) bool {
 }
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
-func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool, envVars ...string) ([]byte, error) {
+func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool, envVars ...string) ([]byte, context.Context, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -317,7 +326,8 @@ func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool,
 	cmd := exec.CommandContext(ctx, fmt.Sprintf("./dist/%s", zbctl), args...)
 
 	cmd.Env = append(cmd.Env, envVars...)
-	return cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
+	return output, ctx, err
 }
 
 func buildZbctl() ([]byte, error) {
