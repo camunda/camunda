@@ -52,6 +52,11 @@ class DmnEvaluationTest {
             "Expect that the evaluation failed because the DRG does not contain the referred decision")
         .contains("no decision found for 'not_in_drg'");
 
+    assertThat(result.getFailedDecisionId())
+        .describedAs(
+            "Expect that the failed decision id is 'null' if the decision was not evaluated")
+        .isNull();
+
     assertThat(result.getOutput())
         .describedAs("Expect that a failed evaluation has no output")
         .isNull();
@@ -76,6 +81,8 @@ class DmnEvaluationTest {
         .isNotNull()
         .describedAs("Expect that the evaluation failed because of a missing variable")
         .contains("no variable found for");
+
+    assertThat(result.getFailedDecisionId()).isEqualTo("jedi_or_sith");
 
     assertThat(result.getOutput())
         .describedAs("Expect that a failed evaluation has no output")
@@ -105,6 +112,10 @@ class DmnEvaluationTest {
         .describedAs("Expect that the evaluation failed because the DRG is invalid")
         .contains("the decision requirements graph is invalid");
 
+    assertThat(result.getFailedDecisionId())
+        .describedAs("Expect that the failed decision id is 'null' if the DRG is invalid")
+        .isNull();
+
     assertThat(result.getOutput())
         .describedAs("Expect that a successful result has no output")
         .isNull();
@@ -131,6 +142,10 @@ class DmnEvaluationTest {
 
     assertThat(result.getFailureMessage())
         .describedAs("Expect that a successful result has no failure message")
+        .isNull();
+
+    assertThat(result.getFailedDecisionId())
+        .describedAs("Expect that a successful result has no failed decision")
         .isNull();
 
     assertThat(result.getOutput())

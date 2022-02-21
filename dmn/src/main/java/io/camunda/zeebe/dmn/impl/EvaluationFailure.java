@@ -16,14 +16,19 @@ import org.agrona.DirectBuffer;
 public final class EvaluationFailure implements DecisionEvaluationResult {
 
   private final String message;
+  private final String failedDecisionId;
   private final List<EvaluatedDecision> evaluatedDecisions;
 
   public EvaluationFailure(final String message) {
-    this(message, List.of());
+    this(message, null, List.of());
   }
 
-  public EvaluationFailure(final String message, final List<EvaluatedDecision> evaluatedDecisions) {
+  public EvaluationFailure(
+      final String message,
+      final String failedDecisionId,
+      final List<EvaluatedDecision> evaluatedDecisions) {
     this.message = message;
+    this.failedDecisionId = failedDecisionId;
     this.evaluatedDecisions = evaluatedDecisions;
   }
 
@@ -35,6 +40,11 @@ public final class EvaluationFailure implements DecisionEvaluationResult {
   @Override
   public String getFailureMessage() {
     return message;
+  }
+
+  @Override
+  public String getFailedDecisionId() {
+    return failedDecisionId;
   }
 
   @Override
