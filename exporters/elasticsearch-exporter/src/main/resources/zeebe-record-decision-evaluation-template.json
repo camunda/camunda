@@ -57,6 +57,12 @@
             "elementInstanceKey": {
               "type": "long"
             },
+            "evaluationFailureMessage": {
+              "type": "keyword"
+            },
+            "failedDecisionId": {
+              "type": "keyword"
+            },
             "evaluatedDecisions": {
               "properties": {
                 "decisionId": {
