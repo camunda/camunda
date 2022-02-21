@@ -43,6 +43,7 @@ import org.camunda.optimize.service.util.configuration.elasticsearch.Elasticsear
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -109,10 +110,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -504,6 +507,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     cleanUpElasticSearch();
   }
 
+  @SuppressWarnings(UNUSED)
   public void disableCleanup() {
     haveToClean = false;
   }
@@ -650,6 +654,12 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
+  private void deleteAllProcessInstanceArchiveIndices() {
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX + "*")
+    );
+  }
+
   private void deleteAllEventProcessInstanceIndices() {
     getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
@@ -755,6 +765,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       deleteAllOptimizeData();
       deleteAllEventProcessInstanceIndices();
       deleteCamundaEventIndicesAndEventCountsAndTraces();
+      deleteAllProcessInstanceArchiveIndices();
     } catch (Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);

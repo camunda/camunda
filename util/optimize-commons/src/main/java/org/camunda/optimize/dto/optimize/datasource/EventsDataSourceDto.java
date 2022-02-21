@@ -16,7 +16,11 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 public class EventsDataSourceDto extends DataSourceDto {
 
   public EventsDataSourceDto() {
-    super(DataImportSourceType.EVENTS, null);
+    this(null);
+  }
+
+  public EventsDataSourceDto(final String name) {
+    super(DataImportSourceType.EVENTS, name);
   }
 
 }

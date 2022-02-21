@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.event.handler;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
+import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -15,14 +15,9 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @AllArgsConstructor
-public class CamundaEventTraceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
+public class CamundaEventTraceImportIndexHandler extends TimestampBasedEventDataImportIndexHandler {
 
   private final String definitionKey;
-
-  @Override
-  public String getEngineAlias() {
-    return ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
-  }
 
   @Override
   protected String getElasticsearchDocID() {

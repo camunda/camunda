@@ -60,6 +60,7 @@ public class ElasticsearchConstants {
   public static final String PROCESS_DEFINITION_INDEX_NAME = "process-definition";
   public static final String PROCESS_INSTANCE_MULTI_ALIAS = "process-instance";
   public static final String PROCESS_INSTANCE_INDEX_PREFIX = "process-instance-";
+  public static final String PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX = "process-instance-archive-";
 
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";

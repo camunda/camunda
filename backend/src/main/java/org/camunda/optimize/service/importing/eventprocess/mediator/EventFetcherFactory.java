@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceT
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.ExternalEventReader;
-import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
+import org.camunda.optimize.service.es.reader.importindex.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.events.CamundaActivityEventFetcherService;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.events.ExternalEventByGroupsFetcherService;

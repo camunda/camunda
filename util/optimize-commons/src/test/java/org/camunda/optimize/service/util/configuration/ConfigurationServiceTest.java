@@ -26,8 +26,8 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 
 public class ConfigurationServiceTest {
 
-  private static final int DEFAULT_AUTH_TOKEN_LIFEMIN = 5;
-  private static final int CUSTOM_AUTH_TOKEN_LIFEMIN = 6;
+  private static final int DEFAULT_AUTH_TOKEN_LIFE_MIN = 5;
+  private static final int CUSTOM_AUTH_TOKEN_LIFE_MIN = 6;
   private static final String TOKEN_SECRET = "someSecret";
   private static final Boolean DEFAULT_FIRST_ENGINE_IMPORT_ENABLED = false;
   private static final Boolean CUSTOM_FIRST_ENGINE_IMPORT_ENABLED = true;
@@ -170,7 +170,7 @@ public class ConfigurationServiceTest {
   public void resolvePropertiesFromEnvironmentVariables() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
-    environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     environmentVariablesExtension.set("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     environmentVariablesExtension.set("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
     environmentVariablesExtension.set("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
@@ -188,13 +188,23 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT",
+      String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT)
+    );
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+      String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE)
+    );
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED",
+      String.valueOf(CUSTOM_ES_SSL_ENABLED)
+    );
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -206,7 +216,7 @@ public class ConfigurationServiceTest {
   public void resolvePropertiesFromSystemVariables() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
-    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
     System.setProperty("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
@@ -232,6 +242,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -259,14 +270,24 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT",
+      String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT)
+    );
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+      String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE)
+    );
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED",
+      String.valueOf(CUSTOM_ES_SSL_ENABLED)
+    );
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
-    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
     System.setProperty("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
@@ -292,6 +313,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -313,7 +335,7 @@ public class ConfigurationServiceTest {
   public void resolveSetPropertiesWinOverDefaultValue() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-default-value-test-config.yaml"};
-    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
     System.setProperty("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
@@ -338,6 +360,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -404,7 +427,7 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatPlaceholderDefaultValuesAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(DEFAULT_AUTH_TOKEN_LIFEMIN);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(DEFAULT_AUTH_TOKEN_LIFE_MIN);
     assertThat(
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
       .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
@@ -443,7 +466,7 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(CUSTOM_AUTH_TOKEN_LIFEMIN);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(CUSTOM_AUTH_TOKEN_LIFE_MIN);
     assertThat(
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
       .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
@@ -483,6 +506,7 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getElasticsearchSecuritySSLEnabled()).isEqualTo(CUSTOM_ES_SSL_ENABLED);
     assertThat(underTest.getSharingEnabled()).isEqualTo(CUSTOM_SHARING_ENABLED);
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isEqualTo(CUSTOM_UI_LOGOUT_HIDDEN);
+    assertThat(underTest.getDataArchiveConfiguration().isEnabled()).isFalse();
   }
 
 }

@@ -3,13 +3,14 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.index;
+package org.camunda.optimize.service.util.configuration.archive;
 
 import lombok.Data;
 
 @Data
-public class AllEntitiesBasedImportIndexDto implements EngineImportIndexDto {
-  private long importIndex;
-  private String esTypeIndexRefersTo;
-  private String engine;
+public class DataArchiveConfiguration {
+
+  private boolean enabled;
+  private int archiveIntervalInMins;
+
 }

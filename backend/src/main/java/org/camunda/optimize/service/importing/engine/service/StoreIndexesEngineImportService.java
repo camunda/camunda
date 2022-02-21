@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.StoreIndexesElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
@@ -19,7 +19,7 @@ import java.util.List;
  * If Optimize is restarted the import index can thus be restored again.
  */
 @Slf4j
-public class StoreIndexesEngineImportService implements ImportService<ImportIndexDto> {
+public class StoreIndexesEngineImportService implements ImportService<EngineImportIndexDto> {
   private final ImportIndexWriter importIndexWriter;
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
@@ -31,7 +31,7 @@ public class StoreIndexesEngineImportService implements ImportService<ImportInde
     this.importIndexWriter = importIndexWriter;
   }
 
-  public void executeImport(final List<ImportIndexDto> importIndexesToStore, final Runnable importCompleteCallback) {
+  public void executeImport(final List<EngineImportIndexDto> importIndexesToStore, final Runnable importCompleteCallback) {
     final StoreIndexesElasticsearchImportJob storeIndexesImportJob = new StoreIndexesElasticsearchImportJob(
       importIndexWriter, importCompleteCallback
     );

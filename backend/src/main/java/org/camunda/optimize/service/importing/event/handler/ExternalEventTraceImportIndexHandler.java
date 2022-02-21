@@ -5,27 +5,17 @@
  */
 package org.camunda.optimize.service.importing.event.handler;
 
-import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
+import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-
 @Component
-public class ExternalEventTraceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
-
-  private static final String EXTERNAL_EVENT_TRACE_IMPORT_INDEX_DOC_ID =
-    EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX;
-
-  @Override
-  public String getEngineAlias() {
-    return ENGINE_ALIAS_OPTIMIZE;
-  }
+public class ExternalEventTraceImportIndexHandler extends TimestampBasedEventDataImportIndexHandler {
 
   @Override
   protected String getElasticsearchDocID() {
-    return EXTERNAL_EVENT_TRACE_IMPORT_INDEX_DOC_ID;
+    return EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX;
   }
 }

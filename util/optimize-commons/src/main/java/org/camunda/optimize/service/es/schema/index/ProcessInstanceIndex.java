@@ -5,15 +5,12 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -23,7 +20,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROP
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_CHAR_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
@@ -34,7 +30,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
-public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
+public class ProcessInstanceIndex extends AbstractInstanceIndex {
 
   public static final int VERSION = 8;
 
@@ -111,12 +107,11 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String INCIDENT_DEFINITION_VERSION = IncidentDto.Fields.definitionVersion;
   public static final String INCIDENT_TENANT_ID = IncidentDto.Fields.tenantId;
 
-  public ProcessInstanceIndex(final String instanceIndexKey) {
-    indexName = getIndexPrefix() + instanceIndexKey.toLowerCase();
+  public ProcessInstanceIndex(final String processInstanceIndexKey) {
+    indexName = getIndexPrefix() + processInstanceIndexKey.toLowerCase();
   }
 
-  @Setter
-  private String indexName;
+  private final String indexName;
 
   @Override
   public String getIndexName() {
@@ -399,12 +394,6 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
-  }
-
-  @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
-    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards());
   }
 
 }

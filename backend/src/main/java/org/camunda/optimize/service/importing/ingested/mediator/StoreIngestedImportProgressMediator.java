@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.ingested.mediator;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -42,11 +42,11 @@ public class StoreIngestedImportProgressMediator
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
-      final List<ImportIndexDto> importIndexes = importIndexHandlerRegistry.getAllIngestedImportHandlers()
+      final List<EngineImportIndexDto> importIndexes = importIndexHandlerRegistry.getAllIngestedImportHandlers()
         .stream()
         .map(ImportIndexHandler::getIndexStateDto)
         .filter(Objects::nonNull)
-        .map(ImportIndexDto.class::cast)
+        .map(EngineImportIndexDto.class::cast)
         .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));

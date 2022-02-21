@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportI
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate37to38.indices.PositionBasedImportIndexOld;
+import org.camunda.optimize.upgrade.migrate37to38.indices.TimestampBasedImportIndexOld;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,8 @@ public abstract class AbstractUpgrade37IT extends AbstractUpgradeIT {
   private static final String TO_VERSION = "3.8.0";
 
   protected static final PositionBasedImportIndexOld POSITION_BASED_INDEX = new PositionBasedImportIndexOld();
+  protected static final TimestampBasedImportIndexOld TIMESTAMP_BASED_IMPORT_INDEX =
+    new TimestampBasedImportIndexOld();
   protected static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX =
     new SingleProcessReportIndex();
   protected static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX =
@@ -36,6 +39,7 @@ public abstract class AbstractUpgrade37IT extends AbstractUpgradeIT {
     super.setUp();
     initSchema(List.of(
       POSITION_BASED_INDEX,
+      TIMESTAMP_BASED_IMPORT_INDEX,
       SINGLE_PROCESS_REPORT_INDEX,
       SINGLE_DECISION_REPORT_INDEX,
       FIRST_DECISION_INSTANCE_INDEX,

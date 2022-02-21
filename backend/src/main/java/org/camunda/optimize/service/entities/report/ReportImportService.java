@@ -24,8 +24,8 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -327,10 +327,10 @@ public class ReportImportService {
                                                      final String definitionKey,
                                                      final List<String> tenantIds) {
     return definitionService.getDefinitionVersions(
-      definitionType,
-      definitionKey,
-      tenantIds
-    ).stream()
+        definitionType,
+        definitionKey,
+        tenantIds
+      ).stream()
       .map(DefinitionVersionResponseDto::getVersion)
       .collect(toList());
   }
@@ -391,7 +391,7 @@ public class ReportImportService {
     }
   }
 
-  private void validateIndexVersionOrFail(final DefaultIndexMappingCreator targetIndex,
+  private void validateIndexVersionOrFail(final AbstractReportIndex targetIndex,
                                           final ReportDefinitionExportDto exportDto) {
     if (targetIndex.getVersion() != exportDto.getSourceIndexVersion()) {
       throw new OptimizeImportIncorrectIndexVersionException(

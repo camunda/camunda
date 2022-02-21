@@ -25,16 +25,14 @@ class OptimizeWrapper {
 
   String optimizeVersion
   String optimizeDirectory
-  String configDirectory
   Process process
   Process upgradeProcess
   OptimizeRequestExecutor requestExecutor
   int elasticPort
 
-  OptimizeWrapper(String optimizeVersion, String baseDirectory, int elasticPort = 9200, String configDirectory = "config") {
+  OptimizeWrapper(String optimizeVersion, String baseDirectory, int elasticPort = 9200) {
     this.optimizeVersion = optimizeVersion
     this.optimizeDirectory = "${baseDirectory}/${optimizeVersion}"
-    this.configDirectory = "${optimizeDirectory}/${configDirectory}"
     this.requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8090/api")
     this.elasticPort = elasticPort
   }
@@ -42,7 +40,7 @@ class OptimizeWrapper {
   def copyLicense(String licensePath) {
     Files.copy(
       new File(licensePath).toPath(),
-      new File("${configDirectory}/OptimizeLicense.txt").toPath(),
+      new File("${optimizeDirectory}/config/OptimizeLicense.txt").toPath(),
       StandardCopyOption.REPLACE_EXISTING
     )
   }
@@ -83,6 +81,7 @@ class OptimizeWrapper {
     environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[demo]")
     environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true")
     environmentVars.add("OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true")
+    environmentVars.add("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED=false")
     environmentVars.add("OPTIMIZE_API_ACCESS_TOKEN=secret")
     def command = ["/bin/bash", "./optimize-startup.sh"]
     this.process = command.execute(environmentVars, new File(optimizeDirectory))

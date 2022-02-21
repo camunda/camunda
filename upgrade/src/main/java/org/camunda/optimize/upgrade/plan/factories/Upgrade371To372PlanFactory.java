@@ -38,7 +38,7 @@ public class Upgrade371To372PlanFactory implements UpgradePlanFactory {
       .build();
   }
 
-  private UpgradeStep deleteInvalidDecisionVariables() {
+  private static UpgradeStep deleteInvalidDecisionVariables() {
     final List<String> supportedTypes = ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES.stream()
       .map(type -> type.getId().toLowerCase())
       .collect(Collectors.toList());

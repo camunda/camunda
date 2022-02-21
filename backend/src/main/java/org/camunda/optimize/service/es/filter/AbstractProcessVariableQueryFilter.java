@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
-import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
-import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.createExcludeUndefinedOrNullQueryFilterBuilder;

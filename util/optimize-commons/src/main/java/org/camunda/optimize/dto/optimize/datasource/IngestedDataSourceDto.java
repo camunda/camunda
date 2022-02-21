@@ -20,4 +20,8 @@ public class IngestedDataSourceDto extends DataSourceDto implements SchedulerCon
     super(DataImportSourceType.INGESTED_DATA, null);
   }
 
+  public IngestedDataSourceDto(final String name) {
+    super(DataImportSourceType.INGESTED_DATA, name);
+  }
+
 }

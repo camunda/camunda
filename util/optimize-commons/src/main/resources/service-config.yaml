@@ -506,6 +506,13 @@ historyCleanup:
     # not external variables already imported into process instances.
     enabled: false
 
+# Configuration relating to the automatic archiving of data within Optimize
+dataArchive:
+  # Determines whether Optimize should try to archive data to cold indices
+  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:true}
+  # The interval in minutes between attempts to archive data made by Optimize
+  archiveIntervalInMins: 480
+
 locales:
   # all locales available
   # Note: for others than the default there must be a <localeCode>.json file available under ./config/localization.

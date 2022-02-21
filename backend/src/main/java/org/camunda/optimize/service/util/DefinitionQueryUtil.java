@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
+import org.camunda.optimize.service.es.schema.index.AbstractInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
@@ -35,7 +35,7 @@ public class DefinitionQueryUtil {
 
   public static BoolQueryBuilder createDefinitionQuery(final String definitionKey,
                                                        final List<String> tenantIds,
-                                                       final DefinitionBasedType type) {
+                                                       final AbstractInstanceIndex type) {
     return createDefinitionQuery(
       definitionKey,
       ImmutableList.of(ReportConstants.ALL_VERSIONS),
@@ -62,7 +62,7 @@ public class DefinitionQueryUtil {
   public static BoolQueryBuilder createDefinitionQuery(final String definitionKey,
                                                        final List<String> definitionVersions,
                                                        final List<String> tenantIds,
-                                                       final DefinitionBasedType type,
+                                                       final AbstractInstanceIndex type,
                                                        final UnaryOperator<String> getLatestVersionToKey) {
     final BoolQueryBuilder query = boolQuery();
     query.must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));

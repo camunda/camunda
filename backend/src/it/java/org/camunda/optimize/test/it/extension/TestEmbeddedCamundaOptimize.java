@@ -12,6 +12,7 @@ import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
@@ -124,7 +125,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public void reloadConfiguration() {
     // reset engine context factory first to ensure we have new clients before reinitializing any other object
     // as they might make use of the engine client
-    final EngineContextFactory engineContextFactory = getApplicationContext().getBean(PlatformEngineContextFactory.class);
+    final EngineContextFactory engineContextFactory =
+      getApplicationContext().getBean(PlatformEngineContextFactory.class);
     engineContextFactory.close();
     engineContextFactory.init();
 
@@ -152,6 +154,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public TelemetryScheduler getTelemetryService() {
     return getApplicationContext().getBean(TelemetryScheduler.class);
+  }
+
+  public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
+    return getApplicationContext().getBean(ProcessInstanceArchivingService.class);
   }
 
   public PlatformUserIdentityCache getPlatformUserIdentityCache() {

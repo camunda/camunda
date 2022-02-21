@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
-import org.camunda.optimize.service.es.reader.PositionBasedImportIndexReader;
+import org.camunda.optimize.service.es.reader.importindex.PositionBasedImportIndexReader;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -39,7 +39,7 @@ public abstract class PositionBasedImportIndexHandler
   @Override
   public PositionBasedImportIndexDto getIndexStateDto() {
     PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
-    indexToStore.setDataSourceDto(dataSource);
+    indexToStore.setDataSource(dataSource);
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
     indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);

@@ -6,16 +6,10 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.time.OffsetDateTime;
-import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
 
@@ -23,15 +17,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIA
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportIndexHandler
-  extends TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> {
+  extends TimestampBasedDataSourceImportIndexHandler<IngestedDataSourceDto> {
 
   public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID = "externalVariableUpdateImportIndex";
-
-  private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
-  private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
-
-  @Autowired
-  private TimestampBasedImportIndexReader importIndexReader;
 
   @Override
   public String getEngineAlias() {
@@ -39,36 +27,13 @@ public class ExternalVariableUpdateImportIndexHandler
   }
 
   @Override
-  public TimestampBasedImportIndexDto getIndexStateDto() {
-    return new TimestampBasedImportIndexDto(
-      lastImportExecutionTimestamp, persistedTimestampOfLastEntity, getElasticsearchDocId(), ENGINE_ALIAS_OPTIMIZE
-    );
-  }
-
-  @PostConstruct
-  protected void init() {
-    final Optional<TimestampBasedImportIndexDto> dto = importIndexReader
-      .getImportIndex(getElasticsearchDocId(), ENGINE_ALIAS_OPTIMIZE);
-    if (dto.isPresent()) {
-      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
-      updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
-      updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
-      updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
-    }
-  }
-
-  private String getElasticsearchDocId() {
+  protected String getElasticsearchDocID() {
     return EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
   }
 
   @Override
-  protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
-    this.persistedTimestampOfLastEntity = timestamp;
-  }
-
-  @Override
-  protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
-    this.lastImportExecutionTimestamp = timestamp;
+  protected IngestedDataSourceDto getDataSource() {
+    return new IngestedDataSourceDto(getEngineAlias());
   }
 
 }

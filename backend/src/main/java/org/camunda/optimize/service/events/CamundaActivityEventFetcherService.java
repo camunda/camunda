@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
-import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
+import org.camunda.optimize.service.es.reader.importindex.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;

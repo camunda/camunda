@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index.index;
 
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -19,11 +20,11 @@ public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
   public static final int VERSION = 2;
 
   private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
-    PositionBasedImportIndexDto.Fields.lastImportExecutionTimestamp;
+    ImportIndexDto.Fields.lastImportExecutionTimestamp;
   private static final String POSITION_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.positionOfLastEntity;
-  private static final String TIMESTAMP_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.timestampOfLastEntity;
+  private static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   private static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
-  private static final String DATA_SOURCE = PositionBasedImportIndexDto.Fields.dataSourceDto;
+  private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
   public String getIndexName() {

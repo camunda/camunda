@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.migrate37to38.indices;
 
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -16,13 +17,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BA
 
 public class PositionBasedImportIndexOld extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  private static final int VERSION = 1;
 
   private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
-    PositionBasedImportIndexDto.Fields.lastImportExecutionTimestamp;
+    ImportIndexDto.Fields.lastImportExecutionTimestamp;
   private static final String POSITION_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.positionOfLastEntity;
   private static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
-  private static final String DATA_SOURCE = PositionBasedImportIndexDto.Fields.dataSourceDto;
+  private static final String DATA_SOURCE = "dataSourceDto";
 
   @Override
   public String getIndexName() {

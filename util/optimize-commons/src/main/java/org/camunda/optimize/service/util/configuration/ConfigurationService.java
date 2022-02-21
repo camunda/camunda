@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
+import org.camunda.optimize.service.util.configuration.archive.DataArchiveConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
@@ -71,6 +72,8 @@ public class ConfigurationService {
   private ReadContext configJsonContext;
 
   private SecurityConfiguration securityConfiguration;
+
+  private DataArchiveConfiguration dataArchiveConfiguration;
 
   private UsersConfiguration usersConfiguration;
 
@@ -252,6 +255,16 @@ public class ConfigurationService {
       );
     }
     return securityConfiguration;
+  }
+
+  public DataArchiveConfiguration getDataArchiveConfiguration() {
+    if (dataArchiveConfiguration == null) {
+      dataArchiveConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.DATA_ARCHIVE,
+        DataArchiveConfiguration.class
+      );
+    }
+    return dataArchiveConfiguration;
   }
 
   public UsersConfiguration getUsersConfiguration() {

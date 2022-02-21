@@ -5,24 +5,33 @@
  */
 package org.camunda.optimize.dto.optimize.index;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
-@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @FieldNameConstants
-public class TimestampBasedImportIndexDto implements ImportIndexDto {
+public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto> implements EngineImportIndexDto {
 
-  protected OffsetDateTime lastImportExecutionTimestamp = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
-  protected OffsetDateTime timestampOfLastEntity = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected String esTypeIndexRefersTo;
-  protected String engine;
 
+  public TimestampBasedImportIndexDto(OffsetDateTime lastImportExecutionTimestamp,
+                                      OffsetDateTime timestampOfLastEntity,
+                                      final String esTypeIndexRefersTo,
+                                      final DataSourceDto dataSourceDto) {
+    super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
+    this.esTypeIndexRefersTo = esTypeIndexRefersTo;
+  }
+
+  @Override
+  @JsonIgnore
+  public String getEngine() {
+    return dataSource.getName();
+  }
 }
