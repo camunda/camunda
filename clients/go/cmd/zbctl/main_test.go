@@ -187,9 +187,16 @@ func TestZbctlWithInsecureGateway(t *testing.T) {
 		})
 }
 
+func (s *integrationTestSuite) AfterTest(suiteName, testName string) {
+	// overload to ignore the parent behavior; we instead print the container logs after each failed
+	// test and not at the very end of all test cases, where it's more difficult to know what went
+	// wrong; if you add more top level tests, like TestCommonCommands, make sure to also add a block
+	// of code in case the test fails to print out the container logs using s.PrintFailedContainerLogs()
+}
+
 func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
-		s.T().Run(test.name, func(t *testing.T) {
+		passed := s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
 				if _, err := s.runCommand(cmd, false); err != nil {
 					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
@@ -227,6 +234,12 @@ func (s *integrationTestSuite) TestCommonCommands() {
 
 			assertEq(t, test, goldenOut, cmdOut)
 		})
+
+		if !passed {
+			_, _ = fmt.Fprintln(os.Stderr, "=====================================")
+			_, _ = fmt.Fprintf(os.Stderr, "Test case '%s' failed, printing container logs up until now\n", test.name)
+			s.PrintFailedContainerLogs()
+		}
 	}
 }
 
