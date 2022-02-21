@@ -8,6 +8,26 @@ package io.camunda.tasklist.property;
 public class ZeebeProperties {
 
   private String gatewayAddress = "localhost:26500";
+  private boolean isSecure = false;
+  private String certificatePath = null;
+
+  public boolean isSecure() {
+    return isSecure;
+  }
+
+  public ZeebeProperties setSecure(final boolean secure) {
+    isSecure = secure;
+    return this;
+  }
+
+  public String getCertificatePath() {
+    return certificatePath;
+  }
+
+  public ZeebeProperties setCertificatePath(final String caCertificatePath) {
+    this.certificatePath = caCertificatePath;
+    return this;
+  }
 
   @Deprecated
   public String getBrokerContactPoint() {
@@ -23,7 +43,8 @@ public class ZeebeProperties {
     return gatewayAddress;
   }
 
-  public void setGatewayAddress(final String gatewayAddress) {
+  public ZeebeProperties setGatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    return this;
   }
 }

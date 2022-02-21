@@ -6,7 +6,9 @@
 package io.camunda.tasklist.zeebe;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +26,21 @@ public class ZeebeConnector {
 
   @Bean // will be closed automatically
   public ZeebeClient zeebeClient() {
+    return newZeebeClient(tasklistProperties.getZeebe());
+  }
 
-    final String gatewayAddress = tasklistProperties.getZeebe().getGatewayAddress();
-
-    return ZeebeClient.newClientBuilder()
-        .gatewayAddress(gatewayAddress)
-        .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
-        .usePlaintext()
-        .build();
+  public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(zeebeProperties.getGatewayAddress())
+            .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
+    if (zeebeProperties.isSecure()) {
+      builder.caCertificatePath(zeebeProperties.getCertificatePath());
+      LOGGER.info("Use TLS connection to zeebe");
+    } else {
+      builder.usePlaintext();
+      LOGGER.info("Use plaintext connection to zeebe");
+    }
+    return builder.build();
   }
 }
