@@ -76,8 +76,9 @@ public final class BpmnDecisionBehavior {
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
 
+    final var decisionId = element.getDecisionId();
     // todo(#8571): avoid parsing drg every time
-    final var decisionOrFailure = findDecisionById(element.getDecisionId());
+    final var decisionOrFailure = findDecisionById(decisionId);
     final var resultOrFailure =
         decisionOrFailure
             .flatMap(this::findDrgByDecision)
@@ -85,11 +86,11 @@ public final class BpmnDecisionBehavior {
                 failure ->
                     new Failure(
                         "Expected to evaluate decision '%s', but %s"
-                            .formatted(element.getDecisionId(), failure.getMessage())))
+                            .formatted(decisionId, failure.getMessage())))
             .flatMap(drg -> parseDrg(drg.getResource()))
             // all the above failures have the same error type and the correct scope
             .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
-            .flatMap(drg -> evaluateDecisionInDrg(drg, element.getDecisionId(), scopeKey));
+            .flatMap(drg -> evaluateDecisionInDrg(drg, decisionId, scopeKey));
 
     resultOrFailure.ifRight(
         result -> {
