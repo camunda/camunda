@@ -122,7 +122,7 @@ public class BusinessRuleTaskIncidentTest {
 
     // then
     assertIncidentCreated(processInstanceKey, taskActivating.getKey())
-        .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
+        .hasErrorType(ErrorType.DECISION_EVALUATION_ERROR)
         .hasErrorMessage(
             """
             Expected to evaluate decision 'jedi_or_sith', \
