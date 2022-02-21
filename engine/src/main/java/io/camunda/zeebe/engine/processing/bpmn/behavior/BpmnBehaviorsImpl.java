@@ -60,7 +60,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             zeebeState,
             eventTriggerBehavior,
             stateWriter,
-            zeebeState.getKeyGenerator());
+            zeebeState.getKeyGenerator(),
+            expressionBehavior);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);

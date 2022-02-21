@@ -19,6 +19,7 @@ import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -50,19 +51,22 @@ public final class BpmnDecisionBehavior {
   private final VariableState variableState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final ExpressionProcessor expressionBehavior;
 
   public BpmnDecisionBehavior(
       final DecisionEngine decisionEngine,
       final ZeebeState zeebeState,
       final EventTriggerBehavior eventTriggerBehavior,
       final StateWriter stateWriter,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final ExpressionProcessor expressionBehavior) {
     this.decisionEngine = decisionEngine;
     decisionState = zeebeState.getDecisionState();
     variableState = zeebeState.getVariableState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateWriter = stateWriter;
     this.keyGenerator = keyGenerator;
+    this.expressionBehavior = expressionBehavior;
   }
 
   /**
@@ -76,7 +80,12 @@ public final class BpmnDecisionBehavior {
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
 
-    final var decisionId = element.getDecisionId().getExpression();
+    final var decisionIdOrFailure = evalDecisionIdExpression(element, scopeKey);
+    if (decisionIdOrFailure.isLeft()) {
+      return Either.left(decisionIdOrFailure.getLeft());
+    }
+
+    final var decisionId = decisionIdOrFailure.get();
     // todo(#8571): avoid parsing drg every time
     final var decisionOrFailure = findDecisionById(decisionId);
     final var resultOrFailure =
@@ -106,6 +115,11 @@ public final class BpmnDecisionBehavior {
         });
 
     return resultOrFailure;
+  }
+
+  private Either<Failure, String> evalDecisionIdExpression(
+      final ExecutableCalledDecision element, final long scopeKey) {
+    return expressionBehavior.evaluateStringExpression(element.getDecisionId(), scopeKey);
   }
 
   private Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
