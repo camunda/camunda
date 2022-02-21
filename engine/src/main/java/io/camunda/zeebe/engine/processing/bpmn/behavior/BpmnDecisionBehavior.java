@@ -99,7 +99,23 @@ public final class BpmnDecisionBehavior {
             .flatMap(drg -> parseDrg(drg.getResource()))
             // all the above failures have the same error type and the correct scope
             .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
-            .flatMap(drg -> evaluateDecisionInDrg(drg, decisionId, scopeKey));
+            .flatMap(
+                drg -> {
+                  final var evaluationResult = evaluateDecisionInDrg(drg, decisionId, scopeKey);
+
+                  final var decision = decisionOrFailure.get();
+                  writeDecisionEvaluationEvent(decision, evaluationResult, context);
+
+                  if (evaluationResult.isFailure()) {
+                    return Either.left(
+                        new Failure(
+                            evaluationResult.getFailureMessage(),
+                            ErrorType.DECISION_EVALUATION_ERROR,
+                            scopeKey));
+                  } else {
+                    return Either.right(evaluationResult);
+                  }
+                });
 
     resultOrFailure.ifRight(
         result -> {
@@ -109,9 +125,6 @@ public final class BpmnDecisionBehavior {
           // the output mapping happens on element completion. We don't want to re-evaluate the
           // decision for output mapping related incidents.
           triggerProcessEventWithResultVariable(context, element.getResultVariable(), result);
-
-          final var decision = decisionOrFailure.get();
-          writeDecisionEvaluationEvent(decision, result, context);
         });
 
     return resultOrFailure;
@@ -151,17 +164,11 @@ public final class BpmnDecisionBehavior {
             });
   }
 
-  private Either<Failure, DecisionEvaluationResult> evaluateDecisionInDrg(
+  private DecisionEvaluationResult evaluateDecisionInDrg(
       final ParsedDecisionRequirementsGraph drg, final String decisionId, final long scopeKey) {
     final var variables = variableState.getVariablesAsDocument(scopeKey);
     final var evaluationContext = new VariablesContext(MsgPackConverter.convertToMap(variables));
-    final var result = decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
-    if (result.isFailure()) {
-      return Either.left(
-          new Failure(result.getFailureMessage(), ErrorType.DECISION_EVALUATION_ERROR, scopeKey));
-    } else {
-      return Either.right(result);
-    }
+    return decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
   }
 
   private void triggerProcessEventWithResultVariable(
@@ -202,7 +209,6 @@ public final class BpmnDecisionBehavior {
             .setDecisionVersion(decision.getVersion())
             .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
             .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-            .setDecisionOutput(decisionResult.getOutput())
             .setProcessDefinitionKey(context.getProcessDefinitionKey())
             .setBpmnProcessId(context.getBpmnProcessId())
             .setProcessInstanceKey(context.getProcessInstanceKey())
@@ -215,9 +221,22 @@ public final class BpmnDecisionBehavior {
             evaluatedDecision ->
                 addDecisionToEvaluationEvent(evaluatedDecision, decisionEvaluationEvent));
 
+    final DecisionEvaluationIntent decisionEvaluationIntent;
+    if (decisionResult.isFailure()) {
+      decisionEvaluationIntent = DecisionEvaluationIntent.FAILED;
+
+      decisionEvaluationEvent
+          .setEvaluationFailureMessage(decisionResult.getFailureMessage())
+          .setFailedDecisionId(decisionResult.getFailedDecisionId());
+    } else {
+      decisionEvaluationIntent = DecisionEvaluationIntent.EVALUATED;
+
+      decisionEvaluationEvent.setDecisionOutput(decisionResult.getOutput());
+    }
+
     final var newDecisionEvaluationKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
-        newDecisionEvaluationKey, DecisionEvaluationIntent.EVALUATED, decisionEvaluationEvent);
+        newDecisionEvaluationKey, decisionEvaluationIntent, decisionEvaluationEvent);
   }
 
   private void addDecisionToEvaluationEvent(
