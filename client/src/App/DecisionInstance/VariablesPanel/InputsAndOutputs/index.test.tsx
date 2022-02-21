@@ -25,7 +25,7 @@ describe('<InputsAndOutputs />', () => {
   it('should have section panels', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstance))
+        res.once(ctx.json(invoiceClassification))
       )
     );
     decisionInstanceStore.fetchDecisionInstance('1');
