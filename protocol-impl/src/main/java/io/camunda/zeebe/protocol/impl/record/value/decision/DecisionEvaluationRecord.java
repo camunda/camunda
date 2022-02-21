@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -28,6 +29,8 @@ import org.agrona.DirectBuffer;
 public final class DecisionEvaluationRecord extends UnifiedRecordValue
     implements DecisionEvaluationRecordValue {
 
+  private static final DirectBuffer NIL_DECISION_OUTPUT = BufferUtil.wrapArray(MsgPackHelper.NIL);
+
   private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
   private final StringProperty decisionIdProp = new StringProperty("decisionId");
   private final StringProperty decisionNameProp = new StringProperty("decisionName");
@@ -36,7 +39,8 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
       new StringProperty("decisionRequirementsId");
   private final LongProperty decisionRequirementsKeyProp =
       new LongProperty("decisionRequirementsKey");
-  private final BinaryProperty decisionOutputProp = new BinaryProperty("decisionOutput");
+  private final BinaryProperty decisionOutputProp =
+      new BinaryProperty("decisionOutput", NIL_DECISION_OUTPUT);
 
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
@@ -46,6 +50,10 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
 
   private final ArrayProperty<EvaluatedDecisionRecord> evaluatedDecisionsProp =
       new ArrayProperty<>("evaluatedDecisions", new EvaluatedDecisionRecord());
+
+  private final StringProperty evaluationFailureMessageProp =
+      new StringProperty("evaluationFailureMessage", "");
+  private final StringProperty failedDecisionIdProp = new StringProperty("failedDecisionId", "");
 
   public DecisionEvaluationRecord() {
     declareProperty(decisionKeyProp)
@@ -60,7 +68,9 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(evaluatedDecisionsProp);
+        .declareProperty(evaluatedDecisionsProp)
+        .declareProperty(evaluationFailureMessageProp)
+        .declareProperty(failedDecisionIdProp);
   }
 
   @Override
@@ -221,6 +231,37 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     }
 
     return evaluatedDecisions;
+  }
+
+  @Override
+  public String getEvaluationFailureMessage() {
+    return bufferAsString(evaluationFailureMessageProp.getValue());
+  }
+
+  @Override
+  public String getFailedDecisionId() {
+    return bufferAsString(failedDecisionIdProp.getValue());
+  }
+
+  public DecisionEvaluationRecord setFailedDecisionId(final String failedDecisionId) {
+    failedDecisionIdProp.setValue(failedDecisionId);
+    return this;
+  }
+
+  public DecisionEvaluationRecord setEvaluationFailureMessage(
+      final String evaluationFailureMessage) {
+    evaluationFailureMessageProp.setValue(evaluationFailureMessage);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getEvaluationFailureMessageBuffer() {
+    return evaluationFailureMessageProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getFailedDecisionIdBuffer() {
+    return failedDecisionIdProp.getValue();
   }
 
   @JsonIgnore
