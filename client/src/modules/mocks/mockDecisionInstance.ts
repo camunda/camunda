@@ -87,6 +87,10 @@ const invoiceClassification = {
       value: '"sbl §17"',
     },
   ],
+  result: JSON.stringify({
+    areAgeRequirementsSatisfied: 'satisfied',
+    paragraph: 'sbl §17',
+  }),
 } as const;
 
 const assignApproverGroup = {

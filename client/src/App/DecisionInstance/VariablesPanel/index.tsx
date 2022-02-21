@@ -4,15 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {observer} from 'mobx-react';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
 import {Container, Content, Header, Tab} from './styled';
 
-const VariablesPanel: React.FC = () => {
+const LOCAL_STORAGE_KEY = 'decisionInstanceTab';
+
+const VariablesPanel: React.FC = observer(() => {
   const [selectedTab, setSelectedTab] = useState<
     'inputs-and-outputs' | 'result'
-  >('inputs-and-outputs');
+  >(getStateLocally()?.[LOCAL_STORAGE_KEY] ?? 'inputs-and-outputs');
+
+  function selectTab(tab: typeof selectedTab) {
+    storeStateLocally({
+      [LOCAL_STORAGE_KEY]: tab,
+    });
+
+    setSelectedTab(tab);
+  }
 
   return (
     <Container data-testid="decision-instance-variables-panel">
@@ -20,7 +32,7 @@ const VariablesPanel: React.FC = () => {
         <Tab
           isSelected={selectedTab === 'inputs-and-outputs'}
           onClick={() => {
-            setSelectedTab('inputs-and-outputs');
+            selectTab('inputs-and-outputs');
           }}
         >
           Inputs and Outputs
@@ -28,7 +40,7 @@ const VariablesPanel: React.FC = () => {
         <Tab
           isSelected={selectedTab === 'result'}
           onClick={() => {
-            setSelectedTab('result');
+            selectTab('result');
           }}
         >
           Result
@@ -40,6 +52,6 @@ const VariablesPanel: React.FC = () => {
       </Content>
     </Container>
   );
-};
+});
 
 export {VariablesPanel};

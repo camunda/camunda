@@ -29,6 +29,7 @@ type Instance = ReadonlyDeep<{
     name: string;
     value: string;
   }>;
+  result: string;
 }>;
 
 type State = {
