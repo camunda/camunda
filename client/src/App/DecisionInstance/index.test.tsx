@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import {rest} from 'msw';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {mockServer} from 'modules/mock-server/node';
@@ -19,7 +19,7 @@ import {drdStore} from 'modules/stores/drd';
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/decisions/4294980768']}>
+      <MemoryRouter initialEntries={['/decisions/111']}>
         <Route path="/decisions/:decisionInstanceId">{children}</Route>
       </MemoryRouter>
     </ThemeProvider>
@@ -123,7 +123,7 @@ describe('<DecisionInstance />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show DRD panel on header button click', () => {
+  it('should show DRD panel on header button click', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
         res(ctx.json(invoiceClassification))
@@ -137,12 +137,20 @@ describe('<DecisionInstance />', () => {
         name: 'Close DRD Panel',
       })
     );
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId('decision-instance-header')).getByRole(
+          'button',
+          {name: /open decision requirements diagram/i}
+        )
+      ).toBeEnabled()
+    );
+
     userEvent.click(
       within(screen.getByTestId('decision-instance-header')).getByRole(
         'button',
-        {
-          name: 'Show DRD Panel',
-        }
+        {name: /open decision requirements diagram/i}
       )
     );
 

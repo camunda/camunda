@@ -98,6 +98,10 @@ const theme = {
       text01: SEMANTIC_COLORS.white,
       text02: SEMANTIC_COLORS.white,
       decisionInstance: {
+        header: {
+          backgroundColor: DARK_COLORS.ui03,
+          borderColor: DARK_COLORS.ui04,
+        },
         panelHeader: {
           backgroundColor: DARK_COLORS.ui03,
           borderColor: DARK_COLORS.ui04,
@@ -1031,6 +1035,10 @@ const theme = {
       text01: DARK_COLORS.ui04,
       text02: DARK_COLORS.ui06,
       decisionInstance: {
+        header: {
+          backgroundColor: LIGHT_COLORS.ui02,
+          borderColor: LIGHT_COLORS.ui05,
+        },
         panelHeader: {
           backgroundColor: LIGHT_COLORS.ui02,
           borderColor: LIGHT_COLORS.ui05,

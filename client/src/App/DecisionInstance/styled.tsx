@@ -14,7 +14,7 @@ const DecisionInstanceContainer = styled.div`
   grid-template-rows: 56px 1fr 1fr;
 `;
 
-const Container = styled.div`
+const Container = styled.main`
   height: calc(100vh - ${HEADER_HEIGHT}px);
 `;
 

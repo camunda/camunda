@@ -10,10 +10,10 @@ import {fetchDecisionInstance} from 'modules/api/decisions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 
-type Instance = ReadonlyDeep<{
+type DecisionInstanceType = ReadonlyDeep<{
   decisionId: string;
   decisionDefinitionId: string;
-  state: 'failed' | 'completed';
+  state: 'FAILED' | 'COMPLETED';
   name: string;
   version: string;
   evaluationDate: string;
@@ -33,7 +33,7 @@ type Instance = ReadonlyDeep<{
 }>;
 
 type State = {
-  decisionInstance: Instance | null;
+  decisionInstance: DecisionInstanceType | null;
   decisionInstanceId: string | null;
   status: 'initial' | 'fetched' | 'error';
 };
@@ -74,7 +74,7 @@ class DecisionInstance extends NetworkReconnectionHandler {
   );
 
   handleFetchSuccess = (
-    decisionInstance: Instance,
+    decisionInstance: DecisionInstanceType,
     decisionInstanceId: string
   ) => {
     this.state.decisionInstance = decisionInstance;
@@ -98,3 +98,4 @@ class DecisionInstance extends NetworkReconnectionHandler {
 }
 
 export const decisionInstanceStore = new DecisionInstance();
+export type {DecisionInstanceType};
