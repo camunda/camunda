@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter.records;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.exporter.AbstractElasticsearchExporterIntegrationTestCase;
@@ -61,7 +60,6 @@ public class ElasticsearchExporterJobRecordIT
     final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
     // then
-    await("index templates need to be created").untilAsserted(this::assertIndexSettings);
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -86,7 +84,6 @@ public class ElasticsearchExporterJobRecordIT
     final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
     // then
-    await("index templates need to be created").untilAsserted(this::assertIndexSettings);
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -110,7 +107,6 @@ public class ElasticsearchExporterJobRecordIT
 
     final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
-    await("index templates need to be created").untilAsserted(this::assertIndexSettings);
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)

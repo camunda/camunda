@@ -73,7 +73,8 @@ public final class CreateProcessInstanceProcessor
     }
 
     final long processInstanceKey = keyGenerator.nextKey();
-    if (!setVariablesFromDocument(controller, record, process.getKey(), processInstanceKey)) {
+    if (!setVariablesFromDocument(
+        controller, record, process.getKey(), processInstanceKey, process.getBpmnProcessId())) {
       return true;
     }
 
@@ -105,12 +106,14 @@ public final class CreateProcessInstanceProcessor
       final CommandControl<ProcessInstanceCreationRecord> controller,
       final ProcessInstanceCreationRecord record,
       final long processDefinitionKey,
-      final long processInstanceKey) {
+      final long processInstanceKey,
+      final DirectBuffer bpmnProcessId) {
     try {
       variableBehavior.mergeLocalDocument(
           processInstanceKey,
           processDefinitionKey,
           processInstanceKey,
+          bpmnProcessId,
           record.getVariablesBuffer());
     } catch (final MsgpackReaderException e) {
       Loggers.PROCESS_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);

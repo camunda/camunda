@@ -46,6 +46,7 @@ const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
 const GatewayAddressEnvVar = "ZEEBE_ADDRESS"
 const GatewayHostEnvVar = "ZEEBE_HOST"
 const GatewayPortEnvVar = "ZEEBE_PORT"
+const OverrideAuthorityEnvVar = "ZEEBE_OVERRIDE_AUTHORITY"
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
@@ -57,6 +58,7 @@ type ClientConfig struct {
 	GatewayAddress         string
 	UsePlaintextConnection bool
 	CaCertificatePath      string
+	OverrideAuthority      string
 	CredentialsProvider    CredentialsProvider
 
 	// KeepAlive can be used configure how often keep alive messages should be sent to the gateway. These will be sent
@@ -176,6 +178,10 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 		config.CaCertificatePath = caCertificatePath
 	}
 
+	if overrideAuthority := env.get(OverrideAuthorityEnvVar); overrideAuthority != "" {
+		config.OverrideAuthority = overrideAuthority
+	}
+
 	if gatewayHost := env.get(GatewayHostEnvVar); gatewayHost != "" {
 		if gatewayPort := env.get(GatewayPortEnvVar); gatewayPort != "" {
 			config.GatewayAddress = fmt.Sprintf("%s:%s", gatewayHost, gatewayPort)
@@ -246,11 +252,11 @@ func configureConnectionSecurity(config *ClientConfig) error {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {
-			creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})
+			creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12, ServerName: config.OverrideAuthority})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
 			return fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
 		} else {
-			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
+			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, config.OverrideAuthority)
 			if err != nil {
 				return err
 			}

@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -45,7 +45,7 @@ public class OutputMappingIncidentTest {
   @Parameter public String description;
 
   @Parameter(1)
-  public BpmnModelInstance bpmnModelInstance;
+  public DeploymentClient deployment;
 
   @Parameter(2)
   public String elementId;
@@ -59,25 +59,51 @@ public class OutputMappingIncidentTest {
         new Object[][] {
           {
             "Service task",
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask(
-                    "serviceTaskId",
-                    b -> b.zeebeJobType("type").zeebeOutputExpression("foo", "bar"))
-                .endEvent()
-                .done(),
+            ENGINE
+                .deployment()
+                .withXmlResource(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .serviceTask(
+                            "serviceTaskId",
+                            b -> b.zeebeJobType("type").zeebeOutputExpression("foo", "bar"))
+                        .endEvent()
+                        .done()),
             "serviceTaskId",
             true
           },
           {
             "Intermediate throw event",
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .intermediateThrowEvent(
-                    "intermediateThrowEventId", b -> b.zeebeOutputExpression("foo", "bar"))
-                .endEvent()
-                .done(),
+            ENGINE
+                .deployment()
+                .withXmlResource(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .intermediateThrowEvent(
+                            "intermediateThrowEventId", b -> b.zeebeOutputExpression("foo", "bar"))
+                        .endEvent()
+                        .done()),
             "intermediateThrowEventId",
+            false
+          },
+          {
+            "Business rule task",
+            ENGINE
+                .deployment()
+                .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+                .withXmlResource(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .businessRuleTask(
+                            "businessRuleTaskId",
+                            b ->
+                                b.zeebeCalledDecisionId("jedi_or_sith")
+                                    .zeebeResultVariable("result")
+                                    .zeebeInputExpression("\"blue\"", "lightsaberColor")
+                                    .zeebeOutputExpression("foo", "bar"))
+                        .endEvent()
+                        .done()),
+            "businessRuleTaskId",
             false
           }
         });
@@ -86,7 +112,7 @@ public class OutputMappingIncidentTest {
   @Test
   public void shouldCreateIncidentOnOutputMappingFailure() {
     // given
-    ENGINE.deployment().withXmlResource(bpmnModelInstance).deploy();
+    deployment.deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -127,7 +153,7 @@ public class OutputMappingIncidentTest {
   @Test
   public void shouldResolveIncidentForOutputMappingFailure() {
     // given
-    ENGINE.deployment().withXmlResource(bpmnModelInstance).deploy();
+    deployment.deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -168,7 +194,7 @@ public class OutputMappingIncidentTest {
 
   @Test
   public void shouldResolveIncidentIfProcessCancelled() {
-    ENGINE.deployment().withXmlResource(bpmnModelInstance).deploy();
+    deployment.deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 

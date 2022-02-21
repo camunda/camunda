@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
@@ -26,6 +27,7 @@ import java.util.function.Function;
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   private final ExpressionProcessor expressionBehavior;
+  private final BpmnDecisionBehavior decisionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -52,6 +54,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     final StateWriter stateWriter = writers.state();
     final var commandWriter = writers.command();
     this.expressionBehavior = expressionBehavior;
+    decisionBehavior =
+        new BpmnDecisionBehavior(
+            DecisionEngineFactory.createDecisionEngine(),
+            zeebeState,
+            eventTriggerBehavior,
+            stateWriter,
+            zeebeState.getKeyGenerator());
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
@@ -97,6 +106,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public ExpressionProcessor expressionBehavior() {
     return expressionBehavior;
+  }
+
+  @Override
+  public BpmnDecisionBehavior decisionBehavior() {
+    return decisionBehavior;
   }
 
   @Override

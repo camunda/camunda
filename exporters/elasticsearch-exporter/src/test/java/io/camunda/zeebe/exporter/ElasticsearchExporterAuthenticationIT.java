@@ -64,7 +64,6 @@ public class ElasticsearchExporterAuthenticationIT
 
     // assert index settings for all created indices
     esClient = createElasticsearchClient(configuration);
-    assertIndexSettings();
 
     // assert all records which where recorded during the tests where exported
     exporterBrokerRule.visitExportedRecords(

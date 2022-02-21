@@ -28,16 +28,15 @@ import io.camunda.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public final class DispatcherTest {
+final class DispatcherTest {
 
   static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(StandardCharsets.UTF_8);
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
   static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-  static final int AN_INITIAL_PARTITION_ID = 0;
   static final int A_LOG_WINDOW_LENGTH = 128;
   static final int A_PARTITION_SIZE = 1024;
   static final int A_STREAM_ID = 20;
@@ -57,8 +56,8 @@ public final class DispatcherTest {
   ClaimedFragmentBatch claimedFragmentBatch;
   AtomicPosition subscriberPosition;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void beforeEach() {
     logBuffer = mock(LogBuffer.class);
     logBufferPartition0 = mock(LogBufferPartition.class);
     logBufferPartition1 = mock(LogBufferPartition.class);
@@ -110,7 +109,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldNotClaimBeyondPublisherLimit() {
+  void shouldNotClaimBeyondPublisherLimit() {
     // given
     // position of 0,0
     when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
@@ -134,7 +133,48 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldClaimFragment() {
+  void canClaimFragmentBatch() {
+    // given
+    final int fragmentCount = 2;
+    final int batchLength = dispatcher.getMaxFragmentLength() / 2;
+
+    // when
+    final var canClaimFragmentBatch = dispatcher.canClaimFragmentBatch(fragmentCount, batchLength);
+
+    // then
+    assertThat(canClaimFragmentBatch).isTrue();
+  }
+
+  @Test
+  void cannotClaimFragmentBatch() {
+    // given - a fragment of max length, unframed
+    final int fragmentCount = 1;
+    final int batchLength = 2 * dispatcher.getMaxFragmentLength();
+
+    // when
+    final var canClaimFragmentBatch = dispatcher.canClaimFragmentBatch(fragmentCount, batchLength);
+
+    // then
+    assertThat(canClaimFragmentBatch).isFalse();
+  }
+
+  @Test
+  void cannotClaimFragmentBatchOfMaxLength() {
+    // given - a fragment of max length, unframed
+    final int fragmentCount = 1;
+    final int batchLength = dispatcher.getMaxFragmentLength();
+
+    // when
+    final var canClaimFragmentBatch = dispatcher.canClaimFragmentBatch(fragmentCount, batchLength);
+
+    // then
+    assertThat(canClaimFragmentBatch)
+        .as("cannot claim when the unframed, unaligned batch is the max fragment length")
+        .isFalse();
+  }
+
+  @Test
+  void shouldClaimFragment() {
     // given
     // position is 0,0
     when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
@@ -175,7 +215,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldReadFragmentsFromPartition() {
+  void shouldReadFragmentsFromPartition() {
     // given
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
     when(subscriberPosition.get()).thenReturn(0L);
@@ -198,7 +238,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldNotReadBeyondPublisherPosition() {
+  void shouldNotReadBeyondPublisherPosition() {
     // given
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
     when(subscriptionSpy.getPosition()).thenReturn(0L);
@@ -212,7 +252,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldUpdatePublisherLimit() {
+  void shouldUpdatePublisherLimit() {
     when(subscriberPosition.get()).thenReturn(position(10, 100));
 
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
@@ -222,7 +262,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldUpdatePublisherLimitToNextPartition() {
+  void shouldUpdatePublisherLimitToNextPartition() {
     when(subscriberPosition.get()).thenReturn(position(10, A_PARTITION_SIZE - A_LOG_WINDOW_LENGTH));
 
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
@@ -232,7 +272,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldReadFragmentsFromPartitionOnPeekAndConsume() {
+  void shouldReadFragmentsFromPartitionOnPeekAndConsume() {
     // given
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
     when(subscriberPosition.get()).thenReturn(0L);
@@ -255,7 +295,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldNotOpenSubscriptionWithSameName() {
+  void shouldNotOpenSubscriptionWithSameName() {
     dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
     Assert.assertThrows(
         "subscription with name 's1' already exists",
@@ -264,7 +304,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldIncrementRecordPositionAfterClaimingFragment() {
+  void shouldIncrementRecordPositionAfterClaimingFragment() {
     // given
     when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
     when(logAppender.claim(
@@ -288,7 +328,7 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldIncreasePositionByFragmentCountAfterClaimingBatch() {
+  void shouldIncreasePositionByFragmentCountAfterClaimingBatch() {
     // given
     final int fragmentCount = 3;
     when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
