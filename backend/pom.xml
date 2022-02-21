@@ -13,7 +13,7 @@
   <properties>
     <jetty.version>9.4.45.v20220203</jetty.version>
     <jersey.version>2.35</jersey.version>
-    <spring.security.version>5.6.1</spring.security.version>
+    <spring.security.version>5.6.2</spring.security.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
