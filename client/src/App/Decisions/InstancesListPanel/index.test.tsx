@@ -57,6 +57,7 @@ describe('Decisions List', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
+    expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 
   it('should render empty message', async () => {
@@ -73,6 +74,7 @@ describe('Decisions List', () => {
     expect(
       screen.getByText('There are no Instances matching this filter set')
     ).toBeInTheDocument();
+    expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 
   it('should render decision instances', async () => {
@@ -84,6 +86,7 @@ describe('Decisions List', () => {
 
     render(<InstancesListPanel />, {wrapper: Wrapper});
 
+    expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
@@ -135,5 +138,6 @@ describe('Decisions List', () => {
     expect(
       within(secondDecisionInstance).getByTestId('FAILED-icon-2251799813689542')
     ).toBeInTheDocument();
+    expect(screen.getByText('2 results found')).toBeInTheDocument();
   });
 });

@@ -14,7 +14,6 @@ import {
   Container,
   Name,
   State,
-  Title,
   DecisionColumnHeader,
   TH,
   TD,
@@ -27,10 +26,11 @@ import {
 import {formatDate} from 'modules/utils/date';
 import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
 import {useLocation} from 'react-router-dom';
+import {Header} from './Header';
 
 const InstancesListPanel: React.FC = observer(() => {
   const {
-    state: {status, decisionInstances},
+    state: {status, decisionInstances, filteredInstancesCount},
     areDecisionInstancesEmpty,
   } = decisionInstancesStore;
   const location = useLocation();
@@ -47,7 +47,7 @@ const InstancesListPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      <Title>Instances</Title>
+      <Header instancesCount={filteredInstancesCount} />
       <List>
         <ScrollableContent overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}>
           <Table>

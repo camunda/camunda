@@ -21,21 +21,6 @@ const Container = styled.div`
   }}
 `;
 
-const Title = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.decisionsList.header;
-
-    return css`
-      background-color: ${colors.backgroundColor};
-      padding: 8px 0 8px 19px;
-      font-size: 16px;
-      font-weight: 600;
-      color: ${theme.colors.text01};
-      border-bottom: solid 1px ${colors.borderColor};
-    `;
-  }}
-`;
-
 const TD = styled(Table.TD)`
   ${({theme}) => {
     return css`
@@ -111,7 +96,6 @@ const THead = styled(Table.THead)`
 
 export {
   Container,
-  Title,
   Name,
   State,
   DecisionColumnHeader,

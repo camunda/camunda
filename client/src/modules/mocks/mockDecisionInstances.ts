@@ -231,6 +231,7 @@ const mockDecisionInstances = {
       state: 'FAILED',
     },
   ],
+  totalCount: 2,
 } as const;
 
 export {mockDecisionInstances};

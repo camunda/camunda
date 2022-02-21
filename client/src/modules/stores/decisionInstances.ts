@@ -13,12 +13,13 @@ import {getSortParams} from 'modules/utils/filter';
 
 type State = {
   decisionInstances: DecisionInstanceEntity[];
-
+  filteredInstancesCount: number;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   decisionInstances: [],
+  filteredInstancesCount: 0,
   status: 'initial',
 };
 
@@ -55,9 +56,9 @@ class DecisionInstances extends NetworkReconnectionHandler {
       const response = await fetchDecisionInstances(payload);
 
       if (response.ok) {
-        const {decisionInstances} = await response.json();
+        const {decisionInstances, totalCount} = await response.json();
 
-        this.setDecisionInstances(decisionInstances);
+        this.setDecisionInstances({decisionInstances, totalCount});
         this.handleFetchSuccess();
       } else {
         this.handleFetchError();
@@ -73,6 +74,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     } else {
       this.state.status = 'fetching';
     }
+    this.state.filteredInstancesCount = 0;
   };
 
   handleFetchSuccess = () => {
@@ -89,8 +91,15 @@ class DecisionInstances extends NetworkReconnectionHandler {
     }
   };
 
-  setDecisionInstances = (decisionInstances: DecisionInstanceEntity[]) => {
+  setDecisionInstances = ({
+    decisionInstances,
+    totalCount,
+  }: {
+    decisionInstances: DecisionInstanceEntity[];
+    totalCount: number;
+  }) => {
     this.state.decisionInstances = decisionInstances;
+    this.state.filteredInstancesCount = totalCount;
   };
 
   get areDecisionInstancesEmpty() {
