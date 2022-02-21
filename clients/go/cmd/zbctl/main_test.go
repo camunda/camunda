@@ -183,6 +183,9 @@ func TestZbctlWithInsecureGateway(t *testing.T) {
 			ContainerSuite: &containersuite.ContainerSuite{
 				WaitTime:       time.Second,
 				ContainerImage: "camunda/zeebe:current-test",
+				Env: map[string]string{
+					"ZEEBE_BROKER_GATEWAY_LONGPOLLING_ENABLED": "false",
+				},
 			},
 		})
 }
@@ -198,8 +201,9 @@ func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
 		passed := s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
-				if _, _, err := s.runCommand(cmd, false); err != nil {
-					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
+				if cmdOut, err := s.runCommand(cmd, false); err != nil {
+					t.Fatalf("failed while executing set up command '%s' (%v). Output: \n%s",
+						strings.Join(cmd, " "), err, cmdOut)
 				}
 			}
 
@@ -210,16 +214,14 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				<-time.After(time.Duration(setupCmdsCount) * time.Second)
 			}
 
-			cmdOut, cmdCtx, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
-			if err != nil {
-				cmdText := strings.Join(test.cmd, " ")
-				// the error returned when a process was stopped by the context is just that it was
-				// killed, which doesn't really tell us if it timed out or not
-				if errors.Is(cmdCtx.Err(), context.DeadlineExceeded) {
-					t.Fatalf("timed out while executing command '%s'", cmdText)
-				} else {
-					t.Fatalf("failed to execute command '%s': %v", cmdText, err)
-				}
+			cmdOut, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
+			exitErr := &exec.ExitError{}
+			// if the exit code is -1, then the process did not start properly or was killed by a
+			// signal, which is what happens when its execution times out. as some tests rely
+			// on exiting with non 0 status codes, we can't just bail out if there is some error
+			if err != nil && errors.As(err, &exitErr) && exitErr.ExitCode() == -1 {
+				t.Fatalf("failed while executing command under test '%s' (%v). Output: \n%s",
+					strings.Join(test.cmd, " "), err, cmdOut)
 			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
@@ -312,11 +314,12 @@ func cmpIgnoreNums(x, y string) bool {
 }
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
-func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool, envVars ...string) ([]byte, context.Context, error) {
+func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool, envVars ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	args := append(command, "--requestTimeout", "10s")
+	// set the request timeout to 1 more second to allow us to detect timeouts properly
+	args := append(command, "--timeout", "10s")
 	if useHostAndPort {
 		args = append(args, "--host", s.GatewayHost)
 		args = append(args, "--port", fmt.Sprint(s.GatewayPort))
@@ -327,7 +330,7 @@ func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool,
 
 	cmd.Env = append(cmd.Env, envVars...)
 	output, err := cmd.CombinedOutput()
-	return output, ctx, err
+	return output, err
 }
 
 func buildZbctl() ([]byte, error) {
