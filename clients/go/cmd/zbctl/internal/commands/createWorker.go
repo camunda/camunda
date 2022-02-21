@@ -44,7 +44,6 @@ var (
 )
 
 // createWorkerCmd represents the createWorker command
-var jobWorker worker.JobWorker
 var jobsHandled = 0
 var workerDoneChannel = make(chan struct{})
 var createWorkerCmd = &cobra.Command{
@@ -60,7 +59,7 @@ If the handler exits with an none zero exit code the job will be failed, the han
 	Run: func(cmd *cobra.Command, args []string) {
 		createWorkerHandlerArgs = strings.Split(createWorkerHandlerFlag, " ")
 
-		jobWorker = client.NewJobWorker().
+		jobWorker := client.NewJobWorker().
 			JobType(args[0]).
 			Handler(handle).
 			Name(createWorkerNameFlag).
@@ -73,6 +72,7 @@ If the handler exits with an none zero exit code the job will be failed, the han
 			Open()
 
 		<-workerDoneChannel
+		jobWorker.Close()
 	},
 }
 
@@ -124,7 +124,7 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 		failJob(jobClient, job, stderr.String())
 	}
 
-	jobsHandled += 1
+	jobsHandled++
 	if createWorkerMaxJobsHandleFlag > 0 && jobsHandled >= createWorkerMaxJobsHandleFlag {
 		close(workerDoneChannel)
 	}
@@ -177,5 +177,5 @@ func init() {
 	createWorkerCmd.Flags().IntVar(&createWorkerMaxJobsHandleFlag, "maxJobsHandle", 0, "Specify the maximum number of jobs the worker should handle before exiting; pass 0 to handle an unlimited amount")
 
 	// maxJobsHandle is mostly used for testing; we can make it public and documented if it proves useful for users as well
-	createWorkerCmd.Flags().MarkHidden("maxJobsHandle")
+	_ = createWorkerCmd.Flags().MarkHidden("maxJobsHandle")
 }
