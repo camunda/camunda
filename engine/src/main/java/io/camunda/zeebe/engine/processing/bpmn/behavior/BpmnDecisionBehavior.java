@@ -143,7 +143,7 @@ public final class BpmnDecisionBehavior {
     final var result = decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
     if (result.isFailure()) {
       return Either.left(
-          new Failure(result.getFailureMessage(), ErrorType.CALLED_ELEMENT_ERROR, scopeKey));
+          new Failure(result.getFailureMessage(), ErrorType.DECISION_EVALUATION_ERROR, scopeKey));
     } else {
       return Either.right(result);
     }
