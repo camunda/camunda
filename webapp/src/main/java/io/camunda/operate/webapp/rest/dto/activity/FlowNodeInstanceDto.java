@@ -5,16 +5,16 @@
  */
 package io.camunda.operate.webapp.rest.dto.activity;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Objects;
 
-public class FlowNodeInstanceDto {
+public class FlowNodeInstanceDto implements
+    CreatableFromEntity<FlowNodeInstanceDto, FlowNodeInstanceEntity> {
 
   private String id;
 
@@ -99,34 +99,22 @@ public class FlowNodeInstanceDto {
     this.sortValues = sortValues;
   }
 
-  public static FlowNodeInstanceDto createFrom(FlowNodeInstanceEntity flowNodeInstanceEntity) {
-    FlowNodeInstanceDto flowNode = new FlowNodeInstanceDto();
-    flowNode.setId(flowNodeInstanceEntity.getId());
-    flowNode.setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId());
-    flowNode.setStartDate(flowNodeInstanceEntity.getStartDate());
-    flowNode.setEndDate(flowNodeInstanceEntity.getEndDate());
+  @Override
+  public FlowNodeInstanceDto fillFrom(final FlowNodeInstanceEntity flowNodeInstanceEntity) {
+    this.setId(flowNodeInstanceEntity.getId());
+    this.setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId());
+    this.setStartDate(flowNodeInstanceEntity.getStartDate());
+    this.setEndDate(flowNodeInstanceEntity.getEndDate());
     if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE && flowNodeInstanceEntity
         .isIncident()) {
-      flowNode.setState(FlowNodeStateDto.INCIDENT);
+      this.setState(FlowNodeStateDto.INCIDENT);
     } else {
-      flowNode.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
+      this.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
     }
-    flowNode.setType(flowNodeInstanceEntity.getType());
-    flowNode.setSortValues(flowNodeInstanceEntity.getSortValues());
-    flowNode.setTreePath(flowNodeInstanceEntity.getTreePath());
-    return flowNode;
-  }
-
-  public static List<FlowNodeInstanceDto> createFrom(List<FlowNodeInstanceEntity> flowNodeInstanceEntities) {
-    List<FlowNodeInstanceDto> result = new ArrayList<>();
-    if (flowNodeInstanceEntities != null) {
-      for (FlowNodeInstanceEntity flowNodeInstanceEntity: flowNodeInstanceEntities) {
-        if (flowNodeInstanceEntity != null) {
-          result.add(createFrom(flowNodeInstanceEntity));
-        }
-      }
-    }
-    return result;
+    this.setType(flowNodeInstanceEntity.getType());
+    this.setSortValues(flowNodeInstanceEntity.getSortValues());
+    this.setTreePath(flowNodeInstanceEntity.getTreePath());
+    return this;
   }
 
   @Override
@@ -154,4 +142,5 @@ public class FlowNodeInstanceDto {
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
+
 }

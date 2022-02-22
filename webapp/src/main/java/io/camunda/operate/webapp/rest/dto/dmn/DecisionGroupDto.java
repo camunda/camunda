@@ -6,6 +6,7 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.swagger.annotations.ApiModel;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,7 +52,7 @@ public class DecisionGroupDto {
         DecisionGroupDto groupDto = new DecisionGroupDto();
         groupDto.setDecisionId(groupEntry.getKey());
         groupDto.setName(groupEntry.getValue().get(0).getName());
-        groupDto.setDecisions(DecisionDto.createFrom(groupEntry.getValue()));
+        groupDto.setDecisions(DtoCreator.create(groupEntry.getValue(), DecisionDto.class));
         groups.add(groupDto);
       }
     );

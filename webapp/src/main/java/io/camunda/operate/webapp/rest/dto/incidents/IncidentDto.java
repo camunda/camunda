@@ -10,6 +10,7 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import java.time.OffsetDateTime;
@@ -168,7 +169,7 @@ public class IncidentDto {
       OperationEntity lastOperation = operations.get(0); // operations are
                                                          // sorted by start date
                                                          // descendant
-      incident.setLastOperation(OperationDto.createFrom(lastOperation))
+      incident.setLastOperation(DtoCreator.create(lastOperation, OperationDto.class))
           .setHasActiveOperation(operations.stream().anyMatch(
               o -> o.getState().equals(OperationState.SCHEDULED) || o.getState()
                   .equals(OperationState.LOCKED) || o.getState().equals(OperationState.SENT)));

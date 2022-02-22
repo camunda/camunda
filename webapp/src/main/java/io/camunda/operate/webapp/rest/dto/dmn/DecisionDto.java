@@ -6,13 +6,12 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 
 @ApiModel("Decision object")
-public class DecisionDto {
+public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDefinitionEntity> {
 
   @ApiModelProperty(value = "Unique id of the decision, must be used when filtering instances by decision ids.")
   private String id;
@@ -56,28 +55,13 @@ public class DecisionDto {
     return this;
   }
 
-  public static DecisionDto createFrom(DecisionDefinitionEntity decisionEntity) {
-    if (decisionEntity == null) {
-      return null;
-    }
-    DecisionDto process = new DecisionDto()
+  @Override
+  public DecisionDto fillFrom(final DecisionDefinitionEntity decisionEntity) {
+    return this
         .setId(decisionEntity.getId())
         .setDecisionId(decisionEntity.getDecisionId())
         .setName(decisionEntity.getName())
         .setVersion(decisionEntity.getVersion());
-    return process;
-  }
-
-  public static List<DecisionDto> createFrom(List<DecisionDefinitionEntity> decisionEntities) {
-    List<DecisionDto> result = new ArrayList<>();
-    if (decisionEntities != null) {
-      for (DecisionDefinitionEntity decisionEntity: decisionEntities) {
-        if (decisionEntity != null) {
-          result.add(createFrom(decisionEntity));
-        }
-      }
-    }
-    return result;
   }
 
   @Override
@@ -106,4 +90,5 @@ public class DecisionDto {
     result = 31 * result + (decisionId != null ? decisionId.hashCode() : 0);
     return result;
   }
+
 }

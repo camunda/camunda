@@ -7,6 +7,7 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +53,7 @@ public class ProcessRestService {
   @GetMapping(path = "/{id}")
   public ProcessDto getProcess(@PathVariable("id") String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
-    return ProcessDto.createFrom(processEntity);
+    return DtoCreator.create(processEntity, ProcessDto.class);
   }
 
   @ApiOperation("List processes grouped by bpmnProcessId")

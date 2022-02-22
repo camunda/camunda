@@ -5,13 +5,12 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import java.util.List;
+import static io.camunda.operate.util.CollectionUtil.map;
 
 import io.camunda.operate.entities.SequenceFlowEntity;
-import static io.camunda.operate.util.CollectionUtil.*;
 import io.camunda.operate.util.ConversionUtils;
 
-public class SequenceFlowDto {
+public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, SequenceFlowEntity> {
 
   private String processInstanceId;
 
@@ -35,17 +34,11 @@ public class SequenceFlowDto {
     return this;
   }
 
-  public static SequenceFlowDto createFrom(SequenceFlowEntity sequenceFlowEntity) {
-    if (sequenceFlowEntity == null) {
-      return null;
-    }
-    return new SequenceFlowDto()
-      .setProcessInstanceId(ConversionUtils.toStringOrNull(sequenceFlowEntity.getProcessInstanceKey()))
-      .setActivityId(sequenceFlowEntity.getActivityId());
-  }
-
-  public static List<SequenceFlowDto> createFrom(List<SequenceFlowEntity> sequenceFlowEntities) {
-    return map(emptyListWhenNull(sequenceFlowEntities), s -> createFrom(s));
+  @Override
+  public SequenceFlowDto fillFrom(final SequenceFlowEntity entity) {
+    return this
+        .setProcessInstanceId(ConversionUtils.toStringOrNull(entity.getProcessInstanceKey()))
+        .setActivityId(entity.getActivityId());
   }
 
   @Override

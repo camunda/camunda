@@ -23,6 +23,7 @@ import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
@@ -192,7 +193,7 @@ public class ProcessInstanceRestService {
   @GetMapping("/{id}/sequence-flows")
   public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
-    return SequenceFlowDto.createFrom(sequenceFlows);
+    return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
   }
 
   @ApiOperation("Get variables by process instance id and scope id")

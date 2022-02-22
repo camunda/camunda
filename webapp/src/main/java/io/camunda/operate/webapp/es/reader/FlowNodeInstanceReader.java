@@ -49,6 +49,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -282,7 +283,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
                 null,
                 getAggsProcessor(incidentPaths, runningParent));
     return new FlowNodeInstanceResponseDto(runningParent[0],
-        FlowNodeInstanceDto.createFrom(children));
+        DtoCreator.create(children, FlowNodeInstanceDto.class));
   }
 
   private Function<SearchHit, FlowNodeInstanceEntity> getSearchHitFunction(
@@ -311,7 +312,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
         .mapSearchHits(searchResponse.getHits().getHits(),
             getSearchHitFunction(incidentPaths));
     return new FlowNodeInstanceResponseDto(runningParent[0],
-        FlowNodeInstanceDto.createFrom(children));
+        DtoCreator.create(children, FlowNodeInstanceDto.class));
   }
 
   private Consumer<Aggregations> getAggsProcessor(Set<String> incidentPaths,

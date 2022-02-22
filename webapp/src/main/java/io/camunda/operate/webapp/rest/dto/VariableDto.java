@@ -8,12 +8,15 @@ package io.camunda.operate.webapp.rest.dto;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VariableDto {
 
@@ -144,18 +147,16 @@ public class VariableDto {
 
   public static List<VariableDto> createFrom(List<VariableEntity> variableEntities,
       Map<String, List<OperationEntity>> operations, int variableSizeThreshold) {
-    List<VariableDto> result = new ArrayList<>();
-    if (variableEntities != null) {
-      for (VariableEntity variableEntity : CollectionUtil.withoutNulls(variableEntities)) {
-        result.add(
-            createFrom(
-                variableEntity,
-                operations.get(variableEntity.getName()),
-                false,
-                variableSizeThreshold));
-      }
+    if (variableEntities == null) {
+      return new ArrayList<>();
     }
-    return result;
+    return variableEntities.stream().filter(item -> item != null)
+        .map(item -> createFrom(
+            item,
+            operations.get(item.getName()),
+            false,
+            variableSizeThreshold))
+        .collect(Collectors.toList());
   }
 
 }

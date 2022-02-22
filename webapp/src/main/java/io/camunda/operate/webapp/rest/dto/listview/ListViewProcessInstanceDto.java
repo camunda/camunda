@@ -10,6 +10,7 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.zeebeimport.util.TreePath;
@@ -19,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ListViewProcessInstanceDto {
 
@@ -204,7 +205,7 @@ public class ListViewProcessInstanceDto {
       .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
       .setProcessName(processInstanceEntity.getProcessName())
       .setProcessVersion(processInstanceEntity.getProcessVersion())
-      .setOperations(OperationDto.createFrom(operations));
+      .setOperations(DtoCreator.create(operations, OperationDto.class));
     if (operations != null) {
       processInstance.setHasActiveOperation(operations.stream().anyMatch(
         o ->
@@ -234,19 +235,16 @@ public class ListViewProcessInstanceDto {
     return processInstance;
   }
 
-  public static List<ListViewProcessInstanceDto> createFrom(List<ProcessInstanceForListViewEntity> processInstanceEntities,
+  public static List<ListViewProcessInstanceDto> createFrom(
+      List<ProcessInstanceForListViewEntity> processInstanceEntities,
       Map<Long, List<OperationEntity>> operationsPerProcessInstance) {
-    List<ListViewProcessInstanceDto> result = new ArrayList<>();
-    if (processInstanceEntities != null) {
-      for (ProcessInstanceForListViewEntity processInstanceEntity: processInstanceEntities) {
-        if (processInstanceEntity != null) {
-          final ListViewProcessInstanceDto instanceDto = createFrom(processInstanceEntity,
-            operationsPerProcessInstance.get(processInstanceEntity.getProcessInstanceKey()));
-          result.add(instanceDto);
-        }
-      }
+    if (processInstanceEntities == null) {
+      return new ArrayList<>();
     }
-    return result;
+    return processInstanceEntities.stream().filter(item -> item != null)
+        .map(item -> createFrom(item,
+            operationsPerProcessInstance.get(item.getProcessInstanceKey())))
+        .collect(Collectors.toList());
   }
 
   @Override

@@ -5,14 +5,12 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import java.util.ArrayList;
-import java.util.List;
 import io.camunda.operate.entities.ProcessEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel("Process object")
-public class ProcessDto {
+public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity> {
 
   @ApiModelProperty(value = "Unique id of the process, must be used when filtering instances by process ids.")
   private String id;
@@ -24,56 +22,45 @@ public class ProcessDto {
     return id;
   }
 
-  public void setId(String id) {
+  public ProcessDto setId(final String id) {
     this.id = id;
+    return this;
   }
 
   public String getName() {
     return name;
   }
 
-  public void setName(String name) {
+  public ProcessDto setName(final String name) {
     this.name = name;
+    return this;
   }
 
   public int getVersion() {
     return version;
   }
 
-  public void setVersion(int version) {
+  public ProcessDto setVersion(final int version) {
     this.version = version;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public ProcessDto setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
-  public static ProcessDto createFrom(ProcessEntity processEntity) {
-    if (processEntity == null) {
-      return null;
-    }
-    ProcessDto process = new ProcessDto();
-    process.setId(processEntity.getId());
-    process.setBpmnProcessId(processEntity.getBpmnProcessId());
-    process.setName(processEntity.getName());
-    process.setVersion(processEntity.getVersion());
-    return process;
-  }
-
-  public static List<ProcessDto> createFrom(List<ProcessEntity> processEntities) {
-    List<ProcessDto> result = new ArrayList<>();
-    if (processEntities != null) {
-      for (ProcessEntity processEntity: processEntities) {
-        if (processEntity != null) {
-          result.add(createFrom(processEntity));
-        }
-      }
-    }
-    return result;
+  @Override
+  public ProcessDto fillFrom(final ProcessEntity processEntity) {
+    this.setId(processEntity.getId())
+        .setBpmnProcessId(processEntity.getBpmnProcessId())
+        .setName(processEntity.getName())
+        .setVersion(processEntity.getVersion());
+    return this;
   }
 
   @Override
@@ -102,4 +89,5 @@ public class ProcessDto {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     return result;
   }
+
 }

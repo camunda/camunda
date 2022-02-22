@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -236,7 +237,7 @@ public class OperationReader extends AbstractReader {
     try {
       final List<OperationEntity> operationEntities =
           ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
-      return OperationDto.createFrom(operationEntities);
+      return DtoCreator.create(operationEntities, OperationDto.class);
     } catch (IOException e) {
       final String message =
           String.format(
@@ -264,7 +265,7 @@ public class OperationReader extends AbstractReader {
     try {
       final List<OperationEntity> operationEntities =
           ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
-      return OperationDto.createFrom(operationEntities);
+      return DtoCreator.create(operationEntities, OperationDto.class);
     } catch (IOException e) {
       final String message =
           String.format(

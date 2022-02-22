@@ -5,14 +5,12 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
+import java.util.Objects;
 
-public class OperationDto {
+public class OperationDto implements CreatableFromEntity<OperationDto, OperationEntity> {
 
   private String id;
 
@@ -28,8 +26,9 @@ public class OperationDto {
     return id;
   }
 
-  public void setId(String id) {
+  public OperationDto setId(final String id) {
     this.id = id;
+    return this;
   }
 
   public String getBatchOperationId() {
@@ -45,49 +44,37 @@ public class OperationDto {
     return type;
   }
 
-  public void setType(OperationType type) {
+  public OperationDto setType(final OperationType type) {
     this.type = type;
+    return this;
   }
 
   public OperationState getState() {
     return state;
   }
 
-  public void setState(OperationState state) {
+  public OperationDto setState(final OperationState state) {
     this.state = state;
+    return this;
   }
 
   public String getErrorMessage() {
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public OperationDto setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
   }
 
-  public static OperationDto createFrom(OperationEntity operationEntity) {
-    if (operationEntity == null) {
-      return null;
-    }
-    OperationDto operation = new OperationDto();
-    operation.setId(operationEntity.getId());
-    operation.setType(operationEntity.getType());
-    operation.setState(operationEntity.getState());
-    operation.setErrorMessage(operationEntity.getErrorMessage());
-    operation.setBatchOperationId(operationEntity.getBatchOperationId());
-    return operation;
-  }
-
-  public static List<OperationDto> createFrom(List<OperationEntity> operationEntities) {
-    List<OperationDto> result = new ArrayList<>();
-    if (operationEntities != null) {
-      for (OperationEntity operationEntity: operationEntities) {
-        if (operationEntity != null) {
-          result.add(createFrom(operationEntity));
-        }
-      }
-    }
-    return result;
+  @Override
+  public OperationDto fillFrom(final OperationEntity operationEntity) {
+    this.setId(operationEntity.getId())
+        .setType(operationEntity.getType())
+        .setState(operationEntity.getState())
+        .setErrorMessage(operationEntity.getErrorMessage())
+        .setBatchOperationId(operationEntity.getBatchOperationId());
+    return this;
   }
 
   @Override
@@ -110,4 +97,5 @@ public class OperationDto {
   public int hashCode() {
     return Objects.hash(id, batchOperationId, type, state, errorMessage);
   }
+
 }

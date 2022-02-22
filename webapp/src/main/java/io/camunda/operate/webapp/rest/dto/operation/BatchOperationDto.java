@@ -5,13 +5,13 @@
  */
 package io.camunda.operate.webapp.rest.dto.operation;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
 
-public class BatchOperationDto {
+public class BatchOperationDto implements
+    CreatableFromEntity<BatchOperationDto, BatchOperationEntity> {
 
   private String id;
 
@@ -110,8 +110,9 @@ public class BatchOperationDto {
     return this;
   }
 
-  public static BatchOperationDto createFrom(BatchOperationEntity batchOperationEntity) {
-    return new BatchOperationDto()
+  @Override
+  public BatchOperationDto fillFrom(final BatchOperationEntity batchOperationEntity) {
+    return this
         .setId(batchOperationEntity.getId())
         .setName(batchOperationEntity.getName())
         .setType(OperationTypeDto.getType(batchOperationEntity.getType()))
@@ -124,19 +125,6 @@ public class BatchOperationDto {
         .setSortValues(Arrays.stream(batchOperationEntity.getSortValues())
             .map(String::valueOf)
             .toArray(String[]::new));
-  }
-
-
-  public static List<BatchOperationDto> createFrom(List<BatchOperationEntity> batchOperationEntities) {
-    List<BatchOperationDto> result = new ArrayList<>();
-    if (batchOperationEntities != null) {
-      for (BatchOperationEntity batchOperationEntity: batchOperationEntities) {
-        if (batchOperationEntity != null) {
-          result.add(createFrom(batchOperationEntity));
-        }
-      }
-    }
-    return result;
   }
 
   @Override

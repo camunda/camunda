@@ -51,7 +51,7 @@ public class ProcessGroupDto {
         ProcessGroupDto groupDto = new ProcessGroupDto();
         groupDto.setBpmnProcessId(groupEntry.getKey());
         groupDto.setName(groupEntry.getValue().get(0).getName());
-        groupDto.setProcesses(ProcessDto.createFrom(groupEntry.getValue()));
+        groupDto.setProcesses(DtoCreator.create(groupEntry.getValue(), ProcessDto.class));
         groups.add(groupDto);
       }
     );

@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.CollectionUtil;
@@ -56,7 +57,7 @@ public class BatchOperationRestService {
     }
 
     List<BatchOperationEntity> batchOperations = batchOperationReader.getBatchOperations(batchOperationRequestDto);
-    return BatchOperationDto.createFrom(batchOperations);
+    return DtoCreator.create(batchOperations, BatchOperationDto.class);
   }
 
 }
