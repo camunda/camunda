@@ -22,6 +22,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
@@ -44,7 +45,7 @@ var (
 )
 
 // createWorkerCmd represents the createWorker command
-var jobsHandled = 0
+var jobsHandled int64 = 0
 var workerDoneChannel = make(chan struct{})
 var createWorkerCmd = &cobra.Command{
 	Use:   "worker <type>",
@@ -124,8 +125,8 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 		failJob(jobClient, job, stderr.String())
 	}
 
-	jobsHandled++
-	if createWorkerMaxJobsHandleFlag > 0 && jobsHandled >= createWorkerMaxJobsHandleFlag {
+	atomic.AddInt64(&jobsHandled, 1)
+	if createWorkerMaxJobsHandleFlag > 0 && jobsHandled >= int64(createWorkerMaxJobsHandleFlag) {
 		close(workerDoneChannel)
 	}
 }
