@@ -18,6 +18,7 @@ package io.camunda.zeebe.client;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -61,6 +62,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(configuration.getOverrideAuthority()).isNull();
     }
   }
 
@@ -150,6 +152,33 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofSeconds(15));
+  }
+
+  @Test
+  public void shouldSetAuthority() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.overrideAuthority("virtualhost");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+  }
+
+  @Test
+  public void shouldOverrideAuthorityWithEnvVar() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.overrideAuthority("localhost");
+    Environment.system().put(OVERRIDE_AUTHORITY_VAR, "virtualhost");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
   }
 
   @Test

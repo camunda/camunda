@@ -50,11 +50,11 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
-    <version.docker-java-api>3.2.12</version.docker-java-api>
+    <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.11.0</version.error-prone>
     <version.grpc>1.44.0</version.grpc>
-    <version.gson>2.8.9</version.gson>
+    <version.gson>2.9.0</version.gson>
     <version.guava>31.0.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
@@ -78,7 +78,7 @@
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.19.4</version.protobuf>
     <version.protobuf-common>2.7.4</version.protobuf-common>
-    <version.micrometer>1.8.2</version.micrometer>
+    <version.micrometer>1.8.3</version.micrometer>
     <version.rocksdbjni>6.28.2</version.rocksdbjni>
     <version.sbe>1.25.1</version.sbe>
     <version.scala-parser>2.1.0</version.scala-parser>
@@ -95,7 +95,7 @@
     <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>4.5.1</version.rest-assured>
-    <version.spring>5.3.15</version.spring>
+    <version.spring>5.3.16</version.spring>
     <version.spring-boot>2.6.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.2</version.config>
@@ -116,7 +116,7 @@
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
-    <plugin.version.compiler>3.9.0</plugin.version.compiler>
+    <plugin.version.compiler>3.10.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.12.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
     <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>

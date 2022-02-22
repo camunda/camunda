@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
@@ -52,14 +54,10 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public final class JsonSerializableToJsonTest {
+final class JsonSerializableToJsonTest {
 
   private static final String VARIABLES_JSON = "{'foo':'bar'}";
   private static final DirectBuffer VARIABLES_MSGPACK =
@@ -77,16 +75,22 @@ public final class JsonSerializableToJsonTest {
     STACK_TRACE = stringWriter.toString();
   }
 
-  @Parameter public String testName;
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("records")
+  void shouldConvertJsonSerializableToJson(
+      @SuppressWarnings("unused") final String testDisplayName,
+      final Supplier<JsonSerializable> actualRecordSupplier,
+      final String expectedJson) {
+    // given
 
-  @Parameter(1)
-  public Supplier<JsonSerializable> actualRecordSupplier;
+    // when
+    final String json = actualRecordSupplier.get().toJson();
 
-  @Parameter(2)
-  public String expectedJson;
+    // then
+    JsonUtil.assertEquality(json, expectedJson);
+  }
 
-  @Parameters(name = "{index}: {0}")
-  public static Object[][] records() {
+  private static Object[][] records() {
     return new Object[][] {
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////// Record /////////////////////////////////////////////
@@ -266,7 +270,7 @@ public final class JsonSerializableToJsonTest {
               record.setProcessInstanceKey(4321);
               return record;
             },
-        errorRecordAsJson(4321, STACK_TRACE)
+        errorRecordAsJson(4321)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// Empty ErrorRecord /////////////////////////////////////
@@ -279,7 +283,7 @@ public final class JsonSerializableToJsonTest {
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               return record;
             },
-        errorRecordAsJson(-1, STACK_TRACE)
+        errorRecordAsJson(-1)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// IncidentRecord /////////////////////////////////////////
@@ -643,15 +647,17 @@ public final class JsonSerializableToJsonTest {
               final long scopeKey = 3;
               final long processInstanceKey = 2;
               final long processDefinitionKey = 4;
+              final String bpmnProcessId = "process";
 
               return new VariableRecord()
                   .setName(wrapString(name))
                   .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
                   .setScopeKey(scopeKey)
                   .setProcessInstanceKey(processInstanceKey)
-                  .setProcessDefinitionKey(processDefinitionKey);
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId));
             },
-        "{'scopeKey':3,'processInstanceKey':2,'processDefinitionKey':4,'name':'x','value':'1'}"
+        "{'scopeKey':3,'processInstanceKey':2,'processDefinitionKey':4,'bpmnProcessId':'process','name':'x','value':'1'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -792,31 +798,77 @@ public final class JsonSerializableToJsonTest {
                     .setChecksum(wrapString("checksum")),
         "{'decisionRequirementsId': 'decision-requirements-id', 'decisionRequirementsName': 'decision-requirements-name', 'decisionRequirementsVersion': 1, 'decisionRequirementsKey': 2, 'namespace': 'namespace', 'resourceName': 'resource-name', 'resource': 'cmVzb3VyY2U=', 'checksum': 'Y2hlY2tzdW0=', 'duplicate': false}"
       },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// DecisionEvaluationRecord  /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "DecisionEvaluationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var record =
+                  new DecisionEvaluationRecord()
+                      .setDecisionKey(1L)
+                      .setDecisionId("decision-id")
+                      .setDecisionName("decision-name")
+                      .setDecisionVersion(1)
+                      .setDecisionRequirementsKey(2L)
+                      .setDecisionRequirementsId("decision-requirements-id")
+                      .setDecisionOutput(toMessagePack("'decision-output'"))
+                      .setProcessDefinitionKey(3L)
+                      .setBpmnProcessId("bpmn-process-id")
+                      .setDecisionVersion(1)
+                      .setProcessInstanceKey(4L)
+                      .setElementInstanceKey(5L)
+                      .setElementId("element-id");
+
+              final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
+              evaluatedDecisionRecord
+                  .setDecisionId("decision-id")
+                  .setDecisionName("decision-name")
+                  .setDecisionType("DECISION_TABLE")
+                  .setDecisionOutput(toMessagePack("'decision-output'"));
+
+              evaluatedDecisionRecord
+                  .evaluatedInputs()
+                  .add()
+                  .setInputId("input-id")
+                  .setInputName("input-name")
+                  .setInputValue(toMessagePack("'input-value'"));
+
+              final var matchedRuleRecord = evaluatedDecisionRecord.matchedRules().add();
+              matchedRuleRecord.setRuleId("rule-id").setRuleIndex(1);
+
+              matchedRuleRecord
+                  .evaluatedOutputs()
+                  .add()
+                  .setOutputId("output-id")
+                  .setOutputName("output-name")
+                  .setOutputValue(toMessagePack("'output-value'"));
+
+              return record;
+            },
+        "{'decisionKey':1,'decisionId':'decision-id','decisionName':'decision-name','decisionVersion':1,'decisionRequirementsKey':2,'decisionRequirementsId':'decision-requirements-id','decisionOutput':'\"decision-output\"','processDefinitionKey':3,'bpmnProcessId':'bpmn-process-id','processInstanceKey':4,'elementInstanceKey':5,'elementId':'element-id','evaluatedDecisions':[{'decisionId':'decision-id','decisionName':'decision-name','decisionOutput':'\"decision-output\"','decisionType':'DECISION_TABLE','evaluatedInputs':[{'inputId':'input-id','inputName':'input-name','inputValue':'\"input-value\"'}],'matchedRules':[{'ruleId':'rule-id','ruleIndex':1,'evaluatedOutputs':[{'outputId':'output-id','outputName':'output-name','outputValue':'\"output-value\"'}]}]}]}"
+      },
     };
   }
 
-  @Test
-  public void shouldConvertJsonSerializableToJson() {
-    // given
-
-    // when
-    final String json = actualRecordSupplier.get().toJson();
-
-    // then
-    JsonUtil.assertEquality(json, expectedJson);
-  }
-
-  private static String errorRecordAsJson(final long processInstanceKey, final String stacktrace) {
+  private static String errorRecordAsJson(final long processInstanceKey) {
     final Map<String, Object> params = new HashMap<>();
     params.put("exceptionMessage", "test");
     params.put("processInstanceKey", processInstanceKey);
     params.put("errorEventPosition", 123);
-    params.put("stacktrace", stacktrace);
+    params.put("stacktrace", STACK_TRACE);
 
     try {
       return new ObjectMapper().writeValueAsString(params);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static DirectBuffer toMessagePack(final String json) {
+    final byte[] messagePack = MsgPackConverter.convertToMsgPack(json);
+    return BufferUtil.wrapArray(messagePack);
   }
 }

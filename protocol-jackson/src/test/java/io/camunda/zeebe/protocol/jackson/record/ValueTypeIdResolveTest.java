@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.jackson.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerFactory;
 import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
@@ -32,16 +33,16 @@ final class ValueTypeIdResolveTest {
   @ParameterizedTest
   void shouldHandleEveryKnownValueType(final ValueType type) throws IOException {
     // given
-    final var mapper = new ObjectMapper();
-    final var baseContext =
+    final ObjectMapper mapper = new ObjectMapper();
+    final DefaultDeserializationContext.Impl baseContext =
         new DefaultDeserializationContext.Impl(BeanDeserializerFactory.instance);
-    final var context =
+    final DefaultDeserializationContext context =
         baseContext.createInstance(
             mapper.getDeserializationConfig(),
             mapper.createParser("{}"),
             mapper.getInjectableValues());
-    final var resolver = new ValueTypeIdResolver();
-    final var resolvedType = resolver.typeFromId(context, resolver.idFromValue(type));
+    final ValueTypeIdResolver resolver = new ValueTypeIdResolver();
+    final JavaType resolvedType = resolver.typeFromId(context, resolver.idFromValue(type));
 
     assertThat(RecordValue.class).isAssignableFrom(resolvedType.getRawClass());
   }

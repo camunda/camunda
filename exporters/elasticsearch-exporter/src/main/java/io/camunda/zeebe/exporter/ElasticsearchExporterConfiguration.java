@@ -83,6 +83,8 @@ public class ElasticsearchExporterConfiguration {
         return index.decisionRequirements;
       case DECISION:
         return index.decision;
+      case DECISION_EVALUATION:
+        return index.decisionEvaluation;
       default:
         return false;
     }
@@ -129,6 +131,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean processMessageSubscription = false;
     public boolean decisionRequirements = true;
     public boolean decision = true;
+    public boolean decisionEvaluation = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -138,7 +141,7 @@ public class ElasticsearchExporterConfiguration {
       return numberOfShards;
     }
 
-    public void setNumberOfShards(Integer numberOfShards) {
+    public void setNumberOfShards(final Integer numberOfShards) {
       this.numberOfShards = numberOfShards;
     }
 
@@ -146,7 +149,7 @@ public class ElasticsearchExporterConfiguration {
       return numberOfReplicas;
     }
 
-    public void setNumberOfReplicas(Integer numberOfReplicas) {
+    public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
     }
 
@@ -192,6 +195,8 @@ public class ElasticsearchExporterConfiguration {
           + decisionRequirements
           + ", decision="
           + decision
+          + ", decisionEvaluation="
+          + decisionEvaluation
           + '}';
     }
   }

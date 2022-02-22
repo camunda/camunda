@@ -21,6 +21,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3;
@@ -75,25 +76,6 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 gatewayAddress(final String gatewayAddress) {
-    innerBuilder.gatewayAddress(gatewayAddress);
-    return this;
-  }
-
-  @Override
-  public ZeebeClientCloudBuilderStep4 usePlaintext() {
-    innerBuilder.usePlaintext();
-    return this;
-  }
-
-  @Override
-  public ZeebeClientCloudBuilderStep4 credentialsProvider(
-      final CredentialsProvider credentialsProvider) {
-    innerBuilder.credentialsProvider(credentialsProvider);
-    return this;
-  }
-
-  @Override
   public ZeebeClientCloudBuilderStep4 withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.CLOUD_CLUSTER_ID)) {
       withClusterId(properties.getProperty(ClientProperties.CLOUD_CLUSTER_ID));
@@ -105,6 +87,12 @@ public class ZeebeClientCloudBuilderImpl
       withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET));
     }
     innerBuilder.withProperties(properties);
+    return this;
+  }
+
+  @Override
+  public ZeebeClientCloudBuilderStep4 gatewayAddress(final String gatewayAddress) {
+    innerBuilder.gatewayAddress(gatewayAddress);
     return this;
   }
 
@@ -151,8 +139,21 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientCloudBuilderStep4 usePlaintext() {
+    innerBuilder.usePlaintext();
+    return this;
+  }
+
+  @Override
   public ZeebeClientCloudBuilderStep4 caCertificatePath(final String certificatePath) {
     innerBuilder.caCertificatePath(certificatePath);
+    return this;
+  }
+
+  @Override
+  public ZeebeClientCloudBuilderStep4 credentialsProvider(
+      final CredentialsProvider credentialsProvider) {
+    innerBuilder.credentialsProvider(credentialsProvider);
     return this;
   }
 
@@ -171,6 +172,12 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientCloudBuilderStep4 withJsonMapper(final JsonMapper jsonMapper) {
     innerBuilder.withJsonMapper(jsonMapper);
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder overrideAuthority(final String authority) {
+    innerBuilder.overrideAuthority(authority);
     return this;
   }
 

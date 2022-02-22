@@ -156,6 +156,7 @@ public final class BpmnStateBehavior {
         context.getElementInstanceKey(),
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getBpmnProcessId(),
         variableName,
         variableValue,
         valueOffset,
@@ -174,6 +175,7 @@ public final class BpmnStateBehavior {
         targetScope,
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getBpmnProcessId(),
         variablesAsDocument);
   }
 
@@ -183,7 +185,11 @@ public final class BpmnStateBehavior {
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
     variableBehavior.mergeDocument(
-        targetProcessInstanceKey, targetProcess.getKey(), targetProcessInstanceKey, variables);
+        targetProcessInstanceKey,
+        targetProcess.getKey(),
+        targetProcessInstanceKey,
+        targetProcess.getBpmnProcessId(),
+        variables);
   }
 
   public boolean isInterrupted(final BpmnElementContext flowScopeContext) {

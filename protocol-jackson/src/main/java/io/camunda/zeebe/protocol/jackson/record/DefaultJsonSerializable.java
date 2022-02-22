@@ -18,12 +18,11 @@ import java.io.UncheckedIOException;
  */
 interface DefaultJsonSerializable extends JsonSerializable {
   /** @deprecated use your own {@link ObjectMapper} instead of relying on this one */
-  @Deprecated(since = "1.2.0")
-  ObjectMapper JSON_WRITER = new ObjectMapper();
+  @Deprecated ObjectMapper JSON_WRITER = new ObjectMapper();
 
   /** @deprecated use a {@link ObjectMapper} directly instead of calling this method */
   @Override
-  @Deprecated(since = "1.2.0")
+  @Deprecated
   default String toJson() {
     try {
       return JSON_WRITER.writeValueAsString(this);

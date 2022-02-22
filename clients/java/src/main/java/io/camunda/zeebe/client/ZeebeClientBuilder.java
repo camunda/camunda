@@ -92,6 +92,22 @@ public interface ZeebeClientBuilder {
 
   ZeebeClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
+  /**
+   * Overrides the authority used with TLS virtual hosting. Specifically, to override hostname
+   * verification in the TLS handshake. It does not change what host is actually connected to.
+   *
+   * <p>This method is intended for testing, but may safely be used outside of tests as an
+   * alternative to DNS overrides.
+   *
+   * <p>This setting does nothing if a {@link #usePlaintext() plaintext} connection is used.
+   *
+   * @param authority The alternative authority to use, commonly in the form <code>host</code> or
+   *     <code>host:port</code>
+   * @apiNote For the full definition of authority see [RFC 2396: Uniform Resource Identifiers
+   *     (URI): Generic Syntax](http://www.ietf.org/rfc/rfc2396.txt)
+   */
+  ZeebeClientBuilder overrideAuthority(String authority);
+
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
 }

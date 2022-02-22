@@ -86,6 +86,30 @@ public interface Either<L, R> {
   }
 
   /**
+   * Convenience method to convert an {@link Optional<R>} of R to an {@code Either<?, R>}, using an
+   * intermediary representation of the Optional in the form of {@link EitherOptional}.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Either.ofOptional(Optional.of(1))
+   *   .orElse("left value")
+   *   .ifRightOrLeft(
+   *     right -> System.out.println("If Optional is present, right is the contained value"),
+   *     left -> System.out.println("If Optional is empty, left is the value provided by orElse")
+   *   );
+   * }</pre>
+   *
+   * @param right The optional that may contain the right value
+   * @param <R> the type of the right value
+   * @return An intermediary representation {@link EitherOptional}
+   */
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  static <R> EitherOptional<R> ofOptional(final Optional<R> right) {
+    return new EitherOptional<>(right);
+  }
+
+  /**
    * Returns a collector for {@code Either<L,R>} that collects them into {@code
    * Either<List<L>,List<R>} and favors {@link Left} over {@link Right}.
    *
@@ -208,6 +232,14 @@ public interface Either<L, R> {
   R get();
 
   /**
+   * Returns the right value, or a default value if this is a {@link Left}.
+   *
+   * @param defaultValue the default value
+   * @return the right value, or the default value if this is a {@link Left}
+   */
+  R getOrElse(R defaultValue);
+
+  /**
    * Returns the left value, if this is a {@link Left}.
    *
    * @return the left value
@@ -309,6 +341,11 @@ public interface Either<L, R> {
     }
 
     @Override
+    public R getOrElse(final R defaultValue) {
+      return value;
+    }
+
+    @Override
     public L getLeft() {
       throw new NoSuchElementException("Expected a left, but this is right");
     }
@@ -398,6 +435,11 @@ public interface Either<L, R> {
     }
 
     @Override
+    public R getOrElse(final R defaultValue) {
+      return defaultValue;
+    }
+
+    @Override
     public L getLeft() {
       return value;
     }
@@ -454,6 +496,20 @@ public interface Either<L, R> {
     @Override
     public String toString() {
       return "Left[" + value + ']';
+    }
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  final class EitherOptional<R> {
+
+    private final Optional<R> right;
+
+    private EitherOptional(final Optional<R> right) {
+      this.right = right;
+    }
+
+    public <L> Either<L, R> orElse(final L left) {
+      return right.<Either<L, R>>map(Either::right).orElse(Either.left(left));
     }
   }
 }

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="force-users" name="force-users" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.11.0">
-  <decision id="jedi-or-sith" name="Jedi or Sith">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="force_users" name="force_users" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <decision id="jedi_or_sith" name="Jedi or Sith">
     <decisionTable id="DecisionTable_14n3bxx">
       <input id="Input_1" label="Lightsaber color" biodi:width="192">
         <inputExpression id="InputExpression_1" typeRef="string">
           <text>lightsaberColor</text>
         </inputExpression>
       </input>
-      <output id="Output_1" label="Jedi or Sith" name="faction" typeRef="string" biodi:width="192">
+      <output id="Output_1" label="Jedi or Sith" name="jedi_or_sith" typeRef="string" biodi:width="192">
         <outputValues id="UnaryTests_0hj346a">
           <text>"Jedi","Sith"</text>
         </outputValues>
@@ -38,14 +38,14 @@
       </rule>
     </decisionTable>
   </decision>
-  <decision id="force-user" name="Which force user?">
+  <decision id="force_user" name="Which force user?">
     <informationRequirement id="InformationRequirement_1o8esai">
-      <requiredDecision href="#jedi-or-sith" />
+      <requiredDecision href="#jedi_or_sith" />
     </informationRequirement>
     <decisionTable id="DecisionTable_07g94t1" hitPolicy="FIRST">
       <input id="InputClause_0qnqj25" label="Jedi or Sith">
         <inputExpression id="LiteralExpression_00lcyt5" typeRef="string">
-          <text>faction</text>
+          <text>jedi_or_sith</text>
         </inputExpression>
         <inputValues id="UnaryTests_1xjidd8">
           <text>"Jedi","Sith"</text>
@@ -56,7 +56,7 @@
           <text>height</text>
         </inputExpression>
       </input>
-      <output id="OutputClause_0hhe1yo" label="Force user" name="force-user" typeRef="string" />
+      <output id="OutputClause_0hhe1yo" label="Force user" name="force_user" typeRef="string" />
       <rule id="DecisionRule_13zidc5">
         <inputEntry id="UnaryTests_056skcq">
           <text>"Jedi"</text>
@@ -128,10 +128,10 @@
   </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram>
-      <dmndi:DMNShape dmnElementRef="jedi-or-sith">
+      <dmndi:DMNShape dmnElementRef="jedi_or_sith">
         <dc:Bounds height="80" width="180" x="160" y="280" />
       </dmndi:DMNShape>
-      <dmndi:DMNShape id="DMNShape_1sb3tre" dmnElementRef="force-user">
+      <dmndi:DMNShape id="DMNShape_1sb3tre" dmnElementRef="force_user">
         <dc:Bounds height="80" width="180" x="280" y="80" />
       </dmndi:DMNShape>
       <dmndi:DMNEdge id="DMNEdge_0gt1p1u" dmnElementRef="InformationRequirement_1o8esai">

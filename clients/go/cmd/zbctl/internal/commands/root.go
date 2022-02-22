@@ -36,6 +36,7 @@ var addressFlag string
 var hostFlag string
 var portFlag string
 var caCertPathFlag string
+var overrideAuthorityFlag string
 var clientIDFlag string
 var clientSecretFlag string
 var audienceFlag string
@@ -80,6 +81,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&portFlag, "port", "", fmt.Sprintf("Specify the port part of the gateway address. If omitted, will read from the environment variable '%s' (default '%s')", zbc.GatewayPortEnvVar, zbc.DefaultAddressPort))
 	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+zbc.GatewayAddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", zbc.DefaultAddressHost, zbc.DefaultAddressPort)+"')")
 	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable '"+zbc.CaCertificatePath+"'")
+	rootCmd.PersistentFlags().StringVar(&overrideAuthorityFlag, "authority", "", "Overrides the authority used with TLS virtual hosting. Specifically, to override hostname verification in the TLS handshake. It does not change what host is actually connected to. If omitted, will read from the environment variable '"+zbc.OverrideAuthorityEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientIdEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. If omitted, will read from the environment variable '"+zbc.OAuthTokenAudienceEnvVar+"'")
@@ -143,6 +145,9 @@ func setSecurityParamsAsEnv() (err error) {
 	}
 	if caCertPathFlag != "" {
 		setEnv(zbc.CaCertificatePath, caCertPathFlag)
+	}
+	if overrideAuthorityFlag != "" {
+		setEnv(zbc.OverrideAuthorityEnvVar, overrideAuthorityFlag)
 	}
 	if clientIDFlag != "" {
 		setEnv(zbc.OAuthClientIdEnvVar, clientIDFlag)

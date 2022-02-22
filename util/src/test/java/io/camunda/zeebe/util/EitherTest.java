@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.util;
 
-import static io.camunda.zeebe.util.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -79,6 +79,15 @@ class EitherTest {
     assertThatThrownBy(() -> Either.left(value).get()).isInstanceOf(NoSuchElementException.class);
   }
 
+  @DisplayName("Only a Left value can retrieve the default value with .getOrElse(...)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyALeftValueCanReturnTheDefaultValueWithGetOrElse(final Object value) {
+    final Object defaultValue = 3;
+    assertThat(Either.right(value).getOrElse(defaultValue)).isSameAs(value);
+    assertThat(Either.left(value).getOrElse(defaultValue)).isSameAs(defaultValue);
+  }
+
   @DisplayName("Only a Left value can be retrieved with .getLeft()")
   @ParameterizedTest
   @MethodSource("parameters")
@@ -92,16 +101,16 @@ class EitherTest {
   @ParameterizedTest
   @MethodSource("parameters")
   void onlyARightIsRight(final Object value) {
-    assertThat(Either.right(value)).isRight();
-    assertThat(Either.left(value)).isNotRight();
+    assertThat(Either.right(value).isRight()).as("a Right should have a right value").isTrue();
+    assertThat(Either.left(value).isRight()).as("a Left should not have a right value").isFalse();
   }
 
   @DisplayName("Only a Left is Left")
   @ParameterizedTest
   @MethodSource("parameters")
   void onlyALeftIsLeft(final Object value) {
-    assertThat(Either.left(value)).isLeft();
-    assertThat(Either.right(value)).isNotLeft();
+    assertThat(Either.left(value).isLeft()).as("a Left should have a right value").isTrue();
+    assertThat(Either.right(value).isLeft()).as("a Right should not have a right value").isFalse();
   }
 
   @DisplayName("Only a Right is transformed by .map(..)")
@@ -167,6 +176,14 @@ class EitherTest {
     assertThat(leftConsumer.hasBeenExecuted).isTrue();
   }
 
+  @DisplayName("Only an Either of Optional with a value present is a Right")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyAnEitherOfPresentOptionalIsRight(final Object value) {
+    assertThat(Either.ofOptional(Optional.of(value)).orElse(null)).isEqualTo(Either.right(value));
+    assertThat(Either.ofOptional(Optional.empty()).orElse(value)).isEqualTo(Either.left(value));
+  }
+
   /** Simple Consumer that knows whether it's been executed. */
   private static final class VerifiableConsumer implements Consumer<Object> {
     boolean hasBeenExecuted = false;
@@ -194,8 +211,9 @@ class EitherTest {
     @MethodSource("io.camunda.zeebe.util.EitherTest#collectionsWithoutLefts")
     void onlyStreamsWithoutLeftsAreCollectedIntoARight(
         final List<Either<Object, Object>> collection) {
-      assertThat(collection.stream().collect(Either.collector()))
-          .isRight()
+      final var collectedEither = collection.stream().collect(Either.collector());
+      assertThat(collectedEither.isRight()).isTrue();
+      assertThat(collectedEither)
           .extracting(Either::get)
           .isEqualTo(
               collection.stream()
@@ -208,8 +226,9 @@ class EitherTest {
     @ParameterizedTest
     @MethodSource("io.camunda.zeebe.util.EitherTest#collectionsWithLefts")
     void onlyStreamsWithLeftsAreCollectedIntoALeft(final List<Either<Object, Object>> collection) {
-      assertThat(collection.stream().collect(Either.collector()))
-          .isLeft()
+      final var collectedEither = collection.stream().collect(Either.collector());
+      assertThat(collectedEither.isLeft()).isTrue();
+      assertThat(collectedEither)
           .extracting(Either::getLeft)
           .isEqualTo(
               collection.stream()
@@ -228,8 +247,9 @@ class EitherTest {
     @MethodSource("io.camunda.zeebe.util.EitherTest#collectionsWithoutLefts")
     void onlyStreamsWithoutLeftsAreCollectedIntoARight(
         final List<Either<Object, Object>> collection) {
-      assertThat(collection.stream().collect(Either.collectorFoldingLeft()))
-          .isRight()
+      final var collectedEither = collection.stream().collect(Either.collectorFoldingLeft());
+      assertThat(collectedEither.isRight()).isTrue();
+      assertThat(collectedEither)
           .extracting(Either::get)
           .isEqualTo(
               collection.stream()
@@ -242,15 +262,12 @@ class EitherTest {
     @ParameterizedTest
     @MethodSource("io.camunda.zeebe.util.EitherTest#collectionsWithLefts")
     void onlyStreamsWithLeftsAreCollectedIntoALeft(final List<Either<Object, Object>> collection) {
-      assertThat(collection.stream().collect(Either.collectorFoldingLeft()))
-          .isLeft()
+      final var collectedEither = collection.stream().collect(Either.collectorFoldingLeft());
+      assertThat(collectedEither.isLeft()).isTrue();
+      assertThat(collectedEither)
           .extracting(Either::getLeft)
           .isEqualTo(
-              collection.stream()
-                  .filter(Either::isLeft)
-                  .map(Either::getLeft)
-                  .collect(Collectors.toList())
-                  .get(0));
+              collection.stream().filter(Either::isLeft).map(Either::getLeft).toList().get(0));
     }
   }
 }

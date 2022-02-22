@@ -68,6 +68,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long childFooKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
@@ -75,7 +76,11 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeLocalDocument(
-        childScopeKey, processDefinitionKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        bpmnProcessId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -88,7 +93,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"buz\"")
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(parentScopeKey);
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process");
             },
             event -> {
               assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
@@ -98,7 +104,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"bar\"")
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(parentScopeKey);
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -107,12 +114,13 @@ final class VariableBehaviorTest {
     // given
     final long processDefinitionKey = 1;
     final long scopeKey = 1;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of();
     setVariable(2, scopeKey, processDefinitionKey, "foo", "qux");
 
     // when
     behavior.mergeLocalDocument(
-        scopeKey, processDefinitionKey, scopeKey, MsgPackUtil.asMsgPack(document));
+        scopeKey, processDefinitionKey, scopeKey, bpmnProcessId, MsgPackUtil.asMsgPack(document));
 
     // then
     assertThat(getFollowUpEvents()).isEmpty();
@@ -126,6 +134,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
     final long parentFooKey = 4;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
@@ -135,7 +144,11 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeDocument(
-        childScopeKey, processDefinitionKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        bpmnProcessId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -149,7 +162,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"bar\"")
                   .hasScopeKey(parentScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(rootScopeKey);
+                  .hasProcessInstanceKey(rootScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -160,6 +174,7 @@ final class VariableBehaviorTest {
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
@@ -167,7 +182,11 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeDocument(
-        childScopeKey, processDefinitionKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        bpmnProcessId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -180,7 +199,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"bar\"")
                   .hasScopeKey(rootScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(rootScopeKey);
+                  .hasProcessInstanceKey(rootScopeKey)
+                  .hasBpmnProcessId("process");
             },
             event -> {
               assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
@@ -189,7 +209,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"baz\"")
                   .hasScopeKey(rootScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(rootScopeKey);
+                  .hasProcessInstanceKey(rootScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -200,6 +221,7 @@ final class VariableBehaviorTest {
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
@@ -208,7 +230,11 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeDocument(
-        childScopeKey, processDefinitionKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        bpmnProcessId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -221,7 +247,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"baz\"")
                   .hasScopeKey(rootScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(rootScopeKey);
+                  .hasProcessInstanceKey(rootScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -232,6 +259,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long childFooKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
@@ -240,7 +268,11 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeDocument(
-        childScopeKey, processDefinitionKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        bpmnProcessId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -254,7 +286,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"bar\"")
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(parentScopeKey);
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -264,6 +297,7 @@ final class VariableBehaviorTest {
     final int processDefinitionKey = 1;
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of();
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
@@ -272,7 +306,11 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeDocument(
-        childScopeKey, processDefinitionKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        bpmnProcessId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -285,6 +323,7 @@ final class VariableBehaviorTest {
     final int processDefinitionKey = 1;
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
@@ -295,6 +334,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        bpmnProcessId,
         variableName,
         variableValue,
         0,
@@ -311,7 +351,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"bar\"")
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(parentScopeKey);
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -322,6 +363,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long parentFooKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
@@ -333,6 +375,7 @@ final class VariableBehaviorTest {
         parentScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        bpmnProcessId,
         variableName,
         variableValue,
         0,
@@ -350,7 +393,8 @@ final class VariableBehaviorTest {
                   .hasValue("\"bar\"")
                   .hasScopeKey(parentScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
-                  .hasProcessInstanceKey(parentScopeKey);
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process");
             });
   }
 
@@ -361,6 +405,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long parentFooKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
@@ -372,6 +417,7 @@ final class VariableBehaviorTest {
         parentScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        bpmnProcessId,
         variableName,
         variableValue,
         0,

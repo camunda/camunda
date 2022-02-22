@@ -63,7 +63,7 @@ public final class DeploymentDmnTest {
 
     final var drgMetadata = deploymentEvent.getValue().getDecisionRequirementsMetadata().get(0);
     Assertions.assertThat(drgMetadata)
-        .hasDecisionRequirementsId("force-users")
+        .hasDecisionRequirementsId("force_users")
         .hasDecisionRequirementsName("Force Users")
         .hasDecisionRequirementsVersion(1)
         .hasNamespace("http://camunda.org/schema/1.0/dmn")
@@ -77,11 +77,11 @@ public final class DeploymentDmnTest {
 
     final var decisionMetadata = deploymentEvent.getValue().getDecisionsMetadata().get(0);
     Assertions.assertThat(decisionMetadata)
-        .hasDecisionId("jedi-or-sith")
+        .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
-        .hasDecisionRequirementsId("force-users")
+        .hasDecisionRequirementsId("force_users")
         .hasVersion(1)
-        .hasDecisionRequirementsId("force-users")
+        .hasDecisionRequirementsId("force_users")
         .hasDecisionRequirementsKey(drgMetadata.getDecisionRequirementsKey());
     assertThat(decisionMetadata.getDecisionKey()).isPositive();
   }
@@ -122,7 +122,7 @@ public final class DeploymentDmnTest {
     assertThat(record.getKey()).isPositive();
 
     final var decisionRequirementsRecord = record.getValue();
-    assertThat(decisionRequirementsRecord.getDecisionRequirementsId()).isEqualTo("force-users");
+    assertThat(decisionRequirementsRecord.getDecisionRequirementsId()).isEqualTo("force_users");
     assertThat(decisionRequirementsRecord.getDecisionRequirementsName()).isEqualTo("Force Users");
     assertThat(decisionRequirementsRecord.getDecisionRequirementsKey()).isPositive();
     assertThat(decisionRequirementsRecord.getDecisionRequirementsVersion()).isEqualTo(1);
@@ -156,9 +156,9 @@ public final class DeploymentDmnTest {
 
     final var decisionRecord = record.getValue();
     Assertions.assertThat(decisionRecord)
-        .hasDecisionId("jedi-or-sith")
+        .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
-        .hasDecisionRequirementsId("force-users")
+        .hasDecisionRequirementsId("force_users")
         .hasVersion(1);
 
     assertThat(decisionRecord.getDecisionKey()).isPositive();
@@ -185,7 +185,7 @@ public final class DeploymentDmnTest {
         .hasSize(2)
         .extracting(Record::getValue)
         .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getDecisionName)
-        .contains(tuple("jedi-or-sith", "Jedi or Sith"), tuple("force-user", "Which force user?"));
+        .contains(tuple("jedi_or_sith", "Jedi or Sith"), tuple("force_user", "Which force user?"));
 
     assertThat(decisionRecords)
         .extracting(Record::getValue)
@@ -226,13 +226,13 @@ public final class DeploymentDmnTest {
         .extracting(
             DecisionRequirementsMetadataValue::getDecisionRequirementsId,
             DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
-        .contains(tuple("force-users", 1), tuple("force-users", 2));
+        .contains(tuple("force_users", 1), tuple("force_users", 2));
 
     assertThat(RecordingExporter.decisionRecords().limit(2))
         .hasSize(2)
         .extracting(Record::getValue)
         .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getVersion)
-        .contains(tuple("jedi-or-sith", 1), tuple("jedi-or-sith", 2));
+        .contains(tuple("jedi_or_sith", 1), tuple("jedi_or_sith", 2));
   }
 
   @Test
@@ -328,13 +328,13 @@ public final class DeploymentDmnTest {
         .extracting(
             DecisionRequirementsMetadataValue::getDecisionRequirementsId,
             DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
-        .contains(tuple("force-users", 1), tuple("star-wars", 1));
+        .contains(tuple("force_users", 1), tuple("star-wars", 1));
 
     assertThat(RecordingExporter.decisionRecords().limit(2))
         .hasSize(2)
         .extracting(Record::getValue)
         .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getVersion)
-        .contains(tuple("jedi-or-sith", 1), tuple("jedi-or-sith", 2));
+        .contains(tuple("jedi_or_sith", 1), tuple("jedi_or_sith", 2));
   }
 
   @Test
@@ -368,9 +368,9 @@ public final class DeploymentDmnTest {
             DecisionRecordValue::getVersion,
             DecisionRecordValue::getDecisionRequirementsId)
         .contains(
-            tuple("jedi-or-sith", 1, "force-users"),
-            tuple("jedi-or-sith", 2, "star-wars"),
-            tuple("jedi-or-sith", 3, "force-users"));
+            tuple("jedi_or_sith", 1, "force_users"),
+            tuple("jedi_or_sith", 2, "star-wars"),
+            tuple("jedi_or_sith", 3, "force_users"));
   }
 
   @Test
@@ -394,7 +394,7 @@ public final class DeploymentDmnTest {
         .contains(
             String.format(
                 "Expected the decision requirements ids to be unique within a deployment "
-                    + "but found a duplicated id 'force-users' in the resources '%s' and '%s'",
+                    + "but found a duplicated id 'force_users' in the resources '%s' and '%s'",
                 DMN_DECISION_TABLE, DMN_DECISION_TABLE_V2));
   }
 
@@ -419,7 +419,7 @@ public final class DeploymentDmnTest {
         .contains(
             String.format(
                 "Expected the decision ids to be unique within a deployment "
-                    + "but found a duplicated id 'jedi-or-sith' in the resources '%s' and '%s'",
+                    + "but found a duplicated id 'jedi_or_sith' in the resources '%s' and '%s'",
                 DMN_DECISION_TABLE, DMN_DECISION_TABLE_RENAMED_DRG));
   }
 

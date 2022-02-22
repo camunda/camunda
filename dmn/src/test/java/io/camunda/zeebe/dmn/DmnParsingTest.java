@@ -64,7 +64,7 @@ class DmnParsingTest {
         .describedAs("Expect that the DMN is parsed successfully")
         .isTrue();
 
-    assertThat(parsedDrg.getId()).isEqualTo("force-users");
+    assertThat(parsedDrg.getId()).isEqualTo("force_users");
     assertThat(parsedDrg.getName()).isEqualTo("Force Users");
     assertThat(parsedDrg.getNamespace()).isEqualTo("http://camunda.org/schema/1.0/dmn");
 
