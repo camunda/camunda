@@ -231,7 +231,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: Wrapper});
+    render(<InstancesListPanel />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
