@@ -36,6 +36,29 @@ const Container = styled.div`
           border-width: 2px 2px 1px 2px;
         }
       }
+
+      .dmn-literal-expression-container {
+        --decision-properties-background-color: ${colors.background};
+        --decision-properties-border-color: ${colors.border};
+        --decision-properties-color: ${colors.text};
+        --textarea-color: ${colors.text};
+        --literal-expression-properties-color: ${colors.text};
+
+        .decision-properties {
+          border-color: ${colors.border};
+          border-width: 2px 2px 1px 2px;
+        }
+
+        .textarea {
+          border-color: ${colors.border};
+          border-width: 1px 2px;
+        }
+
+        .literal-expression-properties {
+          border-color: ${colors.border};
+          border-width: 1px 2px 2px 2px;
+        }
+      }
     `;
   }}
   overflow: auto;
