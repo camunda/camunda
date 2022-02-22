@@ -4,18 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Icon, Up, Down} from './styled';
+import {Up, Down} from './styled';
 
 type Props = {
   sortOrder: 'asc' | 'desc';
-  disabled?: boolean;
 };
 
-const SortIcon: React.FC<Props> = ({sortOrder, disabled, ...rest}) => {
+const SortIcon: React.FC<Props> = ({sortOrder, ...rest}) => {
   return (
-    <Icon {...rest} data-testid={`${sortOrder}-icon`} $disabled={disabled}>
+    <span {...rest} data-testid={`${sortOrder}-icon`}>
       {sortOrder === 'asc' ? <Up /> : <Down />}
-    </Icon>
+    </span>
   );
 };
 

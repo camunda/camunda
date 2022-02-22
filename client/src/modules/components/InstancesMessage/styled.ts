@@ -9,6 +9,7 @@ import Table from 'modules/components/Table';
 
 const EmptyTR = styled(Table.TR)`
   border: 0;
+  border-top-style: hidden;
   padding: 0;
 `;
 

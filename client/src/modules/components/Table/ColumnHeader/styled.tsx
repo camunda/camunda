@@ -49,11 +49,15 @@ const SortableHeader = styled.button<Props & SortableHeaderProps>`
 const Label = styled.span<Props>`
   ${({theme, active, disabled}) => {
     const colors = theme.colors.modules.table.columnHeader;
-    const opacity = theme.opacity.columnHeader.label;
+    const opacity = theme.opacity.decisionsColumnHeader;
 
     return css`
       color: ${active ? colors.sortingActive.color : colors.color};
-      opacity: ${disabled ? opacity.disabled : 1};
+      ${disabled &&
+      css`
+        color: ${colors.disabled.color};
+        opacity: ${opacity.disabled};
+      `}
     `;
   }}
 `;

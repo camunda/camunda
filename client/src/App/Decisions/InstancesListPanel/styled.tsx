@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -85,6 +86,7 @@ const ScrollableContent = styled.div<ScrollableContentProps>`
       height: 100%;
       overflow-y: ${overflow};
       flex: 1 0 0;
+      position: relative;
     `;
   }}
 `;
@@ -92,6 +94,10 @@ const ScrollableContent = styled.div<ScrollableContentProps>`
 const THead = styled(Table.THead)`
   position: sticky;
   top: 0;
+`;
+
+const Spinner = styled(SpinnerSkeleton)`
+  margin-top: 36px;
 `;
 
 export {
@@ -106,4 +112,5 @@ export {
   ScrollableContent,
   THead,
   TRHeader,
+  Spinner,
 };

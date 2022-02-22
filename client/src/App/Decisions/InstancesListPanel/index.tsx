@@ -5,8 +5,9 @@
  */
 
 import {observer} from 'mobx-react';
+import {autorun} from 'mobx';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import {Skeleton} from './Skeleton';
 import Table from 'modules/components/Table';
 import {InstancesMessage} from 'modules/components/InstancesMessage';
@@ -22,6 +23,7 @@ import {
   ScrollableContent,
   THead,
   TRHeader,
+  Spinner,
 } from './styled';
 import {formatDate} from 'modules/utils/date';
 import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
@@ -37,6 +39,8 @@ const InstancesListPanel: React.FC = observer(() => {
   } = decisionInstancesStore;
   const location = useLocation();
 
+  let scrollableContentRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     decisionInstancesStore.fetchInstancesFromFilters();
   }, [location.search]);
@@ -45,13 +49,32 @@ const InstancesListPanel: React.FC = observer(() => {
 
   const isSortingDisabled =
     areDecisionInstancesEmpty ||
-    ['initial', 'first-fetch', 'fetching'].includes(status);
+    ['initial', 'first-fetch', 'fetching', 'error'].includes(status);
+
+  useEffect(() => {
+    let disposer = autorun(() => {
+      if (decisionInstancesStore.state.status === 'fetching') {
+        scrollableContentRef?.current?.scrollTo?.(0, 0);
+      }
+    });
+
+    return () => {
+      if (disposer !== undefined) {
+        disposer();
+      }
+    };
+  }, []);
 
   return (
     <Container>
       <Header instancesCount={filteredInstancesCount} />
       <List>
-        <ScrollableContent overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}>
+        <ScrollableContent
+          overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}
+          ref={scrollableContentRef}
+        >
+          {status === 'fetching' && <Spinner data-testid="instances-loader" />}
+
           <Table>
             <THead>
               <TRHeader>

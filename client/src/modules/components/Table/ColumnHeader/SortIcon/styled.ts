@@ -9,18 +9,6 @@ import styled, {css} from 'styled-components';
 import {ReactComponent as DefaultUp} from 'modules/components/Icon/up.svg';
 import {ReactComponent as DefaultDown} from 'modules/components/Icon/down.svg';
 
-type IconProps = {
-  $disabled?: boolean;
-};
-
-const Icon = styled.span<IconProps>`
-  ${({$disabled}) => {
-    return css`
-      opacity: ${$disabled ? '0.4' : '1'};
-    `;
-  }}
-`;
-
 const sortIconStyle = css`
   height: 16px;
   width: 16px;
@@ -34,4 +22,4 @@ const Down = styled(DefaultDown)`
   ${sortIconStyle};
 `;
 
-export {Icon, Up, Down};
+export {Up, Down};

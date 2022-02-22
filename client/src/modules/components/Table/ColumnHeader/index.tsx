@@ -61,6 +61,7 @@ const ColumnHeader: React.FC<Props> = ({
     const isActive =
       sortParams !== null ? sortParams.sortBy === sortKey : isDefault;
 
+    const displaySortIcon = isActive && !disabled;
     return (
       <SortableHeader
         disabled={disabled}
@@ -72,16 +73,13 @@ const ColumnHeader: React.FC<Props> = ({
         }}
         title={`Sort by ${label}`}
         data-testid={`sort-by-${sortKey}`}
-        $showExtraPadding={!isActive}
+        $showExtraPadding={!displaySortIcon}
       >
         <Label active={isActive} disabled={disabled}>
           {label}
         </Label>
-        {isActive && (
-          <SortIcon
-            disabled={disabled}
-            sortOrder={sortParams?.sortOrder ?? 'desc'}
-          />
+        {displaySortIcon && (
+          <SortIcon sortOrder={sortParams?.sortOrder ?? 'desc'} />
         )}
       </SortableHeader>
     );

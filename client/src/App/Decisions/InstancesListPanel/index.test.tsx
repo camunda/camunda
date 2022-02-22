@@ -223,4 +223,30 @@ describe('Decisions List', () => {
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances/2251799813689544');
   });
+
+  it('should display loading skeleton when sorting is applied', async () => {
+    mockServer.use(
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockDecisionInstances))
+      )
+    );
+
+    render(<InstancesListPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
+
+    mockServer.use(
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockDecisionInstances))
+      )
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Sort by Decision'}));
+
+    expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
+  });
 });

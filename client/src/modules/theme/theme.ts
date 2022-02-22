@@ -840,6 +840,9 @@ const theme = {
           },
           columnHeader: {
             color: LIGHT_COLORS.ui02,
+            disabled: {
+              color: SEMANTIC_COLORS.white,
+            },
             sortingActive: {
               color: SEMANTIC_COLORS.white,
             },
@@ -881,6 +884,9 @@ const theme = {
             selected: 0.9,
           },
         },
+      },
+      decisionsColumnHeader: {
+        disabled: 0.7,
       },
       columnHeader: {
         label: {
@@ -1770,6 +1776,9 @@ const theme = {
           },
           columnHeader: {
             color: LIGHT_COLORS.ui06,
+            disabled: {
+              color: LIGHT_COLORS.ui06,
+            },
             sortingActive: {
               color: DARK_COLORS.ui04,
             },
@@ -1811,6 +1820,9 @@ const theme = {
             selected: 1,
           },
         },
+      },
+      decisionsColumnHeader: {
+        disabled: 0.7,
       },
       columnHeader: {
         label: {
