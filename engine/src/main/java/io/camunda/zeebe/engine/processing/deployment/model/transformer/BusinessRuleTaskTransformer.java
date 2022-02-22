@@ -47,6 +47,6 @@ public final class BusinessRuleTaskTransformer
     taskHeadersTransformer.transform(executableTask, taskHeaders, element);
 
     final var calledDecision = element.getSingleExtensionElement(ZeebeCalledDecision.class);
-    calledDecisionTransformer.transform(executableTask, calledDecision);
+    calledDecisionTransformer.transform(executableTask, context, calledDecision);
   }
 }
