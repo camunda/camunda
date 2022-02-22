@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.ProcessGoalDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -41,11 +42,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT.EXTERNAL_EVENT_GROUP;
+import static org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT.EXTERNAL_EVENT_SOURCE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
-import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -53,8 +55,6 @@ public class ProcessGoalsIT extends AbstractIT {
 
   private static final String FIRST_PROCESS_DEFINITION_KEY = "firstProcessDefinition";
   private static final String SECOND_PROCESS_DEFINITION_KEY = "secondProcessDefinition";
-  private static final String EXTERNAL_EVENT_GROUP = "testGroup";
-  private static final String EXTERNAL_EVENT_SOURCE = "integrationTestSource";
 
   @Test
   public void getProcessGoals_notPossibleForUnauthenticatedUser() {
@@ -129,7 +129,7 @@ public class ProcessGoalsIT extends AbstractIT {
   public void getProcessGoals_processesIncludeAnEventBasedProcess() {
     // given
     deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
-    List<String> eventBasedProcessDefinitionData = deployEventBasedProcessDefinition();
+    final EventProcessDefinitionDto eventProcessDefinitionDto = deployEventBasedProcessDefinition();
 
     importAllEngineEntitiesFromScratch();
 
@@ -147,8 +147,8 @@ public class ProcessGoalsIT extends AbstractIT {
           null
         ),
         new ProcessGoalDto(
-          eventBasedProcessDefinitionData.get(0),
-          eventBasedProcessDefinitionData.get(1),
+          eventProcessDefinitionDto.getKey(),
+          eventProcessDefinitionDto.getName(),
           Collections.emptyList(),
           null
         )
@@ -251,12 +251,13 @@ public class ProcessGoalsIT extends AbstractIT {
     List<ProcessGoalDto> processGoalDtos = getProcessGoals();
 
     // then
-    assertThat(processGoalDtos).hasSize(1).containsExactly(new ProcessGoalDto(
-      processDefinitionVersion1.getKey(),
-      processDefinitionVersion1.getName(),
-      Collections.emptyList(),
-      null
-    ));
+    assertThat(processGoalDtos).hasSize(1).containsExactly(
+      new ProcessGoalDto(
+        processDefinitionVersion1.getKey(),
+        processDefinitionVersion1.getName(),
+        Collections.emptyList(),
+        null
+      ));
   }
 
   @ParameterizedTest
@@ -299,21 +300,19 @@ public class ProcessGoalsIT extends AbstractIT {
 
   private EventProcessMappingDto buildSimpleEventProcessMappingDto() {
     return buildSimpleEventProcessMappingDto(
-      EventMappingDto.builder()
-        .end(EventTypeDto.builder()
-               .group(EXTERNAL_EVENT_GROUP)
-               .source(EXTERNAL_EVENT_SOURCE)
-               .eventName(START_EVENT)
-               .build())
-        .build(),
-      EventMappingDto.builder()
-        .end(EventTypeDto.builder()
-               .group(EXTERNAL_EVENT_GROUP)
-               .source(EXTERNAL_EVENT_SOURCE)
-               .eventName(END_EVENT)
-               .build())
-        .build()
+      buildEventMappingDto(START_EVENT),
+      buildEventMappingDto(END_EVENT)
     );
+  }
+
+  private EventMappingDto buildEventMappingDto(final String endEvent) {
+    return EventMappingDto.builder()
+      .end(EventTypeDto.builder()
+             .group(EXTERNAL_EVENT_GROUP)
+             .source(EXTERNAL_EVENT_SOURCE)
+             .eventName(endEvent)
+             .build())
+      .build();
   }
 
   private EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
@@ -359,28 +358,31 @@ public class ProcessGoalsIT extends AbstractIT {
       );
   }
 
+  private List<ProcessGoalDto> getProcessGoals() {
+    return getProcessGoals(null);
+  }
+
   private List<ProcessGoalDto> getProcessGoals(ProcessGoalSorter sorter) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildGetProcessDefinitionGoalsRequest(sorter)
       .executeAndReturnList(ProcessGoalDto.class, Response.Status.OK.getStatusCode());
   }
 
-  private List<ProcessGoalDto> getProcessGoals() {
-    return getProcessGoals(null);
-  }
-
-  private List<String> deployEventBasedProcessDefinition() {
+  private EventProcessDefinitionDto deployEventBasedProcessDefinition() {
     ingestTestEvent(IdGenerator.getNextId(), START_EVENT, OffsetDateTime.now());
     ingestTestEvent(IdGenerator.getNextId(), END_EVENT, OffsetDateTime.now());
     final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto();
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
     publishMappingAndExecuteImport(eventProcessDefinitionKey);
     executeImportCycle();
-    return List.of(eventProcessDefinitionKey, simpleEventProcessMappingDto.getName());
+    final EventProcessDefinitionDto eventProcessDefinitionDto = new EventProcessDefinitionDto();
+    eventProcessDefinitionDto.setName(simpleEventProcessMappingDto.getName());
+    eventProcessDefinitionDto.setKey(eventProcessDefinitionKey);
+    return eventProcessDefinitionDto;
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinition() {
-    return createProcessDefinition(VERSION_TAG, "hasNoName", null);
+    return createProcessDefinition("1", "hasNoName", null);
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinition(String version, String definitionKey, String name) {
