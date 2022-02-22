@@ -111,6 +111,13 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     return MsgPackWriter.getEncodedArrayHeaderLenght(elementCount) + bufferLength;
   }
 
+  /**
+   * Please be aware that iterating over an {@link ArrayValue} is not thread-safe. Iterating over
+   * this will modify the buffer. Multiple threads iterating over the same object will result in
+   * exceptions!
+   *
+   * @return an iterator for this object
+   */
   @Override
   public Iterator<T> iterator() {
     flushAndResetInnerValue();
@@ -126,6 +133,13 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     return cursorIndex < elementCount;
   }
 
+  /**
+   * Please be aware that iterating over an {@link ArrayValue} is not thread-safe. Iterating over
+   * this will modify the buffer. Multiple threads iterating over the same object will result in
+   * exceptions!
+   *
+   * @return the next element
+   */
   @Override
   public T next() {
     if (!hasNext()) {

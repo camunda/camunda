@@ -170,6 +170,13 @@ public final class MsgPackConverter {
     }
   }
 
+  /**
+   * Please be aware that this method may not thread-safe depending on the object that gets
+   * serialized.
+   *
+   * @param recordValue the object to be serialized
+   * @return a JSON marshaled representation
+   */
   public static String convertJsonSerializableObjectToJson(final JsonSerializable recordValue) {
     try {
 
