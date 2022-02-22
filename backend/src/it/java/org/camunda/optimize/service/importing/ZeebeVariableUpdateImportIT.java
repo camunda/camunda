@@ -461,7 +461,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
                                                                         final VariableIntent intent) {
     BoolQueryBuilder variableBoolQueryBuilder = boolQuery().must(termsQuery(
       ZeebeVariableRecordDto.Fields.intent,
-      intent
+      intent.name()
     ));
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,

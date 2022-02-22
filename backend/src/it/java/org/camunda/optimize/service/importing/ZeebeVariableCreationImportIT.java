@@ -439,7 +439,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   private void waitUntilMinimumVariableDocumentsExportedCount(final int minExportedEventCount) {
     BoolQueryBuilder variableBoolQueryBuilder = boolQuery().must(termsQuery(
       ZeebeVariableRecordDto.Fields.intent,
-      VariableIntent.CREATED
+      VariableIntent.CREATED.name()
     ));
 
     waitUntilMinimumDataExportedCount(

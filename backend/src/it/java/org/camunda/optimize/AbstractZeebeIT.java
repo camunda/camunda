@@ -105,9 +105,9 @@ public abstract class AbstractZeebeIT extends AbstractIT {
   protected BoolQueryBuilder getQueryForProcessableEvents() {
     return boolQuery().must(termsQuery(
       ZeebeProcessInstanceRecordDto.Fields.intent,
-      ProcessInstanceIntent.ELEMENT_ACTIVATING,
-      ProcessInstanceIntent.ELEMENT_COMPLETED,
-      ProcessInstanceIntent.ELEMENT_TERMINATED
+      ProcessInstanceIntent.ELEMENT_ACTIVATING.name(),
+      ProcessInstanceIntent.ELEMENT_COMPLETED.name(),
+      ProcessInstanceIntent.ELEMENT_TERMINATED.name()
     ));
   }
 
@@ -128,7 +128,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     waitUntilMinimumDataExportedCount(
       expectedDefinitionsCount,
       ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED))
+      boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
     );
   }
 

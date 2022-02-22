@@ -206,8 +206,8 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
   private BoolQueryBuilder getQueryForIncidentEvents() {
     return boolQuery().must(termsQuery(
       ZeebeProcessInstanceRecordDto.Fields.intent,
-      IncidentIntent.CREATED,
-      IncidentIntent.RESOLVED
+      IncidentIntent.CREATED.name(),
+      IncidentIntent.RESOLVED.name()
     ));
   }
 

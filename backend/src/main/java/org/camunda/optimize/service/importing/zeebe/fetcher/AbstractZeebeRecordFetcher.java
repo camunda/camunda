@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
@@ -46,7 +45,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
   protected abstract String getBaseIndexName();
 
-  protected abstract Set<Intent> getIntentsForRecordType();
+  protected abstract Set<String> getIntentsForRecordType();
 
   protected abstract Class<T> getRecordDtoClass();
 
