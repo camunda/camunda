@@ -6,13 +6,12 @@
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
-import {HEADER_HEIGHT} from './../Header/styled';
 import SplitPane from 'modules/components/SplitPane';
 
 const Instance = styled.main`
   display: flex;
   flex-direction: column;
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  height: 100%;
   position: relative;
 `;
 

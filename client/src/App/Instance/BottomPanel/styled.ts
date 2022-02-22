@@ -70,21 +70,4 @@ const PaneHeader = styled(SplitPane.Pane.Header)`
   }}
 `;
 
-const Section = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.bottomPanel;
-
-    return css`
-      flex: 1;
-      border: solid 1px ${colors.borderColor};
-      border-top: none;
-      border-bottom: none;
-    `;
-  }}
-`;
-
-const PaneFooter = styled(SplitPane.Pane.Footer)`
-  text-align: right;
-`;
-
-export {Pane, PaneBody, Headline, Pills, PaneHeader, Section, PaneFooter};
+export {Pane, PaneBody, Headline, Pills, PaneHeader};

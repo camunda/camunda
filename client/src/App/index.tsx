@@ -20,7 +20,7 @@ import {CommonUiContext} from 'modules/CommonUiContext';
 import {Routes} from 'modules/routes';
 import {HashRouterMigrator} from './HashRouterMigrator';
 import {AuthenticatedRoute} from './AuthenticatedRoute';
-import {Header} from './Header';
+import {Layout} from './Layout';
 import {SessionWatcher} from './SessionWatcher';
 
 const App: React.FC = () => {
@@ -43,50 +43,45 @@ const App: React.FC = () => {
               path={Routes.dashboard()}
               redirectPath={Routes.login()}
             >
-              <>
-                <Header />
+              <Layout>
                 <Dashboard />
-              </>
+              </Layout>
             </AuthenticatedRoute>
             <AuthenticatedRoute
               exact
               path={Routes.instances()}
               redirectPath={Routes.login()}
             >
-              <>
-                <Header />
+              <Layout>
                 <Instances />
-              </>
+              </Layout>
             </AuthenticatedRoute>
             <AuthenticatedRoute
               exact
               path={Routes.instance()}
               redirectPath={Routes.login()}
             >
-              <>
-                <Header />
+              <Layout>
                 <Instance />
-              </>
+              </Layout>
             </AuthenticatedRoute>
             <AuthenticatedRoute
               exact
               path={Routes.decisions()}
               redirectPath={Routes.login()}
             >
-              <>
-                <Header />
+              <Layout>
                 <Decisions />
-              </>
+              </Layout>
             </AuthenticatedRoute>
             <AuthenticatedRoute
               exact
               path={Routes.decisionInstance()}
               redirectPath={Routes.login()}
             >
-              <>
-                <Header />
+              <Layout>
                 <DecisionInstance />
-              </>
+              </Layout>
             </AuthenticatedRoute>
           </Switch>
         </BrowserRouter>

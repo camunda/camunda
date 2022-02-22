@@ -9,10 +9,8 @@ import styled, {css} from 'styled-components';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
-import {HEADER_HEIGHT} from './../Header/styled';
-
 const Instances = styled.main`
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  height: 100%;
   position: relative;
   overflow: hidden;
 `;

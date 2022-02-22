@@ -8,14 +8,13 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {Story} from '@storybook/react';
-
 import {Dashboard as DashboardComponent} from './index';
 import {rest} from 'msw';
 import {statistics} from 'modules/mocks/statistics';
 import {incidentsByProcess} from 'modules/mocks/incidentsByProcess';
 import {incidentsByError} from 'modules/mocks/incidentsByError';
-import {Header} from 'App/Header';
 import {user} from 'modules/mocks/user';
+import {Layout} from 'App/Layout';
 
 export default {
   title: 'Pages/Dashboard',
@@ -24,8 +23,9 @@ export default {
 const Success: Story = () => {
   return (
     <MemoryRouter>
-      <Header />
-      <DashboardComponent />
+      <Layout>
+        <DashboardComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -50,8 +50,9 @@ Success.parameters = {
 const Skeleton: Story = () => {
   return (
     <MemoryRouter>
-      <Header />
-      <DashboardComponent />
+      <Layout>
+        <DashboardComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -76,8 +77,9 @@ Skeleton.parameters = {
 const Error: Story = () => {
   return (
     <MemoryRouter>
-      <Header />
-      <DashboardComponent />
+      <Layout>
+        <DashboardComponent />
+      </Layout>
     </MemoryRouter>
   );
 };

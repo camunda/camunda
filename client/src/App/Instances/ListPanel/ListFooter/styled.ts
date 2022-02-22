@@ -5,7 +5,7 @@
  */
 
 import styled from 'styled-components';
-import BasicCopyright from 'modules/components/Copyright';
+import {Copyright as BasicCopyright} from 'modules/components/Copyright';
 
 const Footer = styled.div`
   display: flex;

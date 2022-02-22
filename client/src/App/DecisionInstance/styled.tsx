@@ -5,7 +5,6 @@
  */
 
 import styled from 'styled-components';
-import {HEADER_HEIGHT} from 'App/Header/styled';
 
 const DecisionInstanceContainer = styled.div`
   height: 100%;
@@ -14,8 +13,8 @@ const DecisionInstanceContainer = styled.div`
   grid-template-rows: 56px 1fr 1fr;
 `;
 
-const Container = styled.main`
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+const Container = styled.div`
+  height: 100%;
 `;
 
 export {Container, DecisionInstanceContainer};

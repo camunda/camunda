@@ -10,17 +10,7 @@ import {MetricPanel} from './MetricPanel';
 import {InstancesByProcess} from './InstancesByProcess';
 import {IncidentsByError} from './IncidentsByError';
 import {PAGE_TITLE} from 'modules/constants';
-import Copyright from 'modules/components/Copyright';
-import {
-  Container,
-  MetricPanelWrapper,
-  TileWrapper,
-  Tile,
-  TileTitle,
-  TileContent,
-  Footer,
-  Tiles,
-} from './styled';
+import {Grid, Tile, TileTitle, TileContent} from './styled';
 
 function Dashboard() {
   useEffect(() => {
@@ -28,32 +18,26 @@ function Dashboard() {
   }, []);
 
   return (
-    <Container>
-      <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
-      <Tiles>
-        <MetricPanelWrapper>
+    <>
+      <Grid>
+        <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
+        <Tile>
           <MetricPanel />
-        </MetricPanelWrapper>
-        <TileWrapper>
-          <Tile>
-            <TileTitle>Instances by Process</TileTitle>
-            <TileContent>
-              <InstancesByProcess />
-            </TileContent>
-          </Tile>
-          <Tile>
-            <TileTitle>Incidents by Error Message</TileTitle>
-            <TileContent>
-              <IncidentsByError />
-            </TileContent>
-          </Tile>
-        </TileWrapper>
-      </Tiles>
-
-      <Footer>
-        <Copyright />
-      </Footer>
-    </Container>
+        </Tile>
+        <Tile>
+          <TileTitle>Instances by Process</TileTitle>
+          <TileContent>
+            <InstancesByProcess />
+          </TileContent>
+        </Tile>
+        <Tile>
+          <TileTitle>Incidents by Error Message</TileTitle>
+          <TileContent>
+            <IncidentsByError />
+          </TileContent>
+        </Tile>
+      </Grid>
+    </>
   );
 }
 

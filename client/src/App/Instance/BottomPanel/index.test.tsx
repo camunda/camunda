@@ -9,7 +9,6 @@ import {render, screen} from '@testing-library/react';
 import BottomPanel from './index';
 import {EXPAND_STATE} from 'modules/constants';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
 
 type Props = {
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
@@ -40,7 +39,6 @@ describe('BottomPanel', () => {
     expect(screen.getByText('Instance History')).toBeInTheDocument();
     expect(screen.getByText('Show End Time')).toBeInTheDocument();
     expect(screen.getByText('default content')).toBeInTheDocument();
-    expect(screen.getByText(COPYRIGHT_REGEX)).toBeInTheDocument();
   });
 
   it('should render expanded component', () => {

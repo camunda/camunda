@@ -6,8 +6,6 @@
 
 import styled, {css} from 'styled-components';
 
-const HEADER_HEIGHT = 57;
-
 const Menu = styled.ul`
   ${({theme}) => {
     return css`
@@ -41,4 +39,4 @@ const RightSeparator = styled(Separator)`
   margin: 0 11px 0 15px;
 `;
 
-export {HEADER_HEIGHT, Menu, LeftSeparator, RightSeparator};
+export {Menu, LeftSeparator, RightSeparator};

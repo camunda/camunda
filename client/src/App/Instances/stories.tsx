@@ -15,7 +15,7 @@ import {mockGroupedProcesses} from 'modules/mocks/mockGroupedProcesses';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockProcessInstances} from 'modules/mocks/mockProcessInstances';
 import {mockBatchOperations} from 'modules/mocks/mockBatchOperations';
-import {Header} from 'App/Header';
+import {Layout} from 'App/Layout';
 import {statistics} from 'modules/mocks/statistics';
 import {user} from 'modules/mocks/user';
 
@@ -39,8 +39,9 @@ const Success: Story = () => {
         '/instances?active=true&incidents=true&process=bigVarProcess&version=1',
       ]}
     >
-      <Header />
-      <InstancesComponent />
+      <Layout>
+        <InstancesComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -79,8 +80,9 @@ Success.parameters = {
 const Error: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances?incidents=true']}>
-      <Header />
-      <InstancesComponent />
+      <Layout>
+        <InstancesComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -123,8 +125,9 @@ const Skeleton: Story = () => {
         '/instances?active=true&incidents=true&process=bigVarProcess&version=1',
       ]}
     >
-      <Header />
-      <InstancesComponent />
+      <Layout>
+        <InstancesComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -153,8 +156,9 @@ Skeleton.parameters = {
 const NoFilterApplied: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances']}>
-      <Header />
-      <InstancesComponent />
+      <Layout>
+        <InstancesComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -177,8 +181,9 @@ NoFilterApplied.parameters = {
 const Empty: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances?active=true&incidents=true']}>
-      <Header />
-      <InstancesComponent />
+      <Layout>
+        <InstancesComponent />
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -205,8 +210,9 @@ const NoVersionSelected: Story = () => {
         '/instances?active=true&incidents=true&process=complexProcess&version=all',
       ]}
     >
-      <Header />
-      <InstancesComponent />
+      <Layout>
+        <InstancesComponent />
+      </Layout>
     </MemoryRouter>
   );
 };

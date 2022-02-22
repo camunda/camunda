@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-const Copyright = styled.div`
+const Container = styled.div`
   ${({theme}) => {
     const opacity = theme.opacity.modules.copyright;
 
@@ -14,8 +14,9 @@ const Copyright = styled.div`
       color: ${theme.colors.text02};
       opacity: ${opacity};
       font-size: 12px;
+      width: 100%;
     `;
   }}
 `;
 
-export {Copyright};
+export {Container};

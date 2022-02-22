@@ -9,10 +9,15 @@ import BaseInstancesBar from 'modules/components/InstancesBar';
 import {Link} from 'react-router-dom';
 
 const Panel = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 104px 41px 104px;
+  ${({theme}) => {
+    const colors = theme.colors.metricPanel;
+    return css`
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: ${colors.color};
+    `;
+  }}
 `;
 
 const InstancesBar = styled(BaseInstancesBar)`
@@ -23,7 +28,6 @@ const SkeletonBar = styled.div`
   ${({theme}) => {
     const colors = theme.colors.metricPanel.skeletonBar;
     const opacity = theme.opacity.metricPanel.skeletonBar;
-
     return css`
       width: 100%;
       height: 15px;
@@ -41,7 +45,6 @@ const Title = styled(Link)`
   &:hover {
     text-decoration: underline;
   }
-  z-index: 1;
 `;
 
 const LabelContainer = styled.div`

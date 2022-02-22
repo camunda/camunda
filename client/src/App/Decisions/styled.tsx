@@ -5,11 +5,10 @@
  */
 
 import styled from 'styled-components';
-import {HEADER_HEIGHT} from 'App/Header/styled';
 
 const Container = styled.div`
   display: grid;
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  height: 100%;
   grid-template-columns: 350px 1fr;
 `;
 

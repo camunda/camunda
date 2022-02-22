@@ -97,6 +97,15 @@ const theme = {
       ...DARK_COLORS,
       text01: SEMANTIC_COLORS.white,
       text02: SEMANTIC_COLORS.white,
+      layout: {
+        dashboard: {
+          backgroundColor: DARK_COLORS.ui01,
+        },
+        default: {
+          borderColor: DARK_COLORS.ui04,
+          backgroundColor: DARK_COLORS.ui03,
+        },
+      },
       decisionInstance: {
         header: {
           backgroundColor: DARK_COLORS.ui03,
@@ -113,6 +122,7 @@ const theme = {
         skeletonBar: {
           backgroundColor: SEMANTIC_COLORS.badge02,
         },
+        color: rgba(SEMANTIC_COLORS.white, 0.9),
       },
       panelListItem: {
         active: {
@@ -146,9 +156,6 @@ const theme = {
           success: {
             color: rgba(SEMANTIC_COLORS.allIsWell, 0.9),
           },
-        },
-        footer: {
-          backgroundColor: DARK_COLORS.ui01,
         },
       },
       header: {
@@ -1044,6 +1051,15 @@ const theme = {
       ...LIGHT_COLORS,
       text01: DARK_COLORS.ui04,
       text02: DARK_COLORS.ui06,
+      layout: {
+        dashboard: {
+          backgroundColor: LIGHT_COLORS.ui01,
+        },
+        default: {
+          borderColor: LIGHT_COLORS.ui05,
+          backgroundColor: LIGHT_COLORS.ui02,
+        },
+      },
       decisionInstance: {
         header: {
           backgroundColor: LIGHT_COLORS.ui02,
@@ -1060,6 +1076,7 @@ const theme = {
         skeletonBar: {
           backgroundColor: LIGHT_COLORS.ui06,
         },
+        color: LIGHT_COLORS.ui06,
       },
       panelListItem: {
         active: {
@@ -1093,9 +1110,6 @@ const theme = {
           success: {
             color: rgba(SEMANTIC_COLORS.allIsWell, 0.9),
           },
-        },
-        footer: {
-          backgroundColor: LIGHT_COLORS.ui01,
         },
       },
       header: {

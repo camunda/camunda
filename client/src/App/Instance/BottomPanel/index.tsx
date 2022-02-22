@@ -5,11 +5,7 @@
  */
 
 import React from 'react';
-
-import Copyright from 'modules/components/Copyright';
-
-import * as Styled from './styled';
-
+import {Pane, PaneHeader, Headline, Pills, PaneBody} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 
 type Props = {
@@ -31,20 +27,17 @@ export default class BottomPanel extends React.PureComponent<Props> {
 
   render() {
     return (
-      <Styled.Pane {...this.props}>
-        <Styled.PaneHeader expandState={this.props.expandState}>
-          <Styled.Headline>Instance History</Styled.Headline>
-          <Styled.Pills>
+      <Pane {...this.props}>
+        <PaneHeader expandState={this.props.expandState}>
+          <Headline>Instance History</Headline>
+          <Pills>
             <TimeStampPill />
-          </Styled.Pills>
-        </Styled.PaneHeader>
-        <Styled.PaneBody>
+          </Pills>
+        </PaneHeader>
+        <PaneBody>
           {this.props.expandState !== 'COLLAPSED' && this.renderChildren()}
-        </Styled.PaneBody>
-        <Styled.PaneFooter>
-          <Copyright />
-        </Styled.PaneFooter>
-      </Styled.Pane>
+        </PaneBody>
+      </Pane>
     );
   }
 }

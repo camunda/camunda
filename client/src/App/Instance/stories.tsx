@@ -57,13 +57,12 @@ import {
   incidents as miIncidents,
   flowNodeMetadata,
 } from 'modules/mocks/instanceDetailPage/processWithMultiInstance';
-
-import {Header} from 'App/Header';
 import {statistics} from 'modules/mocks/statistics';
 import {user} from 'modules/mocks/user';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {Layout} from 'App/Layout';
 
 const mocks = [
   rest.get('/api/authentications/user', (_, res, ctx) => {
@@ -81,10 +80,11 @@ export default {
 const RunningInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -114,10 +114,11 @@ RunningInstance.parameters = {
 const Error: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -149,10 +150,11 @@ Error.parameters = {
 const Skeleton: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -169,10 +171,11 @@ Skeleton.parameters = {
 const Incident: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/6755399441057842']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -208,10 +211,11 @@ Incident.parameters = {
 const CompletedInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/9007199254741571']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -243,10 +247,11 @@ CompletedInstance.parameters = {
 const CanceledInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/4503599627371108']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -291,10 +296,11 @@ const MultiInstanceSelected: Story = () => {
 
   return (
     <MemoryRouter initialEntries={['/instances/2251799813686430']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -330,10 +336,11 @@ MultiInstanceSelected.parameters = {
 const ChildInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
@@ -363,10 +370,11 @@ ChildInstance.parameters = {
 const ChildInstanceWithLongParentHierarchy: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Header />
-      <Route path="/instances/:processInstanceId">
-        <InstanceDetail />
-      </Route>
+      <Layout>
+        <Route path="/instances/:processInstanceId">
+          <InstanceDetail />
+        </Route>
+      </Layout>
     </MemoryRouter>
   );
 };
