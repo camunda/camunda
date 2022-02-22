@@ -88,6 +88,22 @@ class Drd extends NetworkReconnectionHandler {
     }
   };
 
+  get currentDecision() {
+    const {drdData} = this.state;
+
+    if (drdData === null) {
+      return null;
+    }
+
+    return (
+      Object.keys(drdData).find(
+        (decisionId) =>
+          drdData[decisionId].decisionInstanceId ===
+          decisionInstanceStore.state.decisionInstanceId
+      ) ?? null
+    );
+  }
+
   reset() {
     super.reset();
     this.disposer?.();

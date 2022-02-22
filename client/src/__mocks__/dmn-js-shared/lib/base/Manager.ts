@@ -8,6 +8,8 @@ const mockedModules: {[module: string]: any} = {
   canvas: {
     zoom: jest.fn(),
     resized: jest.fn(),
+    addMarker: jest.fn(),
+    removeMarker: jest.fn(),
   },
 };
 

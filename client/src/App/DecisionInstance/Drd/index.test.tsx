@@ -9,8 +9,10 @@ import {mockServer} from 'modules/mock-server/node';
 import {render, screen, waitFor} from '@testing-library/react';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
+import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
+import {drdDataStore} from 'modules/stores/drdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Drd} from '.';
 
@@ -22,9 +24,14 @@ describe('<Drd />', () => {
       ),
       rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockDmnXml))
+      ),
+      rest.get(
+        '/api/decision-instances/:decisionInstanceId/drd-data',
+        (_, res, ctx) => res(ctx.json(mockDrdData))
       )
     );
 
+    drdDataStore.init();
     decisionXmlStore.init();
     decisionInstanceStore.fetchDecisionInstance('337423841237089');
   });
@@ -32,6 +39,7 @@ describe('<Drd />', () => {
   afterEach(() => {
     decisionInstanceStore.reset();
     decisionXmlStore.reset();
+    drdDataStore.reset();
   });
 
   it('should render DRD', async () => {

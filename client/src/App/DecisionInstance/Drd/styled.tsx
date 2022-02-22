@@ -9,18 +9,18 @@ import BasePanelHeader from 'modules/components/Panel/PanelHeader';
 
 const Container = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.modules.drdDiagram;
+    const colors = theme.colors.modules.diagram.element;
 
     return css`
       display: grid;
       grid-template-rows: 56px 1fr;
       height: 100%;
       width: 100%;
-      background: ${colors.background};
+      background: ${colors.background.default};
 
       .dmn-drd-container .djs-visual rect {
-        stroke: ${colors.stroke} !important;
-        fill: ${colors.background} !important;
+        stroke: ${colors.border} !important;
+        fill: ${colors.background.default} !important;
       }
 
       .dmn-drd-container .djs-label {
@@ -28,11 +28,31 @@ const Container = styled.div`
       }
 
       .dmn-drd-container .djs-connection polyline {
-        stroke: ${colors.stroke} !important;
+        stroke: ${colors.border} !important;
       }
 
       marker#information-requirement-end {
-        fill: ${colors.stroke} !important;
+        fill: ${colors.border} !important;
+      }
+
+      .ope-selectable {
+        cursor: pointer;
+
+        &.hover .djs-outline {
+          stroke: ${colors.outline};
+          stroke-width: 2px;
+        }
+      }
+
+      .ope-selected {
+        .djs-outline {
+          stroke: ${colors.outline};
+          stroke-width: 2px;
+        }
+
+        .djs-visual rect {
+          fill: ${colors.background.selected} !important;
+        }
       }
     `;
   }}

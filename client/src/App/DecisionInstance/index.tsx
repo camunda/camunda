@@ -22,8 +22,8 @@ const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
 
   useEffect(() => {
-    decisionXmlStore.init();
     drdDataStore.init();
+    decisionXmlStore.init();
 
     return () => {
       decisionInstanceStore.reset();

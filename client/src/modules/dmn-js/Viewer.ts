@@ -18,7 +18,9 @@ import DrdViewer from 'dmn-js-drd/lib/NavigatedViewer';
 
 type Options = {
   container?: HTMLElement;
-  drd?: {additionalModules: Array<{[key: string]: ['value', unknown]}>};
+  drd?: {
+    additionalModules: Array<unknown>;
+  };
 };
 
 type Element = {

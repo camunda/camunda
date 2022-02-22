@@ -571,11 +571,15 @@ const theme = {
           },
           defaultFillColor: DARK_COLORS.ui02,
           defaultStrokeColor: SEMANTIC_COLORS.grey,
-        },
-        drdDiagram: {
-          text: SEMANTIC_COLORS.white,
-          background: DARK_COLORS.ui02,
-          stroke: SEMANTIC_COLORS.grey,
+          element: {
+            text: SEMANTIC_COLORS.white,
+            background: {
+              default: DARK_COLORS.ui02,
+              selected: DARK_COLORS.selectedOdd,
+            },
+            border: SEMANTIC_COLORS.grey,
+            outline: SEMANTIC_COLORS.selections,
+          },
         },
         dropdown: {
           menu: {
@@ -1508,11 +1512,15 @@ const theme = {
           },
           defaultFillColor: LIGHT_COLORS.ui04,
           defaultStrokeColor: LIGHT_COLORS.ui06,
-        },
-        drdDiagram: {
-          text: DARK_COLORS.ui01,
-          background: LIGHT_COLORS.ui04,
-          stroke: LIGHT_COLORS.ui06,
+          element: {
+            text: DARK_COLORS.ui01,
+            background: {
+              default: LIGHT_COLORS.ui04,
+              selected: '#dde8fd',
+            },
+            border: LIGHT_COLORS.ui06,
+            outline: SEMANTIC_COLORS.selections,
+          },
         },
         dropdown: {
           menu: {

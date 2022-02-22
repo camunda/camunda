@@ -7,13 +7,26 @@
 type DiagramJSEvent = {
   element: {
     id: string;
+    width: number;
+    height: number;
   };
+  gfx: Element;
+};
+
+type DiagramJSEventCallback = (
+  eventName: String,
+  callback: (event: DiagramJSEvent) => void
+) => void;
+
+type DiagramJSEventBus = {
+  on: DiagramJSEventCallback;
+  off: DiagramJSEventCallback;
 };
 
 type DiagramJSViewer = {
   get: (module: string) => any;
-  on: (eventName: string, callback: (event: DiagramJSEvent) => void) => void;
-  off: (eventName: string, callback: (event: DiagramJSEvent) => void) => void;
+  on: DiagramJSEventCallback;
+  off: DiagramJSEventCallback;
 };
 
 type View = {

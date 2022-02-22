@@ -47,11 +47,14 @@ const Drd: React.FC = () => {
     const disposer = autorun(() => {
       if (
         drdViewerRef.current !== null &&
-        decisionXmlStore.state.xml !== null
+        decisionXmlStore.state.xml !== null &&
+        drdDataStore.state.drdData !== null
       ) {
         drdViewer.current!.render(
           drdViewerRef.current,
-          decisionXmlStore.state.xml
+          decisionXmlStore.state.xml,
+          Object.keys(drdDataStore.state.drdData),
+          drdDataStore.currentDecision
         );
       }
     });

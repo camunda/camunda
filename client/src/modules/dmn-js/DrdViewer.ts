@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
 
 type Definitions = {
@@ -12,6 +13,8 @@ type Definitions = {
 
 class DrdViewer {
   #xml: string | null = null;
+  #selectableDecisions: string[] = [];
+  #selectedDecision: string | null = null;
   #viewer: Viewer | null = null;
   #onDefinitionsChange?: (definitions: Definitions) => void;
   #onDecisionSelection?: (decisionId: string) => void;
@@ -28,12 +31,18 @@ class DrdViewer {
     this.#onDecisionSelection?.(event.element.id);
   };
 
-  render = async (container: HTMLElement, xml: string) => {
+  render = async (
+    container: HTMLElement,
+    xml: string,
+    selectableDecisions: string[],
+    selectedDecision: string | null
+  ) => {
     if (this.#viewer === null) {
       this.#viewer = new Viewer('drd', {
         container,
         drd: {
           additionalModules: [
+            OutlineModule,
             {
               definitionPropertiesView: ['value', null],
             },
@@ -50,7 +59,6 @@ class DrdViewer {
 
       await this.#viewer.importXML(xml);
       this.#xml = xml;
-
       const activeViewer = this.#viewer.getActiveViewer()!;
 
       // Initialize after importing
@@ -61,6 +69,36 @@ class DrdViewer {
       const canvas = activeViewer.get('canvas');
       canvas.resized();
       canvas.zoom('fit-viewport', 'auto');
+    }
+
+    if (this.#selectableDecisions !== selectableDecisions) {
+      const activeViewer = this.#viewer.getActiveViewer()!;
+      const canvas = activeViewer!.get('canvas');
+
+      this.#selectableDecisions.forEach((decisionId) => {
+        canvas.removeMarker(decisionId, 'ope-selectable');
+      });
+
+      selectableDecisions.forEach((decisionId) => {
+        canvas?.addMarker(decisionId, 'ope-selectable');
+      });
+
+      this.#selectableDecisions = selectableDecisions;
+    }
+
+    if (this.#selectedDecision !== selectedDecision) {
+      const activeViewer = this.#viewer.getActiveViewer()!;
+      const canvas = activeViewer!.get('canvas');
+
+      if (this.#selectedDecision !== null) {
+        canvas.removeMarker(this.#selectedDecision, 'ope-selected');
+      }
+
+      if (selectedDecision !== null) {
+        canvas.addMarker(selectedDecision, 'ope-selected');
+      }
+
+      this.#selectedDecision = selectedDecision;
     }
   };
 
