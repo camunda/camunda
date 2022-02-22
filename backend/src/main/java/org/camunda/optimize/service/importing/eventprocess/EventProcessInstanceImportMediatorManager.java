@@ -36,8 +36,8 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
   }
 
   public synchronized void refreshMediators() {
-    final Map<String, EventProcessPublishStateDto> availableInstanceIndices = eventBasedProcessIndexManager
-      .getPublishedInstanceStatesMap();
+    final Map<String, EventProcessPublishStateDto> availableInstanceIndices =
+      eventBasedProcessIndexManager.getPublishedInstanceStatesMap();
 
     final List<String> removedPublishedIds = importMediators.keySet().stream()
       .filter(publishedStateId -> !availableInstanceIndices.containsKey(publishedStateId))

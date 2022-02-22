@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.ingested.handler;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
@@ -26,24 +27,16 @@ public class IngestedImportIndexHandlerProvider {
   private final BeanFactory beanFactory;
 
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
+  @Getter
   private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
 
   @PostConstruct
   public void init() {
     allHandlers = new HashMap<>();
-
     final ExternalVariableUpdateImportIndexHandler importIndexHandlerInstance =
       getImportIndexHandlerInstance(ExternalVariableUpdateImportIndexHandler.class);
     externalVariableUpdateImportIndexHandler = importIndexHandlerInstance;
     allHandlers.put(ExternalVariableUpdateImportIndexHandler.class.getSimpleName(), importIndexHandlerInstance);
-  }
-
-  public ExternalVariableUpdateImportIndexHandler getTimestampBasedIngestedDataHandlers() {
-    return externalVariableUpdateImportIndexHandler;
-  }
-
-  public <C extends ImportIndexHandler<?, ?>> C getImportIndexHandler(Class<C> clazz) {
-    return (C) allHandlers.get(clazz.getSimpleName());
   }
 
   public Collection<ImportIndexHandler<?, ?>> getAllHandlers() {

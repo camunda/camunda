@@ -118,4 +118,7 @@ public class ElasticsearchConstants {
   public static final String ZEEBE_DATA_SOURCE = "zeebe";
   public static final String EVENTS_DATA_SOURCE = "events";
   public static final String INGESTED_DATA_SOURCE = "ingested";
+
+  // Aggregation constants
+  public static final String FREQUENCY_AGGREGATION = "_frequency";
 }

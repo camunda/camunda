@@ -20,12 +20,14 @@ import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_PERCENTAGE_PROPERTY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_PROPERTY;
 
 @EqualsAndHashCode
 public class ViewProperty implements Combinable {
   public static final ViewProperty FREQUENCY = new ViewProperty(VIEW_FREQUENCY_PROPERTY);
   public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
+  public static final ViewProperty PERCENTAGE = new ViewProperty(VIEW_PERCENTAGE_PROPERTY);
   public static final ViewProperty RAW_DATA = new ViewProperty(VIEW_RAW_DATA_PROPERTY);
 
   // uppercase is intended here to align it with other static fields

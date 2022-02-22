@@ -549,6 +549,15 @@ public class TemplatedProcessReportDataBuilder {
           .definitions(definitions)
           .build();
         break;
+      case PROC_INST_PER_GROUP_BY_NONE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.PERCENTAGE)
+          .groupByType(ProcessGroupByType.NONE)
+          .distributedByType(DistributedByType.NONE)
+          .definitions(definitions)
+          .build();
+        break;
       case FLOW_NODE_DUR_GROUP_BY_FLOW_NODE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)

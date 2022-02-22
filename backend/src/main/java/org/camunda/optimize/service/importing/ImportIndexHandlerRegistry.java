@@ -173,7 +173,7 @@ public class ImportIndexHandlerRegistry {
   }
 
   public ExternalVariableUpdateImportIndexHandler getExternalVariableUpdateImportIndexHandler() {
-    return ingestedImportIndexHandlerProvider.getImportIndexHandler(ExternalVariableUpdateImportIndexHandler.class);
+    return ingestedImportIndexHandlerProvider.getExternalVariableUpdateImportIndexHandler();
   }
 
   public void reloadConfiguration() {

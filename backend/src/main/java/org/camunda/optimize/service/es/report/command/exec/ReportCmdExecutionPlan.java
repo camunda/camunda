@@ -124,20 +124,18 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchResponse response;
     SearchScrollRequest scrollRequest = null;
     PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
-    if(paginationInfo instanceof PaginationScrollableDto) {
+    if (paginationInfo instanceof PaginationScrollableDto) {
       PaginationScrollableDto scrollableDto = (PaginationScrollableDto) paginationInfo;
       String scrollId = scrollableDto.getScrollId();
       Integer timeout = scrollableDto.getScrollTimeout();
-      if(scrollId != null && !scrollId.isEmpty()) {
+      if (scrollId != null && !scrollId.isEmpty()) {
         scrollRequest = new SearchScrollRequest(scrollId);
         scrollRequest.scroll(TimeValue.timeValueSeconds(timeout));
-      }
-      else {
+      } else {
         searchRequest.scroll(TimeValue.timeValueSeconds(timeout));
       }
       response = (scrollRequest != null ? esClient.scroll(scrollRequest) : esClient.search(searchRequest));
-    }
-    else {
+    } else {
       response = esClient.search(searchRequest);
     }
     return response;
@@ -150,13 +148,13 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       .trackTotalHits(true)
       .fetchSource(false);
     // The null checks below are essential, otherwise over 4000 tests will fail because of null pointer exceptions
-   executionContext.getPagination().ifPresent(
+    executionContext.getPagination().ifPresent(
       pagination -> {
-      Optional.ofNullable(pagination.getOffset()).ifPresent(
-        searchSourceBuilder::from);
-      Optional.ofNullable(pagination.getLimit()).ifPresent(
-        searchSourceBuilder::size);
-    });
+        Optional.ofNullable(pagination.getOffset()).ifPresent(
+          searchSourceBuilder::from);
+        Optional.ofNullable(pagination.getLimit()).ifPresent(
+          searchSourceBuilder::size);
+      });
     addAggregation(searchSourceBuilder, executionContext);
 
     SearchRequest searchRequest = new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);

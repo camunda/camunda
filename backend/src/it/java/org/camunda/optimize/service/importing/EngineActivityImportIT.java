@@ -33,6 +33,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
@@ -336,7 +337,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
       .aggregation(
         nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
           .subAggregation(
-            count(FLOW_NODE_INSTANCES + "_count")
+            count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
               .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
           )
       );
@@ -351,7 +352,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
       .get(FLOW_NODE_INSTANCES);
     ValueCount countAggregator =
       nested.getAggregations()
-        .get(FLOW_NODE_INSTANCES + "_count");
+        .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
     return countAggregator.getValue();
   }
 

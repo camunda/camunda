@@ -108,6 +108,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
@@ -328,7 +329,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .aggregation(
         nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
           .subAggregation(
-            count(FLOW_NODE_INSTANCES + "_count")
+            count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
               .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
           )
       );
@@ -348,7 +349,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .get(FLOW_NODE_INSTANCES);
     ValueCount countAggregator =
       nested.getAggregations()
-        .get(FLOW_NODE_INSTANCES + "_count");
+        .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
     return Long.valueOf(countAggregator.getValue()).intValue();
   }
 
