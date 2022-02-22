@@ -318,7 +318,6 @@ func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool,
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	// set the request timeout to 1 more second to allow us to detect timeouts properly
 	args := command
 	args = append(args, "--requestTimeout", "10s")
 	if useHostAndPort {
