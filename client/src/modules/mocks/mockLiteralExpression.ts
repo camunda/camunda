@@ -7,7 +7,7 @@
 const mockLiteralExpression = {
   decisionDefinitionId: '111',
   decisionId: 'calc-key-figures',
-  state: 'completed',
+  state: 'COMPLETED',
   name: 'Calculate Credit History Key Figures',
   version: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
