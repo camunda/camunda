@@ -51,6 +51,7 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.GetAliasesResponse;
@@ -81,7 +82,7 @@ import org.springframework.context.ApplicationContext;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.EnumSet;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -96,6 +97,13 @@ import java.util.Collections;
 @Slf4j
 public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
+
+  // we had to introduce our own options due to a regression with the client's behaviour with the 7.16
+  // see https://discuss.elastic.co/t/regression-client-7-16-x-indicesclient-exists-indicesoptions-are-not-present-in-request-anymore/298017
+  public static final IndicesOptions INDICES_EXIST_OPTIONS = new IndicesOptions(
+    EnumSet.of(IndicesOptions.Option.FORBID_CLOSED_INDICES),
+    EnumSet.of(IndicesOptions.WildcardStates.OPEN)
+  );
 
   @Getter
   private RestHighLevelClient highLevelClient;
@@ -182,16 +190,18 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[]{indexName})));
   }
 
-  public final boolean exists(final GetIndexRequest getRequest) throws IOException {
-    return highLevelClient.indices()
-      .exists(new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices())), requestOptions());
+  public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
+    return exists(
+      new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator))
+    );
   }
 
-  public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
-    return highLevelClient.indices().exists(
-      new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator)),
-      requestOptions()
-    );
+  public final boolean exists(final GetIndexRequest getRequest) throws IOException {
+    return highLevelClient.indices()
+      .exists(
+        new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices())).indicesOptions(INDICES_EXIST_OPTIONS),
+        requestOptions()
+      );
   }
 
   public final boolean templateExists(final String indexName) throws IOException {
