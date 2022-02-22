@@ -15,6 +15,7 @@ import {DecisionInstance} from './';
 import userEvent from '@testing-library/user-event';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {drdStore} from 'modules/stores/drd';
+import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -32,6 +33,9 @@ describe('<DecisionInstance />', () => {
       rest.get(
         '/api/decision-instances/:decisionInstanceId/drd-data',
         (_, res, ctx) => res(ctx.json(mockDrdData))
+      ),
+      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
+        res(ctx.text(mockDmnXml))
       )
     );
   });
