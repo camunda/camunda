@@ -932,8 +932,7 @@ final class JsonSerializableToJsonTest {
               "processInstanceKey":4,
               "elementInstanceKey":5,
               "elementId":"element-id",
-              "evaluatedDecisions":[
-              ],
+              "evaluatedDecisions":[],
               "evaluationFailureMessage":"",
               "failedDecisionId":""
           }
