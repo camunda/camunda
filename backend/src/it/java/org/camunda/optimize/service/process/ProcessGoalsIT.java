@@ -5,32 +5,47 @@
  */
 package org.camunda.optimize.service.process;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.ProcessGoalDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
+import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -38,17 +53,8 @@ public class ProcessGoalsIT extends AbstractIT {
 
   private static final String FIRST_PROCESS_DEFINITION_KEY = "firstProcessDefinition";
   private static final String SECOND_PROCESS_DEFINITION_KEY = "secondProcessDefinition";
-  private static final String STARTED_EVENT = "startedEvent";
-  private static final String FINISHED_EVENT = "finishedEvent";
   private static final String EXTERNAL_EVENT_GROUP = "testGroup";
   private static final String EXTERNAL_EVENT_SOURCE = "integrationTestSource";
-  private static final String BPMN_START_EVENT_ID = "StartEvent_1";
-  private static final String USER_TASK_ID_ONE = "user_task_1";
-  private static final String BPMN_END_EVENT_ID = "EndEvent_1";
-  private static final String EVENT_PROCESS_NAME = "myEventProcess";
-  private static final String MY_TRACE_ID_1 = "myTraceId1";
-  private static final String VARIABLE_ID = "var";
-  private static final String VARIABLE_VALUE = "value";
 
   @Test
   public void getProcessGoals_notPossibleForUnauthenticatedUser() {
@@ -72,30 +78,33 @@ public class ProcessGoalsIT extends AbstractIT {
   }
 
   @Test
-  public void getProcessGoals_processDefinitionGoalsFetchedSuccesfully() {
+  public void getProcessGoals_processDefinitionGoalsFetchedAccordingToAscendingOrderWhenSortOrderIsNull() {
     // given
     deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
     deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, null);
+    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
 
-    // then
-    assertThat(processGoalDtos).hasSize(2).containsExactlyInAnyOrder(
-      new ProcessGoalDto(
-        FIRST_PROCESS_DEFINITION_KEY,
-        FIRST_PROCESS_DEFINITION_KEY,
-        Collections.emptyList(),
-        null
-      ),
-      new ProcessGoalDto(
-        SECOND_PROCESS_DEFINITION_KEY,
-        SECOND_PROCESS_DEFINITION_KEY,
-        Collections.emptyList(),
-        null
-      )
-    );
+    // then sort in ascending order
+    assertThat(processGoalDtos).hasSize(2)
+      .isSortedAccordingTo(Comparator.comparing(ProcessGoalDto::getProcessName))
+      .containsExactly(
+        new ProcessGoalDto(
+          FIRST_PROCESS_DEFINITION_KEY,
+          FIRST_PROCESS_DEFINITION_KEY,
+          Collections.emptyList(),
+          null
+        ),
+        new ProcessGoalDto(
+          SECOND_PROCESS_DEFINITION_KEY,
+          SECOND_PROCESS_DEFINITION_KEY,
+          Collections.emptyList(),
+          null
+        )
+      );
   }
 
   @Test
@@ -119,8 +128,8 @@ public class ProcessGoalsIT extends AbstractIT {
   @Test
   public void getProcessGoals_processesIncludeAnEventBasedProcess() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
-    String eventProcessDefinitionKey = deployEventBasedProcessDefinition();
+    deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
+    List<String> eventBasedProcessDefinitionData = deployEventBasedProcessDefinition();
 
     importAllEngineEntitiesFromScratch();
 
@@ -128,20 +137,160 @@ public class ProcessGoalsIT extends AbstractIT {
     List<ProcessGoalDto> processGoalDtos = getProcessGoals();
 
     // then
-    assertThat(processGoalDtos).hasSize(2).containsExactlyInAnyOrder(
+    assertThat(processGoalDtos).hasSize(2)
+      .isSortedAccordingTo(Comparator.comparing(ProcessGoalDto::getProcessName))
+      .containsExactly(
+        new ProcessGoalDto(
+          FIRST_PROCESS_DEFINITION_KEY,
+          FIRST_PROCESS_DEFINITION_KEY,
+          Collections.emptyList(),
+          null
+        ),
+        new ProcessGoalDto(
+          eventBasedProcessDefinitionData.get(0),
+          eventBasedProcessDefinitionData.get(1),
+          Collections.emptyList(),
+          null
+        )
+      );
+  }
+
+  @ParameterizedTest
+  @MethodSource("getSortOrderAndExpectedProcessNameComparator")
+  public void getProcessGoals_sortByProcessName(final SortOrder sortingOrder,
+                                                final Comparator<ProcessGoalDto> comparator) {
+    // given
+    deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
+    deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, sortingOrder);
+    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+
+    // then
+    assertThat(processGoalDtos).hasSize(2).isSortedAccordingTo(comparator);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getSortOrderAndExpectedProcessNameComparator")
+  public void getProcessGoals_useDefinitionKeyForSortOrderForProcessWithNoName(final SortOrder sortOrder,
+                                                                               final Comparator<ProcessGoalDto> comparator) {
+    // given
+    ProcessDefinitionEngineDto processDefinitionWithName = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
+    String processDefinitionKeyForProcessWithNoName = addProcessDefinitionWithNoNameToElasticSearch();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, sortOrder);
+    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+
+    // then
+    assertThat(processGoalDtos).hasSize(2).isSortedAccordingTo(comparator)
+      .extracting(ProcessGoalDto::getProcessName, ProcessGoalDto::getProcessDefinitionKey)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(processDefinitionWithName.getName(), processDefinitionWithName.getKey()),
+        Tuple.tuple(processDefinitionKeyForProcessWithNoName, processDefinitionKeyForProcessWithNoName)
+      );
+  }
+
+  @Test
+  public void getProcessGoals_processGoalsGetReturnedOnceForMultipleTenants() {
+    // given
+    BpmnModelInstance bpmnModelInstance = getSingleUserTaskDiagram(FIRST_PROCESS_DEFINITION_KEY);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      bpmnModelInstance,
+      "firstTenant"
+    );
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      bpmnModelInstance,
+      "secondTenant"
+    );
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalDtos).hasSize(1).containsExactly(
       new ProcessGoalDto(
-        eventProcessDefinitionKey,
-        EVENT_PROCESS_NAME,
-        Collections.emptyList(),
-        null
-      ),
-      new ProcessGoalDto(
-        processDefinition.getKey(),
-        processDefinition.getName(),
+        FIRST_PROCESS_DEFINITION_KEY,
+        FIRST_PROCESS_DEFINITION_KEY,
         Collections.emptyList(),
         null
       )
     );
+  }
+
+  @Test
+  public void getProcessGoals_processGoalsGetReturnedOnceForMultipleProcessVersions() {
+    // given
+    final DefinitionOptimizeResponseDto processDefinitionVersion1 = createProcessDefinition(
+      "1",
+      FIRST_PROCESS_DEFINITION_KEY,
+      "someName"
+    );
+    final DefinitionOptimizeResponseDto processDefinitionVersion2 = createProcessDefinition(
+      "2",
+      FIRST_PROCESS_DEFINITION_KEY,
+      "someName"
+    );
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+      new ProcessDefinitionIndex().getIndexName(),
+      Map.of(
+        processDefinitionVersion1.getId(),
+        processDefinitionVersion1,
+        processDefinitionVersion2.getId(),
+        processDefinitionVersion2
+      )
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalDtos).hasSize(1).containsExactly(new ProcessGoalDto(
+      processDefinitionVersion1.getKey(),
+      processDefinitionVersion1.getName(),
+      Collections.emptyList(),
+      null
+    ));
+  }
+
+  @ParameterizedTest
+  @MethodSource("getSortOrderAndExpectedDefinitionKeyComparator")
+  public void getProcessGoals_sortByKeyWhenNamesAreIdentical(final SortOrder sortOrder,
+                                                             final Comparator<ProcessGoalDto> comparator) {
+    // given
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "a");
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "b");
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "c");
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, sortOrder);
+    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+
+    // then
+    assertThat(processGoalDtos).hasSize(3).isSortedAccordingTo(comparator);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getInvalidSortByFields")
+  public void getProcessGoals_invalidSortParameter(final String sortBy) {
+    // given
+    ProcessGoalSorter processGoalSorter = new ProcessGoalSorter(sortBy, SortOrder.ASC);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessDefinitionGoalsRequest(processGoalSorter)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
@@ -154,14 +303,14 @@ public class ProcessGoalsIT extends AbstractIT {
         .end(EventTypeDto.builder()
                .group(EXTERNAL_EVENT_GROUP)
                .source(EXTERNAL_EVENT_SOURCE)
-               .eventName(STARTED_EVENT)
+               .eventName(START_EVENT)
                .build())
         .build(),
       EventMappingDto.builder()
         .end(EventTypeDto.builder()
                .group(EXTERNAL_EVENT_GROUP)
                .source(EXTERNAL_EVENT_SOURCE)
-               .eventName(FINISHED_EVENT)
+               .eventName(END_EVENT)
                .build())
         .build()
     );
@@ -170,21 +319,11 @@ public class ProcessGoalsIT extends AbstractIT {
   private EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
                                                                    final EventMappingDto endEventMapping) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
-    eventMappings.put(BPMN_START_EVENT_ID, startEventMapping);
-    eventMappings.put(BPMN_END_EVENT_ID, endEventMapping);
+    eventMappings.put(START_EVENT, startEventMapping);
+    eventMappings.put(END_EVENT, endEventMapping);
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-      eventMappings, EVENT_PROCESS_NAME, createTwoEventAndOneTaskActivitiesProcessDefinitionXml()
+      eventMappings, "myEventProcess", createTwoEventAndOneTaskActivitiesProcessDefinitionXml()
     );
-  }
-
-  @SneakyThrows
-  private static String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {
-    return convertBpmnModelToXmlString(getSingleUserTaskDiagram(
-      "aProcessName",
-      BPMN_START_EVENT_ID,
-      BPMN_END_EVENT_ID,
-      USER_TASK_ID_ONE
-    ));
   }
 
   @SneakyThrows
@@ -194,12 +333,6 @@ public class ProcessGoalsIT extends AbstractIT {
       .runImportRound(true)
       .get(10, TimeUnit.SECONDS);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  private static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {
-    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
-    return xmlOutput.toString(StandardCharsets.UTF_8);
   }
 
   private void publishMappingAndExecuteImport(final String eventProcessId) {
@@ -218,28 +351,97 @@ public class ProcessGoalsIT extends AbstractIT {
             .id(eventId)
             .eventName(eventName)
             .timestamp(eventTimestamp.toInstant().toEpochMilli())
-            .traceId(MY_TRACE_ID_1)
+            .traceId("myTraceId1")
             .group(EXTERNAL_EVENT_GROUP)
             .source(EXTERNAL_EVENT_SOURCE)
-            .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))
             .build()
         )
       );
   }
 
-  private List<ProcessGoalDto> getProcessGoals() {
+  private List<ProcessGoalDto> getProcessGoals(ProcessGoalSorter sorter) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionGoalsRequest()
+      .buildGetProcessDefinitionGoalsRequest(sorter)
       .executeAndReturnList(ProcessGoalDto.class, Response.Status.OK.getStatusCode());
   }
 
-  private String deployEventBasedProcessDefinition() {
-    ingestTestEvent(IdGenerator.getNextId(), STARTED_EVENT, OffsetDateTime.now());
-    ingestTestEvent(IdGenerator.getNextId(), FINISHED_EVENT, OffsetDateTime.now());
+  private List<ProcessGoalDto> getProcessGoals() {
+    return getProcessGoals(null);
+  }
+
+  private List<String> deployEventBasedProcessDefinition() {
+    ingestTestEvent(IdGenerator.getNextId(), START_EVENT, OffsetDateTime.now());
+    ingestTestEvent(IdGenerator.getNextId(), END_EVENT, OffsetDateTime.now());
     final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto();
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
     publishMappingAndExecuteImport(eventProcessDefinitionKey);
     executeImportCycle();
-    return eventProcessDefinitionKey;
+    return List.of(eventProcessDefinitionKey, simpleEventProcessMappingDto.getName());
   }
+
+  private ProcessDefinitionOptimizeDto createProcessDefinition() {
+    return createProcessDefinition(VERSION_TAG, "hasNoName", null);
+  }
+
+  private ProcessDefinitionOptimizeDto createProcessDefinition(String version, String definitionKey, String name) {
+    return ProcessDefinitionOptimizeDto.builder()
+      .id(IdGenerator.getNextId())
+      .key(definitionKey)
+      .name(name)
+      .version(version)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
+      .bpmn20Xml("xml")
+      .build();
+  }
+
+  private String addProcessDefinitionWithNoNameToElasticSearch() {
+    final DefinitionOptimizeResponseDto def = createProcessDefinition();
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+      new ProcessDefinitionIndex().getIndexName(),
+      Map.of(def.getId(), def)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    return def.getKey();
+  }
+
+  private void addProcessDefinitionWithGivenNameAndKeyToElasticSearch(String name, String key) {
+    final DefinitionOptimizeResponseDto definition = createProcessDefinition("1", name, key);
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+      new ProcessDefinitionIndex().getIndexName(),
+      Map.of(definition.getId(), definition)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  private static Stream<Arguments> getSortOrderAndExpectedProcessNameComparator() {
+    return Stream.of(
+      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalDto::getProcessName)),
+      Arguments.of(null, Comparator.comparing(ProcessGoalDto::getProcessName)),
+      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalDto::getProcessName).reversed())
+    );
+  }
+
+  private static Stream<String> getInvalidSortByFields() {
+    return Stream.of("invalid", null);
+  }
+
+  private static Stream<Arguments> getSortOrderAndExpectedDefinitionKeyComparator() {
+    return Stream.of(
+      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalDto::getProcessDefinitionKey)),
+      Arguments.of(null, Comparator.comparing(ProcessGoalDto::getProcessDefinitionKey)),
+      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalDto::getProcessDefinitionKey).reversed())
+    );
+  }
+
+  @SneakyThrows
+  private static String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {
+    return convertBpmnModelToXmlString(getSingleUserTaskDiagram("aProcessName"));
+  }
+
+  private static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {
+    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
+    return xmlOutput.toString(StandardCharsets.UTF_8);
+  }
+
 }

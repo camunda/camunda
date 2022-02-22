@@ -7,10 +7,12 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.ProcessGoalDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.service.ProcessGoalService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -30,8 +32,9 @@ public class ProcessGoalRestService {
   @GET
   @Path("/goals")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ProcessGoalDto> getProcessDefinitionsGoals(@Context final ContainerRequestContext requestContext) {
+  public List<ProcessGoalDto> getProcessDefinitionsGoals(@Context final ContainerRequestContext requestContext,
+                                                         @BeanParam final ProcessGoalSorter processGoalSorter) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processGoalService.getProcessDefinitionGoals(userId);
+    return processGoalSorter.applySort(processGoalService.getProcessDefinitionGoals(userId));
   }
 }

@@ -9,11 +9,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
+@FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProcessGoalDto {

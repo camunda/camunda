@@ -7,14 +7,15 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.ProcessGoalDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Component
@@ -25,18 +26,14 @@ public class ProcessGoalService {
   private final DataSourceDefinitionAuthorizationService dataSourceDefinitionAuthorizationService;
 
   public List<ProcessGoalDto> getProcessDefinitionGoals(String userId) {
-    List<ProcessGoalDto> processGoalDtos = new ArrayList<>();
-    processDefinitionReader.getAllProcessDefinitions().forEach(processDefinition -> {
-      if (dataSourceDefinitionAuthorizationService.isAuthorizedToAccessDefinition(userId, processDefinition)) {
-        processGoalDtos.add(new ProcessGoalDto(
-          processDefinition.getKey(),
-          processDefinition.getName(),
-          Collections.emptyList(),
-          null
-        ));
-      }
-    });
-    return processGoalDtos;
+    return processDefinitionReader.getAllProcessDefinitions().stream()
+      .filter(processDefinition -> dataSourceDefinitionAuthorizationService
+        .isAuthorizedToAccessDefinition(userId, processDefinition))
+      .map(processDefinition -> new ProcessGoalDto(
+        processDefinition.getKey(),
+        StringUtils.isEmpty(processDefinition.getName()) ? processDefinition.getKey() : processDefinition.getName(),
+        Collections.emptyList(),
+        null
+      )).distinct().collect(Collectors.toList());
   }
-
 }

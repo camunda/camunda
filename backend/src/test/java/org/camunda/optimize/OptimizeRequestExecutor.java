@@ -66,6 +66,7 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
@@ -494,10 +495,15 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest() {
+  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest(ProcessGoalSorter sorter) {
     this.path = "process/goals";
     this.method = GET;
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
     return this;
+  }
+
+  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest() {
+    return buildGetProcessDefinitionGoalsRequest(null);
   }
 
   public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
