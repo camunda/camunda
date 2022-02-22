@@ -170,8 +170,11 @@ class DmnEvaluatedDecisionsTest {
 
     assertThat(result.getFailureMessage())
         .isEqualTo(
-            "Expected to evaluate decision 'force_user', but failed to evaluate expression 'lightsaberColor': "
-                + "no variable found for name 'lightsaberColor'");
+            """
+            Expected to evaluate decision 'force_user', \
+            but failed to evaluate expression 'lightsaberColor': \
+            no variable found for name 'lightsaberColor'\
+            """);
 
     assertThat(result.getFailedDecisionId()).isEqualTo("jedi_or_sith");
 
