@@ -100,4 +100,24 @@ public final class TimerSubscription implements ActorSubscription, ScheduledTime
   public void run() {
     thread.removeTimer(this);
   }
+
+  @Override
+  public String toString() {
+    return "TimerSubscription{"
+        + "timerId="
+        + timerId
+        + ", deadline="
+        + deadline
+        + ", timeUnit="
+        + timeUnit
+        + ", isRecurring="
+        + isRecurring
+        + ", isDone="
+        + isDone
+        + ", isCanceled="
+        + isCanceled
+        + ", thread="
+        + thread
+        + '}';
+  }
 }
