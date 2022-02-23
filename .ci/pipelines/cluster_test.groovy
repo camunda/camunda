@@ -86,14 +86,11 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
+          sh 'apk add --no-cache jq gettext'
+          camundaInstallKubectl()
           sh("""
-                # install jq
-                apk add --no-cache jq gettext
-                # kubectl
-                gcloud components install kubectl --quiet
-
-                bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}" "${ES_VERSION}" "${CAMBPM_VERSION}"
-            """)
+            bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}" "${ES_VERSION}" "${CAMBPM_VERSION}"
+          """)
         }
         container('maven') {
           sh("""apt-get update && apt-get install -y jq netcat""")

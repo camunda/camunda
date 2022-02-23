@@ -95,14 +95,11 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
-          sh ("""
-                # install jq
-                apk add --no-cache jq gettext
-                # kubectl
-                gcloud components install kubectl --quiet
-
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "false" "${ES_NUM_NODES}"
-            """)
+          sh 'apk add --no-cache jq gettext'
+          camundaInstallKubectl()
+          sh """
+            bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "30s" "false" "${ES_NUM_NODES}"
+          """
         }
       }
     }
