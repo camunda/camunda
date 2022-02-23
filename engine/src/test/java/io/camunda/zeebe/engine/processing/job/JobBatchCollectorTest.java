@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.job.JobBatchCollector.LargeJob;
+import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -68,7 +68,7 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to only accept the first job
     lengthEvaluator.canWriteEventOfLength = (length) -> toggle.getAndSet(false);
-    final Either<LargeJob, Integer> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Integer> result = collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -88,7 +88,7 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
-    final Either<LargeJob, Integer> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Integer> result = collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -150,7 +150,7 @@ final class JobBatchCollectorTest {
     record.getValue().setMaxJobsToActivate(1);
 
     // when
-    final Either<LargeJob, Integer> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Integer> result = collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();

@@ -66,7 +66,7 @@ final class JobBatchCollector {
    * @param record the batch activate command; jobs and their keys will be added directly into it
    * @return the amount of activated jobs on success, or a job which was too large to activate
    */
-  Either<LargeJob, Integer> collectJobs(final TypedRecord<JobBatchRecord> record) {
+  Either<TooLargeJob, Integer> collectJobs(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -74,7 +74,7 @@ final class JobBatchCollector {
     final var maxActivatedCount = value.getMaxJobsToActivate();
     final var activatedCount = new MutableInteger(0);
     final var jobCopyBuffer = new ExpandableArrayBuffer();
-    final var unwritableJob = new MutableReference<LargeJob>();
+    final var unwritableJob = new MutableReference<TooLargeJob>();
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
@@ -99,7 +99,7 @@ final class JobBatchCollector {
             // if no jobs were activated, then the current job is simply too large, and we cannot
             // activate it
             if (activatedCount.value == 0) {
-              unwritableJob.set(new LargeJob(key, jobRecord));
+              unwritableJob.set(new TooLargeJob(key, jobRecord));
             }
 
             value.setTruncated(true);
@@ -165,5 +165,5 @@ final class JobBatchCollector {
     return variables;
   }
 
-  record LargeJob(long key, JobRecord record) {}
+  record TooLargeJob(long key, JobRecord record) {}
 }
