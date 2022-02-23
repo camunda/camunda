@@ -46,8 +46,8 @@
     "test:ci-browserstack": "PORT=8080 node e2e/scripts/browserstack.js",
     "postinstall": "cd .. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
-    "storybook": "start-storybook -p 6006 -s public",
-    "build-storybook": "build-storybook -s public"
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "jest": {
     "transformIgnorePatterns": [
@@ -55,9 +55,9 @@
     ]
   },
   "devDependencies": {
-    "@storybook/addon-actions": "6.3.12",
-    "@storybook/preset-create-react-app": "3.2.0",
-    "@storybook/react": "6.3.13",
+    "@storybook/addon-actions": "6.4.19",
+    "@storybook/preset-create-react-app": "4.0.1",
+    "@storybook/react": "6.4.19",
     "@testing-library/jest-dom": "5.16.2",
     "@testing-library/react": "11.2.7",
     "@testing-library/react-hooks": "7.0.2",

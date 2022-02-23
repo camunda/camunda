@@ -1,7 +1,6 @@
 import React from 'react';
 import {addDecorator} from '@storybook/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {MemoryRouter} from 'react-router-dom';
 
 import {theme} from 'modules/theme';
 import GlobalStyles from 'App/GlobalStyles';
