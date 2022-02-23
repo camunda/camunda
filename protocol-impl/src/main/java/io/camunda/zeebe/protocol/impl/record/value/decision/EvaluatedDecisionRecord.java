@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -29,6 +30,7 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
 
   private final StringProperty decisionIdProp = new StringProperty("decisionId");
   private final StringProperty decisionNameProp = new StringProperty("decisionName");
+  private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
   private final StringProperty decisionTypeProp = new StringProperty("decisionType");
   private final BinaryProperty decisionOutputProp = new BinaryProperty("decisionOutput");
 
@@ -41,6 +43,7 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
   public EvaluatedDecisionRecord() {
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
+        .declareProperty(decisionKeyProp)
         .declareProperty(decisionTypeProp)
         .declareProperty(decisionOutputProp)
         .declareProperty(evaluatedInputsProp)
@@ -64,6 +67,16 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
 
   public EvaluatedDecisionRecord setDecisionName(final String decisionName) {
     decisionNameProp.setValue(decisionName);
+    return this;
+  }
+
+  @Override
+  public long getDecisionKey() {
+    return decisionKeyProp.getValue();
+  }
+
+  public EvaluatedDecisionRecord setDecisionKey(final long decisionKey) {
+    decisionKeyProp.setValue(decisionKey);
     return this;
   }
 
