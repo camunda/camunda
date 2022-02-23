@@ -76,9 +76,7 @@ pipeline {
         }
 
         container('gcloud') {
-          sh("""
-            gcloud components install kubectl --quiet
-          """)
+          camundaInstallKubectl()
         }
       }
     }

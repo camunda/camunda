@@ -1,5 +1,8 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 def static DOCKER_IMAGE() { return "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
@@ -69,10 +72,8 @@ pipeline {
             poll: false
 
         container('gcloud') {
+            camundaInstallKubectl()
             sh ("""
-                # kubectl
-                gcloud components install kubectl --quiet
-
                 # gcloud
                 echo '${REGISTRY}' > account.json
                 gcloud auth activate-service-account --key-file=account.json
