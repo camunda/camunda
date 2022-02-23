@@ -35,4 +35,14 @@ public final class EventApplyingStateWriter implements StateWriter {
     eventWriter.appendFollowUpEvent(key, intent, value);
     eventApplier.applyState(key, intent, value);
   }
+
+  @Override
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return eventWriter.canWriteEventOfLength(eventLength);
+  }
+
+  @Override
+  public int getMaxEventLength() {
+    return eventWriter.getMaxEventLength();
+  }
 }

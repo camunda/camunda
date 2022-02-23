@@ -28,7 +28,6 @@ public final class JobEventProcessors {
       final MutableZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
-      final int maxRecordSize,
       final Writers writers,
       final JobMetrics jobMetrics,
       final EventTriggerBehavior eventTriggerBehavior) {
@@ -70,7 +69,7 @@ public final class JobEventProcessors {
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                writers, zeebeState, zeebeState.getKeyGenerator(), maxRecordSize, jobMetrics))
+                writers, zeebeState, zeebeState.getKeyGenerator(), jobMetrics))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(jobBackoffChecker)
         .withListener(
