@@ -4,28 +4,29 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {Router} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {
   render,
   waitForElementToBeRemoved,
   screen,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
-import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {statistics} from 'modules/mocks/statistics';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-function createWrapper(history = createMemoryHistory()) {
+function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>{children}</Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -57,9 +58,9 @@ describe('<MetricPanel />', () => {
       'Running Instances in total'
     );
 
-    await waitForElementToBeRemoved(() => [
-      screen.getByTestId('instances-bar-skeleton'),
-    ]);
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('instances-bar-skeleton')
+    );
     expect(
       screen.getByText('1087 Running Instances in total')
     ).toBeInTheDocument();
@@ -81,79 +82,82 @@ describe('<MetricPanel />', () => {
   });
 
   it('should go to the correct page when clicking on instances with incidents', async () => {
-    const MOCK_HISTORY = createMemoryHistory();
     render(<MetricPanel />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper(),
     });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('instances-bar-skeleton')
+    );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
     userEvent.click(screen.getByText('Instances with Incident'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe('?incidents=true');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('search')).toHaveTextContent('?incidents=true');
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should not erase pesistent params', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
-
     render(<MetricPanel />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
     userEvent.click(screen.getByText('Instances with Incident'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
     );
 
     userEvent.click(screen.getByText('Active Instances'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true'
     );
 
     userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true&active=true'
     );
   });
 
   it('should go to the correct page when clicking on active instances', async () => {
-    const MOCK_HISTORY = createMemoryHistory();
     render(<MetricPanel />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper(),
     });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('instances-bar-skeleton')
+    );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(screen.getByText('Active Instances'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe('?active=true');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('search')).toHaveTextContent('?active=true');
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should go to the correct page when clicking on total instances', async () => {
-    const MOCK_HISTORY = createMemoryHistory();
     render(<MetricPanel />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper(),
     });
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe('?incidents=true&active=true');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?incidents=true&active=true'
+    );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });

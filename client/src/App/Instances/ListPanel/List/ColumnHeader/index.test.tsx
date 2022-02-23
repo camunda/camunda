@@ -4,10 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {MemoryRouter} from 'react-router-dom';
 import ColumnHeader from './index';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('ColumnHeader', () => {
   const mockPropsWithSorting = {
@@ -19,7 +27,7 @@ describe('ColumnHeader', () => {
 
   it('should render a button if the column is sortable', () => {
     render(<ColumnHeader {...mockPropsWithSorting} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
     expect(screen.getByText(mockPropsWithSorting.label)).toBeInTheDocument();
     expect(
@@ -28,7 +36,7 @@ describe('ColumnHeader', () => {
   });
 
   it('should only render the text if the column is not sortable', () => {
-    render(<ColumnHeader label="Start time" />, {wrapper: ThemeProvider});
+    render(<ColumnHeader label="Start time" />, {wrapper: Wrapper});
     expect(screen.getByText('Start time')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Sort by startDate'})

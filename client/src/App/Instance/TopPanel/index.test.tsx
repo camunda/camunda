@@ -4,13 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   waitForElementToBeRemoved,
   screen,
 } from '@testing-library/react';
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockSequenceFlows, mockIncidents} from './index.setup';
 import SplitPane from 'modules/components/SplitPane';
@@ -56,12 +55,17 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:processInstanceId">
-          <SplitPane>
-            {children}
-            <SplitPane.Pane />
-          </SplitPane>
-        </Route>
+        <Routes>
+          <Route
+            path="/instances/:processInstanceId"
+            element={
+              <SplitPane>
+                {children}
+                <SplitPane.Pane />
+              </SplitPane>
+            }
+          />
+        </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -113,7 +117,7 @@ describe('TopPanel', () => {
       wrapper: Wrapper,
     });
 
-    currentInstanceStore.init('active_instance');
+    currentInstanceStore.init({id: 'active_instance'});
 
     singleInstanceDiagramStore.fetchProcessXml('1');
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -125,7 +129,7 @@ describe('TopPanel', () => {
       wrapper: Wrapper,
     });
 
-    currentInstanceStore.init('instance_with_incident');
+    currentInstanceStore.init({id: 'instance_with_incident'});
     await singleInstanceDiagramStore.fetchProcessXml('1');
     expect(await screen.findByText('1 Incident occured')).toBeInTheDocument();
   });
@@ -140,7 +144,7 @@ describe('TopPanel', () => {
       wrapper: Wrapper,
     });
 
-    currentInstanceStore.init('instance_with_incident');
+    currentInstanceStore.init({id: 'instance_with_incident'});
     singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
@@ -158,7 +162,7 @@ describe('TopPanel', () => {
       wrapper: Wrapper,
     });
 
-    currentInstanceStore.init('instance_with_incident');
+    currentInstanceStore.init({id: 'instance_with_incident'});
     singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
@@ -171,7 +175,7 @@ describe('TopPanel', () => {
       wrapper: Wrapper,
     });
 
-    currentInstanceStore.init('instance_with_incident');
+    currentInstanceStore.init({id: 'instance_with_incident'});
     await singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();

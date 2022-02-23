@@ -19,6 +19,7 @@ import React from 'react';
 import {Restricted} from 'modules/components/Restricted';
 import {tracking} from 'modules/tracking';
 import {CmCheckbox} from '@camunda-cloud/common-ui-react';
+import {useLocation} from 'react-router-dom';
 
 const {TD} = Table;
 
@@ -30,6 +31,7 @@ type Props = {
 const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
   const notifications = useNotifications();
   const {parentInstanceId} = instance;
+  const location = useLocation();
 
   return (
     <TR
@@ -61,7 +63,7 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
       </TD>
       <TD>
         <Link
-          to={(location) => Locations.instance(instance.id, location)}
+          to={Locations.instance(location, instance.id)}
           title={`View instance ${instance.id}`}
           onClick={() => {
             tracking.track({
@@ -79,7 +81,7 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
       <TD data-testid="parent-process-id">
         {parentInstanceId !== null ? (
           <Link
-            to={(location) => Locations.instance(parentInstanceId, location)}
+            to={Locations.instance(location, parentInstanceId)}
             title={`View parent instance ${parentInstanceId}`}
             onClick={() => {
               tracking.track({

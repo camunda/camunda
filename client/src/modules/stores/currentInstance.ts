@@ -16,12 +16,8 @@ import {
 import {fetchProcessInstance} from 'modules/api/instances';
 import {createOperation, getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
-
 import {PAGE_TITLE} from 'modules/constants';
 import {logger} from 'modules/logger';
-import {History} from 'history';
-import {Locations} from 'modules/routes';
-import {NotificationContextType} from 'modules/notifications';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
 
@@ -43,8 +39,8 @@ class CurrentInstance extends NetworkReconnectionHandler {
   disposer: null | IReactionDisposer = null;
   retryCount: number = 0;
   refetchTimeout: NodeJS.Timeout | null = null;
-  history: History | undefined;
-  notifications: NotificationContextType | undefined;
+  onRefetchFailure?: () => void;
+  onPollingFailure?: () => void;
 
   constructor() {
     super();
@@ -62,14 +58,18 @@ class CurrentInstance extends NetworkReconnectionHandler {
     });
   }
 
-  init(
-    id: ProcessInstanceEntity['id'],
-    history?: History,
-    notifications?: NotificationContextType
-  ) {
-    this.history = history;
-    this.notifications = notifications;
+  init({
+    id,
+    onRefetchFailure,
+    onPollingFailure,
+  }: {
+    id: ProcessInstanceEntity['id'];
+    onRefetchFailure?: () => void;
+    onPollingFailure?: () => void;
+  }) {
     this.fetchCurrentInstance(id);
+    this.onRefetchFailure = onRefetchFailure;
+    this.onPollingFailure = onPollingFailure;
 
     this.disposer = autorun(() => {
       if (
@@ -183,12 +183,7 @@ class CurrentInstance extends NetworkReconnectionHandler {
     } else {
       this.retryCount = 0;
       this.handleFetchFailure();
-      if (this.history !== undefined) {
-        this.history.push(Locations.runningInstances(this.history.location));
-        this.notifications?.displayNotification('error', {
-          headline: `Instance ${id} could not be found`,
-        });
-      }
+      this.onRefetchFailure?.();
     }
   };
 
@@ -202,13 +197,9 @@ class CurrentInstance extends NetworkReconnectionHandler {
         } else {
           if (
             !isInstanceRunning(this.state.instance) &&
-            response.status === 404 &&
-            this.history !== undefined
+            response.status === 404
           ) {
-            this.history.push(Locations.filters(this.history.location));
-            this.notifications?.displayNotification('success', {
-              headline: 'Instance deleted',
-            });
+            this.onPollingFailure?.();
           }
           logger.error('Failed to poll process instance');
         }
@@ -248,6 +239,8 @@ class CurrentInstance extends NetworkReconnectionHandler {
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
     this.resetRefetch();
+    this.onRefetchFailure = undefined;
+    this.onPollingFailure = undefined;
   }
 }
 

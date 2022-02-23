@@ -68,7 +68,7 @@ describe('<FlowNodeInstancesTree />', () => {
     });
 
     it('should load the instance history', async () => {
-      currentInstanceStore.init(processInstanceId);
+      currentInstanceStore.init({id: processInstanceId});
       flowNodeInstanceStore.init();
 
       mockServer.use(
@@ -101,7 +101,7 @@ describe('<FlowNodeInstancesTree />', () => {
     });
 
     it('should be able to unfold and fold subprocesses', async () => {
-      currentInstanceStore.init(processInstanceId);
+      currentInstanceStore.init({id: processInstanceId});
       flowNodeInstanceStore.init();
 
       mockServer.use(
@@ -169,7 +169,7 @@ describe('<FlowNodeInstancesTree />', () => {
     it('should poll for instances on root level', async () => {
       jest.useFakeTimers();
 
-      currentInstanceStore.init(processInstanceId);
+      currentInstanceStore.init({id: processInstanceId});
       flowNodeInstanceStore.init();
 
       mockServer.use(
@@ -242,7 +242,7 @@ describe('<FlowNodeInstancesTree />', () => {
       );
       await singleInstanceDiagramStore.fetchProcessXml(processId);
 
-      currentInstanceStore.init(processInstanceId);
+      currentInstanceStore.init({id: processInstanceId});
       flowNodeInstanceStore.init();
     });
 

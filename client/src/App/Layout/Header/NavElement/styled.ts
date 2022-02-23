@@ -5,7 +5,7 @@
  */
 
 import styled from 'styled-components';
-import {NavLink as BaseLink} from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 
 const Container = styled.li`
   display: flex;
@@ -23,7 +23,7 @@ const Label = styled.span`
   margin: 0 20px;
 `;
 
-const Link = styled(BaseLink)`
+const Link = styled(NavLink)`
   display: flex;
   align-items: center;
 `;

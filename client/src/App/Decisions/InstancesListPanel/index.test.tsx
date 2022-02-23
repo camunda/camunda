@@ -16,27 +16,22 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InstancesListPanel} from './';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
-import {createMemoryHistory} from 'history';
-import {Router, Route} from 'react-router';
+import {Routes, Route, MemoryRouter} from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-const createWrapper = (
-  history = createMemoryHistory({initialEntries: ['/decisions']})
-) => {
+const createWrapper = (initialPath: string = '/decisions') => {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>
-          <Route exact path="/decisions">
-            {children}
-          </Route>
-          <Route path="/instances/:processInstanceId">
-            <div></div>
-          </Route>
-          <Route path="/decisions/:decisionInstanceId">
-            <div></div>
-          </Route>
-        </Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path="/decisions" element={children} />
+            <Route path="/instances/:processInstanceId" element={<></>} />
+            <Route path="/decisions/:decisionInstanceId" element={<></>} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -160,21 +155,17 @@ describe('Decisions List', () => {
   });
 
   it('should navigate to decision instance page', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/decisions'],
-    });
-
     mockServer.use(
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json(mockDecisionInstances))
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper(MOCK_HISTORY)});
+    render(<InstancesListPanel />, {wrapper: createWrapper('/decisions')});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/decisions');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/decisions');
 
     userEvent.click(
       screen.getByRole('link', {
@@ -182,14 +173,12 @@ describe('Decisions List', () => {
       })
     );
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/decisions/2251799813689541');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      '/decisions/2251799813689541'
+    );
   });
 
   it('should navigate to process instance page', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/decisions'],
-    });
-
     mockServer.use(
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(
@@ -209,11 +198,11 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper(MOCK_HISTORY)});
+    render(<InstancesListPanel />, {wrapper: createWrapper('/decisions')});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/decisions');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/decisions');
 
     userEvent.click(
       screen.getByRole('link', {
@@ -221,7 +210,9 @@ describe('Decisions List', () => {
       })
     );
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances/2251799813689544');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      '/instances/2251799813689544'
+    );
   });
 
   it('should display loading skeleton when sorting is applied', async () => {

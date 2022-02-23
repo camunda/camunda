@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {Router, Route} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {
   render,
   waitForElementToBeRemoved,
@@ -22,8 +21,8 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
-import {createMemoryHistory} from 'history';
 import {useNotifications} from 'modules/notifications';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -45,17 +44,17 @@ type Props = {
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
-function getWrapper(
-  history = createMemoryHistory({
-    initialEntries: ['/instances/4294980768'],
-  })
-) {
+function getWrapper(initialPath: string = '/instances/4294980768') {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>
-          <Route path="/instances/:processInstanceId">{children} </Route>
-        </Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path="/instances/:processInstanceId" element={children} />
+            <Route path="/instances" element={<>instances page</>} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -179,10 +178,6 @@ describe('Instance', () => {
   });
 
   it('should poll 3 times for not found instance, then redirect to instances page and display notification', async () => {
-    const mockHistory = createMemoryHistory({
-      initialEntries: ['/instances/123'],
-    });
-
     jest.useFakeTimers();
 
     mockServer.use(
@@ -191,7 +186,7 @@ describe('Instance', () => {
       )
     );
 
-    render(<Instance />, {wrapper: getWrapper(mockHistory)});
+    render(<Instance />, {wrapper: getWrapper('/instances/123')});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -203,8 +198,10 @@ describe('Instance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(mockHistory.location.pathname).toBe('/instances');
-      expect(mockHistory.location.search).toBe('?active=true&incidents=true');
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?active=true&incidents=true'
+      );
     });
 
     expect(useNotifications().displayNotification).toHaveBeenCalledWith(

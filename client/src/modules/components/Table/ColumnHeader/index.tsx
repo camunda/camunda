@@ -5,7 +5,7 @@
  */
 
 import {SortableHeader, Header, Label, SortIcon} from './styled';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {getSortParams} from 'modules/utils/filter';
 
 function toggleSorting(
@@ -52,9 +52,8 @@ const ColumnHeader: React.FC<Props> = ({
   isDefault,
 }) => {
   const isSortable = sortKey !== undefined;
-
-  const history = useHistory();
-
+  const navigate = useNavigate();
+  const location = useLocation();
   const sortParams = getSortParams();
 
   if (isSortable) {
@@ -66,9 +65,8 @@ const ColumnHeader: React.FC<Props> = ({
       <SortableHeader
         disabled={disabled}
         onClick={() => {
-          history.push({
-            ...history.location,
-            search: toggleSorting(history.location.search, sortKey, sortParams),
+          navigate({
+            search: toggleSorting(location.search, sortKey, sortParams),
           });
         }}
         title={`Sort by ${label}`}

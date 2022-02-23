@@ -20,18 +20,21 @@ import {
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-
-import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
+import {Locations} from 'modules/routes';
+import {useLocation} from 'react-router-dom';
 
 const InstancesByProcess = observer(() => {
+  const location = useLocation();
+
   useEffect(() => {
     instancesByProcessStore.init();
     return () => {
       instancesByProcessStore.reset();
     };
   }, []);
+
   const renderIncidentsPerVersion = (processName: any, items: any) => {
     return (
       <Styled.VersionList>
@@ -41,20 +44,18 @@ const InstancesByProcess = observer(() => {
           return (
             <Styled.VersionLi key={item.processId}>
               <PanelListItem
-                to={(location) =>
-                  Locations.filters(location, {
-                    process: item.bpmnProcessId,
-                    version: item.version,
-                    active: true,
-                    incidents: true,
-                    ...(totalInstancesCount === 0
-                      ? {
-                          completed: true,
-                          canceled: true,
-                        }
-                      : {}),
-                  })
-                }
+                to={Locations.filters(location, {
+                  process: item.bpmnProcessId,
+                  version: item.version,
+                  active: true,
+                  incidents: true,
+                  ...(totalInstancesCount === 0
+                    ? {
+                        completed: true,
+                        canceled: true,
+                      }
+                    : {}),
+                })}
                 onClick={() => {
                   panelStatesStore.expandFiltersPanel();
                   tracking.track({
@@ -95,21 +96,19 @@ const InstancesByProcess = observer(() => {
 
     return (
       <PanelListItem
-        to={(location) =>
-          Locations.filters(location, {
-            process: item.bpmnProcessId,
-            version:
-              item.processes.length === 1 ? item.processes[0].version : 'all',
-            active: true,
-            incidents: true,
-            ...(totalInstancesCount === 0
-              ? {
-                  completed: true,
-                  canceled: true,
-                }
-              : {}),
-          })
-        }
+        to={Locations.filters(location, {
+          process: item.bpmnProcessId,
+          version:
+            item.processes.length === 1 ? item.processes[0].version : 'all',
+          active: true,
+          incidents: true,
+          ...(totalInstancesCount === 0
+            ? {
+                completed: true,
+                canceled: true,
+              }
+            : {}),
+        })}
         onClick={() => {
           panelStatesStore.expandFiltersPanel();
           tracking.track({

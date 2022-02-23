@@ -6,12 +6,21 @@
 
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {MemoryRouter} from 'react-router-dom';
 import {ColumnHeader} from './index';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('ColumnHeader', () => {
   it('should render a button if the column is sortable', () => {
     render(<ColumnHeader label="Start Time" sortKey="startDate" />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
     expect(screen.getByText('Start Time')).toBeInTheDocument();
     expect(
@@ -21,7 +30,7 @@ describe('ColumnHeader', () => {
 
   it('should only render the text if the column is not sortable', () => {
     render(<ColumnHeader label="Start Time" />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
     expect(screen.getByText('Start Time')).toBeInTheDocument();
     expect(

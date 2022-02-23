@@ -31,7 +31,11 @@ const Collapsable = styled.div<CollapsableProps>`
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      min-width: ${isCollapsed ? COLLAPSABLE_PANEL_MIN_WIDTH : `${maxWidth}px`};
+      min-width: ${isCollapsed
+        ? COLLAPSABLE_PANEL_MIN_WIDTH
+        : css`
+            ${maxWidth}px
+          `};
       height: 100%;
       background-color: ${colors.backgroundColor};
       transition: width 0.2s ease-out;

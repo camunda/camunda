@@ -4,15 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
   waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import {Router, Route} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Instances} from './index';
 import {
@@ -31,20 +29,25 @@ import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 jest.mock('modules/utils/bpmn');
 
-function getWrapper(
-  history = createMemoryHistory({
-    initialEntries: ['/instances'],
-  })
-) {
+function getWrapper(initialPath: string = '/instances') {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>
-          <Route path="/instances">{children} </Route>
-        </Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path="/instances" element={children} />
+          </Routes>
+          <Link to="/instances?active=true">go to active</Link>
+          <Link to="/instances?process=eventBasedGatewayProcess&version=1">
+            go to event based
+          </Link>
+          <Link to="/instances">go to no filters</Link>
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -84,11 +87,7 @@ describe('Instances', () => {
 
   it('should render title and document title', () => {
     render(<Instances />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: ['/instances?incidents=true&active=true'],
-        })
-      ),
+      wrapper: getWrapper('/instances?incidents=true&active=true'),
     });
 
     expect(screen.getByText('Operate Instances')).toBeInTheDocument();
@@ -97,11 +96,7 @@ describe('Instances', () => {
 
   it('should render page components', async () => {
     render(<Instances />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: ['/instances?active=true&incidents=true'],
-        })
-      ),
+      wrapper: getWrapper('/instances?active=true&incidents=true'),
     });
 
     // diagram panel
@@ -130,9 +125,6 @@ describe('Instances', () => {
   });
 
   it('should reset selected instances when filters change', async () => {
-    const mockHistory = createMemoryHistory({
-      initialEntries: ['/instances?active=true&incidents=true'],
-    });
     mockServer.use(
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(ctx.json(mockProcessInstances))
@@ -143,7 +135,7 @@ describe('Instances', () => {
     );
 
     render(<Instances />, {
-      wrapper: getWrapper(mockHistory),
+      wrapper: getWrapper('/instances?active=true&incidents=true'),
     });
 
     expect(instanceSelectionStore.state).toEqual({
@@ -166,7 +158,7 @@ describe('Instances', () => {
       selectionMode: 'INCLUDE',
     });
 
-    mockHistory.push('/instances?active=true');
+    userEvent.click(screen.getByText(/go to active/i));
 
     await waitFor(() =>
       expect(instanceSelectionStore.state).toEqual({
@@ -178,9 +170,6 @@ describe('Instances', () => {
   });
 
   it('should fetch diagram and diagram statistics', async () => {
-    const mockHistory = createMemoryHistory({
-      initialEntries: ['/instances?process=bigVarProcess&version=1'],
-    });
     const firstProcessStatisticsResponse = [
       {
         activityId: 'ServiceTask_0kt6c5i',
@@ -203,7 +192,7 @@ describe('Instances', () => {
     );
 
     render(<Instances />, {
-      wrapper: getWrapper(mockHistory),
+      wrapper: getWrapper('/instances?process=bigVarProcess&version=1'),
     });
 
     await waitFor(() =>
@@ -217,7 +206,7 @@ describe('Instances', () => {
       firstProcessStatisticsResponse
     );
 
-    mockHistory.push('/instances?process=eventBasedGatewayProcess&version=1');
+    userEvent.click(screen.getByText(/go to event based/i));
 
     await waitFor(() =>
       expect(instancesDiagramStore.state.status).toBe('fetching')
@@ -234,13 +223,13 @@ describe('Instances', () => {
       mockProcessStatistics
     );
 
-    mockHistory.push('/instances');
-
     mockServer.use(
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(ctx.json({processInstances: []}))
       )
     );
+
+    userEvent.click(screen.getByText(/go to no filters/i));
 
     await waitFor(() =>
       expect(processStatisticsStore.state.statistics).toEqual([])

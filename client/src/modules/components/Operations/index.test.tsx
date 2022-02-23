@@ -17,9 +17,9 @@ import {mockServer} from 'modules/mock-server/node';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createMemoryHistory} from 'history';
-import {Router, Route} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -45,23 +45,18 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
-const createWrapper = (
-  history = createMemoryHistory({initialEntries: ['/instances']})
-) => {
-  const Wrapper: React.FC = ({children}) => {
-    return (
-      <ThemeProvider>
-        <Router history={history}>
-          <Route path="/instances/:processInstanceId">{children} </Route>
-          <Route exact path="/instances">
-            {children}
-          </Route>
-        </Router>
-      </ThemeProvider>
-    );
-  };
-
-  return Wrapper;
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter initialEntries={['/instances']}>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+          <Route path="/instances" element={children} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
 };
 
 describe('Operations', () => {
@@ -72,7 +67,7 @@ describe('Operations', () => {
   describe('Operation Buttons', () => {
     it('should render retry and cancel button if instance is running and has an incident', () => {
       render(<Operations instance={{...instanceMock, state: 'INCIDENT'}} />, {
-        wrapper: createWrapper(),
+        wrapper: Wrapper,
       });
 
       expect(
@@ -87,7 +82,7 @@ describe('Operations', () => {
     });
     it('should render only cancel button if instance is running and does not have an incident', () => {
       render(<Operations instance={{...instanceMock, state: 'ACTIVE'}} />, {
-        wrapper: createWrapper(),
+        wrapper: Wrapper,
       });
 
       expect(
@@ -108,7 +103,7 @@ describe('Operations', () => {
             state: 'COMPLETED',
           }}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       expect(
@@ -129,7 +124,7 @@ describe('Operations', () => {
             state: 'CANCELED',
           }}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       expect(
@@ -152,7 +147,7 @@ describe('Operations', () => {
             state: 'INCIDENT',
           }}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -166,7 +161,7 @@ describe('Operations', () => {
           }}
           forceSpinner={true}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
@@ -196,7 +191,7 @@ describe('Operations', () => {
             state: 'INCIDENT',
           }}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -227,10 +222,6 @@ describe('Operations', () => {
   });
 
   it('should not display notification and redirect if delete operation is performed on instances page', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/instances'],
-    });
-
     render(
       <Operations
         instance={{
@@ -240,11 +231,11 @@ describe('Operations', () => {
         onError={() => {}}
       />,
       {
-        wrapper: createWrapper(MOCK_HISTORY),
+        wrapper: Wrapper,
       }
     );
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
     userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -260,7 +251,7 @@ describe('Operations', () => {
     );
 
     expect(mockDisplayNotification).not.toHaveBeenCalled();
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
   });
 
   describe('Cancel Operation', () => {
@@ -275,7 +266,7 @@ describe('Operations', () => {
             state: 'INCIDENT',
           }}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       userEvent.click(
@@ -306,7 +297,7 @@ describe('Operations', () => {
           }}
           onOperation={onOperationMock}
         />,
-        {wrapper: createWrapper()}
+        {wrapper: Wrapper}
       );
 
       userEvent.click(
@@ -327,9 +318,6 @@ describe('Operations', () => {
     });
 
     it('should redirect to linked parent instance', () => {
-      const mockHistory = createMemoryHistory({
-        initialEntries: ['/instances'],
-      });
       const rootInstanceId = '6755399441058622';
 
       render(
@@ -340,7 +328,9 @@ describe('Operations', () => {
             rootInstanceId,
           }}
         />,
-        {wrapper: createWrapper(mockHistory)}
+        {
+          wrapper: Wrapper,
+        }
       );
 
       userEvent.click(
@@ -353,7 +343,7 @@ describe('Operations', () => {
         })
       );
 
-      expect(mockHistory.location.pathname).toBe(
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
         `/instances/${rootInstanceId}`
       );
     });

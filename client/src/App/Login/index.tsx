@@ -5,7 +5,7 @@
  */
 
 import {useEffect} from 'react';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import Button from 'modules/components/Button';
@@ -24,22 +24,27 @@ import {
   Password,
   Copyright,
 } from './styled';
-import {Routes} from 'modules/routes';
+import {Paths} from 'modules/routes';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {authenticationStore} from 'modules/stores/authentication';
 import {NetworkError} from 'modules/networkError';
+
+function stateHasReferrer(state: unknown): state is {referrer: Location} {
+  if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
+    return true;
+  }
+
+  return false;
+}
 
 type FormValues = {
   username: string;
   password: string;
 };
 
-type LocationState = {
-  referrer?: Location;
-};
-
 const Login: React.FC = () => {
-  const history = useHistory<LocationState>();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = PAGE_TITLE.LOGIN;
@@ -52,13 +57,14 @@ const Login: React.FC = () => {
 
         if (response === undefined) {
           clearStateLocally();
-          history.replace(
-            history.location.state?.referrer === undefined
-              ? {
-                  ...history.location,
-                  pathname: Routes.dashboard(),
-                }
-              : history.location.state.referrer
+          navigate(
+            stateHasReferrer(location.state)
+              ? location.state.referrer
+              : {
+                  ...location,
+                  pathname: Paths.dashboard(),
+                },
+            {replace: true}
           );
           return;
         }

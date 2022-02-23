@@ -27,7 +27,7 @@ describe('stores/currentInstance', () => {
   });
 
   it('should fetch current instance on init state', async () => {
-    currentInstanceStore.init('1');
+    currentInstanceStore.init({id: '1'});
     await waitFor(() =>
       expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)
     );
@@ -35,7 +35,7 @@ describe('stores/currentInstance', () => {
 
   it('should poll if current instance is running', async () => {
     jest.useFakeTimers();
-    currentInstanceStore.init('1');
+    currentInstanceStore.init({id: '1'});
     await waitFor(() =>
       expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)
     );
@@ -200,7 +200,7 @@ describe('stores/currentInstance', () => {
       eventListeners[event] = cb;
     });
 
-    currentInstanceStore.init('1');
+    currentInstanceStore.init({id: '1'});
 
     await waitFor(() =>
       expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)

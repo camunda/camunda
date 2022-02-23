@@ -4,12 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {IncidentsTable} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createIncident, mockCallActivityProcessXML} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
-import {Route, MemoryRouter} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -45,15 +44,13 @@ const incidentsMock = [
   }),
 ];
 
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:processInstanceId">{children} </Route>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+        </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );

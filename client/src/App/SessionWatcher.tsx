@@ -8,7 +8,7 @@ import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {useNotifications, Notification} from 'modules/notifications';
 import {useLocation} from 'react-router-dom';
-import {Routes} from 'modules/routes';
+import {Paths} from 'modules/routes';
 import {authenticationStore} from 'modules/stores/authentication';
 
 const SessionWatcher: React.FC = observer(() => {
@@ -28,9 +28,9 @@ const SessionWatcher: React.FC = observer(() => {
 
     if (
       notification === undefined &&
-      location.pathname !== Routes.login() &&
+      location.pathname !== Paths.login() &&
       (status === 'session-expired' ||
-        (location.pathname !== Routes.dashboard() &&
+        (location.pathname !== Paths.dashboard() &&
           status === 'invalid-initial-session'))
     ) {
       handleSessionExpiration();

@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Router, Route} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {Header} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createMemoryHistory} from 'history';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {instancesStore} from 'modules/stores/instances';
@@ -16,13 +15,15 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 import {authenticationStore} from 'modules/stores/authentication';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-function createWrapper(history = createMemoryHistory()) {
+function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC = ({children}) => (
     <ThemeProvider>
-      <Router history={history}>
-        <Route>{children}</Route>
-      </Router>
+      <MemoryRouter initialEntries={[initialPath]}>
+        {children}
+        <LocationLog />
+      </MemoryRouter>
     </ThemeProvider>
   );
   return Wrapper;
@@ -80,25 +81,25 @@ describe('Header', () => {
         completed: true,
       },
     });
-    const MOCK_HISTORY = createMemoryHistory();
+
     render(<Header />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper(),
     });
 
     expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
 
     userEvent.click(await screen.findByText('Operate'));
-    expect(MOCK_HISTORY.location.pathname).toBe('/');
-    expect(MOCK_HISTORY.location.search).toBe('');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
 
     userEvent.click(await screen.findByText('Instances'));
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?active=true&incidents=true&completed=true'
     );
 
     userEvent.click(await screen.findByText('Dashboard'));
-    expect(MOCK_HISTORY.location.pathname).toBe('/');
-    expect(MOCK_HISTORY.location.search).toBe('');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
   });
 
   it('should preserve persistent params', async () => {
@@ -109,29 +110,26 @@ describe('Header', () => {
         completed: true,
       },
     });
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
     render(<Header />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
     expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
 
     userEvent.click(await screen.findByText('Operate'));
-    expect(MOCK_HISTORY.location.pathname).toBe('/');
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
 
     userEvent.click(await screen.findByText('Instances'));
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true'
     );
 
     userEvent.click(await screen.findByText('Dashboard'));
-    expect(MOCK_HISTORY.location.pathname).toBe('/');
-    expect(MOCK_HISTORY.location.search).toBe(
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
   });

@@ -13,7 +13,7 @@ import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Location} from 'history';
 import {getFilters, deleteSearchParams} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
@@ -46,11 +46,12 @@ type Props = {
 };
 
 const DiagramPanel: React.FC<Props> = observer((props) => {
-  const history = useHistory();
+  const navigate = useNavigate();
+  const location = useLocation();
   const {status, diagramModel, xml} = instancesDiagramStore.state;
   const {selectableIds} = instancesDiagramStore;
   const {statistics} = processStatisticsStore.state;
-  const {process, version, flowNodeId} = getFilters(history.location.search);
+  const {process, version, flowNodeId} = getFilters(location.search);
   const isNoProcessSelected = status !== 'error' && process === undefined;
   const isNoVersionSelected = status !== 'error' && version === 'all';
 
@@ -105,12 +106,10 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
               selectedFlowNodeId={flowNodeId}
               onFlowNodeSelection={(flowNodeId) => {
                 if (flowNodeId === null || flowNodeId === undefined) {
-                  history.push(
-                    deleteSearchParams(history.location, ['flowNodeId'])
-                  );
+                  navigate(deleteSearchParams(location, ['flowNodeId']));
                 } else {
-                  history.push(
-                    setSearchParam(history.location, ['flowNodeId', flowNodeId])
+                  navigate(
+                    setSearchParam(location, ['flowNodeId', flowNodeId])
                   );
                 }
               }}
@@ -123,13 +122,9 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             definitions={diagramModel.definitions}
             onFlowNodeSelection={(flowNodeId) => {
               if (flowNodeId === null || flowNodeId === undefined) {
-                history.push(
-                  deleteSearchParams(history.location, ['flowNodeId'])
-                );
+                navigate(deleteSearchParams(location, ['flowNodeId']));
               } else {
-                history.push(
-                  setSearchParam(history.location, ['flowNodeId', flowNodeId])
-                );
+                navigate(setSearchParam(location, ['flowNodeId', flowNodeId]));
               }
             }}
             flowNodesStatistics={statistics}

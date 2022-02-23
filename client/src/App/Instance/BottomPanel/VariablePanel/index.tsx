@@ -21,7 +21,7 @@ type FormValues = {
 };
 
 const VariablePanel = observer(function VariablePanel() {
-  const {processInstanceId} = useInstancePageParams();
+  const {processInstanceId = ''} = useInstancePageParams();
   const notifications = useNotifications();
 
   useEffect(() => {

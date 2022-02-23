@@ -13,7 +13,6 @@ import {
   concatGroupTitle,
   concatButtonTitle,
 } from './service';
-
 import * as Styled from './styled';
 import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 import {StatusMessage} from 'modules/components/StatusMessage';
@@ -23,6 +22,7 @@ import {Locations} from 'modules/routes';
 import truncate from 'lodash/truncate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
+import {useLocation} from 'react-router-dom';
 
 function truncateErrorMessage(errorMessage: string) {
   return truncate(errorMessage, {
@@ -33,6 +33,8 @@ function truncateErrorMessage(errorMessage: string) {
 }
 
 const IncidentsByError = observer(() => {
+  const location = useLocation();
+
   useEffect(() => {
     incidentsByErrorStore.init();
     return () => {
@@ -55,14 +57,12 @@ const IncidentsByError = observer(() => {
           return (
             <Styled.VersionLi key={item.processId}>
               <PanelListItem
-                to={(location) =>
-                  Locations.filters(location, {
-                    process: item.bpmnProcessId,
-                    version: item.version,
-                    errorMessage: truncateErrorMessage(errorMessage),
-                    incidents: true,
-                  })
-                }
+                to={Locations.filters(location, {
+                  process: item.bpmnProcessId,
+                  version: item.version,
+                  errorMessage: truncateErrorMessage(errorMessage),
+                  incidents: true,
+                })}
                 onClick={() => {
                   panelStatesStore.expandFiltersPanel();
                   tracking.track({
@@ -95,12 +95,10 @@ const IncidentsByError = observer(() => {
 
     return (
       <PanelListItem
-        to={(location) =>
-          Locations.filters(location, {
-            errorMessage: truncateErrorMessage(errorMessage),
-            incidents: true,
-          })
-        }
+        to={Locations.filters(location, {
+          errorMessage: truncateErrorMessage(errorMessage),
+          incidents: true,
+        })}
         onClick={() => {
           panelStatesStore.expandFiltersPanel();
           tracking.track({

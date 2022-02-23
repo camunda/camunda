@@ -4,14 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Fragment} from 'react';
+import {Fragment} from 'react';
 import {observer} from 'mobx-react';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {Locations} from 'modules/routes';
 import {Container, Link, Separator, CurrentInstance} from './styled';
 import {tracking} from 'modules/tracking';
+import {useLocation} from 'react-router-dom';
 
 const Breadcrumb: React.FC = observer(() => {
+  const location = useLocation();
+
   if (
     currentInstanceStore.state.instance === null ||
     currentInstanceStore.state.instance.callHierarchy.length === 0
@@ -26,7 +29,7 @@ const Breadcrumb: React.FC = observer(() => {
         return (
           <Fragment key={instanceId}>
             <Link
-              to={(location) => Locations.instance(instanceId, location)}
+              to={Locations.instance(location, instanceId)}
               title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
               onClick={() => {
                 tracking.track({

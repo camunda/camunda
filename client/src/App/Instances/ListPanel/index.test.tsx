@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
@@ -12,13 +11,11 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory, MemoryHistory} from 'history';
+import {Link, MemoryRouter} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {instancesStore} from 'modules/stores/instances';
@@ -27,16 +24,17 @@ import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
-function createWrapper({
-  history,
-}: {
-  history?: MemoryHistory;
-} = {}) {
+function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
         <NotificationProvider>
-          <Router history={history ?? createMemoryHistory()}>{children}</Router>
+          <MemoryRouter initialEntries={[initialPath]}>
+            {children}
+            <Link to="/instances?incidents=true&active=true&process=bigVarProcess">
+              go to big var
+            </Link>
+          </MemoryRouter>
         </NotificationProvider>
       </ThemeProvider>
     );
@@ -87,11 +85,7 @@ describe('ListPanel', () => {
       instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
-        wrapper: createWrapper({
-          history: createMemoryHistory({
-            initialEntries: ['/instances?incidents=true&active=true'],
-          }),
-        }),
+        wrapper: createWrapper('/instances?incidents=true&active=true'),
       });
 
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
@@ -446,11 +440,7 @@ describe('ListPanel', () => {
       );
 
       render(<ListPanel />, {
-        wrapper: createWrapper({
-          history: createMemoryHistory({
-            initialEntries: ['/instances?incidents=true&active=true'],
-          }),
-        }),
+        wrapper: createWrapper('/instances?incidents=true&active=true'),
       });
 
       instancesStore.init(true);
@@ -496,11 +486,7 @@ describe('ListPanel', () => {
       );
 
       render(<ListPanel />, {
-        wrapper: createWrapper({
-          history: createMemoryHistory({
-            initialEntries: ['/instances?incidents=true&active=true'],
-          }),
-        }),
+        wrapper: createWrapper('/instances?incidents=true&active=true'),
       });
 
       instancesStore.init(true);
@@ -555,17 +541,11 @@ describe('ListPanel', () => {
         )
       );
 
-      const mockHistory = createMemoryHistory({
-        initialEntries: ['/instances?incidents=true&active=true'],
-      });
-
       instancesStore.init(true);
       await instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
-        wrapper: createWrapper({
-          history: mockHistory,
-        }),
+        wrapper: createWrapper('/instances?incidents=true&active=true'),
       });
 
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
@@ -577,9 +557,7 @@ describe('ListPanel', () => {
         )
       );
 
-      mockHistory.push(
-        '/instances?incidents=true&active=true&process=bigVarProcess'
-      );
+      userEvent.click(screen.getByText(/go to big var/i));
       instancesStore.fetchInstancesFromFilters();
 
       await waitFor(() =>

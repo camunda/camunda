@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Router} from 'react-router-dom';
+import {Link, MemoryRouter} from 'react-router-dom';
 import {
   render,
   within,
@@ -12,8 +12,6 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
-import {createMemoryHistory} from 'history';
 import {IncidentsByError} from './index';
 import {
   mockIncidentsByError,
@@ -27,19 +25,27 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 function getParam(search: string, param: string) {
   return new URLSearchParams(search).get(param);
 }
 
-const createWrapper =
-  (historyMock = createMemoryHistory()) =>
-  ({children}: any) =>
-    (
+function createWrapper(initialPath: string = '/') {
+  const Wrapper: React.FC = ({children}) => {
+    return (
       <ThemeProvider>
-        <Router history={historyMock}>{children}</Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <Link to="/">go to initial</Link>
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
+  };
+
+  return Wrapper;
+}
 
 describe('IncidentsByError', () => {
   beforeEach(() => {
@@ -121,9 +127,8 @@ describe('IncidentsByError', () => {
       )
     );
 
-    const historyMock = createMemoryHistory();
     render(<IncidentsByError />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     const withinIncident = within(
@@ -142,7 +147,7 @@ describe('IncidentsByError', () => {
         "View 36 Instances with error JSON path '$.paid' has no result."
       )
     );
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
 
@@ -163,7 +168,7 @@ describe('IncidentsByError', () => {
     ).toBeInTheDocument();
 
     userEvent.click(firstVersion);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -178,9 +183,8 @@ describe('IncidentsByError', () => {
       )
     );
 
-    const historyMock = createMemoryHistory();
     render(<IncidentsByError />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     const withinIncident = within(
@@ -223,12 +227,8 @@ describe('IncidentsByError', () => {
       )
     );
 
-    const historyMock = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
-
     render(<IncidentsByError />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
     const withinIncident = within(
@@ -244,7 +244,7 @@ describe('IncidentsByError', () => {
         "View 36 Instances with error JSON path '$.paid' has no result."
       )
     );
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       `?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true`
     );
 
@@ -255,7 +255,7 @@ describe('IncidentsByError', () => {
     );
 
     userEvent.click(firstVersion);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
   });
@@ -267,12 +267,8 @@ describe('IncidentsByError', () => {
       )
     );
 
-    const historyMock = createMemoryHistory({
-      initialEntries: ['/'],
-    });
-
     render(<IncidentsByError />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     userEvent.click(
@@ -281,13 +277,16 @@ describe('IncidentsByError', () => {
       )
     );
 
-    expect(getParam(historyMock.location.search, 'errorMessage')).toBe(
-      truncatedBigErrorMessage
-    );
+    expect(
+      getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
+    ).toBe(truncatedBigErrorMessage);
 
-    historyMock.push('/');
+    userEvent.click(screen.getByText(/go to initial/i));
 
-    expect(getParam(historyMock.location.search, 'errorMessage')).toBeNull();
+    expect(
+      // eslint-disable-next-line testing-library/prefer-presence-queries
+      getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
+    ).toBeNull();
 
     userEvent.click(screen.getByTestId('arrow-icon'));
     userEvent.click(
@@ -296,8 +295,8 @@ describe('IncidentsByError', () => {
       )
     );
 
-    expect(getParam(historyMock.location.search, 'errorMessage')).toBe(
-      truncatedBigErrorMessage
-    );
+    expect(
+      getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
+    ).toBe(truncatedBigErrorMessage);
   });
 });

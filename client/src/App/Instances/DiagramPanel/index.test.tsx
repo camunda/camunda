@@ -4,15 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import {Router} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createMemoryHistory} from 'history';
 import {mockProps} from './index.setup';
 import {
   groupedProcessesMock,
@@ -27,12 +25,12 @@ import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 
-function getWrapper(history = createMemoryHistory()) {
+function getWrapper(initialPath: string = '/') {
   const Wrapper: React.FC = ({children}) => {
     return (
-      <Router history={history}>
+      <MemoryRouter initialEntries={[initialPath]}>
         <ThemeProvider>{children}</ThemeProvider>
-      </Router>
+      </MemoryRouter>
     );
   };
 
@@ -66,11 +64,7 @@ describe('DiagramPanel', () => {
 
   it('should render header', async () => {
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: ['/instances?process=bigVarProcess&version=1'],
-        })
-      ),
+      wrapper: getWrapper('/instances?process=bigVarProcess&version=1'),
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
@@ -108,11 +102,7 @@ describe('DiagramPanel', () => {
 
   it('should show a message when no process version is selected', async () => {
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: ['/instances?process=bigVarProcess&version=all'],
-        })
-      ),
+      wrapper: getWrapper('/instances?process=bigVarProcess&version=all'),
     });
 
     expect(
@@ -130,11 +120,7 @@ describe('DiagramPanel', () => {
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: [
-            '/instances?process=eventBasedGatewayProcess&version=all',
-          ],
-        })
+        '/instances?process=eventBasedGatewayProcess&version=all'
       ),
     });
 

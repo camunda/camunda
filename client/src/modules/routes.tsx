@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Location} from 'history';
+import {To, Location} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {FiltersType} from 'modules/utils/filter';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
@@ -13,7 +13,7 @@ type RouterState = {
   referrer?: string;
 };
 
-const Routes = {
+const Paths = {
   login() {
     return '/login';
   },
@@ -35,21 +35,19 @@ const Routes = {
 } as const;
 
 const Locations = {
-  login(location: Location): Location {
+  login(location: Location): To {
     return {
-      ...location,
-      pathname: Routes.login(),
+      pathname: Paths.login(),
       search: getPersistentQueryParams(location.search),
     };
   },
-  dashboard(location: Location): Location {
+  dashboard(location: Location): To {
     return {
-      ...location,
-      pathname: Routes.dashboard(),
+      pathname: Paths.dashboard(),
       search: getPersistentQueryParams(location.search),
     };
   },
-  runningInstances(location: Location): Location {
+  runningInstances(location: Location): To {
     const params = new URLSearchParams(
       getPersistentQueryParams(location.search)
     );
@@ -58,12 +56,11 @@ const Locations = {
     params.set('incidents', 'true');
 
     return {
-      ...location,
-      pathname: Routes.instances(),
+      pathname: Paths.instances(),
       search: params.toString(),
     };
   },
-  filters(location: Location, filters?: FiltersType): Location {
+  filters(location: Location, filters?: FiltersType): To {
     const params = new URLSearchParams(
       getPersistentQueryParams(location.search)
     );
@@ -83,12 +80,11 @@ const Locations = {
     }
 
     return {
-      ...location,
-      pathname: Routes.instances(),
+      pathname: Paths.instances(),
       search: params.toString(),
     };
   },
-  incidents(location: Location): Location {
+  incidents(location: Location): To {
     const params = new URLSearchParams(
       getPersistentQueryParams(location.search)
     );
@@ -96,33 +92,29 @@ const Locations = {
     params.set('incidents', 'true');
 
     return {
-      ...location,
-      pathname: Routes.instances(),
+      pathname: Paths.instances(),
       search: params.toString(),
     };
   },
-  instance(id: string, location: Location): Location {
+  instance(location: Location, id: string): To {
     return {
-      ...location,
-      pathname: Routes.instance(id),
+      pathname: Paths.instance(id),
       search: getPersistentQueryParams(location.search),
     };
   },
-  decisions(location: Location): Location {
+  decisions(location: Location): To {
     return {
-      ...location,
-      pathname: Routes.decisions(),
+      pathname: Paths.decisions(),
       search: getPersistentQueryParams(location.search),
     };
   },
-  decisionInstance(id: string, location: Location): Location {
+  decisionInstance(location: Location, id: string): To {
     return {
-      ...location,
-      pathname: Routes.decisionInstance(id),
+      pathname: Paths.decisionInstance(id),
       search: getPersistentQueryParams(location.search),
     };
   },
 } as const;
 
-export {Routes, Locations};
+export {Paths, Locations};
 export type {RouterState};

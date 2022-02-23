@@ -8,7 +8,7 @@ import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 import {DecisionInstanceType} from 'modules/stores/decisionInstance';
 import {formatDate} from 'modules/utils/date/formatDate';
-import {useParams} from 'react-router-dom';
+import {useLocation, useParams} from 'react-router-dom';
 import {Table, TD, TH, SkeletonBlock} from './styled';
 
 type Props = {
@@ -18,6 +18,7 @@ type Props = {
 
 const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
   const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
+  const location = useLocation();
 
   return (
     <Table data-testid={props['data-testid']}>
@@ -58,12 +59,10 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
             <TD>
               {decisionInstance.processInstanceId ? (
                 <Link
-                  to={(location) =>
-                    Locations.instance(
-                      decisionInstance.processInstanceId as string,
-                      location
-                    )
-                  }
+                  to={Locations.instance(
+                    location,
+                    decisionInstance.processInstanceId
+                  )}
                   title={`View process instance ${decisionInstance.processInstanceId}`}
                 >
                   {decisionInstance.processInstanceId}

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useHistory} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 
 import {
   updateFiltersSearchString,
@@ -13,19 +13,20 @@ import {
 } from 'modules/utils/filter';
 
 const useFilters = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const setFiltersToURL = (filters: FiltersType) => {
-    history.push({
-      ...history.location,
-      search: updateFiltersSearchString(history.location.search, filters),
+    navigate({
+      ...location,
+      search: updateFiltersSearchString(location.search, filters),
     });
   };
 
-  const getFiltersFromUrl = () => getFilters(history.location.search);
+  const getFiltersFromUrl = () => getFilters(location.search);
 
   const areProcessInstanceStatesApplied = () => {
-    const filters = getFilters(history.location.search);
+    const filters = getFilters(location.search);
     return (
       filters.active ||
       filters.incidents ||

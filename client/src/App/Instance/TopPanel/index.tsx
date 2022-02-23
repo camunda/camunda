@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {computed} from 'mobx';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {observer} from 'mobx-react';
@@ -36,7 +36,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     state: {flowNodes},
   } = flowNodeStatesStore;
 
-  const {processInstanceId} = useInstancePageParams();
+  const {processInstanceId = ''} = useInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const [isInTransition, setIsInTransition] = useState(false);
 

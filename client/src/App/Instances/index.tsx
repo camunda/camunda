@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import {PAGE_TITLE} from 'modules/constants';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {DiagramPanel} from './DiagramPanel';
@@ -18,13 +18,13 @@ import {processesStore} from 'modules/stores/processes';
 import {Filters} from './Filters';
 import {getFilters, deleteSearchParams} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
-import * as Styled from './styled';
-import {useLocation, useHistory} from 'react-router-dom';
+import {Content, Container, Separator, SplitPane} from './styled';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 
 const Instances: React.FC = observer(() => {
   const location = useLocation();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const filters = getFilters(location.search);
   const {process, version} = filters;
@@ -78,9 +78,7 @@ const Instances: React.FC = observer(() => {
           processesStore.processes.filter((item) => item.value === process)
             .length === 0
         ) {
-          history.push(
-            deleteSearchParams(history.location, ['process', 'version'])
-          );
+          navigate(deleteSearchParams(location, ['process', 'version']));
           notifications.displayNotification('error', {
             headline: `Process could not be found`,
           });
@@ -89,7 +87,7 @@ const Instances: React.FC = observer(() => {
         instancesDiagramStore.fetchProcessXml(processId);
       }
     }
-  }, [process, processId, history, processesStatus, notifications]);
+  }, [process, processId, navigate, processesStatus, notifications, location]);
 
   useEffect(() => {
     if (isSingleProcessSelected) {
@@ -98,21 +96,21 @@ const Instances: React.FC = observer(() => {
   }, [location.search, isSingleProcessSelected]);
 
   return (
-    <Styled.Instances>
+    <Container>
       <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
-      <Styled.Content>
+      <Content>
         <Filters />
-        <Styled.Separator />
-        <Styled.SplitPane
+        <Separator />
+        <SplitPane
           titles={{top: 'Process', bottom: 'Instances'}}
           expandedPaneId="instancesExpandedPaneId"
         >
           <DiagramPanel />
           <ListPanel />
-        </Styled.SplitPane>
-      </Styled.Content>
+        </SplitPane>
+      </Content>
       <OperationsPanel />
-    </Styled.Instances>
+    </Container>
   );
 });
 

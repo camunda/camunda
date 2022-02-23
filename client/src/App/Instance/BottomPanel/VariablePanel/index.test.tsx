@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from './index';
 import {
@@ -18,7 +17,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {createInstance} from 'modules/testUtils';
@@ -31,15 +30,13 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper: React.FC<Props> = ({children}) => {
+const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:processInstanceId">{children} </Route>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+        </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );

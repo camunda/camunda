@@ -5,11 +5,10 @@
  */
 
 import styled, {css} from 'styled-components';
-
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
-const Instances = styled.main`
+const Container = styled.main`
   height: 100%;
   position: relative;
   overflow: hidden;
@@ -49,4 +48,4 @@ const Separator = styled.div`
   }}
 `;
 
-export {Instances, Content, SplitPane, Pane, PaneHeader, Separator};
+export {Container, Content, SplitPane, Pane, PaneHeader, Separator};

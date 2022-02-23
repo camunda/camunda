@@ -5,10 +5,9 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
-
 import SplitPane from 'modules/components/SplitPane';
 
-const Instance = styled.main`
+const Container = styled.main`
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -103,7 +102,7 @@ const SplitPaneBody = styled(SplitPane.Pane.Body)`
 `;
 
 export {
-  Instance,
+  Container,
   PaneBody,
   Section,
   FlowNodeInstanceLog,

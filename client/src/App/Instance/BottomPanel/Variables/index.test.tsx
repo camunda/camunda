@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
   screen,
@@ -14,7 +13,6 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -44,18 +42,22 @@ jest.mock('modules/notifications', () => ({
 
 const instanceMock = createInstance({id: '1'});
 
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/instances/1`]}>
-        <Route path="/instances/:processInstanceId">
-          <Form onSubmit={() => {}}>
-            {({handleSubmit}) => {
-              return <form onSubmit={handleSubmit}>{children} </form>;
-            }}
-          </Form>
-          ,
-        </Route>
+        <Routes>
+          <Route
+            path="/instances/:processInstanceId"
+            element={
+              <Form onSubmit={() => {}}>
+                {({handleSubmit}) => {
+                  return <form onSubmit={handleSubmit}>{children} </form>;
+                }}
+              </Form>
+            }
+          />
+        </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );

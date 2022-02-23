@@ -13,14 +13,17 @@ import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
 import {tracking} from 'modules/tracking';
 import {LicenseNote} from './LicenseNote';
 import {IS_DMN} from 'modules/feature-flags';
+import {useLocation} from 'react-router-dom';
 
 const Header: React.FC = observer(() => {
+  const location = useLocation();
+
   return (
     <CmHeader>
       <nav slot="left">
         <Menu>
           <NavElement
-            to={Locations.dashboard}
+            to={Locations.dashboard(location)}
             title="View Dashboard"
             label="Operate"
             icon={<CmLogo />}
@@ -33,7 +36,7 @@ const Header: React.FC = observer(() => {
           />
           <LeftSeparator />
           <NavElement
-            to={Locations.dashboard}
+            to={Locations.dashboard(location)}
             title="View Dashboard"
             label="Dashboard"
             onClick={() => {
@@ -44,7 +47,7 @@ const Header: React.FC = observer(() => {
             }}
           />
           <NavElement
-            to={Locations.filters}
+            to={Locations.filters(location)}
             title="View Instances"
             label="Instances"
             onClick={() => {
@@ -56,7 +59,7 @@ const Header: React.FC = observer(() => {
           />
           {IS_DMN && (
             <NavElement
-              to={Locations.decisions}
+              to={Locations.decisions(location)}
               title="View Decisions"
               label="Decisions"
             />

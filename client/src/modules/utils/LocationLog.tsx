@@ -4,17 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation} from 'react-router-dom';
 
-const HashRouterMigrator: React.FC = () => {
+const LocationLog: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
 
-  if (location.hash !== '') {
-    navigate(location.hash.replace(/^#/, ''), {replace: true});
-  }
-
-  return null;
+  return (
+    <>
+      <div data-testid="pathname">{location.pathname}</div>
+      <div data-testid="search">{location.search}</div>
+    </>
+  );
 };
 
-export {HashRouterMigrator};
+export {LocationLog};

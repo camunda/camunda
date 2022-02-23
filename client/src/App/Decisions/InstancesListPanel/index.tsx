@@ -142,9 +142,7 @@ const InstancesListPanel: React.FC = observer(() => {
                       </Name>
                       <TD>
                         <Link
-                          to={(location) =>
-                            Locations.decisionInstance(id, location)
-                          }
+                          to={Locations.decisionInstance(location, id)}
                           title={`View decision instance ${id}`}
                         >
                           {id}
@@ -155,9 +153,7 @@ const InstancesListPanel: React.FC = observer(() => {
                       <TD>
                         {processInstanceId !== null ? (
                           <Link
-                            to={(location) =>
-                              Locations.instance(processInstanceId, location)
-                            }
+                            to={Locations.instance(location, processInstanceId)}
                             title={`View process instance ${processInstanceId}`}
                           >
                             {processInstanceId}

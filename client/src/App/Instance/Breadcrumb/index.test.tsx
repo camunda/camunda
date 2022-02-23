@@ -6,26 +6,24 @@
 
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-
 import {Breadcrumb} from './index';
-import {rest} from 'msw';
+import {createInstance} from 'modules/testUtils';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {LocationLog} from 'modules/utils/LocationLog';
 import {mockServer} from 'modules/mock-server/node';
-import {createMemoryHistory} from 'history';
-import {Router, Route} from 'react-router-dom';
+import {rest} from 'msw';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 
-const createWrapper = (
-  historyMock = createMemoryHistory({
-    initialEntries: ['/instances/123'],
-  })
-) => {
+const createWrapper = (initialPath: string = '/instances/123') => {
   const Wrapper: React.FC = ({children}) => (
     <ThemeProvider>
-      <Router history={historyMock}>
-        <Route path="/instances/:processInstanceId">{children}</Route>
-      </Router>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
     </ThemeProvider>
   );
 
@@ -38,8 +36,8 @@ describe('User', () => {
       rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
         res.once(
           ctx.json({
-            id: 123,
-            state: 'ACTIVE',
+            ...createInstance(),
+            id: '123',
             processName: 'Base instance name',
             callHierarchy: [
               {
@@ -85,34 +83,37 @@ describe('User', () => {
   it('should navigate to instance detail on click', async () => {
     await currentInstanceStore.fetchCurrentInstance();
 
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/instances/123'],
-    });
     render(<Breadcrumb />, {
-      wrapper: createWrapper(MOCK_HISTORY),
+      wrapper: createWrapper('/instances/123'),
     });
 
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances/123');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances/123');
 
     userEvent.click(
       screen.getByRole('link', {
         name: /View Process Parent Process Name - Instance 546546543276/,
       })
     );
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances/546546543276');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      '/instances/546546543276'
+    );
 
     userEvent.click(
       screen.getByRole('link', {
         name: /View Process 1st level Child Process Name - Instance 968765314354/,
       })
     );
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances/968765314354');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      '/instances/968765314354'
+    );
 
     userEvent.click(
       screen.getByRole('link', {
         name: /View Process 2nd level Child Process Name - Instance 2251799813685447/,
       })
     );
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances/2251799813685447');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      '/instances/2251799813685447'
+    );
   });
 });

@@ -19,7 +19,7 @@ import {Drd} from './Drd';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 
 const DecisionInstance: React.FC = observer(() => {
-  const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
+  const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
 
   useEffect(() => {
     drdDataStore.init();

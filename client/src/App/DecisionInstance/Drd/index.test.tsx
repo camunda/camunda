@@ -15,6 +15,15 @@ import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdDataStore} from 'modules/stores/drdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Drd} from '.';
+import {MemoryRouter} from 'react-router-dom';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('<Drd />', () => {
   beforeEach(() => {
@@ -43,7 +52,7 @@ describe('<Drd />', () => {
   });
 
   it('should render DRD', async () => {
-    render(<Drd />, {wrapper: ThemeProvider});
+    render(<Drd />, {wrapper: Wrapper});
 
     await waitFor(() =>
       expect(screen.getByText('Default View mock')).toBeInTheDocument()

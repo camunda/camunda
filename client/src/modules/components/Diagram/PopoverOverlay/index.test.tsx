@@ -20,7 +20,7 @@ import {
 import {mockIncidents} from 'modules/mocks/incidents';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
-import {MemoryRouter} from 'react-router';
+import {MemoryRouter} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 

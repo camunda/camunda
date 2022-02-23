@@ -5,8 +5,7 @@
  */
 
 import {useState, useLayoutEffect} from 'react';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {MemoryRouter} from 'react-router-dom';
 import {
   render,
   screen,
@@ -20,12 +19,16 @@ import userEvent from '@testing-library/user-event';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {visibleFiltersStore} from 'modules/stores/visibleFilters';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-function createWrapper(history = createMemoryHistory()) {
+function createWrapper() {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>{children}</Router>
+        <MemoryRouter>
+          {children}
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -152,7 +155,6 @@ describe('OperationsEntry', () => {
   it('should filter by Operation and expand Filters Panel', () => {
     panelStatesStore.toggleFiltersPanel();
 
-    const mockHistory = createMemoryHistory();
     render(
       <OperationsEntry
         {...mockProps}
@@ -161,13 +163,13 @@ describe('OperationsEntry', () => {
           instancesCount: 3,
         }}
       />,
-      {wrapper: createWrapper(mockHistory)}
+      {wrapper: createWrapper()}
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(screen.getByText('3 Instances'));
-    expect(mockHistory.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052'
     );
 

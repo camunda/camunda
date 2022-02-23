@@ -4,13 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {LinkButton} from 'modules/components/LinkButton';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {ProgressBar} from './ProgressBar';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useLoadingProgress} from './useLoadingProgress';
@@ -37,7 +36,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     operationsTotalCount,
     operationsFinishedCount,
   } = operation;
-  const history = useHistory();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const {fakeProgressPercentage, isComplete} = useLoadingProgress({
     totalCount: operationsTotalCount,
@@ -49,8 +49,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
 
     visibleFiltersStore.reset();
     visibleFiltersStore.addVisibleFilters(['operationId']);
-    history.push(
-      Locations.filters(history.location, {
+    navigate(
+      Locations.filters(location, {
         active: true,
         incidents: true,
         completed: true,

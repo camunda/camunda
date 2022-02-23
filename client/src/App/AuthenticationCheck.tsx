@@ -5,17 +5,19 @@
  */
 
 import {useEffect} from 'react';
-import {Route, Redirect, RouteProps} from 'react-router-dom';
+import {Navigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
-import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 import {authenticationStore} from 'modules/stores/authentication';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
-interface Props extends RouteProps {
+interface Props {
   redirectPath: string;
+  children: React.ReactNode;
 }
 
-const AuthenticatedRoute: React.FC<Props> = observer(
-  ({redirectPath, children, location, ...routeProps}) => {
+const AuthenticationCheck: React.FC<Props> = observer(
+  ({redirectPath, children}) => {
+    const location = useLocation();
     const {
       state: {status},
       authenticate,
@@ -35,25 +37,22 @@ const AuthenticatedRoute: React.FC<Props> = observer(
         'user-information-fetched',
       ].includes(status)
     ) {
-      return (
-        <Route location={location} {...routeProps}>
-          {children}
-        </Route>
-      );
+      return <>{children}</>;
     }
 
     return (
-      <Redirect
+      <Navigate
         to={{
           pathname: redirectPath,
-          state: {
-            referrer: location,
-          },
           search: getPersistentQueryParams(location?.search ?? ''),
         }}
+        state={{
+          referrer: location,
+        }}
+        replace={true}
       />
     );
   }
 );
 
-export {AuthenticatedRoute};
+export {AuthenticationCheck};

@@ -10,13 +10,21 @@ import {
   within,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationsPanel} from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {MemoryRouter} from 'react-router-dom';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('OperationsPanel', () => {
   it('should display empty panel on mount', async () => {
@@ -26,7 +34,7 @@ describe('OperationsPanel', () => {
       )
     );
 
-    render(<OperationsPanel />, {wrapper: ThemeProvider});
+    render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText(CONSTANTS.EMPTY_MESSAGE)
@@ -39,7 +47,7 @@ describe('OperationsPanel', () => {
         res.once(ctx.json([]))
       )
     );
-    render(<OperationsPanel />, {wrapper: ThemeProvider});
+    render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
@@ -54,7 +62,7 @@ describe('OperationsPanel', () => {
         )
       )
     );
-    render(<OperationsPanel />, {wrapper: ThemeProvider});
+    render(<OperationsPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
 
@@ -85,7 +93,7 @@ describe('OperationsPanel', () => {
       )
     );
 
-    const {unmount} = render(<OperationsPanel />, {wrapper: ThemeProvider});
+    const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Operations could not be fetched')
@@ -99,7 +107,7 @@ describe('OperationsPanel', () => {
       )
     );
 
-    render(<OperationsPanel />, {wrapper: ThemeProvider});
+    render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Operations could not be fetched')

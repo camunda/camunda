@@ -4,26 +4,23 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useLocation} from 'react-router-dom';
+import {Outlet, useMatch} from 'react-router-dom';
 import {Header} from './Header';
 import {Footer, Grid} from './styled';
 import {Copyright} from 'modules/components/Copyright';
-import {Routes} from 'modules/routes';
+import {Paths} from 'modules/routes';
 
-const Layout: React.FC = ({children}) => {
-  const location = useLocation();
-  const showFooter = location.pathname !== Routes.instances();
+const Layout: React.FC = () => {
+  const instancesMatch = useMatch(Paths.instances());
+  const dashboardMatch = useMatch(Paths.dashboard());
+  const showFooter = instancesMatch === null;
 
   return (
     <Grid numberOfRows={showFooter ? 3 : 2}>
       <Header />
-      {children}
+      <Outlet />
       {showFooter && (
-        <Footer
-          variant={
-            location.pathname === Routes.dashboard() ? 'dashboard' : 'default'
-          }
-        >
+        <Footer variant={dashboardMatch !== null ? 'dashboard' : 'default'}>
           <Copyright />
         </Footer>
       )}

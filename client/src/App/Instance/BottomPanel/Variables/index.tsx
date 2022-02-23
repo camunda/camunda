@@ -4,12 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useRef} from 'react';
-
+import {useEffect, useRef} from 'react';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
@@ -37,7 +35,7 @@ const Variables: React.FC = observer(() => {
   const scrollableContentRef = useRef<HTMLDivElement>(null);
   const variablesContentRef = useRef<HTMLDivElement>(null);
   const variableRowRef = useRef<HTMLTableRowElement>(null);
-  const {processInstanceId} = useInstancePageParams();
+  const {processInstanceId = ''} = useInstancePageParams();
   const notifications = useNotifications();
 
   const form = useForm();

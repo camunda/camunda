@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Router, Route} from 'react-router-dom';
-import {History, createMemoryHistory} from 'history';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import {
   render,
@@ -22,6 +21,7 @@ import {processesStore} from 'modules/stores/processes';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {mockProcessXML} from 'modules/testUtils';
 import {visibleFiltersStore} from 'modules/stores/visibleFilters';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 type OptionalFilter =
   | 'Variable'
@@ -86,13 +86,16 @@ const GROUPED_PROCESSES = [
   },
 ] as const;
 
-function getWrapper(history: History = createMemoryHistory()) {
+function getWrapper(initialPath: string = '/') {
   const MockApp: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>
-          <Route path="/">{children}</Route>
-        </Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path="/" element={children} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -127,11 +130,8 @@ describe('Filters', () => {
   });
 
   it('should load the process and version fields', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/'],
-    });
     render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+      wrapper: getWrapper(),
     });
 
     await waitFor(() =>
@@ -146,7 +146,7 @@ describe('Filters', () => {
     expect(screen.getByText('Version 1')).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(MOCK_HISTORY.location.search).toBe(
+      expect(screen.getByTestId('search')).toHaveTextContent(
         '?process=bigVarProcess&version=1'
       )
     );
@@ -173,11 +173,7 @@ describe('Filters', () => {
 
     render(<Filters />, {
       wrapper: getWrapper(
-        createMemoryHistory({
-          initialEntries: [
-            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
-          ],
-        })
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
       ),
     });
 
@@ -217,10 +213,6 @@ describe('Filters', () => {
   });
 
   it('should set modified values to the URL', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/'],
-    });
-
     const MOCK_VALUES = {
       process: 'bigVarProcess',
       version: '1',
@@ -239,7 +231,7 @@ describe('Filters', () => {
       canceled: 'true',
     } as const;
     render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+      wrapper: getWrapper(),
     });
 
     await waitFor(() =>
@@ -313,7 +305,9 @@ describe('Filters', () => {
     await waitFor(() =>
       expect(
         Object.fromEntries(
-          new URLSearchParams(MOCK_HISTORY.location.search).entries()
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? ''
+          ).entries()
         )
       ).toEqual(expect.objectContaining(MOCK_VALUES))
     );
@@ -342,15 +336,11 @@ describe('Filters', () => {
 
   describe('Validations', () => {
     it('should validate instance ids', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), 'a');
@@ -360,7 +350,7 @@ describe('Filters', () => {
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-instance-ids'));
 
@@ -388,14 +378,10 @@ describe('Filters', () => {
     });
 
     it('should validate parent instance id', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('Parent Instance Id');
       userEvent.type(screen.getByTestId('filter-parent-instance-id'), 'a');
@@ -403,7 +389,7 @@ describe('Filters', () => {
       expect(
         await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
 
@@ -440,14 +426,10 @@ describe('Filters', () => {
     });
 
     it('should validate start date', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('Start Date');
       userEvent.type(screen.getByTestId('filter-start-date'), 'a');
@@ -456,7 +438,7 @@ describe('Filters', () => {
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-start-date'));
 
@@ -472,15 +454,11 @@ describe('Filters', () => {
     });
 
     it('should validate end date', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('End Date');
       userEvent.type(screen.getByTestId('filter-end-date'), 'a');
@@ -489,7 +467,7 @@ describe('Filters', () => {
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-end-date'));
 
@@ -505,14 +483,10 @@ describe('Filters', () => {
     });
 
     it('should validate variable name', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('Variable');
 
@@ -525,7 +499,7 @@ describe('Filters', () => {
         await screen.findByText('Variable has to be filled')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-variable-value'));
       userEvent.type(
@@ -541,18 +515,14 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
     });
 
     it('should validate variable value', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('Variable');
 
@@ -565,7 +535,7 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-variable-name'));
 
@@ -584,7 +554,7 @@ describe('Filters', () => {
       expect(
         await screen.findByText('Variable has to be filled')
       ).toBeInTheDocument();
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.type(
         screen.getByTestId('filter-variable-name'),
@@ -595,18 +565,14 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
     });
 
     it('should validate operation id', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       displayOptionalFilter('Operation Id');
 
@@ -616,7 +582,7 @@ describe('Filters', () => {
         await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
 
-      expect(MOCK_HISTORY.location.search).toBe('');
+      expect(screen.getByTestId('search')).toHaveTextContent('');
 
       userEvent.clear(screen.getByTestId('filter-operation-id'));
 
@@ -633,11 +599,8 @@ describe('Filters', () => {
   });
 
   it('should enable the reset button', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/?active=true&incidents=true'],
-    });
     render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+      wrapper: getWrapper('/?active=true&incidents=true'),
     });
 
     expect(screen.getByTitle(/reset filters/i)).toBeDisabled();
@@ -645,21 +608,17 @@ describe('Filters', () => {
     userEvent.click(screen.getByTestId(/incidents/));
 
     await waitFor(() =>
-      expect(MOCK_HISTORY.location.search).toBe('?active=true')
+      expect(screen.getByTestId('search')).toHaveTextContent('?active=true')
     );
 
     expect(screen.getByTitle(/reset filters/i)).toBeEnabled();
   });
 
   it('should not submit an invalid form after deleting an optional filter', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/'],
-    });
-
     render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+      wrapper: getWrapper(),
     });
-    expect(MOCK_HISTORY.location.search).toBe('');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
 
     displayOptionalFilter('Start Date');
     userEvent.type(screen.getByTestId('filter-start-date'), 'a');
@@ -668,22 +627,20 @@ describe('Filters', () => {
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
 
-    expect(MOCK_HISTORY.location.search).toBe('');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
     displayOptionalFilter('End Date');
     userEvent.click(screen.getByTestId('delete-endDate'));
 
-    expect(MOCK_HISTORY.location.search).toBe('');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
   });
 
   it('should be able to submit form after deleting an invalid optional filter', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/instances?active=true&incidents=true'],
-    });
-
     render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+      wrapper: getWrapper('/?active=true&incidents=true'),
     });
-    expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?active=true&incidents=true'
+    );
 
     displayOptionalFilter('Start Date');
     userEvent.type(screen.getByTestId('filter-start-date'), 'a');
@@ -692,7 +649,9 @@ describe('Filters', () => {
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
 
-    expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?active=true&incidents=true'
+    );
 
     userEvent.click(screen.getByTestId('delete-startDate'));
 
@@ -700,7 +659,7 @@ describe('Filters', () => {
     userEvent.type(screen.getByTestId('filter-error-message'), 'test');
 
     await waitFor(() =>
-      expect(MOCK_HISTORY.location.search).toBe(
+      expect(screen.getByTestId('search')).toHaveTextContent(
         '?active=true&incidents=true&errorMessage=test'
       )
     );
@@ -708,12 +667,8 @@ describe('Filters', () => {
 
   describe('Interaction with other fields during validation', () => {
     it('validation for Instance IDs field should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Operation Id');
@@ -739,12 +694,8 @@ describe('Filters', () => {
     });
 
     it('validation for Operation ID field should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -777,12 +728,8 @@ describe('Filters', () => {
     });
 
     it('validation for Start Date field should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -815,12 +762,8 @@ describe('Filters', () => {
     });
 
     it('validation for End Date field should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -853,12 +796,8 @@ describe('Filters', () => {
     });
 
     it('validation for Variable Value field should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -895,12 +834,8 @@ describe('Filters', () => {
     });
 
     it('validation for Variable Name field should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -933,12 +868,8 @@ describe('Filters', () => {
     });
 
     it('validation for Process, Version and Flow Node fields should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -984,12 +915,8 @@ describe('Filters', () => {
     });
 
     it('clicking checkboxes should not affect other fields validation errors', async () => {
-      const MOCK_HISTORY = createMemoryHistory({
-        initialEntries: ['/'],
-      });
-
       render(<Filters />, {
-        wrapper: getWrapper(MOCK_HISTORY),
+        wrapper: getWrapper(),
       });
 
       displayOptionalFilter('Instance Id(s)');
@@ -1212,17 +1139,13 @@ describe('Filters', () => {
           canceled: 'true',
         } as const;
 
-        const MOCK_HISTORY = createMemoryHistory({
-          initialEntries: [
-            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
-          ],
-        });
-
         render(<Filters />, {
-          wrapper: getWrapper(MOCK_HISTORY),
+          wrapper: getWrapper(
+            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+          ),
         });
 
-        expect(MOCK_HISTORY.location.search).toBe(
+        expect(screen.getByTestId('search')).toHaveTextContent(
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
@@ -1240,7 +1163,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-ids'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1269,7 +1192,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-parentInstanceId'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1296,7 +1219,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-errorMessage'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1322,7 +1245,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-startDate'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1347,7 +1270,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-endDate'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1369,7 +1292,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-variable'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1394,7 +1317,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-operationId'));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1432,17 +1355,13 @@ describe('Filters', () => {
           canceled: 'true',
         } as const;
 
-        const MOCK_HISTORY = createMemoryHistory({
-          initialEntries: [
-            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
-          ],
-        });
-
         render(<Filters />, {
-          wrapper: getWrapper(MOCK_HISTORY),
+          wrapper: getWrapper(
+            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+          ),
         });
 
-        expect(MOCK_HISTORY.location.search).toBe(
+        expect(screen.getByTestId('search')).toHaveTextContent(
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
@@ -1460,7 +1379,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTitle(/reset filters/i));
 
         await waitFor(() =>
-          expect(MOCK_HISTORY.location.search).toBe(
+          expect(screen.getByTestId('search')).toHaveTextContent(
             '?active=true&incidents=true'
           )
         );

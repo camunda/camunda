@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
@@ -12,21 +11,34 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
-import {Router} from 'react-router-dom';
-import {createMemoryHistory, createLocation} from 'history';
+import {Link, MemoryRouter, To} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-
 import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
+import {LocationLog} from 'modules/utils/LocationLog';
+import {authenticationStore} from 'modules/stores/authentication';
 
-function createWrapper(history = createMemoryHistory()) {
+function createWrapper(
+  initialPath: string = '/',
+  referrer: To = {pathname: '/instances'}
+) {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>{children}</Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <Link
+            to="/login"
+            state={{
+              referrer,
+            }}
+          >
+            emulate auth check
+          </Link>
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -35,21 +47,26 @@ function createWrapper(history = createMemoryHistory()) {
 }
 
 describe('<Login />', () => {
+  afterEach(() => {
+    authenticationStore.reset();
+  });
+
   it('should login', async () => {
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    const mockHistory = createMemoryHistory({initialEntries: ['/login']});
     render(<Login />, {
-      wrapper: createWrapper(mockHistory),
+      wrapper: createWrapper('/login'),
     });
 
     userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText(/password/i), 'demo');
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
-    await waitFor(() => expect(mockHistory.location.pathname).toBe('/'));
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/')
+    );
   });
 
   it('should show a loading spinner', async () => {
@@ -85,27 +102,18 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    const INITIAL_ROUTE = createLocation({
-      pathname: '/instances',
-    });
-    const mockHistory = createMemoryHistory();
-    mockHistory.push({
-      pathname: '/login',
-      state: {
-        referrer: INITIAL_ROUTE,
-      },
+    render(<Login />, {
+      wrapper: createWrapper('/login'),
     });
 
-    render(<Login />, {
-      wrapper: createWrapper(mockHistory),
-    });
+    userEvent.click(screen.getByText(/emulate auth check/i));
 
     userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText(/password/i), 'demo');
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE.pathname)
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/instances')
     );
   });
 
@@ -114,31 +122,25 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    const INITIAL_ROUTE = createLocation({
-      pathname: '/instances',
-      search: '?gseUrl=https://www.testUrl.com',
-    });
-    const mockHistory = createMemoryHistory();
-    mockHistory.push({
-      pathname: '/login',
-      state: {
-        referrer: INITIAL_ROUTE,
-      },
-      search: '?gseUrl=https://www.testUrl.com',
+    render(<Login />, {
+      wrapper: createWrapper('/login', {
+        pathname: '/instances',
+        search: '?gseUrl=https://www.testUrl.com',
+      }),
     });
 
-    render(<Login />, {
-      wrapper: createWrapper(mockHistory),
-    });
+    userEvent.click(screen.getByText(/emulate auth check/i));
 
     userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText(/password/i), 'demo');
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE.pathname)
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/instances')
     );
-    expect(mockHistory.location.search).toBe(INITIAL_ROUTE.search);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?gseUrl=https://www.testUrl.com'
+    );
   });
 
   it('should disable the login button when any field is empty', () => {

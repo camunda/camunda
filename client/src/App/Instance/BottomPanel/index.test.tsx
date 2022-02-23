@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render, screen} from '@testing-library/react';
 import BottomPanel from './index';
 import {EXPAND_STATE} from 'modules/constants';

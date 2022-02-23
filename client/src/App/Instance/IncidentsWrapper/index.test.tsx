@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import {IncidentsWrapper} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {
@@ -15,9 +13,7 @@ import {
   mockIncidents,
   mockResolvedIncidents,
 } from './index.setup';
-
-import {Router, Route} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -49,18 +45,14 @@ jest.mock('react-transition-group', () => {
   };
 });
 
-const history = createMemoryHistory({initialEntries: ['/instances/1']});
-
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <Router history={history}>
-        <Route path="/instances/:processInstanceId">{children}</Route>
-      </Router>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+        </Routes>
+      </MemoryRouter>
     </ThemeProvider>
   );
 };

@@ -4,13 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/IncidentOperation';
-
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {sortIncidents} from './service';
@@ -18,13 +17,12 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {ErrorMessageModal} from './ErrorMessageModal';
-
 import * as Styled from './styled';
 import {Restricted} from 'modules/components/Restricted';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
-import {Locations} from 'modules/routes';
+import {Paths} from 'modules/routes';
 
 const {THead, TBody, TR, TD} = Table;
 
@@ -32,7 +30,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<string>('');
   const [modalTitle, setModalTitle] = useState<string>('');
-  const {processInstanceId} = useInstancePageParams();
+  const {processInstanceId = ''} = useInstancePageParams();
   const {sortBy, sortOrder} = getSortParams() || {
     sortBy: 'errorType',
     sortOrder: 'desc',
@@ -190,12 +188,11 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                             '--'
                           ) : (
                             <Link
-                              to={(location) =>
-                                Locations.instance(
-                                  rootCauseInstance.instanceId,
-                                  location
-                                )
-                              }
+                              to={{
+                                pathname: Paths.instance(
+                                  rootCauseInstance.instanceId
+                                ),
+                              }}
                               title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
                             >
                               {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}

@@ -6,7 +6,7 @@
 
 import * as Styled from './styled';
 import {getSortParams} from 'modules/utils/filter';
-import {useHistory} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 
 function toggleSorting(
   search: string,
@@ -66,12 +66,12 @@ const ColumnHeader: React.FC<Props> = ({
   table = 'instances',
 }) => {
   const isSortable = sortKey !== undefined;
-  const history = useHistory();
+  const navigate = useNavigate();
+  const location = useLocation();
   const {sortBy, sortOrder} = getSortParams() || {
     sortBy: table === 'instances' ? 'processName' : 'errorType',
     sortOrder: 'desc',
   };
-
   const isActive = isSortable && sortKey === sortBy;
 
   if (isSortable) {
@@ -80,9 +80,8 @@ const ColumnHeader: React.FC<Props> = ({
         disabled={disabled}
         onClick={() => {
           if (!disabled && sortKey !== undefined) {
-            history.push({
-              ...history.location,
-              search: toggleSorting(history.location.search, sortKey, table),
+            navigate({
+              search: toggleSorting(location.search, sortKey, table),
             });
           }
         }}

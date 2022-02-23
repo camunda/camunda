@@ -6,7 +6,7 @@
 
 import {render, screen, waitFor, within} from '@testing-library/react';
 import {rest} from 'msw';
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockServer} from 'modules/mock-server/node';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
@@ -20,8 +20,10 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/decisions/111']}>
-        <Route path="/decisions/:decisionInstanceId">{children}</Route>
+      <MemoryRouter initialEntries={['/decisions/4294980768']}>
+        <Routes>
+          <Route path="/decisions/:decisionInstanceId" element={children} />
+        </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );

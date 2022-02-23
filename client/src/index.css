@@ -39,19 +39,19 @@
 html {
   -moz-osx-font-smoothing: antialiased;
   -webkit-font-smoothing: antialiased;
-  height: 100%;
+  
 }
 
 body {
   font-family: IBM Plex Sans;
   margin: 0;
   padding: 0;
-  height: 100%;
   overflow: hidden;
 }
 
-#root {
-  height: 100%;
+html, body, #root{
+  height: 100vh;
+  width: 100vw;
 }
 
 button {

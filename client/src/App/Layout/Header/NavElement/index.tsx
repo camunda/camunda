@@ -4,29 +4,22 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {Container, Link, Label} from './styled';
-import {NavLink as BaseLink} from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 
-type NavElementProps = {
-  to: React.ComponentProps<typeof BaseLink>['to'];
+type Props = {
+  to: React.ComponentProps<typeof NavLink>['to'];
   icon?: React.ReactNode;
   title: string;
   label: string;
   onClick?: () => void;
 };
 
-const NavElement: React.FC<NavElementProps> = ({
-  title,
-  to,
-  icon,
-  label,
-  onClick,
-}) => (
+const NavElement: React.FC<Props> = ({title, to, icon, label, onClick}) => (
   <Container>
     <Link
-      exact
-      activeClassName="active"
+      caseSensitive
+      className={({isActive}) => (isActive ? 'active' : '')}
       title={title}
       to={to}
       onClick={onClick}

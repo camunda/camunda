@@ -4,11 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Router} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {render, within, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
-import {createMemoryHistory} from 'history';
 import {InstancesByProcess} from './index';
 import {
   mockWithSingleVersion,
@@ -20,15 +18,22 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-const createWrapper =
-  (historyMock = createMemoryHistory()) =>
-  ({children}: any) =>
-    (
+function createWrapper(initialPath: string = '/') {
+  const Wrapper: React.FC = ({children}) => {
+    return (
       <ThemeProvider>
-        <Router history={historyMock}>{children}</Router>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <LocationLog />
+        </MemoryRouter>
       </ThemeProvider>
     );
+  };
+
+  return Wrapper;
+}
 
 describe('InstancesByProcess', () => {
   beforeEach(() => {
@@ -114,9 +119,8 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    const historyMock = createMemoryHistory();
     render(<InstancesByProcess />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     const withinIncident = within(
@@ -131,7 +135,7 @@ describe('InstancesByProcess', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(processLink);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?process=orderProcess&version=all&active=true&incidents=true'
     );
 
@@ -170,7 +174,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
 
     userEvent.click(firstVersion);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?process=mockProcess&version=1&active=true&incidents=true'
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -192,7 +196,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
 
     userEvent.click(secondVersion);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?process=mockProcess&version=2&active=true&incidents=true'
     );
   });
@@ -204,9 +208,8 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    const historyMock = createMemoryHistory();
     render(<InstancesByProcess />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     const withinIncident = within(
@@ -226,7 +229,7 @@ describe('InstancesByProcess', () => {
     );
     expect(processLink).toBeInTheDocument();
     userEvent.click(processLink);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?process=loanProcess&version=1&active=true&incidents=true'
     );
 
@@ -246,9 +249,8 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    const historyMock = createMemoryHistory();
     render(<InstancesByProcess />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper(),
     });
 
     const withinIncident = within(
@@ -286,12 +288,8 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    const historyMock = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
-
     render(<InstancesByProcess />, {
-      wrapper: createWrapper(historyMock),
+      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
     const withinIncident = within(
@@ -303,7 +301,7 @@ describe('InstancesByProcess', () => {
     );
 
     userEvent.click(processLink);
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=orderProcess&version=all&active=true&incidents=true'
     );
 
@@ -317,7 +315,7 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    expect(historyMock.location.search).toBe(
+    expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&active=true&incidents=true'
     );
   });

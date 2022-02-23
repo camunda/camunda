@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {IncidentsBanner} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {EXPAND_STATE} from 'modules/constants';
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
@@ -27,11 +26,13 @@ type Props = {
 
 const {fetchIncidents} = incidentsStore;
 
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:processInstanceId">{children}</Route>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+        </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );

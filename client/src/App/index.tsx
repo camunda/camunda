@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {BrowserRouter, Route, Switch} from 'react-router-dom';
+import {BrowserRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 import {Login} from './Login';
@@ -17,11 +17,11 @@ import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
-import {Routes} from 'modules/routes';
+import {Paths} from 'modules/routes';
 import {HashRouterMigrator} from './HashRouterMigrator';
-import {AuthenticatedRoute} from './AuthenticatedRoute';
-import {Layout} from './Layout';
+import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
+import {Layout} from './Layout';
 
 const App: React.FC = () => {
   return (
@@ -34,56 +34,26 @@ const App: React.FC = () => {
           <GettingStartedExperience />
           <HashRouterMigrator />
           <SessionWatcher />
-          <Switch>
-            <Route path={Routes.login()}>
-              <Login />
+          <Routes>
+            <Route path={Paths.login()} element={<Login />} />
+            <Route
+              path={Paths.dashboard()}
+              element={
+                <AuthenticationCheck redirectPath={Paths.login()}>
+                  <Layout />
+                </AuthenticationCheck>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path={Paths.instances()} element={<Instances />} />
+              <Route path={Paths.instance()} element={<Instance />} />
+              <Route path={Paths.decisions()} element={<Decisions />} />
+              <Route
+                path={Paths.decisionInstance()}
+                element={<DecisionInstance />}
+              />
             </Route>
-            <AuthenticatedRoute
-              exact
-              path={Routes.dashboard()}
-              redirectPath={Routes.login()}
-            >
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </AuthenticatedRoute>
-            <AuthenticatedRoute
-              exact
-              path={Routes.instances()}
-              redirectPath={Routes.login()}
-            >
-              <Layout>
-                <Instances />
-              </Layout>
-            </AuthenticatedRoute>
-            <AuthenticatedRoute
-              exact
-              path={Routes.instance()}
-              redirectPath={Routes.login()}
-            >
-              <Layout>
-                <Instance />
-              </Layout>
-            </AuthenticatedRoute>
-            <AuthenticatedRoute
-              exact
-              path={Routes.decisions()}
-              redirectPath={Routes.login()}
-            >
-              <Layout>
-                <Decisions />
-              </Layout>
-            </AuthenticatedRoute>
-            <AuthenticatedRoute
-              exact
-              path={Routes.decisionInstance()}
-              redirectPath={Routes.login()}
-            >
-              <Layout>
-                <DecisionInstance />
-              </Layout>
-            </AuthenticatedRoute>
-          </Switch>
+          </Routes>
         </BrowserRouter>
       </NotificationProvider>
     </ThemeProvider>

@@ -5,10 +5,8 @@
  */
 
 import {useEffect} from 'react';
-
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
@@ -19,51 +17,71 @@ import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
-import {autorun} from 'mobx';
 import {useInstancePageParams} from './useInstancePageParams';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {Breadcrumb} from './Breadcrumb';
-import * as Styled from './styled';
+import {Container} from './styled';
+import {Locations} from 'modules/routes';
 
 const Instance = observer(() => {
-  const {processInstanceId} = useInstancePageParams();
-  const history = useHistory();
+  const {processInstanceId = ''} = useInstancePageParams();
+  const navigate = useNavigate();
   const notifications = useNotifications();
+  const location = useLocation();
+  const {processTitle} = currentInstanceStore;
 
   useEffect(() => {
-    currentInstanceStore.init(processInstanceId, history, notifications);
-    flowNodeInstanceStore.init();
+    const {
+      state: {instance},
+    } = currentInstanceStore;
 
-    let disposer = autorun(() => {
-      if (currentInstanceStore.processTitle !== null)
-        document.title = currentInstanceStore.processTitle;
-    });
+    if (processInstanceId !== instance?.id) {
+      currentInstanceStore.init({
+        id: processInstanceId,
+        onRefetchFailure: () => {
+          navigate(Locations.runningInstances(location));
+          notifications?.displayNotification('error', {
+            headline: `Instance ${processInstanceId} could not be found`,
+          });
+        },
+        onPollingFailure: () => {
+          navigate(Locations.filters(location));
+          notifications?.displayNotification('success', {
+            headline: 'Instance deleted',
+          });
+        },
+      });
+      flowNodeInstanceStore.init();
+      singleInstanceDiagramStore.init();
+      flowNodeSelectionStore.init();
+    }
+  }, [processInstanceId, navigate, notifications, location]);
 
-    singleInstanceDiagramStore.init();
-    flowNodeSelectionStore.init();
-
+  useEffect(() => {
     return () => {
       currentInstanceStore.reset();
       flowNodeInstanceStore.reset();
       singleInstanceDiagramStore.reset();
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
-
-      if (disposer !== undefined) {
-        disposer();
-      }
     };
-  }, [history, notifications, processInstanceId]);
+  }, []);
+
+  useEffect(() => {
+    if (processTitle !== null) {
+      document.title = processTitle;
+    }
+  }, [processTitle]);
 
   const {instance} = currentInstanceStore.state;
 
   return (
-    <Styled.Instance>
+    <Container>
+      {instance && (
+        <VisuallyHiddenH1>{`Operate Instance ${instance.id}`}</VisuallyHiddenH1>
+      )}
       <Breadcrumb />
-      <VisuallyHiddenH1>
-        {instance && `Operate Instance ${instance.id}`}
-      </VisuallyHiddenH1>
       <SplitPane
         titles={{top: 'Process', bottom: 'Instance Details'}}
         expandedPaneId="instanceExpandedPaneId"
@@ -74,7 +92,7 @@ const Instance = observer(() => {
           <VariablePanel />
         </BottomPanel>
       </SplitPane>
-    </Styled.Instance>
+    </Container>
   );
 });
 

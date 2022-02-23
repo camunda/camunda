@@ -7,7 +7,7 @@
 /* istanbul ignore file */
 
 import {useEffect, useState} from 'react';
-import {MemoryRouter} from 'react-router';
+import {MemoryRouter} from 'react-router-dom';
 import styled from 'styled-components';
 import {rest} from 'msw';
 import {Story} from '@storybook/react';

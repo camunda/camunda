@@ -14,7 +14,7 @@ import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Header} from './index';
 
 const MOCK_DECISION_INSTANCE_ID = '123567';
@@ -22,7 +22,9 @@ const MOCK_DECISION_INSTANCE_ID = '123567';
 const Wrapper: React.FC = ({children}) => (
   <ThemeProvider>
     <MemoryRouter initialEntries={[`/decisions/${MOCK_DECISION_INSTANCE_ID}`]}>
-      <Route path="/decisions/:decisionInstanceId">{children}</Route>
+      <Routes>
+        <Route path="/decisions/:decisionInstanceId" element={children} />
+      </Routes>
     </MemoryRouter>
   </ThemeProvider>
 );

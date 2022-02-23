@@ -6,7 +6,7 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {autorun} from 'mobx';
-import {useHistory} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
@@ -22,7 +22,8 @@ const Drd: React.FC = () => {
   const drdViewer = useRef<DrdViewer | null>(null);
   const drdViewerRef = useRef<HTMLDivElement | null>(null);
   const [definitionsName, setDefinitionsName] = useState<string | null>(null);
-  const history = useHistory();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleDecisionSelection = (decisionId: string) => {
     const decisionInstanceId =
@@ -32,9 +33,7 @@ const Drd: React.FC = () => {
       return;
     }
 
-    history.push(
-      Locations.decisionInstance(decisionInstanceId, history.location)
-    );
+    navigate(Locations.decisionInstance(location, decisionInstanceId));
   };
 
   if (drdViewer.current === null) {

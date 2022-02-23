@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render} from '@testing-library/react';
-import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {MemoryRouter} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import {GettingStartedExperience} from './index';
@@ -19,11 +17,11 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
-function createWrapper(history = createMemoryHistory()) {
+function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <Router history={history}>{children}</Router>
+        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
       </ThemeProvider>
     );
   };
@@ -37,11 +35,8 @@ describe('<GettingStartedExperience />', () => {
   });
 
   it('should display gse notification', async () => {
-    const mockHistory = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
     render(<GettingStartedExperience />, {
-      wrapper: createWrapper(mockHistory),
+      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
@@ -55,11 +50,8 @@ describe('<GettingStartedExperience />', () => {
   });
 
   it('should not display gse notification', async () => {
-    const mockHistory = createMemoryHistory({
-      initialEntries: ['/'],
-    });
     render(<GettingStartedExperience />, {
-      wrapper: createWrapper(mockHistory),
+      wrapper: createWrapper(),
     });
 
     expect(mockDisplayNotification).not.toHaveBeenCalledWith('info', {

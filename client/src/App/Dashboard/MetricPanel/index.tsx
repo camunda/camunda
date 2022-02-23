@@ -4,9 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-
 import {
   Panel,
   Title,
@@ -20,9 +19,11 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
+import {useLocation} from 'react-router-dom';
 
 const MetricPanel = observer(() => {
   const {running, active, withIncidents, status} = statisticsStore.state;
+  const location = useLocation();
 
   useEffect(() => {
     statisticsStore.init();
@@ -51,22 +52,20 @@ const MetricPanel = observer(() => {
             link: 'dashboard-running-instances',
           });
         }}
-        to={(location) =>
-          Locations.filters(
-            location,
-            running === 0
-              ? {
-                  completed: true,
-                  canceled: true,
-                  incidents: true,
-                  active: true,
-                }
-              : {
-                  incidents: true,
-                  active: true,
-                }
-          )
-        }
+        to={Locations.filters(
+          location,
+          running === 0
+            ? {
+                completed: true,
+                canceled: true,
+                incidents: true,
+                active: true,
+              }
+            : {
+                incidents: true,
+                active: true,
+              }
+        )}
       >
         {`${
           status === 'fetched' ? `${running} ` : ''
@@ -94,11 +93,9 @@ const MetricPanel = observer(() => {
               link: 'dashboard-instances-with-incidents',
             });
           }}
-          to={(location) =>
-            Locations.filters(location, {
-              incidents: true,
-            })
-          }
+          to={Locations.filters(location, {
+            incidents: true,
+          })}
         >
           Instances with Incident
         </Label>
@@ -111,11 +108,9 @@ const MetricPanel = observer(() => {
               link: 'dashboard-active-instances',
             });
           }}
-          to={(location) =>
-            Locations.filters(location, {
-              active: true,
-            })
-          }
+          to={Locations.filters(location, {
+            active: true,
+          })}
         >
           Active Instances
         </Label>

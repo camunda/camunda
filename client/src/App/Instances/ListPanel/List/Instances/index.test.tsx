@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Router} from 'react-router';
-import {createMemoryHistory} from 'history';
+import {MemoryRouter} from 'react-router-dom';
 import {
   render,
   screen,
@@ -21,14 +20,17 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {Instances} from './';
 import userEvent from '@testing-library/user-event';
 
-const createWrapper =
-  (historyMock = createMemoryHistory()) =>
-  ({children}: any) =>
-    (
+function createWrapper(initialPath: string = '/') {
+  const Wrapper: React.FC = ({children}) => {
+    return (
       <ThemeProvider>
-        <Router history={historyMock}>{children}</Router>
+        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
       </ThemeProvider>
     );
+  };
+
+  return Wrapper;
+}
 
 describe('List/Instances', () => {
   beforeEach(() => {
