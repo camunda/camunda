@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
-import io.camunda.zeebe.engine.processing.job.JobBatchCollector.LargeJob;
+import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -80,7 +80,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
-    final Either<LargeJob, Integer> result = jobBatchCollector.collectJobs(record);
+    final Either<TooLargeJob, Integer> result = jobBatchCollector.collectJobs(record);
     final var activatedJobCount = result.getOrElse(0);
     result.ifLeft(
         largeJob -> raiseIncidentJobTooLargeForMessageSize(largeJob.key(), largeJob.record()));
