@@ -71,6 +71,9 @@
                 "decisionName": {
                   "type": "keyword"
                 },
+                "decisionKey": {
+                  "type": "long"
+                },
                 "decisionType": {
                   "type": "keyword"
                 },
