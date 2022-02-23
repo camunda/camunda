@@ -16,7 +16,7 @@ import {
   DurationChart,
   LoadingIndicator,
 } from 'components';
-import {evaluateReport} from 'services';
+import {evaluateReport, formatters} from 'services';
 import {t} from 'translation';
 import {newReport} from 'config';
 import {withErrorHandling} from 'HOC';
@@ -37,13 +37,22 @@ export function TimeGoalsModal({
   const [goals, setGoals] = useState(
     initialGoals?.length > 0
       ? initialGoals
-      : ['targetDuration', 'slaDuration'].map((type) => ({
-          type,
-          percentile: '',
-          value: '',
-          unit: null,
-          visible: true,
-        }))
+      : [
+          {
+            type: 'targetDuration',
+            percentile: '80',
+            value: '',
+            unit: null,
+            visible: true,
+          },
+          {
+            type: 'slaDuration',
+            percentile: '99',
+            value: '',
+            unit: null,
+            visible: true,
+          },
+        ]
   );
 
   useEffect(() => {
@@ -51,11 +60,23 @@ export function TimeGoalsModal({
       const tenantData = await loadTenants(processDefinitionKey);
       mightFail(
         evaluateReport(getReportPayload(processDefinitionKey, tenantData), []),
-        ({result}) => setData(result.measures[0].data),
+        ({result}) => setData(result),
         showError
       );
     })();
   }, [mightFail, processDefinitionKey]);
+
+  useEffect(() => {
+    if (data?.instanceCount > 0 && (!initialGoals || !initialGoals.length)) {
+      const targetDuration = findPercentageDuration(data, 0.8);
+      const slaDuration = findPercentageDuration(data, 0.99);
+
+      updateGoalValue(0, 'value', targetDuration.value);
+      updateGoalValue(0, 'unit', targetDuration.unit);
+      updateGoalValue(1, 'value', slaDuration.value);
+      updateGoalValue(1, 'unit', slaDuration.unit);
+    }
+  }, [data, initialGoals]);
 
   function updateGoalValue(idx, prop, value) {
     setGoals((currentGoals) => update(currentGoals, {[idx]: {[prop]: {$set: value}}}));
@@ -113,7 +134,11 @@ export function TimeGoalsModal({
           ))}
         </fieldset>
         <h3 className="chartTitle">{t('processes.timeGoals.durationDistribution')}</h3>
-        {data ? <DurationChart data={data} colors="#1991c8" /> : <LoadingIndicator />}
+        {data ? (
+          <DurationChart data={data?.measures[0].data} colors="#1991c8" />
+        ) : (
+          <LoadingIndicator />
+        )}
       </Modal.Content>
       <Modal.Actions>
         <Button main onClick={onClose}>
@@ -151,23 +176,20 @@ function getReportPayload(processDefinitionKey, tenantData) {
       },
       groupBy: {$set: {type: 'duration', value: null}},
       visualization: {$set: 'bar'},
-      filter: {
-        $set: [
-          {
-            type: 'instanceEndDate',
-            data: {
-              type: 'rolling',
-              start: {
-                value: '1',
-                unit: 'months',
-              },
-              end: null,
-            },
-            appliedTo: ['all'],
-            filterLevel: 'instance',
-          },
-        ],
-      },
     },
   });
+}
+
+function findPercentageDuration(data, percentage) {
+  const targetDurationPosition = percentage * data.instanceCount - 1;
+  const durationData = data?.measures[0].data;
+  let instancesCounter = 0;
+  for (let idx = 0; idx < durationData.length; idx++) {
+    instancesCounter += durationData[idx].value;
+    if (instancesCounter > targetDurationPosition) {
+      const durationBucket = durationData[idx + 1] || durationData[idx];
+      const {value, unit} = formatters.convertToBiggestPossibleDuration(durationBucket.key);
+      return {value: Math.ceil(value).toString(), unit};
+    }
+  }
 }
