@@ -1394,6 +1394,14 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <configuration>
+          <flattenMode>ossrh</flattenMode>
+        </configuration>
+      </plugin>
     </plugins>
     <extensions>
       <extension>
