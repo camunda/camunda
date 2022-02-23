@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
-import io.camunda.operate.entities.dmn.DesicionInstanceInputEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceState;
+import io.camunda.operate.entities.dmn.DecisionType;
+import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -18,22 +20,23 @@ import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.PayloadUtil;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.xcontent.XContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DecisionDataUtil {
+
+  public static final String DECISION_INSTANCE_ID_1 = "12121212";
+  public static final String DECISION_INSTANCE_ID_2 = "13131313";
 
   private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
@@ -119,6 +122,81 @@ public class DecisionDataUtil {
     return decisionEntities;
   }
 
+  public List<DecisionInstanceEntity> createDecisionInstances() {
+    List<DecisionInstanceEntity> result = new ArrayList<>();
+
+    final List<DecisionInstanceInputEntity> inputs = new ArrayList<>();
+    inputs.add(new DecisionInstanceInputEntity()
+        .setId("InputClause_0og2hn3")
+        .setName("Invoice Classification")
+        .setValue("day-to-day expense")
+    );
+    inputs.add(new DecisionInstanceInputEntity()
+        .setId("InputClause_0og2hn3")
+        .setName("Invoice Classification")
+        .setValue("budget")
+    );
+    final List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
+    outputs.add(new DecisionInstanceOutputEntity()
+        .setId("OutputClause_1cthd0w")
+        .setName("Approver Group")
+        .setValue("budget")
+        .setRuleIndex(2)
+        .setRuleId("row-49839158-5")
+    );
+    outputs.add(new DecisionInstanceOutputEntity()
+        .setId("OutputClause_1cthd0w")
+        .setName("Approver Group")
+        .setValue("sales")
+        .setRuleIndex(1)
+        .setRuleId("row-49839158-6")
+    );
+    outputs.add(new DecisionInstanceOutputEntity()
+        .setId("OutputClause_1cthd0w")
+        .setName("Approver Group")
+        .setValue("accounting")
+        .setRuleIndex(1)
+        .setRuleId("row-49839158-1")
+    );
+    result.add(new DecisionInstanceEntity()
+        .setId(DECISION_INSTANCE_ID_1)
+        .setState(DecisionInstanceState.COMPLETED)
+        .setDecisionName("Assign Approver Group")
+        .setDecisionType(DecisionType.TABLE)
+        .setEvaluationTime(OffsetDateTime.now())
+        .setDecisionDefinitionId("1333")
+        .setDecisionId("invoice-assign-approver")
+        .setDecisionRequirementsId("1111")
+        .setDecisionRequirementsKey(1111)
+        .setElementId("taskA")
+        .setElementInstanceKey(76543)
+        .setEvaluatedInputs(inputs)
+        .setEvaluatedOutputs(outputs)
+        .setPosition(1000L)
+        .setProcessDefinitionKey(35467)
+        .setProcessInstanceKey(876423)
+        .setResult("{\"total\": 100.0}")
+    );
+    result.add(new DecisionInstanceEntity()
+        .setId(DECISION_INSTANCE_ID_2)
+        .setState(DecisionInstanceState.FAILED)
+        .setDecisionName("Assign Approver Group")
+        .setDecisionType(DecisionType.TABLE)
+        .setEvaluationTime(OffsetDateTime.now())
+        .setEvaluationFailure("Variable not found: invoiceClassification")
+        .setDecisionDefinitionId("1333")
+        .setDecisionId("invoice-assign-approver")
+        .setDecisionRequirementsId("1111")
+        .setDecisionRequirementsKey(1111)
+        .setElementId("taskA")
+        .setElementInstanceKey(547547)
+        .setPosition(1005L)
+        .setProcessDefinitionKey(234545)
+        .setProcessInstanceKey(567386)
+    );
+    return result;
+  }
+
   public void persistOperateEntities(List<? extends OperateEntity> operateEntities)
       throws PersistenceException {
     try {
@@ -149,7 +227,5 @@ public class DecisionDataUtil {
     }
     return entityToESAliasMap;
   }
-
-
 
 }

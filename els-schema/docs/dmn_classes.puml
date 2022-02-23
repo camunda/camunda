@@ -42,6 +42,7 @@ class     DecisionInstanceEntity {
   id: String
   state: DecisionInstanceState
   evaluationTime: OffsetDateTime
+  evaluationFailure: String
   position: long
   decisionRequirementsKey: long
   decisionRequirementsId: String

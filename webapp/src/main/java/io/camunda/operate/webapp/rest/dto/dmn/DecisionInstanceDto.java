@@ -1,0 +1,220 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package io.camunda.operate.webapp.rest.dto.dmn;
+
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionType;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
+public class DecisionInstanceDto {
+
+  public static final Comparator<DecisionInstanceOutputDto> DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR =
+      Comparator
+      .comparingInt(DecisionInstanceOutputDto::getRuleIndex)
+      .thenComparing(DecisionInstanceOutputDto::getName);
+  public static final Comparator<DecisionInstanceInputDto> DECISION_INSTANCE_INPUT_DTO_COMPARATOR =
+      Comparator
+      .comparing(DecisionInstanceInputDto::getName);
+
+  private String id;
+  private DecisionInstanceStateDto state;
+  private DecisionType decisionType;
+  private String decisionDefinitionId;
+  private String decisionId;
+  private String decisionName;
+  private int decisionVersion;
+  private OffsetDateTime evaluationDate;
+  private String errorMessage;
+  private long processInstanceId;
+  private String result;
+  private List<DecisionInstanceInputDto> evaluatedInputs;
+  private List<DecisionInstanceOutputDto> evaluatedOutputs;
+
+  public String getId() {
+    return id;
+  }
+
+  public DecisionInstanceDto setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public DecisionInstanceStateDto getState() {
+    return state;
+  }
+
+  public DecisionInstanceDto setState(
+      final DecisionInstanceStateDto state) {
+    this.state = state;
+    return this;
+  }
+
+  public DecisionType getDecisionType() {
+    return decisionType;
+  }
+
+  public DecisionInstanceDto setDecisionType(
+      final DecisionType decisionType) {
+    this.decisionType = decisionType;
+    return this;
+  }
+
+  public String getDecisionDefinitionId() {
+    return decisionDefinitionId;
+  }
+
+  public DecisionInstanceDto setDecisionDefinitionId(final String decisionDefinitionId) {
+    this.decisionDefinitionId = decisionDefinitionId;
+    return this;
+  }
+
+  public String getDecisionId() {
+    return decisionId;
+  }
+
+  public DecisionInstanceDto setDecisionId(final String decisionId) {
+    this.decisionId = decisionId;
+    return this;
+  }
+
+  public String getDecisionName() {
+    return decisionName;
+  }
+
+  public DecisionInstanceDto setDecisionName(final String decisionName) {
+    this.decisionName = decisionName;
+    return this;
+  }
+
+  public int getDecisionVersion() {
+    return decisionVersion;
+  }
+
+  public DecisionInstanceDto setDecisionVersion(final int decisionVersion) {
+    this.decisionVersion = decisionVersion;
+    return this;
+  }
+
+  public OffsetDateTime getEvaluationDate() {
+    return evaluationDate;
+  }
+
+  public DecisionInstanceDto setEvaluationDate(final OffsetDateTime evaluationDate) {
+    this.evaluationDate = evaluationDate;
+    return this;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public DecisionInstanceDto setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+    return this;
+  }
+
+  public long getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public DecisionInstanceDto setProcessInstanceId(final long processInstanceId) {
+    this.processInstanceId = processInstanceId;
+    return this;
+  }
+
+  public String getResult() {
+    return result;
+  }
+
+  public DecisionInstanceDto setResult(final String result) {
+    this.result = result;
+    return this;
+  }
+
+  public List<DecisionInstanceInputDto> getEvaluatedInputs() {
+    return evaluatedInputs;
+  }
+
+  public DecisionInstanceDto setEvaluatedInputs(
+      final List<DecisionInstanceInputDto> evaluatedInputs) {
+    this.evaluatedInputs = evaluatedInputs;
+    return this;
+  }
+
+  public List<DecisionInstanceOutputDto> getEvaluatedOutputs() {
+    return evaluatedOutputs;
+  }
+
+  public DecisionInstanceDto setEvaluatedOutputs(
+      final List<DecisionInstanceOutputDto> evaluatedOutputs) {
+    this.evaluatedOutputs = evaluatedOutputs;
+    return this;
+  }
+
+  public static DecisionInstanceDto createFrom(DecisionInstanceEntity decisionInstanceEntity) {
+    if (decisionInstanceEntity == null) {
+      return null;
+    }
+    final List<DecisionInstanceInputDto> inputs = DecisionInstanceInputDto
+        .createFrom(decisionInstanceEntity.getEvaluatedInputs());
+    Collections.sort(inputs, DECISION_INSTANCE_INPUT_DTO_COMPARATOR);
+
+    final List<DecisionInstanceOutputDto> outputs = DecisionInstanceOutputDto
+        .createFrom(decisionInstanceEntity.getEvaluatedOutputs());
+    Collections.sort(outputs, DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
+
+    DecisionInstanceDto decision = new DecisionInstanceDto()
+        .setId(decisionInstanceEntity.getId())
+        .setDecisionDefinitionId(decisionInstanceEntity.getDecisionDefinitionId())
+        .setDecisionId(decisionInstanceEntity.getDecisionId())
+        .setDecisionName(decisionInstanceEntity.getDecisionName())
+        .setDecisionType(decisionInstanceEntity.getDecisionType())
+        .setDecisionVersion(1)   //TODO
+        .setErrorMessage(decisionInstanceEntity.getEvaluationFailure())
+        .setEvaluationDate(decisionInstanceEntity.getEvaluationTime())
+        .setEvaluatedInputs(inputs)
+        .setEvaluatedOutputs(outputs)
+        .setProcessInstanceId(decisionInstanceEntity.getProcessInstanceKey())
+        .setResult(decisionInstanceEntity.getResult())
+        .setState(DecisionInstanceStateDto.getState(decisionInstanceEntity.getState()));
+    return decision;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceDto that = (DecisionInstanceDto) o;
+    return decisionVersion == that.decisionVersion &&
+        processInstanceId == that.processInstanceId &&
+        Objects.equals(id, that.id) &&
+        state == that.state &&
+        decisionType == that.decisionType &&
+        Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
+        Objects.equals(decisionId, that.decisionId) &&
+        Objects.equals(decisionName, that.decisionName) &&
+        Objects.equals(evaluationDate, that.evaluationDate) &&
+        Objects.equals(errorMessage, that.errorMessage) &&
+        Objects.equals(result, that.result) &&
+        Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
+        Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, state, decisionType, decisionDefinitionId, decisionId, decisionName,
+        decisionVersion, evaluationDate, errorMessage, processInstanceId, result, evaluatedInputs,
+        evaluatedOutputs);
+  }
+}

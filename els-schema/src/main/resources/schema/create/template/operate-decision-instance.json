@@ -21,6 +21,9 @@
         "format": "date_time || epoch_millis",
         "type": "date"
       },
+      "evaluationFailure": {
+        "type": "keyword"
+      },
       "decisionRequirementsKey": {
         "type": "long"
       },

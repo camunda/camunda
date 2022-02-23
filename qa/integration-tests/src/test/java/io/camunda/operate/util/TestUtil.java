@@ -23,7 +23,7 @@ import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.entities.dmn.DesicionInstanceInputEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -505,33 +505,33 @@ public abstract class TestUtil {
     return decisionInstance;
   }
 
-  private static DecisionInstanceOutputEntity[] createDecisionOutputs() {
-    final DecisionInstanceOutputEntity[] outputs = new DecisionInstanceOutputEntity[2];
-    outputs[0] = new DecisionInstanceOutputEntity()
+  private static List<DecisionInstanceOutputEntity> createDecisionOutputs() {
+    final List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
+    outputs.add(new DecisionInstanceOutputEntity()
         .setId("output1")
         .setName("Output 1")
         .setValue("output1")
         .setRuleId("rule1")
-        .setRuleIndex(1);
-    outputs[1] = new DecisionInstanceOutputEntity()
+        .setRuleIndex(1));
+    outputs.add(new DecisionInstanceOutputEntity()
         .setId("output2")
         .setName("Output 2")
         .setValue("output2")
         .setRuleId("rule2")
-        .setRuleIndex(2);
+        .setRuleIndex(2));
     return outputs;
   }
 
-  private static DesicionInstanceInputEntity[] createDecisionInstanceInputs() {
-    final DesicionInstanceInputEntity[] inputs = new DesicionInstanceInputEntity[2];
-    inputs[0] = new DesicionInstanceInputEntity();
-    inputs[0].setId("input1")
+  private static List<DecisionInstanceInputEntity> createDecisionInstanceInputs() {
+    final List<DecisionInstanceInputEntity> inputs = new ArrayList<>();
+    inputs.add(new DecisionInstanceInputEntity()
+      .setId("input1")
       .setName("Input 1")
-      .setValue("value1");
-    inputs[1] = new DesicionInstanceInputEntity();
-    inputs[1].setId("input2")
+      .setValue("value1"));
+    inputs.add(new DecisionInstanceInputEntity()
+      .setId("input2")
       .setName("Input 2")
-      .setValue("value2");
+      .setValue("value2"));
     return inputs;
   }
 

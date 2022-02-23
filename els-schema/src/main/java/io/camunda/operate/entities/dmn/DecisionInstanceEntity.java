@@ -7,13 +7,15 @@ package io.camunda.operate.entities.dmn;
 
 import io.camunda.operate.entities.OperateZeebeEntity;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
 
   private DecisionInstanceState state;
   private OffsetDateTime evaluationTime;
+  private String evaluationFailure;
   private Long position;
   private long decisionRequirementsKey;
   private String decisionRequirementsId;
@@ -26,8 +28,8 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String decisionName;
   private DecisionType decisionType;
   private String result;
-  private DesicionInstanceInputEntity[] evaluatedInputs;
-  private DecisionInstanceOutputEntity[] evaluatedOutputs;
+  private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
+  private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
 
   public DecisionInstanceState getState() {
     return state;
@@ -45,6 +47,15 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   public DecisionInstanceEntity setEvaluationTime(final OffsetDateTime evaluationTime) {
     this.evaluationTime = evaluationTime;
+    return this;
+  }
+
+  public String getEvaluationFailure() {
+    return evaluationFailure;
+  }
+
+  public DecisionInstanceEntity setEvaluationFailure(final String evaluationFailure) {
+    this.evaluationFailure = evaluationFailure;
     return this;
   }
 
@@ -159,22 +170,22 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
-  public DesicionInstanceInputEntity[] getEvaluatedInputs() {
+  public List<DecisionInstanceInputEntity> getEvaluatedInputs() {
     return evaluatedInputs;
   }
 
   public DecisionInstanceEntity setEvaluatedInputs(
-      final DesicionInstanceInputEntity[] evaluatedInputs) {
+      final List<DecisionInstanceInputEntity> evaluatedInputs) {
     this.evaluatedInputs = evaluatedInputs;
     return this;
   }
 
-  public DecisionInstanceOutputEntity[] getEvaluatedOutputs() {
+  public List<DecisionInstanceOutputEntity> getEvaluatedOutputs() {
     return evaluatedOutputs;
   }
 
   public DecisionInstanceEntity setEvaluatedOutputs(
-      final DecisionInstanceOutputEntity[] evaluatedOutputs) {
+      final List<DecisionInstanceOutputEntity> evaluatedOutputs) {
     this.evaluatedOutputs = evaluatedOutputs;
     return this;
   }
@@ -197,6 +208,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
         elementInstanceKey == that.elementInstanceKey &&
         state == that.state &&
         Objects.equals(evaluationTime, that.evaluationTime) &&
+        Objects.equals(evaluationFailure, that.evaluationFailure) &&
         Objects.equals(position, that.position) &&
         Objects.equals(decisionRequirementsId, that.decisionRequirementsId) &&
         Objects.equals(elementId, that.elementId) &&
@@ -205,18 +217,15 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
         Objects.equals(decisionName, that.decisionName) &&
         decisionType == that.decisionType &&
         Objects.equals(result, that.result) &&
-        Arrays.equals(evaluatedInputs, that.evaluatedInputs) &&
-        Arrays.equals(evaluatedOutputs, that.evaluatedOutputs);
+        Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
+        Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
   }
 
   @Override
   public int hashCode() {
-    int result1 = Objects
-        .hash(super.hashCode(), state, evaluationTime, position, decisionRequirementsKey,
-            decisionRequirementsId, processDefinitionKey, processInstanceKey, elementInstanceKey,
-            elementId, decisionId, decisionDefinitionId, decisionName, decisionType, result);
-    result1 = 31 * result1 + Arrays.hashCode(evaluatedInputs);
-    result1 = 31 * result1 + Arrays.hashCode(evaluatedOutputs);
-    return result1;
+    return Objects.hash(super.hashCode(), state, evaluationTime, evaluationFailure, position,
+        decisionRequirementsKey, decisionRequirementsId, processDefinitionKey, processInstanceKey,
+        elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName, decisionType,
+        result, evaluatedInputs, evaluatedOutputs);
   }
 }

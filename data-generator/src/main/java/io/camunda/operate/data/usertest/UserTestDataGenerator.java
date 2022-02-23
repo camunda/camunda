@@ -652,6 +652,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(client, "usertest/message-end-event.bpmn");
 
     deployDMN();
+
+    createDecisionInstances();
+  }
+
+  private void createDecisionInstances() {
+    try {
+      testUtil.persistOperateEntities(testUtil.createDecisionInstances());
+    } catch (PersistenceException e) {
+      throw new OperateRuntimeException("Exception occurred when creating test data", e);
+    }
   }
 
   private void deployDMN() {

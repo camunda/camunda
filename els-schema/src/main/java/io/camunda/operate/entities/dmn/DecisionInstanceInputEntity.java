@@ -7,7 +7,7 @@ package io.camunda.operate.entities.dmn;
 
 import java.util.Objects;
 
-public class DesicionInstanceInputEntity {
+public class DecisionInstanceInputEntity {
 
   private String id;
   private String name;
@@ -17,7 +17,7 @@ public class DesicionInstanceInputEntity {
     return id;
   }
 
-  public DesicionInstanceInputEntity setId(final String id) {
+  public DecisionInstanceInputEntity setId(final String id) {
     this.id = id;
     return this;
   }
@@ -26,7 +26,7 @@ public class DesicionInstanceInputEntity {
     return name;
   }
 
-  public DesicionInstanceInputEntity setName(final String name) {
+  public DecisionInstanceInputEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -35,7 +35,7 @@ public class DesicionInstanceInputEntity {
     return value;
   }
 
-  public DesicionInstanceInputEntity setValue(final String value) {
+  public DecisionInstanceInputEntity setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -48,7 +48,7 @@ public class DesicionInstanceInputEntity {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final DesicionInstanceInputEntity that = (DesicionInstanceInputEntity) o;
+    final DecisionInstanceInputEntity that = (DecisionInstanceInputEntity) o;
     return Objects.equals(id, that.id) &&
         Objects.equals(name, that.name) &&
         Objects.equals(value, that.value);
