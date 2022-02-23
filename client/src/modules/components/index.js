@@ -57,3 +57,4 @@ export {DownloadButton} from './DownloadButton';
 export {BulkDeleter} from './BulkDeleter';
 export {AlertModal} from './AlertModal';
 export {AlertsDropdown} from './AlertsDropdown';
+export {DurationChart} from './DurationChart';

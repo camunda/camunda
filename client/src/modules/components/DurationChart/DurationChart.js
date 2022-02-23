@@ -14,7 +14,7 @@ import './DurationChart.scss';
 
 const {createDurationFormattingOptions, duration} = formatters;
 
-function DurationChart({data}) {
+function DurationChart({data, colors}) {
   const canvas = useRef(null);
 
   const createTooltipTitle = useCallback(
@@ -35,7 +35,6 @@ function DurationChart({data}) {
   );
 
   useEffect(() => {
-    const colors = data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'));
     const maxDuration = data && data.length > 0 ? data[data.length - 1].key : 0;
 
     return new Chart(canvas.current, {
@@ -96,7 +95,7 @@ function DurationChart({data}) {
         },
       },
     });
-  }, [createTooltipTitle, data]);
+  }, [createTooltipTitle, data, colors]);
 
   return (
     <div className="DurationChart">

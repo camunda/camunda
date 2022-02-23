@@ -6,18 +6,20 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {EntityList} from 'components';
+import {Button, EntityList} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
-import {loadProcesses} from './service';
+import TimeGoalsModal from './TimeGoalsModal';
+import {loadProcesses, saveGoals} from './service';
 
 import './Processes.scss';
 
 export function Processes({mightFail}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
+  const [openProcess, setOpenProcess] = useState();
 
   const loadProcessesList = useCallback(
     (sortBy, sortOrder) => {
@@ -50,14 +52,38 @@ export function Processes({mightFail}) {
         ]}
         sorting={sorting}
         onChange={loadProcessesList}
-        data={processes?.map(({processDefinitionKey, processName, owner}) => ({
+        data={processes?.map(({processDefinitionKey, processName, owner, timeGoals}) => ({
           id: processDefinitionKey,
           type: t('common.process.label'),
           icon: 'data-source',
           name: processName || processDefinitionKey,
-          meta: [owner, ''],
+          meta: [
+            owner,
+            <Button
+              className="setGoalBtn"
+              onClick={() => {
+                setOpenProcess({processDefinitionKey, timeGoals});
+              }}
+            >
+              {timeGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
+            </Button>,
+          ],
         }))}
       />
+      {openProcess && (
+        <TimeGoalsModal
+          processDefinitionKey={openProcess.processDefinitionKey}
+          initialGoals={openProcess.timeGoals}
+          onClose={() => setOpenProcess()}
+          onConfirm={(goals) => {
+            mightFail(
+              saveGoals(openProcess.processDefinitionKey, goals),
+              setOpenProcess,
+              showError
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

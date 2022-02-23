@@ -3,12 +3,27 @@
 .Processes {
   height: 100%;
 
-  .EntityList .goalInfo {
-    font-size: 14px;
+  .EntityList {
+    .setGoalBtn {
+      margin: 4px;
+    }
 
-    .highlighted {
-      @include highlighted;
-      display: inline;
+    .ListItem:not(:hover) .setGoalBtn {
+      opacity: 0;
+
+      &.active,
+      &.focus-visible {
+        opacity: 1;
+      }
+    }
+
+    .goalInfo {
+      font-size: 14px;
+
+      .highlighted {
+        @include highlighted;
+        display: inline;
+      }
     }
   }
 }

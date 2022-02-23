@@ -23,14 +23,20 @@ jest.mock('services', () => ({
   },
 }));
 
-it('should construct a bar Chart with the noda data', () => {
-  shallow(<DurationChart data={data} />);
+it('should construct a bar Chart with the node data', () => {
+  const testColors = ['red', 'blue'];
+  shallow(<DurationChart data={data} colors={testColors} />);
 
   runAllEffects();
 
   expect(Chart).toHaveBeenCalled();
   expect(Chart.mock.calls[0][1].type).toBe('bar');
-  expect(Chart.mock.calls[0][1].data).toMatchSnapshot();
+  const {datasets, labels} = Chart.mock.calls[0][1].data;
+
+  expect(datasets[0].data).toEqual(['3', '20']);
+  expect(labels).toEqual(['5', '1']);
+  expect(datasets[0].backgroundColor).toEqual(testColors);
+  expect(datasets[0].borderColor).toEqual(testColors);
 });
 
 it('should create correct chart options', () => {

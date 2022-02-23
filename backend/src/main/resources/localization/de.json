@@ -167,7 +167,21 @@
     "owner": "Eigentümer",
     "timeGoal": "Ziel: Zeit",
     "displayData": "Ziele zeigen Daten von Instanzen an",
-    "endedThisMonth": "die im aktuellen Monat beendet wurden"
+    "endedThisMonth": "die im aktuellen Monat beendet wurden",
+    "setGoal": "Ziel setzen",
+    "editGoal": "Ziel bearbeiten",
+    "timeGoals": {
+      "label": "Zeitziele",
+      "configure": "Ziele konfigurieren",
+      "targetDuration": "Ziellaufzeit",
+      "slaDuration": "SLA Laufzeit",
+      "instancesTake": "der Prozessinstanzen benötigen",
+      "lessThan": "weniger als",
+      "displayGoal": "Ziel anzeigen",
+      "durationDistribution": "Laufzeitverteilung",
+      "saveGoals": "Ziele speichern",
+      "updateGoals": "Ziele aktualisieren"
+    }
   },
   "events": {
     "new": "Neuer Prozess",

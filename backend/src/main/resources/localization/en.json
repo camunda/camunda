@@ -167,7 +167,21 @@
     "owner": "Owner",
     "timeGoal": "Goal: Time",
     "displayData": "Goals display data from instances",
-    "endedThisMonth": "ended in the current month"
+    "endedThisMonth": "ended in the current month",
+    "setGoal": "Set Goal",
+    "editGoal": "Edit Goal",
+    "timeGoals": {
+      "label": "Time goals",
+      "configure": "Configure duration goals",
+      "targetDuration": "Target duration",
+      "slaDuration": "SLA duration",
+      "instancesTake": "of process instances take",
+      "lessThan": "less than",
+      "displayGoal": "Display goal",
+      "durationDistribution": "Duration distribution",
+      "saveGoals": "Save Goals",
+      "updateGoals": "Update Goals"
+    }
   },
   "events": {
     "new": "New Process",
