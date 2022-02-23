@@ -361,7 +361,8 @@ es:
       # NOTE: this property only applies the first time Optimize is started and
       # the schema/mapping is deployed on Elasticsearch. If you want to take
       # this property to take effect again, you need to delete all indexes (with it all data)
-      # and restart Optimize.
+      # and restart Optimize. This configuration will also only be applied to the current write instance indices. Archive
+      # indices will have a single shard regardless
       number_of_shards: 1
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
