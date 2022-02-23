@@ -35,6 +35,11 @@ public final class EvaluationResult implements DecisionEvaluationResult {
   }
 
   @Override
+  public String getFailedDecisionId() {
+    return null;
+  }
+
+  @Override
   public DirectBuffer getOutput() {
     return output;
   }

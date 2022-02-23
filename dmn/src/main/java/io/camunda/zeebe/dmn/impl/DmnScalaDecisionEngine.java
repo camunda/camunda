@@ -106,8 +106,15 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
 
     if (result.isLeft()) {
       final var reason = result.left().get().failure().message();
+
+      String failedDecisionId = null;
+      if (!evaluatedDecisions.isEmpty()) {
+        failedDecisionId = evaluatedDecisions.get(evaluatedDecisions.size() - 1).decisionId();
+      }
+
       return new EvaluationFailure(
           String.format("Expected to evaluate decision '%s', but %s", decisionId, reason),
+          failedDecisionId,
           evaluatedDecisions);
     }
 

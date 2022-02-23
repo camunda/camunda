@@ -119,8 +119,8 @@ class DmnEvaluatedDecisionsTest {
   }
 
   @Test
-  @DisplayName("Should return partial output if evaluation fails")
-  void shouldReturnPartialResultIfEvaluationFails() {
+  @DisplayName("Should return output of required decision if evaluation fails on root decision")
+  void shouldReturnOutputOfRequiredDecisionIfEvaluationFailsOnRootDecision() {
     // given
     final var inputStream = getClass().getResourceAsStream(VALID_DRG);
     final var parsedDrg = decisionEngine.parse(inputStream);
@@ -140,6 +140,8 @@ class DmnEvaluatedDecisionsTest {
             "Expected to evaluate decision 'force_user', but failed to evaluate expression 'height': "
                 + "no variable found for name 'height'");
 
+    assertThat(result.getFailedDecisionId()).isEqualTo("force_user");
+
     assertThat(result.getEvaluatedDecisions())
         .hasSize(2)
         .extracting(EvaluatedDecision::decisionId, EvaluatedDecision::decisionName)
@@ -149,6 +151,40 @@ class DmnEvaluatedDecisionsTest {
     final var evaluatedDecisions = result.getEvaluatedDecisions();
     assertEquality(evaluatedDecisions.get(0).decisionOutput(), "'Jedi'");
     assertEquality(evaluatedDecisions.get(1).decisionOutput(), "null");
+  }
+
+  @Test
+  @DisplayName("Should return partial output if evaluation fails on required decision")
+  void shouldReturnPartialOutputIfEvaluationFailsOnRequiredDecision() {
+    // given
+    final var inputStream = getClass().getResourceAsStream(VALID_DRG);
+    final var parsedDrg = decisionEngine.parse(inputStream);
+
+    // when
+    final var result = decisionEngine.evaluateDecisionById(parsedDrg, "force_user", null);
+
+    // then
+    assertThat(result.isFailure())
+        .describedAs("Expect that the result is not evaluated successfully")
+        .isTrue();
+
+    assertThat(result.getFailureMessage())
+        .isEqualTo(
+            """
+            Expected to evaluate decision 'force_user', \
+            but failed to evaluate expression 'lightsaberColor': \
+            no variable found for name 'lightsaberColor'\
+            """);
+
+    assertThat(result.getFailedDecisionId()).isEqualTo("jedi_or_sith");
+
+    assertThat(result.getEvaluatedDecisions()).hasSize(1);
+
+    final var evaluatedDecision = result.getEvaluatedDecisions().get(0);
+    assertThat(evaluatedDecision.decisionId()).isEqualTo("jedi_or_sith");
+    assertEquality(evaluatedDecision.decisionOutput(), "null");
+    assertThat(evaluatedDecision.evaluatedInputs()).hasSize(0);
+    assertThat(evaluatedDecision.matchedRules()).hasSize(0);
   }
 
   @Nested

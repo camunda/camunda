@@ -264,7 +264,9 @@ public final class BusinessRuleTaskTest {
         .hasDecisionVersion(calledDecision.getVersion())
         .hasDecisionRequirementsKey(calledDecision.getDecisionRequirementsKey())
         .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
-        .hasDecisionOutput("\"Obi-Wan Kenobi\"");
+        .hasDecisionOutput("\"Obi-Wan Kenobi\"")
+        .hasFailedDecisionId("")
+        .hasEvaluationFailureMessage("");
 
     assertThat(decisionEvaluationValue)
         .hasProcessDefinitionKey(businessRuleTaskActivated.getValue().getProcessDefinitionKey())
@@ -367,5 +369,87 @@ public final class BusinessRuleTaskTest {
                 .exists())
         .as("Decision is evaluated successfully")
         .isTrue();
+  }
+
+  @Test
+  public void shouldWriteDecisionEvaluationEventIfEvaluationFailed() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_RESOURCE)
+            .withXmlResource(
+                processWithBusinessRuleTask(
+                    t ->
+                        t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
+            .deploy();
+
+    final var calledDecision =
+        deployment.getValue().getDecisionsMetadata().stream()
+            .filter(decision -> decision.getDecisionId().equals("force_user"))
+            .findFirst()
+            .orElseThrow();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var businessRuleTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(decisionEvaluationRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DECISION_EVALUATION)
+        .hasIntent(DecisionEvaluationIntent.FAILED)
+        .hasSourceRecordPosition(businessRuleTaskActivating.getSourceRecordPosition());
+    assertThat(decisionEvaluationRecord.getKey())
+        .describedAs("Expect that the decision evaluation event has a key")
+        .isPositive();
+
+    final var decisionEvaluationValue = decisionEvaluationRecord.getValue();
+    assertThat(decisionEvaluationValue)
+        .hasDecisionKey(calledDecision.getDecisionKey())
+        .hasDecisionId(calledDecision.getDecisionId())
+        .hasDecisionName(calledDecision.getDecisionName())
+        .hasDecisionVersion(calledDecision.getVersion())
+        .hasDecisionRequirementsKey(calledDecision.getDecisionRequirementsKey())
+        .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
+        .hasDecisionOutput("null")
+        .hasFailedDecisionId("jedi_or_sith")
+        .hasEvaluationFailureMessage(
+            """
+            Expected to evaluate decision 'force_user', \
+            but failed to evaluate expression 'lightsaberColor': \
+            no variable found for name 'lightsaberColor'\
+            """);
+
+    assertThat(decisionEvaluationValue)
+        .hasProcessDefinitionKey(businessRuleTaskActivating.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(businessRuleTaskActivating.getValue().getBpmnProcessId())
+        .hasProcessInstanceKey(businessRuleTaskActivating.getValue().getProcessInstanceKey())
+        .hasElementInstanceKey(businessRuleTaskActivating.getKey())
+        .hasElementId(businessRuleTaskActivating.getValue().getElementId());
+
+    final var evaluatedDecisions = decisionEvaluationValue.getEvaluatedDecisions();
+    assertThat(evaluatedDecisions).hasSize(1);
+
+    assertThat(evaluatedDecisions.get(0))
+        .hasDecisionId("jedi_or_sith")
+        .hasDecisionName("Jedi or Sith")
+        .hasDecisionType("DECISION_TABLE")
+        .hasDecisionOutput("null")
+        .satisfies(
+            evaluatedDecision -> {
+              assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(0);
+              assertThat(evaluatedDecision.getMatchedRules()).hasSize(0);
+            });
   }
 }
