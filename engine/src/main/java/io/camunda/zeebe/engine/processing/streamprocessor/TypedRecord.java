@@ -13,15 +13,17 @@ import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 
 public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 
+  @Override
   long getKey();
 
+  @Override
   T getValue();
 
   int getRequestStreamId();
 
   long getRequestId();
 
-  long getLength();
+  int getLength();
 
   default boolean hasRequestMetadata() {
     return getRequestId() != RecordMetadataEncoder.requestIdNullValue()

@@ -219,6 +219,11 @@ public class StreamProcessorHealthTest {
     }
 
     @Override
+    public int getMaxEventLength() {
+      return Integer.MAX_VALUE;
+    }
+
+    @Override
     public void appendNewCommand(final Intent intent, final RecordValue value) {}
 
     @Override
