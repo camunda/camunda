@@ -219,7 +219,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(new Tuple(END_EVENT, 1.));
@@ -268,7 +268,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     assertThat(result.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactly(instance1.getId());
@@ -304,7 +304,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactlyInAnyOrder(instance1.getId(), instance2.getId());
@@ -341,7 +341,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrder(new Tuple(START_EVENT, 1.), new Tuple(END_EVENT, 1.));
@@ -399,7 +399,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // then only 1 instance and 1 userTask is included in the result
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(new Tuple(USER_TASK_1, 1.));

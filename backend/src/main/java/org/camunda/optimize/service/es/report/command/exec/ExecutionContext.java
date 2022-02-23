@@ -31,7 +31,7 @@ public class ExecutionContext<D extends SingleReportDataDto> {
 
   private D reportData;
   private ZoneId timezone;
-  private long unfilteredInstanceCount;
+  private long unfilteredTotalInstanceCount;
   private Optional<PaginationDto> pagination;
   private boolean isCsvExport;
 

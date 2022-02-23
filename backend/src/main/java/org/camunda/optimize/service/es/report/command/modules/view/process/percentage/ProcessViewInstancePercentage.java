@@ -46,8 +46,12 @@ public class ProcessViewInstancePercentage extends ProcessViewPart {
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    final Filter count = aggs.get(FREQUENCY_AGGREGATION);
-    return createViewResult(((double) count.getDocCount() / context.getUnfilteredInstanceCount()) * 100);
+    final long unfilteredTotalInstanceCount = context.getUnfilteredTotalInstanceCount();
+    if (unfilteredTotalInstanceCount == 0) {
+      return createViewResult(null);
+    }
+    final Filter frequency = aggs.get(FREQUENCY_AGGREGATION);
+    return createViewResult(((double) frequency.getDocCount() / unfilteredTotalInstanceCount) * 100);
   }
 
   public ViewResult createViewResult(final Double value) {

@@ -9,6 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
@@ -38,6 +43,14 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 @Slf4j
 public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, ProcessReportDataDto> {
 
+  // Instance date filters should also reduce the total count (baseline) considered for report evaluation
+  private static final List<Class<? extends ProcessFilterDto<?>>> FILTERS_AFFECTING_BASELINE = List.of(
+    InstanceStartDateFilterDto.class,
+    InstanceEndDateFilterDto.class,
+    FlowNodeStartDateFilterDto.class,
+    FlowNodeEndDateFilterDto.class
+  );
+  
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
@@ -55,25 +68,18 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
 
   @Override
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
-
-    final ProcessReportDataDto reportData = context.getReportData();
-    final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition = reportData.groupFiltersByDefinitionIdentifier();
-    final BoolQueryBuilder multiDefinitionFilterQuery = boolQuery().minimumShouldMatch(1);
-    reportData.getDefinitions().forEach(definitionDto -> {
-      final BoolQueryBuilder definitionQuery = createDefinitionQuery(definitionDto);
-      queryFilterEnhancer.addFilterToQuery(
-        definitionQuery,
-        filtersByDefinition.getOrDefault(definitionDto.getIdentifier(), Collections.emptyList()),
-        context.getFilterContext()
-      );
-      multiDefinitionFilterQuery.should(definitionQuery);
-    });
+    final Map<String, List<ProcessFilterDto<?>>> dateFiltersByDefinition = context.getReportData()
+      .groupFiltersByDefinitionIdentifier();
+    final BoolQueryBuilder multiDefinitionFilterQuery = buildDefinitionBaseQueryForFilters(
+      context,
+      dateFiltersByDefinition
+    );
 
     queryFilterEnhancer.addFilterToQuery(
       multiDefinitionFilterQuery,
       Stream.concat(
-        filtersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList()).stream(),
-        reportData.getAdditionalFiltersForReportType().stream()
+        dateFiltersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList()).stream(),
+        context.getReportData().getAdditionalFiltersForReportType().stream()
       ).collect(Collectors.toList()),
       context.getFilterContext()
     );
@@ -85,11 +91,44 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
   }
 
   @Override
-  protected BoolQueryBuilder setupUnfilteredBaseQuery(final ProcessReportDataDto reportData) {
+  protected BoolQueryBuilder setupUnfilteredBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
+    // Instance level date filters are also applied to the baseline so are included here
+    final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
+      context.getReportData().groupFiltersByDefinitionIdentifier()
+        .entrySet().stream()
+        .collect(Collectors.toMap(
+          Map.Entry::getKey,
+          entry -> entry.getValue()
+            .stream()
+            .filter(filter -> filter.getFilterLevel() == FilterApplicationLevel.INSTANCE)
+            .filter(filter -> FILTERS_AFFECTING_BASELINE.contains(filter.getClass()))
+            .collect(Collectors.toList())
+        ));
+    final BoolQueryBuilder multiDefinitionFilterQuery = buildDefinitionBaseQueryForFilters(
+      context,
+      instanceLevelDateFiltersByDefinitionKey
+    );
+
+    queryFilterEnhancer.addFilterToQuery(
+      multiDefinitionFilterQuery,
+      instanceLevelDateFiltersByDefinitionKey.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList()),
+      context.getFilterContext()
+    );
+    return multiDefinitionFilterQuery;
+  }
+
+  private BoolQueryBuilder buildDefinitionBaseQueryForFilters(final ExecutionContext<ProcessReportDataDto> context,
+                                                              final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
     final BoolQueryBuilder multiDefinitionFilterQuery = boolQuery().minimumShouldMatch(1);
-    reportData.getDefinitions().forEach(definitionDto -> multiDefinitionFilterQuery.should(
-      createDefinitionQuery(definitionDto)
-    ));
+    context.getReportData().getDefinitions().forEach(definitionDto -> {
+      final BoolQueryBuilder definitionQuery = createDefinitionQuery(definitionDto);
+      queryFilterEnhancer.addFilterToQuery(
+        definitionQuery,
+        filtersByDefinition.getOrDefault(definitionDto.getIdentifier(), Collections.emptyList()),
+        context.getFilterContext()
+      );
+      multiDefinitionFilterQuery.should(definitionQuery);
+    });
     return multiDefinitionFilterQuery;
   }
 

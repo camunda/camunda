@@ -63,7 +63,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   public abstract BoolQueryBuilder setupBaseQuery(final ExecutionContext<D> context);
 
-  protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final D reportData);
+  protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final ExecutionContext<D> reportData);
 
   protected abstract String[] getIndexNames(final ExecutionContext<D> context);
 
@@ -72,18 +72,16 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   }
 
   protected CommandEvaluationResult<T> evaluate(final ExecutionContext<D> executionContext) {
-    final D reportData = executionContext.getReportData();
-
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
-    CountRequest unfilteredInstanceCountRequest =
-      new CountRequest(getIndexNames(executionContext)).query(setupUnfilteredBaseQuery(reportData));
+    CountRequest unfilteredTotalInstanceCountRequest =
+      new CountRequest(getIndexNames(executionContext)).query(setupUnfilteredBaseQuery(executionContext));
 
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
     try {
       response = executeElasticSearchCommand(executionContext, searchRequest);
-      unfilteredInstanceCountResponse = esClient.count(unfilteredInstanceCountRequest);
-      executionContext.setUnfilteredInstanceCount(unfilteredInstanceCountResponse.getCount());
+      unfilteredInstanceCountResponse = esClient.count(unfilteredTotalInstanceCountRequest);
+      executionContext.setUnfilteredTotalInstanceCount(unfilteredInstanceCountResponse.getCount());
     } catch (IOException e) {
       String reason =
         String.format(
@@ -91,7 +89,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
           viewPart.getClass().getSimpleName(),
           groupByPart.getClass().getSimpleName(),
           distributedByPart.getClass().getSimpleName(),
-          reportData.getDefinitions()
+          executionContext.getReportData().getDefinitions()
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -147,7 +145,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       .query(baseQuery)
       .trackTotalHits(true)
       .fetchSource(false);
-    // The null checks below are essential, otherwise over 4000 tests will fail because of null pointer exceptions
+    // The null checks below are essential to prevent NPEs in integration tests
     executionContext.getPagination().ifPresent(
       pagination -> {
         Optional.ofNullable(pagination.getOffset()).ifPresent(
@@ -173,7 +171,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
     final CommandEvaluationResult<T> reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits().value);
-    reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredInstanceCount());
+    reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredTotalInstanceCount());
     executionContext.getPagination().ifPresent(
       plainPagination -> {
         PaginationScrollableDto scrollablePagination = PaginationScrollableDto.fromPaginationDto(plainPagination);

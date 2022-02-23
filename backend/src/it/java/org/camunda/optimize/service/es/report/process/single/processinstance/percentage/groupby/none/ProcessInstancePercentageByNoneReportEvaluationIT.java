@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -25,10 +26,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
 
 public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -81,6 +85,21 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).isEqualTo(100.);
+  }
+
+  @Test
+  public void percentageReportEvaluationForZeroInstances() {
+    // given
+    final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(0L);
+    assertThat(result.getFirstMeasureData()).isEqualTo(null);
   }
 
   @Test
@@ -153,6 +172,7 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now.minusDays(1));
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId(), Map.of("varName", "varVal"));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -160,17 +180,30 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
-                           .start(now.minusMinutes(10))
-                           .end(null)
-                           .add()
-                           .buildList());
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .fixedInstanceStartDate()
+        .start(now.minusMinutes(10))
+        .end(null)
+        .add()
+        .variable()
+        .name("varName")
+        .stringType()
+        .values(Collections.singletonList("varVal"))
+        .operator(IN)
+        .add()
+        .buildList());
     ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    final Integer storedInstanceCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(
+      new ProcessInstanceIndex(processInstance.getProcessDefinitionKey()).getIndexName());
 
-    // then
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    // then all three instance have been imported
+    assertThat(storedInstanceCount).isEqualTo(3);
+    // one is removed from baseline total as it doesn't match the instance level date filter
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    // and only one matches the variable filter
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    // and the percentage is relative to the baseline total
     assertThat(result.getFirstMeasureData()).isEqualTo(50.);
   }
 

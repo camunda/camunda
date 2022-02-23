@@ -695,7 +695,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(0L)
-      .processInstanceCountWithoutFilters(1L)
+      .processInstanceCountWithoutFilters(0L)
       .measure(ViewProperty.FREQUENCY)
       .doAssert(actualResult);
 
