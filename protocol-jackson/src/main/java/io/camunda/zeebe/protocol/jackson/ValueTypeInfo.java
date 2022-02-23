@@ -5,10 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * Provides mapping info between a value type and various constructs. Can be extended in the future
@@ -16,8 +17,9 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
  * implementation class (as generated here) for safe copying.
  *
  * @param <T> the immutable implementation class, e.g. {@link
- *     io.camunda.zeebe.protocol.jackson.record.VariableRecordValueBuilder.ImmutableVariableRecordValue}
+ *     io.camunda.zeebe.protocol.record.value.ImmutableErrorRecordValue}
  */
+@Immutable
 final class ValueTypeInfo<T extends RecordValue> {
   private final Class<T> valueClass;
 
@@ -28,7 +30,7 @@ final class ValueTypeInfo<T extends RecordValue> {
     this.intentClass = intentClass;
   }
 
-  Class<T> getValueClass() {
+  Class<? extends T> getValueClass() {
     return valueClass;
   }
 

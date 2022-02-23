@@ -16,7 +16,11 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
 
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface DeploymentDistributionRecordValue extends RecordValue {
 
   /** @return the partition where the deployment should be distributed */

@@ -38,7 +38,7 @@ as a type reference.
 ```java
 // assume a myJson string containing the JSON
 final ObjectMapper mapper = new ObjectMapper();
-final Record<?> record = mapper.readValue(myJson,AbstractRecord.class);
+final Record<?> record = mapper.readValue(myJson, Record.class);
 
 // record will be correctly deserialized with the right parametric type
 ```

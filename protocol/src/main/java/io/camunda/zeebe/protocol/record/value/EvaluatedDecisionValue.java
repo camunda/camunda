@@ -16,11 +16,15 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import java.util.List;
+import org.immutables.value.Value;
 
 /**
  * An evaluated DMN decision. It contains details of the evaluation depending on the decision type.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface EvaluatedDecisionValue extends RecordValue {
 
   /** @return the id of the evaluated decision */

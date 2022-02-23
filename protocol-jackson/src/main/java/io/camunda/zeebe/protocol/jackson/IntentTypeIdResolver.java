@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.DatabindContext;

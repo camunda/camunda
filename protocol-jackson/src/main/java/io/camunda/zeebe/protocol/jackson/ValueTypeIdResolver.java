@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.DatabindContext;
@@ -17,8 +17,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 
 /**
  * A {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} that maps a serialized {@link
- * RecordValue} value to a concrete implementation enum, e.g. {@link ImmutableVariableRecordValue},
- * based on the value type of the record.
+ * RecordValue} value to a concrete implementation enum, e.g. {@link
+ * io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue}, based on the value type of
+ * the record.
  */
 final class ValueTypeIdResolver extends TypeIdResolverBase {
 

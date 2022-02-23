@@ -16,13 +16,17 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a process instance related command or event.
  *
  * <p>See {@link ProcessInstanceIntent} for intents.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstanceRelated {
   /** @return the BPMN process id this process instance belongs to. */
   String getBpmnProcessId();
@@ -34,6 +38,7 @@ public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstance
   long getProcessDefinitionKey();
 
   /** @return the key of the process instance */
+  @Override
   long getProcessInstanceKey();
 
   /** @return the id of the current process element, or empty if the id is not specified. */

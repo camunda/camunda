@@ -16,6 +16,8 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
 
 /**
  * Represents a signal that an event was triggered in a process instance, within a given scope, and
@@ -34,6 +36,8 @@ import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
  * from the emitter (e.g. error throw end event, escalation), and there is no special purpose entity
  * associated with the emitter (e.g. timer, message).
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface ProcessEventRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
 
   /** @return the key identifying the event's scope */

@@ -946,6 +946,12 @@
       </dependency>
 
       <dependency>
+        <groupId>io.github.classgraph</groupId>
+        <artifactId>classgraph</artifactId>
+        <version>${version.classgraph}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
         <version>${version.bouncycastle}</version>

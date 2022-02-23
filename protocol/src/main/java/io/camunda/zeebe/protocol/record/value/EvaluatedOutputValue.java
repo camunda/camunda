@@ -16,11 +16,15 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
 
 /**
  * An evaluated output of a decision table that belongs to a {@link MatchedRuleValue matched rule}.
  * It contains details of the output and the value of the evaluated output expression.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface EvaluatedOutputValue extends RecordValue {
 
   /** @return the id of the evaluated output */

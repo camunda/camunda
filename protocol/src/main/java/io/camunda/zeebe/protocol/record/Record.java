@@ -16,8 +16,11 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import org.immutables.value.Value;
 
 /** Represents a record published to the log stream. */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface Record<T extends RecordValue> extends JsonSerializable, Cloneable {
   /**
    * Retrieves the position of the record. Positions are locally unique to the partition, and
@@ -79,7 +82,7 @@ public interface Record<T extends RecordValue> extends JsonSerializable, Cloneab
 
   /**
    * Returns the raw value of the record, which should implement one of the interfaces in the {@link
-   * io.camunda.zeebe.exporter.record.value} package.
+   * io.camunda.zeebe.protocol.record.value} package.
    *
    * <p>The record value is essentially the record specific data, e.g. for a process instance
    * creation event, it would contain information relevant to the process instance being created.
@@ -93,5 +96,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable, Cloneab
    *
    * @return a deep copy of this record
    */
-  Record<T> clone();
+  @Value.NonAttribute
+  default Record<T> copyOf() {
+    return ImmutableRecord.copyOf(this);
+  }
 }

@@ -16,18 +16,22 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.List;
+import org.immutables.value.Value;
 
 /**
  * Represents a single deployment event or command.
  *
  * <p>See {@link DeploymentIntent} for intents.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface DeploymentRecordValue extends RecordValue {
   /** @return the resources to deploy */
   List<DeploymentResource> getResources();

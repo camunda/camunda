@@ -68,7 +68,7 @@ public interface Exporter {
    *
    * <p>Given Record just wraps the underlying internal buffer. This means if the implementation
    * needs to collect multiple records it either has to call {@link Record#toJson()} to get the
-   * serialized version of the record or {@link Record#clone()} to get a deep copy.
+   * serialized version of the record or {@link Record#copyOf()} to get a deep copy.
    *
    * @param record the record to export
    */

@@ -16,13 +16,17 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a message event or command.
  *
  * <p>See {@link MessageIntent} for intents.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface MessageRecordValue extends RecordValueWithVariables {
   /** @return the name of the message */
   String getName();

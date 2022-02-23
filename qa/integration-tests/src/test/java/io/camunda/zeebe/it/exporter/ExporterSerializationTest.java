@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.exporter.debug.DebugHttpExporter;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
-import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.util.WorkloadGenerator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -31,11 +31,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class ExporterSerializationTest {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-
-  @Rule public ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1, this::configureBroker);
-
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new ZeebeProtocolModule());
   private int debugExporterPort;
+  @Rule public ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1, this::configureBroker);
 
   @Test
   public void shouldDeserializeExportedRecords() throws IOException {
@@ -62,21 +61,20 @@ public final class ExporterSerializationTest {
         .zipSatisfy(exportedRecords, this::assertRecordIsLogicallyEquivalent);
   }
 
-  private List<AbstractRecord<?>> fetchJsonRecords(final int expectedCount) throws IOException {
+  private List<Record<?>> fetchJsonRecords(final int expectedCount) throws IOException {
     final var url = new URL("http://localhost:" + debugExporterPort + "/records.json");
 
     return Awaitility.await("until we have at least " + expectedCount + " records")
         .pollInSameThread()
         .until(
-            () -> MAPPER.readerFor(new TypeReference<List<AbstractRecord<?>>>() {}).readValue(url),
+            () -> MAPPER.readerFor(new TypeReference<List<Record<?>>>() {}).readValue(url),
             records -> records.size() >= expectedCount);
   }
 
   // TODO: this is a hacky way to logically compare two beans, as when serialized to JSON they
   //  should produce logically equivalent objects; this should be replaced by a proper logical equal
   //  and/or copy method in the future
-  private void assertRecordIsLogicallyEquivalent(
-      final AbstractRecord<?> actual, final Record<?> expected) {
+  private void assertRecordIsLogicallyEquivalent(final Record<?> actual, final Record<?> expected) {
     final var actualJson = MAPPER.valueToTree(actual);
     final var expectedJson = MAPPER.valueToTree(expected);
 

@@ -15,7 +15,12 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
+
 /** Represents a deployed process, which extends the meta data with the acutal resources */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface Process extends ProcessMetadataValue {
   /** @return returns the corresponding binary resource */
   byte[] getResource();

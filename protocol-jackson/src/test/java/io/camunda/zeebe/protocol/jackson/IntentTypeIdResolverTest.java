@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,10 +16,13 @@ import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.io.IOException;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
+@Execution(ExecutionMode.CONCURRENT)
 final class IntentTypeIdResolverTest {
 
   /**

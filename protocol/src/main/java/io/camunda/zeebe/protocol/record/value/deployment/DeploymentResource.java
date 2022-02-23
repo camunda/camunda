@@ -15,7 +15,12 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
+
 /** Represents a single deployment resource. */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface DeploymentResource {
 
   /** @return the resource contents */

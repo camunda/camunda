@@ -16,8 +16,12 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
 
 /** Error records are written on unexpected errors during the processing phase. */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface ErrorRecordValue extends RecordValue {
 
   /** @return the exception message, which causes this error record. */

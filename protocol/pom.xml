@@ -35,6 +35,29 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
+    <!-- will correctly annotate the immutable classes with concurrency annotations -->
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
+
+    <!--
+      scoped as provided since the annotations are not retained at runtime, and therefore it can be
+      omitted entirely
+      -->
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>annotate</artifactId>
+      <version>${version.immutables}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -122,6 +145,29 @@
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- required, as the tool is not capable of looking up the generated sources by itself -->
+          <sourcepath>${project.basedir}/src/main;${project.basedir}/target/generated-sources</sourcepath>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs combine.children="append">
+            <!-- required by javac detection logic in immutables -->
+            <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+            <!-- required to correctly deserialize objects with Jackson in protocol-jackson -->
+            <arg>-parameters</arg>
+          </compilerArgs>
+          <fork>true</fork>
+        </configuration>
       </plugin>
     </plugins>
   </build>

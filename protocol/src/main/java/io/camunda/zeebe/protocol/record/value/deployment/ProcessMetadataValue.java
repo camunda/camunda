@@ -16,8 +16,12 @@
 package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
+import org.immutables.value.Value;
 
 /** Represents deployed process meta data, so all important properties of an deployed process. */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface ProcessMetadataValue extends RecordValue {
   /** @return the bpmn process ID of this process */
   String getBpmnProcessId();

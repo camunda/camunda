@@ -14,7 +14,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.clock.ZeebeClock;
@@ -42,6 +43,9 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
 final class ControlledActorClockEndpointIT {
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+
   private static final String ELASTICSEARCH_HOST = "elasticsearch";
   private static final String INDEX_PREFIX = "exporter-clock-test";
   private Network network;
@@ -49,7 +53,6 @@ final class ControlledActorClockEndpointIT {
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;
   private final HttpClient httpClient = HttpClient.newHttpClient();
-  private final ObjectMapper mapper = new ObjectMapper();
   private ZeebeClock zeebeClock;
 
   @BeforeEach
@@ -111,7 +114,7 @@ final class ControlledActorClockEndpointIT {
             });
   }
 
-  private List<AbstractRecord<?>> searchExportedRecords() throws IOException, InterruptedException {
+  private List<Record<?>> searchExportedRecords() throws IOException, InterruptedException {
     final var uri =
         URI.create(
             String.format(
@@ -119,7 +122,7 @@ final class ControlledActorClockEndpointIT {
                 elasticsearchContainer.getHttpHostAddress(), INDEX_PREFIX));
     final var request = HttpRequest.newBuilder(uri).method("POST", BodyPublishers.noBody()).build();
     final var response = httpClient.send(request, BodyHandlers.ofInputStream());
-    final var result = mapper.readValue(response.body(), EsSearchResponseDto.class);
+    final var result = MAPPER.readValue(response.body(), EsSearchResponseDto.class);
     if (result.esDocumentsWrapper == null) {
       return Collections.emptyList();
     }
@@ -187,7 +190,7 @@ final class ControlledActorClockEndpointIT {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private static final class EsDocumentDto {
     @JsonProperty(value = "_source", required = true)
-    AbstractRecord<?> record;
+    Record<?> record;
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

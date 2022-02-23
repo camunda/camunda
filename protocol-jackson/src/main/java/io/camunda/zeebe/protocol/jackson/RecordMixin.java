@@ -5,55 +5,34 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import io.camunda.zeebe.protocol.jackson.record.RecordBuilder.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import org.immutables.value.Value;
 
-@Value.Immutable
-@ZeebeStyle
-@JsonDeserialize(as = ImmutableRecord.class)
-public abstract class AbstractRecord<T extends RecordValue>
-    implements Record<T>, DefaultJsonSerializable {
-  @Value.Default
+/**
+ * This annotation mixin is used by Jackson during deserialization of {@link Record} objects. It's
+ * necessary to be able to resolve the intent and the value to their correct concrete class based on
+ * the value type of the record.
+ *
+ * <p>NOTE: the type represented by {@code T} can be abstract or concrete, it doesn't matter much
+ * here.
+ *
+ * @param <T> the record value type
+ */
+interface RecordMixin<T extends RecordValue> extends Record<T> {
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
   @JsonTypeIdResolver(IntentTypeIdResolver.class)
   @Override
-  public Intent getIntent() {
-    return Intent.UNKNOWN;
-  }
-
-  @Value.Default
-  @Override
-  public RecordType getRecordType() {
-    return RecordType.NULL_VAL;
-  }
-
-  @Value.Default
-  @Override
-  public RejectionType getRejectionType() {
-    return RejectionType.NULL_VAL;
-  }
+  Intent getIntent();
 
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
   @JsonTypeIdResolver(ValueTypeIdResolver.class)
   @Override
-  public abstract T getValue();
-
-  /** @return itself as the object is immutable and can be used as is */
-  @SuppressWarnings({"MethodDoesntCallSuperMethod", "squid:S2975", "squid:S1182"})
-  @Override
-  public Record<T> clone() {
-    return this;
-  }
+  T getValue();
 }

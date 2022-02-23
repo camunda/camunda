@@ -16,14 +16,18 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import java.util.List;
+import org.immutables.value.Value;
 
 /**
  * Represents a job batch related event or command.
  *
  * <p>See {@link JobBatchIntent} for intents.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface JobBatchRecordValue extends RecordValue {
   /** @return the type of the job */
   String getType();

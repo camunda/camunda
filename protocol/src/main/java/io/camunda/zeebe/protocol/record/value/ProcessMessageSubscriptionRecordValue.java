@@ -16,13 +16,17 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a process message subscription command or event.
  *
  * <p>See {@link ProcessMessageSubscriptionIntent} for intents.
  */
+@Value.Immutable
+@ZeebeImmutableProtocol
 public interface ProcessMessageSubscriptionRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated {
   /** @return the process instance key */
