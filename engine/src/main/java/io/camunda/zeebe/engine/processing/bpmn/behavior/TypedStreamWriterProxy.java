@@ -40,6 +40,16 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
   }
 
   @Override
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return writer.canWriteEventOfLength(eventLength);
+  }
+
+  @Override
+  public int getMaxEventLength() {
+    return writer.getMaxEventLength();
+  }
+
+  @Override
   public void appendNewCommand(final Intent intent, final RecordValue value) {
     writer.appendNewCommand(intent, value);
   }

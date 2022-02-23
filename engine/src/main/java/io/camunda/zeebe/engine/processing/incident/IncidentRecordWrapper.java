@@ -105,7 +105,7 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   }
 
   @Override
-  public long getLength() {
+  public int getLength() {
     return 0;
   }
 

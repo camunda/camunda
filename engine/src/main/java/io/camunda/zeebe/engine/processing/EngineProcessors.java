@@ -65,7 +65,6 @@ public final class EngineProcessors {
 
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
-    final int maxFragmentSize = processingContext.getMaxFragmentSize();
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
@@ -128,7 +127,6 @@ public final class EngineProcessors {
         zeebeState,
         onJobsAvailableCallback,
         eventPublicationBehavior,
-        maxFragmentSize,
         writers,
         jobMetrics,
         eventTriggerBehavior);
