@@ -63,7 +63,7 @@ final class JobBatchCollectorTest {
     // given
     final long variableScopeKey = state.getKeyGenerator().nextKey();
     final TypedRecord<JobBatchRecord> record = createRecord();
-    final List<Job> jobs = Arrays.asList(createJob(variableScopeKey), createJob(variableScopeKey));
+    final List<Long> jobs = Arrays.asList(createJob(variableScopeKey), createJob(variableScopeKey));
     final var toggle = new AtomicBoolean(true);
 
     // when - set up the evaluator to only accept the first job
@@ -76,7 +76,7 @@ final class JobBatchCollectorTest {
         .as("should have activated only one job successfully")
         .right()
         .isEqualTo(1);
-    JobBatchRecordValueAssert.assertThat(batchRecord).hasOnlyJobKeys(jobs.get(0).key).isTruncated();
+    JobBatchRecordValueAssert.assertThat(batchRecord).hasOnlyJobKeys(jobs.get(0)).isTruncated();
   }
 
   @Test
@@ -84,7 +84,7 @@ final class JobBatchCollectorTest {
     // given
     final long variableScopeKey = state.getKeyGenerator().nextKey();
     final TypedRecord<JobBatchRecord> record = createRecord();
-    final List<Job> jobs = Arrays.asList(createJob(variableScopeKey), createJob(variableScopeKey));
+    final List<Long> jobs = Arrays.asList(createJob(variableScopeKey), createJob(variableScopeKey));
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
@@ -95,7 +95,7 @@ final class JobBatchCollectorTest {
     EitherAssert.assertThat(result)
         .as("should return excessively large job")
         .left()
-        .hasFieldOrPropertyWithValue("key", jobs.get(0).key);
+        .hasFieldOrPropertyWithValue("key", jobs.get(0));
     JobBatchRecordValueAssert.assertThat(batchRecord).hasNoJobKeys().hasNoJobs().isTruncated();
   }
 
@@ -131,14 +131,14 @@ final class JobBatchCollectorTest {
     // given - multiple jobs to ensure variables are collected based on the scope
     final TypedRecord<JobBatchRecord> record = createRecord();
     final long scopeKey = state.getKeyGenerator().nextKey();
-    final List<Job> jobs = Arrays.asList(createJob(scopeKey), createJob(scopeKey));
+    final List<Long> jobs = Arrays.asList(createJob(scopeKey), createJob(scopeKey));
 
     // when
     collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
-    JobBatchRecordValueAssert.assertThat(batchRecord).hasJobKeys(jobs.get(0).key, jobs.get(1).key);
+    JobBatchRecordValueAssert.assertThat(batchRecord).hasJobKeys(jobs.get(0), jobs.get(1));
   }
 
   @Test
@@ -146,7 +146,7 @@ final class JobBatchCollectorTest {
     // given
     final TypedRecord<JobBatchRecord> record = createRecord();
     final long scopeKey = state.getKeyGenerator().nextKey();
-    final List<Job> jobs = Arrays.asList(createJob(scopeKey), createJob(scopeKey));
+    final List<Long> jobs = Arrays.asList(createJob(scopeKey), createJob(scopeKey));
     record.getValue().setMaxJobsToActivate(1);
 
     // when
@@ -155,7 +155,7 @@ final class JobBatchCollectorTest {
     // then
     final JobBatchRecord batchRecord = record.getValue();
     EitherAssert.assertThat(result).as("should collect only the first job").right().isEqualTo(1);
-    JobBatchRecordValueAssert.assertThat(batchRecord).hasJobKeys(jobs.get(0).key).isNotTruncated();
+    JobBatchRecordValueAssert.assertThat(batchRecord).hasJobKeys(jobs.get(0)).isNotTruncated();
   }
 
   @Test
@@ -292,7 +292,7 @@ final class JobBatchCollectorTest {
     return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
   }
 
-  private Job createJob(final long variableScopeKey) {
+  private long createJob(final long variableScopeKey) {
     final var jobRecord =
         new JobRecord()
             .setBpmnProcessId("process")
@@ -302,7 +302,7 @@ final class JobBatchCollectorTest {
     final long jobKey = state.getKeyGenerator().nextKey();
 
     state.getJobState().create(jobKey, jobRecord);
-    return new Job(jobKey, jobRecord);
+    return jobKey;
   }
 
   private void createJobWithVariables(
@@ -335,6 +335,4 @@ final class JobBatchCollectorTest {
       return canWriteEventOfLength.test(length);
     }
   }
-
-  private record Job(long key, JobRecord job) {}
 }
