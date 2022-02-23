@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -42,4 +43,13 @@ public interface DecisionState {
    */
   Optional<PersistedDecisionRequirements> findDecisionRequirementsByKey(
       long decisionRequirementsKey);
+
+  /**
+   * Query decisions by the given decision requirements (DRG) key.
+   *
+   * @param decisionRequirementsKey the key of the DRG
+   * @return all decisions that belong to the given DRG, or an empty list if no decision belongs to
+   *     it
+   */
+  List<PersistedDecision> findDecisionsByDecisionRequirementsKey(long decisionRequirementsKey);
 }
