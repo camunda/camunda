@@ -165,5 +165,21 @@ final class JobBatchCollector {
     return variables;
   }
 
-  record TooLargeJob(long key, JobRecord record) {}
+  static final class TooLargeJob {
+    private final long key;
+    private final JobRecord job;
+
+    private TooLargeJob(final long key, final JobRecord job) {
+      this.key = key;
+      this.job = job;
+    }
+
+    long key() {
+      return key;
+    }
+
+    JobRecord record() {
+      return job;
+    }
+  }
 }
