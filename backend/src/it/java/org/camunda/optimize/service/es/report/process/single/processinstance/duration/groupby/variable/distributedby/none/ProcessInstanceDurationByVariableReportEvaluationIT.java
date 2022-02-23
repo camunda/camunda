@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -69,6 +70,7 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -1120,7 +1122,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AggregationType.MAX));
     AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
@@ -1654,10 +1656,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
-  }
-
-  private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
   }
 
   private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,

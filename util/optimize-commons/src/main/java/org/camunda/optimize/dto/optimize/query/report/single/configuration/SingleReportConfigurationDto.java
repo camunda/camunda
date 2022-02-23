@@ -37,8 +37,8 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
-  private Set<AggregationType> aggregationTypes =
-    new LinkedHashSet<>(Collections.singletonList(AggregationType.AVERAGE));
+  private Set<AggregationDto> aggregationTypes =
+    new LinkedHashSet<>(Collections.singletonList(new AggregationDto(AggregationType.AVERAGE)));
   @Builder.Default
   private Set<UserTaskDurationTime> userTaskDurationTimes =
     new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
@@ -112,7 +112,7 @@ public class SingleReportConfigurationDto implements Combinable {
       && userTaskDurationTimesAmount <= 1 && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
   }
 
-  public void setAggregationTypes(final AggregationType... aggregationTypes) {
+  public void setAggregationTypes(final AggregationDto... aggregationTypes) {
     // deduplication using an intermediate set
     this.aggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
   }

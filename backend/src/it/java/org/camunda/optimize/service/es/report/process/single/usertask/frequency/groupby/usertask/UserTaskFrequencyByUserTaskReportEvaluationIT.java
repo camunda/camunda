@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -659,7 +660,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AggregationType.MAX));
     reportData.getConfiguration().setUserTaskDurationTimes(UserTaskDurationTime.IDLE);
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);

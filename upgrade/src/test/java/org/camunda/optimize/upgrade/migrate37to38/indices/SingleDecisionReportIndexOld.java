@@ -3,23 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.report;
+package org.camunda.optimize.upgrade.migrate37to38.indices;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DYNAMIC_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
-public class SingleDecisionReportIndex extends AbstractReportIndex {
+public class SingleDecisionReportIndexOld extends AbstractReportIndex {
 
-  public static final int VERSION = 9;
+  public static final int VERSION = 8;
 
   @Override
   public String getIndexName() {
@@ -36,8 +33,8 @@ public class SingleDecisionReportIndex extends AbstractReportIndex {
     // @formatter:off
     return xContentBuilder.
       startObject(DATA)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .field(DYNAMIC_PROPERTY_TYPE, true)
+        .field("type", "object")
+        .field("dynamic", true)
         .startObject("properties")
           .startObject(DecisionReportDataDto.Fields.view)
             .field(MAPPING_ENABLED_SETTING, false)
@@ -52,17 +49,13 @@ public class SingleDecisionReportIndex extends AbstractReportIndex {
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(CONFIGURATION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .field(DYNAMIC_PROPERTY_TYPE, true)
+            .field("type", "object")
+            .field("dynamic", true)
             .startObject("properties")
               .startObject(XML)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+                .field("type", "text")
                 .field("index", true)
                 .field("analyzer", "is_present_analyzer")
-              .endObject()
-              .startObject(AGGREGATION_TYPES)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-                .field(DYNAMIC_PROPERTY_TYPE, true)
               .endObject()
             .endObject()
           .endObject()

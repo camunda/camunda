@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime.TOTAL;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime.WORK;
@@ -205,7 +207,12 @@ public class UserTaskDurationByUserTaskByProcessReportEvaluationIT extends Abstr
       ALL_IDENTIFIER, v2Instance.getProcessDefinitionKey(), ALL_VERSIONS_DISPLAY_NAME);
     allVersionsDefinition.setVersion(ALL_VERSIONS);
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
-    reportData.getConfiguration().setAggregationTypes(MAX, SUM, MEDIAN);
+    reportData.getConfiguration().setAggregationTypes(
+      new AggregationDto(MAX),
+      new AggregationDto(SUM),
+      new AggregationDto(MEDIAN),
+      new AggregationDto(PERCENTILE, 99.)
+    );
     reportData.getConfiguration().setUserTaskDurationTimes(TOTAL, WORK);
 
     // when
@@ -216,17 +223,19 @@ public class UserTaskDurationByUserTaskByProcessReportEvaluationIT extends Abstr
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getMeasures()).hasSize(6)
+    assertThat(result.getMeasures()).hasSize(8)
       .extracting(
         MeasureResponseDto::getAggregationType,
         MeasureResponseDto::getUserTaskDurationTime,
         MeasureResponseDto::getData
       )
       .contains(
-        Tuple.tuple(MAX, TOTAL, createResultsForAllFlowNodes(5000.0, 1000.0)),
-        Tuple.tuple(SUM, TOTAL, createResultsForAllFlowNodes(6000.0, 1000.0)),
-        // We cannot support the median aggregation type with this distribution as the information is lost on merging
-        Tuple.tuple(MEDIAN, TOTAL, createResultsForAllFlowNodes(null, null))
+        Tuple.tuple(new AggregationDto(MAX), TOTAL, createResultsForAllFlowNodes(5000.0, 1000.0)),
+        Tuple.tuple(new AggregationDto(SUM), TOTAL, createResultsForAllFlowNodes(6000.0, 1000.0)),
+        // We cannot support the median or percentile aggregation types with this distribution as the information is
+        // lost on merging
+        Tuple.tuple(new AggregationDto(MEDIAN), TOTAL, createResultsForAllFlowNodes(null, null)),
+        Tuple.tuple(new AggregationDto(PERCENTILE, 99.), TOTAL, createResultsForAllFlowNodes(null, null))
       );
   }
 

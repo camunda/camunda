@@ -43,6 +43,7 @@ public class ElasticsearchConstants {
 
   public static final String MAPPING_PROPERTY_TYPE = "type";
   public static final String FORMAT_PROPERTY_TYPE = "format";
+  public static final String DYNAMIC_PROPERTY_TYPE = "dynamic";
 
   public static final String TYPE_KEYWORD = "keyword";
   public static final String TYPE_LONG = "long";

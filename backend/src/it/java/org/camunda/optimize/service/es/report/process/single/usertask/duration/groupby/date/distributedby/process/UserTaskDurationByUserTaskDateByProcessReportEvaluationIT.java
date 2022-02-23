@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -39,6 +40,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
@@ -97,7 +99,7 @@ public abstract class UserTaskDurationByUserTaskDateByProcessReportEvaluationIT 
       .containsExactly(
         Tuple.tuple(
           ViewProperty.DURATION,
-          AggregationType.AVERAGE,
+          new AggregationDto(AggregationType.AVERAGE),
           List.of(
             createHyperMapResult(
               localDateTimeToString(now),
@@ -223,7 +225,10 @@ public abstract class UserTaskDurationByUserTaskDateByProcessReportEvaluationIT 
       ALL_VERSIONS_IDENTIFIER, v2Instance.getProcessDefinitionKey(), ALL_DISPLAY_NAME);
     allVersionsDefinition.setVersion(ALL_VERSIONS);
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
-    reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
+    reportData.getConfiguration().setAggregationTypes(
+      new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
+      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+    );
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
@@ -233,27 +238,32 @@ public abstract class UserTaskDurationByUserTaskDateByProcessReportEvaluationIT 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getMeasures()).hasSize(5)
+    assertThat(result.getMeasures()).hasSize(6)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(MAX, List.of(
+        Tuple.tuple(new AggregationDto(MAX), List.of(
           versionResults(localDateTimeToString(now.minusDays(1)), 5000.0, null),
           versionResults(localDateTimeToString(now), 1000.0, 1000.0)
         )),
-        Tuple.tuple(MIN, List.of(
+        Tuple.tuple(new AggregationDto(MIN), List.of(
           versionResults(localDateTimeToString(now.minusDays(1)), 5000.0, null),
           versionResults(localDateTimeToString(now), 1000.0, 1000.0)
         )),
-        Tuple.tuple(AVERAGE, List.of(
+        Tuple.tuple(new AggregationDto(AVERAGE), List.of(
           versionResults(localDateTimeToString(now.minusDays(1)), 5000.0, null),
           versionResults(localDateTimeToString(now), 1000.0, 1000.0)
         )),
-        Tuple.tuple(SUM, List.of(
+        Tuple.tuple(new AggregationDto(SUM), List.of(
           versionResults(localDateTimeToString(now.minusDays(1)), 10000.0, null),
           versionResults(localDateTimeToString(now), 1000.0, 1000.0)
         )),
-        // We cannot support the median aggregation type with this distribution as the information is lost on merging
-        Tuple.tuple(MEDIAN, List.of(
+        // We cannot support the median or percentile aggregation types with this distribution as the information is
+        // lost on merging
+        Tuple.tuple(new AggregationDto(MEDIAN), List.of(
+          versionResults(localDateTimeToString(now.minusDays(1)), null, null),
+          versionResults(localDateTimeToString(now), null, null)
+        )),
+        Tuple.tuple(new AggregationDto(PERCENTILE, 99.), List.of(
           versionResults(localDateTimeToString(now.minusDays(1)), null, null),
           versionResults(localDateTimeToString(now), null, null)
         ))

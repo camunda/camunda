@@ -117,7 +117,11 @@ public class ReportService implements CollectionReferencingService {
                                                     final SingleProcessReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
     Optional.ofNullable(definitionDto.getData())
-      .ifPresent(data -> ValidationHelper.validateProcessFilters(data.getFilter()));
+      .ifPresent(data -> {
+        ValidationHelper.validateProcessFilters(data.getFilter());
+        Optional.ofNullable(data.getConfiguration())
+          .ifPresent(config -> ValidationHelper.validateAggregationTypes(config.getAggregationTypes()));
+      });
     return createReport(
       userId, definitionDto, ProcessReportDataDto::new, reportWriter::createNewSingleProcessReport
     );
@@ -228,7 +232,7 @@ public class ReportService implements CollectionReferencingService {
     return filterAuthorizedReports(userId, reports)
       .stream()
       .sorted(Comparator.comparing(o -> ((AuthorizedReportDefinitionResponseDto) o).getDefinitionDto()
-        .getLastModified())
+          .getLastModified())
                 .reversed())
       .collect(toList());
   }
@@ -326,6 +330,8 @@ public class ReportService implements CollectionReferencingService {
                                         boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     ValidationHelper.validateProcessFilters(updatedReport.getData().getFilter());
+    Optional.ofNullable(updatedReport.getData().getConfiguration())
+      .ifPresent(config -> ValidationHelper.validateAggregationTypes(config.getAggregationTypes()));
 
     final SingleProcessReportDefinitionRequestDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId

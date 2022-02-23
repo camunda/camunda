@@ -12,12 +12,12 @@ import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchAggregationResultMappingUtil {
 
-  public static Double mapToDoubleOrNull(final ParsedTDigestPercentiles aggregation) {
-    double median = aggregation.percentile(50);
-    if (Double.isNaN(median) || Double.isInfinite(median)) {
+  public static Double mapToDoubleOrNull(final ParsedTDigestPercentiles aggregation, final double percentileValue) {
+    double percentile = aggregation.percentile(percentileValue);
+    if (Double.isNaN(percentile) || Double.isInfinite(percentile)) {
       return null;
     } else {
-      return median;
+      return percentile;
     }
   }
 

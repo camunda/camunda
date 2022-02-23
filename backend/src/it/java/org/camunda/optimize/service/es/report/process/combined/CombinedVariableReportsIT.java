@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -79,8 +80,8 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     // given
     Map<String, Object> variables = ImmutableMap.of(TEST_VARIABLE, 1);
     deployAndStartSimpleProcessWithVariables(variables);
-    String singleReportId1 = createVariableReport(AggregationType.SUM);
-    String singleReportId2 = createVariableReport(AggregationType.AVERAGE);
+    String singleReportId1 = createVariableReport(new AggregationDto(AggregationType.SUM));
+    String singleReportId2 = createVariableReport(new AggregationDto(AggregationType.AVERAGE));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -92,10 +93,10 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
   }
 
   private String createVariableReport() {
-    return createVariableReport(AggregationType.AVERAGE);
+    return createVariableReport(new AggregationDto(AggregationType.AVERAGE));
   }
 
-  private String createVariableReport(final AggregationType aggregationType) {
+  private String createVariableReport(final AggregationDto aggregationType) {
     ProcessReportDataDto data = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
@@ -105,7 +106,8 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
       .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
       .build();
     data.getConfiguration().setAggregationTypes(aggregationType);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(data);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
@@ -117,7 +119,8 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }

@@ -13,7 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
@@ -35,7 +35,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 @SuperBuilder
 public class MeasureResponseDto<T> {
   private ViewProperty property;
-  private AggregationType aggregationType;
+  private AggregationDto aggregationType;
   private UserTaskDurationTime userTaskDurationTime;
   private T data;
   private ResultType type;

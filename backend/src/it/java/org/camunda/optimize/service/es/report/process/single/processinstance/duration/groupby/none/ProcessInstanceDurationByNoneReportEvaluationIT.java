@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.du
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -42,8 +42,10 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 
 public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -529,10 +531,6 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
-  }
-
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -545,14 +543,20 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse) {
-    final Map<AggregationType, Double> resultByAggregationType = evaluationResponse.getResult().getMeasures().stream()
+    final Map<AggregationDto, Double> resultByAggregationType = evaluationResponse.getResult()
+      .getMeasures()
+      .stream()
       .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
     assertThat(resultByAggregationType)
       .hasSize(getSupportedAggregationTypes().length)
-      .containsEntry(AVERAGE, 4000.)
-      .containsEntry(MIN, 1000.)
-      .containsEntry(MAX, 9000.)
-      .containsEntry(MEDIAN, 2000.);
+      .containsEntry(new AggregationDto(AVERAGE), 4000.)
+      .containsEntry(new AggregationDto(MIN), 1000.)
+      .containsEntry(new AggregationDto(MAX), 9000.)
+      .containsEntry(new AggregationDto(MEDIAN), 2000.)
+      .containsEntry(new AggregationDto(PERCENTILE, 99.), 9000.)
+      .containsEntry(new AggregationDto(PERCENTILE, 95.), 9000.)
+      .containsEntry(new AggregationDto(PERCENTILE, 75.), 7250.)
+      .containsEntry(new AggregationDto(PERCENTILE, 25.), 1250.);
   }
 
   private ProcessReportDataDto createReport(String processKey, String definitionVersion) {

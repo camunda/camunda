@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -37,6 +38,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
@@ -188,7 +190,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
     assertThat(result.getMeasures()).hasSize(1)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(Tuple.tuple(
-        AVERAGE,
+        new AggregationDto(AVERAGE),
         List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
@@ -234,7 +236,10 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
 
     // when
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
-    reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
+    reportData.getConfiguration().setAggregationTypes(
+      new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
+      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+    );
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
@@ -242,10 +247,10 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(3);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3);
-    assertThat(result.getMeasures()).hasSize(5)
+    assertThat(result.getMeasures()).hasSize(6)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(MAX, List.of(
+        Tuple.tuple(new AggregationDto(MAX), List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
             new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
@@ -257,7 +262,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           )
         )),
-        Tuple.tuple(MIN, List.of(
+        Tuple.tuple(new AggregationDto(MIN), List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
             new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
@@ -269,7 +274,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           )
         )),
-        Tuple.tuple(AVERAGE, List.of(
+        Tuple.tuple(new AggregationDto(AVERAGE), List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
             new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
@@ -281,7 +286,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           )
         )),
-        Tuple.tuple(SUM, List.of(
+        Tuple.tuple(new AggregationDto(SUM), List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
             new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
@@ -293,8 +298,21 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           )
         )),
-        // We cannot support the median aggregation type with this distribution as the information is lost on merging
-        Tuple.tuple(MEDIAN, List.of(
+        // We cannot support the median and percentile aggregation types with this distribution as the information is
+        // lost on merging
+        Tuple.tuple(new AggregationDto(MEDIAN), List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          )
+        )),
+        Tuple.tuple(new AggregationDto(PERCENTILE, 99.), List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
             new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),

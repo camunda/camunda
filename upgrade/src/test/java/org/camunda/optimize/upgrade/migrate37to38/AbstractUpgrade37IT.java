@@ -6,10 +6,10 @@
 package org.camunda.optimize.upgrade.migrate37to38;
 
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate37to38.indices.PositionBasedImportIndexOld;
+import org.camunda.optimize.upgrade.migrate37to38.indices.SingleDecisionReportIndexOld;
+import org.camunda.optimize.upgrade.migrate37to38.indices.SingleProcessReportIndexOld;
 import org.camunda.optimize.upgrade.migrate37to38.indices.TimestampBasedImportIndexOld;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
@@ -25,10 +25,10 @@ public abstract class AbstractUpgrade37IT extends AbstractUpgradeIT {
   protected static final PositionBasedImportIndexOld POSITION_BASED_INDEX = new PositionBasedImportIndexOld();
   protected static final TimestampBasedImportIndexOld TIMESTAMP_BASED_IMPORT_INDEX =
     new TimestampBasedImportIndexOld();
-  protected static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX =
-    new SingleProcessReportIndex();
-  protected static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX =
-    new SingleDecisionReportIndex();
+  protected static final SingleProcessReportIndexOld SINGLE_PROCESS_REPORT_INDEX =
+    new SingleProcessReportIndexOld();
+  protected static final SingleDecisionReportIndexOld SINGLE_DECISION_REPORT_INDEX =
+    new SingleDecisionReportIndexOld();
   protected static final DecisionInstanceIndex FIRST_DECISION_INSTANCE_INDEX =
     new DecisionInstanceIndex("firstprocess");
   protected static final DecisionInstanceIndex SECOND_DECISION_INSTANCE_INDEX =

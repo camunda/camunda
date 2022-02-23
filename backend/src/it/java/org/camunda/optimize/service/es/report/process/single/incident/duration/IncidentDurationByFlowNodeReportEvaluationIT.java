@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.incident.duration;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -42,6 +42,11 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
@@ -118,7 +123,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 1000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -151,7 +156,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -184,7 +189,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -217,7 +222,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -253,7 +258,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(3L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1) // uses the average by default
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -295,7 +300,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(END_EVENT_ID_1, null, END_EVENT_NAME_1)
         .groupedByContains(END_EVENT_ID_2, null, END_EVENT_NAME_2)
@@ -337,7 +342,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 55_000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -374,7 +379,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -409,7 +414,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
         .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
@@ -445,7 +450,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
         .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
@@ -480,7 +485,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -513,7 +518,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -562,7 +567,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 1000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -595,7 +600,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then the result has two process instances
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -614,7 +619,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -658,7 +663,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(3L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null, END_EVENT_NAME)
       .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
       .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -703,11 +708,11 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L);
     Optional.ofNullable(firstExpectedResult)
-      .ifPresent(result -> asserter.measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .ifPresent(result -> asserter.measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1)
         .add());
     Optional.ofNullable(secondExpectedResult)
-      .ifPresent(result -> asserter.measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .ifPresent(result -> asserter.measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(SERVICE_TASK_ID_2, result, SERVICE_TASK_NAME_2)
         .add());
     asserter.doAssert(resultDto);
@@ -766,7 +771,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
       .groupedByContains(END_EVENT, null)
       .groupedByContains(START_EVENT, null)
       .doAssert(resultDto);
@@ -797,7 +802,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
@@ -808,17 +813,23 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private Stream<Arguments> aggregationTypes() {
     // @formatter:off
     return Stream.of(
-      Arguments.of(AggregationType.MIN, 1000.),
-      Arguments.of(AggregationType.MAX, 9000.),
-      Arguments.of(AggregationType.AVERAGE, 4000.),
-      Arguments.of(AggregationType.MEDIAN, 2000.)
+      Arguments.of(new AggregationDto(MIN), 1000.),
+      Arguments.of(new AggregationDto(MAX), 9000.),
+      Arguments.of(new AggregationDto(AVERAGE), 4000.),
+      Arguments.of(new AggregationDto(MEDIAN), 2000.),
+      Arguments.of(new AggregationDto(PERCENTILE, 99.), 9000.),
+      Arguments.of(new AggregationDto(PERCENTILE, 95.), 9000.),
+      Arguments.of(new AggregationDto(PERCENTILE, 75.), 7250.),
+      Arguments.of(new AggregationDto(PERCENTILE, 25.), 1250.),
+      Arguments.of(new AggregationDto(PERCENTILE, 100.), 9000.),
+      Arguments.of(new AggregationDto(PERCENTILE, 0.), 1000.)
     );
     // @formatter:on
   }
 
   @ParameterizedTest
   @MethodSource("aggregationTypes")
-  public void aggregationTypes(final AggregationType aggregationType, final double expectedResult) {
+  public void aggregationTypes(final AggregationDto aggregationType, final double expectedResult) {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
@@ -839,8 +850,8 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.getConfiguration().setAggregationTypes(aggregationType);
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
-      .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto =
+      reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -880,7 +891,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(START_EVENT_ID, null, START_EVENT_NAME)
         .groupedByContains(SPLITTING_GATEWAY_ID, null)
         .groupedByContains(SERVICE_TASK_ID_2, 2000., SERVICE_TASK_NAME_2)
@@ -917,7 +928,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
         .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)

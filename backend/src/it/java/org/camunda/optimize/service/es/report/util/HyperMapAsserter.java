@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.util;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -42,7 +43,12 @@ public class HyperMapAsserter {
   }
 
   public MeasureAdder measure(final ViewProperty viewProperty) {
-    return measure(viewProperty, null);
+    return new MeasureAdder(this, viewProperty, null, null);
+  }
+
+  public MeasureAdder measure(final ViewProperty viewProperty,
+                              final AggregationDto aggregationType) {
+    return measure(viewProperty, aggregationType, null);
   }
 
   public MeasureAdder measure(final ViewProperty viewProperty,
@@ -52,6 +58,12 @@ public class HyperMapAsserter {
 
   public MeasureAdder measure(final ViewProperty viewProperty,
                               final AggregationType aggregationType,
+                              final UserTaskDurationTime userTaskDurationTime) {
+    return new MeasureAdder(this, viewProperty, new AggregationDto(aggregationType), userTaskDurationTime);
+  }
+
+  public MeasureAdder measure(final ViewProperty viewProperty,
+                              final AggregationDto aggregationType,
                               final UserTaskDurationTime userTaskDurationTime) {
     return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
   }
@@ -169,7 +181,7 @@ public class HyperMapAsserter {
 
     public MeasureAdder(final HyperMapAsserter hyperMapAsserter,
                         final ViewProperty viewProperty,
-                        final AggregationType aggregationType,
+                        final AggregationDto aggregationType,
                         final UserTaskDurationTime userTaskDurationTime) {
       this.asserter = hyperMapAsserter;
       this.measure = HyperMapMeasureResponseDto.builder()

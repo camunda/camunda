@@ -12,6 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
@@ -118,7 +119,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+      .measure(ViewProperty.DURATION, new AggregationDto(AggregationType.AVERAGE), getUserTaskDurationTime())
         .groupByContains(localDateTimeToString(startOfToday))
           .distributedByContains(DEFAULT_USERNAME, expectedDuration, DEFAULT_FULLNAME)
       .doAssert(result);

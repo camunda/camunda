@@ -18,6 +18,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FRE
 
 public class UserTaskFrequencyByUserTaskIdleDurationReportEvaluationIT
   extends ModelElementFrequencyByModelElementDurationIT {
+
   @Override
   protected ProcessInstanceEngineDto startProcessInstanceCompleteTaskAndModifyDuration(
     final String definitionId,

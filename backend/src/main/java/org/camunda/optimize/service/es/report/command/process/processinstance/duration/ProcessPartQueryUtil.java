@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
@@ -46,7 +47,8 @@ public class ProcessPartQueryUtil {
     return ((Nested) aggs.get(NESTED_AGGREGATION)).getAggregations();
   }
 
-  public static Double getProcessPartAggregationResult(final Aggregations aggs, final AggregationType aggregationType) {
+  public static Double getProcessPartAggregationResult(final Aggregations aggs,
+                                                       final AggregationDto aggregationType) {
     Nested nested = aggs.get(NESTED_AGGREGATION);
     ScriptedMetric scriptedMetric = nested.getAggregations().get(getScriptAggregationName(aggregationType));
 
@@ -76,7 +78,7 @@ public class ProcessPartQueryUtil {
 
   public static AggregationBuilder createProcessPartAggregation(final String startFlowNodeId,
                                                                 final String endFlowNodeId,
-                                                                final List<AggregationType> aggregationTypes) {
+                                                                final List<AggregationDto> aggregationTypes) {
     final NestedAggregationBuilder nestedFlowNodeAggregation = nested(
       NESTED_AGGREGATION,
       ProcessInstanceIndex.FLOW_NODE_INSTANCES
@@ -85,7 +87,7 @@ public class ProcessPartQueryUtil {
       final Map<String, Object> params = new HashMap<>();
       params.put("startFlowNodeId", startFlowNodeId);
       params.put("endFlowNodeId", endFlowNodeId);
-      params.put("aggregationType", aggregationType.getId());
+      params.put("aggregationType", aggregationType.getType().getId());
 
       final ScriptedMetricAggregationBuilder findStartAndEndDatesForEvents =
         scriptedMetric(getScriptAggregationName(aggregationType))
@@ -100,8 +102,12 @@ public class ProcessPartQueryUtil {
     return nestedFlowNodeAggregation;
   }
 
-  private static String getScriptAggregationName(final AggregationType aggregationType) {
-    return String.join("_", SCRIPT_AGGREGATION, aggregationType.getId());
+  private static String getScriptAggregationName(final AggregationDto aggregationType) {
+    final String aggName = aggregationType.getType() == AggregationType.PERCENTILE
+      ? aggregationType.getType().getId() + String.valueOf(aggregationType.getValue())
+      .replace(".", "_")
+      : aggregationType.getType().getId();
+    return String.join("_", SCRIPT_AGGREGATION, aggName);
   }
 
   private static Script createInitScript() {
@@ -210,7 +216,7 @@ public class ProcessPartQueryUtil {
       "} else if (params.aggregationType == 'sum') {" +
         "return sum;" +
       "} else {" +
-        "Debug.explain('Aggregation type ' + params.aggregationType + 'is not supported!');" +
+        "Debug.explain('Aggregation type ' + params.aggregationType + ' is not supported!');" +
       "}"
     );
     // @formatter:on

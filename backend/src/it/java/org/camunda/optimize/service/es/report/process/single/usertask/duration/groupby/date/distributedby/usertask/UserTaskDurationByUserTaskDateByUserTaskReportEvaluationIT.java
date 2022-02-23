@@ -9,11 +9,12 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -71,6 +72,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -247,7 +249,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L);
     result.getMeasures().forEach(measureResult -> {
-      final AggregationType aggType = measureResult.getAggregationType();
+      final AggregationDto aggType = measureResult.getAggregationType();
       // @formatter:off
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())

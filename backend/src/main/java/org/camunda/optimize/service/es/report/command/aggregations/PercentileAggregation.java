@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.aggregations;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil;
@@ -15,27 +17,31 @@ import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuil
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
 
+@AllArgsConstructor
+@NoArgsConstructor
+public class PercentileAggregation extends AggregationStrategy<PercentilesAggregationBuilder> {
 
-public class MedianAggregation extends AggregationStrategy<PercentilesAggregationBuilder> {
+  private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
 
-  private static final String MEDIAN_AGGREGATION = "medianAggregation";
+  private Double percentileValue;
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggregations) {
-    final ParsedTDigestPercentiles percentiles = aggregations.get(createAggregationName(
-      customIdentifier, MEDIAN_AGGREGATION
+  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
+    final ParsedTDigestPercentiles percentiles = aggs.get(createAggregationName(
+      customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION
     ));
-    return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(percentiles, 50.);
+    return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(percentiles, percentileValue);
   }
 
   @Override
   public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder> createAggregationBuilderForAggregation(final String customIdentifier) {
-    return percentiles(createAggregationName(customIdentifier, MEDIAN_AGGREGATION)).percentiles(50);
+    return percentiles(createAggregationName(customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
+      .percentiles(percentileValue);
   }
 
   @Override
   public AggregationDto getAggregationType() {
-    return new AggregationDto(AggregationType.MEDIAN);
+    return new AggregationDto(AggregationType.PERCENTILE, percentileValue);
   }
 
 }

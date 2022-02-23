@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.incident.duration;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -472,7 +473,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    reportData.getConfiguration().setAggregationTypes(aggregationType);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(aggregationType));
     final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then

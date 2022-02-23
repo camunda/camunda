@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregatio
 import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
+import org.camunda.optimize.service.es.report.command.aggregations.PercentileAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.SumAggregation;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewMeasure;
@@ -23,13 +24,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class ProcessViewMultiAggregation extends ProcessViewPart {
-  private static final Map<AggregationType, AggregationStrategy> AGGREGATION_STRATEGIES =
-    ImmutableMap.<AggregationType, AggregationStrategy>builder()
+
+  private static final Map<AggregationType, AggregationStrategy<?>> AGGREGATION_STRATEGIES =
+    ImmutableMap.<AggregationType, AggregationStrategy<?>>builder()
       .put(AggregationType.MIN, new MinAggregation())
       .put(AggregationType.MAX, new MaxAggregation())
       .put(AggregationType.AVERAGE, new AvgAggregation())
       .put(AggregationType.MEDIAN, new MedianAggregation())
       .put(AggregationType.SUM, new SumAggregation())
+      .put(AggregationType.PERCENTILE, new PercentileAggregation())
       .build();
 
   @Override
@@ -42,9 +45,15 @@ public abstract class ProcessViewMultiAggregation extends ProcessViewPart {
     return viewResultBuilder.build();
   }
 
-  public List<AggregationStrategy> getAggregationStrategies(final ProcessReportDataDto definitionData) {
+  public List<AggregationStrategy<?>> getAggregationStrategies(final ProcessReportDataDto definitionData) {
     return definitionData.getConfiguration().getAggregationTypes().stream()
-      .map(AGGREGATION_STRATEGIES::get)
+      .map(aggregationTypeDto -> {
+        final AggregationStrategy<?> aggregationStrategy = AGGREGATION_STRATEGIES.get(aggregationTypeDto.getType());
+        if (aggregationStrategy instanceof PercentileAggregation) {
+          return new PercentileAggregation(aggregationTypeDto.getValue());
+        }
+        return aggregationStrategy;
+      })
       .collect(Collectors.toList());
   }
 

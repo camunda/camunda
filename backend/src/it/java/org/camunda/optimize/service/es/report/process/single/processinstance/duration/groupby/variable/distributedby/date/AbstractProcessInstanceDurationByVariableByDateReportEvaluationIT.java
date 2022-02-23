@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.du
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.*;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -81,7 +82,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupByContains("a string")
           .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
       .doAssert(result);
@@ -120,7 +121,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupByContains("a string")
           .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
       .doAssert(result);
@@ -149,7 +150,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, AVERAGE)
         .groupByContains("a string")
           .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.)
       .doAssert(result);
@@ -179,7 +180,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, AVERAGE)
         .groupByContains("a string")
           .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
       .doAssert(result);
@@ -218,7 +219,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, AVERAGE)
         .groupByContains(localDateTimeToString(truncatedVariableDate))
           .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
       .doAssert(result);
@@ -251,7 +252,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, AVERAGE)
         .groupByContains("10.00")
           .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
       .doAssert(result);
@@ -294,7 +295,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, AVERAGE)
         .groupByContains("1.00")
           .distributedByContains(localDateTimeToString(startOfToday), 1000.)
           .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
@@ -448,7 +449,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, AVERAGE)
         .groupByContains("a string")
           .distributedByContains(localDateTimeToString(startOfReferenceDate.minusDays(2)), 9000.0)
           .distributedByContains(localDateTimeToString(startOfReferenceDate.minusDays(1)), null)

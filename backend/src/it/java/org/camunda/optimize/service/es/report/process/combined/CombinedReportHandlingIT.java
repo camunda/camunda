@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
@@ -71,6 +71,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
@@ -310,7 +312,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
           .setProcessDefinitionVersion("1")
           .build()
       );
-    multiAggregation.getData().getConfiguration().setAggregationTypes(AggregationType.MIN, AggregationType.MAX);
+    multiAggregation.getData()
+      .getConfiguration()
+      .setAggregationTypes(new AggregationDto(MIN), new AggregationDto(MAX));
 
     // report with multiple userTaskDurationTimes is not supported
     SingleProcessReportDefinitionRequestDto multiUserTaskDuration =
@@ -1343,7 +1347,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // when
     final String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
     final SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
-    userTaskDurationByTaskReportData.getConfiguration().setAggregationTypes(AggregationType.MIN, AggregationType.MAX);
+    userTaskDurationByTaskReportData.getConfiguration()
+      .setAggregationTypes(new AggregationDto(MIN), new AggregationDto(MAX));
     report.setData(userTaskDurationByTaskReportData);
     updateReport(singleReportIdToUpdate, report, true);
     final List<ReportDefinitionDto> reports = getAllPrivateReports();

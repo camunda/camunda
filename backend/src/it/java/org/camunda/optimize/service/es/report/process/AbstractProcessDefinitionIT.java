@@ -134,10 +134,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     );
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessOnTenant(final String key,
-                                                                                 final String tenantId) {
+  private void deployAndStartSimpleUserTaskProcessOnTenant(final String key,
+                                                           final String tenantId) {
     final BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram(key);
-    return engineIntegrationExtension.deployAndStartProcess(processModel, tenantId);
+    engineIntegrationExtension.deployAndStartProcess(processModel, tenantId);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
@@ -200,7 +200,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return deploySimpleServiceTaskProcessAndGetDefinition(TEST_PROCESS);
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
     BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }

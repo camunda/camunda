@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -288,7 +289,7 @@ public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends
 
     // when
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
-    reportData.getConfiguration().setAggregationTypes(AVERAGE, MAX);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE), new AggregationDto(MAX));
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
@@ -300,7 +301,7 @@ public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
         Tuple.tuple(
-          AVERAGE, List.of(
+          new AggregationDto(AVERAGE), List.of(
             createHyperMapResult(
               FIRST_CANDIDATE_GROUP_ID,
               FIRST_CANDIDATE_GROUP_NAME,
@@ -316,7 +317,7 @@ public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends
           )
         ),
         Tuple.tuple(
-          MAX, List.of(
+          new AggregationDto(MAX), List.of(
             createHyperMapResult(
               FIRST_CANDIDATE_GROUP_ID,
               FIRST_CANDIDATE_GROUP_NAME,

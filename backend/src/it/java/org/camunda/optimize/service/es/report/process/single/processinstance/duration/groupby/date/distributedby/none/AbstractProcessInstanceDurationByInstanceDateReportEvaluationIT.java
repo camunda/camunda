@@ -10,7 +10,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -59,6 +59,7 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluationIT
@@ -716,10 +717,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
-  private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
-  }
-
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -737,9 +734,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .extracting(MeasureResponseDto::getAggregationType)
       .containsExactly(getSupportedAggregationTypes());
 
-    final Map<AggregationType, List<MapResultEntryDto>> resultByAggregationType =
+    final Map<AggregationDto, List<MapResultEntryDto>> resultByAggregationType =
       evaluationResponse.getResult().getMeasures().stream()
-      .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
+        .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
 
     Arrays.stream(getSupportedAggregationTypes()).forEach(aggregationType -> {
       assertThat(resultByAggregationType.get(aggregationType).get(0).getValue())
