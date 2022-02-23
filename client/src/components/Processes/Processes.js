@@ -12,7 +12,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import TimeGoalsModal from './TimeGoalsModal';
-import {loadProcesses, saveGoals} from './service';
+import {loadProcesses, updateGoals} from './service';
 
 import './Processes.scss';
 
@@ -62,7 +62,7 @@ export function Processes({mightFail}) {
             <Button
               className="setGoalBtn"
               onClick={() => {
-                setOpenProcess({processDefinitionKey, timeGoals});
+                setOpenProcess({processDefinitionKey, processName, timeGoals});
               }}
             >
               {timeGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
@@ -72,16 +72,16 @@ export function Processes({mightFail}) {
       />
       {openProcess && (
         <TimeGoalsModal
-          processDefinitionKey={openProcess.processDefinitionKey}
-          initialGoals={openProcess.timeGoals}
+          process={openProcess}
           onClose={() => setOpenProcess()}
           onConfirm={(goals) => {
             mightFail(
-              saveGoals(openProcess.processDefinitionKey, goals),
+              updateGoals(openProcess.processDefinitionKey, goals),
               setOpenProcess,
               showError
             );
           }}
+          onRemove={loadProcessesList}
         />
       )}
     </div>

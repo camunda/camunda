@@ -10,10 +10,13 @@ import {shallow} from 'enzyme';
 import {EntityList} from 'components';
 
 import {Processes} from './Processes';
-import {loadProcesses, saveGoals} from './service';
+import {loadProcesses, updateGoals} from './service';
 import TimeGoalsModal from './TimeGoalsModal';
 
-jest.mock('./service', () => ({loadProcesses: jest.fn(), saveGoals: jest.fn()}));
+jest.mock('./service', () => ({
+  loadProcesses: jest.fn(),
+  updateGoals: jest.fn(),
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -54,7 +57,7 @@ it('should load processes with sort parameters', () => {
   expect(node.find('EntityList').prop('sorting')).toEqual({key: 'lastModifier', order: 'desc'});
 });
 
-it('should invoke saveGoals when confirming the TimeGoalsModal', () => {
+it('should invoke updateGoals when confirming the TimeGoalsModal', () => {
   const node = shallow(<Processes {...props} />);
 
   runLastEffect();
@@ -62,7 +65,7 @@ it('should invoke saveGoals when confirming the TimeGoalsModal', () => {
   node.find(EntityList).prop('data')[0].meta[1].props.onClick();
   node.find(TimeGoalsModal).simulate('confirm', [{type: 'targetDuration'}]);
 
-  expect(saveGoals).toHaveBeenCalledWith('defKey', [{type: 'targetDuration'}]);
+  expect(updateGoals).toHaveBeenCalledWith('defKey', [{type: 'targetDuration'}]);
   expect(node.find(TimeGoalsModal)).not.toExist();
 });
 
@@ -75,4 +78,15 @@ it('should close the TimeGoalsModal when onClose prop is called', () => {
   node.find(TimeGoalsModal).simulate('close');
 
   expect(node.find(TimeGoalsModal)).not.toExist();
+});
+
+it('should reload processes when onRemove is called on the timeGoalsModal', async () => {
+  const node = shallow(<Processes {...props} />);
+
+  runLastEffect();
+
+  node.find(EntityList).prop('data')[0].meta[1].props.onClick();
+  node.find(TimeGoalsModal).simulate('remove');
+
+  expect(loadProcesses).toHaveBeenCalled();
 });

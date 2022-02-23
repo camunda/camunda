@@ -170,6 +170,8 @@
     "endedThisMonth": "die im aktuellen Monat beendet wurden",
     "setGoal": "Ziel setzen",
     "editGoal": "Ziel bearbeiten",
+    "goals": "Ziele",
+    "goalRemoved": "Ziele aus dem '{processName}' Prozess wurden entfernt",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
@@ -1243,7 +1245,8 @@
         "process": "Prozess",
         "processEvents": "Prozessevents",
         "ingestedEvents": "Events",
-        "items": "Elemente"
+        "items": "Elemente",
+        "goals": "Ziele"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

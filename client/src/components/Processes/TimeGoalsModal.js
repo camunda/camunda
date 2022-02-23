@@ -15,28 +15,24 @@ import {
   Select,
   DurationChart,
   LoadingIndicator,
+  Deleter,
 } from 'components';
 import {evaluateReport, formatters} from 'services';
 import {t} from 'translation';
 import {newReport} from 'config';
 import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+import {addNotification, showError} from 'notifications';
 
-import {loadTenants} from './service';
+import {loadTenants, updateGoals} from './service';
 
 import './TimeGoalsModal.scss';
 
-export function TimeGoalsModal({
-  onClose,
-  onConfirm,
-  mightFail,
-  processDefinitionKey,
-  initialGoals,
-}) {
+export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process}) {
+  const isEditing = process.timeGoals?.length > 0;
   const [data, setData] = useState();
   const [goals, setGoals] = useState(
-    initialGoals?.length > 0
-      ? initialGoals
+    isEditing
+      ? process.timeGoals
       : [
           {
             type: 'targetDuration',
@@ -54,20 +50,21 @@ export function TimeGoalsModal({
           },
         ]
   );
+  const [deleting, setDeleting] = useState();
 
   useEffect(() => {
     (async () => {
-      const tenantData = await loadTenants(processDefinitionKey);
+      const tenantData = await loadTenants(process.processDefinitionKey);
       mightFail(
-        evaluateReport(getReportPayload(processDefinitionKey, tenantData), []),
+        evaluateReport(getReportPayload(process.processDefinitionKey, tenantData), []),
         ({result}) => setData(result),
         showError
       );
     })();
-  }, [mightFail, processDefinitionKey]);
+  }, [mightFail, process]);
 
   useEffect(() => {
-    if (data?.instanceCount > 0 && (!initialGoals || !initialGoals.length)) {
+    if (data?.instanceCount > 0 && !isEditing) {
       const targetDuration = findPercentageDuration(data, 0.8);
       const slaDuration = findPercentageDuration(data, 0.99);
 
@@ -76,7 +73,7 @@ export function TimeGoalsModal({
       updateGoalValue(1, 'value', slaDuration.value);
       updateGoalValue(1, 'unit', slaDuration.unit);
     }
-  }, [data, initialGoals]);
+  }, [data, isEditing]);
 
   function updateGoalValue(idx, prop, value) {
     setGoals((currentGoals) => update(currentGoals, {[idx]: {[prop]: {$set: value}}}));
@@ -142,15 +139,35 @@ export function TimeGoalsModal({
         ) : (
           <LoadingIndicator />
         )}
+        <Deleter
+          type="goals"
+          entity={deleting}
+          onClose={() => {
+            setDeleting();
+            onRemove();
+          }}
+          getName={({processName}) => processName}
+          deleteEntity={async () => {
+            await updateGoals(deleting.processDefinitionKey, []);
+            addNotification({
+              type: 'success',
+              text: t('processes.goalRemoved', {processName: deleting.processName}),
+            });
+            onClose();
+          }}
+        />
       </Modal.Content>
       <Modal.Actions>
+        {isEditing && (
+          <Button link className="deleteButton" onClick={() => setDeleting(process)}>
+            {t('common.deleteEntity', {entity: t('processes.goals')})}
+          </Button>
+        )}
         <Button main onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button main primary onClick={() => onConfirm(goals)}>
-          {initialGoals?.length > 0
-            ? t('processes.timeGoals.updateGoals')
-            : t('processes.timeGoals.saveGoals')}
+          {isEditing ? t('processes.timeGoals.updateGoals') : t('processes.timeGoals.updateGoals')}
         </Button>
       </Modal.Actions>
     </Modal>

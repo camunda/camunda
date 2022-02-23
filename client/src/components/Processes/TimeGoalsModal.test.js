@@ -7,13 +7,17 @@
 import React, {runAllEffects, runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {Input, Select} from 'components';
+import {Deleter, Input, Select} from 'components';
 import {evaluateReport} from 'services';
 
+import {updateGoals} from './service';
 import {TimeGoalsModal} from './TimeGoalsModal';
+
+jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([{tenants: [{id: null}, {id: 'engineering'}]}]),
+  updateGoals: jest.fn(),
 }));
 
 jest.mock('services', () => ({
@@ -27,27 +31,31 @@ beforeEach(() => {
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  process: {processDefinitionKey: 'defKey', processName: 'defName'},
 };
 
-const goals = [
-  {
-    type: 'targetDuration',
-    percentile: '75',
-    value: '1',
-    unit: 'weeks',
-    visible: true,
-  },
-  {
-    type: 'slaDuration',
-    percentile: '99',
-    value: '5',
-    unit: 'days',
-    visible: true,
-  },
-];
+const processWithGoals = {
+  ...props.process,
+  timeGoals: [
+    {
+      type: 'targetDuration',
+      percentile: '75',
+      value: '1',
+      unit: 'weeks',
+      visible: true,
+    },
+    {
+      type: 'slaDuration',
+      percentile: '99',
+      value: '5',
+      unit: 'days',
+      visible: true,
+    },
+  ],
+};
 
 it('should load initialGoals', () => {
-  const node = shallow(<TimeGoalsModal {...props} initialGoals={goals} />);
+  const node = shallow(<TimeGoalsModal {...props} process={processWithGoals} />);
 
   expect(node.find(Select).at(0).prop('value')).toBe('75');
   expect(node.find(Input).at(0).prop('value')).toBe('1');
@@ -58,12 +66,12 @@ it('should load initialGoals', () => {
 it('should evaluate and pass report result to chart component', async () => {
   const data = [{key: '22.0', value: '10'}];
   evaluateReport.mockReturnValueOnce({result: {instanceCount: 22, measures: [{data}]}});
-  const node = shallow(<TimeGoalsModal {...props} processDefinitionKey="DefKey" />);
+  const node = shallow(<TimeGoalsModal {...props} />);
 
   await runAllEffects();
 
   expect(evaluateReport.mock.calls[0][0].data.definitions).toEqual([
-    {key: 'DefKey', versions: ['all'], tenantIds: [null, 'engineering']},
+    {key: 'defKey', versions: ['all'], tenantIds: [null, 'engineering']},
   ]);
 
   expect(node.find('DurationChart').prop('data')).toEqual(data);
@@ -121,4 +129,27 @@ it('should calculate default duration values based on percentiles', async () => 
 
   expect(node.find('.singleGoal').at(0).find(Input).prop('value')).toBe('40');
   expect(node.find('.singleGoal').at(1).find(Input).prop('value')).toBe('50');
+});
+
+it('should invoke removeGoals when confirming the delete modal', async () => {
+  const spy = jest.fn();
+  const removeSpy = jest.fn();
+  const node = shallow(
+    <TimeGoalsModal {...props} process={processWithGoals} onClose={spy} onRemove={removeSpy} />
+  );
+
+  await runAllEffects();
+
+  node.find('.deleteButton').simulate('click');
+
+  expect(node.find(Deleter).prop('entity')).toEqual(processWithGoals);
+
+  await node.find(Deleter).prop('deleteEntity')();
+
+  expect(updateGoals).toHaveBeenCalledWith('defKey', []);
+  expect(spy).toHaveBeenCalled();
+
+  node.find(Deleter).simulate('close');
+  expect(node.find(Deleter).prop('entity')).toEqual();
+  expect(removeSpy).toHaveBeenCalled();
 });

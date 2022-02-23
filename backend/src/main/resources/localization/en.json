@@ -170,6 +170,8 @@
     "endedThisMonth": "ended in the current month",
     "setGoal": "Set Goal",
     "editGoal": "Edit Goal",
+    "goals": "Goals",
+    "goalRemoved": "Goals removed from '{processName}' process",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
@@ -1243,7 +1245,8 @@
         "process": "Process",
         "processEvents": "process events",
         "ingestedEvents": "Events",
-        "items": "Items"
+        "items": "Items",
+        "goals": "Goals"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",
