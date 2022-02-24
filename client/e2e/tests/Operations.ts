@@ -39,7 +39,7 @@ test('infinite scrolling', async (t) => {
   await t.expect(screen.getAllByTestId('operations-entry').count).eql(40);
 });
 
-test('Retry and Cancel single instance ', async (t) => {
+test.skip('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
 
