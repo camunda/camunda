@@ -6,17 +6,23 @@
 
 import styled from 'styled-components';
 
-const Container = styled.main`
-  display: flex;
-  width: 100%;
+const CollapsedPanel = styled.div`
+  min-width: 56px;
+`;
+
+const ExpandedPanel = styled.div`
+  min-width: 320px;
   height: 100%;
 `;
 
-const RightContainer = styled.div`
+const Header = styled.header`
   width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-rows: 1fr 1fr;
+  height: 38px;
 `;
 
-export {Container, RightContainer};
+const Content = styled.div`
+  width: 100%;
+  height: calc(100% - 38px);
+`;
+
+export {CollapsedPanel, ExpandedPanel, Header, Content};

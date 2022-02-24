@@ -32,7 +32,7 @@ import {Header} from './Header';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 
-const InstancesListPanel: React.FC = observer(() => {
+const InstancesTable: React.FC = observer(() => {
   const {
     state: {status, decisionInstances, filteredInstancesCount},
     areDecisionInstancesEmpty,
@@ -174,4 +174,4 @@ const InstancesListPanel: React.FC = observer(() => {
   );
 });
 
-export {InstancesListPanel};
+export {InstancesTable};

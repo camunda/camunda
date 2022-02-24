@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const FiltersPanel: React.FC = () => {
-  return <div>Filters</div>;
+const DecisionDiagram: React.FC = () => {
+  return <section>Decision Table</section>;
 };
 
-export {FiltersPanel};
+export {DecisionDiagram};

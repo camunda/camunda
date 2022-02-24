@@ -4,8 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const DecisionTablePanel: React.FC = () => {
-  return <div>Decision Table</div>;
+import {CollapsablePanel} from './CollapsablePanel';
+
+const Filters: React.FC = () => {
+  return <CollapsablePanel header="Filters">filters content</CollapsablePanel>;
 };
 
-export {DecisionTablePanel};
+export {Filters};

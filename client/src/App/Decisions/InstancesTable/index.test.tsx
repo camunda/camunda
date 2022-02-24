@@ -13,7 +13,7 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {InstancesListPanel} from './';
+import {InstancesTable} from './index';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {Routes, Route, MemoryRouter} from 'react-router-dom';
@@ -39,7 +39,7 @@ const createWrapper = (initialPath: string = '/decisions') => {
   return Wrapper;
 };
 
-describe('Decisions List', () => {
+describe('<InstancesTable />', () => {
   afterEach(() => {
     decisionInstancesStore.reset();
   });
@@ -51,7 +51,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper()});
+    render(<InstancesTable />, {wrapper: createWrapper()});
 
     expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
 
@@ -65,7 +65,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper()});
+    render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -80,7 +80,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper()});
+    render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -97,7 +97,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper()});
+    render(<InstancesTable />, {wrapper: createWrapper()});
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -161,7 +161,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper('/decisions')});
+    render(<InstancesTable />, {wrapper: createWrapper('/decisions')});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -198,7 +198,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper('/decisions')});
+    render(<InstancesTable />, {wrapper: createWrapper('/decisions')});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -222,7 +222,7 @@ describe('Decisions List', () => {
       )
     );
 
-    render(<InstancesListPanel />, {wrapper: createWrapper()});
+    render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 

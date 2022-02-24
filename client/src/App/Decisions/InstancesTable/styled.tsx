@@ -9,7 +9,7 @@ import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 
-const Container = styled.div`
+const Container = styled.section`
   ${({theme}) => {
     const colors = theme.colors.decisionsList;
     return css`
