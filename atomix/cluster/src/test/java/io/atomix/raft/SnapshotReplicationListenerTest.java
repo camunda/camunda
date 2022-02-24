@@ -17,6 +17,7 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -58,5 +59,17 @@ public class SnapshotReplicationListenerTest {
     verify(snapshotReplicationListener, timeout(1_000).times(1)).onSnapshotReplicationStarted();
     verify(snapshotReplicationListener, timeout(1_000).times(1))
         .onSnapshotReplicationCompleted(follower.getTerm());
+  }
+
+  @Test
+  public void shouldNotifyOnRegisteringListener() {
+    // given
+    final var snapshotReplicationListener = mock(SnapshotReplicationListener.class);
+    final var follower = raftRule.getFollower().orElseThrow();
+    // then
+    follower.getContext().notifySnapshotReplicationStarted();
+    verify(snapshotReplicationListener, never()).onSnapshotReplicationStarted();
+    follower.getContext().addSnapshotReplicationListener(snapshotReplicationListener);
+    verify(snapshotReplicationListener).onSnapshotReplicationStarted();
   }
 }
