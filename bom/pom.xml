@@ -104,7 +104,15 @@
         <version>${plugin.version.flatten}</version>
         <configuration combine.children="append">
           <flattenMode>bom</flattenMode>
-          <outputDirectory>${project.build.directory}</outputDirectory>
+          <!--
+            do not change the outputDirectory; it must remain the same one as the relative project
+            directory, as many plugins expect to resolve the project directory from the current POM
+            file's parent, and any plugin which would run post flatten would resolve the project
+            directory to the wrong one. For example, if you configure it to
+            ${project.build.directory}, then any plugin after will think that the project's
+            directory is not /parent/ but /parent/target, which may affect the execution of plugins
+            (e.g. resource file resolution)
+            -->
         </configuration>
         <executions>
           <execution>
@@ -112,6 +120,13 @@
             <phase>process-resources</phase>
             <goals>
               <goal>flatten</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>clean</goal>
             </goals>
           </execution>
         </executions>
