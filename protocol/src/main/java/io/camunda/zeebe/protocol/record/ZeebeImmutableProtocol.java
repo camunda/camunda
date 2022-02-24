@@ -26,7 +26,7 @@ import org.immutables.annotate.InjectAnnotation.Where;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ValidationMethod;
 
-@Target({ElementType.PACKAGE, ElementType.TYPE})
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
 @Value.Style(
     // standardize to mimic Java beans
@@ -56,6 +56,7 @@ import org.immutables.value.Value.Style.ValidationMethod;
     // for example
     init = "with*")
 @InjectAnnotation(type = ZeebeImmutableProtocolType.class, target = Where.IMMUTABLE_TYPE)
+@Documented
 public @interface ZeebeImmutableProtocol {
 
   /**
