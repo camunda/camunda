@@ -5,7 +5,7 @@
  */
 
 import {Filters} from './Filters';
-import {DecisionDiagram} from './DecisionDiagram';
+import {Decision} from './Decision';
 import {InstancesTable} from './InstancesTable';
 import {Container, RightContainer} from './styled';
 
@@ -14,7 +14,7 @@ const Decisions: React.FC = () => {
     <Container>
       <Filters />
       <RightContainer>
-        <DecisionDiagram />
+        <Decision />
         <InstancesTable />
       </RightContainer>
     </Container>

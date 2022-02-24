@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const DecisionDiagram: React.FC = () => {
+const Decision: React.FC = () => {
   return <section>Decision Table</section>;
 };
 
-export {DecisionDiagram};
+export {Decision};
