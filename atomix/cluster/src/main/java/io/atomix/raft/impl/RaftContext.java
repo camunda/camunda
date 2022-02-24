@@ -469,12 +469,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void addSnapshotReplicationListener(
       final SnapshotReplicationListener snapshotReplicationListener) {
-    snapshotReplicationListeners.add(snapshotReplicationListener);
-    if (ongoingSnapshotReplication) {
-      // Notify listener immediately if it registered during an ongoing replication.
-      // This is to prevent missing necessary state transitions.
-      snapshotReplicationListener.onSnapshotReplicationStarted();
-    }
+    threadContext.execute(
+        () -> {
+          snapshotReplicationListeners.add(snapshotReplicationListener);
+          if (ongoingSnapshotReplication) {
+            // Notify listener immediately if it registered during an ongoing replication.
+            // This is to prevent missing necessary state transitions.
+            snapshotReplicationListener.onSnapshotReplicationStarted();
+          }
+        });
   }
 
   /**
@@ -484,17 +487,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void removeSnapshotReplicationListener(
       final SnapshotReplicationListener snapshotReplicationListener) {
-    snapshotReplicationListeners.remove(snapshotReplicationListener);
+    threadContext.execute(() -> snapshotReplicationListeners.remove(snapshotReplicationListener));
   }
 
   public void notifySnapshotReplicationStarted() {
-    ongoingSnapshotReplication = true;
-    snapshotReplicationListeners.forEach(SnapshotReplicationListener::onSnapshotReplicationStarted);
+    threadContext.execute(
+        () -> {
+          ongoingSnapshotReplication = true;
+          snapshotReplicationListeners.forEach(
+              SnapshotReplicationListener::onSnapshotReplicationStarted);
+        });
   }
 
   public void notifySnapshotReplicationCompleted() {
-    snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
-    ongoingSnapshotReplication = false;
+    threadContext.execute(
+        () -> {
+          snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
+          ongoingSnapshotReplication = false;
+        });
   }
 
   /**
