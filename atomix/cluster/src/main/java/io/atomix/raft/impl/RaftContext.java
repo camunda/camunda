@@ -128,6 +128,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private volatile HealthStatus health = HealthStatus.HEALTHY;
 
   private boolean ongoingTransition = false;
+  private boolean ongoingSnapshotReplication = false;
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -467,6 +468,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public void addSnapshotReplicationListener(
       final SnapshotReplicationListener snapshotReplicationListener) {
     snapshotReplicationListeners.add(snapshotReplicationListener);
+    if (ongoingSnapshotReplication) {
+      // Notify listener immediately if it registered during an ongoing replication.
+      // This is to prevent missing necessary state transitions.
+      snapshotReplicationListener.onSnapshotReplicationStarted();
+    }
   }
 
   /**
@@ -480,11 +486,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public void notifySnapshotReplicationStarted() {
+    ongoingSnapshotReplication = true;
     snapshotReplicationListeners.forEach(SnapshotReplicationListener::onSnapshotReplicationStarted);
   }
 
   public void notifySnapshotReplicationCompleted() {
     snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
+    ongoingSnapshotReplication = false;
   }
 
   /**
