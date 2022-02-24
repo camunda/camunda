@@ -49,7 +49,7 @@ var completeJobCmd = &cobra.Command{
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		var resp *pb.CompleteJobResponse

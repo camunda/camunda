@@ -44,7 +44,7 @@ var cancelInstanceCmd = &cobra.Command{
 			NewCancelInstanceCommand().
 			ProcessInstanceKey(cancelInstanceKey)
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		resp, err := zbCmd.Send(ctx)
