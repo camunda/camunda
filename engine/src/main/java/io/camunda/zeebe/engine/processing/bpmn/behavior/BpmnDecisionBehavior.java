@@ -39,11 +39,14 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
 /** Provides decision behavior to the BPMN processors */
 public final class BpmnDecisionBehavior {
+
+  private static final long UNKNOWN_DECISION_KEY = -1L;
 
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
@@ -215,11 +218,24 @@ public final class BpmnDecisionBehavior {
             .setElementInstanceKey(context.getElementInstanceKey())
             .setElementId(context.getElementId());
 
+    final var decisionKeysByDecisionId =
+        decisionState
+            .findDecisionsByDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+            .stream()
+            .collect(
+                Collectors.toMap(
+                    persistedDecision -> bufferAsString(persistedDecision.getDecisionId()),
+                    PersistedDecision::getDecisionKey));
+
     decisionResult
         .getEvaluatedDecisions()
         .forEach(
             evaluatedDecision ->
-                addDecisionToEvaluationEvent(evaluatedDecision, decisionEvaluationEvent));
+                addDecisionToEvaluationEvent(
+                    evaluatedDecision,
+                    decisionKeysByDecisionId.getOrDefault(
+                        evaluatedDecision.decisionId(), UNKNOWN_DECISION_KEY),
+                    decisionEvaluationEvent));
 
     final DecisionEvaluationIntent decisionEvaluationIntent;
     if (decisionResult.isFailure()) {
@@ -241,12 +257,14 @@ public final class BpmnDecisionBehavior {
 
   private void addDecisionToEvaluationEvent(
       final EvaluatedDecision evaluatedDecision,
+      final long decisionKey,
       final DecisionEvaluationRecord decisionEvaluationEvent) {
 
     final var evaluatedDecisionRecord = decisionEvaluationEvent.evaluatedDecisions().add();
     evaluatedDecisionRecord
         .setDecisionId(evaluatedDecision.decisionId())
         .setDecisionName(evaluatedDecision.decisionName())
+        .setDecisionKey(decisionKey)
         .setDecisionType(evaluatedDecision.decisionType().name())
         .setDecisionOutput(evaluatedDecision.decisionOutput());
 

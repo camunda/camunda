@@ -25,10 +25,13 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -223,11 +226,12 @@ public final class BusinessRuleTaskTest {
                         t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
             .deploy();
 
-    final var calledDecision =
+    final var deployedDecisionsById =
         deployment.getValue().getDecisionsMetadata().stream()
-            .filter(decision -> decision.getDecisionId().equals("force_user"))
-            .findFirst()
-            .orElseThrow();
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
+
+    final var calledDecision = deployedDecisionsById.get("force_user");
+    final var requiredDecision = deployedDecisionsById.get("jedi_or_sith");
 
     // when
     final Map<String, Object> variables =
@@ -281,6 +285,7 @@ public final class BusinessRuleTaskTest {
     assertThat(evaluatedDecisions.get(0))
         .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
+        .hasDecisionKey(requiredDecision.getDecisionKey())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("\"Jedi\"")
         .satisfies(
@@ -308,6 +313,7 @@ public final class BusinessRuleTaskTest {
     assertThat(evaluatedDecisions.get(1))
         .hasDecisionId("force_user")
         .hasDecisionName("Which force user?")
+        .hasDecisionKey(calledDecision.getDecisionKey())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("\"Obi-Wan Kenobi\"")
         .satisfies(
@@ -384,11 +390,12 @@ public final class BusinessRuleTaskTest {
                         t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
             .deploy();
 
-    final var calledDecision =
+    final var deployedDecisionsById =
         deployment.getValue().getDecisionsMetadata().stream()
-            .filter(decision -> decision.getDecisionId().equals("force_user"))
-            .findFirst()
-            .orElseThrow();
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
+
+    final var calledDecision = deployedDecisionsById.get("force_user");
+    final var requiredDecision = deployedDecisionsById.get("jedi_or_sith");
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -444,6 +451,7 @@ public final class BusinessRuleTaskTest {
     assertThat(evaluatedDecisions.get(0))
         .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
+        .hasDecisionKey(requiredDecision.getDecisionKey())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("null")
         .satisfies(

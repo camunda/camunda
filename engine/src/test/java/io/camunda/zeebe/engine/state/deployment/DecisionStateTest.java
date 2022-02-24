@@ -258,6 +258,62 @@ public final class DecisionStateTest {
         .isEqualTo(drg2.getDecisionRequirementsKey());
   }
 
+  @DisplayName("should return empty if no decision found for DRG key")
+  @Test
+  void shouldReturnEmptyIfNoDecisionFoundForDrgKey() {
+    // given
+    final var unknownDrgKey = 1L;
+
+    // when
+    final var decisions = decisionState.findDecisionsByDecisionRequirementsKey(unknownDrgKey);
+
+    // then
+    assertThat(decisions).isEmpty();
+  }
+
+  @DisplayName("should find decisions by DRG key")
+  @Test
+  void shouldFindDecisionsByDrgKey() {
+    // given
+    final var drg1 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(10L);
+    final var drg2 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(20L);
+
+    final var decision1 =
+        sampleDecisionRecord()
+            .setDecisionKey(1L)
+            .setDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+    final var decision2 =
+        sampleDecisionRecord()
+            .setDecisionKey(2L)
+            .setDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+    final var decision3 =
+        sampleDecisionRecord()
+            .setDecisionKey(3L)
+            .setDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
+
+    decisionState.putDecision(decision1);
+    decisionState.putDecision(decision2);
+    decisionState.putDecision(decision3);
+
+    // when
+    final var decisionsOfDrg1 =
+        decisionState.findDecisionsByDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+
+    final var decisionsOfDrg2 =
+        decisionState.findDecisionsByDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
+
+    // then
+    assertThat(decisionsOfDrg1)
+        .hasSize(2)
+        .extracting(PersistedDecision::getDecisionKey)
+        .contains(decision1.getDecisionKey(), decision2.getDecisionKey());
+
+    assertThat(decisionsOfDrg2)
+        .hasSize(1)
+        .extracting(PersistedDecision::getDecisionKey)
+        .contains(decision3.getDecisionKey());
+  }
+
   private DecisionRecord sampleDecisionRecord() {
     return new DecisionRecord()
         .setDecisionId("decision-id")
