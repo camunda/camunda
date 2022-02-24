@@ -8,10 +8,14 @@
 package io.camunda.zeebe.protocol.jackson.record;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.camunda.zeebe.protocol.jackson.record.DecisionRecordValueBuilder.ImmutableDecisionRecordValue;
+import io.camunda.zeebe.protocol.jackson.record.DecisionRequirementsRecordValueBuilder.ImmutableDecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.jackson.record.DeploymentRecordValueBuilder.ImmutableDeploymentRecordValue;
 import io.camunda.zeebe.protocol.jackson.record.DeploymentResourceBuilder.ImmutableDeploymentResource;
 import io.camunda.zeebe.protocol.jackson.record.ProcessMetadataValueBuilder.ImmutableProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.List;
@@ -29,4 +33,12 @@ public abstract class AbstractDeploymentRecordValue
   @JsonDeserialize(contentAs = ImmutableProcessMetadataValue.class)
   @Override
   public abstract List<ProcessMetadataValue> getProcessesMetadata();
+
+  @JsonDeserialize(contentAs = ImmutableDecisionRecordValue.class)
+  @Override
+  public abstract List<DecisionRecordValue> getDecisionsMetadata();
+
+  @JsonDeserialize(contentAs = ImmutableDecisionRequirementsRecordValue.class)
+  @Override
+  public abstract List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata();
 }
