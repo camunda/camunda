@@ -175,12 +175,15 @@
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
+      "setDuration": "Set a duration goal by setting a percentage of process instances that should take less than a certain duration to complete.",
+      "availableGoals": "You can use duration goals to track how many instances are fully automated (target duration) or meet your service level agreements (SLAs).",
       "targetDuration": "Target",
       "slaDuration": "SLA",
       "instancesTake": "of process instances take",
       "lessThan": "less than",
       "displayGoal": "Display goal",
       "durationDistribution": "Duration distribution",
+      "durationDistributionInfo": "This chart shows durations for process instances ending in the current month.",
       "saveGoals": "Save Goals",
       "updateGoals": "Update Goals"
     }

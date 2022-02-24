@@ -175,12 +175,15 @@
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
+      "setDuration": "Legen Sie eine Ziellaufzeit fest, indem Sie einen Prozentsatz der Prozessinstanzen festlegen, die weniger als die festgelegte Dauer brauchen, um abzuschließen.",
+      "availableGoals": "Sie können Ziellaufzeiten verwenden, um zu verfolgen, wie viele Instanzen vollständig automatisiert sind oder Ihre Service Level-Agreements (SLAs) erreichen.",
       "targetDuration": "Ziel",
       "slaDuration": "SLA",
       "instancesTake": "der Prozessinstanzen benötigen",
       "lessThan": "weniger als",
       "displayGoal": "Ziel anzeigen",
       "durationDistribution": "Laufzeitverteilung",
+      "durationDistributionInfo": "Diese Grafik zeigt die Laufzeiten für Prozessinstanzen, die im aktuellen Monat enden",
       "saveGoals": "Ziele speichern",
       "updateGoals": "Ziele aktualisieren"
     }

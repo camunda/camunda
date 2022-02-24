@@ -52,6 +52,14 @@
         }
       }
     }
+
+    .chartTitle,
+    .goalsConfig legend {
+      > .Icon {
+        height: 18px;
+        color: var(--silver-darken-80);
+      }
+    }
   }
 
   .Modal__actions .deleteButton {

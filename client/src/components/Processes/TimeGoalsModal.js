@@ -16,6 +16,8 @@ import {
   DurationChart,
   LoadingIndicator,
   Deleter,
+  Tooltip,
+  Icon,
 } from 'components';
 import {evaluateReport, formatters} from 'services';
 import {t} from 'translation';
@@ -87,7 +89,22 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
       <Modal.Header>{t('processes.timeGoals.label')}</Modal.Header>
       <Modal.Content>
         <fieldset className="goalsConfig">
-          <legend>{t('processes.timeGoals.configure')}</legend>
+          <legend>
+            {t('processes.timeGoals.configure')}{' '}
+            <Tooltip
+              content={
+                <div>
+                  {t('processes.timeGoals.setDuration')}
+                  <br />
+                  <br />
+                  {t('processes.timeGoals.availableGoals')}
+                </div>
+              }
+            >
+              <Icon type="info" />
+            </Tooltip>
+          </legend>
+
           {goals.map(({type, value, percentile, unit, visible}, idx) => (
             <div className="singleGoal" key={type}>
               <b>{t('processes.timeGoals.' + type)}</b>
@@ -140,7 +157,12 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
             </div>
           ))}
         </fieldset>
-        <h3 className="chartTitle">{t('processes.timeGoals.durationDistribution')}</h3>
+        <h3 className="chartTitle">
+          {t('processes.timeGoals.durationDistribution')}{' '}
+          <Tooltip position="bottom" content={t('processes.timeGoals.durationDistributionInfo')}>
+            <Icon type="info" />
+          </Tooltip>
+        </h3>
         {data ? (
           <DurationChart data={data?.measures[0].data} colors="#1991c8" />
         ) : (
