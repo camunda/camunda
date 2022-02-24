@@ -52,9 +52,9 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
           </tr>
         ) : (
           <tr>
-            <TD>{decisionInstance.name}</TD>
+            <TD>{decisionInstance.decisionName}</TD>
             <TD>{decisionInstanceId}</TD>
-            <TD>{decisionInstance.version}</TD>
+            <TD>{decisionInstance.decisionVersion}</TD>
             <TD>{formatDate(decisionInstance.evaluationDate)}</TD>
             <TD>
               {decisionInstance.processInstanceId ? (

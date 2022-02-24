@@ -4,12 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const mockLiteralExpression = {
+import {DecisionInstanceType} from 'modules/stores/decisionInstance';
+
+const mockLiteralExpression: DecisionInstanceType = {
   decisionDefinitionId: '111',
   decisionId: 'calc-key-figures',
   state: 'COMPLETED',
-  name: 'Calculate Credit History Key Figures',
-  version: '1',
+  decisionName: 'Calculate Credit History Key Figures',
+  decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '42',
   inputs: [
@@ -23,10 +25,12 @@ const mockLiteralExpression = {
     {
       id: '0',
       rule: 3,
+      ruleIndex: 1,
       name: 'paragraph',
       value: '"sbl §201"',
     },
   ],
+  result: null,
 } as const;
 
 export {mockLiteralExpression};

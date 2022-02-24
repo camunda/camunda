@@ -14,23 +14,23 @@ type DecisionInstanceType = ReadonlyDeep<{
   decisionId: string;
   decisionDefinitionId: string;
   state: 'FAILED' | 'COMPLETED';
-  name: string;
-  version: string;
+  decisionName: string;
+  decisionVersion: string;
   evaluationDate: string;
   processInstanceId: string | null;
   inputs: Array<{
     id: string;
     name: string;
-    value: string;
+    value: string | null;
   }>;
   outputs: Array<{
     id: string;
     ruleIndex: number;
     rule: number;
     name: string;
-    value: string;
+    value: string | null;
   }>;
-  result: string;
+  result: string | null;
 }>;
 
 type State = {

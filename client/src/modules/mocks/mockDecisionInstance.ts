@@ -4,12 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const invoiceClassification = {
+import {DecisionInstanceType} from 'modules/stores/decisionInstance';
+
+const invoiceClassification: DecisionInstanceType = {
   decisionDefinitionId: '111',
   decisionId: 'invoiceClassification',
   state: 'COMPLETED',
-  name: 'Invoice Classification',
-  version: '1',
+  decisionName: 'Invoice Classification',
+  decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '666',
   inputs: [
@@ -95,12 +97,12 @@ const invoiceClassification = {
   }),
 } as const;
 
-const assignApproverGroup = {
+const assignApproverGroup: DecisionInstanceType = {
   decisionDefinitionId: '111',
   decisionId: 'invoice-assign-approver',
   state: 'FAILED',
-  name: 'Assign Approver Group',
-  version: '1',
+  decisionName: 'Assign Approver Group',
+  decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '777',
   inputs: [
@@ -119,6 +121,7 @@ const assignApproverGroup = {
       ruleIndex: 1,
     },
   ],
+  result: null,
 } as const;
 
 export {invoiceClassification, assignApproverGroup};

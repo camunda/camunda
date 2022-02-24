@@ -23,8 +23,8 @@ const Result: React.FC = observer(() => {
       )}
       {status === 'fetched' && decisionInstance !== null && (
         <JSONViewer
-          value={decisionInstance.result}
           data-testid="results-json-viewer"
+          value={decisionInstance.result ?? '{}'}
         />
       )}
       {status === 'error' && (

@@ -78,10 +78,16 @@ describe('<Header />', () => {
     expect(
       screen.getByRole('columnheader', {name: /process instance id/i})
     ).toBeInTheDocument();
-    expect(await screen.findByRole('cell', {name: invoiceClassification.name}));
+    expect(
+      await screen.findByRole('cell', {
+        name: invoiceClassification.decisionName,
+      })
+    );
     expect(await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID}));
     expect(
-      await screen.findByRole('cell', {name: invoiceClassification.version})
+      await screen.findByRole('cell', {
+        name: invoiceClassification.decisionVersion,
+      })
     );
     expect(
       await screen.findByRole('cell', {
