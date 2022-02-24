@@ -25,6 +25,7 @@ type DecisionInstanceType = ReadonlyDeep<{
   }>;
   outputs: Array<{
     id: string;
+    ruleIndex: number;
     rule: number;
     name: string;
     value: string;

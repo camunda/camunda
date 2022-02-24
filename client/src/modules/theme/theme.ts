@@ -440,6 +440,10 @@ const theme = {
         background: DARK_COLORS.ui02,
         text: SEMANTIC_COLORS.white,
         border: SEMANTIC_COLORS.grey,
+        highlightedRow: {
+          background: DARK_COLORS.selectedOdd,
+          color: SEMANTIC_COLORS.white,
+        },
       },
       drdPanel: {
         background: DARK_COLORS.ui02,
@@ -1388,6 +1392,10 @@ const theme = {
         background: LIGHT_COLORS.ui04,
         text: DARK_COLORS.ui01,
         border: LIGHT_COLORS.ui06,
+        highlightedRow: {
+          background: '#dde8fd',
+          color: DARK_COLORS.ui01,
+        },
       },
       drdPanel: {
         background: LIGHT_COLORS.ui04,

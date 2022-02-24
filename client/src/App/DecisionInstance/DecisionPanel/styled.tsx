@@ -5,9 +5,15 @@
  */
 
 import styled, {css} from 'styled-components';
-const Container = styled.div`
-  ${({theme}) => {
+
+type ContainerProps = {
+  highlightableRows: number[];
+};
+
+const Container = styled.div<ContainerProps>`
+  ${({theme, highlightableRows}) => {
     const colors = theme.colors.decisionPanel;
+
     return css`
       background: ${colors.background};
       padding: 30px 20px;
@@ -34,6 +40,20 @@ const Container = styled.div`
 
         .tjs-table-container {
           border-width: 2px 2px 1px 2px;
+
+          tbody {
+            ${highlightableRows.map((rowIndex) => {
+              return css`
+                tr:nth-child(${rowIndex}) {
+                  background-color: ${colors.highlightedRow.background};
+                  td {
+                    color: ${colors.highlightedRow.color};
+                    background-color: ${colors.highlightedRow.background};
+                  }
+                }
+              `;
+            })}
+          }
         }
       }
 

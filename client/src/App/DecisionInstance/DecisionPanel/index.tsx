@@ -40,8 +40,19 @@ const DecisionPanel: React.FC = observer(() => {
     };
   }, []);
 
+  const highlightableRules = Array.from(
+    new Set(
+      decisionInstanceStore.state.decisionInstance?.outputs.map(
+        (output) => output.ruleIndex
+      )
+    )
+  ).filter((item) => item !== undefined);
+
   return (
-    <Container data-testid="decision-panel">
+    <Container
+      data-testid="decision-panel"
+      highlightableRows={highlightableRules}
+    >
       <Decision ref={decisionViewerRef} />
     </Container>
   );

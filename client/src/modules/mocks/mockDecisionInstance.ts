@@ -79,12 +79,14 @@ const invoiceClassification = {
       rule: 5,
       name: 'Age requirements satisfied',
       value: '"missing data"',
+      ruleIndex: 1,
     },
     {
       id: '1',
       rule: 6,
       name: 'paragraph',
       value: '"sbl §17"',
+      ruleIndex: 4,
     },
   ],
   result: JSON.stringify({
@@ -114,6 +116,7 @@ const assignApproverGroup = {
       rule: 1,
       name: 'paragraph',
       value: '"sbl §382"',
+      ruleIndex: 1,
     },
   ],
 } as const;
