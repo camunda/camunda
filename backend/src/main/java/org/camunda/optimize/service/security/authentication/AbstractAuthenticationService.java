@@ -5,8 +5,7 @@
  */
 package org.camunda.optimize.service.security.authentication;
 
-import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.dto.LogoutRequestDto;
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -27,8 +26,8 @@ public abstract class AbstractAuthenticationService {
 
   public abstract Response loginCallback(@Context ContainerRequestContext requestContext, AuthCodeDto authCode);
 
-  public abstract Response logoutCallback(@Context ContainerRequestContext requestContext,
-                                          LogoutRequestDto logoutRequestDto);
+  // public abstract Response logoutCallback(@Context ContainerRequestContext requestContext,
+  //                                        LogoutRequestDto logoutRequestDto);
 
   public abstract Response logout(@Context ContainerRequestContext requestContext);
 

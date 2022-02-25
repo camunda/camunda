@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.rest;
 
-import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.dto.LogoutRequestDto;
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+// import io.camunda.identity.sdk.authentication.dto.LogoutRequestDto;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
@@ -74,6 +74,7 @@ public class AuthenticationRestService {
     return authenticationService.loginCallback(requestContext, new AuthCodeDto(code, state, error));
   }
 
+  /*
   @GET
   @Path(LOGOUT_CALLBACK)
   public Response logoutCallback(@Context ContainerRequestContext requestContext,
@@ -84,7 +85,7 @@ public class AuthenticationRestService {
       new LogoutRequestDto(logoutToken, redirectUri)
     );
   }
-
+*/
   /**
    * Logout yourself from Optimize.
    *
