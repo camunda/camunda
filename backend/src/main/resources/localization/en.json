@@ -173,8 +173,8 @@
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
-      "targetDuration": "Target duration",
-      "slaDuration": "SLA duration",
+      "targetDuration": "Target",
+      "slaDuration": "SLA",
       "instancesTake": "of process instances take",
       "lessThan": "less than",
       "displayGoal": "Display goal",

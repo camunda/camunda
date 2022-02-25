@@ -14,43 +14,32 @@
       display: flex;
       flex-direction: column;
       border: 1px solid var(--silver-darken-87);
-      max-width: 850px;
-      min-width: 820px;
-      padding: 0 15px 20px 0;
+      max-width: max-content;
+      padding: 0 30px 20px 30px;
 
       legend {
         width: 100%;
         float: left;
         font-weight: bold;
-        margin: 20px 30px 30px 30px;
+        margin: 20px 30px 30px 0px;
         font-size: 16px;
       }
 
       .singleGoal {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
         gap: 10px;
         margin-bottom: 10px;
+
+        b:first-child {
+          min-width: 50px;
+        }
 
         input[type='text'] {
           max-width: 80px;
         }
 
-        .percentageInput {
-          position: relative;
-          > span {
-            position: absolute;
-            right: 5px;
-            top: 5px;
-            color: var(--silver-darken-80);
-          }
-          input {
-            padding-right: 20px;
-          }
-        }
-
-        > .Select {
+        > .unitSelection {
           min-width: 125px;
         }
 

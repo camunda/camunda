@@ -173,8 +173,8 @@
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
-      "targetDuration": "Ziellaufzeit",
-      "slaDuration": "SLA Laufzeit",
+      "targetDuration": "Ziel",
+      "slaDuration": "SLA",
       "instancesTake": "der Prozessinstanzen benötigen",
       "lessThan": "weniger als",
       "displayGoal": "Ziel anzeigen",

@@ -7,7 +7,7 @@
 import React, {runAllEffects, runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {Input} from 'components';
+import {Input, Select} from 'components';
 import {evaluateReport} from 'services';
 
 import {TimeGoalsModal} from './TimeGoalsModal';
@@ -32,14 +32,14 @@ const props = {
 const goals = [
   {
     type: 'targetDuration',
-    percentile: '80',
+    percentile: '75',
     value: '1',
     unit: 'weeks',
     visible: true,
   },
   {
     type: 'slaDuration',
-    percentile: '20',
+    percentile: '99',
     value: '5',
     unit: 'days',
     visible: true,
@@ -49,10 +49,10 @@ const goals = [
 it('should load initialGoals', () => {
   const node = shallow(<TimeGoalsModal {...props} initialGoals={goals} />);
 
-  expect(node.find(Input).at(0).prop('value')).toBe('80');
-  expect(node.find(Input).at(1).prop('value')).toBe('1');
-  expect(node.find('Select').at(0).prop('value')).toBe('weeks');
-  expect(node.find('.singleGoal').at(1).find(Input).at(0).prop('value')).toBe('20');
+  expect(node.find(Select).at(0).prop('value')).toBe('75');
+  expect(node.find(Input).at(0).prop('value')).toBe('1');
+  expect(node.find('.unitSelection').at(0).prop('value')).toBe('weeks');
+  expect(node.find(Select).at(2).prop('value')).toBe('99');
 });
 
 it('should evaluate and pass report result to chart component', async () => {
@@ -77,17 +77,19 @@ it('should invoke onConfirm when saving goals', () => {
     .find(Input)
     .at(0)
     .simulate('change', {target: {value: '20'}});
+  node.find('.unitSelection').at(0).simulate('change', 'days');
+
   node
     .find(Input)
     .at(1)
     .simulate('change', {target: {value: '3'}});
-  node.find('Select').at(0).simulate('change', 'days');
+  node.find('.unitSelection').at(1).simulate('change', 'days');
 
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
-    {type: 'targetDuration', percentile: '20', unit: 'days', value: '3', visible: true},
-    {type: 'slaDuration', percentile: '99', unit: null, value: '', visible: true},
+    {type: 'targetDuration', percentile: '75', unit: 'days', value: '20', visible: true},
+    {type: 'slaDuration', percentile: '99', unit: 'days', value: '3', visible: true},
   ]);
 });
 
@@ -117,6 +119,6 @@ it('should calculate default duration values based on percentiles', async () => 
   // calculate the default duration values
   await runLastEffect();
 
-  expect(node.find('.singleGoal').at(0).find(Input).at(1).prop('value')).toBe('40');
-  expect(node.find('.singleGoal').at(1).find(Input).at(1).prop('value')).toBe('50');
+  expect(node.find('.singleGoal').at(0).find(Input).prop('value')).toBe('40');
+  expect(node.find('.singleGoal').at(1).find(Input).prop('value')).toBe('50');
 });

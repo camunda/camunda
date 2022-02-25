@@ -40,7 +40,7 @@ export function TimeGoalsModal({
       : [
           {
             type: 'targetDuration',
-            percentile: '80',
+            percentile: '75',
             value: '',
             unit: null,
             visible: true,
@@ -91,14 +91,16 @@ export function TimeGoalsModal({
           {goals.map(({type, value, percentile, unit, visible}, idx) => (
             <div className="singleGoal" key={type}>
               <b>{t('processes.timeGoals.' + type)}</b>
-              <div className="percentageInput">
-                <Input
-                  type="text"
-                  value={percentile}
-                  onChange={(evt) => updateGoalValue(idx, 'percentile', evt.target.value)}
-                />
-                <span>%</span>
-              </div>
+              <Select
+                value={percentile}
+                onChange={(selectValue) => updateGoalValue(idx, 'percentile', selectValue)}
+              >
+                <Select.Option value="99">99%</Select.Option>
+                <Select.Option value="95">95%</Select.Option>
+                <Select.Option value="90">90%</Select.Option>
+                <Select.Option value="75">75%</Select.Option>
+                <Select.Option value="25">25%</Select.Option>
+              </Select>
               <span>
                 {t('processes.timeGoals.instancesTake')} <b>{t('processes.timeGoals.lessThan')}</b>
               </span>
@@ -108,6 +110,7 @@ export function TimeGoalsModal({
                 onChange={(evt) => updateGoalValue(idx, 'value', evt.target.value)}
               />
               <Select
+                className="unitSelection"
                 value={unit}
                 onChange={(selectValue) => updateGoalValue(idx, 'unit', selectValue)}
               >
