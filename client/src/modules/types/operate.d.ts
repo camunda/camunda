@@ -76,4 +76,5 @@ interface DecisionInstanceEntity {
   evaluationTime: string;
   processInstanceId: string | null;
   state: DecisionInstanceEntityState;
+  sortValues: [string, string];
 }

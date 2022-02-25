@@ -11,15 +11,31 @@ import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {getSortParams} from 'modules/utils/filter';
 
+type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   decisionInstances: DecisionInstanceEntity[];
   filteredInstancesCount: number;
-  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  latestFetch: {
+    fetchType: FetchType;
+    decisionInstancesCount: number;
+  } | null;
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetching-next'
+    | 'fetching-prev'
+    | 'fetched'
+    | 'error';
 };
+
+const MAX_INSTANCES_STORED = 30; //TODO #2312: 200 when working with real data
+const MAX_INSTANCES_PER_REQUEST = 20; //TODO #2312: 50 when working with real data
 
 const DEFAULT_STATE: State = {
   decisionInstances: [],
   filteredInstancesCount: 0,
+  latestFetch: null,
   status: 'initial',
 };
 
@@ -34,31 +50,54 @@ class DecisionInstances extends NetworkReconnectionHandler {
       state: observable,
       reset: override,
       startFetching: action,
+      startFetchingNext: action,
+      startFetchingPrev: action,
       handleFetchSuccess: action,
       handleFetchError: action,
       setDecisionInstances: action,
       areDecisionInstancesEmpty: computed,
+      setLatestFetchDetails: action,
+      hasLatestDecisionInstances: computed,
     });
   }
 
   fetchInstancesFromFilters = this.retryOnConnectionLost(async () => {
     this.startFetching();
     this.fetchInstances({
-      query: {},
-      sorting: getSortParams() || {sortBy: 'evaluationTime', sortOrder: 'desc'},
+      fetchType: 'initial',
+      payload: {
+        query: {},
+        sorting: getSortParams() || {
+          sortBy: 'evaluationTime',
+          sortOrder: 'desc',
+        },
+      },
     });
   });
 
-  fetchInstances = async (
-    payload: Parameters<typeof fetchDecisionInstances>['0']
-  ) => {
+  fetchInstances = async ({
+    fetchType,
+    payload,
+  }: {
+    fetchType: FetchType;
+    payload: Parameters<typeof fetchDecisionInstances>['0'];
+  }) => {
     try {
       const response = await fetchDecisionInstances(payload);
 
       if (response.ok) {
         const {decisionInstances, totalCount} = await response.json();
 
-        this.setDecisionInstances({decisionInstances, totalCount});
+        this.setDecisionInstances({
+          decisionInstances: this.getDecisionInstances(
+            fetchType,
+            decisionInstances
+          ),
+          totalCount,
+        });
+
+        this.setLatestFetchDetails(fetchType, decisionInstances.length);
+
         this.handleFetchSuccess();
       } else {
         this.handleFetchError();
@@ -68,6 +107,71 @@ class DecisionInstances extends NetworkReconnectionHandler {
     }
   };
 
+  shouldFetchPreviousInstances = () => {
+    const {latestFetch, decisionInstances, status} = this.state;
+    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+      return false;
+    }
+
+    return (
+      (latestFetch?.fetchType === 'next' &&
+        decisionInstances.length === MAX_INSTANCES_STORED) ||
+      (latestFetch?.fetchType === 'prev' &&
+        latestFetch?.decisionInstancesCount === MAX_INSTANCES_PER_REQUEST)
+    );
+  };
+
+  shouldFetchNextInstances = () => {
+    const {latestFetch, decisionInstances, status} = this.state;
+    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+      return false;
+    }
+
+    return (
+      (latestFetch?.fetchType === 'next' &&
+        latestFetch?.decisionInstancesCount === MAX_INSTANCES_PER_REQUEST) ||
+      (latestFetch?.fetchType === 'prev' &&
+        decisionInstances.length === MAX_INSTANCES_STORED) ||
+      latestFetch?.fetchType === 'initial'
+    );
+  };
+
+  fetchPreviousInstances = async () => {
+    this.startFetchingPrev();
+
+    return this.fetchInstances({
+      fetchType: 'prev',
+      payload: {
+        query: {},
+        sorting: getSortParams() || {
+          sortBy: 'evaluationTime',
+          sortOrder: 'desc',
+        },
+        searchBefore: this.state.decisionInstances[0]?.sortValues,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+      },
+    });
+  };
+
+  fetchNextInstances = async () => {
+    this.startFetchingNext();
+
+    return this.fetchInstances({
+      fetchType: 'next',
+      payload: {
+        query: {},
+        sorting: getSortParams() || {
+          sortBy: 'evaluationTime',
+          sortOrder: 'desc',
+        },
+        searchAfter:
+          this.state.decisionInstances[this.state.decisionInstances.length - 1]
+            ?.sortValues,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+      },
+    });
+  };
+
   startFetching = () => {
     if (this.state.status === 'initial') {
       this.state.status = 'first-fetch';
@@ -75,6 +179,14 @@ class DecisionInstances extends NetworkReconnectionHandler {
       this.state.status = 'fetching';
     }
     this.state.filteredInstancesCount = 0;
+  };
+
+  startFetchingNext = () => {
+    this.state.status = 'fetching-next';
+  };
+
+  startFetchingPrev = () => {
+    this.state.status = 'fetching-prev';
   };
 
   handleFetchSuccess = () => {
@@ -88,6 +200,41 @@ class DecisionInstances extends NetworkReconnectionHandler {
     logger.error('Failed to fetch decision instances');
     if (error !== undefined) {
       logger.error(error);
+    }
+  };
+
+  setLatestFetchDetails = (
+    fetchType: FetchType,
+    decisionInstancesCount: number
+  ) => {
+    this.state.latestFetch = {
+      fetchType,
+      decisionInstancesCount,
+    };
+  };
+
+  getDecisionInstances = (
+    fetchType: FetchType,
+    decisionInstances: DecisionInstanceEntity[]
+  ) => {
+    switch (fetchType) {
+      case 'next':
+        const allDecisionInstances = [
+          ...this.state.decisionInstances,
+          ...decisionInstances,
+        ];
+
+        return allDecisionInstances.slice(
+          Math.max(allDecisionInstances.length - MAX_INSTANCES_STORED, 0)
+        );
+      case 'prev':
+        return [...decisionInstances, ...this.state.decisionInstances].slice(
+          0,
+          MAX_INSTANCES_STORED
+        );
+      case 'initial':
+      default:
+        return decisionInstances;
     }
   };
 
@@ -106,6 +253,14 @@ class DecisionInstances extends NetworkReconnectionHandler {
     return (
       this.state.status === 'fetched' &&
       this.state.decisionInstances.length === 0
+    );
+  }
+
+  get hasLatestDecisionInstances() {
+    return (
+      this.state.decisionInstances.length === MAX_INSTANCES_STORED &&
+      this.state.latestFetch !== null &&
+      this.state.latestFetch?.decisionInstancesCount !== 0
     );
   }
 

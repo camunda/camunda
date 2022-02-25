@@ -13,29 +13,27 @@ import Table from 'modules/components/Table';
 import {InstancesMessage} from 'modules/components/InstancesMessage';
 import {
   Container,
-  Name,
-  State,
   DecisionColumnHeader,
   TH,
-  TD,
-  TR,
   List,
   ScrollableContent,
   THead,
   TRHeader,
   Spinner,
 } from './styled';
-import {formatDate} from 'modules/utils/date';
 import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
 import {useLocation} from 'react-router-dom';
 import {Header} from './Header';
-import {Link} from 'modules/components/Link';
-import {Locations} from 'modules/routes';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {DecisionInstances} from './DecisionInstances';
+
+const ROW_HEIGHT = 37;
 
 const InstancesTable: React.FC = observer(() => {
   const {
-    state: {status, decisionInstances, filteredInstancesCount},
+    state: {status, filteredInstancesCount, latestFetch},
     areDecisionInstancesEmpty,
+    hasLatestDecisionInstances,
   } = decisionInstancesStore;
   const location = useLocation();
 
@@ -121,52 +119,37 @@ const InstancesTable: React.FC = observer(() => {
             {shouldDisplaySkeleton && <Skeleton />}
             {status === 'error' && <InstancesMessage type="error" />}
             {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
-            <Table.TBody>
-              {decisionInstances.map(
-                ({
-                  id,
-                  state,
-                  name,
-                  version,
-                  evaluationTime,
-                  processInstanceId,
-                }) => {
-                  return (
-                    <TR key={id}>
-                      <Name>
-                        <State
-                          state={state}
-                          data-testid={`${state}-icon-${id}`}
-                        />
-                        {name}
-                      </Name>
-                      <TD>
-                        <Link
-                          to={Locations.decisionInstance(location, id)}
-                          title={`View decision instance ${id}`}
-                        >
-                          {id}
-                        </Link>
-                      </TD>
-                      <TD>{version}</TD>
-                      <TD>{formatDate(evaluationTime)}</TD>
-                      <TD>
-                        {processInstanceId !== null ? (
-                          <Link
-                            to={Locations.instance(location, processInstanceId)}
-                            title={`View process instance ${processInstanceId}`}
-                          >
-                            {processInstanceId}
-                          </Link>
-                        ) : (
-                          'None'
-                        )}
-                      </TD>
-                    </TR>
+
+            <InfiniteScroller
+              onVerticalScrollStartReach={async (scrollDown) => {
+                if (
+                  decisionInstancesStore.shouldFetchPreviousInstances() ===
+                  false
+                ) {
+                  return;
+                }
+
+                await decisionInstancesStore.fetchPreviousInstances();
+
+                if (hasLatestDecisionInstances) {
+                  scrollDown(
+                    latestFetch?.decisionInstancesCount ?? 0 * ROW_HEIGHT
                   );
                 }
-              )}
-            </Table.TBody>
+              }}
+              onVerticalScrollEndReach={() => {
+                if (
+                  decisionInstancesStore.shouldFetchNextInstances() === false
+                ) {
+                  return;
+                }
+
+                decisionInstancesStore.fetchNextInstances();
+              }}
+              scrollableContainerRef={scrollableContentRef}
+            >
+              <DecisionInstances />
+            </InfiniteScroller>
           </Table>
         </ScrollableContent>
       </List>

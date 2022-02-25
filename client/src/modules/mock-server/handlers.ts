@@ -11,7 +11,7 @@ import {
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
 import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
-import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
+import {mockDecisionInstancesLargeData} from 'modules/mocks/mockDecisionInstances';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 
 const handlers: RequestHandler[] = [
@@ -35,8 +35,64 @@ const handlers: RequestHandler[] = [
   rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) => {
     return res(ctx.body(mockDmnXml));
   }),
-  rest.post('/api/decision-instances', (_, res, ctx) => {
-    return res(ctx.delay(1000), ctx.json(mockDecisionInstances));
+  rest.post('/api/decision-instances', (req, res, ctx) => {
+    //@ts-ignore
+    if (!req.body.searchAfter && !req.body.searchBefore) {
+      return res(
+        ctx.delay(1000),
+        ctx.json({
+          decisionInstances: [
+            ...mockDecisionInstancesLargeData.decisionInstances.slice(0, 20),
+          ],
+          totalCount: mockDecisionInstancesLargeData.totalCount,
+        })
+      );
+    }
+
+    if (
+      //@ts-ignore
+      JSON.stringify(req.body.searchAfter) ===
+      JSON.stringify(['test-decision-instance-20', '2251799813689560'])
+    ) {
+      return res(
+        ctx.json({
+          decisionInstances: [
+            ...mockDecisionInstancesLargeData.decisionInstances.slice(20),
+          ],
+          totalCount: mockDecisionInstancesLargeData.totalCount,
+        })
+      );
+    }
+
+    if (
+      //@ts-ignore
+      JSON.stringify(req.body.searchBefore) ===
+      JSON.stringify(['test-decision-instance-11', '2251799813689551'])
+    ) {
+      return res(
+        ctx.json({
+          decisionInstances: [
+            ...mockDecisionInstancesLargeData.decisionInstances.slice(0, 10),
+          ],
+          totalCount: mockDecisionInstancesLargeData.totalCount,
+        })
+      );
+    }
+
+    if (
+      //@ts-ignore
+      JSON.stringify(req.body.searchAfter) ===
+      JSON.stringify(['test-decision-instance-40', '2251799813689580'])
+    ) {
+      return res(
+        ctx.json({
+          decisionInstances: [],
+          totalCount: mockDecisionInstancesLargeData.totalCount,
+        })
+      );
+    }
+
+    return res(ctx.json(mockDecisionInstancesLargeData));
   }),
 ];
 

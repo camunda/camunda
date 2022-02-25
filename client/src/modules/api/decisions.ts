@@ -13,6 +13,9 @@ type DecisionInstancesQuery = {
     sortBy: string;
     sortOrder: 'desc' | 'asc';
   };
+  searchAfter?: ReadonlyArray<string>;
+  searchBefore?: ReadonlyArray<string>;
+  pageSize?: number;
 };
 
 async function fetchDecisionXML(decisionDefinitionId: string) {
