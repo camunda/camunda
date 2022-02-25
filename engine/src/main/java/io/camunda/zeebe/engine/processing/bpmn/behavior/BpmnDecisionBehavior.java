@@ -17,6 +17,7 @@ import io.camunda.zeebe.dmn.EvaluatedOutput;
 import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -55,6 +56,7 @@ public final class BpmnDecisionBehavior {
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final ExpressionProcessor expressionBehavior;
+  private final ProcessEngineMetrics metrics;
 
   public BpmnDecisionBehavior(
       final DecisionEngine decisionEngine,
@@ -62,7 +64,8 @@ public final class BpmnDecisionBehavior {
       final EventTriggerBehavior eventTriggerBehavior,
       final StateWriter stateWriter,
       final KeyGenerator keyGenerator,
-      final ExpressionProcessor expressionBehavior) {
+      final ExpressionProcessor expressionBehavior,
+      final ProcessEngineMetrics metrics) {
     this.decisionEngine = decisionEngine;
     decisionState = zeebeState.getDecisionState();
     variableState = zeebeState.getVariableState();
@@ -70,6 +73,7 @@ public final class BpmnDecisionBehavior {
     this.stateWriter = stateWriter;
     this.keyGenerator = keyGenerator;
     this.expressionBehavior = expressionBehavior;
+    this.metrics = metrics;
   }
 
   /**
@@ -110,12 +114,16 @@ public final class BpmnDecisionBehavior {
                   writeDecisionEvaluationEvent(decision, evaluationResult, context);
 
                   if (evaluationResult.isFailure()) {
+                    metrics.increaseFailedEvaluatedDmnElements(
+                        evaluationResult.getEvaluatedDecisions().size());
                     return Either.left(
                         new Failure(
                             evaluationResult.getFailureMessage(),
                             ErrorType.DECISION_EVALUATION_ERROR,
                             scopeKey));
                   } else {
+                    metrics.increaseSuccessfullyEvaluatedDmnElements(
+                        evaluationResult.getEvaluatedDecisions().size());
                     return Either.right(evaluationResult);
                   }
                 });

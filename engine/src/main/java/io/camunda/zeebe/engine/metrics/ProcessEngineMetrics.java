@@ -13,13 +13,27 @@ import io.prometheus.client.Counter;
 
 public final class ProcessEngineMetrics {
 
+  static final Counter EXECUTED_INSTANCES =
+      Counter.build()
+          .namespace("zeebe")
+          .name("executed_instances_total")
+          .help("Number of executed instances")
+          .labelNames("organizationId", "type", "action", "partition")
+          .register();
+  static final Counter EVALUATED_DMN_ELEMENTS =
+      Counter.build()
+          .namespace("zeebe")
+          .name("evaluated_dmn_elements_total")
+          .help("Number of evaluated DMN elements including required decisions")
+          .labelNames("organizationId", "action", "partition")
+          .register();
   private static final String ORGANIZATION_ID =
       System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
-
   private static final String ACTION_ACTIVATED = "activated";
   private static final String ACTION_COMPLETED = "completed";
   private static final String ACTION_TERMINATED = "terminated";
-
+  private static final String ACTION_EVALUATED_SUCCESSFULLY = "evaluated_successfully";
+  private static final String ACTION_EVALUATED_FAILED = "evaluated_failed";
   private static final Counter ELEMENT_INSTANCE_EVENTS =
       Counter.build()
           .namespace("zeebe")
@@ -27,15 +41,6 @@ public final class ProcessEngineMetrics {
           .help("Number of process element instance events")
           .labelNames("action", "type", "partition")
           .register();
-
-  private static final Counter EXECUTED_INSTANCES =
-      Counter.build()
-          .namespace("zeebe")
-          .name("executed_instances_total")
-          .help("Number of executed instances")
-          .labelNames("organizationId", "type", "action", "partition")
-          .register();
-
   private final String partitionIdLabel;
 
   public ProcessEngineMetrics(final int partitionId) {
@@ -86,5 +91,17 @@ public final class ProcessEngineMetrics {
   private boolean isRootProcessInstance(
       final BpmnElementType elementType, final long parentProcessInstanceKey) {
     return isProcessInstance(elementType) && parentProcessInstanceKey == -1;
+  }
+
+  public void increaseSuccessfullyEvaluatedDmnElements(final int amount) {
+    increaseEvaluatedDmnElements(ACTION_EVALUATED_SUCCESSFULLY, amount);
+  }
+
+  public void increaseFailedEvaluatedDmnElements(final int amount) {
+    increaseEvaluatedDmnElements(ACTION_EVALUATED_FAILED, amount);
+  }
+
+  private void increaseEvaluatedDmnElements(final String action, final int amount) {
+    EVALUATED_DMN_ELEMENTS.labels(ORGANIZATION_ID, action, partitionIdLabel).inc(amount);
   }
 }
