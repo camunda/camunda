@@ -63,6 +63,13 @@ class FeelToMessagePackTransformer {
           }
         }
       }
+      case ValTime(time) => writeValue(ValString(time.format))
+      case ValLocalTime(time) => writeValue((ValString(time.toString)))
+      case ValDate(date) => writeValue(ValString(date.toString))
+      case ValDateTime(dateTime) => writeValue(ValString(dateTime.toString))
+      case ValLocalDateTime(dateTime) => writeValue(ValString(dateTime.toString))
+      case ValDayTimeDuration(duration) => writeValue(ValString(duration.toString))
+      case ValYearMonthDuration(duration) => writeValue(ValString(duration.toString))
       case other => {
         writer.writeNil()
         LOGGER.trace("No FEEL to MessagePack transformation for '{}'. Using 'null' instead.", other)
