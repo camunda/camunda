@@ -128,7 +128,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private volatile HealthStatus health = HealthStatus.HEALTHY;
 
   private boolean ongoingTransition = false;
-  private boolean ongoingSnapshotReplication = false;
+  // Keeps track of snapshot replication to notify new listeners about missed events
+  private MissedSnapshotReplicationEvents missedSnapshotReplicationEvents =
+      MissedSnapshotReplicationEvents.NONE;
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -470,10 +472,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     threadContext.execute(
         () -> {
           snapshotReplicationListeners.add(snapshotReplicationListener);
-          if (ongoingSnapshotReplication) {
-            // Notify listener immediately if it registered during an ongoing replication.
-            // This is to prevent missing necessary state transitions.
-            snapshotReplicationListener.onSnapshotReplicationStarted();
+          // Notify listener immediately if it registered during an ongoing replication.
+          // This is to prevent missing necessary state transitions.
+          switch (missedSnapshotReplicationEvents) {
+            case STARTED -> snapshotReplicationListener.onSnapshotReplicationStarted();
+            case COMPLETED -> {
+              snapshotReplicationListener.onSnapshotReplicationStarted();
+              snapshotReplicationListener.onSnapshotReplicationCompleted(term);
+            }
+            default -> {}
           }
         });
   }
@@ -491,7 +498,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public void notifySnapshotReplicationStarted() {
     threadContext.execute(
         () -> {
-          ongoingSnapshotReplication = true;
+          missedSnapshotReplicationEvents = MissedSnapshotReplicationEvents.STARTED;
           snapshotReplicationListeners.forEach(
               SnapshotReplicationListener::onSnapshotReplicationStarted);
         });
@@ -501,7 +508,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     threadContext.execute(
         () -> {
           snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
-          ongoingSnapshotReplication = false;
+          missedSnapshotReplicationEvents = MissedSnapshotReplicationEvents.COMPLETED;
         });
   }
 
@@ -1138,5 +1145,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public enum State {
     ACTIVE,
     READY,
+  }
+
+  /**
+   * Keeps track of potentially missed snapshot replication events to properly notify newly
+   * registered listeners.
+   */
+  private enum MissedSnapshotReplicationEvents {
+    NONE,
+    STARTED,
+    COMPLETED
   }
 }
