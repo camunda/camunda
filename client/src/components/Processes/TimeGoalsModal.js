@@ -27,28 +27,31 @@ import {loadTenants, updateGoals} from './service';
 
 import './TimeGoalsModal.scss';
 
+const defaultGoals = [
+  {
+    type: 'targetDuration',
+    percentile: '75',
+    value: '',
+    unit: null,
+  },
+  {
+    type: 'slaDuration',
+    percentile: '99',
+    value: '',
+    unit: null,
+  },
+];
+
 export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process}) {
   const isEditing = process.timeGoals?.length > 0;
   const [data, setData] = useState();
+  const [visibleGoals, setVisibleGoals] = useState(
+    defaultGoals.map((goal) =>
+      isEditing ? process.timeGoals.some(({type}) => goal.type === type) : true
+    )
+  );
   const [goals, setGoals] = useState(
-    isEditing
-      ? process.timeGoals
-      : [
-          {
-            type: 'targetDuration',
-            percentile: '75',
-            value: '',
-            unit: null,
-            visible: true,
-          },
-          {
-            type: 'slaDuration',
-            percentile: '99',
-            value: '',
-            unit: null,
-            visible: true,
-          },
-        ]
+    defaultGoals.map((goal) => process.timeGoals?.find(({type}) => goal.type === type) || goal)
   );
   const [deleting, setDeleting] = useState();
 
@@ -127,8 +130,12 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
               <LabeledInput
                 type="checkbox"
                 label={t('processes.timeGoals.displayGoal')}
-                checked={visible}
-                onChange={(evt) => updateGoalValue(idx, 'visible', evt.target.checked)}
+                checked={visibleGoals[idx]}
+                onChange={(evt) =>
+                  setVisibleGoals((visibleGoals) =>
+                    update(visibleGoals, {[idx]: {$set: evt.target.checked}})
+                  )
+                }
               />
             </div>
           ))}
@@ -166,7 +173,13 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
         <Button main onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary onClick={() => onConfirm(goals)}>
+        <Button
+          main
+          primary
+          onClick={() => {
+            onConfirm(goals.filter((_, idx) => visibleGoals[idx]));
+          }}
+        >
           {isEditing ? t('processes.timeGoals.updateGoals') : t('processes.timeGoals.updateGoals')}
         </Button>
       </Modal.Actions>

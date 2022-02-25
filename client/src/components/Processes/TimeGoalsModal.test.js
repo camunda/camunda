@@ -39,17 +39,15 @@ const processWithGoals = {
   timeGoals: [
     {
       type: 'targetDuration',
-      percentile: '75',
+      percentile: '25',
       value: '1',
       unit: 'weeks',
-      visible: true,
     },
     {
       type: 'slaDuration',
-      percentile: '99',
+      percentile: '95',
       value: '5',
       unit: 'days',
-      visible: true,
     },
   ],
 };
@@ -57,10 +55,24 @@ const processWithGoals = {
 it('should load initialGoals', () => {
   const node = shallow(<TimeGoalsModal {...props} process={processWithGoals} />);
 
-  expect(node.find(Select).at(0).prop('value')).toBe('75');
+  expect(node.find(Select).at(0).prop('value')).toBe('25');
   expect(node.find(Input).at(0).prop('value')).toBe('1');
   expect(node.find('.unitSelection').at(0).prop('value')).toBe('weeks');
-  expect(node.find(Select).at(2).prop('value')).toBe('99');
+  expect(node.find(Select).at(2).prop('value')).toBe('95');
+});
+
+it('should use default goals if one of the initial goals is not present', async () => {
+  const node = shallow(
+    <TimeGoalsModal
+      {...props}
+      process={{...processWithGoals, timeGoals: [processWithGoals.timeGoals[1]]}}
+    />
+  );
+
+  await runAllEffects();
+
+  expect(node.find(Select).at(0).prop('value')).toBe('75');
+  expect(node.find(Select).at(2).prop('value')).toBe('95');
 });
 
 it('should evaluate and pass report result to chart component', async () => {
@@ -96,8 +108,8 @@ it('should invoke onConfirm when saving goals', () => {
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
-    {type: 'targetDuration', percentile: '75', unit: 'days', value: '20', visible: true},
-    {type: 'slaDuration', percentile: '99', unit: 'days', value: '3', visible: true},
+    {type: 'targetDuration', percentile: '75', unit: 'days', value: '20'},
+    {type: 'slaDuration', percentile: '99', unit: 'days', value: '3'},
   ]);
 });
 
@@ -152,4 +164,19 @@ it('should invoke removeGoals when confirming the delete modal', async () => {
   node.find(Deleter).simulate('close');
   expect(node.find(Deleter).prop('entity')).toEqual();
   expect(removeSpy).toHaveBeenCalled();
+});
+
+it('should filter out hidden goals when saving', async () => {
+  const spy = jest.fn();
+  const node = shallow(<TimeGoalsModal {...props} onConfirm={spy} process={processWithGoals} />);
+
+  await runAllEffects();
+
+  node
+    .find('[type="checkbox"]')
+    .at(0)
+    .simulate('change', {target: {checked: false}});
+  node.find('[primary]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith([processWithGoals.timeGoals[1]]);
 });
