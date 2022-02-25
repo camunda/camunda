@@ -33,8 +33,7 @@ public final class ZeebeRuntimeValidators {
     return List.of(
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
-            .hasValidExpression(
-                ZeebeInput::getSource, expression -> expression.isNonStatic().isMandatory())
+            .hasValidExpression(ZeebeInput::getSource, ExpressionVerification::isMandatory)
             .hasValidPath(ZeebeInput::getTarget)
             .build(expressionLanguage),
         // ----------------------------------------
