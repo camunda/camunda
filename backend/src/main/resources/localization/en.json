@@ -1011,6 +1011,7 @@
           "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
           "includesOpenIncident": "Open",
           "includesResolvedIncident": "Resolved",
+          "includesClosedIncident": "Closed",
           "doesNotIncludeIncident": "No"
         },
         "modalLabels": {
@@ -1026,6 +1027,7 @@
           "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
           "includesOpenIncident": "Open Incidents",
           "includesResolvedIncident": "Resolved Incidents",
+          "includesClosedIncident": "Closed Incidents",
           "doesNotIncludeIncident": "Without Incidents"
         }
       },

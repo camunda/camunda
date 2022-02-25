@@ -1011,6 +1011,7 @@
           "completedOrCanceledFlowNodesOnly": "abgeschlossene oder abgebrochene",
           "includesOpenIncident": "Offene",
           "includesResolvedIncident": "Gelöste",
+          "includesClosedIncident": "Geschlossene",
           "doesNotIncludeIncident": "Keine"
         },
         "modalLabels": {
@@ -1026,6 +1027,7 @@
           "completedOrCanceledFlowNodesOnly": "Abgeschlossen oder Abgebrochen",
           "includesOpenIncident": "Offenen Zwischenfällen",
           "includesResolvedIncident": "Gelösten Zwischenfällen",
+          "includesClosedIncident": "Geschlossenen Zwischenfällen",
           "doesNotIncludeIncident": "Keinen Zwischenfällen"
         }
       },
