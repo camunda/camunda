@@ -18,6 +18,7 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CountDownLatch;
@@ -61,13 +62,42 @@ public class SnapshotReplicationListenerTest {
   }
 
   @Test
-  public void shouldNotifyOnRegisteringListener() {
+  public void shouldCallStartedOnRegister() {
     // given
     final var snapshotReplicationListener = mock(SnapshotReplicationListener.class);
     final var follower = raftRule.getFollower().orElseThrow();
-    // then
+    // when
     follower.getContext().notifySnapshotReplicationStarted();
     follower.getContext().addSnapshotReplicationListener(snapshotReplicationListener);
+    // then
     verify(snapshotReplicationListener, timeout(1_000).times(1)).onSnapshotReplicationStarted();
+  }
+
+  @Test
+  public void shouldCallStartedAndCompletedOnRegister() {
+    // given
+    final var snapshotReplicationListener = mock(SnapshotReplicationListener.class);
+    final var follower = raftRule.getFollower().orElseThrow();
+    // when
+    follower.getContext().notifySnapshotReplicationStarted();
+    follower.getContext().notifySnapshotReplicationCompleted();
+    follower.getContext().addSnapshotReplicationListener(snapshotReplicationListener);
+    // then
+    verify(snapshotReplicationListener, timeout(1_000).times(1)).onSnapshotReplicationStarted();
+    verify(snapshotReplicationListener, timeout(1_000).times(1))
+        .onSnapshotReplicationCompleted(follower.getTerm());
+  }
+
+  @Test
+  public void shouldNotCallListenerOnRegister() {
+    // given
+    final var snapshotReplicationListener = mock(SnapshotReplicationListener.class);
+    final var follower = raftRule.getFollower().orElseThrow();
+    // when
+    follower.getContext().addSnapshotReplicationListener(snapshotReplicationListener);
+    // then
+    verify(snapshotReplicationListener, times(0)).onSnapshotReplicationStarted();
+    verify(snapshotReplicationListener, times(0))
+        .onSnapshotReplicationCompleted(follower.getTerm());
   }
 }
