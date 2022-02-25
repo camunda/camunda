@@ -11,8 +11,8 @@ import lombok.Data;
 public class CCSMAuthConfiguration {
   // the url to Identity
   private String issuerUrl;
-  // the url to Identity (backchannel)
-  private String issuerBackchannelUrl;
+  // the url to Identity (back channel for container to container communication)
+  private String issuerBackendUrl;
   // Identity client id to use by Optimize
   private String clientId;
   // Identity client secret to use by Optimize

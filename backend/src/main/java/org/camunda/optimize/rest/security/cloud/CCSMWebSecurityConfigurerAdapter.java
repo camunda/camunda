@@ -119,7 +119,7 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
   private IdentityConfiguration identityConfiguration() {
     final CCSMAuthConfiguration ccsmAuthConfig = getCcsmAuthConfiguration();
     return new IdentityConfiguration(
-        ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackchannelUrl(),
+        ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
         ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
     );
   }

@@ -12,9 +12,11 @@ security:
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
     ccsm:
-      issuerUrl: ${CAMUNDA_OPTIMIZE_IAM_ISSUER_URL:}
-      clientId: ${CAMUNDA_OPTIMIZE_IAM_CLIENTID:}
-      clientSecret: ${CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET:}
+      issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
+      issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}}
+      clientId: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID:}
+      clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
+      audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set
