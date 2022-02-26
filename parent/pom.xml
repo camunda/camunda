@@ -113,6 +113,7 @@
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.139</version.classgraph>
     <version.archunit>0.23.0</version.archunit>
+    <version.spotbugs>4.5.3</version.spotbugs>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -937,6 +938,12 @@
         <groupId>com.esotericsoftware</groupId>
         <artifactId>minlog</artifactId>
         <version>${version.minlog}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-annotations</artifactId>
+        <version>${version.spotbugs}</version>
       </dependency>
 
       <!-- primarily for dependency convergence in wiremock, can be removed once fixed upstream -->
