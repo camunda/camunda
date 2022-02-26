@@ -7,6 +7,12 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.DefaultAnnotationForFields;
+import edu.umd.cs.findbugs.annotations.DefaultAnnotationForParameters;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -64,6 +70,9 @@ import javax.annotation.concurrent.ThreadSafe;
 @SuppressWarnings("java:S1452")
 @ThreadSafe
 @Immutable
+@ReturnValuesAreNonnullByDefault
+@DefaultAnnotationForParameters(NonNull.class)
+@DefaultAnnotationForFields(NonNull.class)
 final class ValueTypes {
   private final Map<ValueType, ValueTypeInfo<?>> types;
 
@@ -83,6 +92,8 @@ final class ValueTypes {
     return typeInfo;
   }
 
+  @Nullable
+  @CheckForNull
   static ValueTypeInfo<?> getTypeInfoOrNull(final ValueType valueType) {
     return Singleton.INSTANCE.types.get(valueType);
   }
@@ -90,6 +101,7 @@ final class ValueTypes {
   // suppressed warning about method length; this is simply populating a map, which while tedious,
   // isn't incredibly complex
   @SuppressWarnings("java:S138")
+  @NonNull
   private Map<ValueType, ValueTypeInfo<?>> loadValueTypes() {
     final Map<ValueType, ValueTypeInfo<?>> mapping = new EnumMap<>(ValueType.class);
 

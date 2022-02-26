@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
+import edu.umd.cs.findbugs.annotations.DefaultAnnotationForFields;
+import edu.umd.cs.findbugs.annotations.DefaultAnnotationForParameters;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
+import net.jcip.annotations.Immutable;
 
 /**
  * Provides mapping info between a value type and various constructs. Can be extended in the future
@@ -20,14 +25,16 @@ import javax.annotation.concurrent.Immutable;
  *     io.camunda.zeebe.protocol.record.value.ImmutableErrorRecordValue}
  */
 @Immutable
+@DefaultAnnotationForParameters(NonNull.class)
+@DefaultAnnotationForFields(NonNull.class)
+@ReturnValuesAreNonnullByDefault
 final class ValueTypeInfo<T extends RecordValue> {
   private final Class<T> valueClass;
-
   private final Class<? extends Intent> intentClass;
 
   ValueTypeInfo(final Class<T> valueClass, final Class<? extends Intent> intentClass) {
-    this.valueClass = valueClass;
-    this.intentClass = intentClass;
+    this.valueClass = Objects.requireNonNull(valueClass, "must specify a value class");
+    this.intentClass = Objects.requireNonNull(intentClass, "must specify an intent");
   }
 
   Class<? extends T> getValueClass() {

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
@@ -43,7 +44,8 @@ final class IntentTypeIdResolver extends TypeIdResolverBase {
     return typeFactory.constructType(mapValueTypeToIntentClass(valueType));
   }
 
-  private Class<? extends Intent> mapValueTypeToIntentClass(final ValueType valueType) {
+  @NonNull
+  private Class<? extends Intent> mapValueTypeToIntentClass(@NonNull final ValueType valueType) {
     final ValueTypeInfo<?> typeInfo = ValueTypes.getTypeInfoOrNull(valueType);
     if (typeInfo == null) {
       return Intent.UNKNOWN.getClass();

@@ -12,8 +12,10 @@ import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Objects;
 
 /**
  * A {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} that maps a serialized {@link
@@ -45,7 +47,10 @@ final class ValueTypeIdResolver extends TypeIdResolverBase {
     return typeFactory.constructType(mapValueTypeToRecordValue(valueType));
   }
 
-  private Class<? extends RecordValue> mapValueTypeToRecordValue(final ValueType valueType) {
-    return ValueTypes.getTypeInfo(valueType).getValueClass();
+  @NonNull
+  private Class<? extends RecordValue> mapValueTypeToRecordValue(
+      @NonNull final ValueType valueType) {
+    return ValueTypes.getTypeInfo(Objects.requireNonNull(valueType, "must specify a value type"))
+        .getValueClass();
   }
 }

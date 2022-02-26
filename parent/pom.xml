@@ -114,6 +114,7 @@
     <version.classgraph>4.8.139</version.classgraph>
     <version.archunit>0.23.0</version.archunit>
     <version.spotbugs>4.5.3</version.spotbugs>
+    <version.jcip>1.0</version.jcip>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -944,6 +945,12 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${version.spotbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.jcip</groupId>
+        <artifactId>jcip-annotations</artifactId>
+        <version>${version.jcip}</version>
       </dependency>
 
       <!-- primarily for dependency convergence in wiremock, can be removed once fixed upstream -->

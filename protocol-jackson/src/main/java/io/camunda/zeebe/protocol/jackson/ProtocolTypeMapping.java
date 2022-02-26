@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
+import edu.umd.cs.findbugs.annotations.DefaultAnnotationForFields;
+import edu.umd.cs.findbugs.annotations.DefaultAnnotationForParameters;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.github.classgraph.ClassGraph;
@@ -15,12 +20,9 @@ import io.github.classgraph.ClassInfoList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.ThreadSafe;
+import net.jcip.annotations.Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +38,10 @@ import org.slf4j.LoggerFactory;
  * <p>Expected usage is via {@link #forEach(Consumer)}. See {@link ZeebeProtocolModule} for an
  * example.
  */
-@ThreadSafe
 @Immutable
-@ParametersAreNonnullByDefault
+@ReturnValuesAreNonnullByDefault
+@DefaultAnnotationForParameters(NonNull.class)
+@DefaultAnnotationForFields(NonNull.class)
 final class ProtocolTypeMapping {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolTypeMapping.class);
   private final Map<Class<?>, TypeMapping<?>> typeMappings;
@@ -51,12 +54,12 @@ final class ProtocolTypeMapping {
     Singleton.INSTANCE.typeMappings.values().forEach(consumer);
   }
 
+  @SuppressWarnings("java:S1452") // the expected usage is to pass it as is with the wildcard type
   @Nullable
-  static TypeMapping<?> mappingForConcreteType(final Class<?> concreteType) {
+  static TypeMapping<?> mappingForConcreteType(@Nullable final Class<?> concreteType) {
     return Singleton.INSTANCE.typeMappings.get(concreteType);
   }
 
-  @Nonnull
   private Map<Class<?>, TypeMapping<?>> loadTypeMappings() {
     final Map<Class<?>, TypeMapping<?>> mappings = new HashMap<>();
     final String protocolPackageName = Record.class.getPackage().getName();
@@ -75,9 +78,11 @@ final class ProtocolTypeMapping {
     return mappings;
   }
 
-  @Nonnull
   private <T> Map<Class<?>, TypeMapping<T>> loadTypeMappingsFor(
       final ClassInfo abstractType, final Class<T> abstractClass) {
+    Objects.requireNonNull(abstractType, "must specify an abstract type");
+    Objects.requireNonNull(abstractClass, "must specify an abstract class");
+
     final Map<Class<?>, TypeMapping<T>> mappings = new HashMap<>();
     final ClassInfoList concreteTypes =
         abstractType.getClassesImplementing().filter(ClassInfo::isStandardClass);
@@ -98,9 +103,12 @@ final class ProtocolTypeMapping {
     return mappings;
   }
 
-  @Nonnull
   private <T> Map<Class<?>, TypeMapping<T>> loadTypeMappingsFor(
       final ClassInfo concreteType, final Class<T> abstractClass, final Class<T> concreteClass) {
+    Objects.requireNonNull(concreteType, "must specify a concrete type");
+    Objects.requireNonNull(abstractClass, "must specify an abstract class");
+    Objects.requireNonNull(concreteClass, "must specify a concrete class");
+
     final Map<Class<?>, TypeMapping<T>> mappings = new HashMap<>();
     final ClassInfoList builderTypes =
         concreteType.getInnerClasses().filter(info -> "Builder".equals(info.getSimpleName()));
@@ -121,10 +129,9 @@ final class ProtocolTypeMapping {
     return mappings;
   }
 
-  @Nonnull
   private ClassInfoList findProtocolTypes(final String packageName) {
     return new ClassGraph()
-        .acceptPackages(packageName)
+        .acceptPackages(Objects.requireNonNull(packageName, "must specify a package name"))
         .enableAnnotationInfo()
         .scan()
         .getAllInterfaces()
@@ -132,6 +139,9 @@ final class ProtocolTypeMapping {
   }
 
   @Immutable
+  @ReturnValuesAreNonnullByDefault
+  @DefaultAnnotationForParameters(NonNull.class)
+  @DefaultAnnotationForFields(NonNull.class)
   static final class TypeMapping<T> {
     final Class<T> abstractClass;
     final Class<? extends T> concreteClass;
@@ -141,9 +151,9 @@ final class ProtocolTypeMapping {
         final Class<T> abstractClass,
         final Class<? extends T> concreteClass,
         final Class<?> builderClass) {
-      this.abstractClass = abstractClass;
-      this.concreteClass = concreteClass;
-      this.builderClass = builderClass;
+      this.abstractClass = Objects.requireNonNull(abstractClass, "must specify an abstract class");
+      this.concreteClass = Objects.requireNonNull(concreteClass, "must specify a concrete class");
+      this.builderClass = Objects.requireNonNull(builderClass, "must specify a builder class");
     }
   }
 
