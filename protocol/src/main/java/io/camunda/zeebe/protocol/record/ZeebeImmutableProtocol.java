@@ -15,14 +15,10 @@
  */
 package io.camunda.zeebe.protocol.record;
 
-import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol.ZeebeImmutableProtocolType;
-import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.immutables.annotate.InjectAnnotation;
-import org.immutables.annotate.InjectAnnotation.Where;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ValidationMethod;
 
@@ -55,16 +51,4 @@ import org.immutables.value.Value.Style.ValidationMethod;
     // present in the builder; this will be useful to integrate with Jackson in protocol-jackson,
     // for example
     init = "with*")
-@InjectAnnotation(type = ZeebeImmutableProtocolType.class, target = Where.IMMUTABLE_TYPE)
-@Documented
-public @interface ZeebeImmutableProtocol {
-
-  /**
-   * This annotation gets injected into all immutable generated types. This allows us to introspect
-   * at runtime, later, if a value is an immutable variant of a protocol type.
-   */
-  @Documented
-  @Target(ElementType.TYPE)
-  @Retention(value = RetentionPolicy.RUNTIME)
-  @interface ZeebeImmutableProtocolType {}
-}
+public @interface ZeebeImmutableProtocol {}

@@ -52,21 +52,33 @@
     </dependency>
 
     <dependency>
-      <groupId>org.immutables</groupId>
-      <artifactId>annotate</artifactId>
-      <version>${version.immutables}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- ArchUnit tests are used to ensure we always generate protocol types -->
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -149,22 +161,11 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- required, as the tool is not capable of looking up the generated sources by itself -->
-          <sourcepath>${project.basedir}/src/main;${project.basedir}/target/generated-sources</sourcepath>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <compilerArgs combine.children="append">
             <!-- required by javac detection logic in immutables -->
             <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-            <!-- required to correctly deserialize objects with Jackson in protocol-jackson -->
-            <arg>-parameters</arg>
           </compilerArgs>
           <fork>true</fork>
         </configuration>

@@ -112,6 +112,7 @@
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.139</version.classgraph>
+    <version.archunit>0.23.0</version.archunit>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -470,6 +471,18 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${version.junit4}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit</artifactId>
+        <version>${version.archunit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${version.archunit}</version>
       </dependency>
 
       <dependency>
