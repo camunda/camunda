@@ -22,8 +22,7 @@ public interface JsonSerializable {
   /**
    * @return a JSON marshaled representation
    * @throws UnsupportedOperationException if the implementation does not support it; in that case,
-   *     you may try using a library like Jackson with our {@link io.camunda.zeebe.protocol.jackson}
-   *     module.
+   *     you may try using a library like Jackson with our {@code protocol-jackson} module.
    */
   @Value.NonAttribute
   default String toJson() {
