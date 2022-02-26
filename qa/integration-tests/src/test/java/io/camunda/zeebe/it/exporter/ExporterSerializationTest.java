@@ -33,8 +33,9 @@ import org.junit.Test;
 public final class ExporterSerializationTest {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
-  private int debugExporterPort;
+
   @Rule public ClusteringRule clusteringRule = new ClusteringRule(1, 1, 1, this::configureBroker);
+  private int debugExporterPort;
 
   @Test
   public void shouldDeserializeExportedRecords() throws IOException {
