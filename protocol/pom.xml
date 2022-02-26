@@ -35,12 +35,6 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
-    <!-- will correctly annotate the immutable classes with concurrency annotations -->
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-    </dependency>
-
     <!--
       scoped as provided since the annotations are not retained at runtime, and therefore it can be
       omitted entirely
