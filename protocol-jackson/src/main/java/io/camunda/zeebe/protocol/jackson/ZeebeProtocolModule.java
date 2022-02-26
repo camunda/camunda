@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.jackson.ProtocolTypeMapping.TypeMapping;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.Objects;
 
@@ -35,8 +36,8 @@ import java.util.Objects;
  */
 public final class ZeebeProtocolModule extends SimpleModule {
   public ZeebeProtocolModule() {
-    setMixInAnnotation(Record.class, RecordMixin.class);
     ProtocolTypeMapping.forEach(this::addProtocolTypeMapping);
+    setMixInAnnotation(ImmutableRecord.Builder.class, RecordMixin.class);
   }
 
   @Override
