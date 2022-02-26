@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 /** Represents a record published to the log stream. */
 @Value.Immutable
 @ZeebeImmutableProtocol
-public interface Record<T extends RecordValue> extends JsonSerializable, Cloneable {
+public interface Record<T extends RecordValue> extends JsonSerializable {
   /**
    * Retrieves the position of the record. Positions are locally unique to the partition, and
    * monotonically increasing. Records are then ordered on the partition by their positions, i.e.
