@@ -62,7 +62,7 @@ final class ProtocolTypeMapping {
 
   private Map<Class<?>, TypeMapping<?>> loadTypeMappings() {
     final Map<Class<?>, TypeMapping<?>> mappings = new HashMap<>();
-    final String protocolPackageName = Record.class.getPackage().getName();
+    final String protocolPackageName = Record.class.getPackage().getName() + "*";
     final ClassInfoList abstractTypes = findProtocolTypes(protocolPackageName);
     for (final ClassInfo abstractType : abstractTypes) {
       LOGGER.trace("Found abstract protocol type {}", abstractType);
@@ -81,11 +81,13 @@ final class ProtocolTypeMapping {
   private <T> Map<Class<?>, TypeMapping<T>> loadTypeMappingsFor(
       final ClassInfo abstractType, final Class<T> abstractClass) {
     Objects.requireNonNull(abstractType, "must specify an abstract type");
-    Objects.requireNonNull(abstractClass, "must specify an abstract class");
+    Objects.requireNonNull(abstractClass, "must specify the abstract class");
 
     final Map<Class<?>, TypeMapping<T>> mappings = new HashMap<>();
+    // a few of the abstract types actually extend each other, so we need to lookup only the direct
+    // concrete types, as otherwise we won't be able to tell which implementation is the right one
     final ClassInfoList concreteTypes =
-        abstractType.getClassesImplementing().filter(ClassInfo::isStandardClass);
+        abstractType.getClassesImplementing().filter(ClassInfo::isStandardClass).directOnly();
 
     for (final ClassInfo concreteType : concreteTypes) {
       final Class<T> concreteClass = concreteType.loadClass(abstractClass);

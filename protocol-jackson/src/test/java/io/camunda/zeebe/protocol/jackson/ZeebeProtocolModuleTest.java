@@ -9,11 +9,20 @@ package io.camunda.zeebe.protocol.jackson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import java.io.IOException;
 import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.Test;
@@ -44,5 +53,28 @@ final class ZeebeProtocolModuleTest {
     final JobBatchRecordValue other = mapper.readValue(serialized, JobBatchRecordValue.class);
 
     assertThat(deserialized).isEqualTo(other).isEqualTo(batch);
+  }
+
+  @Test
+  void shouldDeserializeRecord() throws IOException {
+    final ObjectMapper mapper = ZeebeProtocolModule.createMapper();
+    final DeploymentRecordValue deployment =
+        ImmutableDeploymentRecordValue.builder()
+            .addProcessesMetadata(ImmutableProcess.builder().build())
+            .build();
+    final Record<DeploymentRecordValue> record =
+        ImmutableRecord.<DeploymentRecordValue>builder()
+            .withRecordType(RecordType.EVENT)
+            .withIntent(DeploymentIntent.CREATED)
+            .withValueType(ValueType.DEPLOYMENT)
+            .withValue(deployment)
+            .build();
+
+    // when
+    final byte[] serialized = mapper.writeValueAsBytes(record);
+    final Record<DeploymentRecordValue> deserialized =
+        mapper.readValue(serialized, new TypeReference<Record<DeploymentRecordValue>>() {});
+
+    assertThat(deserialized).isEqualTo(record);
   }
 }
