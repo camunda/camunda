@@ -32,7 +32,7 @@ interface RecordMixin<T extends RecordValue> extends Record<T> {
   Intent getIntent();
 
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
-  @JsonTypeIdResolver(ValueTypeIdResolver.class)
+  @JsonTypeIdResolver(RecordValueTypeIdResolver.class)
   @Override
   T getValue();
 }

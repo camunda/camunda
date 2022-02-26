@@ -7,11 +7,6 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -23,33 +18,11 @@ import java.util.Objects;
  * io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue}, based on the value type of
  * the record.
  */
-final class ValueTypeIdResolver extends TypeIdResolverBase {
+final class RecordValueTypeIdResolver extends AbstractValueTypeIdResolver {
 
   @Override
-  public String idFromValue(final Object value) {
-    return ((ValueType) value).name();
-  }
-
-  @Override
-  public String idFromValueAndType(final Object value, final Class<?> suggestedType) {
-    return idFromValue(value);
-  }
-
-  @Override
-  public Id getMechanism() {
-    return Id.CUSTOM;
-  }
-
-  @Override
-  public JavaType typeFromId(final DatabindContext context, final String id) {
-    final ValueType valueType = ValueType.valueOf(id);
-    final TypeFactory typeFactory = context.getTypeFactory();
-    return typeFactory.constructType(mapValueTypeToRecordValue(valueType));
-  }
-
   @NonNull
-  private Class<? extends RecordValue> mapValueTypeToRecordValue(
-      @NonNull final ValueType valueType) {
+  protected Class<? extends RecordValue> mapFromValueType(@NonNull final ValueType valueType) {
     return ValueTypes.getTypeInfo(Objects.requireNonNull(valueType, "must specify a value type"))
         .getValueClass();
   }

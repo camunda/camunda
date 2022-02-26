@@ -7,46 +7,23 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.util.Objects;
 
 /**
  * A {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} that maps a serialized {@link
  * Intent} value to a concrete implementation enum, e.g. {@link
  * io.camunda.zeebe.protocol.record.intent.VariableIntent}, based on the value type of the record.
  */
-final class IntentTypeIdResolver extends TypeIdResolverBase {
+final class IntentTypeIdResolver extends AbstractValueTypeIdResolver {
   @Override
-  public String idFromValue(final Object value) {
-    return ((ValueType) value).name();
-  }
-
-  @Override
-  public String idFromValueAndType(final Object value, final Class<?> suggestedType) {
-    return idFromValue(value);
-  }
-
-  @Override
-  public Id getMechanism() {
-    return Id.CUSTOM;
-  }
-
-  @Override
-  public JavaType typeFromId(final DatabindContext context, final String id) {
-    final ValueType valueType = ValueType.valueOf(id);
-    final TypeFactory typeFactory = context.getTypeFactory();
-    return typeFactory.constructType(mapValueTypeToIntentClass(valueType));
-  }
-
   @NonNull
-  private Class<? extends Intent> mapValueTypeToIntentClass(@NonNull final ValueType valueType) {
-    final ValueTypeInfo<?> typeInfo = ValueTypes.getTypeInfoOrNull(valueType);
+  protected Class<? extends Intent> mapFromValueType(@NonNull final ValueType valueType) {
+    final ValueTypeInfo<?> typeInfo =
+        ValueTypes.getTypeInfoOrNull(
+            Objects.requireNonNull(valueType, "must specify a value type"));
     if (typeInfo == null) {
       return Intent.UNKNOWN.getClass();
     }

@@ -44,7 +44,7 @@ final class ValueTypeIdResolveTest {
             mapper.getDeserializationConfig(),
             mapper.createParser("{}"),
             mapper.getInjectableValues());
-    final ValueTypeIdResolver resolver = new ValueTypeIdResolver();
+    final RecordValueTypeIdResolver resolver = new RecordValueTypeIdResolver();
     final JavaType resolvedType = resolver.typeFromId(context, resolver.idFromValue(type));
 
     assertThat(RecordValue.class).isAssignableFrom(resolvedType.getRawClass());
