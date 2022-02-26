@@ -1,9 +1,10 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "clients/java/revapi.filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself",
         "include": [
           "io\\.camunda:zeebe-client-java:.*"
         ]
@@ -21,6 +22,7 @@
   },
   {
     "extension": "revapi.differences",
+    "id": "clients/java/revapi.differences",
     "configuration": {
       "ignore": true,
       "differences": [

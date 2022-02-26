@@ -1,9 +1,10 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "bpmn-model/revapi.filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself",
         "include": [
           "io\\.camunda:zeebe-bpmn-model:.*"
         ]
@@ -12,6 +13,7 @@
   },
   {
     "extension": "revapi.differences",
+    "id": "bpmn-model/revapi.differences",
     "configuration": {
       "ignore": true,
       "differences": [

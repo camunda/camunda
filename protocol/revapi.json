@@ -1,15 +1,17 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "protocol/revapi.filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself and build time annotations",
         "include": ["io\\.camunda:zeebe-protocol:.*"]
       }
     }
   },
   {
     "extension": "revapi.differences",
+    "id": "protocol/revapi.differences",
     "configuration": {
       "ignore": true,
       "differences": [

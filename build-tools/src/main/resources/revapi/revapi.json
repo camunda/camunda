@@ -1,6 +1,7 @@
 [
   {
     "extension": "revapi.java",
+    "id": "build-tools/revapi.java",
     "configuration": {
       "reportUsesFor": "all-differences",
       "missing-classes": {
@@ -12,6 +13,7 @@
   },
   {
     "extension": "revapi.versions",
+    "id": "build-tools/revapi.versions",
     "configuration": {
       "enabled": true,
       "passThroughDifferences": [
