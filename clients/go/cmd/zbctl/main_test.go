@@ -126,7 +126,7 @@ var tests = []testCase{
 			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
 			strings.Fields("--insecure create instance jobProcess"),
 		},
-		cmd:        strings.Fields("create --insecure worker jobType --handler echo"),
+		cmd:        strings.Fields("create --insecure worker jobType --maxJobsHandle 1 --handler echo"),
 		goldenFile: "testdata/create_worker.golden",
 	},
 	{
@@ -183,27 +183,45 @@ func TestZbctlWithInsecureGateway(t *testing.T) {
 			ContainerSuite: &containersuite.ContainerSuite{
 				WaitTime:       time.Second,
 				ContainerImage: "camunda/zeebe:current-test",
+				Env: map[string]string{
+					"ZEEBE_BROKER_GATEWAY_LONGPOLLING_ENABLED": "false",
+				},
 			},
 		})
 }
 
+func (s *integrationTestSuite) AfterTest(suiteName, testName string) {
+	// overload to ignore the parent behavior; we instead print the container logs after each failed
+	// test and not at the very end of all test cases, where it's more difficult to know what went
+	// wrong; if you add more top level tests, like TestCommonCommands, make sure to also add a block
+	// of code in case the test fails to print out the container logs using s.PrintFailedContainerLogs()
+}
+
 func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
-		s.T().Run(test.name, func(t *testing.T) {
+		passed := s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
-				if _, err := s.runCommand(cmd, false); err != nil {
-					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
+				if cmdOut, err := s.runCommand(cmd, false); err != nil {
+					t.Fatalf("failed while executing set up command '%s' (%v). Output: \n%s",
+						strings.Join(cmd, " "), err, cmdOut)
 				}
 			}
 
-			if len(test.setupCmds) > 0 {
-				// mitigates race condition between setup commands and test command
-				<-time.After(time.Second)
+			setupCmdsCount := len(test.setupCmds)
+			if setupCmdsCount > 0 {
+				// mitigates race condition between setup commands and test command, wait 1 second
+				// per setup command
+				<-time.After(time.Duration(setupCmdsCount) * time.Second)
 			}
 
 			cmdOut, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
-			if errors.Is(err, context.DeadlineExceeded) {
-				t.Fatalf("timed out while executing command '%s': %v", strings.Join(test.cmd, " "), err)
+			exitErr := &exec.ExitError{}
+			// if the exit code is -1, then the process did not start properly or was killed by a
+			// signal, which is what happens when its execution times out. as some tests rely
+			// on exiting with non 0 status codes, we can't just bail out if there is some error
+			if err != nil && errors.As(err, &exitErr) && exitErr.ExitCode() == -1 {
+				t.Fatalf("failed while executing command under test '%s' (%v). Output: \n%s",
+					strings.Join(test.cmd, " "), err, cmdOut)
 			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
@@ -227,6 +245,12 @@ func (s *integrationTestSuite) TestCommonCommands() {
 
 			assertEq(t, test, goldenOut, cmdOut)
 		})
+
+		if !passed {
+			_, _ = fmt.Fprintln(os.Stderr, "=====================================")
+			_, _ = fmt.Fprintf(os.Stderr, "Test case '%s' failed, printing container logs up until now\n", test.name)
+			s.PrintFailedContainerLogs()
+		}
 	}
 }
 
@@ -295,6 +319,7 @@ func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool,
 	defer cancel()
 
 	args := command
+	args = append(args, "--requestTimeout", "10s")
 	if useHostAndPort {
 		args = append(args, "--host", s.GatewayHost)
 		args = append(args, "--port", fmt.Sprint(s.GatewayPort))
@@ -304,7 +329,8 @@ func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool,
 	cmd := exec.CommandContext(ctx, fmt.Sprintf("./dist/%s", zbctl), args...)
 
 	cmd.Env = append(cmd.Env, envVars...)
-	return cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
+	return output, err
 }
 
 func buildZbctl() ([]byte, error) {
@@ -321,7 +347,9 @@ func buildZbctl() ([]byte, error) {
 	defer cancel()
 
 	// we need to build all binaries, because this is run after the go build stage on CI and will overwrite the binaries
-	cmd := exec.CommandContext(ctx, "./build.sh")
+	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
 	cmd.Env = append(os.Environ(), "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
+	fmt.Printf("Building zbctl before running the tests with command: %s\n", cmd.String())
+
 	return cmd.CombinedOutput()
 }

@@ -36,7 +36,6 @@ import (
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
 )
 
-const DefaultRequestTimeout = 15 * time.Second
 const DefaultKeepAlive = 45 * time.Second
 const DefaultAddressHost = "127.0.0.1"
 const DefaultAddressPort = "26500"

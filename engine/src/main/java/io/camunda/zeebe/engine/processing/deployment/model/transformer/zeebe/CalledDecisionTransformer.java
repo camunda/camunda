@@ -8,19 +8,25 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 
 public final class CalledDecisionTransformer {
 
   public void transform(
-      final ExecutableCalledDecision executableElement, final ZeebeCalledDecision calledDecision) {
+      final ExecutableCalledDecision executableElement,
+      final TransformContext context,
+      final ZeebeCalledDecision calledDecision) {
 
     if (calledDecision == null) {
       return;
     }
 
-    final var decisionId = calledDecision.getDecisionId();
-    executableElement.setDecisionId(decisionId);
+    final var expressionLanguage = context.getExpressionLanguage();
+
+    final var decisionIdExpression =
+        expressionLanguage.parseExpression(calledDecision.getDecisionId());
+    executableElement.setDecisionId(decisionIdExpression);
 
     final var resultVariable = calledDecision.getResultVariable();
     executableElement.setResultVariable(resultVariable);

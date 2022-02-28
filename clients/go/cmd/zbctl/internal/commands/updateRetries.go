@@ -45,7 +45,7 @@ var updateRetriesCmd = &cobra.Command{
 	Args:    keyArg(&updateRetriesKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		resp, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)

@@ -57,6 +57,12 @@
             "elementInstanceKey": {
               "type": "long"
             },
+            "evaluationFailureMessage": {
+              "type": "keyword"
+            },
+            "failedDecisionId": {
+              "type": "keyword"
+            },
             "evaluatedDecisions": {
               "properties": {
                 "decisionId": {
@@ -64,6 +70,9 @@
                 },
                 "decisionName": {
                   "type": "keyword"
+                },
+                "decisionKey": {
+                  "type": "long"
                 },
                 "decisionType": {
                   "type": "keyword"

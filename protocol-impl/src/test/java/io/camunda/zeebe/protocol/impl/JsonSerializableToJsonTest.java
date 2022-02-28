@@ -820,12 +820,15 @@ final class JsonSerializableToJsonTest {
                       .setDecisionVersion(1)
                       .setProcessInstanceKey(4L)
                       .setElementInstanceKey(5L)
-                      .setElementId("element-id");
+                      .setElementId("element-id")
+                      .setEvaluationFailureMessage("evaluation-failure-message")
+                      .setFailedDecisionId("failed-decision-id");
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
                   .setDecisionId("decision-id")
                   .setDecisionName("decision-name")
+                  .setDecisionKey(6L)
                   .setDecisionType("DECISION_TABLE")
                   .setDecisionOutput(toMessagePack("'decision-output'"));
 
@@ -848,7 +851,94 @@ final class JsonSerializableToJsonTest {
 
               return record;
             },
-        "{'decisionKey':1,'decisionId':'decision-id','decisionName':'decision-name','decisionVersion':1,'decisionRequirementsKey':2,'decisionRequirementsId':'decision-requirements-id','decisionOutput':'\"decision-output\"','processDefinitionKey':3,'bpmnProcessId':'bpmn-process-id','processInstanceKey':4,'elementInstanceKey':5,'elementId':'element-id','evaluatedDecisions':[{'decisionId':'decision-id','decisionName':'decision-name','decisionOutput':'\"decision-output\"','decisionType':'DECISION_TABLE','evaluatedInputs':[{'inputId':'input-id','inputName':'input-name','inputValue':'\"input-value\"'}],'matchedRules':[{'ruleId':'rule-id','ruleIndex':1,'evaluatedOutputs':[{'outputId':'output-id','outputName':'output-name','outputValue':'\"output-value\"'}]}]}]}"
+        """
+          {
+              "decisionKey":1,
+              "decisionId":"decision-id",
+              "decisionName":"decision-name",
+              "decisionVersion":1,
+              "decisionRequirementsKey":2,
+              "decisionRequirementsId":"decision-requirements-id",
+              "decisionOutput":'"decision-output"',
+              "processDefinitionKey":3,
+              "bpmnProcessId":"bpmn-process-id",
+              "processInstanceKey":4,
+              "elementInstanceKey":5,
+              "elementId":"element-id",
+              "evaluatedDecisions":[
+                  {
+                      "decisionId":"decision-id",
+                      "decisionName":"decision-name",
+                      "decisionKey":6,
+                      "decisionOutput":'"decision-output"',
+                      "decisionType":"DECISION_TABLE",
+                      "evaluatedInputs":[
+                          {
+                              "inputId":"input-id",
+                              "inputName":"input-name",
+                              "inputValue":'"input-value"'
+                          }
+                      ],
+                      "matchedRules":[
+                          {
+                              "ruleId":"rule-id",
+                              "ruleIndex":1,
+                              "evaluatedOutputs":[
+                                  {
+                                      "outputId":"output-id",
+                                      "outputName":"output-name",
+                                      "outputValue":'"output-value"'
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              ],
+              "evaluationFailureMessage":"evaluation-failure-message",
+              "failedDecisionId":"failed-decision-id"
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty DecisionEvaluationRecord ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty DecisionEvaluationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new DecisionEvaluationRecord()
+                    .setDecisionKey(1L)
+                    .setDecisionId("decision-id")
+                    .setDecisionName("decision-name")
+                    .setDecisionVersion(1)
+                    .setDecisionRequirementsKey(2L)
+                    .setDecisionRequirementsId("decision-requirements-id")
+                    .setProcessDefinitionKey(3L)
+                    .setBpmnProcessId("bpmn-process-id")
+                    .setDecisionVersion(1)
+                    .setProcessInstanceKey(4L)
+                    .setElementInstanceKey(5L)
+                    .setElementId("element-id"),
+        """
+          {
+              "decisionKey":1,
+              "decisionId":"decision-id",
+              "decisionName":"decision-name",
+              "decisionVersion":1,
+              "decisionRequirementsKey":2,
+              "decisionRequirementsId":"decision-requirements-id",
+              "decisionOutput":"null",
+              "processDefinitionKey":3,
+              "bpmnProcessId":"bpmn-process-id",
+              "processInstanceKey":4,
+              "elementInstanceKey":5,
+              "elementId":"element-id",
+              "evaluatedDecisions":[],
+              "evaluationFailureMessage":"",
+              "failedDecisionId":""
+          }
+          """
       },
     };
   }

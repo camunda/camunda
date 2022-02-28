@@ -43,6 +43,7 @@ var audienceFlag string
 var authzURLFlag string
 var insecureFlag bool
 var clientCacheFlag string
+var timeoutFlag time.Duration
 
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
@@ -88,6 +89,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", zbc.OAuthDefaultAuthzURL, "Specify an authorization server URL from which to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthAuthorizationUrlEnvVar+"'")
 	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection. If omitted, will read from the environment variable '"+zbc.InsecureEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientCacheFlag, "clientCache", zbc.DefaultOauthYamlCachePath, "Specify the path to use for the OAuth credentials cache. If omitted, will read from the environment variable '"+zbc.OAuthCachePathEnvVar+"'")
+	rootCmd.PersistentFlags().DurationVar(&timeoutFlag, "requestTimeout", defaultTimeout, "Specify the default timeout for all requests. Example values: 300ms, 50s or 1m")
 }
 
 // initClient will create a client with in the following precedence: flag, environment variable, default

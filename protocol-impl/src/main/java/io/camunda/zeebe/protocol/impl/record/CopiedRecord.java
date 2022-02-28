@@ -146,6 +146,14 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     return recordValue;
   }
 
+  /**
+   * Please be aware that this method is not thread-safe. Some records contain properties that will
+   * get modified when iterating over it (eg. Records containing an
+   * {@link io.camunda.zeebe.msgpack.property.ArrayProperty).
+   * Multiple threads serializing the same Record at a time will result in exceptions.
+   *
+   * @return a JSON marshaled representation
+   */
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);

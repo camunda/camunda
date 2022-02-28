@@ -22,13 +22,22 @@ public interface DecisionEvaluationResult {
   boolean isFailure();
 
   /**
-   * Returns the reason why the evaluation failed. Use {@link #isFailure()} ()} to check if the
+   * Returns the reason why the evaluation failed. Use {@link #isFailure()} to check if the
    * evaluation was successful or not.
    *
    * @return the failure message if the evaluation was not successful, or {@code null} if the
    *     evaluation was successful
    */
   String getFailureMessage();
+
+  /**
+   * Returns the id of the decision where the evaluation failed. Use {@link #isFailure()} to check
+   * if the evaluation was successful or not.
+   *
+   * @return the id of the decision where the evaluation failed, or {@code null} if the evaluation
+   *     was successful
+   */
+  String getFailedDecisionId();
 
   /** @return the output of the decision if it was made successfully, otherwise {@code null} */
   DirectBuffer getOutput();

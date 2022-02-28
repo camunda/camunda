@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
+
 public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
     implements ExecutableCalledDecision {
 
-  private String decisionId;
+  private Expression decisionId;
   private String resultVariable;
 
   public ExecutableBusinessRuleTask(final String id) {
@@ -18,12 +20,12 @@ public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
   }
 
   @Override
-  public String getDecisionId() {
+  public Expression getDecisionId() {
     return decisionId;
   }
 
   @Override
-  public void setDecisionId(final String decisionId) {
+  public void setDecisionId(final Expression decisionId) {
     this.decisionId = decisionId;
   }
 

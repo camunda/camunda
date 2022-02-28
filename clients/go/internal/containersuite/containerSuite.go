@@ -157,6 +157,8 @@ type ContainerSuite struct {
 	GatewayAddress string
 	GatewayHost    string
 	GatewayPort    int
+	// Env will add additional environment variables when creating the container
+	Env map[string]string
 
 	suite.Suite
 	container testcontainers.Container
@@ -164,9 +166,13 @@ type ContainerSuite struct {
 
 func (s *ContainerSuite) AfterTest(suiteName, testName string) {
 	if s.T().Failed() {
-		if err := printFailedContainerLogs(s.container); err != nil {
-			_, _ = fmt.Fprint(os.Stderr, err)
-		}
+		s.PrintFailedContainerLogs()
+	}
+}
+
+func (s *ContainerSuite) PrintFailedContainerLogs() {
+	if err := printFailedContainerLogs(s.container); err != nil {
+		_, _ = fmt.Fprint(os.Stderr, err)
 	}
 }
 
@@ -183,6 +189,11 @@ func (s *ContainerSuite) SetupSuite() {
 			},
 		},
 		Started: true,
+	}
+
+	// apply environment overrides
+	for key, value := range s.Env {
+		req.Env[key] = value
 	}
 
 	ctx := context.Background()

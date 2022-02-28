@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
+
 /** A representation of an element that calls a decision. For example, a business rule task. */
 public interface ExecutableCalledDecision {
 
-  String getDecisionId();
+  Expression getDecisionId();
 
-  void setDecisionId(String decisionId);
+  void setDecisionId(Expression decisionId);
 
   String getResultVariable();
 

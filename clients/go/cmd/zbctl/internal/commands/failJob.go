@@ -46,7 +46,7 @@ var failJobCmd = &cobra.Command{
 	Args:    keyArg(&failJobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		resp, err := client.NewFailJobCommand().

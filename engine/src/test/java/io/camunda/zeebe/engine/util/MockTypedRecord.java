@@ -56,7 +56,7 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
-  public long getLength() {
+  public int getLength() {
     return metadata.getLength() + value.getLength();
   }
 

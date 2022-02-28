@@ -64,4 +64,25 @@ public interface DecisionEvaluationRecordValue extends RecordValue {
    * @return details of the evaluated decisions
    */
   List<EvaluatedDecisionValue> getEvaluatedDecisions();
+
+  /**
+   * If the evaluation of the decision failed then it returns the reason why the evaluation of the
+   * {@link #getFailedDecisionId() failed decision} was not successful. The failure message is not
+   * available if the decision was evaluated successfully.
+   *
+   * @return the failure message why the evaluation failed, or an empty string if the evaluation was
+   *     successful
+   */
+  String getEvaluationFailureMessage();
+
+  /**
+   * If the evaluation of the decision failed then it returns the id of the decision where the
+   * evaluation failed. It can be the called/root decision or any of its required decisions. The
+   * reason of the failure can be retrieved as {@link #getEvaluationFailureMessage() evaluation
+   * failure message}. The decision id is not available if the decision was evaluated successfully.
+   *
+   * @return the id of the decision in the DMN where the evaluation failed, or an empty string if
+   *     the evaluation was successful
+   */
+  String getFailedDecisionId();
 }
