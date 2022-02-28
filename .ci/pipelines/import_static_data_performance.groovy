@@ -91,7 +91,7 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
-          sh 'apk add --no-cache jq gettext'
+          sh 'apk add --no-cache jq gettext postgresql-client'
           camundaInstallKubectl()
           sh("""
             bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "false" "${ES_NUM_NODES}"
