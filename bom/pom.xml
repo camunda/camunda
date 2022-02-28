@@ -10,20 +10,28 @@
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
+
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
   <version>1.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
+
   <name>Zeebe BOM</name>
+  <description/>
   <url>http://zeebe.io/</url>
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
+    <connection>scm:git:git@github.com:camunda-cloud/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-cloud/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/zeebe-io/zeebe</url>
+    <url>https://github.com/camunda-cloud/zeebe</url>
   </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/camunda-cloud/zeebe/issues</url>
+  </issueManagement>
 
   <properties>
     <!-- release parent settings -->
