@@ -6,12 +6,14 @@
 package io.camunda.operate.zeebe;
 
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.property.ZeebeProperties;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import io.camunda.zeebe.client.ZeebeClient;
 
 @Configuration
 public class ZeebeConnector {
@@ -25,15 +27,21 @@ public class ZeebeConnector {
 
   @Bean //will be closed automatically
   public ZeebeClient zeebeClient() {
+    return newZeebeClient(operateProperties.getZeebe());
+  }
 
-    final String gatewayAddress = operateProperties.getZeebe().getGatewayAddress();
-
-    return ZeebeClient
-      .newClientBuilder()
-      .gatewayAddress(gatewayAddress)
-      .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
-      .usePlaintext()
-      .build();
+  public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
+    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
+        .gatewayAddress(zeebeProperties.getGatewayAddress())
+        .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
+    if (zeebeProperties.isSecure()) {
+      builder.caCertificatePath(zeebeProperties.getCertificatePath());
+      logger.info("Use TLS connection to zeebe");
+    } else {
+      builder.usePlaintext();
+      logger.info("Use plaintext connection to zeebe");
+    }
+    return builder.build();
   }
 
 }
