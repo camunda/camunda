@@ -127,6 +127,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private PersistedSnapshot currentSnapshot;
 
   private boolean ongoingTransition = false;
+  // Keeps track of snapshot replication to notify new listeners about missed events
+  private MissedSnapshotReplicationEvents missedSnapshotReplicationEvents =
+      MissedSnapshotReplicationEvents.NONE;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport health = HealthReport.healthy(this);
@@ -468,7 +471,25 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void addSnapshotReplicationListener(
       final SnapshotReplicationListener snapshotReplicationListener) {
-    snapshotReplicationListeners.add(snapshotReplicationListener);
+    threadContext.execute(
+        () -> {
+          snapshotReplicationListeners.add(snapshotReplicationListener);
+          // Notify listener immediately if it registered during an ongoing replication.
+          // This is to prevent missing necessary state transitions.
+          switch (missedSnapshotReplicationEvents) {
+            case STARTED:
+              snapshotReplicationListener.onSnapshotReplicationStarted();
+              break;
+            case COMPLETED:
+              {
+                snapshotReplicationListener.onSnapshotReplicationStarted();
+                snapshotReplicationListener.onSnapshotReplicationCompleted(term);
+                break;
+              }
+            default:
+              break;
+          }
+        });
   }
 
   /**
@@ -478,15 +499,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void removeSnapshotReplicationListener(
       final SnapshotReplicationListener snapshotReplicationListener) {
-    snapshotReplicationListeners.remove(snapshotReplicationListener);
+    threadContext.execute(() -> snapshotReplicationListeners.remove(snapshotReplicationListener));
   }
 
   public void notifySnapshotReplicationStarted() {
-    snapshotReplicationListeners.forEach(SnapshotReplicationListener::onSnapshotReplicationStarted);
+    threadContext.execute(
+        () -> {
+          missedSnapshotReplicationEvents = MissedSnapshotReplicationEvents.STARTED;
+          snapshotReplicationListeners.forEach(
+              SnapshotReplicationListener::onSnapshotReplicationStarted);
+        });
   }
 
   public void notifySnapshotReplicationCompleted() {
-    snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
+    threadContext.execute(
+        () -> {
+          snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
+          missedSnapshotReplicationEvents = MissedSnapshotReplicationEvents.COMPLETED;
+        });
   }
 
   /**
@@ -1131,5 +1161,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public enum State {
     ACTIVE,
     READY,
+  }
+
+  /**
+   * Keeps track of potentially missed snapshot replication events to properly notify newly
+   * registered listeners.
+   */
+  private enum MissedSnapshotReplicationEvents {
+    NONE,
+    STARTED,
+    COMPLETED
   }
 }
