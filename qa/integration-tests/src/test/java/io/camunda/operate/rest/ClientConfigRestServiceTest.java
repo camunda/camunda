@@ -6,6 +6,7 @@
 package io.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -16,8 +17,10 @@ import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -36,8 +39,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 )
 public class ClientConfigRestServiceTest extends OperateIntegrationTest {
 
+  @MockBean
+  private OperateProfileService operateProfileService;
+
   @Test
   public void testGetClientConfig() throws Exception {
+    // given
+    given(operateProfileService.currentProfileCanLogout()).willReturn(true);
     // when
     MockHttpServletRequestBuilder request = get("/client-config.js");
     MvcResult mvcResult = mockMvc.perform(request)
@@ -48,10 +56,33 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
     // then
     assertThat(mvcResult.getResponse().getContentAsString())
         .isEqualTo("window.clientConfig = {"
-            + "\"isEnterprise\":false,\"contextPath\":\"\","
+            + "\"isEnterprise\":false,"
+            + "\"canLogout\":true,"
+            + "\"contextPath\":\"\","
             + "\"organizationId\":null,"
             + "\"clusterId\":\"clusterId\""
             + "};");
   }
 
+  @Test
+  public void testGetClientConfigForCantLogout() throws Exception {
+    // given
+    given(operateProfileService.currentProfileCanLogout()).willReturn(false);
+    // when
+    MockHttpServletRequestBuilder request = get("/client-config.js");
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith("text/javascript"))
+        .andReturn();
+
+    // then
+    assertThat(mvcResult.getResponse().getContentAsString())
+        .isEqualTo("window.clientConfig = {"
+            + "\"isEnterprise\":false,"
+            + "\"canLogout\":false,"
+            + "\"contextPath\":\"\","
+            + "\"organizationId\":null,"
+            + "\"clusterId\":\"clusterId\""
+            + "};");
+  }
 }

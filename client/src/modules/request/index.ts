@@ -35,6 +35,10 @@ async function request({url, method, body, headers, signal}: RequestParams) {
     authenticationStore.expireSession();
   }
 
+  if (response.ok) {
+    authenticationStore.handleThirdPartySessionSuccess();
+  }
+
   return response;
 }
 

@@ -16,6 +16,7 @@ import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MvcResult;
@@ -24,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
+        OperateProfileService.class,
         ClientConfig.class,
         ClientConfigRestService.class,
         JacksonConfig.class,
@@ -49,6 +51,7 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
     assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo(
         "window.clientConfig = {"
             + "\"isEnterprise\":true,"
+            + "\"canLogout\":true,"
             + "\"contextPath\":\"\","
             + "\"organizationId\":\"organizationId\","
             + "\"clusterId\":null"

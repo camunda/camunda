@@ -8,6 +8,7 @@ import {makeObservable, observable, action} from 'mobx';
 import {getUser, login, logout, Credentials} from 'modules/api/authentication';
 import {logger} from 'modules/logger';
 import {NetworkError} from 'modules/networkError';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {Undefinable} from 'ts-toolbelt/out/Object/Undefinable';
 
 type Permissions = Array<'read' | 'write'>;
@@ -20,7 +21,8 @@ type State = {
     | 'user-information-fetched'
     | 'logged-out'
     | 'session-expired'
-    | 'invalid-initial-session';
+    | 'invalid-initial-session'
+    | 'invalid-third-party-session';
   permissions: Permissions;
   displayName: string | undefined;
   canLogout: boolean;
@@ -43,31 +45,56 @@ class Authentication {
       startLoadingUser: action,
       setUser: action,
       reset: action,
+      resetUser: action,
+      setStatus: action,
       endLogin: action,
     });
   }
 
   disableSession = () => {
-    this.state.status = 'logged-out';
-    this.state.displayName = DEFAULT_STATE.displayName;
-    this.state.canLogout = DEFAULT_STATE.canLogout;
-    this.state.permissions = DEFAULT_STATE.permissions;
+    this.resetUser();
+
+    if (!window.clientConfig?.canLogout) {
+      this.#handleThirdPartySessionExpiration();
+
+      return;
+    }
+
+    this.setStatus('logged-out');
   };
 
   expireSession = () => {
-    if (window.clientConfig?.organizationId) {
+    this.resetUser();
+
+    if (!window.clientConfig?.canLogout) {
+      this.#handleThirdPartySessionExpiration();
+
       return;
     }
 
     if (this.state.status === 'user-information-fetched') {
-      this.state.status = 'session-expired';
-    } else {
-      this.state.status = 'invalid-initial-session';
+      this.setStatus('session-expired');
+
+      return;
     }
 
-    this.state.displayName = DEFAULT_STATE.displayName;
-    this.state.canLogout = DEFAULT_STATE.canLogout;
-    this.state.permissions = DEFAULT_STATE.permissions;
+    this.setStatus('invalid-initial-session');
+  };
+
+  #handleThirdPartySessionExpiration = () => {
+    const wasReloaded = getStateLocally()?.wasReloaded;
+
+    this.setStatus('invalid-third-party-session');
+
+    if (wasReloaded) {
+      return;
+    }
+
+    storeStateLocally({
+      wasReloaded: true,
+    });
+
+    window.location.reload();
   };
 
   handleLogin = async (credentials: Credentials): Promise<Error | void> => {
@@ -126,6 +153,10 @@ class Authentication {
     Pick<State, 'displayName' | 'permissions' | 'canLogout'>,
     'permissions'
   >) => {
+    storeStateLocally({
+      wasReloaded: false,
+    });
+
     this.state.status = 'user-information-fetched';
     this.state.displayName = displayName;
     this.state.canLogout = canLogout;
@@ -152,6 +183,22 @@ class Authentication {
     return this.state.permissions.some((permission) =>
       scopes.includes(permission)
     );
+  };
+
+  handleThirdPartySessionSuccess = () => {
+    if (this.state.status === 'invalid-third-party-session') {
+      this.authenticate();
+    }
+  };
+
+  setStatus = (status: State['status']) => {
+    this.state.status = status;
+  };
+
+  resetUser = () => {
+    this.state.displayName = DEFAULT_STATE.displayName;
+    this.state.canLogout = DEFAULT_STATE.canLogout;
+    this.state.permissions = DEFAULT_STATE.permissions;
   };
 
   reset = () => {

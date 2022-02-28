@@ -11,6 +11,7 @@ export declare global {
       contextPath?: string;
       organizationId?: null | string;
       clusterId?: null | string;
+      canLogout?: null | boolean;
     };
     Osano?: {
       cm?: {

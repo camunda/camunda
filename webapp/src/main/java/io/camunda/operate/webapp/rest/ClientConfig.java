@@ -5,8 +5,10 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateProperties;
-import javax.annotation.PostConstruct;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import javax.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,6 +17,8 @@ import org.springframework.stereotype.Component;
 public class ClientConfig {
 
   @Autowired
+  private OperateProfileService profileService;
+  @Autowired
   private OperateProperties operateProperties;
 
   @Autowired
@@ -22,17 +26,25 @@ public class ClientConfig {
 
   public boolean isEnterprise;
 
+  public boolean canLogout;
+
   public String contextPath;
 
   public String organizationId;
 
   public String clusterId;
 
-  @PostConstruct
-  public void init(){
+  public String asJson(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
     organizationId = operateProperties.getCloud().getOrganizationId();
     contextPath = context.getContextPath();
+    canLogout = profileService.currentProfileCanLogout();
+    try {
+      return String.format("window.clientConfig = %s;",
+          new ObjectMapper().writeValueAsString(this));
+    } catch (JsonProcessingException e) {
+      return "window.clientConfig = {};";
+    }
   }
 }

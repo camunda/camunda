@@ -84,6 +84,14 @@ window.MutationObserver = MutationObserver;
 beforeAll(() => mockServer.listen());
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
+beforeEach(() => {
+  Object.defineProperty(window, 'clientConfig', {
+    value: {
+      canLogout: true,
+    },
+    writable: true,
+  });
+});
 
 configure({
   asyncUtilTimeout: 7000,

@@ -5,9 +5,6 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,21 +17,9 @@ public class ClientConfigRestService {
   @Autowired
   private ClientConfig clientConfig;
 
-  private String clientConfigAsJS;
-
-  @PostConstruct
-  public void init(){
-    try {
-      clientConfigAsJS = String.format("window.clientConfig = %s;",
-          new ObjectMapper().writeValueAsString(clientConfig));
-    } catch (JsonProcessingException e) {
-      clientConfigAsJS = "window.clientConfig = {};";
-    }
-  }
-
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
-      return clientConfigAsJS;
+      return clientConfig.asJson();
   }
 
 }

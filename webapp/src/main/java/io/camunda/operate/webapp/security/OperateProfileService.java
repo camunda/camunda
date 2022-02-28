@@ -25,6 +25,9 @@ public class OperateProfileService {
       SSO_AUTH_PROFILE,
       IAM_AUTH_PROFILE);
 
+  private static final Set<String> CANT_LOGOUT_AUTH_PROFILES =
+      Set.of(SSO_AUTH_PROFILE, IAM_AUTH_PROFILE);
+
   @Autowired
   private Environment environment;
 
@@ -45,5 +48,10 @@ public class OperateProfileService {
 
   public boolean isIAMProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(IAM_AUTH_PROFILE);
+  }
+
+  public boolean currentProfileCanLogout() {
+    return Arrays.stream(environment.getActiveProfiles())
+        .noneMatch(CANT_LOGOUT_AUTH_PROFILES::contains);
   }
 }

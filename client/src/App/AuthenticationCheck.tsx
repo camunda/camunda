@@ -35,6 +35,7 @@ const AuthenticationCheck: React.FC<Props> = observer(
         'logged-in',
         'fetching-user-information',
         'user-information-fetched',
+        'invalid-third-party-session',
       ].includes(status)
     ) {
       return <>{children}</>;
