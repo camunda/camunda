@@ -52,8 +52,10 @@ const processWithGoals = {
   ],
 };
 
-it('should load initialGoals', () => {
+it('should load initialGoals', async () => {
   const node = shallow(<TimeGoalsModal {...props} process={processWithGoals} />);
+
+  await runAllEffects();
 
   expect(node.find(Select).at(0).prop('value')).toBe('25');
   expect(node.find(Input).at(0).prop('value')).toBe('1');
@@ -89,9 +91,11 @@ it('should evaluate and pass report result to chart component', async () => {
   expect(node.find('DurationChart').prop('data')).toEqual(data);
 });
 
-it('should invoke onConfirm when saving goals', () => {
+it('should invoke onConfirm when saving goals', async () => {
   const spy = jest.fn();
   const node = shallow(<TimeGoalsModal {...props} onConfirm={spy} />);
+
+  await runAllEffects();
 
   node
     .find(Input)
@@ -179,4 +183,18 @@ it('should filter out hidden goals when saving', async () => {
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([processWithGoals.timeGoals[1]]);
+});
+
+it('should disable save button and show an error message if duration input is invalid', async () => {
+  const node = shallow(
+    <TimeGoalsModal
+      {...props}
+      process={{...processWithGoals, timeGoals: [{...processWithGoals.timeGoals[0], value: '-1'}]}}
+    />
+  );
+
+  await runAllEffects();
+
+  expect(node.find('.positiveIntegerError')).toExist();
+  expect(node.find('[primary]')).toBeDisabled();
 });

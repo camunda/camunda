@@ -16,6 +16,13 @@
       border: 1px solid var(--silver-darken-87);
       max-width: max-content;
       padding: 0 30px 20px 30px;
+      position: relative;
+
+      .positiveIntegerError {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+      }
 
       legend {
         width: 100%;
