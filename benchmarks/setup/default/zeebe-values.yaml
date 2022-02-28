@@ -158,14 +158,6 @@ elasticsearch:
       cpu: 3
       memory: 8Gi
 
-# KIBANA
-kibana:
-  enabled: false
-
-# PROMETHEUS
-prometheus:
-  enabled: false
-
 # PrometheusServiceMonitor configuration for the prometheus service monitor
 prometheusServiceMonitor:
   # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
