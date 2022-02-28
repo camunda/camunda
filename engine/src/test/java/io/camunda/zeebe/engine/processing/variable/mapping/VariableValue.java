@@ -10,20 +10,7 @@ package io.camunda.zeebe.engine.processing.variable.mapping;
 import io.camunda.zeebe.test.util.JsonUtil;
 import java.util.Objects;
 
-public final class VariableValue {
-
-  private final String name;
-  private final String value;
-
-  private VariableValue(final String name, final String value) {
-    this.name = name;
-    this.value = value;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, value);
-  }
+public record VariableValue(String name, String value) {
 
   @Override
   public boolean equals(final Object o) {
@@ -35,6 +22,11 @@ public final class VariableValue {
     }
     final VariableValue that = (VariableValue) o;
     return Objects.equals(name, that.name) && JsonUtil.isEqual(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, value);
   }
 
   @Override
