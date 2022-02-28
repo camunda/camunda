@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
+import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -359,6 +360,11 @@ public final class ZeebePartition extends Actor
           context.getCurrentTerm(),
           error);
       handleUnrecoverableFailure();
+    } else if (error instanceof RecoverablePartitionTransitionException) {
+      LOG.info(
+          "Aborted installation of partition {}, cause: {}",
+          context.getPartitionId(),
+          error.getMessage());
     } else {
       handleRecoverableFailure();
     }
