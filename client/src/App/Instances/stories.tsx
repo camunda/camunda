@@ -6,7 +6,7 @@
 
 /* istanbul ignore file */
 
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Story} from '@storybook/react';
 
 import {Instances as InstancesComponent} from './index';
@@ -39,9 +39,11 @@ const Success: Story = () => {
         '/instances?active=true&incidents=true&process=bigVarProcess&version=1',
       ]}
     >
-      <Layout>
-        <InstancesComponent />
-      </Layout>
+      <Routes>
+        <Route path="/instances" element={<Layout />}>
+          <Route index element={<InstancesComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -80,9 +82,11 @@ Success.parameters = {
 const Error: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances?incidents=true']}>
-      <Layout>
-        <InstancesComponent />
-      </Layout>
+      <Routes>
+        <Route path="/instances" element={<Layout />}>
+          <Route index element={<InstancesComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -125,9 +129,11 @@ const Skeleton: Story = () => {
         '/instances?active=true&incidents=true&process=bigVarProcess&version=1',
       ]}
     >
-      <Layout>
-        <InstancesComponent />
-      </Layout>
+      <Routes>
+        <Route path="/instances" element={<Layout />}>
+          <Route index element={<InstancesComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -156,9 +162,11 @@ Skeleton.parameters = {
 const NoFilterApplied: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances']}>
-      <Layout>
-        <InstancesComponent />
-      </Layout>
+      <Routes>
+        <Route path="/instances" element={<Layout />}>
+          <Route index element={<InstancesComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -181,9 +189,11 @@ NoFilterApplied.parameters = {
 const Empty: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances?active=true&incidents=true']}>
-      <Layout>
-        <InstancesComponent />
-      </Layout>
+      <Routes>
+        <Route path="/instances" element={<Layout />}>
+          <Route index element={<InstancesComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -210,9 +220,11 @@ const NoVersionSelected: Story = () => {
         '/instances?active=true&incidents=true&process=complexProcess&version=all',
       ]}
     >
-      <Layout>
-        <InstancesComponent />
-      </Layout>
+      <Routes>
+        <Route path="/instances" element={<Layout />}>
+          <Route index element={<InstancesComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };

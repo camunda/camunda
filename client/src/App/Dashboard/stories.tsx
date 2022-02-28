@@ -6,7 +6,7 @@
 
 /* istanbul ignore file */
 
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Story} from '@storybook/react';
 import {Dashboard as DashboardComponent} from './index';
 import {rest} from 'msw';
@@ -23,9 +23,11 @@ export default {
 const Success: Story = () => {
   return (
     <MemoryRouter>
-      <Layout>
-        <DashboardComponent />
-      </Layout>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<DashboardComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -50,9 +52,11 @@ Success.parameters = {
 const Skeleton: Story = () => {
   return (
     <MemoryRouter>
-      <Layout>
-        <DashboardComponent />
-      </Layout>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<DashboardComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -77,9 +81,11 @@ Skeleton.parameters = {
 const Error: Story = () => {
   return (
     <MemoryRouter>
-      <Layout>
-        <DashboardComponent />
-      </Layout>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<DashboardComponent />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };

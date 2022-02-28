@@ -6,9 +6,8 @@
 
 /* istanbul ignore file */
 
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Story} from '@storybook/react';
-
 import {Instance as InstanceDetail} from './index';
 import {rest} from 'msw';
 import {
@@ -80,11 +79,11 @@ export default {
 const RunningInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -114,11 +113,11 @@ RunningInstance.parameters = {
 const Error: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -150,11 +149,11 @@ Error.parameters = {
 const Skeleton: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -171,11 +170,11 @@ Skeleton.parameters = {
 const Incident: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/6755399441057842']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -211,11 +210,11 @@ Incident.parameters = {
 const CompletedInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/9007199254741571']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -247,11 +246,11 @@ CompletedInstance.parameters = {
 const CanceledInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/4503599627371108']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -296,11 +295,11 @@ const MultiInstanceSelected: Story = () => {
 
   return (
     <MemoryRouter initialEntries={['/instances/2251799813686430']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -336,11 +335,11 @@ MultiInstanceSelected.parameters = {
 const ChildInstance: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -370,11 +369,11 @@ ChildInstance.parameters = {
 const ChildInstanceWithLongParentHierarchy: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813685591']}>
-      <Layout>
-        <Route path="/instances/:processInstanceId">
-          <InstanceDetail />
+      <Routes>
+        <Route path="instances/:processInstanceId" element={<Layout />}>
+          <Route index element={<InstanceDetail />} />
         </Route>
-      </Layout>
+      </Routes>
     </MemoryRouter>
   );
 };

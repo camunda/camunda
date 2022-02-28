@@ -6,7 +6,7 @@
 
 /* istanbul ignore file */
 
-import {MemoryRouter, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Story} from '@storybook/react';
 
 import Variables from './index';
@@ -74,21 +74,26 @@ const AddMode: Story = () => {
 
   return (
     <MemoryRouter initialEntries={['/instances/6755399441055885']}>
-      <Route path="/instances/:processInstanceId">
-        <Wrapper>
-          <Styled.VariablesPanel>
-            <Form onSubmit={() => {}}>
-              {({handleSubmit}) => {
-                return (
-                  <form onSubmit={handleSubmit}>
-                    <AddVariableWrapper />
-                  </form>
-                );
-              }}
-            </Form>
-          </Styled.VariablesPanel>
-        </Wrapper>
-      </Route>
+      <Routes>
+        <Route
+          path="/instances/:processInstanceId"
+          element={
+            <Wrapper>
+              <Styled.VariablesPanel>
+                <Form onSubmit={() => {}}>
+                  {({handleSubmit}) => {
+                    return (
+                      <form onSubmit={handleSubmit}>
+                        <AddVariableWrapper />
+                      </form>
+                    );
+                  }}
+                </Form>
+              </Styled.VariablesPanel>
+            </Wrapper>
+          }
+        />
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -132,21 +137,26 @@ const EditMode: Story = () => {
 
   return (
     <MemoryRouter initialEntries={['/instances/6755399441055885']}>
-      <Route path="/instances/:processInstanceId">
-        <Wrapper>
-          <Styled.VariablesPanel>
-            <Form onSubmit={() => {}}>
-              {({handleSubmit}) => {
-                return (
-                  <form onSubmit={handleSubmit}>
-                    <EditVariableWrapper />
-                  </form>
-                );
-              }}
-            </Form>
-          </Styled.VariablesPanel>
-        </Wrapper>
-      </Route>
+      <Routes>
+        <Route
+          path="/instances/:processInstanceId"
+          element={
+            <Wrapper>
+              <Styled.VariablesPanel>
+                <Form onSubmit={() => {}}>
+                  {({handleSubmit}) => {
+                    return (
+                      <form onSubmit={handleSubmit}>
+                        <EditVariableWrapper />
+                      </form>
+                    );
+                  }}
+                </Form>
+              </Styled.VariablesPanel>
+            </Wrapper>
+          }
+        />
+      </Routes>
     </MemoryRouter>
   );
 };
@@ -180,21 +190,26 @@ const WithActiveOperations: Story = () => {
 
   return (
     <MemoryRouter initialEntries={['/instances/6755399441055885']}>
-      <Route path="/instances/:processInstanceId">
-        <Wrapper>
-          <Styled.VariablesPanel>
-            <Form onSubmit={() => {}}>
-              {({handleSubmit}) => {
-                return (
-                  <form onSubmit={handleSubmit}>
-                    <PendingVariableWrapper />
-                  </form>
-                );
-              }}
-            </Form>
-          </Styled.VariablesPanel>
-        </Wrapper>
-      </Route>
+      <Routes>
+        <Route
+          path="/instances/:processInstanceId"
+          element={
+            <Wrapper>
+              <Styled.VariablesPanel>
+                <Form onSubmit={() => {}}>
+                  {({handleSubmit}) => {
+                    return (
+                      <form onSubmit={handleSubmit}>
+                        <PendingVariableWrapper />
+                      </form>
+                    );
+                  }}
+                </Form>
+              </Styled.VariablesPanel>
+            </Wrapper>
+          }
+        />
+      </Routes>
     </MemoryRouter>
   );
 };

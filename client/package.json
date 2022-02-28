@@ -55,9 +55,9 @@
     ]
   },
   "devDependencies": {
-    "@storybook/addon-actions": "6.4.19",
-    "@storybook/preset-create-react-app": "4.0.1",
-    "@storybook/react": "6.4.19",
+    "@storybook/addon-actions": "6.3.12",
+    "@storybook/preset-create-react-app": "3.2.0",
+    "@storybook/react": "6.3.13",
     "@testing-library/jest-dom": "5.16.2",
     "@testing-library/react": "11.2.7",
     "@testing-library/react-hooks": "7.0.2",
