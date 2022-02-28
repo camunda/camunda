@@ -6,8 +6,6 @@ all: zeebe starter timer simpleStarter worker
 .PHONY: zeebe
 zeebe:
 	-helm install --namespace $(namespace) $(namespace) camunda-cloud/ccsm-helm -f zeebe-values.yaml --skip-crds
-	-kubectl apply -n $(namespace) -f curator-cronjob.yaml
-	-kubectl apply -n $(namespace) -f curator-configmap.yaml
 
 # Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
 # To apply the templates use k apply -f ccsm-helm/templates/
@@ -42,8 +40,6 @@ clean: clean-starter clean-timer clean-simpleStarter clean-worker clean-zeebe
 .PHONY: clean-zeebe
 clean-zeebe:
 	-helm --namespace $(namespace) uninstall $(namespace)
-	-kubectl delete -n $(namespace) -f curator-cronjob.yaml
-	-kubectl delete -n $(namespace) -f curator-configmap.yaml
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 
