@@ -10,7 +10,6 @@ import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import Button from 'modules/components/Button';
 import {PAGE_TITLE} from 'modules/constants';
-import {clearStateLocally} from 'modules/utils/localStorage';
 import {Disclaimer} from './Disclaimer';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {
@@ -56,7 +55,6 @@ const Login: React.FC = () => {
         const response = await authenticationStore.handleLogin(values);
 
         if (response === undefined) {
-          clearStateLocally();
           navigate(
             stateHasReferrer(location.state)
               ? location.state.referrer
