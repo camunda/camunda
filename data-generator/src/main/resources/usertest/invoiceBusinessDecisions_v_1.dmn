@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.10.0">
   <decision id="invoiceClassification" name="Invoice Classification">
     <decisionTable id="decisionTable">
       <input id="clause1" label="Invoice Amount" camunda:inputVariable="">
@@ -17,7 +17,7 @@
       </input>
       <output id="clause3" label="Classification" name="invoiceClassification" typeRef="string">
         <outputValues id="UnaryTests_08dl8wf">
-          <text>"day-to-day expense","budget","exceptional"</text>
+          <text>"day-to-day expense","budget"</text>
         </outputValues>
       </output>
       <rule id="DecisionRule_1of5a87">
@@ -33,24 +33,13 @@
       </rule>
       <rule id="DecisionRule_1ak4z14">
         <inputEntry id="LiteralExpression_0qmsef6">
-          <text>[250..1000]</text>
+          <text>&gt;= 250</text>
         </inputEntry>
         <inputEntry id="UnaryTests_09b743h">
           <text>"Misc"</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_05xxvip">
           <text>"budget"</text>
-        </outputEntry>
-      </rule>
-      <rule id="row-49839158-4">
-        <inputEntry id="UnaryTests_0le0gl8">
-          <text>&gt; 1000</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_0pukamj">
-          <text>"Misc"</text>
-        </inputEntry>
-        <outputEntry id="LiteralExpression_1e76ugx">
-          <text>"exceptional"</text>
         </outputEntry>
       </rule>
       <rule id="DecisionRule_0cuxolz">
@@ -87,7 +76,7 @@
           <text>invoiceClassification</text>
         </inputExpression>
         <inputValues id="UnaryTests_0by7qiy">
-          <text>"day-to-day expense","budget","exceptional"</text>
+          <text>"day-to-day expense","budget"</text>
         </inputValues>
       </input>
       <output id="OutputClause_1cthd0w" label="Approver Group" name="result" typeRef="string">
@@ -113,7 +102,7 @@
       </rule>
       <rule id="row-49839158-5">
         <inputEntry id="UnaryTests_08cevwi">
-          <text>"budget", "exceptional"</text>
+          <text>"budget"</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_0c7hz8g">
           <text>"management"</text>

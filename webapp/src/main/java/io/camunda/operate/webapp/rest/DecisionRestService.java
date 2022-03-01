@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,6 +32,13 @@ public class DecisionRestService {
   protected DecisionReader decisionReader;
 
   public static final String DECISION_URL = "/api/decisions";
+
+
+  @ApiOperation("Get process BPMN XML")
+  @GetMapping(path = "/{id}/xml")
+  public String getDecisionDiagram(@PathVariable("id") String decisionDefinitionId) {
+    return decisionReader.getDiagram(decisionDefinitionId);
+  }
 
   @ApiOperation("List processes grouped by decisionId")
   @GetMapping(path = "/grouped")

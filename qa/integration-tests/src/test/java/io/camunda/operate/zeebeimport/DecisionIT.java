@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class DecisionIT extends OperateIntegrationTest {
 
   private static final String QUERY_DECISIONS_GROUPED_URL = "/api/decisions/grouped";
+  private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
@@ -34,7 +35,7 @@ public class DecisionIT extends OperateIntegrationTest {
   private DecisionDataUtil testDataUtil;
 
   @Test
-  public void testProcessesGrouped() throws Exception {
+  public void testDecisionsGrouped() throws Exception {
     //given
     final String demoDecisionId1 = "invoiceClassification";
     final String decision1Name = "Invoice Classification";
@@ -75,6 +76,88 @@ public class DecisionIT extends OperateIntegrationTest {
     assertThat(demoDecisionGroup2.getDecisions()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
     assertThat(demoDecisionGroup2.getDecisions()).extracting(DecisionIndex.ID).containsExactlyInAnyOrder(decision2V1Id.toString(), decision2V2Id.toString());
 
+  }
+
+  @Test
+  public void testDecisionGetDiagramV1() throws Exception {
+    //given
+    final String demoDecisionId1 = "invoiceClassification";
+    final Long decision1V1Id = 1222L;
+    final String demoDecisionId2 = "invoice-assign-approver";
+    final Long decision2V1Id = 1333L;
+
+    createData();
+
+    //when invoiceClassification version 1
+    MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decision1V1Id));
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andReturn();
+
+    final String invoiceClassification_v_1 = mvcResult.getResponse().getContentAsString();
+
+    //and invoiceClassification version 1
+    request = get(String.format(QUERY_DECISION_XML_URL, decision2V1Id));
+    mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andReturn();
+
+    final String invoiceAssignApprover_v_1 = mvcResult.getResponse().getContentAsString();
+
+    //then one and the same DRD is returned
+    assertThat(invoiceAssignApprover_v_1).isEqualTo(invoiceClassification_v_1);
+
+    //it is of version 1
+    assertThat(invoiceAssignApprover_v_1).isNotEmpty();
+    assertThat(invoiceAssignApprover_v_1).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    assertThat(invoiceAssignApprover_v_1).doesNotContain("exceptional");
+  }
+
+  @Test
+  public void testDecisionGetDiagramV2() throws Exception {
+    //given
+    final String demoDecisionId1 = "invoiceClassification";
+    final Long decision1V2Id = 2222L;
+    final String demoDecisionId2 = "invoice-assign-approver";
+    final Long decision2V2Id = 2333L;
+
+    createData();
+
+    //when invoiceClassification version 2
+    MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decision1V2Id));
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andReturn();
+
+    final String invoiceClassification_v_2 = mvcResult.getResponse().getContentAsString();
+
+    //and invoiceClassification version 2
+    request = get(String.format(QUERY_DECISION_XML_URL, decision2V2Id));
+    mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andReturn();
+
+    final String invoiceAssignApprover_v_2 = mvcResult.getResponse().getContentAsString();
+
+    //then
+    //one and the same DRD is returned
+    assertThat(invoiceAssignApprover_v_2).isEqualTo(invoiceClassification_v_2);
+    //it is of version 2
+    assertThat(invoiceAssignApprover_v_2).isNotEmpty();
+    assertThat(invoiceAssignApprover_v_2).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    assertThat(invoiceAssignApprover_v_2).contains("exceptional");
+  }
+
+  @Test
+  public void testNonExistingDecisionGetDiagram() throws Exception {
+    //given
+    final String decisionDefinitionId = "111";
+    //no decisions deployed
+
+    //when
+    MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decisionDefinitionId));
+    mockMvc.perform(request)
+        .andExpect(status().isNotFound());
   }
 
   private void createData() throws PersistenceException {

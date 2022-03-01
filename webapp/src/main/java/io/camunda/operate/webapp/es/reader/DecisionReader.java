@@ -5,6 +5,9 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
+import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.XML;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
@@ -13,6 +16,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +50,50 @@ public class DecisionReader extends AbstractReader {
   private DecisionDefinitionEntity fromSearchHit(String processString) {
     return ElasticsearchUtil
         .fromSearchHit(processString, objectMapper, DecisionDefinitionEntity.class);
+  }
+
+  /**
+   * Gets the DMN diagram XML as a string.
+   * @param decisionDefinitionId
+   * @return
+   */
+  public String getDiagram(String decisionDefinitionId) {
+    //get decisionRequirementsId
+    SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
+        .source(new SearchSourceBuilder().query(idsQuery().addIds(decisionDefinitionId)));
+    try {
+      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value == 0) {
+        throw new NotFoundException(
+            "No decision definition found for id " + decisionDefinitionId);
+      }
+      final String decisionRequirementsId = (String) response.getHits().getHits()[0]
+          .getSourceAsMap().get(DECISION_REQUIREMENTS_ID);
+
+      //get XML
+      searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias())
+          .source(new SearchSourceBuilder()
+              .query(idsQuery().addIds(decisionRequirementsId))
+              .fetchSource(XML, null));
+
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      if (response.getHits().getTotalHits().value == 1) {
+        Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
+        return (String) result.get(XML);
+      } else if (response.getHits().getTotalHits().value > 1) {
+        throw new NotFoundException(
+            String.format("Could not find unique DRD with id '%s'.", decisionRequirementsId));
+      } else {
+        throw new NotFoundException(
+            String.format("Could not find DRD with id '%s'.", decisionRequirementsId));
+      }
+    } catch (IOException e) {
+      final String message = String
+          .format("Exception occurred, while obtaining the decision diagram: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   /**
