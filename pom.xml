@@ -424,7 +424,7 @@
           <extensions>true</extensions>
           <configuration>
             <serverId>camunda-nexus</serverId>
-            <nexusUrl>https://app.camunda.com/nexus/</nexusUrl>
+            <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
             <skipStaging>true</skipStaging>
           </configuration>
         </plugin>
@@ -537,11 +537,11 @@
   <distributionManagement>
     <snapshotRepository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize-snapshots</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize-snapshots/</url>
     </snapshotRepository>
     <repository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize/</url>
     </repository>
   </distributionManagement>
 
