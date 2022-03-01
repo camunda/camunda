@@ -6,7 +6,11 @@
 
 import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-import {parseIds, parseFilterDate, FiltersType} from 'modules/utils/filter';
+import {
+  parseIds,
+  parseFilterDate,
+  ProcessInstanceFilters,
+} from 'modules/utils/filter';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 
@@ -34,7 +38,7 @@ const areIdsComplete = (value: string) => {
   );
 };
 
-const validateIdsCharacters: FieldValidator<FiltersType['ids']> = (
+const validateIdsCharacters: FieldValidator<ProcessInstanceFilters['ids']> = (
   value = ''
 ) => {
   if (
@@ -45,7 +49,7 @@ const validateIdsCharacters: FieldValidator<FiltersType['ids']> = (
   }
 };
 
-const validateIdsNotTooLong: FieldValidator<FiltersType['ids']> = (
+const validateIdsNotTooLong: FieldValidator<ProcessInstanceFilters['ids']> = (
   value = ''
 ) => {
   if (areIdsTooLong(value)) {
@@ -53,7 +57,7 @@ const validateIdsNotTooLong: FieldValidator<FiltersType['ids']> = (
   }
 };
 
-const validatesIdsComplete: FieldValidator<FiltersType['ids']> =
+const validatesIdsComplete: FieldValidator<ProcessInstanceFilters['ids']> =
   promisifyValidator((value = '') => {
     if (!areIdsComplete(value)) {
       return ERRORS.ids;
@@ -61,7 +65,7 @@ const validatesIdsComplete: FieldValidator<FiltersType['ids']> =
   }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdCharacters: FieldValidator<
-  FiltersType['parentInstanceId']
+  ProcessInstanceFilters['parentInstanceId']
 > = (value = '') => {
   if (value !== '' && !/^[0-9]+$/.test(value)) {
     return ERRORS.parentInstanceId;
@@ -69,7 +73,7 @@ const validateParentInstanceIdCharacters: FieldValidator<
 };
 
 const validateParentInstanceIdComplete: FieldValidator<
-  FiltersType['parentInstanceId']
+  ProcessInstanceFilters['parentInstanceId']
 > = promisifyValidator((value = '') => {
   if (!areIdsComplete(value)) {
     return ERRORS.parentInstanceId;
@@ -77,7 +81,7 @@ const validateParentInstanceIdComplete: FieldValidator<
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdNotTooLong: FieldValidator<
-  FiltersType['parentInstanceId']
+  ProcessInstanceFilters['parentInstanceId']
 > = (value = '') => {
   if (areIdsTooLong(value)) {
     return ERRORS.parentInstanceId;
@@ -85,7 +89,7 @@ const validateParentInstanceIdNotTooLong: FieldValidator<
 };
 
 const validateDateComplete: FieldValidator<
-  FiltersType['startDate'] | FiltersType['endDate']
+  ProcessInstanceFilters['startDate'] | ProcessInstanceFilters['endDate']
 > = promisifyValidator((value = '') => {
   if (value !== '' && !isValid(parseFilterDate(value.trim()))) {
     return ERRORS.date;
@@ -93,7 +97,7 @@ const validateDateComplete: FieldValidator<
 }, VALIDATION_TIMEOUT);
 
 const validateDateCharacters: FieldValidator<
-  FiltersType['startDate'] | FiltersType['endDate']
+  ProcessInstanceFilters['startDate'] | ProcessInstanceFilters['endDate']
 > = (value = '') => {
   if (value !== '' && value.replace(/[0-9]|\s|:|-/g, '') !== '') {
     return ERRORS.date;
@@ -111,7 +115,7 @@ const validateVariableNameCharacters: FieldValidator<string | undefined> = (
 };
 
 const validateVariableNameComplete: FieldValidator<
-  FiltersType['variableName']
+  ProcessInstanceFilters['variableName']
 > = promisifyValidator(
   (variableName = '', allValues: {variableValue?: string}) => {
     const variableValue = allValues.variableValue ?? '';
@@ -126,7 +130,7 @@ const validateVariableNameComplete: FieldValidator<
 );
 
 const validateVariableValueComplete: FieldValidator<
-  FiltersType['variableValue']
+  ProcessInstanceFilters['variableValue']
 > = promisifyValidator(
   (variableValue = '', allValues: {variableName?: string}) => {
     const variableName = allValues.variableName ?? '';
@@ -147,24 +151,25 @@ const validateVariableValueComplete: FieldValidator<
 );
 
 const validateOperationIdCharacters: FieldValidator<
-  FiltersType['operationId']
+  ProcessInstanceFilters['operationId']
 > = (value = '') => {
   if (value !== '' && !/^[a-f0-9-]{1,36}/.test(value)) {
     return ERRORS.operationId;
   }
 };
 
-const validateOperationIdComplete: FieldValidator<FiltersType['operationId']> =
-  promisifyValidator((value = '') => {
-    if (
-      value !== '' &&
-      !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/.test(
-        value
-      )
-    ) {
-      return ERRORS.operationId;
-    }
-  }, VALIDATION_TIMEOUT);
+const validateOperationIdComplete: FieldValidator<
+  ProcessInstanceFilters['operationId']
+> = promisifyValidator((value = '') => {
+  if (
+    value !== '' &&
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/.test(
+      value
+    )
+  ) {
+    return ERRORS.operationId;
+  }
+}, VALIDATION_TIMEOUT);
 
 export {
   validateIdsCharacters,

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getFilters} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {instancesStore} from 'modules/stores/instances';
@@ -35,7 +35,7 @@ const Header = observer(function (props: any) {
 
   const {isAllChecked} = instanceSelectionStore.state;
   const location = useLocation();
-  const {canceled, completed} = getFilters(location.search);
+  const {canceled, completed} = getProcessInstanceFilters(location.search);
   const isListEmpty = !isInitialDataLoaded || areProcessInstancesEmpty;
   const listHasFinishedInstances = canceled || completed;
 

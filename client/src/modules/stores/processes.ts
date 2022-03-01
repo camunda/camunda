@@ -6,7 +6,7 @@
 
 import {makeObservable, action, observable, computed, override} from 'mobx';
 import {fetchGroupedProcesses} from 'modules/api/instances';
-import {getFilters} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
@@ -55,7 +55,7 @@ class Processes extends NetworkReconnectionHandler {
   fetchProcesses = this.retryOnConnectionLost(async () => {
     this.startFetching();
 
-    const {process} = getFilters(getSearchString());
+    const {process} = getProcessInstanceFilters(getSearchString());
 
     try {
       const response = await fetchGroupedProcesses();

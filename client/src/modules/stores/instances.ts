@@ -18,7 +18,10 @@ import {
   fetchProcessInstancesByIds,
 } from 'modules/api/instances';
 import {logger} from 'modules/logger';
-import {getRequestFilters, getSortParams} from 'modules/utils/filter';
+import {
+  getProcessInstancesRequestFilters,
+  getSortParams,
+} from 'modules/utils/filter';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {createOperation} from 'modules/utils/instance';
 import {hasActiveOperations} from './utils/hasActiveOperations';
@@ -196,7 +199,7 @@ class Instances extends NetworkReconnectionHandler {
     return this.fetchInstances({
       fetchType: 'prev',
       payload: {
-        query: getRequestFilters(),
+        query: getProcessInstancesRequestFilters(),
         sorting: this.getSorting(),
         searchBefore: instancesStore.state.processInstances[0]?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
@@ -210,7 +213,7 @@ class Instances extends NetworkReconnectionHandler {
     return this.fetchInstances({
       fetchType: 'next',
       payload: {
-        query: getRequestFilters(),
+        query: getProcessInstancesRequestFilters(),
         sorting: this.getSorting(),
         searchAfter:
           this.state.processInstances[this.state.processInstances.length - 1]
@@ -226,7 +229,7 @@ class Instances extends NetworkReconnectionHandler {
     this.fetchInstances({
       fetchType: 'initial',
       payload: {
-        query: getRequestFilters(),
+        query: getProcessInstancesRequestFilters(),
         sorting: this.getSorting(),
         pageSize: MAX_INSTANCES_PER_REQUEST,
         searchBefore: undefined,
@@ -288,7 +291,7 @@ class Instances extends NetworkReconnectionHandler {
     try {
       const response = await fetchProcessInstances({
         payload: {
-          query: getRequestFilters(),
+          query: getProcessInstancesRequestFilters(),
           sorting: this.getSorting(),
           pageSize:
             this.state.processInstances.length > 0
@@ -349,7 +352,7 @@ class Instances extends NetworkReconnectionHandler {
         this.fetchInstances({
           fetchType: 'initial',
           payload: {
-            query: getRequestFilters(),
+            query: getProcessInstancesRequestFilters(),
             sorting: this.getSorting(),
             pageSize: MAX_INSTANCES_PER_REQUEST,
             searchBefore: undefined,

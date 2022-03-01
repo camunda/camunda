@@ -5,28 +5,28 @@
  */
 
 import {useNavigate, useLocation} from 'react-router-dom';
-
 import {
-  updateFiltersSearchString,
-  getFilters,
-  FiltersType,
+  updateProcessFiltersSearchString,
+  getProcessInstanceFilters,
+  ProcessInstanceFilters,
 } from 'modules/utils/filter';
 
 const useFilters = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const setFiltersToURL = (filters: FiltersType) => {
+  const setFiltersToURL = (filters: ProcessInstanceFilters) => {
     navigate({
       ...location,
-      search: updateFiltersSearchString(location.search, filters),
+      search: updateProcessFiltersSearchString(location.search, filters),
     });
   };
 
-  const getFiltersFromUrl = () => getFilters(location.search);
+  const getFiltersFromUrl = () => getProcessInstanceFilters(location.search);
 
   const areProcessInstanceStatesApplied = () => {
-    const filters = getFilters(location.search);
+    const filters = getProcessInstanceFilters(location.search);
+
     return (
       filters.active ||
       filters.incidents ||

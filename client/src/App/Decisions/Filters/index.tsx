@@ -4,14 +4,31 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {Locations} from 'modules/routes';
+import {
+  DecisionInstanceFilters,
+  getDecisionInstanceFilters,
+  updateDecisionsFiltersSearchString,
+} from 'modules/utils/filter';
 import {Field, Form} from 'react-final-form';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {CollapsablePanel} from './CollapsablePanel';
 import {FormElement} from './styled';
 
 const Filters: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   return (
     <CollapsablePanel header="Filters">
-      <Form onSubmit={() => {}}>
+      <Form<DecisionInstanceFilters>
+        onSubmit={(values) => {
+          navigate({
+            search: updateDecisionsFiltersSearchString(location.search, values),
+          });
+        }}
+        initialValues={getDecisionInstanceFilters(location.search)}
+      >
         {({handleSubmit, form}) => (
           <FormElement onSubmit={handleSubmit}>
             <h3>Decision</h3>
@@ -50,28 +67,28 @@ const Filters: React.FC = () => {
               )}
             </Field>
             <h3>Instance States</h3>
-            <Field name="completed">
+            <Field name="completed" type="checkbox">
               {({input}) => (
                 <label htmlFor={input.name}>
                   <input
                     type="checkbox"
                     name={input.name}
                     id={input.name}
-                    value={input.value}
+                    checked={input.checked}
                     onChange={input.onChange}
                   />
                   Completed
                 </label>
               )}
             </Field>
-            <Field name="failed">
+            <Field name="failed" type="checkbox">
               {({input}) => (
                 <label htmlFor={input.name}>
                   <input
                     type="checkbox"
                     name={input.name}
                     id={input.name}
-                    value={input.value}
+                    checked={input.checked}
                     onChange={input.onChange}
                   />
                   Failed
@@ -120,7 +137,13 @@ const Filters: React.FC = () => {
               )}
             </Field>
             <button type="submit">Submit</button>
-            <button type="reset" onClick={form.reset}>
+            <button
+              type="reset"
+              onClick={() => {
+                navigate(Locations.decisions(location));
+                form.reset();
+              }}
+            >
               Reset
             </button>
           </FormElement>

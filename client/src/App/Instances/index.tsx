@@ -16,7 +16,10 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processesStore} from 'modules/stores/processes';
 import {Filters} from './Filters';
-import {getFilters, deleteSearchParams} from 'modules/utils/filter';
+import {
+  getProcessInstanceFilters,
+  deleteSearchParams,
+} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
 import {Content, Container, Separator, SplitPane} from './styled';
 import {useLocation, useNavigate} from 'react-router-dom';
@@ -26,7 +29,7 @@ const Instances: React.FC = observer(() => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const filters = getFilters(location.search);
+  const filters = getProcessInstanceFilters(location.search);
   const {process, version} = filters;
   const processId =
     process !== undefined && version !== undefined

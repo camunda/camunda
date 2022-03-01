@@ -11,12 +11,12 @@ import {
 } from 'modules/stores/visibleFilters';
 import {observer} from 'mobx-react';
 import {useForm} from 'react-final-form';
-import {FilterFieldsType} from 'modules/utils/filter';
+import {ProcessInstanceFilterField} from 'modules/utils/filter';
 
 type Props = {
   name: OptionalFilterType;
   children: React.ReactNode;
-  filterList: Array<FilterFieldsType>;
+  filterList: Array<ProcessInstanceFilterField>;
 };
 
 const OptionalFilter: React.FC<Props> = observer(

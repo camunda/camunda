@@ -6,7 +6,7 @@
 
 import {To, Location} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {FiltersType} from 'modules/utils/filter';
+import {ProcessInstanceFilters} from 'modules/utils/filter';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 type RouterState = {
@@ -60,7 +60,7 @@ const Locations = {
       search: params.toString(),
     };
   },
-  filters(location: Location, filters?: FiltersType): To {
+  filters(location: Location, filters?: ProcessInstanceFilters): To {
     const params = new URLSearchParams(
       getPersistentQueryParams(location.search)
     );

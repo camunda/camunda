@@ -9,7 +9,7 @@ import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'history';
 
-type FilterFieldsType =
+type ProcessInstanceFilterField =
   | 'process'
   | 'version'
   | 'ids'
@@ -26,7 +26,16 @@ type FilterFieldsType =
   | 'completed'
   | 'canceled';
 
-type FiltersType = {
+type DecisionInstanceFilterField =
+  | 'name'
+  | 'version'
+  | 'completed'
+  | 'failed'
+  | 'decisionInstanceId'
+  | 'processInstanceId'
+  | 'evaluationDate';
+
+type ProcessInstanceFilters = {
   process?: string;
   version?: string;
   ids?: string;
@@ -42,6 +51,16 @@ type FiltersType = {
   incidents?: boolean;
   completed?: boolean;
   canceled?: boolean;
+};
+
+type DecisionInstanceFilters = {
+  name?: string;
+  version?: string;
+  completed?: boolean;
+  failed?: boolean;
+  decisionInstanceId?: string;
+  processInstanceId?: string;
+  evaluationDate?: string;
 };
 
 type RequestFilters = {
@@ -77,7 +96,7 @@ type DecisionRequestFilters = {
   decisionIds?: string[];
 };
 
-const FILTER_FIELDS: FilterFieldsType[] = [
+const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'process',
   'version',
   'ids',
@@ -94,23 +113,43 @@ const FILTER_FIELDS: FilterFieldsType[] = [
   'completed',
   'canceled',
 ];
+const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
+  'name',
+  'version',
+  'completed',
+  'failed',
+  'decisionInstanceId',
+  'processInstanceId',
+  'evaluationDate',
+];
 
-const BOOLEAN_FILTER_FIELDS = ['active', 'incidents', 'completed', 'canceled'];
+const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
+  'active',
+  'incidents',
+  'completed',
+  'canceled',
+];
 
-function getFilters(
+const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
+  'failed',
+  'completed',
+];
+
+function getFilters<Fields extends string, Filters>(
   searchParams: string,
-  fields: FilterFieldsType[] = FILTER_FIELDS
-): FiltersType {
+  fields: Fields[],
+  booleanFields: string[]
+): Filters {
   return Array.from(new URLSearchParams(searchParams)).reduce(
     (accumulator, [param, value]) => {
-      if (BOOLEAN_FILTER_FIELDS.includes(param as FilterFieldsType)) {
+      if (booleanFields.includes(param)) {
         return {
           ...accumulator,
           [param]: value === 'true',
         };
       }
 
-      if (fields.includes(param as FilterFieldsType)) {
+      if (fields.includes(param as Fields)) {
         return {
           ...accumulator,
           [param]: value,
@@ -120,8 +159,29 @@ function getFilters(
       return accumulator;
     },
     {}
+  ) as Filters;
+}
+
+function getProcessInstanceFilters(
+  searchParams: string
+): ProcessInstanceFilters {
+  return getFilters<ProcessInstanceFilterField, ProcessInstanceFilters>(
+    searchParams,
+    PROCESS_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS
   );
 }
+
+function getDecisionInstanceFilters(
+  searchParams: string
+): DecisionInstanceFilters {
+  return getFilters<DecisionInstanceFilterField, DecisionInstanceFilters>(
+    searchParams,
+    DECISION_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS
+  );
+}
+
 function deleteSearchParams(location: Location, paramsToDelete: string[]) {
   const params = new URLSearchParams(location.search);
 
@@ -220,8 +280,8 @@ function getProcessIds(process: string, processVersion: string) {
   );
 }
 
-function getRequestFilters(): RequestFilters {
-  const filters = getFilters(getSearchString());
+function getProcessInstancesRequestFilters(): RequestFilters {
+  const filters = getProcessInstanceFilters(getSearchString());
 
   return Object.entries(filters).reduce<RequestFilters>(
     (accumulator, [key, value]): RequestFilters => {
@@ -325,34 +385,60 @@ function getRequestFilters(): RequestFilters {
   );
 }
 
-function updateFiltersSearchString(
+function updateFiltersSearchString<Filters extends object>(
   currentSearch: string,
-  newFilters: FiltersType
+  newFilters: Filters,
+  possibleFilters: Array<keyof Filters>,
+  possibleBooleanFilters: Array<keyof Filters>
 ) {
   const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
-  const fieldsToDelete = FILTER_FIELDS.filter(
+  const fieldsToDelete = possibleFilters.filter(
     (field) => newFilters[field] === undefined
   );
   const newParams = new URLSearchParams(
     Object.entries({
       ...oldParams,
       ...newFilters,
-    }) as [string, string][]
+    })
   );
 
   fieldsToDelete.forEach((field) => {
-    if (newParams.has(field)) {
-      newParams.delete(field);
+    if (newParams.has(field.toString())) {
+      newParams.delete(field.toString());
     }
   });
 
-  BOOLEAN_FILTER_FIELDS.forEach((field) => {
-    if (newParams.get(field) === 'false') {
-      newParams.delete(field);
+  possibleBooleanFilters.forEach((field) => {
+    if (newParams.get(field.toString()) === 'false') {
+      newParams.delete(field.toString());
     }
   });
 
   return newParams.toString();
+}
+
+function updateProcessFiltersSearchString(
+  currentSearch: string,
+  newFilters: ProcessInstanceFilters
+) {
+  return updateFiltersSearchString<ProcessInstanceFilters>(
+    currentSearch,
+    newFilters,
+    PROCESS_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS
+  );
+}
+
+function updateDecisionsFiltersSearchString(
+  currentSearch: string,
+  newFilters: DecisionInstanceFilters
+) {
+  return updateFiltersSearchString<DecisionInstanceFilters>(
+    currentSearch,
+    newFilters,
+    DECISION_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS
+  );
 }
 
 function getSortParams(): {
@@ -376,17 +462,20 @@ function getSortParams(): {
 }
 
 export {
-  getFilters,
+  getProcessInstanceFilters,
   parseIds,
   parseFilterDate,
-  getRequestFilters,
-  updateFiltersSearchString,
+  getProcessInstancesRequestFilters,
+  updateProcessFiltersSearchString,
+  updateDecisionsFiltersSearchString,
   deleteSearchParams,
   getSortParams,
+  getDecisionInstanceFilters,
 };
 export type {
-  FiltersType,
-  FilterFieldsType,
+  ProcessInstanceFilters,
+  ProcessInstanceFilterField,
   RequestFilters,
   DecisionRequestFilters,
+  DecisionInstanceFilters,
 };

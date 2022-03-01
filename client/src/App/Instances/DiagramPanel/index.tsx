@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import SplitPane from 'modules/components/SplitPane';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
@@ -15,7 +14,10 @@ import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Location} from 'history';
-import {getFilters, deleteSearchParams} from 'modules/utils/filter';
+import {
+  getProcessInstanceFilters,
+  deleteSearchParams,
+} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 
@@ -51,7 +53,9 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
   const {status, diagramModel, xml} = instancesDiagramStore.state;
   const {selectableIds} = instancesDiagramStore;
   const {statistics} = processStatisticsStore.state;
-  const {process, version, flowNodeId} = getFilters(location.search);
+  const {process, version, flowNodeId} = getProcessInstanceFilters(
+    location.search
+  );
   const isNoProcessSelected = status !== 'error' && process === undefined;
   const isNoVersionSelected = status !== 'error' && version === 'all';
 

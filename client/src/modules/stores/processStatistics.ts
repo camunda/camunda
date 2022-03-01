@@ -7,7 +7,7 @@
 import {makeObservable, action, observable, override} from 'mobx';
 import {fetchProcessInstancesStatistics} from 'modules/api/instances';
 import {instancesStore} from 'modules/stores/instances';
-import {getRequestFilters} from 'modules/utils/filter';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
@@ -45,7 +45,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
 
   init = () => {
     instancesStore.addCompletedOperationsHandler(() => {
-      const filters = getRequestFilters();
+      const filters = getProcessInstancesRequestFilters();
       const processIds = filters?.processIds || [];
 
       if (processIds.length > 0) {
@@ -55,7 +55,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   };
 
   fetchProcessStatistics = this.retryOnConnectionLost(
-    async (payload = getRequestFilters()) => {
+    async (payload = getProcessInstancesRequestFilters()) => {
       this.setProcessStatistics([]);
       this.startLoading();
       try {

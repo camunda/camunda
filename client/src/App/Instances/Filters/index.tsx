@@ -24,7 +24,10 @@ import {FlowNodeField} from './FlowNodeField';
 import {CheckboxGroup} from './CheckboxGroup';
 import Button from 'modules/components/Button';
 import {AutoSubmit} from './AutoSubmit';
-import {getFilters, FiltersType} from 'modules/utils/filter';
+import {
+  getProcessInstanceFilters,
+  ProcessInstanceFilters,
+} from 'modules/utils/filter';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
 import {observer} from 'mobx-react';
@@ -48,13 +51,13 @@ const Filters: React.FC = observer(() => {
 
   const {visibleFilters} = visibleFiltersStore.state;
 
-  const initialValues: FiltersType = {
+  const initialValues: ProcessInstanceFilters = {
     active: true,
     incidents: true,
   };
 
   useEffect(() => {
-    const filters = getFilters(location.search);
+    const filters = getProcessInstanceFilters(location.search);
     storeStateLocally({
       filters,
     });
@@ -69,7 +72,7 @@ const Filters: React.FC = observer(() => {
 
   return (
     <FiltersPanel>
-      <Form<FiltersType>
+      <Form<ProcessInstanceFilters>
         onSubmit={(values) => {
           filters.setFiltersToURL(values);
         }}

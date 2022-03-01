@@ -6,7 +6,7 @@
 
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {operationsStore} from 'modules/stores/operations';
-import {getRequestFilters} from 'modules/utils/filter';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {instancesStore} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 import {tracking} from 'modules/tracking';
@@ -22,7 +22,7 @@ export default function useOperationApply() {
       operationType: OperationEntityType,
       onSuccess: () => void
     ) => {
-      const query = getRequestFilters();
+      const query = getProcessInstancesRequestFilters();
       const filterIds = query.ids || [];
 
       // if ids are selected, ignore ids from filter
