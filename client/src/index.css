@@ -39,7 +39,6 @@
 html {
   -moz-osx-font-smoothing: antialiased;
   -webkit-font-smoothing: antialiased;
-  
 }
 
 body {
@@ -49,7 +48,9 @@ body {
   overflow: hidden;
 }
 
-html, body, #root{
+html,
+body,
+#root {
   height: 100vh;
   width: 100vw;
 }
