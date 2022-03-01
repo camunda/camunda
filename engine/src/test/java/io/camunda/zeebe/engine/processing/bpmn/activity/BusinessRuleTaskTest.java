@@ -286,6 +286,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
         .hasDecisionKey(requiredDecision.getDecisionKey())
+        .hasDecisionVersion(requiredDecision.getVersion())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("\"Jedi\"")
         .satisfies(
@@ -314,6 +315,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionId("force_user")
         .hasDecisionName("Which force user?")
         .hasDecisionKey(calledDecision.getDecisionKey())
+        .hasDecisionVersion(calledDecision.getVersion())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("\"Obi-Wan Kenobi\"")
         .satisfies(
@@ -452,6 +454,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
         .hasDecisionKey(requiredDecision.getDecisionKey())
+        .hasDecisionVersion(requiredDecision.getVersion())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("null")
         .satisfies(
