@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe BPMN model API</name>
   <artifactId>zeebe-bpmn-model</artifactId>
-  <version>1.2.11</version>
+  <version>1.2.12-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.11</version>
+    <version>1.2.12-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
