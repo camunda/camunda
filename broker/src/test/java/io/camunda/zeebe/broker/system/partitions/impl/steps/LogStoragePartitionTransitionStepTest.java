@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +17,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.LogStorageTermMissmatchException;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -47,6 +49,23 @@ class LogStoragePartitionTransitionStepTest {
     transitionContext.setRaftPartition(raftPartition);
 
     step = new LogStoragePartitionTransitionStep();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      names = {"INACTIVE", "FOLLOWER", "CANDIDATE"})
+  void shouldThrowTermMissmatchException(final Role currentRole) {
+    // given
+    initializeContext(currentRole);
+    step.prepareTransition(transitionContext, 1, Role.LEADER);
+
+    // simulate term change in Raft
+    when(raftServer.getTerm()).thenReturn(2L);
+
+    // when + then
+    assertThatThrownBy(() -> step.transitionTo(transitionContext, 1, Role.LEADER).join())
+        .hasCauseInstanceOf(LogStorageTermMissmatchException.class);
   }
 
   @ParameterizedTest
