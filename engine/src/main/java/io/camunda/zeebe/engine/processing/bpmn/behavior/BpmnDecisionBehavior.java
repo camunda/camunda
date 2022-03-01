@@ -47,7 +47,7 @@ import org.agrona.ExpandableArrayBuffer;
 /** Provides decision behavior to the BPMN processors */
 public final class BpmnDecisionBehavior {
 
-  private static final long UNKNOWN_DECISION_KEY = -1L;
+  private static final DecisionInfo UNKNOWN_DECISION_INFO = new DecisionInfo(-1L, -1);
 
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
@@ -233,7 +233,7 @@ public final class BpmnDecisionBehavior {
             .collect(
                 Collectors.toMap(
                     persistedDecision -> bufferAsString(persistedDecision.getDecisionId()),
-                    PersistedDecision::getDecisionKey));
+                    DecisionInfo::new));
 
     decisionResult
         .getEvaluatedDecisions()
@@ -242,7 +242,7 @@ public final class BpmnDecisionBehavior {
                 addDecisionToEvaluationEvent(
                     evaluatedDecision,
                     decisionKeysByDecisionId.getOrDefault(
-                        evaluatedDecision.decisionId(), UNKNOWN_DECISION_KEY),
+                        evaluatedDecision.decisionId(), UNKNOWN_DECISION_INFO),
                     decisionEvaluationEvent));
 
     final DecisionEvaluationIntent decisionEvaluationIntent;
@@ -265,14 +265,15 @@ public final class BpmnDecisionBehavior {
 
   private void addDecisionToEvaluationEvent(
       final EvaluatedDecision evaluatedDecision,
-      final long decisionKey,
+      final DecisionInfo decisionInfo,
       final DecisionEvaluationRecord decisionEvaluationEvent) {
 
     final var evaluatedDecisionRecord = decisionEvaluationEvent.evaluatedDecisions().add();
     evaluatedDecisionRecord
         .setDecisionId(evaluatedDecision.decisionId())
         .setDecisionName(evaluatedDecision.decisionName())
-        .setDecisionKey(decisionKey)
+        .setDecisionKey(decisionInfo.key())
+        .setDecisionVersion(decisionInfo.version())
         .setDecisionType(evaluatedDecision.decisionType().name())
         .setDecisionOutput(evaluatedDecision.decisionOutput());
 
@@ -316,5 +317,11 @@ public final class BpmnDecisionBehavior {
         .setOutputId(evaluatedOutput.outputId())
         .setOutputName(evaluatedOutput.outputName())
         .setOutputValue(evaluatedOutput.outputValue());
+  }
+
+  private record DecisionInfo(long key, int version) {
+    DecisionInfo(final PersistedDecision persistedDecision) {
+      this(persistedDecision.getDecisionKey(), persistedDecision.getVersion());
+    }
   }
 }
