@@ -16,10 +16,6 @@
   <properties>
     <!-- do we still need to skip JavaDoc generation? -->
     <maven.javadoc.skip>true</maven.javadoc.skip>
-
-    <!-- ignore Spotbugs failures related to Scala classes -->
-    <spotbugs.exclude>${basedir}/spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
-
   </properties>
 
   <dependencies>
