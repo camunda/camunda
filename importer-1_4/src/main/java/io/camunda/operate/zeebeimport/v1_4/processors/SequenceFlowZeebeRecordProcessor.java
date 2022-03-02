@@ -9,9 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.zeebeimport.v1_4.record.Intent;
-import io.camunda.operate.zeebeimport.v1_4.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.io.IOException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -35,13 +35,13 @@ public class SequenceFlowZeebeRecordProcessor {
 
   public void processSequenceFlowRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    if (intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name())) {
-      ProcessInstanceRecordValueImpl recordValue = (ProcessInstanceRecordValueImpl)record.getValue();
+    if (intentStr.equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.name())) {
+      ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue)record.getValue();
       persistSequenceFlow(record, recordValue, bulkRequest);
     }
   }
 
-  private void persistSequenceFlow(Record record, ProcessInstanceRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
+  private void persistSequenceFlow(Record record, ProcessInstanceRecordValue recordValue, BulkRequest bulkRequest) throws PersistenceException {
     SequenceFlowEntity entity = new SequenceFlowEntity();
     entity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId()));
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());

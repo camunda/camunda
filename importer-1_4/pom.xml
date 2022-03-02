@@ -21,12 +21,12 @@
     <!-- Record classes and interfaces -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
+      <artifactId>zeebe-protocol-jackson</artifactId>
       <scope>compile</scope>
       <version>${version.zeebe}</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 
+    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
     <dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>javax.json</artifactId>
@@ -56,13 +56,14 @@
         <configuration>
           <artifactSet>
             <includes>
+              <include>io.camunda:zeebe-protocol-jackson</include>
               <include>io.camunda:zeebe-protocol</include>
             </includes>
           </artifactSet>
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v120</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v140</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

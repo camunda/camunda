@@ -25,13 +25,13 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.util.ThreadUtil;
-import io.camunda.operate.zeebeimport.v1_4.record.Intent;
-import io.camunda.operate.zeebeimport.v1_4.record.RecordImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.IncidentRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
@@ -82,7 +82,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
+    IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     //update activity instance
     bulkRequest.add(persistFlowNodeInstanceFromIncident(record, intentStr, recordValue));
@@ -90,16 +90,17 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   public void processProcessInstanceRecord(
-      Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records,
+      Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
       final List<Long> flowNodeInstanceKeysOrdered, BulkRequest bulkRequest) throws PersistenceException {
 
     for (Long key: flowNodeInstanceKeysOrdered) {
-      List<RecordImpl<ProcessInstanceRecordValueImpl>> wiRecords = records.get(key);
+      List<Record<ProcessInstanceRecordValue>> wiRecords = records.get(key);
       FlowNodeInstanceEntity fniEntity = null;
-      for (RecordImpl record: wiRecords) {
+      for (Record record: wiRecords) {
         final String intentStr = record.getIntent().name();
-        ProcessInstanceRecordValueImpl recordValue = (ProcessInstanceRecordValueImpl)record.getValue();
-        if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
+        ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue)record.getValue();
+        if (!isProcessEvent(recordValue) && !intentStr.equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(
+            Intent.UNKNOWN.name())) {
           fniEntity = updateFlowNodeInstance(record, intentStr, recordValue, fniEntity);
         }
       }
@@ -110,7 +111,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   private FlowNodeInstanceEntity updateFlowNodeInstance(Record record, String intentStr,
-      ProcessInstanceRecordValueImpl recordValue, FlowNodeInstanceEntity entity) {
+      ProcessInstanceRecordValue recordValue, FlowNodeInstanceEntity entity) {
     if (entity == null) {
       entity = new FlowNodeInstanceEntity();
     }
@@ -153,7 +154,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   private String getParentTreePath(final Record record,
-      final ProcessInstanceRecordValueImpl recordValue) {
+      final ProcessInstanceRecordValue recordValue) {
     String parentTreePath;
     //if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search for parent 1st
     if (recordValue.getFlowScopeKey() == recordValue.getProcessInstanceKey()) {
@@ -211,7 +212,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValue recordValue) throws PersistenceException {
     FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
     entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
@@ -277,11 +278,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

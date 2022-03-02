@@ -12,9 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.util.ElasticsearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import java.util.List;
 import org.junit.Rule;
@@ -23,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-public class DecisionIT extends OperateIntegrationTest {
+public class DecisionIT extends OperateZeebeIntegrationTest {
 
   private static final String QUERY_DECISIONS_GROUPED_URL = "/api/decisions/grouped";
   private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";
@@ -39,14 +38,13 @@ public class DecisionIT extends OperateIntegrationTest {
     //given
     final String demoDecisionId1 = "invoiceClassification";
     final String decision1Name = "Invoice Classification";
-    final Long decision1V1Id = 1222L;
-    final Long decision1V2Id = 2222L;
-    final String demoDecisionId2 = "invoice-assign-approver";
+    final String demoDecisionId2 = "invoiceAssignApprover";
     final String decision2Name = "Assign Approver Group";
-    final Long decision2V1Id = 1333L;
-    final Long decision2V2Id = 2333L;
 
-    createData();
+    tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil()
+        .decisionsAreDeployed(2);
 
     //when
     MockHttpServletRequestBuilder request = get(QUERY_DECISIONS_GROUPED_URL);
@@ -66,7 +64,7 @@ public class DecisionIT extends OperateIntegrationTest {
     assertThat(demoDecisionGroup1.getDecisions()).hasSize(2);
     assertThat(demoDecisionGroup1.getName()).isEqualTo(decision1Name);
     assertThat(demoDecisionGroup1.getDecisions()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoDecisionGroup1.getDecisions()).extracting(DecisionIndex.ID).containsExactlyInAnyOrder(decision1V1Id.toString(), decision1V2Id.toString());
+    assertThat(demoDecisionGroup1.getDecisions().get(0).getId()).isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
     assertThat(decisionGroupDtos).filteredOn(wg -> wg.getDecisionId().equals(demoDecisionId2)).hasSize(1);
     final DecisionGroupDto demoDecisionGroup2 =
@@ -74,16 +72,14 @@ public class DecisionIT extends OperateIntegrationTest {
     assertThat(demoDecisionGroup2.getDecisions()).hasSize(2);
     assertThat(demoDecisionGroup2.getName()).isEqualTo(decision2Name);
     assertThat(demoDecisionGroup2.getDecisions()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoDecisionGroup2.getDecisions()).extracting(DecisionIndex.ID).containsExactlyInAnyOrder(decision2V1Id.toString(), decision2V2Id.toString());
+    assertThat(demoDecisionGroup2.getDecisions().get(0).getId()).isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
   }
 
   @Test
   public void testDecisionGetDiagramV1() throws Exception {
     //given
-    final String demoDecisionId1 = "invoiceClassification";
     final Long decision1V1Id = 1222L;
-    final String demoDecisionId2 = "invoice-assign-approver";
     final Long decision2V1Id = 1333L;
 
     createData();
@@ -116,9 +112,7 @@ public class DecisionIT extends OperateIntegrationTest {
   @Test
   public void testDecisionGetDiagramV2() throws Exception {
     //given
-    final String demoDecisionId1 = "invoiceClassification";
     final Long decision1V2Id = 2222L;
-    final String demoDecisionId2 = "invoice-assign-approver";
     final Long decision2V2Id = 2333L;
 
     createData();

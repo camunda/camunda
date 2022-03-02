@@ -100,6 +100,10 @@ public class OperateTester {
   private Predicate<Object[]> processIsDeployedCheck;
 
   @Autowired
+  @Qualifier("decisionsAreDeployedCheck")
+  private Predicate<Object[]> decisionsAreDeployedCheck;
+
+  @Autowired
   @Qualifier("processInstancesAreStartedCheck")
   private Predicate<Object[]> processInstancesAreStartedCheck;
 
@@ -204,6 +208,12 @@ public class OperateTester {
     return this;
   }
 
+  public OperateTester deployDecision(String... classpathResources) {
+    Validate.notNull(zeebeClient, "ZeebeClient should be set.");
+    ZeebeTestUtil.deployDecision(zeebeClient, classpathResources);
+    return this;
+  }
+
   public OperateTester deployProcess(BpmnModelInstance processModel, String resourceName) {
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
     return this;
@@ -211,6 +221,11 @@ public class OperateTester {
 
   public OperateTester processIsDeployed() {
     elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    return this;
+  }
+
+  public OperateTester decisionsAreDeployed(int count) {
+    elasticsearchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
     return this;
   }
 

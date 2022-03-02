@@ -212,6 +212,7 @@
               </includes>
               <excludes>
                 <exclude>**/ImportSeveralVersionsIT.java</exclude>
+                <exclude>**/DecisionIT.java</exclude>
               </excludes>
               <systemPropertyVariables>
                 <spring.profiles.active>test,old-zeebe</spring.profiles.active>

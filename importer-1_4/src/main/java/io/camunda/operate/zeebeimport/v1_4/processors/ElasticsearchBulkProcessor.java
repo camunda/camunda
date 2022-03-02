@@ -5,24 +5,19 @@
  */
 package io.camunda.operate.zeebeimport.v1_4.processors;
 
-import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.AbstractImportBatchProcessor;
 import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.zeebeimport.v1_4.record.RecordImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.IncidentRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.JobRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.ProcessInstanceRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.VariableDocumentRecordImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.VariableRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.deployment.DeployedProcessImpl;
+import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,19 +58,38 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
 
   @Autowired
+  private DecisionZeebeRecordProcessor decisionZeebeRecordProcessor;
+
+  @Autowired
+  private DecisionRequirementsZeebeRecordProcessor decisionRequirementsZeebeRecordProcessor;
+
+  @Autowired
   private ObjectMapper objectMapper;
 
   @Override
   protected void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException {
 
-    JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, getRecordValueClass(importBatch.getImportValueType()));
-    final List<Record> zeebeRecords = ElasticsearchUtil.mapSearchHits(importBatch.getHits(), objectMapper, valueType);
+    final List<Record> zeebeRecords = importBatch.getHits().stream()
+        .map(searchHit -> {
+          try {
+            return objectMapper.readValue(searchHit.getSourceAsString(), AbstractRecord.class);
+          } catch (JsonProcessingException e) {
+            throw new OperateRuntimeException(e.getMessage(), e);
+          }
+        }).collect(Collectors.toList());
+    logger.debug(
+        "Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}",
+        zeebeRecords.size(), getZeebeVersion(), importBatch.getImportValueType(),
+        importBatch.getPartitionId());
 
     ImportValueType importValueType = importBatch.getImportValueType();
-
-    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), getZeebeVersion(), importBatch.getImportValueType(), importBatch.getPartitionId());
-
     switch (importValueType) {
+      case DECISION:
+        processDecisionRecords(bulkRequest, zeebeRecords);
+        break;
+      case DECISION_REQUIREMENTS:
+        processDecisionRequirementsRecord(bulkRequest, zeebeRecords);
+        break;
       case PROCESS_INSTANCE:
         processProcessInstanceRecords(importBatch, bulkRequest, zeebeRecords);
         break;
@@ -98,13 +112,28 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         logger.debug("Default case triggered for type {}", importValueType);
         break;
     }
+  }
 
+  private void processDecisionRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+      throws PersistenceException {
+    for (Record record : zeebeRecords) {
+      // deployment records can be processed one by one
+      decisionZeebeRecordProcessor.processDecisionRecord(record, bulkRequest);
+    }
+  }
+
+  private void processDecisionRequirementsRecord(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+      throws PersistenceException {
+    for (Record record : zeebeRecords) {
+      // deployment records can be processed one by one
+      decisionRequirementsZeebeRecordProcessor.processDecisionRequirementsRecord(record, bulkRequest);
+    }
   }
 
   private void processJobRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     // per activity
-    Map<Long, List<RecordImpl<JobRecordValueImpl>>> groupedJobRecordsPerActivityInst = zeebeRecords.stream().map(obj -> (RecordImpl<JobRecordValueImpl>) obj)
+    Map<Long, List<Record<JobRecordValue>>> groupedJobRecordsPerActivityInst = zeebeRecords.stream().map(obj -> (Record<JobRecordValue>)obj)
         .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
     eventZeebeRecordProcessor.processJobRecords(groupedJobRecordsPerActivityInst, bulkRequest);
   }
@@ -141,26 +170,26 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
     }
     incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
-    Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> groupedIncidentRecordsPerActivityInst = zeebeRecords
+    Map<Long, List<Record<IncidentRecordValue>>> groupedIncidentRecordsPerActivityInst = zeebeRecords
         .stream()
-        .map(obj -> (RecordImpl<IncidentRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
+        .map(obj -> (Record<IncidentRecordValue>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
     eventZeebeRecordProcessor.processIncidentRecords(groupedIncidentRecordsPerActivityInst,
         bulkRequest);
   }
 
   private void processProcessInstanceRecords(final ImportBatch importBatch,
       final BulkRequest bulkRequest, final List<Record> zeebeRecords) throws PersistenceException {
-    Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords
+    Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecords = zeebeRecords
         .stream()
-        .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(LinkedHashMap::new,
+        .map(obj -> (Record<ProcessInstanceRecordValue>) obj).collect(LinkedHashMap::new,
             (map, item) -> CollectionUtil
                 .addToMap(map, item.getValue().getProcessInstanceKey(), item),
             Map::putAll);
     listViewZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecords, bulkRequest,
         importBatch);
-    Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords
+    Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecordsPerActivityInst = zeebeRecords
         .stream()
-        .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
+        .map(obj -> (Record<ProcessInstanceRecordValue>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
     List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
         .map(Record::getKey)
         .collect(Collectors.toList());
@@ -170,25 +199,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         bulkRequest);
     for (Record record : zeebeRecords) {
       sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
-    }
-  }
-
-  protected Class<? extends RecordValue> getRecordValueClass(ImportValueType importValueType) {
-    switch (importValueType) {
-      case PROCESS:
-      return DeployedProcessImpl.class;
-    case PROCESS_INSTANCE:
-      return ProcessInstanceRecordValueImpl.class;
-    case JOB:
-      return JobRecordValueImpl.class;
-    case INCIDENT:
-      return IncidentRecordValueImpl.class;
-    case VARIABLE:
-      return VariableRecordValueImpl.class;
-    case VARIABLE_DOCUMENT:
-      return VariableDocumentRecordImpl.class;
-    default:
-      throw new OperateRuntimeException(String.format("No value type class found for: %s", importValueType));
     }
   }
 

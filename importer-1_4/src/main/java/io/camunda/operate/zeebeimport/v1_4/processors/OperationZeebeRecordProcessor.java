@@ -8,8 +8,8 @@ package io.camunda.operate.zeebeimport.v1_4.processors;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.zeebeimport.v1_4.record.Intent;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import java.util.HashSet;
 import java.util.Set;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -26,7 +26,7 @@ public class OperationZeebeRecordProcessor {
   private static final Set<String> VARIABLE_DOCUMENT_STATES = new HashSet<>();
 
   static {
-    VARIABLE_DOCUMENT_STATES.add(Intent.UPDATED.name());
+    VARIABLE_DOCUMENT_STATES.add(VariableDocumentIntent.UPDATED.name());
   }
 
   @Autowired

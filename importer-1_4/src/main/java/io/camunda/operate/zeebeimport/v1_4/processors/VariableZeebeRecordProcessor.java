@@ -13,9 +13,9 @@ import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
-import io.camunda.operate.zeebeimport.v1_4.record.Intent;
-import io.camunda.operate.zeebeimport.v1_4.record.value.VariableRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,8 +37,8 @@ public class VariableZeebeRecordProcessor {
   private static final Set<String> VARIABLE_STATES = new HashSet<>();
 
   static {
-    VARIABLE_STATES.add(Intent.CREATED.name());
-    VARIABLE_STATES.add(Intent.UPDATED.name());
+    VARIABLE_STATES.add(VariableIntent.CREATED.name());
+    VARIABLE_STATES.add(VariableIntent.UPDATED.name());
   }
 
   @Autowired
@@ -51,14 +51,14 @@ public class VariableZeebeRecordProcessor {
   private OperateProperties operateProperties;
 
   public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
+    VariableRecordValue recordValue = (VariableRecordValue)record.getValue();
 
     //update variable
     bulkRequest.add(persistVariable(record, recordValue));
 
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistVariable(Record record, VariableRecordValue recordValue) throws PersistenceException {
     VariableEntity entity = new VariableEntity();
     entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());

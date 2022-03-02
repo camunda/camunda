@@ -16,11 +16,11 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
-import io.camunda.operate.zeebeimport.v1_4.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -75,15 +75,13 @@ public class ProcessZeebeRecordProcessor {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      DeployedProcessImpl recordValue = (DeployedProcessImpl)record.getValue();
-      persistProcess(recordValue, bulkRequest);
+      ProcessMetadataValue recordValue = (ProcessMetadataValue)record.getValue();
+      persistProcess((Process) recordValue, bulkRequest);
     }
 
   }
 
   private void persistProcess(Process process, BulkRequest bulkRequest) throws PersistenceException {
-    String resourceName = process.getResourceName();
-
     final ProcessEntity processEntity = createEntity(process);
     logger.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(), processEntity.getBpmnProcessId());
 

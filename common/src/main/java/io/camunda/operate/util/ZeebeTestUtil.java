@@ -55,6 +55,20 @@ public abstract class ZeebeTestUtil {
     return deploymentEvent.getProcesses().get(classpathResources.length - 1).getProcessDefinitionKey();
   }
 
+  public static void deployDecision(ZeebeClient client, String... classpathResources) {
+    if (classpathResources.length == 0) {
+      return;
+    }
+    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
+    for (String classpathResource: classpathResources) {
+      deployProcessCommandStep1 = deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
+    }
+    ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2)deployProcessCommandStep1)
+            .send()
+            .join();
+    logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
+  }
+
   /**
    * Deploys the process synchronously.
    * @param client client

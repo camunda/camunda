@@ -22,9 +22,9 @@ import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.IncidentNotifier;
-import io.camunda.operate.zeebeimport.v1_4.record.Intent;
-import io.camunda.operate.zeebeimport.v1_4.record.value.IncidentRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -88,24 +88,24 @@ public class IncidentZeebeRecordProcessor {
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest,
       Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
-    IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
+    IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     persistIncident(record, recordValue, bulkRequest, newIncidentHandler);
 
   }
 
-  private void persistIncident(Record record, IncidentRecordValueImpl recordValue,
+  private void persistIncident(Record record, IncidentRecordValue recordValue,
       BulkRequest bulkRequest,
       Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
-    if (intentStr.equals(Intent.RESOLVED.toString())) {
+    if (intentStr.equals(IncidentIntent.RESOLVED.toString())) {
 
       //resolve corresponding operation
       operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
 
       bulkRequest.add(getIncidentUpdateQuery(incidentKey, IncidentState.RESOLVED));
-    } else if (intentStr.equals(Intent.CREATED.toString())) {
+    } else if (intentStr.equals(IncidentIntent.CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
       incident.setId( ConversionUtils.toStringOrNull(incidentKey));
       incident.setKey(incidentKey);

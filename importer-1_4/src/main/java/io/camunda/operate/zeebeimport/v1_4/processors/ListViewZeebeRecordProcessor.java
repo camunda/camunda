@@ -39,14 +39,14 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.util.TreePath;
-import io.camunda.operate.zeebeimport.v1_4.record.Intent;
-import io.camunda.operate.zeebeimport.v1_4.record.RecordImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.IncidentRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.ProcessInstanceRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.VariableRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -139,7 +139,7 @@ public class ListViewZeebeRecordProcessor {
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
+    IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     //update activity instance
     bulkRequest.add(persistFlowNodeInstanceFromIncident(record, intentStr, recordValue));
@@ -147,23 +147,24 @@ public class ListViewZeebeRecordProcessor {
   }
 
   public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
+    VariableRecordValue recordValue = (VariableRecordValue)record.getValue();
 
     bulkRequest.add(persistVariable(record, recordValue));
 
   }
 
-  public void processProcessInstanceRecord(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest,
+  public void processProcessInstanceRecord(
+      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BulkRequest bulkRequest,
       ImportBatch importBatch) throws PersistenceException {
     final Map<String, String> treePathMap = new HashMap<>();
-    for (Map.Entry<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+    for (Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry: records.entrySet()) {
       ProcessInstanceForListViewEntity piEntity = null;
       Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<Long, FlowNodeInstanceForListViewEntity>();
       Long processInstanceKey = null;
-      for (RecordImpl record: wiRecordsEntry.getValue()) {
+      for (Record record: wiRecordsEntry.getValue()) {
         processInstanceKey = wiRecordsEntry.getKey();
         final String intentStr = record.getIntent().name();
-        ProcessInstanceRecordValueImpl recordValue = (ProcessInstanceRecordValueImpl)record.getValue();
+        ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue)record.getValue();
         if (isProcessEvent(recordValue)) {
           //complete operation
           if (intentStr.equals(ELEMENT_TERMINATED.name())) {
@@ -171,7 +172,7 @@ public class ListViewZeebeRecordProcessor {
             operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
           }
           piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity, treePathMap, bulkRequest);
-        } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
+        } else if (!intentStr.equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           updateFlowNodeInstance(record, intentStr, recordValue, actEntities);
         }
       }
@@ -188,7 +189,7 @@ public class ListViewZeebeRecordProcessor {
   private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch,
       Record record,
       String intentStr,
-      ProcessInstanceRecordValueImpl recordValue,
+      ProcessInstanceRecordValue recordValue,
       ProcessInstanceForListViewEntity piEntity,
       Map<String, String> treePathMap,
       BulkRequest bulkRequest) {
@@ -246,7 +247,7 @@ public class ListViewZeebeRecordProcessor {
     return piEntity;
   }
 
-  private String getTreePathForCalledProcess(final ProcessInstanceRecordValueImpl recordValue) {
+  private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {
     String parentTreePath = null;
 
     //search in cache
@@ -310,7 +311,7 @@ public class ListViewZeebeRecordProcessor {
   }
 
 
-  private void updateFlowNodeInstance(Record record, String intentStr, ProcessInstanceRecordValueImpl recordValue, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
+  private void updateFlowNodeInstance(Record record, String intentStr, ProcessInstanceRecordValue recordValue, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
     if (entities.get(record.getKey()) == null) {
       entities.put(record.getKey(), new FlowNodeInstanceForListViewEntity());
     }
@@ -343,7 +344,7 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValue recordValue) throws PersistenceException {
     FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
     entity.setId( ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
@@ -367,7 +368,7 @@ public class ListViewZeebeRecordProcessor {
     return getFlowNodeInstanceFromIncidentQuery(entity, processInstanceKey);
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistVariable(Record record, VariableRecordValue recordValue) throws PersistenceException {
     VariableForListViewEntity entity = new VariableForListViewEntity();
     entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
@@ -474,11 +475,11 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

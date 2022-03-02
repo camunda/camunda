@@ -66,7 +66,7 @@
       </rule>
     </decisionTable>
   </decision>
-  <decision id="invoice-assign-approver" name="Assign Approver Group">
+  <decision id="invoiceAssignApprover" name="Assign Approver Group">
     <informationRequirement id="InformationRequirement_1kkeocv">
       <requiredDecision href="#invoiceClassification" />
     </informationRequirement>
@@ -113,14 +113,14 @@
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1cuuevk">
       <dmndi:DMNShape id="DMNShape_1abvt5s" dmnElementRef="invoiceClassification">
-        <dc:Bounds height="55" width="100" x="393" y="325" />
+        <dc:Bounds height="55" width="100" x="153" y="215" />
       </dmndi:DMNShape>
-      <dmndi:DMNShape id="DMNShape_1ay7af5" dmnElementRef="invoice-assign-approver">
-        <dc:Bounds height="55" width="100" x="464" y="194" />
+      <dmndi:DMNShape id="DMNShape_1ay7af5" dmnElementRef="invoiceAssignApprover">
+        <dc:Bounds height="55" width="100" x="224" y="84" />
       </dmndi:DMNShape>
       <dmndi:DMNEdge id="DMNEdge_1wn1950" dmnElementRef="InformationRequirement_1kkeocv">
-        <di:waypoint x="458" y="325" />
-        <di:waypoint x="498" y="249" />
+        <di:waypoint x="218" y="215" />
+        <di:waypoint x="258" y="139" />
       </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>

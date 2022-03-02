@@ -21,14 +21,13 @@ import io.camunda.operate.entities.EventType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.zeebeimport.v1_4.record.RecordImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.IncidentRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.JobRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -80,15 +79,15 @@ public class EventZeebeRecordProcessor {
   @Autowired
   private EventTemplate eventTemplate;
 
-  public void processIncidentRecords(Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<RecordImpl<IncidentRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+  public void processIncidentRecords(Map<Long, List<Record<IncidentRecordValue>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<Record<IncidentRecordValue>>> wiRecordsEntry: records.entrySet()) {
       //we need only last event of the processed type
-      List<RecordImpl<IncidentRecordValueImpl>> incidentRecords = wiRecordsEntry.getValue();
+      List<Record<IncidentRecordValue>> incidentRecords = wiRecordsEntry.getValue();
       if (incidentRecords.size() >= 1) {
         for (int i = incidentRecords.size() - 1; i>=0; i-- ) {
           final String intentStr = incidentRecords.get(i).getIntent().name();
           if (INCIDENT_EVENTS.contains(intentStr)) {
-            IncidentRecordValueImpl recordValue = incidentRecords.get(i).getValue();
+            IncidentRecordValue recordValue = incidentRecords.get(i).getValue();
             processIncident(incidentRecords.get(i), recordValue, bulkRequest);
             break;
           }
@@ -97,15 +96,15 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  public void processJobRecords(Map<Long, List<RecordImpl<JobRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<RecordImpl<JobRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+  public void processJobRecords(Map<Long, List<Record<JobRecordValue>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<Record<JobRecordValue>>> wiRecordsEntry: records.entrySet()) {
       //we need only last event of the processed type
-      List<RecordImpl<JobRecordValueImpl>> jobRecords = wiRecordsEntry.getValue();
+      List<Record<JobRecordValue>> jobRecords = wiRecordsEntry.getValue();
       if (jobRecords.size() >= 1) {
         for (int i = jobRecords.size() - 1; i>=0; i-- ) {
           final String intentStr = jobRecords.get(i).getIntent().name();
           if (JOB_EVENTS.contains(intentStr)) {
-            JobRecordValueImpl recordValue = jobRecords.get(i).getValue();
+            JobRecordValue recordValue = jobRecords.get(i).getValue();
             processJob(jobRecords.get(i), recordValue, bulkRequest);
             break;
           }
@@ -114,15 +113,16 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  public void processProcessInstanceRecords(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+  public void processProcessInstanceRecords(
+      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry: records.entrySet()) {
       //we need only last event of the processed type
-      List<RecordImpl<ProcessInstanceRecordValueImpl>> wiRecords = wiRecordsEntry.getValue();
+      List<Record<ProcessInstanceRecordValue>> wiRecords = wiRecordsEntry.getValue();
       if (wiRecords.size() >= 1) {
         for (int i = wiRecords.size() - 1; i>=0; i-- ) {
           final String intentStr = wiRecords.get(i).getIntent().name();
           if (PROCESS_INSTANCE_STATES.contains(intentStr)) {
-            ProcessInstanceRecordValueImpl recordValue = wiRecords.get(i).getValue();
+            ProcessInstanceRecordValue recordValue = wiRecords.get(i).getValue();
             processProcessInstance(wiRecords.get(i), recordValue, bulkRequest);
             break;
           }
@@ -131,7 +131,7 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  private void processProcessInstance(Record record, ProcessInstanceRecordValueImpl recordValue, BulkRequest bulkRequest)
+  private void processProcessInstance(Record record, ProcessInstanceRecordValue recordValue, BulkRequest bulkRequest)
     throws PersistenceException {
     if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
       EventEntity eventEntity = new EventEntity();
@@ -156,7 +156,7 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  private void processJob(Record record, JobRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
+  private void processJob(Record record, JobRecordValue recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
     eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
@@ -203,7 +203,7 @@ public class EventZeebeRecordProcessor {
 
   }
 
-  private void processIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
+  private void processIncident(Record record, IncidentRecordValue recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
     eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
@@ -230,11 +230,11 @@ public class EventZeebeRecordProcessor {
     persistEvent(eventEntity, record.getPosition(), bulkRequest);
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

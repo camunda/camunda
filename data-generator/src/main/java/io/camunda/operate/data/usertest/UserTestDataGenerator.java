@@ -780,6 +780,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_2.bpmn");
 
+    ZeebeTestUtil.deployDecision(client, "usertest/invoiceBusinessDecisions_v_2.dmn");
   }
 
   protected void deployVersion3() {
