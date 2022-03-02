@@ -65,16 +65,26 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
+  public void remove(final TimerInstance timer) {
+    elementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    timerInstanceColumnFamily.delete(elementAndTimerKey);
+
+    dueDateKey.wrapLong(timer.getDueDate());
+    dueDateColumnFamily.delete(dueDateCompositeKey);
+  }
+
+  @Override
   public long findTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
     dueDateColumnFamily.whileTrue(
         (key, nil) -> {
-          final DbLong dueDate = key.getFirst();
+          final DbLong dueDate = key.first();
 
           boolean consumed = false;
           if (dueDate.getValue() <= timestamp) {
-            final DbCompositeKey<DbLong, DbLong> elementAndTimerKey = key.getSecond();
+            final DbCompositeKey<DbLong, DbLong> elementAndTimerKey = key.second();
             final TimerInstance timerInstance = timerInstanceColumnFamily.get(elementAndTimerKey);
             consumed = consumer.visit(timerInstance);
           }
@@ -106,15 +116,5 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
-  }
-
-  @Override
-  public void remove(final TimerInstance timer) {
-    elementInstanceKey.wrapLong(timer.getElementInstanceKey());
-    timerKey.wrapLong(timer.getKey());
-    timerInstanceColumnFamily.delete(elementAndTimerKey);
-
-    dueDateKey.wrapLong(timer.getDueDate());
-    dueDateColumnFamily.delete(dueDateCompositeKey);
   }
 }

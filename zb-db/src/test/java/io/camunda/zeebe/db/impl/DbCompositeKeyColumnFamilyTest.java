@@ -102,10 +102,10 @@ public final class DbCompositeKeyColumnFamilyTest {
     final List<String> values = new ArrayList<>();
     columnFamily.forEach(
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
@@ -137,10 +137,10 @@ public final class DbCompositeKeyColumnFamilyTest {
 
     columnFamily.forEach(
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
@@ -168,10 +168,10 @@ public final class DbCompositeKeyColumnFamilyTest {
     final List<String> values = new ArrayList<>();
     columnFamily.whileTrue(
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
@@ -202,15 +202,15 @@ public final class DbCompositeKeyColumnFamilyTest {
     columnFamily.whileTrue(
         (key, value) -> {
           columnFamily.delete(key);
-          return key.getSecond().getValue() != 13;
+          return key.second().getValue() != 13;
         });
 
     columnFamily.forEach(
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
@@ -243,10 +243,10 @@ public final class DbCompositeKeyColumnFamilyTest {
     columnFamily.whileEqualPrefix(
         firstKey,
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
@@ -280,10 +280,10 @@ public final class DbCompositeKeyColumnFamilyTest {
     columnFamily.whileEqualPrefix(
         firstKey,
         (key, value) -> {
-          seenStringKeys.add(key.getFirst().toString());
-          seenLongKeys.add(key.getSecond().getValue());
+          seenStringKeys.add(key.first().toString());
+          seenLongKeys.add(key.second().getValue());
 
-          key.getFirst().wrapString("hello");
+          key.first().wrapString("hello");
           final DbString zbString = columnFamily.get(key);
           if (zbString != null) {
             values.add(zbString.toString());
@@ -317,10 +317,10 @@ public final class DbCompositeKeyColumnFamilyTest {
     columnFamily.whileEqualPrefix(
         firstKey,
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
@@ -350,7 +350,7 @@ public final class DbCompositeKeyColumnFamilyTest {
         firstKey,
         (key, value) -> {
           columnFamily.delete(key);
-          return key.getSecond().getValue() != 13;
+          return key.second().getValue() != 13;
         });
 
     final List<String> firstKeyParts = new ArrayList<>();
@@ -358,10 +358,10 @@ public final class DbCompositeKeyColumnFamilyTest {
     final List<String> values = new ArrayList<>();
     columnFamily.forEach(
         (key, value) -> {
-          final DbString firstPart = key.getFirst();
+          final DbString firstPart = key.first();
           firstKeyParts.add(firstPart.toString());
 
-          final DbLong secondPart = key.getSecond();
+          final DbLong secondPart = key.second();
           secondKeyParts.add(secondPart.getValue());
 
           values.add(value.toString());
