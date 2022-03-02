@@ -47,8 +47,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.rest.util.AuthorizationUtil.validateAccessToken;
-
 @AllArgsConstructor
 @Slf4j
 @Path(PublicApiRestService.PUBLIC_PATH)
@@ -85,7 +83,6 @@ public class PublicApiRestService {
   @SneakyThrows
   public List<IdResponseDto> getReportIds(final @Context ContainerRequestContext requestContext,
                                           final @QueryParam("collectionId") String collectionId) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     validateCollectionIdNotNull(collectionId);
     return reportService.getAllReportIdsInCollection(collectionId);
   }
@@ -96,7 +93,6 @@ public class PublicApiRestService {
   @SneakyThrows
   public List<IdResponseDto> getDashboardIds(final @Context ContainerRequestContext requestContext,
                                              final @QueryParam("collectionId") String collectionId) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     validateCollectionIdNotNull(collectionId);
     return dashboardService.getAllDashboardIdsInCollection(collectionId);
   }
@@ -108,7 +104,6 @@ public class PublicApiRestService {
   public PaginatedDataExportDto exportReportData(@Context ContainerRequestContext requestContext,
                                                  @PathParam("reportId") String reportId,
                                                  @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     final ZoneId timezone = ZoneId.of("UTC");
     try {
       return jsonReportResultExportService.getJsonForEvaluatedReportResult(
@@ -134,7 +129,6 @@ public class PublicApiRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public List<ReportDefinitionExportDto> exportReportDefinition(final @Context ContainerRequestContext requestContext,
                                                                 final @RequestBody Set<String> reportIds) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     return entityExportService.getReportExportDtos(Optional.ofNullable(reportIds).orElse(Collections.emptySet()));
   }
 
@@ -144,7 +138,6 @@ public class PublicApiRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public List<OptimizeEntityExportDto> exportDashboardDefinition(final @Context ContainerRequestContext requestContext,
                                                                  final @RequestBody Set<String> dashboardIds) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     return entityExportService.getDashboardExportDtos(Optional.ofNullable(dashboardIds).orElse(Collections.emptySet()));
   }
 
@@ -155,7 +148,6 @@ public class PublicApiRestService {
   public List<EntityIdResponseDto> importEntities(@Context final ContainerRequestContext requestContext,
                                                   @QueryParam("collectionId") String collectionId,
                                                   final String exportedDtoJson) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     validateCollectionIdNotNull(collectionId);
     final Set<OptimizeEntityExportDto> exportDtos = entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
     return entityImportService.importEntities(collectionId, exportDtos);
@@ -166,7 +158,6 @@ public class PublicApiRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteReportDefinition(final @Context ContainerRequestContext requestContext,
                                      final @PathParam("reportId") String reportId) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     reportService.deleteReport(reportId);
   }
 
@@ -175,7 +166,6 @@ public class PublicApiRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboardDefinition(final @Context ContainerRequestContext requestContext,
                                         final @PathParam("dashboardId") String dashboardId) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     dashboardService.deleteDashboard(dashboardId);
   }
 
@@ -184,7 +174,6 @@ public class PublicApiRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
                                    @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
-    validateAccessToken(requestContext, getJsonExportAccessToken());
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 
@@ -193,9 +182,4 @@ public class PublicApiRestService {
       throw new BadRequestException("Must specify a collection ID for this request.");
     }
   }
-
-  private String getJsonExportAccessToken() {
-    return configurationService.getOptimizeApiConfiguration().getAccessToken();
-  }
-
 }

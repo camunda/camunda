@@ -11,6 +11,7 @@ security:
       organizationClaimName: 'https://camunda.com/orgs'
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
+      audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IAM_ISSUER_URL:}
       clientId: ${CAMUNDA_OPTIMIZE_IAM_CLIENTID:}
@@ -72,9 +73,11 @@ security:
 
 # A global access token used by all public APIs of Optimize
 api:
-  # Secret token to be provided on public APIs of Optimize.
-  # If set `null` an error will be thrown on any API access
+  # Authentication information to be provided for the public APIs of Optimize.
+  # Provide either a static access token OR a URL for a resource server. If both are provided, the static access
+  # token will be ignored and the resource server will be used for validation instead
   accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
+  jwtSetUri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:null}
 
 container:
   # A host name or IP address, to identify a specific network interface on

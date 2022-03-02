@@ -19,6 +19,7 @@ import org.camunda.optimize.service.util.configuration.security.CCSMAuthConfigur
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -37,12 +38,12 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
-import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSecurity
 @Conditional(CCSMCondition.class)
+@Order(2)
 public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
   private final SessionService sessionService;
   private final ConfigurationService configurationService;
@@ -80,8 +81,6 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
       .authorizeRequests()
         // ready endpoint is public
         .antMatchers(createApiPath(READYZ_PATH)).permitAll()
-        // public api has own auth setup when needed
-        .antMatchers(createApiPath(PUBLIC_PATH, "/**")).permitAll()
         // IAM callback request handling is public
         .antMatchers(createApiPath(AUTHENTICATION_PATH + CALLBACK)).permitAll()
       .anyRequest().authenticated()

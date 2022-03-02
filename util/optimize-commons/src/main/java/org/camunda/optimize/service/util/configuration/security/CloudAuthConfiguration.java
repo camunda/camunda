@@ -25,4 +25,7 @@ public class CloudAuthConfiguration {
   private String organizationId;
   // the id of the cluster Optimize belongs to
   private String clusterId;
+  // the audience (scope) for API access
+  private String audience;
+
 }

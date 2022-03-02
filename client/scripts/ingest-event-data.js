@@ -15,7 +15,7 @@ console.debug('ingesting event data');
     const response = await fetch('http://localhost:8090/api/ingestion/event/batch', {
       method: 'POST',
       headers: {
-        Authorization: 'secret',
+        Authorization: 'Bearer secret',
         'Content-Type': 'application/cloudevents-batch+json',
       },
       body: JSON.stringify(eventData),
