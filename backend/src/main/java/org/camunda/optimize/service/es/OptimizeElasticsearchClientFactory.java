@@ -12,7 +12,6 @@ import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -57,33 +56,32 @@ public class OptimizeElasticsearchClientFactory {
     while (!isConnected) {
       try {
         isConnected = getNumberOfClusterNodes(esClient, requestOptions) > 0;
+      } catch (final Exception e) {
+        log.error(
+          "Can't connect to any Elasticsearch node {}. Please check the connection!",
+          esClient.getLowLevelClient().getNodes(), e
+        );
+      } finally {
         if (!isConnected) {
           long sleepTime = backoffCalculator.calculateSleepTime();
           log.info("No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
-          Thread.sleep(sleepTime);
+          try {
+            Thread.sleep(sleepTime);
+          } catch (final InterruptedException e) {
+            log.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
+            Thread.currentThread().interrupt();
+          }
         }
-      } catch (final InterruptedException e) {
-        log.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
-        Thread.currentThread().interrupt();
-      } catch (final Exception e) {
-        String message = "Can't connect to Elasticsearch. Please check the connection!";
-        log.error(message, e);
-        throw new OptimizeRuntimeException(message, e);
       }
     }
     checkESVersionSupport(esClient, requestOptions);
   }
 
   private static int getNumberOfClusterNodes(final RestHighLevelClient esClient,
-                                             final RequestOptions requestOptions) {
-    try {
-      return esClient.cluster()
-        .health(new ClusterHealthRequest(), requestOptions)
-        .getNumberOfNodes();
-    } catch (IOException e) {
-      log.error("Failed getting number of cluster nodes.", e);
-      return 0;
-    }
+                                             final RequestOptions requestOptions) throws IOException {
+    return esClient.cluster()
+      .health(new ClusterHealthRequest(), requestOptions)
+      .getNumberOfNodes();
   }
 
 }
