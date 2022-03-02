@@ -56,7 +56,7 @@ public final class VariableMappingTransformerTest {
   @Test
   public void failToTransformWithInvalidSourceExpression() {
     // when
-    final var mappings = List.of(mapping("x?", "a"));
+    final var mappings = List.of(mapping("=x?", "a"));
 
     // when
     assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
@@ -67,7 +67,7 @@ public final class VariableMappingTransformerTest {
   @Test
   public void failToTransformWithInvalidTargetExpression() {
     // given
-    final var mappings = List.of(mapping("x", "a?"));
+    final var mappings = List.of(mapping("=x", "a?"));
 
     // when
     assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
@@ -78,7 +78,7 @@ public final class VariableMappingTransformerTest {
   @Test
   public void shouldEvaluateWithNotExistingVariable() {
     // given
-    final var mappings = List.of(mapping("x", "a"));
+    final var mappings = List.of(mapping("=x", "a"));
     final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
 
     // when
