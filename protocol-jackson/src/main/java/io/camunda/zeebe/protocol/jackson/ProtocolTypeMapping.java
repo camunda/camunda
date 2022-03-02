@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -44,29 +43,29 @@ import org.slf4j.LoggerFactory;
 @DefaultAnnotationForFields(NonNull.class)
 final class ProtocolTypeMapping {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolTypeMapping.class);
-  private final Map<Class<?>, TypeMapping<?>> typeMappings;
+  private final Map<Class<?>, TypeMapping<?>> concreteMappings;
 
   private ProtocolTypeMapping() {
-    typeMappings = Collections.unmodifiableMap(loadTypeMappings());
+    concreteMappings = new HashMap<>();
+    loadTypeMappings();
   }
 
   static void forEach(final Consumer<TypeMapping<?>> consumer) {
-    Singleton.INSTANCE.typeMappings.values().forEach(consumer);
+    Singleton.INSTANCE.concreteMappings.values().forEach(consumer);
   }
 
   @SuppressWarnings("java:S1452") // the expected usage is to pass it as is with the wildcard type
   @Nullable
   static TypeMapping<?> mappingForConcreteType(@Nullable final Class<?> concreteType) {
-    return Singleton.INSTANCE.typeMappings.get(concreteType);
+    return Singleton.INSTANCE.concreteMappings.get(concreteType);
   }
 
-  private Map<Class<?>, TypeMapping<?>> loadTypeMappings() {
-    final Map<Class<?>, TypeMapping<?>> mappings = new HashMap<>();
+  private void loadTypeMappings() {
     final String protocolPackageName = Record.class.getPackage().getName() + "*";
     final ClassInfoList abstractTypes = findProtocolTypes(protocolPackageName);
     for (final ClassInfo abstractType : abstractTypes) {
       LOGGER.trace("Found abstract protocol type {}", abstractType);
-      mappings.putAll(loadTypeMappingsFor(abstractType, abstractType.loadClass()));
+      loadTypeMappingsFor(abstractType, abstractType.loadClass());
     }
 
     if (abstractTypes.isEmpty()) {
@@ -74,26 +73,26 @@ final class ProtocolTypeMapping {
           "Found no abstract protocol types in package {}; deserialization will most likely not work",
           protocolPackageName);
     }
-
-    return mappings;
   }
 
-  private <T> Map<Class<?>, TypeMapping<T>> loadTypeMappingsFor(
-      final ClassInfo abstractType, final Class<T> abstractClass) {
+  private <T> void loadTypeMappingsFor(final ClassInfo abstractType, final Class<T> abstractClass) {
     Objects.requireNonNull(abstractType, "must specify an abstract type");
     Objects.requireNonNull(abstractClass, "must specify the abstract class");
 
-    final Map<Class<?>, TypeMapping<T>> mappings = new HashMap<>();
     // a few of the abstract types actually extend each other, so we need to lookup only the direct
     // concrete types, as otherwise we won't be able to tell which implementation is the right one
     final ClassInfoList concreteTypes =
-        abstractType.getClassesImplementing().filter(ClassInfo::isStandardClass).directOnly();
+        abstractType
+            .getClassesImplementing()
+            .filter(ClassInfo::isStandardClass)
+            .filter(info -> !info.isAbstract())
+            .directOnly();
 
     for (final ClassInfo concreteType : concreteTypes) {
       final Class<T> concreteClass = concreteType.loadClass(abstractClass);
       LOGGER.trace(
           "Found concrete type mapping for protocol class {} => {}", abstractClass, concreteClass);
-      mappings.putAll(loadTypeMappingsFor(concreteType, abstractClass, concreteClass));
+      loadTypeMappingsFor(concreteType, abstractClass, concreteClass);
     }
 
     if (concreteTypes.isEmpty()) {
@@ -101,23 +100,20 @@ final class ProtocolTypeMapping {
           "Found no concrete type mapping for protocol type {}; deserialization may not always work",
           abstractClass);
     }
-
-    return mappings;
   }
 
-  private <T> Map<Class<?>, TypeMapping<T>> loadTypeMappingsFor(
+  private <T> void loadTypeMappingsFor(
       final ClassInfo concreteType, final Class<T> abstractClass, final Class<T> concreteClass) {
     Objects.requireNonNull(concreteType, "must specify a concrete type");
     Objects.requireNonNull(abstractClass, "must specify an abstract class");
     Objects.requireNonNull(concreteClass, "must specify a concrete class");
 
-    final Map<Class<?>, TypeMapping<T>> mappings = new HashMap<>();
     final ClassInfoList builderTypes =
         concreteType.getInnerClasses().filter(info -> "Builder".equals(info.getSimpleName()));
     for (final ClassInfo builder : builderTypes) {
       final TypeMapping<T> typeMapping =
           new TypeMapping<>(abstractClass, concreteClass, builder.loadClass());
-      mappings.put(concreteClass, typeMapping);
+      concreteMappings.put(concreteClass, typeMapping);
     }
 
     if (builderTypes.isEmpty()) {
@@ -127,8 +123,6 @@ final class ProtocolTypeMapping {
           concreteClass,
           abstractClass);
     }
-
-    return mappings;
   }
 
   private ClassInfoList findProtocolTypes(final String packageName) {
