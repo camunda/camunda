@@ -250,10 +250,10 @@ public final class DbJobState implements JobState, MutableJobState {
       final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
     deadlinesColumnFamily.whileTrue(
         (key, value) -> {
-          final long deadline = key.getFirst().getValue();
+          final long deadline = key.first().getValue();
           final boolean isDue = deadline < upperBound;
           if (isDue) {
-            final long jobKey1 = key.getSecond().getValue();
+            final long jobKey1 = key.second().getValue();
             return visitJob(jobKey1, callback::apply, () -> deadlinesColumnFamily.delete(key));
           }
           return false;
@@ -292,7 +292,7 @@ public final class DbJobState implements JobState, MutableJobState {
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
         ((compositeKey, zbNil) -> {
-          final long jobKey = compositeKey.getSecond().getValue();
+          final long jobKey = compositeKey.second().getValue();
           // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
           return visitJob(jobKey, callback::apply, () -> {});
         }));
@@ -315,10 +315,10 @@ public final class DbJobState implements JobState, MutableJobState {
     nextBackOffDueDate = -1L;
     backoffColumnFamily.whileTrue(
         (key, value) -> {
-          final long deadline = key.getFirst().getValue();
+          final long deadline = key.first().getValue();
           boolean consumed = false;
           if (deadline <= timestamp) {
-            final long jobKey = key.getSecond().getValue();
+            final long jobKey = key.second().getValue();
             consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.delete(key));
           }
           if (!consumed) {

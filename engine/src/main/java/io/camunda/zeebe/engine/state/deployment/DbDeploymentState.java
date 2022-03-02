@@ -71,6 +71,19 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
+  public void storeDeploymentRecord(final long key, final DeploymentRecord value) {
+    deploymentKey.wrapLong(key);
+    deploymentRaw.setDeploymentRecord(value);
+    deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+  }
+
+  @Override
+  public void removeDeploymentRecord(final long key) {
+    deploymentKey.wrapLong(key);
+    deploymentRawColumnFamily.delete(deploymentKey);
+  }
+
+  @Override
   public boolean hasPendingDeploymentDistribution(final long deploymentKey) {
     this.deploymentKey.wrapLong(deploymentKey);
 
@@ -86,10 +99,17 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
-  public void storeDeploymentRecord(final long key, final DeploymentRecord value) {
+  public DeploymentRecord getStoredDeploymentRecord(final long key) {
     deploymentKey.wrapLong(key);
-    deploymentRaw.setDeploymentRecord(value);
-    deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+
+    final var storedDeploymentRaw = deploymentRawColumnFamily.get(deploymentKey);
+
+    DeploymentRecord record = null;
+    if (storedDeploymentRaw != null) {
+      record = storedDeploymentRaw.getDeploymentRecord();
+    }
+
+    return record;
   }
 
   @Override
@@ -100,11 +120,11 @@ public final class DbDeploymentState implements MutableDeploymentState {
     final MutableLong lastDeploymentKey = new MutableLong(0);
     pendingDeploymentColumnFamily.forEach(
         (compositeKey, nil) -> {
-          final var deploymentKey = compositeKey.getFirst().getValue();
-          final var partitionId = compositeKey.getSecond().getValue();
+          final var deploymentKey = compositeKey.first().getValue();
+          final var partitionId = compositeKey.second().getValue();
 
           if (lastDeploymentKey.value != deploymentKey) {
-            final var deploymentRaw = deploymentRawColumnFamily.get(compositeKey.getFirst());
+            final var deploymentRaw = deploymentRawColumnFamily.get(compositeKey.first());
             if (deploymentRaw == null) {
               LOG.warn(
                   "Expected to find a deployment with key {} for a pending partition {}, but none found. The state is inconsistent.",
@@ -119,25 +139,5 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
           pendingDeploymentVisitor.visit(deploymentKey, partitionId, lastDeployment.get());
         });
-  }
-
-  @Override
-  public void removeDeploymentRecord(final long key) {
-    deploymentKey.wrapLong(key);
-    deploymentRawColumnFamily.delete(deploymentKey);
-  }
-
-  @Override
-  public DeploymentRecord getStoredDeploymentRecord(final long key) {
-    deploymentKey.wrapLong(key);
-
-    final var storedDeploymentRaw = deploymentRawColumnFamily.get(deploymentKey);
-
-    DeploymentRecord record = null;
-    if (storedDeploymentRaw != null) {
-      record = storedDeploymentRaw.getDeploymentRecord();
-    }
-
-    return record;
   }
 }

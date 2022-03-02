@@ -334,7 +334,7 @@ public class DbVariableState implements MutableVariableState {
     variablesColumnFamily.whileEqualPrefix(
         this.scopeKey,
         (compositeKey, variable) -> {
-          final DbString name = compositeKey.getSecond();
+          final DbString name = compositeKey.second();
 
           if (variableFilter.test(name)) {
             variableConsumer.accept(name, variable);
