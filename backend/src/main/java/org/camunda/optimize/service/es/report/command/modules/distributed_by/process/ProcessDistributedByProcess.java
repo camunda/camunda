@@ -12,8 +12,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
@@ -213,9 +213,8 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
           mergedAggResult = totalValueSum / totalDocCount;
         }
         break;
-      // We cannot support the median or percentile aggregation types with this distribution as the information is lost on merging
+      // We cannot support percentile aggregation types with this distribution as the information is lost on merging
       // of buckets
-      case MEDIAN:
       case PERCENTILE:
         mergedAggResult = null;
         break;

@@ -38,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -225,12 +224,12 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     return Stream.of(
       Arguments.of(new AggregationDto(MIN), 1.),
       Arguments.of(new AggregationDto(MAX), 6.),
-      Arguments.of(new AggregationDto(MEDIAN), 5.),
       Arguments.of(new AggregationDto(AVERAGE), 4.),
       Arguments.of(new AggregationDto(SUM), 12.),
       Arguments.of(new AggregationDto(PERCENTILE, 99.), 6.),
       Arguments.of(new AggregationDto(PERCENTILE, 95.), 6.),
       Arguments.of(new AggregationDto(PERCENTILE, 75.), 5.75),
+      Arguments.of(new AggregationDto(PERCENTILE, 50.), 5.),
       Arguments.of(new AggregationDto(PERCENTILE, 25.), 2.)
     );
   }

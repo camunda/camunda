@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -52,16 +51,17 @@ public class DurationAggregationUtil {
       new AggregationDto(PERCENTILE, 99.),
       new AggregationDto(PERCENTILE, 95.),
       new AggregationDto(PERCENTILE, 75.),
+      new AggregationDto(PERCENTILE, 50.),
       new AggregationDto(PERCENTILE, 25.)
     ));
     return aggregationDtos.toArray(AggregationDto[]::new);
   }
 
   public static AggregationDto[] getAggregationTypesAsListForProcessParts() {
-    // process parts does not support the median or percentile since it does the result calculation
+    // process parts does not support percentile since it does the result calculation
     // with a script and the script does not allow sorting over all values.
     return Arrays.stream(values())
-      .filter(type -> !ImmutableSet.of(MEDIAN, PERCENTILE).contains(type))
+      .filter(type -> !ImmutableSet.of(PERCENTILE).contains(type))
       .map(AggregationDto::new)
       .toArray(AggregationDto[]::new);
   }
@@ -79,7 +79,6 @@ public class DurationAggregationUtil {
       new AggregationDto(MIN), Precision.round(statistics.getMin(), 0),
       new AggregationDto(MAX), Precision.round(statistics.getMax(), 0),
       new AggregationDto(AVERAGE), Precision.round(statistics.getMean(), 0),
-      new AggregationDto(MEDIAN), Precision.round(tDigest.quantile(0.50), 0),
       new AggregationDto(SUM), Precision.round(statistics.getSum(), 0),
       new AggregationDto(PERCENTILE, 99.), Precision.round(tDigest.quantile(0.99), 0),
       new AggregationDto(PERCENTILE, 95.), Precision.round(tDigest.quantile(0.95), 0),

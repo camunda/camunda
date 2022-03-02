@@ -31,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -221,7 +220,7 @@ public class FlowNodeDurationByFlowNodeByProcessReportEvaluationIT extends Abstr
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
     reportData.getConfiguration().setAggregationTypes(
       new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
-      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
     );
 
     // when
@@ -239,9 +238,9 @@ public class FlowNodeDurationByFlowNodeByProcessReportEvaluationIT extends Abstr
         Tuple.tuple(new AggregationDto(MIN), createResultsForAllFlowNodes(1000.0, 1000.0)),
         Tuple.tuple(new AggregationDto(AVERAGE), createResultsForAllFlowNodes(3000.0, 1000.0)),
         Tuple.tuple(new AggregationDto(SUM), createResultsForAllFlowNodes(6000.0, 1000.0)),
-        // We cannot support median or percentile aggregation types with this distribution as the information is lost
+        // We cannot support percentile aggregation types with this distribution as the information is lost
         // on merging
-        Tuple.tuple(new AggregationDto(MEDIAN), createResultsForAllFlowNodes(null, null)),
+        Tuple.tuple(new AggregationDto(PERCENTILE, 50.), createResultsForAllFlowNodes(null, null)),
         Tuple.tuple(new AggregationDto(PERCENTILE, 99.), createResultsForAllFlowNodes(null, null))
       );
   }

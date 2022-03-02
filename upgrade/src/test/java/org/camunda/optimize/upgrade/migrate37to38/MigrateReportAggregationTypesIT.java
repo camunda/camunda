@@ -20,8 +20,8 @@ import java.util.Collections;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 
 public class MigrateReportAggregationTypesIT extends AbstractUpgrade37IT {
@@ -49,12 +49,14 @@ public class MigrateReportAggregationTypesIT extends AbstractUpgrade37IT {
           ImmutableSet.of(
             new AggregationDto(MAX),
             new AggregationDto(MIN),
-            new AggregationDto(MEDIAN),
+            // The median is migrated to a P50 aggregation
+            new AggregationDto(PERCENTILE, 50.),
             new AggregationDto(AVERAGE),
             new AggregationDto(SUM)
           )
         ),
-        Tuple.tuple("report-2", ImmutableSet.of(new AggregationDto(AVERAGE))),
+        // The median is migrated to a P50 aggregation
+        Tuple.tuple("report-2", ImmutableSet.of(new AggregationDto(PERCENTILE, 50.))),
         Tuple.tuple("report-3", Collections.emptySet()),
         Tuple.tuple("report-4", Collections.emptySet())
       );
@@ -70,7 +72,8 @@ public class MigrateReportAggregationTypesIT extends AbstractUpgrade37IT {
           ImmutableSet.of(
             new AggregationDto(MAX),
             new AggregationDto(MIN),
-            new AggregationDto(MEDIAN),
+            // The median is migrated to a P50 aggregation
+            new AggregationDto(PERCENTILE, 50.),
             new AggregationDto(AVERAGE),
             new AggregationDto(SUM)
           )

@@ -34,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -210,7 +209,7 @@ public class FlowNodeDurationByVariableByProcessReportEvaluationIT extends Abstr
       createReport(List.of(v1definition, allVersionsDefinition), STRING_VAR, VariableType.STRING);
     reportData.getConfiguration().setAggregationTypes(
       new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
-      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
     );
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -246,9 +245,9 @@ public class FlowNodeDurationByVariableByProcessReportEvaluationIT extends Abstr
             new MapResultEntryDto(allVersionsIdentifier, 18000.0, allVersionsDisplayName),
             new MapResultEntryDto(v1Identifier, 3000.0, v1displayName)
           ))),
-        // We cannot support the median or percentile aggregation types with this distribution as the information is
+        // We cannot support percentile aggregation types with this distribution as the information is
         // lost on merging
-        Tuple.tuple(new AggregationDto(MEDIAN), List.of(
+        Tuple.tuple(new AggregationDto(PERCENTILE, 50.), List.of(
           createHyperMapResult(
             "aStringValue",
             new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),

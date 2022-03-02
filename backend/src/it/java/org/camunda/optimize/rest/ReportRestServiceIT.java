@@ -63,7 +63,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_I
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -203,8 +202,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       new AggregationDto(AVERAGE, 5.),
       new AggregationDto(MAX, 5.),
       new AggregationDto(MIN, 5.),
-      new AggregationDto(SUM, 5.),
-      new AggregationDto(MEDIAN, 5.)
+      new AggregationDto(SUM, 5.)
     );
   }
 

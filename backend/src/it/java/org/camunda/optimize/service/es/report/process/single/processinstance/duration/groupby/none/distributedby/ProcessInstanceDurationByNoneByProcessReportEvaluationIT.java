@@ -33,7 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_NONE_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -120,7 +119,7 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     final ProcessReportDataDto reportData = createDurationGroupedByNoneByProcessReport(List.of(definition));
     reportData.getConfiguration().setAggregationTypes(
       new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
-      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
     );
 
     // when
@@ -141,8 +140,11 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
           createHyperMapEntry(processDisplayName, processIdentifier, 6000.0)
         ),
         Tuple.tuple(new AggregationDto(SUM), createHyperMapEntry(processDisplayName, processIdentifier, 12000.0)),
-        // We can't work out the median or percentile, so it has a null value
-        Tuple.tuple(new AggregationDto(MEDIAN), createHyperMapEntry(processDisplayName, processIdentifier, null)),
+        // We can't work out percentile aggregation types, so it has a null value
+        Tuple.tuple(
+          new AggregationDto(PERCENTILE, 50.),
+          createHyperMapEntry(processDisplayName, processIdentifier, null)
+        ),
         Tuple.tuple(
           new AggregationDto(PERCENTILE, 99.),
           createHyperMapEntry(processDisplayName, processIdentifier, null)
@@ -163,7 +165,7 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     final ProcessReportDataDto reportData = createDurationGroupedByNoneByProcessReport(List.of(definition));
     reportData.getConfiguration().setAggregationTypes(
       new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
-      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
     );
 
     // when
@@ -181,7 +183,10 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
         Tuple.tuple(new AggregationDto(MIN), createHyperMapEntry(processDisplayName, processIdentifier, null)),
         Tuple.tuple(new AggregationDto(AVERAGE), createHyperMapEntry(processDisplayName, processIdentifier, null)),
         Tuple.tuple(new AggregationDto(SUM), createHyperMapEntry(processDisplayName, processIdentifier, null)),
-        Tuple.tuple(new AggregationDto(MEDIAN), createHyperMapEntry(processDisplayName, processIdentifier, null)),
+        Tuple.tuple(
+          new AggregationDto(PERCENTILE, 50.),
+          createHyperMapEntry(processDisplayName, processIdentifier, null)
+        ),
         Tuple.tuple(
           new AggregationDto(PERCENTILE, 99.),
           createHyperMapEntry(processDisplayName, processIdentifier, null)

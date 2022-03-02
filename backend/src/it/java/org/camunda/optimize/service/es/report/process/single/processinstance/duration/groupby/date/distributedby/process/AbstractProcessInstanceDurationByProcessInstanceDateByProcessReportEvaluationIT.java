@@ -36,7 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
@@ -238,7 +237,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
     reportData.getConfiguration().setAggregationTypes(
       new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
-      new AggregationDto(SUM), new AggregationDto(MEDIAN), new AggregationDto(PERCENTILE, 99.)
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
     );
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
@@ -298,9 +297,9 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProc
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           )
         )),
-        // We cannot support the median and percentile aggregation types with this distribution as the information is
+        // We cannot support percentile aggregation types with this distribution as the information is
         // lost on merging
-        Tuple.tuple(new AggregationDto(MEDIAN), List.of(
+        Tuple.tuple(new AggregationDto(PERCENTILE, 50.), List.of(
           createHyperMapResult(
             localDateTimeToString(now.minusDays(1)),
             new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),

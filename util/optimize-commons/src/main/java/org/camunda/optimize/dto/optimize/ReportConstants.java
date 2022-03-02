@@ -71,7 +71,6 @@ public class ReportConstants {
   public static final String AVERAGE_AGGREGATION_TYPE = "avg";
   public static final String MIN_AGGREGATION_TYPE = "min";
   public static final String MAX_AGGREGATION_TYPE = "max";
-  public static final String MEDIAN_AGGREGATION_TYPE = "median";
   public static final String SUM_AGGREGATION_TYPE = "sum";
   public static final String PERCENTILE_AGGREGATION_TYPE = "percentile";
 

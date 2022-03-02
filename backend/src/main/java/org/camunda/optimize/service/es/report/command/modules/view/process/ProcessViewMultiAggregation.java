@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.PercentileAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.SumAggregation;
@@ -30,7 +29,6 @@ public abstract class ProcessViewMultiAggregation extends ProcessViewPart {
       .put(AggregationType.MIN, new MinAggregation())
       .put(AggregationType.MAX, new MaxAggregation())
       .put(AggregationType.AVERAGE, new AvgAggregation())
-      .put(AggregationType.MEDIAN, new MedianAggregation())
       .put(AggregationType.SUM, new SumAggregation())
       .put(AggregationType.PERCENTILE, new PercentileAggregation())
       .build();

@@ -86,12 +86,13 @@ public class Upgrade37To380PlanFactory implements UpgradePlanFactory {
         "      && reportData.configuration.aggregationTypes != null && !reportData.configuration.aggregationTypes.isEmpty()) {\n" +
         "  def currentAggTypes = ctx._source.data.configuration.aggregationTypes;\n" +
         "  for (def aggType : currentAggTypes) {\n" +
-        "    newAggTypes.add(" +
+        "    def isMedian = aggType.equals(\"median\");\n" +
+        "    def newAgg = \n" +
         "      [\n" +
-        "        'type': aggType,\n" +
-        "        'value': null\n" +
-        "      ]\n" +
-        "    )\n" +
+        "        'type': isMedian ? 'percentile' : aggType,\n" +
+        "        'value': isMedian ? '50.0' : null\n" +
+        "      ];\n" +
+        "    newAggTypes.add(newAgg);\n" +
         "  }\n" +
         "  ctx._source.data.configuration.aggregationTypes = newAggTypes;\n" +
         "}";

@@ -30,7 +30,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime.TOTAL;
@@ -210,7 +209,7 @@ public class UserTaskDurationByUserTaskByProcessReportEvaluationIT extends Abstr
     reportData.getConfiguration().setAggregationTypes(
       new AggregationDto(MAX),
       new AggregationDto(SUM),
-      new AggregationDto(MEDIAN),
+      new AggregationDto(PERCENTILE, 50.),
       new AggregationDto(PERCENTILE, 99.)
     );
     reportData.getConfiguration().setUserTaskDurationTimes(TOTAL, WORK);
@@ -232,9 +231,9 @@ public class UserTaskDurationByUserTaskByProcessReportEvaluationIT extends Abstr
       .contains(
         Tuple.tuple(new AggregationDto(MAX), TOTAL, createResultsForAllFlowNodes(5000.0, 1000.0)),
         Tuple.tuple(new AggregationDto(SUM), TOTAL, createResultsForAllFlowNodes(6000.0, 1000.0)),
-        // We cannot support the median or percentile aggregation types with this distribution as the information is
+        // We cannot support percentile aggregation types with this distribution as the information is
         // lost on merging
-        Tuple.tuple(new AggregationDto(MEDIAN), TOTAL, createResultsForAllFlowNodes(null, null)),
+        Tuple.tuple(new AggregationDto(PERCENTILE, 50.), TOTAL, createResultsForAllFlowNodes(null, null)),
         Tuple.tuple(new AggregationDto(PERCENTILE, 99.), TOTAL, createResultsForAllFlowNodes(null, null))
       );
   }

@@ -175,8 +175,6 @@ public class CSVUtils {
 
   public static String mapAggregationType(AggregationDto aggregationDto) {
     switch (aggregationDto.getType()) {
-      case MEDIAN:
-        return "median";
       case AVERAGE:
         return "average";
       case MIN:

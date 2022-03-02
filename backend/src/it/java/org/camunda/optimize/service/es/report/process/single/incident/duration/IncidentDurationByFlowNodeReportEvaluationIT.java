@@ -44,7 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
@@ -816,10 +815,10 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
       Arguments.of(new AggregationDto(MIN), 1000.),
       Arguments.of(new AggregationDto(MAX), 9000.),
       Arguments.of(new AggregationDto(AVERAGE), 4000.),
-      Arguments.of(new AggregationDto(MEDIAN), 2000.),
       Arguments.of(new AggregationDto(PERCENTILE, 99.), 9000.),
       Arguments.of(new AggregationDto(PERCENTILE, 95.), 9000.),
       Arguments.of(new AggregationDto(PERCENTILE, 75.), 7250.),
+      Arguments.of(new AggregationDto(PERCENTILE, 50.), 2000.),
       Arguments.of(new AggregationDto(PERCENTILE, 25.), 1250.),
       Arguments.of(new AggregationDto(PERCENTILE, 100.), 9000.),
       Arguments.of(new AggregationDto(PERCENTILE, 0.), 1000.)

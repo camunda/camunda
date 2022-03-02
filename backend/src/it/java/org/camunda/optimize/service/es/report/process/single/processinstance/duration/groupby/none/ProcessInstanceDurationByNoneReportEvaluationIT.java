@@ -40,7 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
@@ -552,10 +551,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .containsEntry(new AggregationDto(AVERAGE), 4000.)
       .containsEntry(new AggregationDto(MIN), 1000.)
       .containsEntry(new AggregationDto(MAX), 9000.)
-      .containsEntry(new AggregationDto(MEDIAN), 2000.)
       .containsEntry(new AggregationDto(PERCENTILE, 99.), 9000.)
       .containsEntry(new AggregationDto(PERCENTILE, 95.), 9000.)
       .containsEntry(new AggregationDto(PERCENTILE, 75.), 7250.)
+      .containsEntry(new AggregationDto(PERCENTILE, 50.), 2000.)
       .containsEntry(new AggregationDto(PERCENTILE, 25.), 1250.);
   }
 
