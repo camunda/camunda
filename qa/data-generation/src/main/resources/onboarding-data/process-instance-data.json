@@ -1,0 +1,146 @@
+{
+  "processDefinitionKey": "invoice",
+  "processDefinitionVersion": "2",
+  "processDefinitionId": "invoice:2:3eb8658e-955a-11ec-aa40-0242ac120003",
+  "processInstanceId": "3fa70b6e-955a-11ec-aa40-0242ac120003",
+  "businessKey": null,
+  "startDate": "2022-02-24T11:12:18.915+0100",
+  "endDate": null,
+  "duration": null,
+  "state": "ACTIVE",
+  "flowNodeInstances": [
+    {
+      "processInstanceId": "3fa70b6e-955a-11ec-aa40-0242ac120003",
+      "userTaskInstanceId": null,
+      "flowNodeId": "assignApprover",
+      "endDate": "2022-02-24T11:12:18.922+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "2",
+      "candidateGroups": [ ],
+      "tenantId": null,
+      "definitionKey": "invoice",
+      "assignee": null,
+      "flowNodeType": "businessRuleTask",
+      "candidateGroupOperations": [ ],
+      "assigneeOperations": [ ],
+      "totalDurationInMs": 5,
+      "startDate": "2022-02-24T11:12:18.917+0100",
+      "flowNodeInstanceId": "assignApprover:3fa7599e-955a-11ec-aa40-0242ac120003"
+    }
+  ,
+    {
+      "processInstanceId": "3fa70b6e-955a-11ec-aa40-0242ac120003",
+      "userTaskInstanceId": null,
+      "flowNodeId": "StartEvent_1",
+      "endDate": "2022-02-24T11:12:18.916+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "2",
+      "candidateGroups": [ ],
+      "tenantId": null,
+      "definitionKey": "invoice",
+      "assignee": null,
+      "flowNodeType": "startEvent",
+      "candidateGroupOperations": [ ],
+      "assigneeOperations": [ ],
+      "totalDurationInMs": 0,
+      "startDate": "2022-02-24T11:12:18.916+0100",
+      "flowNodeInstanceId": "StartEvent_1:3fa7328c-955a-11ec-aa40-0242ac120003"
+    }
+  ,
+    {
+      "flowNodeInstanceId": "approveInvoice:3fa8440c-955a-11ec-aa40-0242ac120003",
+      "flowNodeId": "approveInvoice",
+      "flowNodeType": "userTask",
+      "processInstanceId": "3fa70b6e-955a-11ec-aa40-0242ac120003",
+      "totalDurationInMs": null,
+      "startDate": "2022-02-24T11:12:18.924+0100",
+      "endDate": null,
+      "canceled": null,
+      "definitionKey": "invoice",
+      "definitionVersion": "2",
+      "tenantId": null,
+      "userTaskInstanceId": "3fa8440d-955a-11ec-aa40-0242ac120003",
+      "dueDate": "2022-03-03T11:12:18.923+0100",
+      "deleteReason": null,
+      "assignee": null,
+      "candidateGroups": [
+        "accounting"
+      ,
+        "sales"
+      ],
+      "assigneeOperations": [ ],
+      "candidateGroupOperations": [
+        {
+          "id": "3fa8440f-955a-11ec-aa40-0242ac120003",
+          "groupId": "accounting",
+          "operationType": "add",
+          "timestamp": "2022-02-24T11:12:18.923+0100"
+        }
+      ,
+        {
+          "id": "3fa86b22-955a-11ec-aa40-0242ac120003",
+          "groupId": "sales",
+          "operationType": "add",
+          "timestamp": "2022-02-24T11:12:18.924+0100"
+        }
+      ],
+      "idleDurationInMs": null,
+      "workDurationInMs": null
+    }
+  ],
+  "variables": [
+    {
+      "name": "creditor",
+      "id": "3fa73288-955a-11ec-aa40-0242ac120003",
+      "type": "String",
+      "value": [
+        "Great Pizza for Everyone Inc."
+      ],
+      "version": 1
+    }
+  ,
+    {
+      "name": "invoiceNumber",
+      "id": "3fa70b6f-955a-11ec-aa40-0242ac120003",
+      "type": "String",
+      "value": [
+        "GPFE-23232323"
+      ],
+      "version": 1
+    }
+  ,
+    {
+      "name": "invoiceCategory",
+      "id": "3fa7328a-955a-11ec-aa40-0242ac120003",
+      "type": "String",
+      "value": [
+        "Travel Expenses"
+      ],
+      "version": 1
+    }
+  ,
+    {
+      "name": "amount",
+      "id": "3fa73286-955a-11ec-aa40-0242ac120003",
+      "type": "Double",
+      "value": [
+        "30.0"
+      ],
+      "version": 1
+    }
+  ],
+  "incidents": [ ],
+  "dataSource": {
+    "name": "camunda-bpm",
+    "type": "engine"
+  },
+  "tenantId": null
+}
