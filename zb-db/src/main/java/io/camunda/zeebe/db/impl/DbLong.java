@@ -40,4 +40,9 @@ public final class DbLong implements DbKey, DbValue {
   public long getValue() {
     return longValue;
   }
+
+  @Override
+  public String toString() {
+    return "DbLong{" + longValue + '}';
+  }
 }
