@@ -21,6 +21,19 @@ import org.agrona.DirectBuffer;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
+/**
+ * Some code conventions that we should follow here:
+ *
+ * <ul>
+ *   <li>Public methods ensure that a transaction is open by using {@link
+ *       TransactionalColumnFamily#ensureInOpenTransaction}, private methods can assume that a
+ *       transaction is already open and don't need to call ensureInOpenTransaction.
+ *   <li>Iteration is implemented in terms of {@link TransactionalColumnFamily#forEachInPrefix} to
+ *       depend difficult to follow call chains between the different public methods such as {@link
+ *       TransactionalColumnFamily#forEach(Consumer)} and {@link
+ *       TransactionalColumnFamily#whileEqualPrefix(DbKey, BiConsumer)}
+ * </ul>
+ */
 class TransactionalColumnFamily<
         ColumnFamilyNames extends Enum<ColumnFamilyNames>,
         KeyType extends DbKey,
@@ -174,6 +187,11 @@ class TransactionalColumnFamily<
     return isEmpty.get();
   }
 
+  /**
+   * Make sure to use this method in all public methods of this class to ensure that all operations
+   * on the column family occur inside a transaction. Within private methods we can assume that a
+   * transaction was already opened.
+   */
   private void ensureInOpenTransaction(final TransactionConsumer operation) {
     context.runInTransaction(
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
@@ -185,16 +203,23 @@ class TransactionalColumnFamily<
   }
 
   /**
-   * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on iterators
-   * at the moment, so using prefixes seem to be mostly related to skipping files that do not
-   * contain keys with the given prefix (which is useful anyway), but it will still iterate over all
-   * keys contained in those files, so we still need to make sure the key actually matches the
-   * prefix.
+   * This is the preferred method to implement methods that iterate over a column family.
    *
-   * <p>While iterating over subsequent keys we have to validate it.
+   * @param prefix of all keys that are iterated over.
+   * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
+   *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
    */
   private void forEachInPrefix(
       final DbKey prefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    /*
+     * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
+     * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
+     * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
+     * over all keys contained in those files, so we still need to make sure the key actually
+     * matches the prefix.
+     *
+     * <p>While iterating over subsequent keys we have to validate it.
+     */
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
