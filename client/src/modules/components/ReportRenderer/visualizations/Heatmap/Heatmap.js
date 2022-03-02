@@ -68,9 +68,10 @@ export function Heatmap({report, context}) {
 
           if (typeof real === 'number') {
             const relation = (real / target) * 100;
+            const type = result.measures[selectedMeasure].aggregationType?.type;
 
             tooltipHTML +=
-              t(`report.heatTarget.duration.${result.measures[selectedMeasure].aggregationType}`) +
+              t(`report.heatTarget.duration.${type}`) +
               t('report.heatTarget.actualDuration', {
                 duration: formatters.duration(real),
                 percentage: relation < 1 ? '< 1' : Math.round(relation),
@@ -179,7 +180,7 @@ function getMeasureString(measure) {
 
   return (
     t('report.view.' + property) +
-    (aggregation ? ` - ${t('report.config.aggregationShort.' + aggregation)}` : '') +
+    (aggregation ? ` - ${t('report.config.aggregationShort.' + aggregation.type)}` : '') +
     (userTaskDurationTime
       ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
       : '')

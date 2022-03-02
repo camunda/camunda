@@ -114,22 +114,22 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
     // remove sum aggregation from incident view
     if (newReport.view.entity === 'incident') {
       newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-        (type) => type !== 'sum'
+        (agg) => agg.type !== 'sum'
       );
 
       if (newReport.configuration.aggregationTypes.length === 0) {
-        newReport.configuration.aggregationTypes = ['avg'];
+        newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
       }
     }
 
     // remove median aggregation from group by process
     if (newReport.distributedBy.type === 'process') {
       newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-        (type) => type !== 'median'
+        (agg) => agg.type !== 'median'
       );
 
       if (newReport.configuration.aggregationTypes.length === 0) {
-        newReport.configuration.aggregationTypes = ['avg'];
+        newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
       }
     }
 

@@ -19,7 +19,7 @@ it('should render nothing if the current result is no duration and the view is n
   const node = shallow(
     <AggregationType
       report={{
-        configuration: {aggregationTypes: ['avg']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         view: {entity: null, properties: ['rawData']},
         distributedBy: {type: 'none'},
       }}
@@ -35,7 +35,7 @@ it('should render an aggregation selection for duration reports', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['median']},
+        configuration: {aggregationTypes: [{type: 'median', value: null}]},
       }}
     />
   );
@@ -49,7 +49,10 @@ it('should render an user task duration selection for user task duration reports
       report={{
         view: {entity: 'userTask', properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['median'], userTaskDurationTimes: ['idle']},
+        configuration: {
+          aggregationTypes: [{type: 'median', value: null}],
+          userTaskDurationTimes: ['idle'],
+        },
       }}
     />
   );
@@ -65,7 +68,7 @@ it('should render sum field for variable reports', () => {
       report={{
         view: {entity: 'variable', properties: [{}]},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['sum']},
+        configuration: {aggregationTypes: [{type: 'sum', value: null}]},
       }}
     />
   );
@@ -79,7 +82,7 @@ it('should hide sum field for incident reports', () => {
       report={{
         view: {entity: 'incident', properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['avg']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
       }}
     />
   );
@@ -95,7 +98,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['median']},
+        configuration: {aggregationTypes: [{type: 'median', value: null}]},
       }}
       onChange={spy}
     />
@@ -109,7 +112,12 @@ it('should reevaluate the report when changing the aggregation type', () => {
   expect(spy).toHaveBeenCalledWith(
     {
       configuration: {
-        aggregationTypes: {$set: ['median', 'max']},
+        aggregationTypes: {
+          $set: [
+            {type: 'median', value: null},
+            {type: 'max', value: null},
+          ],
+        },
         targetValue: {active: {$set: false}},
       },
     },
@@ -125,7 +133,10 @@ it('should hide median aggregation if processpart is defined', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['avg'], processPart: 'defined'},
+        configuration: {
+          aggregationTypes: [{type: 'avg', value: null}],
+          processPart: 'defined',
+        },
       }}
       onChange={spy}
     />
@@ -142,7 +153,7 @@ it('should disable median aggregation for reports distributed by process', () =>
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'process'},
-        configuration: {aggregationTypes: ['avg']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
       }}
       onChange={spy}
     />
@@ -159,7 +170,10 @@ it('should not show user task duration selection for user task duration reports 
       report={{
         view: {entity: 'userTask', properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+        configuration: {
+          aggregationTypes: [{type: 'avg', value: null}],
+          userTaskDurationTimes: ['total'],
+        },
       }}
     />
   );

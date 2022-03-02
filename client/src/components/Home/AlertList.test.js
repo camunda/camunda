@@ -26,7 +26,7 @@ jest.mock('services', () => {
         data: {
           visualization: 'table',
           view: {properties: ['frequency']},
-          configuration: {aggregationTypes: ['avg']},
+          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         },
         name: 'Report 1',
       },
@@ -35,7 +35,7 @@ jest.mock('services', () => {
         data: {
           visualization: 'number',
           view: {properties: ['duration']},
-          configuration: {aggregationTypes: ['avg']},
+          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         },
         name: 'Report 2',
       },
@@ -90,7 +90,7 @@ it('should not show multi-measure reports', async () => {
       data: {
         visualization: 'number',
         view: {properties: ['frequency', 'duration']},
-        configuration: {aggregationTypes: ['avg']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
       },
       name: 'Report 1',
     },
@@ -99,7 +99,12 @@ it('should not show multi-measure reports', async () => {
       data: {
         visualization: 'number',
         view: {properties: ['duration']},
-        configuration: {aggregationTypes: ['avg', 'max']},
+        configuration: {
+          aggregationTypes: [
+            {type: 'avg', value: null},
+            {type: 'max', value: null},
+          ],
+        },
       },
       name: 'Report 2',
     },
@@ -108,7 +113,12 @@ it('should not show multi-measure reports', async () => {
       data: {
         visualization: 'number',
         view: {properties: ['frequency']},
-        configuration: {aggregationTypes: ['avg', 'max']},
+        configuration: {
+          aggregationTypes: [
+            {type: 'avg', value: null},
+            {type: 'max', value: null},
+          ],
+        },
       },
       name: 'Report 3',
     },

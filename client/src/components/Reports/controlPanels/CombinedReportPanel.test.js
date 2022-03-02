@@ -49,7 +49,7 @@ const singleReportData = {
       bucketSize: '10',
       baseline: '-10',
     },
-    aggregationTypes: ['avg'],
+    aggregationTypes: [{type: 'avg', value: null}],
   },
   visualization: 'bar',
 };

@@ -424,12 +424,14 @@ export default withErrorHandling(
                       processPart={data.configuration.processPart}
                       update={(newPart) => {
                         const change = {configuration: {processPart: {$set: newPart}}};
-                        if (data.configuration.aggregationTypes.includes('median')) {
+                        if (
+                          data.configuration.aggregationTypes.find((agg) => agg.type === 'median')
+                        ) {
                           const newAggregations = data.configuration.aggregationTypes.filter(
-                            (type) => type !== 'median'
+                            (agg) => agg.type !== 'median'
                           );
                           if (newAggregations.length === 0) {
-                            newAggregations.push('avg');
+                            newAggregations.push({type: 'avg', value: null});
                           }
 
                           change.configuration.aggregationTypes = {$set: newAggregations};

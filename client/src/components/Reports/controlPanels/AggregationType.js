@@ -34,45 +34,46 @@ export default function AggregationType({report, onChange}) {
   }, []);
 
   function isLastAggregation(field, type) {
-    return configuration[field].length === 1 && configuration[field][0] === type;
+    return configuration[field].length === 1 && gettype(field, configuration[field][0]) === type;
   }
 
   function hasAggregation(field, type) {
-    return configuration[field].includes(type);
+    return configuration[field].some((agg) => gettype(field, agg) === type);
   }
 
-  function addAggregation(field, type) {
-    const newAggregations = [...configuration[field], type].sort(
-      (a, b) => orders[field].indexOf(a) - orders[field].indexOf(b)
-    );
+  function addAggregation(field, type, value = null) {
+    const newAggregations = [
+      ...configuration[field],
+      constructNewAggregation(field, type, value),
+    ].sort((a, b) => {
+      return orders[field].indexOf(gettype(field, a)) - orders[field].indexOf(gettype(field, b));
+    });
 
-    const changes = {
-      configuration: {
-        [field]: {
-          $set: newAggregations,
-        },
-        targetValue: {active: {$set: false}},
-      },
-    };
-
-    return onChange(changes, true);
+    return updateReport(field, newAggregations, true);
   }
 
   function removeAggregation(field, type) {
     const remainingAggregations = configuration[field].filter(
-      (existingType) => existingType !== type
+      (existingAgg) => gettype(field, existingAgg) !== type
     );
 
-    return onChange(
-      {
-        configuration: {
-          [field]: {
-            $set: remainingAggregations,
-          },
+    return updateReport(field, remainingAggregations);
+  }
+
+  function updateReport(field, aggregations, resetTargetValue) {
+    const changes = {
+      configuration: {
+        [field]: {
+          $set: aggregations,
         },
       },
-      true
-    );
+    };
+
+    if (resetTargetValue) {
+      changes.configuration.targetValue = {active: {$set: false}};
+    }
+
+    return onChange(changes, true);
   }
 
   if (isDurationReport || isVariableReport) {
@@ -86,9 +87,11 @@ export default function AggregationType({report, onChange}) {
     }
     availableAggregations.push('max');
 
-    let popoverTitle = t('report.config.aggregationShort.' + aggregationTypes[0]);
+    let popoverTitle = t('report.config.aggregationShort.' + aggregationTypes[0].type);
     if (
-      availableAggregations.every((aggregation) => hasAggregation('aggregationTypes', aggregation))
+      availableAggregations.every((aggregation) =>
+        hasAggregation('aggregationTypes', aggregation.type)
+      )
     ) {
       popoverTitle = 'All';
     } else if (aggregationTypes.length > 1) {
@@ -174,4 +177,20 @@ export default function AggregationType({report, onChange}) {
     );
   }
   return null;
+}
+
+function gettype(field, aggregation) {
+  if (field === 'userTaskDurationTimes') {
+    return aggregation;
+  }
+
+  return aggregation.type;
+}
+
+function constructNewAggregation(field, type) {
+  if (field === 'userTaskDurationTimes') {
+    return type;
+  }
+
+  return {type, value: null};
 }

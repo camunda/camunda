@@ -82,7 +82,7 @@ export default function processDefaultData({report}, processVariables) {
           : ''
       }${
         view.entity === 'incident' ? t('report.view.resolutionDuration') : t('report.view.duration')
-      } - ${t('report.config.aggregationShort.' + measure.aggregationType)}`;
+      } - ${t('report.config.aggregationShort.' + measure.aggregationType.type)}`;
 
       head.push({label: title, id: title, sortable: !isMultiMeasure});
       formattedResult.forEach(({value}, idx) => {

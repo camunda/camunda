@@ -173,7 +173,11 @@ it('should remove median aggregation after setting a process part', () => {
           view: {entity: 'processInstance', properties: ['duration']},
           configuration: {
             ...report.data.configuration,
-            aggregationTypes: ['min', 'median', 'max'],
+            aggregationTypes: [
+              {type: 'min', value: null},
+              {type: 'median', value: null},
+              {type: 'max', value: null},
+            ],
           },
         },
       }}
@@ -181,7 +185,10 @@ it('should remove median aggregation after setting a process part', () => {
   );
 
   node.find('ProcessPart').prop('update')({});
-  expect(spy.mock.calls[0][0].configuration.aggregationTypes.$set).toEqual(['min', 'max']);
+  expect(spy.mock.calls[0][0].configuration.aggregationTypes.$set).toEqual([
+    {type: 'min', value: null},
+    {type: 'max', value: null},
+  ]);
 
   node.setProps({
     report: {
@@ -191,14 +198,16 @@ it('should remove median aggregation after setting a process part', () => {
         view: {entity: 'processInstance', properties: ['duration']},
         configuration: {
           ...report.data.configuration,
-          aggregationTypes: ['median'],
+          aggregationTypes: [{type: 'median', value: null}],
         },
       },
     },
   });
 
   node.find('ProcessPart').prop('update')({});
-  expect(spy.mock.calls[1][0].configuration.aggregationTypes.$set).toEqual(['avg']);
+  expect(spy.mock.calls[1][0].configuration.aggregationTypes.$set).toEqual([
+    {type: 'avg', value: null},
+  ]);
 });
 
 it('should only display target value button if view is flownode duration', () => {

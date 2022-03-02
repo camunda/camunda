@@ -158,14 +158,21 @@ describe('process exclusive updates', () => {
       view: {entity: 'processInstance', properties: ['duration']},
       configuration: {
         ...report.configuration,
-        aggregationTypes: ['avg', 'sum', 'min'],
+        aggregationTypes: [
+          {type: 'avg', value: null},
+          {type: 'sum', value: null},
+          {type: 'min', value: null},
+        ],
       },
     };
 
     expect(
       createReportUpdate('process', durationReport, 'view', 'incident').configuration.$set
         .aggregationTypes
-    ).toEqual(['avg', 'min']);
+    ).toEqual([
+      {type: 'avg', value: null},
+      {type: 'min', value: null},
+    ]);
   });
 
   it('should use average aggregation by default for incident views', () => {
@@ -174,14 +181,14 @@ describe('process exclusive updates', () => {
       view: {entity: 'processInstance', properties: ['duration']},
       configuration: {
         ...report.configuration,
-        aggregationTypes: ['sum'],
+        aggregationTypes: [{type: 'sum', value: null}],
       },
     };
 
     expect(
       createReportUpdate('process', durationReport, 'view', 'incident').configuration.$set
         .aggregationTypes
-    ).toEqual(['avg']);
+    ).toEqual([{type: 'avg', value: null}]);
   });
 
   it('should remove median aggregation for group by process reports', () => {
@@ -191,14 +198,23 @@ describe('process exclusive updates', () => {
       view: {entity: 'processInstance', properties: ['duration']},
       configuration: {
         ...report.configuration,
-        aggregationTypes: ['avg', 'sum', 'median', 'min'],
+        aggregationTypes: [
+          {type: 'avg', value: null},
+          {type: 'sum', value: null},
+          {type: 'median', value: null},
+          {type: 'min', value: null},
+        ],
       },
     };
 
     expect(
       createReportUpdate('process', processReport, 'group', 'process').configuration.$set
         .aggregationTypes
-    ).toEqual(['avg', 'sum', 'min']);
+    ).toEqual([
+      {type: 'avg', value: null},
+      {type: 'sum', value: null},
+      {type: 'min', value: null},
+    ]);
   });
 
   it('should use average aggregation by default for group by process reports', () => {
@@ -208,14 +224,14 @@ describe('process exclusive updates', () => {
       view: {entity: 'processInstance', properties: ['duration']},
       configuration: {
         ...report.configuration,
-        aggregationTypes: ['median'],
+        aggregationTypes: [{type: 'median', value: null}],
       },
     };
 
     expect(
       createReportUpdate('process', processReport, 'group', 'process').configuration.$set
         .aggregationTypes
-    ).toEqual(['avg']);
+    ).toEqual([{type: 'avg', value: null}]);
   });
 
   it('should remove process parts if report setup does not support it', () => {
