@@ -17,7 +17,7 @@
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
-  <description>${name}</description>
+  <description>${project.name}</description>
   <url>http://zeebe.io/</url>
   <inceptionYear>2017</inceptionYear>
 
