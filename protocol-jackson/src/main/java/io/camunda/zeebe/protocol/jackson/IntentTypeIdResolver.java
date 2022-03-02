@@ -21,7 +21,7 @@ final class IntentTypeIdResolver extends AbstractValueTypeIdResolver {
   @Override
   @NonNull
   protected Class<? extends Intent> mapFromValueType(@NonNull final ValueType valueType) {
-    final ValueTypeInfo<?> typeInfo =
+    final ValueTypeInfo<?, ?> typeInfo =
         ValueTypes.getTypeInfoOrNull(
             Objects.requireNonNull(valueType, "must specify a value type"));
     if (typeInfo == null) {

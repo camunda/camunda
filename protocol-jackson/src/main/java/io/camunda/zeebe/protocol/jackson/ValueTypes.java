@@ -74,14 +74,14 @@ import javax.annotation.concurrent.ThreadSafe;
 @DefaultAnnotationForParameters(NonNull.class)
 @DefaultAnnotationForFields(NonNull.class)
 final class ValueTypes {
-  private final Map<ValueType, ValueTypeInfo<?>> types;
+  private final Map<ValueType, ValueTypeInfo<?, ?>> types;
 
   private ValueTypes() {
     types = Collections.unmodifiableMap(loadValueTypes());
   }
 
-  static ValueTypeInfo<?> getTypeInfo(final ValueType valueType) {
-    final ValueTypeInfo<?> typeInfo = Singleton.INSTANCE.types.get(valueType);
+  static ValueTypeInfo<?, ?> getTypeInfo(final ValueType valueType) {
+    final ValueTypeInfo<?, ?> typeInfo = Singleton.INSTANCE.types.get(valueType);
     if (typeInfo == null) {
       throw new IllegalArgumentException(
           String.format(
@@ -94,7 +94,7 @@ final class ValueTypes {
 
   @Nullable
   @CheckForNull
-  static ValueTypeInfo<?> getTypeInfoOrNull(final ValueType valueType) {
+  static ValueTypeInfo<?, ?> getTypeInfoOrNull(final ValueType valueType) {
     return Singleton.INSTANCE.types.get(valueType);
   }
 
@@ -102,8 +102,8 @@ final class ValueTypes {
   // isn't incredibly complex
   @SuppressWarnings("java:S138")
   @NonNull
-  private Map<ValueType, ValueTypeInfo<?>> loadValueTypes() {
-    final Map<ValueType, ValueTypeInfo<?>> mapping = new EnumMap<>(ValueType.class);
+  private Map<ValueType, ValueTypeInfo<?, ?>> loadValueTypes() {
+    final Map<ValueType, ValueTypeInfo<?, ?>> mapping = new EnumMap<>(ValueType.class);
 
     mapping.put(
         ValueType.DECISION, new ValueTypeInfo<>(DecisionRecordValue.class, DecisionIntent.class));

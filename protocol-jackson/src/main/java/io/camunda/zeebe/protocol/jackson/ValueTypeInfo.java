@@ -28,11 +28,11 @@ import net.jcip.annotations.Immutable;
 @DefaultAnnotationForParameters(NonNull.class)
 @DefaultAnnotationForFields(NonNull.class)
 @ReturnValuesAreNonnullByDefault
-final class ValueTypeInfo<T extends RecordValue> {
+final class ValueTypeInfo<T extends RecordValue, I extends Enum<I> & Intent> {
   private final Class<T> valueClass;
-  private final Class<? extends Intent> intentClass;
+  private final Class<I> intentClass;
 
-  ValueTypeInfo(final Class<T> valueClass, final Class<? extends Intent> intentClass) {
+  ValueTypeInfo(final Class<T> valueClass, final Class<I> intentClass) {
     this.valueClass = Objects.requireNonNull(valueClass, "must specify a value class");
     this.intentClass = Objects.requireNonNull(intentClass, "must specify an intent");
   }
@@ -41,7 +41,7 @@ final class ValueTypeInfo<T extends RecordValue> {
     return valueClass;
   }
 
-  Class<? extends Intent> getIntentClass() {
+  Class<I> getIntentClass() {
     return intentClass;
   }
 }
