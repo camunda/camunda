@@ -75,7 +75,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
 
-          assertDoesNotExist(transaction);
+          assertKeyDoesNotExist(transaction);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
@@ -91,7 +91,7 @@ class TransactionalColumnFamily<
         transaction -> {
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
-          assertExists(transaction);
+          assertKeyExists(transaction);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
@@ -195,7 +195,7 @@ class TransactionalColumnFamily<
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
-          assertExists(transaction);
+          assertKeyExists(transaction);
           transaction.delete(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
@@ -246,7 +246,7 @@ class TransactionalColumnFamily<
     return isEmpty.get();
   }
 
-  private void assertDoesNotExist(final ZeebeTransaction transaction) throws Exception {
+  private void assertKeyDoesNotExist(final ZeebeTransaction transaction) throws Exception {
     final var value =
         transaction.get(
             transactionDb.getDefaultNativeHandle(),
@@ -259,7 +259,7 @@ class TransactionalColumnFamily<
     }
   }
 
-  private void assertExists(final ZeebeTransaction transaction) throws Exception {
+  private void assertKeyExists(final ZeebeTransaction transaction) throws Exception {
     final var value =
         transaction.get(
             transactionDb.getDefaultNativeHandle(),
