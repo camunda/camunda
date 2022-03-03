@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   backend:
-    image: docker.io/camunda/iam:1.3.3
+    image: docker.io/camunda/iam:1.3.5
     container_name: iam-backend
     depends_on:
       - database
