@@ -95,7 +95,7 @@
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>4.4.0</version.rest-assured>
     <version.spring>5.3.14</version.spring>
-    <version.spring-boot>2.6.1</version.spring-boot>
+    <version.spring-boot>2.6.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>5.2.1</version.kryo>
@@ -970,7 +970,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration/>
             </execution>
           </executions>
         </plugin>
@@ -1153,7 +1153,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1246,7 +1246,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>
@@ -1257,7 +1257,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>
