@@ -59,7 +59,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -254,8 +253,7 @@ public final class SkipFailingEventsTest {
   }
 
   @Test
-  @Ignore("will be fixed by #7429")
-  public void shouldBacklistInstanceOnReplay() throws Exception {
+  public void shouldBlacklistInstanceOnReplay() throws Exception {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
 

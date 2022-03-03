@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -41,6 +42,7 @@ class TransactionalColumnFamily<
     implements ColumnFamily<KeyType, ValueType> {
 
   private final ZeebeTransactionDb<ColumnFamilyNames> transactionDb;
+  private final ColumnFamilyNames columnFamily;
   private final TransactionContext context;
 
   private final ValueType valueInstance;
@@ -54,6 +56,7 @@ class TransactionalColumnFamily<
       final KeyType keyInstance,
       final ValueType valueInstance) {
     this.transactionDb = transactionDb;
+    this.columnFamily = columnFamily;
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
@@ -62,6 +65,44 @@ class TransactionalColumnFamily<
 
   @Override
   public void put(final KeyType key, final ValueType value) {
+    upsert(key, value);
+  }
+
+  @Override
+  public void insert(final KeyType key, final ValueType value) {
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          columnFamilyContext.writeValue(value);
+
+          assertKeyDoesNotExist(transaction);
+          transaction.put(
+              transactionDb.getDefaultNativeHandle(),
+              columnFamilyContext.getKeyBufferArray(),
+              columnFamilyContext.getKeyLength(),
+              columnFamilyContext.getValueBufferArray(),
+              value.getLength());
+        });
+  }
+
+  @Override
+  public void update(final KeyType key, final ValueType value) {
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          columnFamilyContext.writeValue(value);
+          assertKeyExists(transaction);
+          transaction.put(
+              transactionDb.getDefaultNativeHandle(),
+              columnFamilyContext.getKeyBufferArray(),
+              columnFamilyContext.getKeyLength(),
+              columnFamilyContext.getValueBufferArray(),
+              value.getLength());
+        });
+  }
+
+  @Override
+  public void upsert(final KeyType key, final ValueType value) {
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
@@ -146,6 +187,24 @@ class TransactionalColumnFamily<
 
   @Override
   public void delete(final KeyType key) {
+    deleteIfExists(key);
+  }
+
+  @Override
+  public void deleteExisting(final KeyType key) {
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          assertKeyExists(transaction);
+          transaction.delete(
+              transactionDb.getDefaultNativeHandle(),
+              columnFamilyContext.getKeyBufferArray(),
+              columnFamilyContext.getKeyLength());
+        });
+  }
+
+  @Override
+  public void deleteIfExists(final KeyType key) {
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
@@ -185,6 +244,32 @@ class TransactionalColumnFamily<
                 }));
 
     return isEmpty.get();
+  }
+
+  private void assertKeyDoesNotExist(final ZeebeTransaction transaction) throws Exception {
+    final var value =
+        transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            columnFamilyContext.getKeyBufferArray(),
+            columnFamilyContext.getKeyLength());
+    if (value != null) {
+      throw new ZeebeDbInconsistentException(
+          "Key " + keyInstance + " in ColumnFamily " + columnFamily + " already exists");
+    }
+  }
+
+  private void assertKeyExists(final ZeebeTransaction transaction) throws Exception {
+    final var value =
+        transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            columnFamilyContext.getKeyBufferArray(),
+            columnFamilyContext.getKeyLength());
+    if (value == null) {
+      throw new ZeebeDbInconsistentException(
+          "Key " + keyInstance + " in ColumnFamily " + columnFamily + " does not exist");
+    }
   }
 
   /**

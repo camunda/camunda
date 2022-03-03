@@ -22,10 +22,31 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   /**
    * Stores the key-value pair into the column family.
    *
+   * @deprecated Prefer {@link ColumnFamily#insert} or {@link ColumnFamily#update} which check that
+   *     the key does not exist (insert) or does exist (update). If update and insert can't be used,
+   *     use {@link ColumnFamily#upsert} instead of this method.
    * @param key the key
    * @param value the value
    */
+  @Deprecated(forRemoval = true)
   void put(KeyType key, ValueType value);
+
+  /**
+   * Inserts a new key value pair into the column family.
+   *
+   * @throws IllegalStateException if key already exists
+   */
+  void insert(KeyType key, ValueType value);
+
+  /**
+   * Updates the value of an existing key in the column family.
+   *
+   * @throws IllegalStateException if key does not exist
+   */
+  void update(KeyType key, ValueType value);
+
+  /** Inserts or updates a key value pair in the column family. */
+  void upsert(KeyType key, ValueType value);
 
   /**
    * The corresponding stored value in the column family to the given key.
@@ -50,7 +71,7 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * Visits the key-value pairs, which are stored in the column family. The ordering depends on the
    * key.
    *
-   * <p>Similar to {@link #forEach(BiConsumer)}.
+   * <p>Similar to {@link #forEach(Consumer)}.
    *
    * @param consumer the consumer which accepts the key-value pairs
    */
@@ -95,9 +116,25 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   /**
    * Deletes the key-value pair with the given key from the column family.
    *
+   * @deprecated Prefer the {@link ColumnFamily#deleteExisting} which checks that the key does exist
+   *     or the unchecked {@link ColumnFamily#deleteIfExists}.
    * @param key the key which identifies the pair
    */
+  @Deprecated(forRemoval = true)
   void delete(KeyType key);
+
+  /**
+   * Deletes the key-value pair with the given key if it exists in the column family
+   *
+   * @throws IllegalStateException if the key does not exist
+   */
+  void deleteExisting(KeyType key);
+
+  /**
+   * Deletes the key-value pair if the key does exist in the column family. No-op if the key does
+   * not exist.
+   */
+  void deleteIfExists(KeyType key);
 
   /**
    * Checks for key existence in the column family.

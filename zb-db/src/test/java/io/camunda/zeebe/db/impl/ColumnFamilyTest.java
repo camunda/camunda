@@ -8,10 +8,12 @@
 package io.camunda.zeebe.db.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -326,6 +328,36 @@ public final class ColumnFamilyTest {
 
     columnFamily.delete(key);
     assertThat(columnFamily.isEmpty()).isTrue();
+  }
+
+  @Test
+  public void shouldThrowOnInsert() {
+    key.wrapLong(1);
+    value.wrapLong(10);
+    columnFamily.insert(key, value);
+    assertThatThrownBy(() -> columnFamily.insert(key, value))
+        .getRootCause()
+        .hasMessageContaining("already exists")
+        .isInstanceOf(ZeebeDbInconsistentException.class);
+  }
+
+  @Test
+  public void shouldThrowOnUpdate() {
+    key.wrapLong(1);
+    value.wrapLong(10);
+    assertThatThrownBy(() -> columnFamily.update(key, value))
+        .getRootCause()
+        .hasMessageContaining("does not exist")
+        .isInstanceOf(ZeebeDbInconsistentException.class);
+  }
+
+  @Test
+  public void shouldThrowOnDeleteExisting() {
+    key.wrapLong(1);
+    assertThatThrownBy(() -> columnFamily.deleteExisting(key))
+        .getRootCause()
+        .hasMessageContaining("does not exist")
+        .isInstanceOf(ZeebeDbInconsistentException.class);
   }
 
   private void putKeyValuePair(final int key, final int value) {
