@@ -129,8 +129,8 @@ public class ObjectVariableService {
 
   private List<ProcessVariableDto> mapToFlattenedVariable(final String name, final Object value,
                                                           final ProcessVariableUpdateDto origin) {
-    if (value == null) {
-      log.info("Variable attribute '{}' of '{}' is null and won't be imported", name, origin.getName());
+    if (value == null || String.valueOf(value).isEmpty()) {
+      log.info("Variable attribute '{}' of '{}' is null or empty and won't be imported", name, origin.getName());
       return Collections.emptyList();
     }
 
@@ -222,7 +222,7 @@ public class ObjectVariableService {
   private Optional<OffsetDateTime> parsePossibleDate(final String dateAsString) {
     try {
       return Optional.of(DateParserUtils.parseOffsetDateTime(dateAsString));
-    } catch (DateTimeParseException e) {
+    } catch (Exception e) {
       return Optional.empty();
     }
   }
