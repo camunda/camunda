@@ -263,6 +263,9 @@ function getReportPayload(processDefinitionKey, tenantData) {
 }
 
 function findPercentageDuration(data, percentage) {
+  // find the duration bucket that contains nth percentile instance
+  // and return the next duration bucket to ensure that goals succeed
+  // if the nth percentile instance is in the last bucket, return its duration even if goals fail
   const targetDurationPosition = percentage * data.instanceCount - 1;
   const durationData = data?.measures[0].data;
   let instancesCounter = 0;
@@ -270,7 +273,7 @@ function findPercentageDuration(data, percentage) {
     instancesCounter += durationData[idx].value;
     if (instancesCounter > targetDurationPosition) {
       const durationBucket = durationData[idx + 1] || durationData[idx];
-      const {value, unit} = formatters.convertToBiggestPossibleDuration(durationBucket.key);
+      const {value, unit} = formatters.convertToDecimalTimeUnit(durationBucket.key);
       return {value: Math.ceil(value).toString(), unit};
     }
   }
