@@ -15,6 +15,7 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private long scopeKey;
   private long processInstanceKey;
   private long processDefinitionKey;
+  private String bpmnProcessId;
 
   @Override
   public String getName() {
@@ -41,6 +42,11 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     return processDefinitionKey;
   }
 
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
   public void setProcessDefinitionKey(long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
@@ -59,6 +65,11 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public VariableRecordValueImpl setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   @Override
