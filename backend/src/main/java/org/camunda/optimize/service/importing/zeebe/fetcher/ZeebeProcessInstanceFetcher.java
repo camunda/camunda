@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
@@ -25,10 +24,10 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCE
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeProcessInstanceFetcher extends AbstractZeebeRecordFetcher<ZeebeProcessInstanceRecordDto> {
 
-  private static final Set<Intent> INTENTS = Set.of(
-    ProcessInstanceIntent.ELEMENT_COMPLETED,
-    ProcessInstanceIntent.ELEMENT_TERMINATED,
-    ProcessInstanceIntent.ELEMENT_ACTIVATING
+  private static final Set<String> INTENTS = Set.of(
+    ProcessInstanceIntent.ELEMENT_COMPLETED.name(),
+    ProcessInstanceIntent.ELEMENT_TERMINATED.name(),
+    ProcessInstanceIntent.ELEMENT_ACTIVATING.name()
   );
 
   public ZeebeProcessInstanceFetcher(final int partitionId,
@@ -44,7 +43,7 @@ public class ZeebeProcessInstanceFetcher extends AbstractZeebeRecordFetcher<Zeeb
   }
 
   @Override
-  protected Set<Intent> getIntentsForRecordType() {
+  protected Set<String> getIntentsForRecordType() {
     return INTENTS;
   }
 

@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.schema;
 
 import lombok.Setter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public abstract class DefaultIndexMappingCreator implements IndexMappingCreator,
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
-  public static final String LOWERCASE_FIELD = "lowercase";
+  public static final String LOWERCASE = "lowercase";
   protected static final String ANALYZER = "analyzer";
   protected static final String NORMALIZER = "normalizer";
 

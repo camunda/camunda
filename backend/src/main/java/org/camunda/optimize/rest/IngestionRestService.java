@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.VariableHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.variable.ExternalVariableService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,7 +37,6 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto.toExternalProcessVariableDtos;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.rest.util.AuthorizationUtil.validateAccessToken;
 
 @AllArgsConstructor
 @Slf4j
@@ -48,11 +46,8 @@ public class IngestionRestService {
   public static final String INGESTION_PATH = "/ingestion";
   public static final String EVENT_BATCH_SUB_PATH = "/event/batch";
   public static final String VARIABLE_SUB_PATH = "/variable";
-
   public static final String CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH = "application/cloudevents-batch+json";
-  public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
-  private final ConfigurationService configurationService;
   private final ExternalEventService externalEventService;
   private final ExternalVariableService externalVariableService;
 
@@ -62,7 +57,6 @@ public class IngestionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventRequestDto> cloudEventDtos) {
-    validateAccessToken(requestContext, getApiAccessToken());
     externalEventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
@@ -71,7 +65,6 @@ public class IngestionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void ingestVariables(final @Context ContainerRequestContext requestContext,
                               final @NotNull @Valid @RequestBody List<ExternalProcessVariableRequestDto> variableDtos) {
-    validateAccessToken(requestContext, getApiAccessToken());
     validateVariableType(variableDtos);
     externalVariableService.storeExternalProcessVariables(
       toExternalProcessVariableDtos(
@@ -87,10 +80,6 @@ public class IngestionRestService {
         ReportConstants.ALL_SUPPORTED_PROCESS_VARIABLE_TYPES
       ));
     }
-  }
-
-  private String getApiAccessToken() {
-    return configurationService.getOptimizeApiConfiguration().getAccessToken();
   }
 
   private static List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {

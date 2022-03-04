@@ -74,6 +74,7 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -1421,7 +1422,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
       .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    String VARIABLE_COUNT_AGGREGATION = VARIABLES + "_count";
+    String VARIABLE_COUNT_AGGREGATION = VARIABLES + FREQUENCY_AGGREGATION;
     String NESTED_VARIABLE_AGGREGATION = "nestedAggregation";
     searchSourceBuilder.aggregation(
       nested(

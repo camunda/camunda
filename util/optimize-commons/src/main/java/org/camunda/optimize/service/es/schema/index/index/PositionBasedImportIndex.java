@@ -5,9 +5,10 @@
  */
 package org.camunda.optimize.service.es.schema.index.index;
 
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
@@ -16,12 +17,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BA
 
 public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
-  public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = PositionBasedImportIndexDto.Fields.lastImportExecutionTimestamp;
-  public static final String POSITION_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.positionOfLastEntity;
-  public static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
-  private static final String DATA_SOURCE = PositionBasedImportIndexDto.Fields.dataSourceDto;
+  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
+    ImportIndexDto.Fields.lastImportExecutionTimestamp;
+  private static final String POSITION_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.positionOfLastEntity;
+  private static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
+  private static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+  private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
   public String getIndexName() {
@@ -46,6 +49,10 @@ public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(POSITION_OF_LAST_ENTITY)
         .field("type", "keyword")
+      .endObject()
+      .startObject(TIMESTAMP_OF_LAST_ENTITY)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
         .field("type", "date")

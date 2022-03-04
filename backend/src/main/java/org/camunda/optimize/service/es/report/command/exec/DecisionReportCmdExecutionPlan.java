@@ -45,7 +45,7 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
 
   @Override
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<DecisionReportDataDto> context) {
-    final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
+    final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context);
     queryFilterEnhancer.addFilterToQuery(
       boolQueryBuilder, context.getReportData().getFilter(), context.getFilterContext()
     );
@@ -53,18 +53,22 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
   }
 
   @Override
-  protected BoolQueryBuilder setupUnfilteredBaseQuery(final DecisionReportDataDto reportData) {
+  protected BoolQueryBuilder setupUnfilteredBaseQuery(final ExecutionContext<DecisionReportDataDto> context) {
     final BoolQueryBuilder definitionFilterQuery = boolQuery().minimumShouldMatch(1);
     // for decision reports only one (the first) definition is supported
-    reportData.getDefinitions().stream().findFirst().ifPresent(definitionDto -> definitionFilterQuery.should(
-      DefinitionQueryUtil.createDefinitionQuery(
-        definitionDto.getKey(),
-        definitionDto.getVersions(),
-        definitionDto.getTenantIds(),
-        new DecisionInstanceIndex(definitionDto.getKey()),
-        decisionDefinitionReader::getLatestVersionToKey
-      )
-    ));
+    context.getReportData()
+      .getDefinitions()
+      .stream()
+      .findFirst()
+      .ifPresent(definitionDto -> definitionFilterQuery.should(
+        DefinitionQueryUtil.createDefinitionQuery(
+          definitionDto.getKey(),
+          definitionDto.getVersions(),
+          definitionDto.getTenantIds(),
+          new DecisionInstanceIndex(definitionDto.getKey()),
+          decisionDefinitionReader::getLatestVersionToKey
+        )
+      ));
     return definitionFilterQuery;
   }
 

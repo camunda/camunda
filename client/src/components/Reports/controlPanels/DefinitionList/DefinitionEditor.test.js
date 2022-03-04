@@ -127,5 +127,4 @@ it('should invoke onChange when confirming the renamed variable modal', () => {
   node.find(RenameVariablesModal).prop('onChange')();
 
   expect(spy).toHaveBeenCalled();
-  expect(node.find(RenameVariablesModal)).not.toExist();
 });

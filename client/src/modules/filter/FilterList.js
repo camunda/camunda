@@ -34,6 +34,7 @@ const flowNodeStateFilters = [
 const incidentFilters = [
   'includesOpenIncident',
   'includesResolvedIncident',
+  'includesClosedIncident',
   'doesNotIncludeIncident',
 ];
 

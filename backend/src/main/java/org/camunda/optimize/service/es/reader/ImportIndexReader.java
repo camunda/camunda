@@ -39,7 +39,6 @@ public class ImportIndexReader {
       // do nothing
     }
 
-
     if (getResponse != null && getResponse.isExists()) {
       try {
         AllEntitiesBasedImportIndexDto storedIndex =

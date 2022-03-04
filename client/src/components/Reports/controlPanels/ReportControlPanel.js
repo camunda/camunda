@@ -15,6 +15,7 @@ import {withErrorHandling} from 'HOC';
 import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, getRandomId} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {setVariables} from 'variables';
 
 import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
@@ -74,7 +75,10 @@ export default withErrorHandling(
               tenantIds,
             }))
           ),
-          (variables) => this.setState({variables}, resolve),
+          (variables) => {
+            this.setState({variables}, resolve);
+            setVariables(variables);
+          },
           (error) => reject(showError(error))
         );
       });
@@ -390,11 +394,7 @@ export default withErrorHandling(
                   )}
                 </li>
                 {shouldDisplayMeasure && (
-                  <Measure
-                    report={data}
-                    onChange={(change) => updateReport(change, true)}
-                    variables={{variable: variables}}
-                  />
+                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
                 )}
                 <GroupBy
                   type="process"

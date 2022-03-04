@@ -32,11 +32,7 @@ export default function View({type, report, onChange, variables}) {
           };
         }
 
-        onChange(
-          createReportUpdate(reportType, report, 'view', type, adjustment, {
-            variables: {variable: variables},
-          })
-        );
+        onChange(createReportUpdate(reportType, report, 'view', type, adjustment));
       }}
       value={getValue(selectedOption?.key, report.view)}
       disabled={report.definitions.length === 0 || !report.definitions[0].key}

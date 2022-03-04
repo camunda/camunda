@@ -246,7 +246,7 @@ public class ExternalEventReader {
     List<CompositeValuesSourceBuilder<?>> eventGroupsAndLowercaseGroups = new ArrayList<>();
     eventGroupsAndLowercaseGroups.add(
       new TermsValuesSourceBuilder(LOWERCASE_GROUP_AGG)
-        .field(GROUP + "." + DefaultIndexMappingCreator.LOWERCASE_FIELD)
+        .field(GROUP + "." + DefaultIndexMappingCreator.LOWERCASE)
         .order(ASC)
         .missingBucket(true));
     eventGroupsAndLowercaseGroups.add

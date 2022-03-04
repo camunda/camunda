@@ -6,10 +6,9 @@
 
 import React from 'react';
 
-import {Modal, Tabs} from 'components';
+import {Modal, Tabs, DurationChart} from 'components';
 import {t} from 'translation';
 
-import DurationChart from './DurationChart';
 import VariablesTable from './VariablesTable';
 import InstancesButton from './InstancesButton';
 
@@ -40,7 +39,10 @@ export default function OutlierDetailsModal({selectedNode, onClose, config}) {
                 totalCount={totalCount}
               />
             </p>
-            <DurationChart data={data} />
+            <DurationChart
+              data={data}
+              colors={data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'))}
+            />
           </Tabs.Tab>
           <Tabs.Tab title={t('analysis.outlier.detailsModal.variablesTable')}>
             <p className="description">

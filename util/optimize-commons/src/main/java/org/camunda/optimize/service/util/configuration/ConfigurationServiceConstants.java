@@ -109,6 +109,8 @@ public class ConfigurationServiceConstants {
   public static final String AVAILABLE_LOCALES = "$.locales.availableLocales";
   public static final String FALLBACK_LOCALE = "$.locales.fallbackLocale";
 
+  public static final String DATA_ARCHIVE = "$.dataArchive";
+
   public static final String UI_CONFIGURATION = "$.ui";
 
   public static final String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";

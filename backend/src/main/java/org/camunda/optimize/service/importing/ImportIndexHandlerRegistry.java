@@ -24,7 +24,6 @@ import org.camunda.optimize.service.importing.engine.handler.RunningUserTaskInst
 import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.UserOperationLogImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.ingested.handler.IngestedImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
@@ -62,10 +61,6 @@ public class ImportIndexHandlerRegistry {
   public void register(final int partitionId,
                        final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider) {
     zeebeImportIndexHandlerProviderMap.put(partitionId, zeebeImportIndexHandlerProvider);
-  }
-
-  public List<TimestampBasedIngestedDataImportIndexHandler> getTimestampBasedIngestedImportHandlers() {
-    return ingestedImportIndexHandlerProvider.getTimestampBasedIngestedDataHandlers();
   }
 
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
@@ -178,7 +173,7 @@ public class ImportIndexHandlerRegistry {
   }
 
   public ExternalVariableUpdateImportIndexHandler getExternalVariableUpdateImportIndexHandler() {
-    return ingestedImportIndexHandlerProvider.getImportIndexHandler(ExternalVariableUpdateImportIndexHandler.class);
+    return ingestedImportIndexHandlerProvider.getExternalVariableUpdateImportIndexHandler();
   }
 
   public void reloadConfiguration() {

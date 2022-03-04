@@ -53,8 +53,8 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
@@ -427,7 +427,7 @@ public class MixedFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isZero();
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isZero();
 
     // when
     filterList = ProcessFilterBuilder
@@ -447,7 +447,7 @@ public class MixedFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isZero();
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isZero();
   }
 
   @ParameterizedTest
@@ -559,7 +559,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
 
     // then
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
 
     // when
@@ -579,7 +579,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     result = evaluateReport(reportType, processDefinition, filterList);
 
     // then
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
 
     // when
@@ -600,7 +600,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     result = evaluateReport(reportType, processDefinition, filterList);
 
     // then
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 

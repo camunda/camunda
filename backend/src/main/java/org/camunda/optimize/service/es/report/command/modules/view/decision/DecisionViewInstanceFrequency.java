@@ -23,12 +23,12 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionViewInstanceFrequency extends DecisionViewPart {
-  private static final String COUNT_AGGREGATION = "_count";
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
@@ -37,13 +37,13 @@ public class DecisionViewInstanceFrequency extends DecisionViewPart {
 
   @Override
   public List<AggregationBuilder> createAggregations(final ExecutionContext<DecisionReportDataDto> context) {
-    return Collections.singletonList(filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery()));
+    return Collections.singletonList(filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery()));
   }
 
   @Override
   public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
                                    final ExecutionContext<DecisionReportDataDto> context) {
-    final Filter count = aggs.get(COUNT_AGGREGATION);
+    final Filter count = aggs.get(FREQUENCY_AGGREGATION);
     return createViewResult(count.getDocCount());
   }
 

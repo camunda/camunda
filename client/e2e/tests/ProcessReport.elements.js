@@ -128,3 +128,8 @@ export const lineButton = Selector('.measureContainer .Button').withText('Line')
 export const tableScrollableContainer = reportTable.find('table');
 export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
 export const objectVariableModal = Selector('.ObjectVariableModal');
+export const renameVariablesBtn = Selector('.actionBar .Button').withText('Rename Variables');
+export const newNameInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
+export const updateVariableBtn = Selector('.Modal__actions .Button').withText('Update');
+export const viewSelect = Selector('.View .activateButton');
+export const numberReportInfo = reportRenderer.find('.Number .label');

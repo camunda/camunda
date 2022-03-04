@@ -5,7 +5,9 @@
  */
 
 import update from 'immutability-helper';
+
 import {t} from 'translation';
+import {getVariableLabel} from 'variables';
 
 import * as processOptions from './process';
 import * as decisionOptions from './decision';
@@ -15,14 +17,7 @@ const config = {
   decision: decisionOptions,
 };
 
-export function createReportUpdate(
-  reportType,
-  report,
-  type,
-  newValue,
-  payloadAdjustment,
-  additionalData
-) {
+export function createReportUpdate(reportType, report, type, newValue, payloadAdjustment) {
   const options = config[reportType];
   let newPayload = options[type].find(({key}) => key === newValue).payload(report);
 
@@ -95,13 +90,10 @@ export function createReportUpdate(
   }
 
   // update x label on group and view update
-  if (['view', 'group'].indexOf(type) !== -1) {
+  if (['view', 'group'].includes(type)) {
     if (['variable', 'inputVariable', 'outputVariable'].includes(newReport.groupBy.type)) {
       const {name, type} = newReport.groupBy.value;
-      const variable = additionalData.variables[newReport.groupBy.type]?.find(
-        (variable) => variable.name === name && variable.type === type
-      );
-      newReport.configuration.xLabel = variable?.label || name;
+      newReport.configuration.xLabel = getVariableLabel(name, type);
     } else {
       newReport.configuration.xLabel = options.group
         .find(({matcher}) => matcher(newReport))

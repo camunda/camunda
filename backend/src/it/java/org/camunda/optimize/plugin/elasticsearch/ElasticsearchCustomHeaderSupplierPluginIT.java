@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -60,6 +61,9 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
     // when
     embeddedOptimizeExtension.getApplicationContext().getBean(OptimizeElasticsearchClientConfiguration.class)
       .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
+    // clear the version validation request the client does on first use, which bypasses our plugins
+    // see RestHighLevelClient#versionValidationFuture
+    esMockServer.clear(request("/").withMethod(GET));
 
     // then
     esMockServer.verify(

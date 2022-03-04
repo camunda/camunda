@@ -9,15 +9,13 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
-import org.camunda.optimize.service.importing.TimestampBasedIngestedDataImportIndexHandler;
+import org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler.EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
+import static org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler.EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 
@@ -36,8 +34,8 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
     // then
     final long lastImportedExternalVariableTimestamp =
       elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
-      EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID, ENGINE_ALIAS_OPTIMIZE
-    ).toInstant().toEpochMilli();
+        EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID, ENGINE_ALIAS_OPTIMIZE
+      ).toInstant().toEpochMilli();
 
     assertThat(lastImportedExternalVariableTimestamp)
       .isEqualTo(getAllStoredExternalProcessVariables().get(0).getIngestionTimestamp());
@@ -63,13 +61,11 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
     embeddedOptimizeExtension.startOptimize();
 
     // then
-    assertThat(embeddedOptimizeExtension.getIndexHandlerRegistry().getTimestampBasedIngestedImportHandlers())
-      .extracting(TimestampBasedIngestedDataImportIndexHandler::getIndexStateDto)
+    assertThat(embeddedOptimizeExtension.getIndexHandlerRegistry().getExternalVariableUpdateImportIndexHandler())
+      .extracting(ExternalVariableUpdateImportIndexHandler::getIndexStateDto)
       .extracting(TimestampBasedImportIndexDto::getTimestampOfLastEntity)
-      .map(OffsetDateTime::toInstant)
-      .map(Instant::toEpochMilli)
-      .singleElement()
-      .isEqualTo(lastImportedExternalVariableTimestamp);
+      .satisfies(timestampOfLastEntity -> assertThat(
+        timestampOfLastEntity.toInstant().toEpochMilli()).isEqualTo(lastImportedExternalVariableTimestamp));
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {

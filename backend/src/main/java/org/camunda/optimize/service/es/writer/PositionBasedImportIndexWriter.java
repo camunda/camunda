@@ -15,7 +15,7 @@ import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -51,7 +51,7 @@ public class PositionBasedImportIndexWriter {
     );
     try {
       bulkRequest.add(new IndexRequest(POSITION_BASED_IMPORT_INDEX_NAME)
-                        .id(EsHelper.constructKey(optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSourceDto()))
+                        .id(EsHelper.constructKey(optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
                         .source(objectMapper.writeValueAsString(optimizeDto), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.error("Was not able to write position based import index of type [{}] to Elasticsearch. Reason: {}",

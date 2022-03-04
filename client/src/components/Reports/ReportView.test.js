@@ -100,28 +100,6 @@ it('should render a sharing popover', async () => {
   expect(node.find('.share-button')).toExist();
 });
 
-it('should show a download csv button with the correct link', () => {
-  const node = shallow(<ReportView report={report} />);
-  expect(node.find(DownloadButton)).toExist();
-
-  const href = node.find(DownloadButton).props().href;
-
-  expect(href).toContain(report.id);
-  expect(href).toContain(report.name);
-});
-
-it('should show a download csv button even if the result is 0', () => {
-  const node = shallow(<ReportView report={{...report, result: {measures: [{data: 0}]}}} />);
-  expect(node.find(DownloadButton)).toExist();
-});
-
-it('should not show a download csv button for multi-measure reports', () => {
-  const node = shallow(
-    <ReportView report={{...report, result: {measures: [{data: 0}, {data: 12}]}}} />
-  );
-  expect(node.find(DownloadButton)).not.toExist();
-});
-
 it('should provide conflict check method to Deleter', () => {
   const node = shallow(<ReportView report={report} />);
 
@@ -160,4 +138,52 @@ it('should hide alert dropdown in ccsm environment', async () => {
   );
 
   expect(node.find(AlertsDropdown)).not.toExist();
+});
+
+describe('Download CSV', () => {
+  it('should show a download csv button with the correct link', () => {
+    const node = shallow(<ReportView report={report} />);
+    expect(node.find(DownloadButton)).toExist();
+
+    const href = node.find(DownloadButton).props().href;
+
+    expect(href).toContain(report.id);
+    expect(href).toContain(report.name);
+  });
+
+  it('should show a download csv button even if the result is 0', () => {
+    const node = shallow(<ReportView report={{...report, result: {measures: [{data: 0}]}}} />);
+    expect(node.find(DownloadButton)).toExist();
+  });
+
+  it('should show a download csv button even if the result is null', () => {
+    const node = shallow(<ReportView report={{...report, result: {measures: [{data: null}]}}} />);
+
+    expect(node.find(DownloadButton)).toExist();
+  });
+
+  it('should not show a download csv button for multi-measure reports', () => {
+    const node = shallow(
+      <ReportView report={{...report, result: {measures: [{data: 0}, {data: 12}]}}} />
+    );
+    expect(node.find(DownloadButton)).not.toExist();
+  });
+
+  it('should calculate total entries correctly for different report types', () => {
+    const node = shallow(
+      <ReportView report={{...report, result: {type: 'number', measures: [{data: 12}]}}} />
+    );
+
+    expect(node.find(DownloadButton).prop('totalCount')).toBe(1);
+
+    node.setProps({report: {...report, result: {type: 'map', measures: [{data: [{}, {}, {}]}]}}});
+
+    expect(node.find(DownloadButton).prop('totalCount')).toBe(3);
+
+    node.setProps({
+      report: {...report, result: {type: 'raw', measures: [{data: [{}]}], instanceCount: 20}},
+    });
+
+    expect(node.find(DownloadButton).prop('totalCount')).toBe(20);
+  });
 });

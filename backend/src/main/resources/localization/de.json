@@ -3,6 +3,7 @@
   "navigation": {
     "homepage": "Home",
     "analysis": "Analyse",
+    "processes": "Prozesse",
     "events": "Eventbasierte Prozesse",
     "telemetry": "Telemetrie-Einstellungen",
     "logout": "Abmelden",
@@ -159,6 +160,28 @@
     },
     "empty": "Es wurde noch nichts erstellt",
     "welcome": "Willkommen"
+  },
+  "processes": {
+    "title": "Prozesse",
+    "empty": "Es sind noch keine Prozesse importiert",
+    "owner": "Eigentümer",
+    "timeGoal": "Ziel: Zeit",
+    "displayData": "Ziele zeigen Daten von Instanzen an",
+    "endedThisMonth": "die im aktuellen Monat beendet wurden",
+    "setGoal": "Ziel setzen",
+    "editGoal": "Ziel bearbeiten",
+    "timeGoals": {
+      "label": "Zeitziele",
+      "configure": "Ziele konfigurieren",
+      "targetDuration": "Ziel",
+      "slaDuration": "SLA",
+      "instancesTake": "der Prozessinstanzen benötigen",
+      "lessThan": "weniger als",
+      "displayGoal": "Ziel anzeigen",
+      "durationDistribution": "Laufzeitverteilung",
+      "saveGoals": "Ziele speichern",
+      "updateGoals": "Ziele aktualisieren"
+    }
   },
   "events": {
     "new": "Neuer Prozess",
@@ -988,6 +1011,7 @@
           "completedOrCanceledFlowNodesOnly": "abgeschlossene oder abgebrochene",
           "includesOpenIncident": "Offene",
           "includesResolvedIncident": "Gelöste",
+          "includesClosedIncident": "Geschlossene",
           "doesNotIncludeIncident": "Keine"
         },
         "modalLabels": {
@@ -1003,6 +1027,7 @@
           "completedOrCanceledFlowNodesOnly": "Abgeschlossen oder Abgebrochen",
           "includesOpenIncident": "Offenen Zwischenfällen",
           "includesResolvedIncident": "Gelösten Zwischenfällen",
+          "includesClosedIncident": "Geschlossenen Zwischenfällen",
           "doesNotIncludeIncident": "Keinen Zwischenfällen"
         }
       },

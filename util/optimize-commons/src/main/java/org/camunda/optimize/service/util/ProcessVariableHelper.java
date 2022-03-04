@@ -13,9 +13,9 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.InstanceType.MULTIVALUE_FIELD_DATE;
-import static org.camunda.optimize.service.es.schema.index.InstanceType.MULTIVALUE_FIELD_DOUBLE;
-import static org.camunda.optimize.service.es.schema.index.InstanceType.MULTIVALUE_FIELD_LONG;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_LONG;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;

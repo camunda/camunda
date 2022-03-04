@@ -60,6 +60,7 @@ public class ElasticsearchConstants {
   public static final String PROCESS_DEFINITION_INDEX_NAME = "process-definition";
   public static final String PROCESS_INSTANCE_MULTI_ALIAS = "process-instance";
   public static final String PROCESS_INSTANCE_INDEX_PREFIX = "process-instance-";
+  public static final String PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX = "process-instance-archive-";
 
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
@@ -117,4 +118,7 @@ public class ElasticsearchConstants {
   public static final String ZEEBE_DATA_SOURCE = "zeebe";
   public static final String EVENTS_DATA_SOURCE = "events";
   public static final String INGESTED_DATA_SOURCE = "ingested";
+
+  // Aggregation constants
+  public static final String FREQUENCY_AGGREGATION = "_frequency";
 }

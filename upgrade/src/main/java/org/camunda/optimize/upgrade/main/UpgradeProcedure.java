@@ -111,7 +111,6 @@ public class UpgradeProcedure {
       }
       currentStepCount++;
     }
-    schemaUpgradeClient.initializeSchema();
     schemaUpgradeClient
       .updateOptimizeVersion(upgradePlan.getFromVersion().toString(), upgradePlan.getToVersion().toString());
   }

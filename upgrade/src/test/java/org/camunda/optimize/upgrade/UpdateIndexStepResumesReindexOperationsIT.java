@@ -42,7 +42,9 @@ import static org.mockserver.verify.VerificationTimes.atLeast;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT {
-  public static final String NEWEST_INDEX_SUFFIX = "-000002";
+
+  private static final String NEWEST_INDEX_SUFFIX = "-000002";
+
   @RegisterExtension
   protected final LogCapturer schemaUpdateClientLogs = LogCapturer.create().captureForType(SchemaUpgradeClient.class);
 
@@ -283,7 +285,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
 
   private void performUpgradeAndLetReindexStatusCheckFail(final UpgradePlan upgradePlan,
                                                           final HttpRequest reindexRequest) {
-    final HttpRequest getReindexStatusRequest = createTaskStatusRequestestMatcher();
+    final HttpRequest getReindexStatusRequest = createTaskStatusRequestTestMatcher();
     esMockServer
       .when(getReindexStatusRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
@@ -361,7 +363,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     return request().withPath("/_reindex").withMethod(POST);
   }
 
-  private HttpRequest createTaskStatusRequestestMatcher() {
+  private HttpRequest createTaskStatusRequestTestMatcher() {
     return request().withPath("/_tasks/.*").withMethod(GET);
   }
 

@@ -8,8 +8,7 @@ package org.camunda.optimize.dto.optimize.index;
 import lombok.Data;
 
 @Data
-public class AllEntitiesBasedImportIndexDto implements ImportIndexDto {
-
+public class AllEntitiesBasedImportIndexDto implements EngineImportIndexDto {
   private long importIndex;
   private String esTypeIndexRefersTo;
   private String engine;

@@ -51,8 +51,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
-import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;

@@ -1,0 +1,30 @@
+@import 'shared-styles/shared-styles.scss';
+
+.Processes {
+  height: 100%;
+
+  .EntityList {
+    .setGoalBtn {
+      margin: 4px;
+      display: none;
+    }
+
+    .ListItem:not(:hover) .setGoalBtn {
+      opacity: 0;
+
+      &.active,
+      &.focus-visible {
+        opacity: 1;
+      }
+    }
+
+    .goalInfo {
+      font-size: 14px;
+
+      .highlighted {
+        @include highlighted;
+        display: inline;
+      }
+    }
+  }
+}

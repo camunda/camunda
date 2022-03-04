@@ -14,21 +14,14 @@ import AggregationType from './AggregationType';
 
 import './Measure.scss';
 
-export default function Measure({report, onChange, variables}) {
+export default function Measure({report, onChange}) {
   const selectedView = reportConfig.process.view.find(({matcher}) => matcher(report));
 
   function updateMeasure(newMeasures) {
     onChange(
-      createReportUpdate(
-        'process',
-        report,
-        'view',
-        selectedView.key,
-        {
-          view: {properties: {$set: newMeasures}},
-        },
-        {variables}
-      )
+      createReportUpdate('process', report, 'view', selectedView.key, {
+        view: {properties: {$set: newMeasures}},
+      })
     );
   }
 

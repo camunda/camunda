@@ -19,7 +19,6 @@ spec:
     - key: "${NODE_POOL()}"
       operator: "Exists"
       effect: "NoSchedule"
-  serviceAccountName: ci-optimize-camunda-cloud
   containers:
   - name: gcloud
     image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
@@ -61,6 +60,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
+      serviceAccount 'ci-optimize-camunda-cloud'
       yaml gCloudAndMavenAgent()
     }
   }
@@ -86,14 +86,11 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
+          sh 'apk add --no-cache jq gettext'
+          camundaInstallKubectl()
           sh("""
-                # install jq
-                apk add --no-cache jq gettext
-                # kubectl
-                gcloud components install kubectl --quiet
-
-                bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}" "${ES_VERSION}" "${CAMBPM_VERSION}"
-            """)
+            bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}" "${ES_VERSION}" "${CAMBPM_VERSION}"
+          """)
         }
         container('maven') {
           sh("""apt-get update && apt-get install -y jq netcat""")

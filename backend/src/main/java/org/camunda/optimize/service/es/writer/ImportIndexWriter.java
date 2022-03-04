@@ -11,7 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
@@ -19,9 +19,9 @@ import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentFactory;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -41,14 +41,14 @@ public class ImportIndexWriter {
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
-  public void importIndexes(List<ImportIndexDto> importIndexDtos) {
+  public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
     String importItemName = "import index information";
-    log.debug("Writing [{}] {} to ES.", importIndexDtos.size(), importItemName);
+    log.debug("Writing [{}] {} to ES.", engineImportIndexDtos.size(), importItemName);
 
     ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
-      importIndexDtos,
+      engineImportIndexDtos,
       this::addImportIndexRequest,
       configurationService.getSkipDataAfterNestedDocLimitReached()
     );
@@ -82,7 +82,7 @@ public class ImportIndexWriter {
     }
   }
 
-  private String getId(ImportIndexDto importIndex) {
+  private String getId(EngineImportIndexDto importIndex) {
     return EsHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
   }
 

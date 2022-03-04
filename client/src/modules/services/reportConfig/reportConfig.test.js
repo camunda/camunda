@@ -6,6 +6,8 @@
 
 import {createReportUpdate} from './reportConfig';
 
+import {getVariableLabel} from 'variables';
+
 const report = {
   configuration: {
     tableColumns: {},
@@ -28,6 +30,10 @@ const report = {
   visualization: 'bar',
 };
 
+jest.mock('variables', () => ({
+  getVariableLabel: jest.fn(),
+}));
+
 it('should update the payload when selecting a new report setting', () => {
   expect(createReportUpdate('process', report, 'visualization', 'table').visualization.$set).toBe(
     'table'
@@ -36,16 +42,9 @@ it('should update the payload when selecting a new report setting', () => {
 
 it('should augment change with custom payload adjustment', () => {
   expect(
-    createReportUpdate(
-      'process',
-      report,
-      'group',
-      'variable',
-      {
-        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
-      },
-      {variables: []}
-    ).groupBy.$set
+    createReportUpdate('process', report, 'group', 'variable', {
+      groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+    }).groupBy.$set
   ).toEqual({type: 'variable', value: {name: 'boolVar', type: 'Boolean'}});
 });
 
@@ -116,31 +115,13 @@ it('should update x axis labels', () => {
       variables: [],
     }).configuration.$set.xLabel
   ).toBe('End Date');
-  expect(
-    createReportUpdate(
-      'process',
-      report,
-      'group',
-      'variable',
-      {
-        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
-      },
-      {variables: []}
-    ).configuration.$set.xLabel
-  ).toBe('boolVar');
 
+  getVariableLabel.mockReturnValueOnce('boolVarLabel');
   expect(
-    createReportUpdate(
-      'process',
-      report,
-      'group',
-      'variable',
-      {
-        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
-      },
-      {variables: [{name: 'boolVar', type: 'Boolean', label: 'boolVarLabel'}]}
-    ).configuration.$set.xLabel
-  ).toBe('boolVar');
+    createReportUpdate('process', report, 'group', 'variable', {
+      groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+    }).configuration.$set.xLabel
+  ).toBe('boolVarLabel');
 });
 
 it('should update sorting', () => {

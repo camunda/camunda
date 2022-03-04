@@ -27,7 +27,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
-  protected List<String> excludedTenantIds = null;
+  protected List<String> excludedTenantIds;
 
   protected BackoffImportMediator(final ConfigurationService configurationService,
                                   final BackoffCalculator idleBackoffCalculator,

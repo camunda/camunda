@@ -13,6 +13,9 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -97,9 +100,12 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
                                                 final Runnable importCompleteCallback) {
     importIndexHandler.updateLastImportExecutionTimestamp(LocalDateUtil.getCurrentDateTime());
     if (!entitiesNextPage.isEmpty()) {
-      final long currentPageLastEntityPosition = entitiesNextPage.get(entitiesNextPage.size() - 1).getPosition();
+      final DTO lastImportedEntity = entitiesNextPage.get(entitiesNextPage.size() - 1);
+      final long currentPageLastEntityPosition = lastImportedEntity.getPosition();
       importService.executeImport(entitiesNextPage, () -> {
         importIndexHandler.updateLastPersistedEntityPosition(currentPageLastEntityPosition);
+        importIndexHandler.updateTimestampOfLastPersistedEntity(
+          OffsetDateTime.ofInstant(Instant.ofEpochMilli(lastImportedEntity.getTimestamp()), ZoneId.systemDefault()));
         importCompleteCallback.run();
       });
       importIndexHandler.updatePendingLastEntityPosition(currentPageLastEntityPosition);

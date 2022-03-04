@@ -1,0 +1,44 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should create correct chart options 1`] = `
+Object {
+  "animation": false,
+  "maintainAspectRatio": false,
+  "plugins": Object {
+    "legend": Object {
+      "display": false,
+    },
+    "tooltip": Object {
+      "callbacks": Object {
+        "label": [Function],
+        "title": [Function],
+      },
+      "filter": [Function],
+      "intersect": false,
+      "mode": "x",
+    },
+  },
+  "responsive": true,
+  "scales": Object {
+    "xAxis": Object {
+      "ticks": Object {},
+      "title": Object {
+        "display": true,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": "Duration",
+      },
+    },
+    "yAxis": Object {
+      "title": Object {
+        "display": true,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": "Instance Count",
+      },
+    },
+  },
+}
+`;

@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.indexes;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 

@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
@@ -65,7 +65,7 @@ public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
                 .field("type", "text")
                 .field(ANALYZER, LOWERCASE_NGRAM)
               .endObject()
-              .startObject(LOWERCASE_FIELD)
+              .startObject(LOWERCASE)
                 .field("type", "keyword")
                 .field(NORMALIZER, LOWERCASE_NORMALIZER)
               .endObject()
@@ -78,7 +78,7 @@ public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
                 .field("type", "text")
                 .field(ANALYZER, LOWERCASE_NGRAM)
               .endObject()
-              .startObject(LOWERCASE_FIELD)
+              .startObject(LOWERCASE)
                 .field("type", "keyword")
                 .field(NORMALIZER, LOWERCASE_NORMALIZER)
               .endObject()
@@ -91,7 +91,7 @@ public class EventSequenceCountIndex extends DefaultIndexMappingCreator {
                 .field("type", "text")
                 .field(ANALYZER, LOWERCASE_NGRAM)
               .endObject()
-              .startObject(LOWERCASE_FIELD)
+              .startObject(LOWERCASE)
                 .field("type", "keyword")
                 .field(NORMALIZER, LOWERCASE_NORMALIZER)
               .endObject()

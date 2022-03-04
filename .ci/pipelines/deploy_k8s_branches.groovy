@@ -19,7 +19,6 @@ spec:
   - key: "${NODE_POOL()}"
     operator: "Exists"
     effect: "NoSchedule"
-  serviceAccountName: ci-optimize-camunda-cloud
   volumes:
   - name: import
     emptyDir: {}
@@ -72,6 +71,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
+      serviceAccount 'ci-optimize-camunda-cloud'
       yaml kubectlAgent()
     }
   }
@@ -96,8 +96,8 @@ pipeline {
         }
 
         container('gcloud') {
+          camundaInstallKubectl()
           sh("""
-            gcloud components install kubectl --quiet
             apk add --no-cache jq py-pip && pip install yq
             gsutil stat gs://optimize-data/optimize_data-stage.sqlc | grep ETag |  yq -r '.ETag' >> /import/optimize_large_data-stage.etag || true
             gsutil cp   gs://optimize-data/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.old || true

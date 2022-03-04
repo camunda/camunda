@@ -43,6 +43,7 @@ import org.camunda.optimize.service.util.configuration.elasticsearch.Elasticsear
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -59,9 +60,6 @@ import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -71,6 +69,9 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.ToXContent;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -107,14 +108,16 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -122,6 +125,7 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 /**
  * ElasticSearch Extension including configuration of retrievable ElasticSearch MockServer
@@ -325,7 +329,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .aggregation(
         nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
           .subAggregation(
-            count(FLOW_NODE_INSTANCES + "_count")
+            count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
               .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
           )
       );
@@ -345,7 +349,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .get(FLOW_NODE_INSTANCES);
     ValueCount countAggregator =
       nested.getAggregations()
-        .get(FLOW_NODE_INSTANCES + "_count");
+        .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
     return Long.valueOf(countAggregator.getValue()).intValue();
   }
 
@@ -504,6 +508,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     cleanUpElasticSearch();
   }
 
+  @SuppressWarnings(UNUSED)
   public void disableCleanup() {
     haveToClean = false;
   }
@@ -650,6 +655,12 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
+  private void deleteAllProcessInstanceArchiveIndices() {
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX + "*")
+    );
+  }
+
   private void deleteAllEventProcessInstanceIndices() {
     getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
@@ -755,6 +766,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       deleteAllOptimizeData();
       deleteAllEventProcessInstanceIndices();
       deleteCamundaEventIndicesAndEventCountsAndTraces();
+      deleteAllProcessInstanceArchiveIndices();
     } catch (Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);

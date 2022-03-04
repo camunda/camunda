@@ -159,7 +159,7 @@ public class CompositeCommandResult {
     final Map<ViewMeasureIdentifier, T> measureMap = new LinkedHashMap<>();
 
     // if this is a frequency view only null key is expected
-    if (ViewProperty.FREQUENCY.equals(viewProperty)) {
+    if (ViewProperty.FREQUENCY.equals(viewProperty) || ViewProperty.PERCENTAGE.equals(viewProperty)) {
       measureMap.put(new ViewMeasureIdentifier(), defaultValueSupplier.get());
     }
 
@@ -176,6 +176,7 @@ public class CompositeCommandResult {
           new ViewMeasureIdentifier(aggregationType, null), defaultValueSupplier.get()
         ));
     }
+
     return measureMap;
   }
 

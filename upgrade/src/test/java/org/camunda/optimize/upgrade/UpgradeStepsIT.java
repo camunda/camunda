@@ -33,8 +33,8 @@ import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

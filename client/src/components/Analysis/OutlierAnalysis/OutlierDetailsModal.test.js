@@ -9,19 +9,22 @@ import {shallow} from 'enzyme';
 
 import OutlierDetailsModal from './OutlierDetailsModal';
 
-jest.mock('chart.js');
-
 const selectedNode = {
   name: 'test',
   higherOutlier: {
     count: 4,
     relation: 1.1,
   },
+  data: [
+    {key: '1', outlier: false},
+    {key: '2', outlier: true},
+  ],
 };
 
-it('should render a modal with a button group showing duration chart', () => {
+it('should pass outlier data to DurationChart and VariablesTable', () => {
   const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
 
-  expect(node).toMatchSnapshot();
-  expect(node.find('DurationChart')).toExist();
+  expect(node.find('DurationChart').prop('data')).toEqual(selectedNode.data);
+  expect(node.find('DurationChart').prop('colors')).toEqual(['#eeeeee', '#1991c8']);
+  expect(node.find('VariablesTable').prop('selectedNode')).toEqual(selectedNode);
 });

@@ -60,7 +60,10 @@ export function RenameVariablesModal({
   function updateVariableNames() {
     mightFail(
       updateVariables(definitionKey, Array.from(renamedVariables.values())),
-      onChange,
+      () => {
+        onChange();
+        onClose();
+      },
       showError
     );
   }

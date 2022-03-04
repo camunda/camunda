@@ -1,0 +1,56 @@
+.TimeGoalsModal {
+  .Modal__content {
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+
+    .chartTitle {
+      font-weight: bold;
+      margin: 25px 0;
+    }
+
+    .goalsConfig {
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--silver-darken-87);
+      max-width: max-content;
+      padding: 0 30px 20px 30px;
+
+      legend {
+        width: 100%;
+        float: left;
+        font-weight: bold;
+        margin: 20px 30px 30px 0px;
+        font-size: 16px;
+      }
+
+      .singleGoal {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+
+        b:first-child {
+          min-width: 50px;
+        }
+
+        input[type='text'] {
+          max-width: 80px;
+        }
+
+        > .unitSelection {
+          min-width: 125px;
+        }
+
+        .LabeledInput {
+          display: inline-block;
+        }
+
+        > span {
+          min-width: 230px;
+        }
+      }
+    }
+  }
+}

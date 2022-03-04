@@ -243,7 +243,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
 
     // works with gte filter
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -259,7 +259,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
   }
 
   private static Stream<ProcessReportDataType> dateReportTypes() {

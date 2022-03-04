@@ -41,7 +41,6 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
 
   @Test
   public void reportEvaluationForOneProcess() {
-
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();

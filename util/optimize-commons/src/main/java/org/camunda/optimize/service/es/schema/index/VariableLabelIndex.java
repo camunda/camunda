@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabels
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 

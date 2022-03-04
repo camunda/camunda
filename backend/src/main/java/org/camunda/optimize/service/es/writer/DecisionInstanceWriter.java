@@ -20,9 +20,9 @@ import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 

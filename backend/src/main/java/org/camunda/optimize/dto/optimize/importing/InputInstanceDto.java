@@ -5,28 +5,22 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class InputInstanceDto {
+
   private String id;
   private String clauseId;
   private String clauseName;
   private VariableType type;
   private String value;
 
-  public InputInstanceDto() {
-  }
-
-  public InputInstanceDto(final String id, final String clauseId, final String clauseName, final VariableType type,
-                           final String value) {
-    this.id = id;
-    this.clauseId = clauseId;
-    this.clauseName = clauseName;
-    this.type = type;
-    this.value = value;
-  }
 }

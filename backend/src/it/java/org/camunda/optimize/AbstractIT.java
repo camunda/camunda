@@ -37,6 +37,7 @@ import org.camunda.optimize.test.optimize.VariablesClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 
 import java.util.function.Supplier;
 
@@ -65,6 +66,8 @@ public abstract class AbstractIT {
   protected ClientAndServer useAndGetElasticsearchMockServer() {
     final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useEsMockServer();
     embeddedOptimizeExtension.configureEsHostAndPort(MOCKSERVER_HOST, esMockServer.getLocalPort());
+    // clear any requests that might have been recorded during configuration reload
+    esMockServer.clear(HttpRequest.request());
     return esMockServer;
   }
 
@@ -124,5 +127,4 @@ public abstract class AbstractIT {
     optimizeRequestExecutorSupplier,
     () -> embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken()
   );
-
 }

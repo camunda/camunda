@@ -140,6 +140,25 @@ export const convertDurationToObject = (value) => {
   };
 };
 
+export const convertToBiggestPossibleDuration = (value) => {
+  // sort the time units in descending order, then find
+  // the biggest one that fits the provided value even if it
+  // has decimal places
+
+  const possibleUnits = Object.keys(timeUnits)
+    .map((key) => [timeUnits[key].value, key])
+    .sort(([a], [b]) => b - a);
+
+  const [divisor, unit] =
+    possibleUnits.find(([divisor]) => value / divisor >= 1) ||
+    possibleUnits[possibleUnits.length - 1];
+
+  return {
+    value: Number((value / divisor).toFixed(3)).toString(),
+    unit,
+  };
+};
+
 export const convertDurationToSingleNumber = (threshold) => {
   if (typeof threshold.value === 'undefined') {
     return threshold;

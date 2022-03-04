@@ -21,7 +21,6 @@ spec:
      effect: "NoSchedule"
   imagePullSecrets:
     - name: registry-camunda-cloud
-  serviceAccountName: ci-optimize-camunda-cloud
   containers:
   - name: gcloud
     image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
@@ -63,6 +62,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
+      serviceAccount 'ci-optimize-camunda-cloud'
       yaml gCloudAndMavenAgent()
     }
   }
@@ -92,13 +92,10 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
+            sh 'apk add --no-cache jq gettext'
+            camundaInstallKubectl()
             sh ("""
-                # install jq
-                apk add --no-cache jq gettext
-                # kubectl
-                gcloud components install kubectl --quiet
-
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "${EVENT_IMPORT_ENABLED}" "${ES_NUM_NODES}"
+              bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}" "${ES_REFRESH_INTERVAL}" "${EVENT_IMPORT_ENABLED}" "${ES_NUM_NODES}"
             """)
         }
       }

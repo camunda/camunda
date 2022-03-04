@@ -5,18 +5,15 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
+public class DecisionInstanceIndex extends AbstractInstanceIndex {
 
   public static final int VERSION = 5;
 
@@ -211,12 +208,6 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
       .endObject();
     return builder;
     // @formatter:on
-  }
-
-  @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
-    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards());
   }
 
 }

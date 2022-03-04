@@ -3,6 +3,7 @@
   "navigation": {
     "homepage": "Home",
     "analysis": "Analysis",
+    "processes": "Processes",
     "events": "Event Based Processes",
     "telemetry": "Telemetry Settings",
     "logout": "Logout",
@@ -159,6 +160,28 @@
     },
     "empty": "There are no items created yet",
     "welcome": "Welcome"
+  },
+  "processes": {
+    "title": "Processes",
+    "empty": "There are no processes imported yet",
+    "owner": "Owner",
+    "timeGoal": "Goal: Time",
+    "displayData": "Goals display data from instances",
+    "endedThisMonth": "ended in the current month",
+    "setGoal": "Set Goal",
+    "editGoal": "Edit Goal",
+    "timeGoals": {
+      "label": "Time goals",
+      "configure": "Configure duration goals",
+      "targetDuration": "Target",
+      "slaDuration": "SLA",
+      "instancesTake": "of process instances take",
+      "lessThan": "less than",
+      "displayGoal": "Display goal",
+      "durationDistribution": "Duration distribution",
+      "saveGoals": "Save Goals",
+      "updateGoals": "Update Goals"
+    }
   },
   "events": {
     "new": "New Process",
@@ -988,6 +1011,7 @@
           "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
           "includesOpenIncident": "Open",
           "includesResolvedIncident": "Resolved",
+          "includesClosedIncident": "Closed",
           "doesNotIncludeIncident": "No"
         },
         "modalLabels": {
@@ -1003,6 +1027,7 @@
           "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
           "includesOpenIncident": "Open Incidents",
           "includesResolvedIncident": "Resolved Incidents",
+          "includesClosedIncident": "Closed Incidents",
           "doesNotIncludeIncident": "Without Incidents"
         }
       },

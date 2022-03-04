@@ -50,17 +50,16 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
     final CommandEvaluationResult<?> commandResult = getFirstCommandResult();
     PaginatedDataExportDto result = new PaginatedDataExportDto();
     result.setData(commandResult.getResult());
-    if(commandResult instanceof RawDataCommandResult) {
+    if (commandResult instanceof RawDataCommandResult) {
       result.setTotalNumberOfRecords(commandResult.getInstanceCount());
-      if (commandResult.getPagination() instanceof PaginationScrollableDto){
-        result.setSearchRequestId(((PaginationScrollableDto)commandResult.getPagination()).getScrollId());
+      if (commandResult.getPagination() instanceof PaginationScrollableDto) {
+        result.setSearchRequestId(((PaginationScrollableDto) commandResult.getPagination()).getScrollId());
       } else {
         result.setSearchRequestId(null);
       }
-    }
-    else {
+    } else {
       Object data = Optional.ofNullable(result.getData()).orElse(new ArrayList<>());
-      int payloadSize = (data instanceof List ? ((List<?>)data).size() : 1);
+      int payloadSize = (data instanceof List ? ((List<?>) data).size() : 1);
       result.setTotalNumberOfRecords(payloadSize);
     }
     return result;

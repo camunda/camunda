@@ -27,6 +27,7 @@ public class ReportConstants {
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
+  public static final String VIEW_PERCENTAGE_PROPERTY = "percentage";
   public static final String VIEW_RAW_DATA_PROPERTY = "rawData";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";

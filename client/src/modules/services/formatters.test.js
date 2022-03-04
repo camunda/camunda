@@ -18,6 +18,7 @@ import {
   getRelativeValue,
   formatVersions,
   formatTenants,
+  convertToBiggestPossibleDuration,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -129,6 +130,13 @@ describe('convertDurationToObject', () => {
     expect(convertDurationToObject(1000)).toEqual({value: '1', unit: 'seconds'});
     expect(convertDurationToObject(1001)).toEqual({value: '1001', unit: 'millis'});
   });
+});
+
+describe('convertToBiggestPossibleDuration', () => {
+  expect(convertToBiggestPossibleDuration(123)).toEqual({value: '123', unit: 'millis'});
+  expect(convertToBiggestPossibleDuration(4 * 60 * 1000)).toEqual({value: '4', unit: 'minutes'});
+  expect(convertToBiggestPossibleDuration(1000)).toEqual({value: '1', unit: 'seconds'});
+  expect(convertToBiggestPossibleDuration(1001)).toEqual({value: '1.001', unit: 'seconds'});
 });
 
 describe('convertDurationToSingleNumber', () => {

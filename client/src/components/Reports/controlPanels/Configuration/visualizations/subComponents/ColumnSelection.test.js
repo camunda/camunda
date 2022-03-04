@@ -7,8 +7,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ColumnSelection from './ColumnSelection';
 import {LabeledInput} from 'components';
+import {getVariableLabel} from 'variables';
+
+import ColumnSelection from './ColumnSelection';
+
+jest.mock('variables', () => ({
+  getVariableLabel: jest.fn(),
+}));
 
 const data = {
   configuration: {
@@ -43,6 +49,7 @@ it('should have a switch for every column', () => {
 });
 
 it('should change the switches labels to space case instead of camelCase for non variables', () => {
+  getVariableLabel.mockReturnValueOnce('testVariable');
   const node = shallow(
     <ColumnSelection
       report={{
@@ -141,4 +148,18 @@ it('should not crash if the report result is missing', () => {
       }}
     />
   );
+});
+
+it('should resolve the label of the variable if it exists', () => {
+  getVariableLabel.mockReturnValueOnce('variableLabel');
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        result: {data: [{variables: {testVariable: 1}}]},
+        data,
+      }}
+    />
+  );
+
+  expect(node.find('Switch').prop('label').props.children[1]).toBe('variableLabel');
 });

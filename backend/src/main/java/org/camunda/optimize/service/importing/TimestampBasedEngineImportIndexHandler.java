@@ -6,62 +6,17 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-
-import javax.annotation.PostConstruct;
-import java.time.OffsetDateTime;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class TimestampBasedEngineImportIndexHandler
-  extends TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> {
+  extends TimestampBasedDataSourceImportIndexHandler<EngineDataSourceDto> {
 
-  @Autowired
-  private TimestampBasedImportIndexReader importIndexReader;
-
-  private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
-  private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
-
-  @Override
-  public TimestampBasedImportIndexDto getIndexStateDto() {
-    TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
-    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
-    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
-    indexToStore.setEngine(getEngineAlias());
-    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
-    return indexToStore;
-  }
-
-  @PostConstruct
-  protected void init() {
-    final Optional<TimestampBasedImportIndexDto> dto = importIndexReader
-      .getImportIndex(getElasticsearchDocID(), getEngineAlias());
-    if (dto.isPresent()) {
-      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
-      updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
-      updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
-      updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
-    }
-  }
-
-  /**
-   * States the Elasticsearch document name where the index information should be stored.
-   */
-  protected abstract String getElasticsearchDocID();
-
-  @Override
-  protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
-    this.persistedTimestampOfLastEntity = timestamp;
-  }
-
-  @Override
-  protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
-    this.lastImportExecutionTimestamp = timestamp;
+  protected EngineDataSourceDto getDataSource() {
+    return new EngineDataSourceDto(getEngineAlias());
   }
 
 }

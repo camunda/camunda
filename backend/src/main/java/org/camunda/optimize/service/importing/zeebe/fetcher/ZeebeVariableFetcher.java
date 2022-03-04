@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
@@ -25,9 +24,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_VARIA
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeVariableFetcher extends AbstractZeebeRecordFetcher<ZeebeVariableRecordDto> {
 
-  private static final Set<Intent> INTENTS = Set.of(
-    VariableIntent.CREATED,
-    VariableIntent.UPDATED
+  private static final Set<String> INTENTS = Set.of(
+    VariableIntent.CREATED.name(),
+    VariableIntent.UPDATED.name()
   );
 
   public ZeebeVariableFetcher(final int partitionId,
@@ -43,7 +42,7 @@ public class ZeebeVariableFetcher extends AbstractZeebeRecordFetcher<ZeebeVariab
   }
 
   @Override
-  protected Set<Intent> getIntentsForRecordType() {
+  protected Set<String> getIntentsForRecordType() {
     return INTENTS;
   }
 

@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.schema.index.index;
 
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
@@ -15,12 +17,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_B
 
 public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
-  public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = "lastImportExecutionTimestamp";
-  public static final String TIMESTAMP_OF_LAST_ENTITY = "timestampOfLastEntity";
-  public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
-  public static final String ENGINE = "engine";
+  public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = ImportIndexDto.Fields.lastImportExecutionTimestamp;
+  public static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
+  public static final String ES_TYPE_INDEX_REFERS_TO = TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+  public static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
   public String getIndexName() {
@@ -36,8 +38,9 @@ public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(ENGINE)
-        .field("type", "keyword")
+      .startObject(DATA_SOURCE)
+        .field("type", "object")
+        .field("dynamic", true)
       .endObject()
       .startObject(ES_TYPE_INDEX_REFERS_TO)
         .field("type", "keyword")

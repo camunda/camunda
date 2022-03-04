@@ -8,15 +8,23 @@
 
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
+
 static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
+
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
-static String PUBLIC_DOCKER_REGISTRY(boolean pushChanges) {
+static String DOCKER_REGISTRY(boolean pushChanges) {
   return (pushChanges && !isStagingJenkins()) ?
     'registry.camunda.cloud' : 'stage.registry.camunda.cloud'
 }
+
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
-static String PUBLIC_DOCKER_IMAGE(boolean pushChanges) { return "${PUBLIC_DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize" }
+
+static String DOCKER_REGISTRY_IMAGE(boolean pushChanges) {
+  return "${DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize"
+}
+
+static String DOCKERHUB_IMAGE() { return "camunda/optimize" }
 
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME(boolean pushChanges) {
   return (pushChanges && !isStagingJenkins()) ?
@@ -143,7 +151,7 @@ spec:
         cpu: 4
         memory: 3Gi
   - name: optimize
-    image: ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${params.RELEASE_VERSION}
+    image: ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${params.RELEASE_VERSION}
     imagePullPolicy: Always
     env:
     - name: OPTIMIZE_JAVA_OPTS
@@ -212,7 +220,7 @@ void runRelease(params) {
 
   if (!params.PUSH_CHANGES) {
     pushChanges = 'false'
-    skipDeploy='true'
+    skipDeploy = 'true'
   }
 
   withCredentials([usernamePassword(
@@ -234,7 +242,7 @@ void runRelease(params) {
     // Access Optimize repo using access token.
     sh 'git remote set-url origin https://$GITHUB_APP:$GITHUB_ACCESS_TOKEN@github.com/camunda/camunda-optimize.git'
 
-    sh ("""
+    sh("""
       # This is needed to not abort the job in case 'git diff' returns a status different from 0
       set +e
       # auto-update previousVersion property
@@ -282,7 +290,7 @@ pipeline {
 
   options {
     skipDefaultCheckout(true)
-    buildDiscarder(logRotator(numToKeepStr:'50', artifactNumToKeepStr: '3'))
+    buildDiscarder(logRotator(numToKeepStr: '50', artifactNumToKeepStr: '3'))
     timestamps()
     timeout(time: 30, unit: 'MINUTES')
   }
@@ -294,7 +302,7 @@ pipeline {
         setBuildEnvVars()
 
         container('maven') {
-          sh ("""
+          sh("""
             # install git
             apt-get update && \
             apt-get -y install git
@@ -318,8 +326,8 @@ pipeline {
       post {
         always {
           archiveArtifacts(
-              artifacts: "target/checkout/distro/target/*.zip,target/checkout/distro/target/*.tar.gz",
-              onlyIfSuccessful: false
+            artifacts: "target/checkout/distro/target/*.zip,target/checkout/distro/target/*.tar.gz",
+            onlyIfSuccessful: false
           )
         }
       }
@@ -344,7 +352,8 @@ pipeline {
       environment {
         VERSION = "${params.RELEASE_VERSION}"
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
-        GCR_REGISTRY = credentials('docker-registry-ci3')
+        DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
+        GCR_REGISTRY_CREDENTIALS = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
       }
@@ -353,8 +362,8 @@ pipeline {
           configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
             sh("""
             cp \$MAVEN_SETTINGS_XML settings.xml
-            echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${PUBLIC_DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
+            echo '${GCR_REGISTRY_CREDENTIALS}' | docker login -u _json_key https://gcr.io --password-stdin
+            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
 
             docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
               --build-arg SKIP_DOWNLOAD=true \
@@ -366,12 +375,22 @@ pipeline {
               docker push ${PROJECT_DOCKER_IMAGE()}:${VERSION}
             fi
 
-            docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${VERSION}
-            docker push ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${VERSION}
+            docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
+            docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
 
             if [ "${MAJOR_OR_MINOR}" = true ]; then
-              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:latest
-              docker push ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:latest
+              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
+              docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
+            fi
+            
+            if [ "${PUSH_CHANGES}" = true ]; then
+              docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
+              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:${VERSION}
+              docker push ${DOCKERHUB_IMAGE()}:${VERSION}
+              if [ "${MAJOR_OR_MINOR}" = true ]; then
+                docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:latest
+                docker push ${DOCKERHUB_IMAGE()}:latest
+              fi
             fi
           """)
           }
@@ -406,12 +425,12 @@ pipeline {
       }
       steps {
         build job: '/camunda-optimize-example-repo-release',
-            parameters: [
-                string(name: 'RELEASE_VERSION', value: "${params.RELEASE_VERSION}"),
-                string(name: 'DEVELOPMENT_VERSION', value: "${params.DEVELOPMENT_VERSION}"),
-                string(name: 'BRANCH', value: "master"),
-            ],
-        wait: false
+          parameters: [
+            string(name: 'RELEASE_VERSION', value: "${params.RELEASE_VERSION}"),
+            string(name: 'DEVELOPMENT_VERSION', value: "${params.DEVELOPMENT_VERSION}"),
+            string(name: 'BRANCH', value: "master"),
+          ],
+          wait: false
       }
     }
   }

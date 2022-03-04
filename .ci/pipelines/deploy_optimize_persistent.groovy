@@ -43,9 +43,8 @@ pipeline {
           optimizeCloneGitRepo(params.BRANCH)
         }
         container('gcloud') {
-          sh '''
-            gcloud components install kubectl kustomize --quiet
-          '''
+          camundaInstallKubectl()
+          camundaInstallKustomize()
         }
       }
     }

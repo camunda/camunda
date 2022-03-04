@@ -44,6 +44,7 @@ public class ESVersionChecker {
     supportedVersions.add("7.14.0");
     supportedVersions.add("7.15.0");
     supportedVersions.add("7.16.2");
+    supportedVersions.add("7.17.0");
   }
 
   private static final Comparator<String> MAJOR_COMPARATOR = Comparator.comparingInt(major -> Integer.parseInt(

@@ -8,10 +8,12 @@ package org.camunda.optimize.test.it.extension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.SneakyThrows;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
@@ -21,6 +23,7 @@ import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.client.RequestOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -121,10 +124,12 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     logger.info("done resetting config");
   }
 
+  @SneakyThrows
   public void reloadConfiguration() {
     // reset engine context factory first to ensure we have new clients before reinitializing any other object
     // as they might make use of the engine client
-    final EngineContextFactory engineContextFactory = getApplicationContext().getBean(PlatformEngineContextFactory.class);
+    final EngineContextFactory engineContextFactory =
+      getApplicationContext().getBean(PlatformEngineContextFactory.class);
     engineContextFactory.close();
     engineContextFactory.init();
 
@@ -136,6 +141,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
         reloadable.reloadConfiguration(getApplicationContext());
       }
     }
+
+    // warmup the elastic client with default options (to not make use of plugins)
+    // this is done to fully initialize the client as the client does a version validation on the first request
+    getOptimizeElasticClient().getHighLevelClient().info(RequestOptions.DEFAULT);
   }
 
   protected ApplicationContext getApplicationContext() {
@@ -152,6 +161,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public TelemetryScheduler getTelemetryService() {
     return getApplicationContext().getBean(TelemetryScheduler.class);
+  }
+
+  public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
+    return getApplicationContext().getBean(ProcessInstanceArchivingService.class);
   }
 
   public PlatformUserIdentityCache getPlatformUserIdentityCache() {

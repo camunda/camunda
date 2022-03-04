@@ -35,7 +35,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,7 +63,7 @@ public class UpgradeProcedureTest {
   }
 
   @Test
-  public void initializeSchemaIsCalled() {
+  public void initializeSchemaIsNotCalled() {
     // given
     final UpgradeProcedure underTest = createUpgradeProcedure();
     when(schemaUpgradeClient.getSchemaVersion()).thenReturn(Optional.of(FROM_VERSION));
@@ -72,7 +71,8 @@ public class UpgradeProcedureTest {
     // when
     underTest.performUpgrade(createUpgradePlan());
 
-    verify(schemaUpgradeClient, times(1)).initializeSchema();
+    // then schema isn't initialized, as this is handled instead by the main Upgrade class
+    verify(schemaUpgradeClient, never()).initializeSchema();
   }
 
   @Test

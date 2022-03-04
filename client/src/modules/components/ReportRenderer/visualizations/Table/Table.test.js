@@ -126,7 +126,7 @@ it('should display object variable modal when invoked from processRawData functi
   );
   runAllEffects();
 
-  processRawData.mock.calls[0][3]('varName', 'instanceId', testDefinition.key);
+  processRawData.mock.calls[0][0].onVariableView('varName', 'instanceId', testDefinition.key);
 
   expect(node.find(ObjectVariableModal).prop('variable')).toEqual({
     name: 'varName',
@@ -154,7 +154,7 @@ it('should close object variable modal', async () => {
   );
   runAllEffects();
 
-  processRawData.mock.calls[0][3]('varName', 'instanceId', testDefinition.key);
+  processRawData.mock.calls[0][0].onVariableView('varName', 'instanceId', testDefinition.key);
 
   node.find(ObjectVariableModal).simulate('close');
   expect(node.find(ObjectVariableModal)).not.toExist();
@@ -245,10 +245,9 @@ it('should pass loaded process variables to raw data handler', async () => {
       }}
     />
   );
-
   runAllEffects();
 
-  expect(processRawData.mock.calls[0][2]).toEqual(variables);
+  expect(processRawData.mock.calls[0][0].processVariables).toEqual(variables);
 });
 
 it('should pass loaded process variables to group by variable handler', async () => {

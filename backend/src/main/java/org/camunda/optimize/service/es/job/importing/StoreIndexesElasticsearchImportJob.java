@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
-import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 
 import java.util.List;
 
-public class StoreIndexesElasticsearchImportJob extends ElasticsearchImportJob<ImportIndexDto> {
+public class StoreIndexesElasticsearchImportJob extends ElasticsearchImportJob<EngineImportIndexDto> {
 
-  private ImportIndexWriter importIndexWriter;
+  private final ImportIndexWriter importIndexWriter;
 
   public StoreIndexesElasticsearchImportJob(final ImportIndexWriter importIndexWriter,
                                             final Runnable importCompleteCallback) {
@@ -22,7 +22,7 @@ public class StoreIndexesElasticsearchImportJob extends ElasticsearchImportJob<I
   }
 
   @Override
-  protected void persistEntities(List<ImportIndexDto> newOptimizeEntities) {
+  protected void persistEntities(List<EngineImportIndexDto> newOptimizeEntities) {
     importIndexWriter.importIndexes(newOptimizeEntities);
   }
 }

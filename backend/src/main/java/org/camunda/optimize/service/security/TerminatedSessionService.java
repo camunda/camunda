@@ -52,10 +52,6 @@ public class TerminatedSessionService extends AbstractScheduledService {
     cleanup();
   }
 
-  public boolean isCleanupScheduled() {
-    return isScheduledToRun();
-  }
-
   public void terminateUserSession(final String sessionId) {
     final TerminatedUserSessionDto sessionDto = new TerminatedUserSessionDto(sessionId);
 

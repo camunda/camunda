@@ -8,9 +8,10 @@ security:
       domain: ${CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN:}
       customDomain: ${CAMUNDA_OPTIMIZE_AUTH0_DOMAIN:}
       userIdAttributeName: 'name'
-      organizationClaimName: 'https://camunda.com/organizations'
+      organizationClaimName: 'https://camunda.com/orgs'
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
+      audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IAM_ISSUER_URL:}
       clientId: ${CAMUNDA_OPTIMIZE_IAM_CLIENTID:}
@@ -72,9 +73,11 @@ security:
 
 # A global access token used by all public APIs of Optimize
 api:
-  # Secret token to be provided on public APIs of Optimize.
-  # If set `null` an error will be thrown on any API access
+  # Authentication information to be provided for the public APIs of Optimize.
+  # Provide either a static access token OR a URL for a resource server. If both are provided, the static access
+  # token will be ignored and the resource server will be used for validation instead
   accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
+  jwtSetUri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:null}
 
 container:
   # A host name or IP address, to identify a specific network interface on
@@ -361,7 +364,8 @@ es:
       # NOTE: this property only applies the first time Optimize is started and
       # the schema/mapping is deployed on Elasticsearch. If you want to take
       # this property to take effect again, you need to delete all indexes (with it all data)
-      # and restart Optimize.
+      # and restart Optimize. This configuration will also only be applied to the current write instance indices. Archive
+      # indices will have a single shard regardless
       number_of_shards: 1
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
@@ -505,6 +509,13 @@ historyCleanup:
     # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
     # not external variables already imported into process instances.
     enabled: false
+
+# Configuration relating to the automatic archiving of data within Optimize
+dataArchive:
+  # Determines whether Optimize should try to archive data to cold indices
+  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:true}
+  # The interval in minutes between attempts to archive data made by Optimize
+  archiveIntervalInMins: 480
 
 locales:
   # all locales available

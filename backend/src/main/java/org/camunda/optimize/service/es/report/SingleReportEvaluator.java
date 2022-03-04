@@ -65,8 +65,7 @@ public class SingleReportEvaluator {
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <T> SingleReportEvaluationResult<T> evaluate(
-    final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext)
+  public <T> SingleReportEvaluationResult<T> evaluate(final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext)
     throws OptimizeException {
     List<Command<T, ReportDefinitionDto<?>>> commands = extractCommandsWithValidation(reportEvaluationContext);
     final List<CommandEvaluationResult<T>> commandEvaluationResults = new ArrayList<>();

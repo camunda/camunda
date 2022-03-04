@@ -20,10 +20,10 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import java.util.Collections;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
 public abstract class ProcessViewFrequency extends ProcessViewPart {
-  private static final String FREQUENCY_AGGREGATION = "_frequency";
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {

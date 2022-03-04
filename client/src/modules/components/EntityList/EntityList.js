@@ -17,6 +17,7 @@ import './EntityList.scss';
 
 export default function EntityList({
   name,
+  headerText,
   children,
   action,
   bulkActions,
@@ -59,6 +60,7 @@ export default function EntityList({
       <div className="header">
         <div className="titleBar">
           <h1>{name}</h1>
+          {headerText && <div className="headerText">{headerText}</div>}
           {!embedded && <SearchField value={searchQuery} onChange={setSearchQuery} />}
           {hasSorting && (
             <Dropdown icon label={<Icon type="sort-menu" />} className="sortMenu">

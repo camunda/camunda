@@ -24,7 +24,7 @@ public class SessionServiceIT extends AbstractIT {
 
   @Test
   public void verifyTerminatedSessionCleanupIsScheduledAfterStartup() {
-    assertThat(getTerminatedSessionService().isCleanupScheduled()).isTrue();
+    assertThat(getTerminatedSessionService().isScheduledToRun()).isTrue();
   }
 
   @Test

@@ -18,14 +18,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Cand
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DeletedIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
@@ -35,7 +37,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
@@ -74,6 +75,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final AssigneeQueryFilter assigneeQueryFilter;
   private final CandidateGroupQueryFilter candidateGroupQueryFilter;
   private final OpenIncidentQueryFilter openIncidentQueryFilter;
+  private final DeletedIncidentQueryFilter deletedIncidentQueryFilter;
   private final ResolvedIncidentQueryFilter resolvedIncidentQueryFilter;
   private final NoIncidentQueryFilter noIncidentQueryFilter;
   private final RunningFlowNodesOnlyQueryFilter runningFlowNodesOnlyQueryFilter;
@@ -142,6 +144,9 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       );
       openIncidentQueryFilter.addFilters(
         query, extractInstanceFilters(filters, OpenIncidentFilterDto.class), filterContext
+      );
+      deletedIncidentQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, DeletedIncidentFilterDto.class), filterContext
       );
       resolvedIncidentQueryFilter.addFilters(
         query, extractInstanceFilters(filters, ResolvedIncidentFilterDto.class), filterContext

@@ -9,6 +9,7 @@ import React from 'react';
 import {Switch, LabeledInput} from 'components';
 import {t} from 'translation';
 import {getReportResult} from 'services';
+import {getVariableLabel} from 'variables';
 
 import AllColumnsButtons from './AllColumnsButtons';
 
@@ -77,6 +78,8 @@ export default function ColumnSelection({report, onChange}) {
           } else if (prefix === 'output') {
             name = columns.outputVariables[name].name;
             type = 'outputVariable';
+          } else {
+            name = getVariableLabel(name);
           }
           prefix = t(`common.filter.types.${type}`) + ': ';
         } else {

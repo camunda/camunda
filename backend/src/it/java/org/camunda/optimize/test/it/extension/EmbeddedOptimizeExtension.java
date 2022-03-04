@@ -20,6 +20,7 @@ import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -547,6 +548,10 @@ public class EmbeddedOptimizeExtension
 
   public TelemetryScheduler getTelemetryScheduler() {
     return getOptimize().getTelemetryService();
+  }
+
+  public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
+    return getOptimize().getProcessInstanceArchivingService();
   }
 
   public PlatformUserIdentityCache getUserIdentityCache() {

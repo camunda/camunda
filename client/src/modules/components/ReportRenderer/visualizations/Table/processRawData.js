@@ -46,20 +46,18 @@ const instanceColumns = {
 
 export const OBJECT_VARIABLE_IDENTIFIER = '<<OBJECT_VARIABLE_VALUE>>';
 
-export default function processRawData(
-  {
-    report: {
-      reportType,
-      data: {
-        configuration: {tableColumns},
-      },
-      result: {data: result},
+export default function processRawData({
+  report: {
+    reportType,
+    data: {
+      configuration: {tableColumns},
     },
+    result: {data: result},
   },
-  endpoints = {},
+  camundaEndpoints = {},
   processVariables = [],
-  onVariableView
-) {
+  onVariableView,
+}) {
   const instanceProps = instanceColumns[reportType].filter((entry) =>
     isVisibleColumn(entry, tableColumns)
   );
@@ -87,11 +85,11 @@ export default function processRawData(
   const body = result.map((instance) => {
     const row = instanceProps.map((entry) => {
       if (entry === 'processInstanceId') {
-        return cockpitLink(endpoints, instance, 'process');
+        return cockpitLink(camundaEndpoints, instance, 'process');
       }
 
       if (entry === 'decisionInstanceId') {
-        return cockpitLink(endpoints, instance, 'decision');
+        return cockpitLink(camundaEndpoints, instance, 'decision');
       }
 
       if (

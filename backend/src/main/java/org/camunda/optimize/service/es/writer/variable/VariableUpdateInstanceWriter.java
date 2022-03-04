@@ -17,8 +17,8 @@ import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

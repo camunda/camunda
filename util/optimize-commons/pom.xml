@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>util</artifactId>
-    <version>3.8.0-alpha1</version>
+    <version>3.8.0</version>
   </parent>
 
   <artifactId>optimize-commons</artifactId>
@@ -65,7 +65,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.138</version>
+      <version>4.8.141</version>
     </dependency>
 
     <!-- Logging -->
@@ -110,7 +110,7 @@
     <dependency>
       <groupId>com.ethlo.time</groupId>
       <artifactId>itu</artifactId>
-      <version>1.3.0</version>
+      <version>1.5.1</version>
     </dependency>
     <dependency>
       <groupId>net.jodah</groupId>
