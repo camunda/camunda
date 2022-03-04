@@ -1,0 +1,35 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+.custom-gutter-Vertical {
+  padding: 0 !important;
+  height: 0;
+  width: 100%;
+  position: relative;
+  cursor: ns-resize !important;
+}
+
+.custom-gutter-Vertical:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+}
+
+.custom-dragger-Vertical {
+  width: 100% !important;
+  height: 10px !important;
+}
+
+.nsResizing .topPanel {
+  cursor: ns-resize;
+}
+.nsResizing .bottomPanel {
+  cursor: ns-resize;
+}
+.nsResizing .custom-gutter-Vertical:after {
+  background-color: #4d90ff;
+}

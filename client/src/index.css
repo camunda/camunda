@@ -48,6 +48,10 @@ body {
   overflow: hidden;
 }
 
+body.nsResizing {
+  cursor: ns-resize !important;
+}
+
 html,
 body,
 #root {
