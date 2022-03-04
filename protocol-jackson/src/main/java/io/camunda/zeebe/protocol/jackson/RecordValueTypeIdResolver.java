@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.jackson;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.util.ValueTypes;
 import java.util.Objects;
 
 /**

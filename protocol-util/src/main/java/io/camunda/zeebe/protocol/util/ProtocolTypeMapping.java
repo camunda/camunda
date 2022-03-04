@@ -5,13 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson;
+package io.camunda.zeebe.protocol.util;
 
-import edu.umd.cs.findbugs.annotations.DefaultAnnotationForFields;
-import edu.umd.cs.findbugs.annotations.DefaultAnnotationForParameters;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ZeebeImmutableProtocol;
 import io.github.classgraph.ClassGraph;
@@ -21,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import net.jcip.annotations.Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,35 +28,29 @@ import org.slf4j.LoggerFactory;
  * <p>This class is thread-safe, including static initialization by multiple concurrent class
  * loaders.
  *
- * <p>Expected usage is via {@link #forEach(Consumer)}. See {@link ZeebeProtocolModule} for an
- * example.
+ * <p>Expected usage is via {@link #forEach(Consumer)}.
  */
-@Immutable
-@ReturnValuesAreNonnullByDefault
-@DefaultAnnotationForParameters(NonNull.class)
-@DefaultAnnotationForFields(NonNull.class)
-final class ProtocolTypeMapping {
+public final class ProtocolTypeMapping {
+  private static final String PROTOCOL_PACKAGE_NAME = Record.class.getPackage().getName() + "*";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolTypeMapping.class);
-  private final Map<Class<?>, TypeMapping<?>> concreteMappings;
+  private final Map<Class<?>, Mapping<?>> concreteMappings;
 
   private ProtocolTypeMapping() {
     concreteMappings = new HashMap<>();
     loadTypeMappings();
   }
 
-  static void forEach(final Consumer<TypeMapping<?>> consumer) {
+  public static void forEach(final Consumer<Mapping<?>> consumer) {
     Singleton.INSTANCE.concreteMappings.values().forEach(consumer);
   }
 
   @SuppressWarnings("java:S1452") // the expected usage is to pass it as is with the wildcard type
-  @Nullable
-  static TypeMapping<?> mappingForConcreteType(@Nullable final Class<?> concreteType) {
+  public static Mapping<?> mappingForConcreteType(final Class<?> concreteType) {
     return Singleton.INSTANCE.concreteMappings.get(concreteType);
   }
 
   private void loadTypeMappings() {
-    final String protocolPackageName = Record.class.getPackage().getName() + "*";
-    final ClassInfoList abstractTypes = findProtocolTypes(protocolPackageName);
+    final ClassInfoList abstractTypes = findProtocolTypes();
     for (final ClassInfo abstractType : abstractTypes) {
       LOGGER.trace("Found abstract protocol type {}", abstractType);
       loadTypeMappingsFor(abstractType, abstractType.loadClass());
@@ -71,7 +59,7 @@ final class ProtocolTypeMapping {
     if (abstractTypes.isEmpty()) {
       LOGGER.warn(
           "Found no abstract protocol types in package {}; deserialization will most likely not work",
-          protocolPackageName);
+          PROTOCOL_PACKAGE_NAME);
     }
   }
 
@@ -111,9 +99,8 @@ final class ProtocolTypeMapping {
     final ClassInfoList builderTypes =
         concreteType.getInnerClasses().filter(info -> "Builder".equals(info.getSimpleName()));
     for (final ClassInfo builder : builderTypes) {
-      final TypeMapping<T> typeMapping =
-          new TypeMapping<>(abstractClass, concreteClass, builder.loadClass());
-      concreteMappings.put(concreteClass, typeMapping);
+      final Mapping<T> mapping = new Mapping<>(abstractClass, concreteClass, builder.loadClass());
+      concreteMappings.put(concreteClass, mapping);
     }
 
     if (builderTypes.isEmpty()) {
@@ -125,31 +112,40 @@ final class ProtocolTypeMapping {
     }
   }
 
-  private ClassInfoList findProtocolTypes(final String packageName) {
+  static ClassInfoList findProtocolTypes() {
     return new ClassGraph()
-        .acceptPackages(Objects.requireNonNull(packageName, "must specify a package name"))
+        .acceptPackages(PROTOCOL_PACKAGE_NAME)
         .enableAnnotationInfo()
         .scan()
         .getAllInterfaces()
-        .filter(info -> info.hasAnnotation(ZeebeImmutableProtocol.class));
+        .filter(info -> info.hasAnnotation(ZeebeImmutableProtocol.class))
+        .directOnly();
   }
 
-  @Immutable
-  @ReturnValuesAreNonnullByDefault
-  @DefaultAnnotationForParameters(NonNull.class)
-  @DefaultAnnotationForFields(NonNull.class)
-  static final class TypeMapping<T> {
+  public static final class Mapping<T> {
     final Class<T> abstractClass;
     final Class<? extends T> concreteClass;
     final Class<?> builderClass;
 
-    private TypeMapping(
+    private Mapping(
         final Class<T> abstractClass,
         final Class<? extends T> concreteClass,
         final Class<?> builderClass) {
       this.abstractClass = Objects.requireNonNull(abstractClass, "must specify an abstract class");
       this.concreteClass = Objects.requireNonNull(concreteClass, "must specify a concrete class");
       this.builderClass = Objects.requireNonNull(builderClass, "must specify a builder class");
+    }
+
+    public Class<T> getAbstractClass() {
+      return abstractClass;
+    }
+
+    public Class<? extends T> getConcreteClass() {
+      return concreteClass;
+    }
+
+    public Class<?> getBuilderClass() {
+      return builderClass;
     }
   }
 

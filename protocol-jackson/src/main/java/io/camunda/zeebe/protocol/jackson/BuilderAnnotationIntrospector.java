@@ -10,7 +10,8 @@ package io.camunda.zeebe.protocol.jackson;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
-import io.camunda.zeebe.protocol.jackson.ProtocolTypeMapping.TypeMapping;
+import io.camunda.zeebe.protocol.util.ProtocolTypeMapping;
+import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.TypeMapping;
 
 /**
  * Immutable classes, having no default or public constructor, don't work nicely with Jackson out of
@@ -31,6 +32,6 @@ final class BuilderAnnotationIntrospector extends NopAnnotationIntrospector {
       return super.findPOJOBuilder(ac);
     }
 
-    return mapping.builderClass;
+    return mapping.getBuilderClass();
   }
 }

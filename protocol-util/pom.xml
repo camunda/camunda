@@ -10,10 +10,10 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-protocol-jackson</artifactId>
+  <artifactId>zeebe-protocol-util</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe Protocol Jackson</name>
+  <name>Zeebe Protocol Utilities</name>
 
   <properties>
     <version.java>8</version.java>
@@ -23,27 +23,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-util</artifactId>
-    </dependency>
-
-    <!-- Jackson dependencies -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
     </dependency>
 
     <!-- Used to discover the mappings between the protocol's abstract and concrete types -->
@@ -58,28 +37,7 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.github.spotbugs</groupId>
-      <artifactId>spotbugs-annotations</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jcip</groupId>
-      <artifactId>jcip-annotations</artifactId>
-    </dependency>
-
-    <!-- Testing dependencies -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <!-- Test dependencies -->
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -100,12 +58,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
 </project>

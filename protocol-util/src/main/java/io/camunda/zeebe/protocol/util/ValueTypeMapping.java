@@ -5,14 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson;
+package io.camunda.zeebe.protocol.util;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.DefaultAnnotationForFields;
-import edu.umd.cs.findbugs.annotations.DefaultAnnotationForParameters;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -21,6 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -58,9 +54,10 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.ThreadSafe;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Provides a mapping of all {@link ValueType} to their concrete implementations. It should be an
@@ -68,20 +65,18 @@ import javax.annotation.concurrent.ThreadSafe;
  * mapping here as well.
  */
 @SuppressWarnings("java:S1452")
-@ThreadSafe
-@Immutable
-@ReturnValuesAreNonnullByDefault
-@DefaultAnnotationForParameters(NonNull.class)
-@DefaultAnnotationForFields(NonNull.class)
-final class ValueTypes {
-  private final Map<ValueType, ValueTypeInfo<?, ?>> types;
+public final class ValueTypeMapping {
+  private final Map<ValueType, Mapping<?, ?>> types;
+  private final Set<ValueType> acceptedValueTypes;
 
-  private ValueTypes() {
+  private ValueTypeMapping() {
     types = Collections.unmodifiableMap(loadValueTypes());
+    acceptedValueTypes =
+        EnumSet.complementOf(EnumSet.of(ValueType.SBE_UNKNOWN, ValueType.NULL_VAL));
   }
 
-  static ValueTypeInfo<?, ?> getTypeInfo(final ValueType valueType) {
-    final ValueTypeInfo<?, ?> typeInfo = Singleton.INSTANCE.types.get(valueType);
+  public static Mapping<?, ?> getTypeInfo(final ValueType valueType) {
+    final Mapping<?, ?> typeInfo = Singleton.INSTANCE.types.get(valueType);
     if (typeInfo == null) {
       throw new IllegalArgumentException(
           String.format(
@@ -92,81 +87,100 @@ final class ValueTypes {
     return typeInfo;
   }
 
-  @Nullable
-  @CheckForNull
-  static ValueTypeInfo<?, ?> getTypeInfoOrNull(final ValueType valueType) {
+  public static Mapping<?, ?> getTypeInfoOrNull(final ValueType valueType) {
     return Singleton.INSTANCE.types.get(valueType);
+  }
+
+  public static Set<ValueType> getAcceptedValueTypes() {
+    return Singleton.INSTANCE.acceptedValueTypes;
   }
 
   // suppressed warning about method length; this is simply populating a map, which while tedious,
   // isn't incredibly complex
   @SuppressWarnings("java:S138")
-  @NonNull
-  private Map<ValueType, ValueTypeInfo<?, ?>> loadValueTypes() {
-    final Map<ValueType, ValueTypeInfo<?, ?>> mapping = new EnumMap<>(ValueType.class);
+  private Map<ValueType, Mapping<?, ?>> loadValueTypes() {
+    final Map<ValueType, Mapping<?, ?>> mapping = new EnumMap<>(ValueType.class);
 
-    mapping.put(
-        ValueType.DECISION, new ValueTypeInfo<>(DecisionRecordValue.class, DecisionIntent.class));
+    mapping.put(ValueType.DECISION, new Mapping<>(DecisionRecordValue.class, DecisionIntent.class));
     mapping.put(
         ValueType.DECISION_EVALUATION,
-        new ValueTypeInfo<>(DecisionEvaluationRecordValue.class, DecisionEvaluationIntent.class));
+        new Mapping<>(DecisionEvaluationRecordValue.class, DecisionEvaluationIntent.class));
     mapping.put(
         ValueType.DECISION_REQUIREMENTS,
-        new ValueTypeInfo<>(
-            DecisionRequirementsRecordValue.class, DecisionRequirementsIntent.class));
+        new Mapping<>(DecisionRequirementsRecordValue.class, DecisionRequirementsIntent.class));
     mapping.put(
-        ValueType.DEPLOYMENT,
-        new ValueTypeInfo<>(DeploymentRecordValue.class, DeploymentIntent.class));
+        ValueType.DEPLOYMENT, new Mapping<>(DeploymentRecordValue.class, DeploymentIntent.class));
     mapping.put(
         ValueType.DEPLOYMENT_DISTRIBUTION,
-        new ValueTypeInfo<>(
-            DeploymentDistributionRecordValue.class, DeploymentDistributionIntent.class));
-    mapping.put(ValueType.ERROR, new ValueTypeInfo<>(ErrorRecordValue.class, ErrorIntent.class));
+        new Mapping<>(DeploymentDistributionRecordValue.class, DeploymentDistributionIntent.class));
+    mapping.put(ValueType.ERROR, new Mapping<>(ErrorRecordValue.class, ErrorIntent.class));
+    mapping.put(ValueType.INCIDENT, new Mapping<>(IncidentRecordValue.class, IncidentIntent.class));
+    mapping.put(ValueType.JOB, new Mapping<>(JobRecordValue.class, JobIntent.class));
     mapping.put(
-        ValueType.INCIDENT, new ValueTypeInfo<>(IncidentRecordValue.class, IncidentIntent.class));
-    mapping.put(ValueType.JOB, new ValueTypeInfo<>(JobRecordValue.class, JobIntent.class));
-    mapping.put(
-        ValueType.JOB_BATCH, new ValueTypeInfo<>(JobBatchRecordValue.class, JobBatchIntent.class));
-    mapping.put(
-        ValueType.MESSAGE, new ValueTypeInfo<>(MessageRecordValue.class, MessageIntent.class));
+        ValueType.JOB_BATCH, new Mapping<>(JobBatchRecordValue.class, JobBatchIntent.class));
+    mapping.put(ValueType.MESSAGE, new Mapping<>(MessageRecordValue.class, MessageIntent.class));
     mapping.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-        new ValueTypeInfo<>(
+        new Mapping<>(
             MessageStartEventSubscriptionRecordValue.class,
             MessageStartEventSubscriptionIntent.class));
     mapping.put(
         ValueType.MESSAGE_SUBSCRIPTION,
-        new ValueTypeInfo<>(MessageSubscriptionRecordValue.class, MessageSubscriptionIntent.class));
-    mapping.put(ValueType.PROCESS, new ValueTypeInfo<>(Process.class, ProcessIntent.class));
+        new Mapping<>(MessageSubscriptionRecordValue.class, MessageSubscriptionIntent.class));
+    mapping.put(ValueType.PROCESS, new Mapping<>(Process.class, ProcessIntent.class));
     mapping.put(
         ValueType.PROCESS_EVENT,
-        new ValueTypeInfo<>(ProcessEventRecordValue.class, ProcessEventIntent.class));
+        new Mapping<>(ProcessEventRecordValue.class, ProcessEventIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE,
-        new ValueTypeInfo<>(ProcessInstanceRecordValue.class, ProcessInstanceIntent.class));
+        new Mapping<>(ProcessInstanceRecordValue.class, ProcessInstanceIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_CREATION,
-        new ValueTypeInfo<>(
+        new Mapping<>(
             ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_RESULT,
-        new ValueTypeInfo<>(
-            ProcessInstanceResultRecordValue.class, ProcessInstanceResultIntent.class));
+        new Mapping<>(ProcessInstanceResultRecordValue.class, ProcessInstanceResultIntent.class));
     mapping.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        new ValueTypeInfo<>(
+        new Mapping<>(
             ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionIntent.class));
-    mapping.put(ValueType.TIMER, new ValueTypeInfo<>(TimerRecordValue.class, TimerIntent.class));
-    mapping.put(
-        ValueType.VARIABLE, new ValueTypeInfo<>(VariableRecordValue.class, VariableIntent.class));
+    mapping.put(ValueType.TIMER, new Mapping<>(TimerRecordValue.class, TimerIntent.class));
+    mapping.put(ValueType.VARIABLE, new Mapping<>(VariableRecordValue.class, VariableIntent.class));
     mapping.put(
         ValueType.VARIABLE_DOCUMENT,
-        new ValueTypeInfo<>(VariableDocumentRecordValue.class, VariableDocumentIntent.class));
+        new Mapping<>(VariableDocumentRecordValue.class, VariableDocumentIntent.class));
 
     return mapping;
   }
 
+  /**
+   * Provides mapping info between a value type and various constructs. Can be extended in the
+   * future to include mapping between a base value class (as defined in the protocol module) and a
+   * concrete implementation class (as generated here) for safe copying.
+   *
+   * @param <T> the immutable implementation class, e.g. {@link
+   *     io.camunda.zeebe.protocol.record.value.ImmutableErrorRecordValue}
+   */
+  public static final class Mapping<T extends RecordValue, I extends Enum<I> & Intent> {
+    private final Class<T> valueClass;
+    private final Class<I> intentClass;
+
+    private Mapping(final Class<T> valueClass, final Class<I> intentClass) {
+      this.valueClass = Objects.requireNonNull(valueClass, "must specify a value class");
+      this.intentClass = Objects.requireNonNull(intentClass, "must specify an intent");
+    }
+
+    public Class<? extends T> getValueClass() {
+      return valueClass;
+    }
+
+    public Class<I> getIntentClass() {
+      return intentClass;
+    }
+  }
+
   private static final class Singleton {
-    private static final ValueTypes INSTANCE = new ValueTypes();
+    private static final ValueTypeMapping INSTANCE = new ValueTypeMapping();
   }
 }

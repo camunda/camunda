@@ -10,9 +10,10 @@ package io.camunda.zeebe.protocol.jackson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.camunda.zeebe.protocol.jackson.ProtocolTypeMapping.TypeMapping;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.util.ProtocolTypeMapping;
+import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.TypeMapping;
 import java.util.Objects;
 
 /**
@@ -62,6 +63,6 @@ public final class ZeebeProtocolModule extends SimpleModule {
 
   private <T> void addProtocolTypeMapping(@NonNull final TypeMapping<T> mapping) {
     Objects.requireNonNull(mapping, "must specify a type mapping");
-    addAbstractTypeMapping(mapping.abstractClass, mapping.concreteClass);
+    addAbstractTypeMapping(mapping.getAbstractClass(), mapping.getConcreteClass());
   }
 }

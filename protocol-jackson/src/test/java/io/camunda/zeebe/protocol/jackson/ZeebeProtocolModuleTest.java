@@ -11,23 +11,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableDeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
+import io.camunda.zeebe.test.broker.protocol.record.ProtocolRecordFactory;
 import java.io.IOException;
+import java.util.stream.Stream;
 import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ZeebeProtocolModuleTest {
@@ -55,26 +53,24 @@ final class ZeebeProtocolModuleTest {
     assertThat(deserialized).isEqualTo(other).isEqualTo(batch);
   }
 
-  @Test
-  void shouldDeserializeRecord() throws IOException {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("recordProvider")
+  void shouldDeserializeRecord(
+      @SuppressWarnings("unused") final String testName, final Record<?> record)
+      throws IOException {
+    // given
     final ObjectMapper mapper = ZeebeProtocolModule.createMapper();
-    final DeploymentRecordValue deployment =
-        ImmutableDeploymentRecordValue.builder()
-            .addProcessesMetadata(ImmutableProcess.builder().build())
-            .build();
-    final Record<DeploymentRecordValue> record =
-        ImmutableRecord.<DeploymentRecordValue>builder()
-            .withRecordType(RecordType.EVENT)
-            .withIntent(DeploymentIntent.CREATED)
-            .withValueType(ValueType.DEPLOYMENT)
-            .withValue(deployment)
-            .build();
 
     // when
     final byte[] serialized = mapper.writeValueAsBytes(record);
-    final Record<DeploymentRecordValue> deserialized =
-        mapper.readValue(serialized, new TypeReference<Record<DeploymentRecordValue>>() {});
+    final Record<?> deserialized = mapper.readValue(serialized, new TypeReference<Record<?>>() {});
 
+    // then
     assertThat(deserialized).isEqualTo(record);
+  }
+
+  private static Stream<Arguments> recordProvider() {
+    final ProtocolRecordFactory factory = new ProtocolRecordFactory();
+    return factory.generateForAllValueTypes().map(r -> Arguments.of(r.getValueType().name(), r));
   }
 }
