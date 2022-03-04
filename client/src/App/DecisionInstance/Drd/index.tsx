@@ -26,12 +26,14 @@ const Drd: React.FC = () => {
   const navigate = useNavigate();
 
   const handleDecisionSelection = (decisionId: string) => {
-    const decisionInstanceId =
-      drdDataStore.state.drdData?.[decisionId]?.decisionInstanceId;
+    const decisionInstances = drdDataStore.state.drdData?.[decisionId];
 
-    if (decisionInstanceId === undefined) {
+    if (decisionInstances === undefined) {
       return;
     }
+
+    const decisionInstanceId =
+      decisionInstances[decisionInstances.length - 1].decisionInstanceId;
 
     navigate(Locations.decisionInstance(location, decisionInstanceId));
   };

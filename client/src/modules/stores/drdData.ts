@@ -18,10 +18,12 @@ import {logger} from 'modules/logger';
 import {decisionInstanceStore} from './decisionInstance';
 
 type DrdData = ReadonlyDeep<{
-  [decisionId: string]: {
-    decisionInstanceId: DecisionInstanceEntity['id'];
-    state: DecisionInstanceEntityState;
-  };
+  [decisionId: string]: [
+    {
+      decisionInstanceId: DecisionInstanceEntity['id'];
+      state: DecisionInstanceEntityState;
+    }
+  ];
 }>;
 
 type State = {
@@ -96,10 +98,13 @@ class Drd extends NetworkReconnectionHandler {
     }
 
     return (
-      Object.keys(drdData).find(
-        (decisionId) =>
-          drdData[decisionId].decisionInstanceId ===
-          decisionInstanceStore.state.decisionInstanceId
+      Object.keys(drdData).find((decisionId) =>
+        drdData[decisionId].some((drdData) => {
+          return (
+            drdData.decisionInstanceId ===
+            decisionInstanceStore.state.decisionInstanceId
+          );
+        })
       ) ?? null
     );
   }

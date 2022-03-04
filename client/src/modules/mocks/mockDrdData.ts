@@ -7,18 +7,19 @@
 import {DrdData} from 'modules/stores/drdData';
 
 const mockDrdData: DrdData = {
-  'invoice-assign-approver': {
-    decisionInstanceId: '0',
-    state: 'COMPLETED',
-  },
-  invoiceClassification: {
-    decisionInstanceId: '1',
-    state: 'FAILED',
-  },
-  'calc-key-figures': {
-    decisionInstanceId: '2',
-    state: 'COMPLETED',
-  },
+  'invoice-assign-approver': [{decisionInstanceId: '0', state: 'EVALUATED'}],
+  invoiceClassification: [
+    {
+      decisionInstanceId: '1',
+      state: 'FAILED',
+    },
+  ],
+  'calc-key-figures': [
+    {
+      decisionInstanceId: '2',
+      state: 'EVALUATED',
+    },
+  ],
 };
 
 export {mockDrdData};

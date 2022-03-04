@@ -28,7 +28,7 @@ type InstanceEntityState =
   | 'INCIDENT'
   | 'TERMINATED';
 
-type DecisionInstanceEntityState = 'COMPLETED' | 'FAILED';
+type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
 
 interface OperationEntity {
   id: string;
