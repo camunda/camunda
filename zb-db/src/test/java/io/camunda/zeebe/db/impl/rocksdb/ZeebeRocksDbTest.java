@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
+import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +27,7 @@ public final class ZeebeRocksDbTest {
   @Test
   public void shouldCreateSnapshot() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
 
     final File pathName = temporaryFolder.newFolder();
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
@@ -51,7 +52,7 @@ public final class ZeebeRocksDbTest {
   @Test
   public void shouldReopenDb() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
     final File pathName = temporaryFolder.newFolder();
     ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
 
@@ -80,7 +81,7 @@ public final class ZeebeRocksDbTest {
   @Test
   public void shouldRecoverFromSnapshot() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
     final File pathName = temporaryFolder.newFolder();
     ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
 

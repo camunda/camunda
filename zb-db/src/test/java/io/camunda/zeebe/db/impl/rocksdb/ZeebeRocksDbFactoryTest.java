@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
+import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.ByteValue;
 import java.io.File;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public final class ZeebeRocksDbFactoryTest {
   @Test
   public void shouldCreateNewDb() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
 
     final File pathName = temporaryFolder.newFolder();
 
@@ -39,14 +40,14 @@ public final class ZeebeRocksDbFactoryTest {
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
 
     // then
-    assertThat(pathName.listFiles()).isNotEmpty();
+    assertThat(pathName).isNotEmptyDirectory();
     db.close();
   }
 
   @Test
   public void shouldCreateTwoNewDbs() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = ZeebeRocksDbFactory.newFactory();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
     final File firstPath = temporaryFolder.newFolder();
     final File secondPath = temporaryFolder.newFolder();
 
@@ -57,8 +58,8 @@ public final class ZeebeRocksDbFactoryTest {
     // then
     assertThat(firstDb).isNotEqualTo(secondDb);
 
-    assertThat(firstPath.listFiles()).isNotEmpty();
-    assertThat(secondPath.listFiles()).isNotEmpty();
+    assertThat(firstPath).isNotEmptyDirectory();
+    assertThat(secondPath).isNotEmptyDirectory();
 
     firstDb.close();
     secondDb.close();
@@ -72,12 +73,11 @@ public final class ZeebeRocksDbFactoryTest {
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>) ZeebeRocksDbFactory.newFactory();
+        (ZeebeRocksDbFactory<DefaultColumnFamily>) DefaultZeebeDbFactory.getDefaultFactory();
     final var factoryWithCustomOptions =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(
-                new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
-                new ConsistencyChecksSettings());
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
+            new ConsistencyChecksSettings());
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -108,16 +108,12 @@ public final class ZeebeRocksDbFactoryTest {
     final File pathName = temporaryFolder.newFolder();
 
     final var factoryWithCustomOptions =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(
-                new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
-                new ConsistencyChecksSettings());
+        new ZeebeRocksDbFactory<>(
+            new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
+            new ConsistencyChecksSettings());
 
     // expect
-    assertThatThrownBy(
-            () -> {
-              factoryWithCustomOptions.createDb(pathName);
-            })
+    assertThatThrownBy(() -> factoryWithCustomOptions.createDb(pathName))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
             "Expected to create column family options for RocksDB, but one or many values are undefined in the context of RocksDB");

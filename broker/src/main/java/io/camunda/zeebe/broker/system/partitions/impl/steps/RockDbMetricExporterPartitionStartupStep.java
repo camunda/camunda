@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import static io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_METRIC_EXPORTER_FACTORY;
-
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -26,7 +25,7 @@ public class RockDbMetricExporterPartitionStartupStep implements PartitionStartu
   public ActorFuture<PartitionStartupContext> startup(
       final PartitionStartupContext partitionStartupContext) {
     final var metricExporter =
-        DEFAULT_DB_METRIC_EXPORTER_FACTORY.apply(
+        new ZeebeRocksDBMetricExporter<>(
             Integer.toString(partitionStartupContext.getPartitionId()),
             partitionStartupContext::getZeebeDb);
     final var metricsTimer =
