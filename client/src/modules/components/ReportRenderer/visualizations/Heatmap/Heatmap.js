@@ -180,7 +180,9 @@ function getMeasureString(measure) {
 
   return (
     t('report.view.' + property) +
-    (aggregation ? ` - ${t('report.config.aggregationShort.' + aggregation.type)}` : '') +
+    (aggregation
+      ? ` - ${t('report.config.aggregationShort.' + aggregation.type, {value: aggregation.value})}`
+      : '') +
     (userTaskDurationTime
       ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
       : '')

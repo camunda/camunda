@@ -105,8 +105,8 @@ export function Number({report, formatter, mightFail}) {
           }
 
           if (measure.property === 'duration' || data.view.entity === 'variable') {
-            viewString +=
-              ' - ' + t('report.config.aggregationShort.' + measure.aggregationType.type);
+            const {type, value} = measure.aggregationType;
+            viewString += ' - ' + t('report.config.aggregationShort.' + type, {value});
           }
 
           const formatter =

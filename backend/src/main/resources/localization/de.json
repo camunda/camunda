@@ -510,13 +510,15 @@
       },
       "aggregation": {
         "userTaskLegend": "Benutzeraufgabendauer",
-        "durationLegend": "Daueraggregationen",
+        "durationLegend": "Grundlegende Aggregationen",
         "variableLegend": "Variablenaggregationen",
+        "percentileLegend": "Perzentilaggregationen",
         "sum": "Summe",
         "min": "Minimum",
         "avg": "Durchschnitt",
         "median": "Median",
         "max": "Maximum",
+        "p50": "P50 (median)",
         "multiProcessWarning": "Berichte die nach Prozess gruppiert sind unterstützen keine Median-Aggregation."
       },
       "aggregationShort": {
@@ -524,7 +526,8 @@
         "min": "Min",
         "avg": "Durchschn",
         "median": "Med",
-        "max": "Max"
+        "max": "Max",
+        "percentile": "P{value}"
       },
       "userTaskDuration": {
         "idle": "Wartezeit",

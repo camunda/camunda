@@ -125,7 +125,7 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
     // remove median aggregation from group by process
     if (newReport.distributedBy.type === 'process') {
       newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-        (agg) => agg.type !== 'median'
+        (agg) => agg.type !== 'median' && agg.type !== 'percentile'
       );
 
       if (newReport.configuration.aggregationTypes.length === 0) {

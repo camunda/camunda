@@ -1,106 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should render an aggregation selection for duration reports 1`] = `
-<Popover
-  className="AggregationType"
-  renderInPortal="AggregationType"
-  title={
-    <React.Fragment>
-      <span
-        className="content"
-      >
-        Med
-      </span>
-      <Icon
-        className="editIcon"
-        type="edit-small"
-      />
-    </React.Fragment>
-  }
->
-  <Form
-    compact={true}
-  >
-    <h4>
-      Duration aggregations
-    </h4>
-    <fieldset>
-      <div
-        key="sum"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Sum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-      <div
-        key="min"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Minimum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-      <div
-        key="avg"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Average"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-      <div
-        key="median"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={true}
-              disabled={true}
-              label="Median"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-      <div
-        key="max"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Maximum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-    </fieldset>
-  </Form>
-</Popover>
-`;
-
-exports[`should render an user task duration selection for user task duration reports 1`] = `
+exports[`should render a user task duration selection for user task duration reports 1`] = `
 <Popover
   className="AggregationType"
   renderInPortal="AggregationType"
@@ -163,7 +63,7 @@ exports[`should render an user task duration selection for user task duration re
       </div>
     </fieldset>
     <h4>
-      Duration aggregations
+      Basic aggregations
     </h4>
     <fieldset>
       <div
@@ -235,6 +135,260 @@ exports[`should render an user task duration selection for user task duration re
             />
           </span>
         </Tooltip>
+      </div>
+    </fieldset>
+    <h4>
+      Percentile aggregations
+    </h4>
+    <fieldset>
+      <div
+        key="99"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P99"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="95"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P95"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="90"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P90"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="75"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P75"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="50"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P50 (median)"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="25"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P25"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+    </fieldset>
+  </Form>
+</Popover>
+`;
+
+exports[`should render an aggregation selection for duration reports 1`] = `
+<Popover
+  className="AggregationType"
+  renderInPortal="AggregationType"
+  title={
+    <React.Fragment>
+      <span
+        className="content"
+      >
+        Med
+      </span>
+      <Icon
+        className="editIcon"
+        type="edit-small"
+      />
+    </React.Fragment>
+  }
+>
+  <Form
+    compact={true}
+  >
+    <h4>
+      Basic aggregations
+    </h4>
+    <fieldset>
+      <div
+        key="sum"
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Sum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
+        key="min"
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Minimum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
+        key="avg"
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Average"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
+        key="median"
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={true}
+              disabled={true}
+              label="Median"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
+        key="max"
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Maximum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+    </fieldset>
+    <h4>
+      Percentile aggregations
+    </h4>
+    <fieldset>
+      <div
+        key="99"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P99"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="95"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P95"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="90"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P90"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="75"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P75"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="50"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P50 (median)"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
+        key="25"
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="P25"
+            onChange={[Function]}
+          />
+        </span>
       </div>
     </fieldset>
   </Form>

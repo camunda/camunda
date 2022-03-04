@@ -43,7 +43,7 @@ it('should render an aggregation selection for duration reports', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should render an user task duration selection for user task duration reports', async () => {
+it('should render a user task duration selection for user task duration reports', async () => {
   const node = shallow(
     <AggregationType
       report={{
@@ -115,7 +115,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
         aggregationTypes: {
           $set: [
             {type: 'median', value: null},
-            {type: 'max', value: null},
+            {type: 'percentile', value: '25'},
           ],
         },
         targetValue: {active: {$set: false}},
@@ -182,4 +182,23 @@ it('should not show user task duration selection for user task duration reports 
 
   expect(node.find({label: 'Work'})).not.toExist();
   expect(node.find({label: 'Idle'})).not.toExist();
+});
+
+it('should not show percentile aggregations when report is grouped by process ', async () => {
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'processInstance', properties: ['duration']},
+        distributedBy: {type: 'process'},
+        configuration: {
+          aggregationTypes: [{type: 'avg', value: null}],
+        },
+      }}
+    />
+  );
+
+  await runAllEffects();
+
+  expect(node.find({label: 'P25'})).not.toExist();
+  expect(node.find({label: 'P95'})).not.toExist();
 });
