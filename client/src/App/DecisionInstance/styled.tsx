@@ -10,11 +10,15 @@ const DecisionInstanceContainer = styled.div`
   height: 100%;
   position: relative;
   display: grid;
-  grid-template-rows: 56px 1fr 1fr;
+  grid-template-rows: 56px 1fr;
 `;
 
 const Container = styled.div`
   height: 100%;
 `;
 
-export {Container, DecisionInstanceContainer};
+const PanelContainer = styled.div`
+  overflow: hidden;
+`;
+
+export {Container, DecisionInstanceContainer, PanelContainer};

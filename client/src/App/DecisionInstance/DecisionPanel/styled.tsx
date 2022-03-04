@@ -82,6 +82,7 @@ const Container = styled.div<ContainerProps>`
     `;
   }}
   overflow: auto;
+  height: 100%;
 `;
 
 const Decision = styled.div`

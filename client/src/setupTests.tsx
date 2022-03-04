@@ -13,6 +13,7 @@ import {Textfield as MockTextfield} from 'modules/mocks/common-ui/Textfield';
 import {Checkbox as MockCheckbox} from 'modules/mocks/common-ui/Checkbox';
 import {Select as MockSelect} from 'modules/mocks/common-ui/Select';
 import {Dropdown as MockDropdown} from 'modules/mocks/common-ui/Dropdown';
+import MockSplitter from 'modules/mocks/Splitter';
 
 class MockJSONEditor {
   updateText() {}
@@ -20,6 +21,14 @@ class MockJSONEditor {
   set() {}
   get() {}
 }
+
+jest.mock('@devbookhq/splitter', () => {
+  return {
+    __esModule: true,
+    ...jest.requireActual('@devbookhq/splitter'),
+    default: MockSplitter,
+  };
+});
 
 jest.mock('jsoneditor', () => MockJSONEditor);
 jest.mock('jsoneditor/dist/jsoneditor.css', () => undefined);
