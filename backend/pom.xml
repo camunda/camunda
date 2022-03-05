@@ -319,7 +319,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.6</version>
+      <version>1.6.7</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
