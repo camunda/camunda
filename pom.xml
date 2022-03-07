@@ -413,8 +413,8 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <requirePluginVersion />
-                <banDuplicatePomDependencyVersions />
+                <requirePluginVersion/>
+                <banDuplicatePomDependencyVersions/>
               </rules>
             </configuration>
             <goals>
