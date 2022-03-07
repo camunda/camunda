@@ -8,7 +8,7 @@
     </encoder>
   </appender>
 
-  <logger name="org.camunda.optimize.data.generation" level="OFF" />
+  <logger name="org.camunda.optimize.data.generation" level="INFO" />
   <logger name="org.camunda.optimize.data.generation.DataGenerator" level="INFO" />
 
   <root level="info">

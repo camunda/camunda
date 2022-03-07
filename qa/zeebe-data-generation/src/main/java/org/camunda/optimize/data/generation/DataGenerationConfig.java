@@ -7,6 +7,7 @@ package org.camunda.optimize.data.generation;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -19,11 +20,13 @@ public class DataGenerationConfig {
   public static final String DATA_INSTANCE_COUNT = "DATA_INSTANCE_COUNT";
   public static final String DATA_PROCESS_DEFINITION_COUNT = "DATA_PROCESS_DEFINITION_COUNT";
 
-  private static final String INSTANCE_STARTER_THREAD_COUNT = "INSTANCE_STARTER_THREAD_COUNT";
   private static final int JOB_WORKER_MAX_JOBS_ACTIVE = 5;
   private static final String ZEEBE_GATEWAY_ADDRESS = "localhost:26500";
+  @Value("${INSTANCE_STARTER_THREAD_COUNT:8}")
+  private Integer threadCount;
 
-  public ZeebeClient createZeebeClient() {
+  @Bean
+  public ZeebeClient getZeebeClient() {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
       .gatewayAddress(ZEEBE_GATEWAY_ADDRESS)
       .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
@@ -31,18 +34,13 @@ public class DataGenerationConfig {
     return builder.build();
   }
 
-  @Bean
-  public ZeebeClient getZeebeClient() {
-    return createZeebeClient();
-  }
-
   @SuppressWarnings("unused")
   @Bean("dataGeneratorThreadPoolExecutor")
   public ThreadPoolTaskExecutor getDataGeneratorTaskExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadFactory(getThreadFactory());
-    executor.setCorePoolSize(Integer.getInteger(INSTANCE_STARTER_THREAD_COUNT));
-    executor.setMaxPoolSize(Integer.getInteger(INSTANCE_STARTER_THREAD_COUNT));
+    executor.setCorePoolSize(threadCount);
+    executor.setMaxPoolSize(threadCount);
     executor.setQueueCapacity(10000);
     executor.initialize();
     return executor;
@@ -54,7 +52,7 @@ public class DataGenerationConfig {
       @Override
       public Thread newThread(final Runnable runnable) {
         Thread thread = new DataGeneratorThread(this.getThreadGroup(), runnable,
-                                                this.nextThreadName(), createZeebeClient()
+                                                this.nextThreadName(), getZeebeClient()
         );
         thread.setPriority(this.getThreadPriority());
         thread.setDaemon(this.isDaemon());

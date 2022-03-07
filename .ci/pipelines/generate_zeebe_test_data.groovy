@@ -126,7 +126,6 @@ spec:
           memory: 8Gi
     - name: zeebe
       image: camunda/zeebe:${params.ZEEBE_VERSION}
-      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -169,7 +168,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(daysToKeepStr: '10'))
     timestamps()
-    timeout(time: 168, unit: 'HOURS')
+    timeout(time: 7, unit: 'DAYS')
   }
 
   stages {
@@ -182,14 +181,6 @@ pipeline {
             sh('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -Dskip.fe.build -Dskip.docker clean install -B')
           }
         }
-        script {
-          env.INSTANCE_STARTER_THREAD_COUNT = params.INSTANCE_STARTER_THREAD_COUNT
-          echo "Set env.INSTANCE_STARTER_THREAD_COUNT: $env.INSTANCE_STARTER_THREAD_COUNT"
-          env.NUM_PROCESS_DEFINITIONS = params.NUM_PROCESS_DEFINITIONS
-          echo "Set env.NUM_PROCESS_DEFINITIONS: $env.NUM_PROCESS_DEFINITIONS"
-          env.NUM_PROCESS_INSTANCES = params.NUM_PROCESS_INSTANCES
-          echo "Set env.NUM_PROCESS_INSTANCES: $env.NUM_PROCESS_INSTANCES"
-        }
       }
     }
     stage('Data Generation') {
@@ -199,9 +190,9 @@ pipeline {
             // Generate Data
             sh("""
               mvn -B -s $MAVEN_SETTINGS_XML -f qa/zeebe-data-generation spring-boot:run \
-              -Dinstancestarterthreadcount=\$INSTANCE_STARTER_THREAD_COUNT \
-              -Ddata.processdefinitioncount=\$NUM_PROCESS_DEFINITIONS \
-              -Ddata.instancecount=\$NUM_PROCESS_INSTANCES \
+              -Dinstancestarterthreadcount=$params.INSTANCE_STARTER_THREAD_COUNT \
+              -Ddata.processdefinitioncount=$params.NUM_PROCESS_DEFINITIONS \
+              -Ddata.instancecount=$params.NUM_PROCESS_INSTANCES \
             """)
           }
         }
@@ -211,15 +202,15 @@ pipeline {
       steps {
         container('maven') {
           // Create repository
-          sh ("""
+          sh("""
                 echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "optimize-data", "base_path": "zeebe-ci-test", "client": "optimize_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
             """)
           // Delete previous Snapshot
-          sh ("""
+          sh("""
                 echo \$(curl -qs -XDELETE "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1")
             """)
           // Trigger Snapshot
-          sh ("""
+          sh("""
                 echo \$(curl -qs -H "Content-Type: application/json" -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true" -d '{"indices": "zeebe-record*", "ignore_unavailable": "true", "include_global_state": false}')
             """)
         }

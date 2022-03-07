@@ -9,6 +9,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <instancestarterthreadcount>8</instancestarterthreadcount>
+    <data.processdefinitioncount>30</data.processdefinitioncount>
+    <data.instancecount>240000</data.instancecount>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -36,12 +42,6 @@
   </parent>
 
   <artifactId>zeebe-data-generation</artifactId>
-
-  <properties>
-    <instancestarterthreadcount>8</instancestarterthreadcount>
-    <data.processdefinitioncount>30</data.processdefinitioncount>
-    <data.instancecount>240000</data.instancecount>
-  </properties>
 
   <build>
     <plugins>

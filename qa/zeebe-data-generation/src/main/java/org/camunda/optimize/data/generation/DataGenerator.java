@@ -13,9 +13,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -31,23 +30,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.data.generation.DataGenerationConfig.DATA_INSTANCE_COUNT;
-import static org.camunda.optimize.data.generation.DataGenerationConfig.DATA_PROCESS_DEFINITION_COUNT;
-
 @Slf4j
 @Component
-@Configuration
 public class DataGenerator {
 
   private static final String TASK_JOB_TYPE = "taskToComplete";
   private final AtomicInteger completedTaskCount = new AtomicInteger(0);
 
-  @Autowired
-  private ZeebeClient zeebeClient;
+  private final ZeebeClient zeebeClient;
 
-  @Autowired
-  @Qualifier("dataGeneratorThreadPoolExecutor")
-  private ThreadPoolTaskExecutor dataGeneratorTaskExecutor;
+  private final ThreadPoolTaskExecutor dataGeneratorTaskExecutor;
+  private Integer instanceCount;
+  private Integer definitionCount;
+
+  public DataGenerator(final ZeebeClient zeebeClient,
+                       @Qualifier("dataGeneratorThreadPoolExecutor") final ThreadPoolTaskExecutor dataGeneratorTaskExecutor,
+                       @Value("${DATA_INSTANCE_COUNT:1000000}") final Integer instanceCount,
+                       @Value("${DATA_PROCESS_DEFINITION_COUNT:100}") final Integer definitionCount) {
+    this.zeebeClient = zeebeClient;
+    this.dataGeneratorTaskExecutor = dataGeneratorTaskExecutor;
+    this.instanceCount = instanceCount;
+    this.definitionCount = definitionCount;
+  }
 
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -103,7 +107,7 @@ public class DataGenerator {
 
   private void waitForTaskCompletionWorker(final JobWorker taskCompletionWorker) {
     log.info("Waiting for serviceTasks to be completed..");
-    while (completedTaskCount.get() < getProcessInstanceCount()) { // one task per model needs completed
+    while (completedTaskCount.get() < instanceCount) { // one task per model needs completed
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
@@ -156,22 +160,12 @@ public class DataGenerator {
 
   private Map<String, Integer> calculateInstanceCountsPerDefinition() {
     final Map<String, Integer> instanceCountsByDef = new HashMap<>();
-    final int instanceCountPerDef =
-      getProcessInstanceCount() / getProcessDefinitionCount();
-    final int leftOverInstCount =
-      getProcessInstanceCount() % getProcessDefinitionCount();
-    IntStream.range(0, getProcessDefinitionCount())
+    final int instanceCountPerDef = instanceCount / definitionCount;
+    final int leftOverInstCount = instanceCount % definitionCount;
+    IntStream.range(0, definitionCount)
       .forEach(i -> instanceCountsByDef.put("defKey-" + i, instanceCountPerDef));
     instanceCountsByDef.put("defKey-0", instanceCountsByDef.get("defKey-0") + leftOverInstCount);
     return instanceCountsByDef;
-  }
-
-  private int getProcessInstanceCount() {
-    return Integer.getInteger(DATA_INSTANCE_COUNT);
-  }
-
-  private int getProcessDefinitionCount() {
-    return Integer.getInteger(DATA_PROCESS_DEFINITION_COUNT);
   }
 
   class InstancesStarter implements Runnable {
