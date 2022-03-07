@@ -829,6 +829,7 @@ final class JsonSerializableToJsonTest {
                   .setDecisionId("decision-id")
                   .setDecisionName("decision-name")
                   .setDecisionKey(6L)
+                  .setDecisionVersion(7)
                   .setDecisionType("DECISION_TABLE")
                   .setDecisionOutput(toMessagePack("'decision-output'"));
 
@@ -870,6 +871,7 @@ final class JsonSerializableToJsonTest {
                       "decisionId":"decision-id",
                       "decisionName":"decision-name",
                       "decisionKey":6,
+                      "decisionVersion":7,
                       "decisionOutput":'"decision-output"',
                       "decisionType":"DECISION_TABLE",
                       "evaluatedInputs":[

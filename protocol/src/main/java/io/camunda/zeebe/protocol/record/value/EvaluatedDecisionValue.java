@@ -32,6 +32,9 @@ public interface EvaluatedDecisionValue extends RecordValue {
   /** @return the key of the evaluated decision */
   long getDecisionKey();
 
+  /** @return the version of the evaluated decision */
+  long getDecisionVersion();
+
   /** @return the type of the evaluated decision */
   String getDecisionType();
 
