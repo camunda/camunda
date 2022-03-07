@@ -38,4 +38,9 @@ public final class DbByte implements DbKey, DbValue {
   public byte getValue() {
     return value;
   }
+
+  @Override
+  public String toString() {
+    return "DbByte{" + "value=" + value + '}';
+  }
 }

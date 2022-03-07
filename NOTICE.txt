@@ -1,2 +1,2 @@
 Camunda
-Copyright 2017-2019 Camunda Services GmbH
+Copyright 2017-2022 Camunda Services GmbH

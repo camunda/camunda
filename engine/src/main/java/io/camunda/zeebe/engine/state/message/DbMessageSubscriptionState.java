@@ -207,8 +207,7 @@ public final class DbMessageSubscriptionState
       throw new IllegalStateException(
           String.format(
               "Expected to find subscription with key %d and %s, but no subscription found",
-              elementKeyAndMessageName.getFirst().getValue(),
-              elementKeyAndMessageName.getSecond()));
+              elementKeyAndMessageName.first().getValue(), elementKeyAndMessageName.second()));
     }
     return visitor.visit(messageSubscription);
   }

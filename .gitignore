@@ -35,6 +35,8 @@ work/
 public/
 tngp-data
 
+.flattened-pom.xml
+
 hs_err*.log
 /data/
 /metrics/

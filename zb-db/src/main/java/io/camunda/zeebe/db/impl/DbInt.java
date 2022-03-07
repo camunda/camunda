@@ -40,4 +40,9 @@ public final class DbInt implements DbKey, DbValue {
   public int getValue() {
     return intValue;
   }
+
+  @Override
+  public String toString() {
+    return "DbInt{" + intValue + '}';
+  }
 }

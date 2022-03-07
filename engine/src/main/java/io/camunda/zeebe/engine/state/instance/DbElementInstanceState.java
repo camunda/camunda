@@ -240,7 +240,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       parentChildColumnFamily.whileEqualPrefix(
           this.parentKey,
           (key, value) -> {
-            final DbLong childKey = key.getSecond();
+            final DbLong childKey = key.second();
             final ElementInstance childInstance = getInstance(childKey.getValue());
 
             final ElementInstance copiedElementInstance = copyElementInstance(childInstance);

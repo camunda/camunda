@@ -107,10 +107,10 @@ public class DbMigrationState implements MutableMigrationState {
 
     messageSubscriptionSentTimeColumnFamily.forEach(
         (key, value) -> {
-          final var sentTime = key.getFirst().getValue();
-          final var elementKeyAndMessageName = key.getSecond();
-          final var elementInstanceKey = elementKeyAndMessageName.getFirst().getValue();
-          final var messageName = elementKeyAndMessageName.getSecond().getBuffer();
+          final var sentTime = key.first().getValue();
+          final var elementKeyAndMessageName = key.second();
+          final var elementInstanceKey = elementKeyAndMessageName.first().getValue();
+          final var messageName = elementKeyAndMessageName.second().getBuffer();
 
           final var messageSubscription =
               messageSubscriptionState.get(elementInstanceKey, messageName);
@@ -130,10 +130,10 @@ public class DbMigrationState implements MutableMigrationState {
 
     processSubscriptionSentTimeColumnFamily.forEach(
         (key, value) -> {
-          final var sentTime = key.getFirst().getValue();
-          final var elementKeyAndMessageName = key.getSecond();
-          final var elementInstanceKey = elementKeyAndMessageName.getFirst().getValue();
-          final var messageName = elementKeyAndMessageName.getSecond().getBuffer();
+          final var sentTime = key.first().getValue();
+          final var elementKeyAndMessageName = key.second();
+          final var elementInstanceKey = elementKeyAndMessageName.first().getValue();
+          final var messageName = elementKeyAndMessageName.second().getBuffer();
 
           final var processMessageSubscription =
               persistentState.getSubscription(elementInstanceKey, messageName);

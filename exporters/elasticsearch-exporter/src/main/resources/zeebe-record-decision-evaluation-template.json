@@ -74,6 +74,9 @@
                 "decisionKey": {
                   "type": "long"
                 },
+                "decisionVersion": {
+                  "type": "long"
+                },
                 "decisionType": {
                   "type": "keyword"
                 },

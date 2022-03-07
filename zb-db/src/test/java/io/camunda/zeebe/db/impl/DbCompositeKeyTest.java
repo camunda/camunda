@@ -53,9 +53,9 @@ public final class DbCompositeKeyTest {
 
     // then
     assertThat(compositeKey.getLength()).isEqualTo(Long.BYTES * 2);
-    assertThat(compositeKey.getFirst().getValue()).isEqualTo(23);
+    assertThat(compositeKey.first().getValue()).isEqualTo(23);
     assertThat(firstLong.getValue()).isEqualTo(23);
-    assertThat(compositeKey.getSecond().getValue()).isEqualTo(121);
+    assertThat(compositeKey.second().getValue()).isEqualTo(121);
     assertThat(secondLong.getValue()).isEqualTo(121);
   }
 
@@ -104,9 +104,9 @@ public final class DbCompositeKeyTest {
 
     // then
     assertThat(compositeKey.getLength()).isEqualTo(Long.BYTES + 3 + Integer.BYTES);
-    assertThat(compositeKey.getFirst().toString()).isEqualTo("foo");
+    assertThat(compositeKey.first().toString()).isEqualTo("foo");
     assertThat(firstString.toString()).isEqualTo("foo");
-    assertThat(compositeKey.getSecond().getValue()).isEqualTo(121);
+    assertThat(compositeKey.second().getValue()).isEqualTo(121);
     assertThat(secondLong.getValue()).isEqualTo(121);
   }
 
@@ -176,14 +176,14 @@ public final class DbCompositeKeyTest {
     assertThat(nestedCompositeKey.getLength())
         .isEqualTo(Long.BYTES + 3 + Integer.BYTES + Long.BYTES);
 
-    final DbCompositeKey<DbString, DbLong> composite = nestedCompositeKey.getFirst();
-    assertThat(composite.getFirst().toString()).isEqualTo("foo");
+    final DbCompositeKey<DbString, DbLong> composite = nestedCompositeKey.first();
+    assertThat(composite.first().toString()).isEqualTo("foo");
     assertThat(firstString.toString()).isEqualTo("foo");
 
-    assertThat(composite.getSecond().getValue()).isEqualTo(121);
+    assertThat(composite.second().getValue()).isEqualTo(121);
     assertThat(secondLong.getValue()).isEqualTo(121);
 
-    assertThat(nestedCompositeKey.getSecond().getValue()).isEqualTo(100_234L);
+    assertThat(nestedCompositeKey.second().getValue()).isEqualTo(100_234L);
     assertThat(thirdLong.getValue()).isEqualTo(100_234L);
   }
 }

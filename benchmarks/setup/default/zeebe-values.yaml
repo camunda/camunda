@@ -110,6 +110,23 @@ zeebe-gateway:
       cpu: 1
       memory: 512Mi
 
+# RetentionPolicy configuration to configure the elasticsearch index retention policies
+retentionPolicy:
+  # RetentionPolicy.enabled if true, elasticsearch curator cronjob and configuration will be deployed.
+  enabled: true
+  # RetentionPolicy.schedule defines how often/when the curator should run
+  schedule: "*/15 * * * *"
+  # RetentionPolicy.zeebeIndexTTL defines after how many days a zeebe index can be deleted
+  zeebeIndexTTL: 1
+  # RetentionPolicy.zeebeIndexMaxSize can be set to configure the maximum allowed zeebe index size in gigabytes.
+  # After reaching that size, curator will delete that corresponding index on the next run.
+  # To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes.
+  zeebeIndexMaxSize: 10
+  # RetentionPolicy.operateIndexTTL defines after how many days an operate index can be deleted
+  operateIndexTTL: 30
+  # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
+  tasklistIndexTTL: 30
+
 operate:
   enabled: false
 
@@ -140,14 +157,6 @@ elasticsearch:
     limits:
       cpu: 3
       memory: 8Gi
-
-# KIBANA
-kibana:
-  enabled: false
-
-# PROMETHEUS
-prometheus:
-  enabled: false
 
 # PrometheusServiceMonitor configuration for the prometheus service monitor
 prometheusServiceMonitor:

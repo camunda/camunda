@@ -10,20 +10,28 @@
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
+
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
   <version>1.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
+
   <name>Zeebe BOM</name>
+  <description>${name}</description>
   <url>http://zeebe.io/</url>
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
+    <connection>scm:git:git@github.com:camunda-cloud/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-cloud/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/zeebe-io/zeebe</url>
+    <url>https://github.com/camunda-cloud/zeebe</url>
   </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/camunda-cloud/zeebe/issues</url>
+  </issueManagement>
 
   <properties>
     <!-- release parent settings -->
@@ -31,6 +39,7 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
+    <plugin.version.flatten>1.2.7</plugin.version.flatten>
     <plugin.version.javadoc>3.3.2</plugin.version.javadoc>
   </properties>
 
@@ -38,7 +47,7 @@
     <dependencies>
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-broker</artifactId>
+        <artifactId>zeebe-bpmn-model</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -50,97 +59,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-protocol-test-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-bpmn-model</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-dispatcher</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-logstreams</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-workflow-engine</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-msgpack-core</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-msgpack-value</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-protocol</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-protocol-impl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-protocol-jackson</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-transport</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-test-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-db</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-build-tools</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-gateway-protocol</artifactId>
+        <artifactId>zeebe-exporter-api</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -152,83 +71,9 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-gateway</artifactId>
+        <artifactId>zeebe-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-exporter-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-elasticsearch-exporter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-protocol-asserts</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-expression-language</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-feel-integration</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-snapshots</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-journal</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-dmn</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <!-- ATOMIX -->
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-atomix-cluster</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-atomix-storage</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-atomix-utils</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-atomix</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
     </dependencies>
   </dependencyManagement>
 
@@ -257,6 +102,45 @@
       <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
     </repository>
   </repositories>
+
+  <build>
+
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>${plugin.version.flatten}</version>
+        <configuration combine.children="append">
+          <flattenMode>bom</flattenMode>
+          <!--
+            do not change the outputDirectory; it must remain the same one as the relative project
+            directory, as many plugins expect to resolve the project directory from the current POM
+            file's parent, and any plugin which would run post flatten would resolve the project
+            directory to the wrong one. For example, if you configure it to
+            ${project.build.directory}, then any plugin after will think that the project's
+            directory is not /parent/ but /parent/target, which may affect the execution of plugins
+            (e.g. resource file resolution)
+            -->
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>

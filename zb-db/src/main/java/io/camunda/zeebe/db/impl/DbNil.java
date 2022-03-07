@@ -33,4 +33,9 @@ public final class DbNil implements DbValue {
   public void write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
     mutableDirectBuffer.putByte(offset, EXISTENCE_BYTE);
   }
+
+  @Override
+  public String toString() {
+    return "DbNil{}";
+  }
 }

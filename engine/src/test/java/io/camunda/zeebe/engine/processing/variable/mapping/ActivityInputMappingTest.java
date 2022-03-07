@@ -35,6 +35,14 @@ public final class ActivityInputMappingTest {
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
 
+  private static final String A_TIME_VALUE = "\"04:20:00@Europe/Berlin\"";
+  private static final String A_LOCAL_TIME_VALUE = "\"04:20\"";
+  private static final String A_DATE_VALUE = "\"2021-02-24\"";
+  private static final String A_LOCAL_DATE_AND_TIME_VALUE = "\"2021-02-24T04:20\"";
+  private static final String A_DATE_AND_TIME_VALUE = "\"2021-02-24T04:20+01:00\"";
+  private static final String A_DAY_TIME_DURATION_VALUE = "\"PT42H56M33S\"";
+  private static final String A_YEAR_MONTH_DURATION_VALUE = "\"P2Y3M\"";
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -76,6 +84,41 @@ public final class ActivityInputMappingTest {
         mapping(b -> b.zeebeInputExpression("x.y", "y")),
         activityVariables(variable("y", "2"))
       },
+      {
+        "{'x': %s}".formatted(A_TIME_VALUE),
+        mapping(b -> b.zeebeInputExpression("time(x)", "y")),
+        activityVariables(variable("y", A_TIME_VALUE))
+      },
+      {
+        "{'x': %s}".formatted(A_LOCAL_TIME_VALUE),
+        mapping(b -> b.zeebeInputExpression("time(x)", "y")),
+        activityVariables(variable("y", A_LOCAL_TIME_VALUE))
+      },
+      {
+        "{'x': %s}".formatted(A_DATE_VALUE),
+        mapping(b -> b.zeebeInputExpression("date(x)", "y")),
+        activityVariables(variable("y", A_DATE_VALUE))
+      },
+      {
+        "{'x': %s}".formatted(A_LOCAL_DATE_AND_TIME_VALUE),
+        mapping(b -> b.zeebeInputExpression("date and time(x)", "y")),
+        activityVariables(variable("y", A_LOCAL_DATE_AND_TIME_VALUE))
+      },
+      {
+        "{'x': %s}".formatted(A_DATE_AND_TIME_VALUE),
+        mapping(b -> b.zeebeInputExpression("date and time(x)", "y")),
+        activityVariables(variable("y", A_DATE_AND_TIME_VALUE))
+      },
+      {
+        "{'x': %s}".formatted(A_DAY_TIME_DURATION_VALUE),
+        mapping(b -> b.zeebeInputExpression("duration(x)", "y")),
+        activityVariables(variable("y", A_DAY_TIME_DURATION_VALUE))
+      },
+      {
+        "{'x': %s}".formatted(A_YEAR_MONTH_DURATION_VALUE),
+        mapping(b -> b.zeebeInputExpression("duration(x)", "y")),
+        activityVariables(variable("y", A_YEAR_MONTH_DURATION_VALUE))
+      }
     };
   }
 

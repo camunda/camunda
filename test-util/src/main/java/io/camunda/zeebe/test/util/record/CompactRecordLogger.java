@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -33,6 +34,9 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.time.Instant;
@@ -47,6 +51,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +72,9 @@ public class CompactRecordLogger {
           entry("VARIABLE", "VAR"),
           entry("ELEMENT_", ""),
           entry("_ELEMENT", ""),
-          entry("EVENT", "EVNT"));
+          entry("EVENT", "EVNT"),
+          entry("DECISION_REQUIREMENTS", "DRG"),
+          entry("EVALUATION", "EVAL"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -103,7 +110,9 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
     valueLoggers.put(ValueType.PROCESS_EVENT, this::summarizeProcessEvent);
-    // TODO please extend list
+    valueLoggers.put(ValueType.DECISION_REQUIREMENTS, this::summarizeDecisionRequirements);
+    valueLoggers.put(ValueType.DECISION, this::summarizeDecision);
+    valueLoggers.put(ValueType.DECISION_EVALUATION, this::summarizeDecisionEvaluation);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -253,9 +262,14 @@ public class CompactRecordLogger {
   private String summarizeDeployment(final Record<?> record) {
     final var value = (DeploymentRecordValue) record.getValue();
 
-    return value.getProcessesMetadata().stream()
-        .map(ProcessMetadataValue::getResourceName)
-        .collect(Collectors.joining(", "));
+    final var bpmnResources =
+        value.getProcessesMetadata().stream().map(ProcessMetadataValue::getResourceName);
+
+    final var dmnResources =
+        value.getDecisionRequirementsMetadata().stream()
+            .map(DecisionRequirementsMetadataValue::getResourceName);
+
+    return Stream.concat(bpmnResources, dmnResources).collect(Collectors.joining(", "));
   }
 
   private String summarizeProcess(final Record<?> record) {
@@ -551,6 +565,40 @@ public class CompactRecordLogger {
         + summarizeProcessInformation(
             value.getProcessDefinitionKey(), value.getProcessInstanceKey())
         + summarizeVariables(value.getVariables());
+  }
+
+  private String summarizeDecisionRequirements(final Record<?> record) {
+    final var value = (DecisionRequirementsRecordValue) record.getValue();
+    return String.format(
+        "%s -> %s (version:%d)",
+        value.getResourceName(),
+        formatId(value.getDecisionRequirementsId()),
+        value.getDecisionRequirementsVersion());
+  }
+
+  private String summarizeDecision(final Record<?> record) {
+    final var value = (DecisionRecordValue) record.getValue();
+    return String.format(
+        "%s (version:%d) of <drg %s[%s]>",
+        formatId(value.getDecisionId()),
+        value.getVersion(),
+        formatId(value.getDecisionRequirementsId()),
+        shortenKey(value.getDecisionRequirementsKey()));
+  }
+
+  private String summarizeDecisionEvaluation(final Record<?> record) {
+    final var value = (DecisionEvaluationRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(value.getDecisionOutput())
+        .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
+        .append(
+            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
+        .toString();
+  }
+
+  private String summarizeDecisionInformation(final String decisionId, final long decisionKey) {
+    return String.format(" of <decision %s[%s]>", formatId(decisionId), formatKey(decisionKey));
   }
 
   private String shortenKey(final long input) {

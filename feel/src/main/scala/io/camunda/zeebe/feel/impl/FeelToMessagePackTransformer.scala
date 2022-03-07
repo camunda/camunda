@@ -36,10 +36,7 @@ class FeelToMessagePackTransformer {
       case ValNumber(number) if number.isWhole => writer.writeInteger(number.longValue)
       case ValNumber(number) => writer.writeFloat(number.doubleValue)
       case ValBoolean(boolean) => writer.writeBoolean(boolean)
-      case ValString(string) => {
-        stringWrapper.wrap(string.getBytes)
-        writer.writeString(stringWrapper)
-      }
+      case ValString(string) => writeStringValue(string)
       case ValList(items) => {
         writer.writeArrayHeader(items.size)
         items.foreach(writeValue)
@@ -63,6 +60,13 @@ class FeelToMessagePackTransformer {
           }
         }
       }
+      case ValTime(time) => writeStringValue(time.format)
+      case ValLocalTime(time) => writeStringValue(time.toString)
+      case ValDate(date) => writeStringValue(date.toString)
+      case ValDateTime(dateTime) => writeStringValue(dateTime.toString)
+      case ValLocalDateTime(dateTime) => writeStringValue(dateTime.toString)
+      case ValDayTimeDuration(duration) => writeStringValue(duration.toString)
+      case ValYearMonthDuration(duration) => writeStringValue(duration.toString)
       case other => {
         writer.writeNil()
         LOGGER.trace("No FEEL to MessagePack transformation for '{}'. Using 'null' instead.", other)
@@ -70,6 +74,9 @@ class FeelToMessagePackTransformer {
     }
   }
 
-
+  private def writeStringValue(string: String) = {
+    stringWrapper.wrap(string.getBytes)
+    writer.writeString(stringWrapper)
+  }
 }
 
