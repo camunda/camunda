@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
@@ -42,6 +43,7 @@ class TransactionalColumnFamily<
     implements ColumnFamily<KeyType, ValueType> {
 
   private final ZeebeTransactionDb<ColumnFamilyNames> transactionDb;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
   private final ColumnFamilyNames columnFamily;
   private final TransactionContext context;
 
@@ -51,11 +53,13 @@ class TransactionalColumnFamily<
 
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
+      final ConsistencyChecksSettings consistencyChecksSettings,
       final ColumnFamilyNames columnFamily,
       final TransactionContext context,
       final KeyType keyInstance,
       final ValueType valueInstance) {
     this.transactionDb = transactionDb;
+    this.consistencyChecksSettings = consistencyChecksSettings;
     this.columnFamily = columnFamily;
     this.context = context;
     this.keyInstance = keyInstance;
@@ -247,6 +251,9 @@ class TransactionalColumnFamily<
   }
 
   private void assertKeyDoesNotExist(final ZeebeTransaction transaction) throws Exception {
+    if (!consistencyChecksSettings.enablePreconditions()) {
+      return;
+    }
     final var value =
         transaction.get(
             transactionDb.getDefaultNativeHandle(),
@@ -260,6 +267,9 @@ class TransactionalColumnFamily<
   }
 
   private void assertKeyExists(final ZeebeTransaction transaction) throws Exception {
+    if (!consistencyChecksSettings.enablePreconditions()) {
+      return;
+    }
     final var value =
         transaction.get(
             transactionDb.getDefaultNativeHandle(),

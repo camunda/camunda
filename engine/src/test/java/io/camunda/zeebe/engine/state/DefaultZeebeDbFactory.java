@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -14,8 +14,7 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 
 public final class DefaultZeebeDbFactory {
 
-  public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true);
     return new ZeebeRocksDbFactory<>(new RocksDbConfiguration(), consistencyChecks);

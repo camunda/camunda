@@ -19,8 +19,8 @@ import static org.mockito.Mockito.when;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
@@ -65,7 +65,7 @@ public final class AsyncSnapshottingTest {
 
     snapshotController =
         new StateControllerImpl(
-            ZeebeRocksDbFactory.newFactory(),
+            DefaultZeebeDbFactory.defaultFactory(),
             persistedSnapshotStore,
             rootDirectory.resolve("runtime"),
             l ->

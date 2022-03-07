@@ -109,4 +109,27 @@ public class ExperimentalCfgTest {
     // then
     assertThat(raft.getPreferSnapshotReplicationThreshold()).isEqualTo(10);
   }
+
+  @Test
+  public void shouldSetEnablePreconditionsFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
+
+    // then
+    assertThat(consistencyChecks.isEnablePreconditions()).isTrue();
+  }
+
+  @Test
+  public void shouldSetEnablePreconditionsFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.consistencyChecks.enablePreconditions", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
+
+    // then
+    assertThat(consistencyChecks.isEnablePreconditions()).isTrue();
+  }
 }

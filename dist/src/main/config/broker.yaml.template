@@ -625,6 +625,12 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_DISABLEWAL
         # disableWal: false
 
+      # consistencyChecks:
+        # Configures if the basic operations on RocksDB, such as inserting or deleting key-value pairs, should check preconditions,
+        # for example that a key does not already exist when inserting.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS
+        # enablePreconditions: false
+
       # Allows to configure the query API. By default, the broker only offers a command API, which
       # is used by the gateway to pass commands it received along to the broker. Commands can then
       # be processed. Zeebe does not directly support querying of brokers, instead it provides a way
