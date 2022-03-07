@@ -133,7 +133,7 @@ public final class DbCompositeKeyColumnFamilyTest {
     final List<String> firstKeyParts = new ArrayList<>();
     final List<Long> secondKeyParts = new ArrayList<>();
     final List<String> values = new ArrayList<>();
-    columnFamily.forEach((key, value) -> columnFamily.delete(key));
+    columnFamily.forEach((key, value) -> columnFamily.deleteExisting(key));
 
     columnFamily.forEach(
         (key, value) -> {
@@ -201,7 +201,7 @@ public final class DbCompositeKeyColumnFamilyTest {
     final List<String> values = new ArrayList<>();
     columnFamily.whileTrue(
         (key, value) -> {
-          columnFamily.delete(key);
+          columnFamily.deleteExisting(key);
           return key.second().getValue() != 13;
         });
 
@@ -349,7 +349,7 @@ public final class DbCompositeKeyColumnFamilyTest {
     columnFamily.whileEqualPrefix(
         firstKey,
         (key, value) -> {
-          columnFamily.delete(key);
+          columnFamily.deleteExisting(key);
           return key.second().getValue() != 13;
         });
 

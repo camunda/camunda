@@ -192,7 +192,7 @@ public final class DbTransactionTest {
 
           // then it is committed but available in this transaction
           assertThat(oneColumnFamily.exists(oneKey)).isTrue();
-          oneColumnFamily.delete(oneKey);
+          oneColumnFamily.deleteExisting(oneKey);
 
           assertThat(twoColumnFamily.exists(twoKey)).isTrue();
           assertThat(threeColumnFamily.exists(threeKey)).isTrue();
@@ -444,7 +444,7 @@ public final class DbTransactionTest {
       transactionContext.runInTransaction(
           () -> {
             oneColumnFamily.insert(oneKey, oneValue);
-            twoColumnFamily.delete(twoKey);
+            twoColumnFamily.deleteExisting(twoKey);
             threeColumnFamily.insert(threeKey, threeValue);
             throw new RuntimeException();
           });

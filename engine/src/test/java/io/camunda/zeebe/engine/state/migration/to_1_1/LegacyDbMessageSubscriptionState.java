@@ -215,12 +215,12 @@ final class LegacyDbMessageSubscriptionState {
   }
 
   public void remove(final LegacyMessageSubscription subscription) {
-    subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteIfExists(elementKeyAndMessageName);
 
     final var record = subscription.getRecord();
     messageName.wrapBuffer(record.getMessageNameBuffer());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
+    messageNameAndCorrelationKeyColumnFamily.deleteIfExists(nameCorrelationAndElementInstanceKey);
 
     removeSubscriptionFromSentTimeColumnFamily(subscription);
   }
@@ -229,7 +229,7 @@ final class LegacyDbMessageSubscriptionState {
       final LegacyMessageSubscription subscription) {
     if (subscription.getCommandSentTime() > 0) {
       sentTime.wrapLong(subscription.getCommandSentTime());
-      sentTimeColumnFamily.delete(sentTimeCompositeKey);
+      sentTimeColumnFamily.deleteIfExists(sentTimeCompositeKey);
     }
   }
 }

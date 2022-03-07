@@ -198,7 +198,7 @@ public final class DbMessageState implements MutableMessageState {
     this.messageKey.wrapLong(messageKey);
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
 
-    correlatedMessageColumnFamily.delete(messageBpmnProcessIdKey);
+    correlatedMessageColumnFamily.deleteExisting(messageBpmnProcessIdKey);
   }
 
   @Override
@@ -221,7 +221,7 @@ public final class DbMessageState implements MutableMessageState {
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    activeProcessInstancesByCorrelationKeyColumnFamiliy.delete(bpmnProcessIdCorrelationKey);
+    activeProcessInstancesByCorrelationKeyColumnFamiliy.deleteExisting(bpmnProcessIdCorrelationKey);
   }
 
   @Override
@@ -240,7 +240,7 @@ public final class DbMessageState implements MutableMessageState {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
 
     this.processInstanceKey.wrapLong(processInstanceKey);
-    processInstanceCorrelationKeyColumnFamiliy.delete(this.processInstanceKey);
+    processInstanceCorrelationKeyColumnFamiliy.deleteExisting(this.processInstanceKey);
   }
 
   @Override
@@ -251,26 +251,26 @@ public final class DbMessageState implements MutableMessageState {
     }
 
     messageKey.wrapLong(storedMessage.getMessageKey());
-    messageColumnFamily.delete(messageKey);
+    messageColumnFamily.deleteExisting(messageKey);
 
     messageName.wrapBuffer(storedMessage.getMessage().getNameBuffer());
     correlationKey.wrapBuffer(storedMessage.getMessage().getCorrelationKeyBuffer());
 
-    nameCorrelationMessageColumnFamily.delete(nameCorrelationMessageKey);
+    nameCorrelationMessageColumnFamily.deleteExisting(nameCorrelationMessageKey);
 
     final DirectBuffer messageId = storedMessage.getMessage().getMessageIdBuffer();
     if (messageId.capacity() > 0) {
       this.messageId.wrapBuffer(messageId);
-      messageIdColumnFamily.delete(nameCorrelationMessageIdKey);
+      messageIdColumnFamily.deleteExisting(nameCorrelationMessageIdKey);
     }
 
     deadline.wrapLong(storedMessage.getMessage().getDeadline());
-    deadlineColumnFamily.delete(deadlineMessageKey);
+    deadlineColumnFamily.deleteExisting(deadlineMessageKey);
 
     correlatedMessageColumnFamily.whileEqualPrefix(
         messageKey,
         ((compositeKey, zbNil) -> {
-          correlatedMessageColumnFamily.delete(compositeKey);
+          correlatedMessageColumnFamily.deleteExisting(compositeKey);
         }));
   }
 

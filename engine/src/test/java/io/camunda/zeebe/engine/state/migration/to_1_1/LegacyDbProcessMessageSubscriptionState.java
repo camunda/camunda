@@ -171,7 +171,7 @@ public final class LegacyDbProcessMessageSubscriptionState {
     if (updatedSentTime != previousSentTime) {
       if (previousSentTime > 0) {
         sentTime.wrapLong(previousSentTime);
-        sentTimeColumnFamily.delete(sentTimeCompositeKey);
+        sentTimeColumnFamily.deleteIfExists(sentTimeCompositeKey);
       }
 
       if (updatedSentTime > 0) {
@@ -186,10 +186,10 @@ public final class LegacyDbProcessMessageSubscriptionState {
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
 
-    subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteIfExists(elementKeyAndMessageName);
 
     sentTime.wrapLong(subscription.getCommandSentTime());
-    sentTimeColumnFamily.delete(sentTimeCompositeKey);
+    sentTimeColumnFamily.deleteIfExists(sentTimeCompositeKey);
   }
 
   private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {

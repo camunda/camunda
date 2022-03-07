@@ -92,14 +92,14 @@ public final class DbIncidentState implements MutableIncidentState {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
-      incidentColumnFamily.delete(incidentKey);
+      incidentColumnFamily.deleteExisting(incidentKey);
 
       if (isJobIncident(incidentRecord)) {
         jobKey.wrapLong(incidentRecord.getJobKey());
-        jobIncidentColumnFamily.delete(jobKey);
+        jobIncidentColumnFamily.deleteExisting(jobKey);
       } else {
         elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
-        processInstanceIncidentColumnFamily.delete(elementInstanceKey);
+        processInstanceIncidentColumnFamily.deleteExisting(elementInstanceKey);
       }
 
       metrics.incidentResolved();

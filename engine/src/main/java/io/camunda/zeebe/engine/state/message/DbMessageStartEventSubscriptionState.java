@@ -75,8 +75,9 @@ public final class DbMessageStartEventSubscriptionState
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageName.wrapBuffer(messageName);
 
-    subscriptionsColumnFamily.delete(messageNameAndProcessDefinitionKey);
-    subscriptionsOfProcessDefinitionKeyColumnFamily.delete(processDefinitionKeyAndMessageName);
+    subscriptionsColumnFamily.deleteExisting(messageNameAndProcessDefinitionKey);
+    subscriptionsOfProcessDefinitionKeyColumnFamily.deleteExisting(
+        processDefinitionKeyAndMessageName);
   }
 
   @Override

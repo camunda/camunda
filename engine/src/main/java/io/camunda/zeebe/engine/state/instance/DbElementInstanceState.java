@@ -133,12 +133,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       elementInstanceKey.wrapLong(key);
       parentKey.wrapLong(instance.getParentKey());
 
-      parentChildColumnFamily.delete(parentChildKey);
-      elementInstanceColumnFamily.delete(elementInstanceKey);
+      parentChildColumnFamily.deleteIfExists(parentChildKey);
+      elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
 
       variableState.removeScope(key);
 
-      awaitProcessInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
+      awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
       removeNumberOfTakenSequenceFlows(key);
 
       final long parentKey = instance.getParentKey();
@@ -221,7 +221,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             numberOfTakenSequenceFlows.wrapInt(newValue);
             numberOfTakenSequenceFlowsColumnFamily.update(key, numberOfTakenSequenceFlows);
           } else {
-            numberOfTakenSequenceFlowsColumnFamily.delete(key);
+            numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
           }
         });
   }
@@ -295,7 +295,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         this.flowScopeKey,
         (key, number) -> {
-          numberOfTakenSequenceFlowsColumnFamily.delete(key);
+          numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
         });
   }
 

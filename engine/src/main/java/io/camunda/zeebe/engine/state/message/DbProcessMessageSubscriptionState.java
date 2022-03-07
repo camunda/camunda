@@ -173,7 +173,7 @@ public final class DbProcessMessageSubscriptionState
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
 
-    subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
 
     transientState.remove(subscription.getRecord());
   }

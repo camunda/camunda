@@ -133,7 +133,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJob(key, record, State.ACTIVATABLE);
     jobKey.wrapLong(key);
     backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.delete(backoffJobKey);
+    backoffColumnFamily.deleteExisting(backoffJobKey);
   }
 
   @Override
@@ -176,9 +176,9 @@ public final class DbJobState implements JobState, MutableJobState {
     final long deadline = record.getDeadline();
 
     jobKey.wrapLong(key);
-    jobsColumnFamily.delete(jobKey);
+    jobsColumnFamily.deleteExisting(jobKey);
 
-    statesJobColumnFamily.delete(jobKey);
+    statesJobColumnFamily.deleteExisting(jobKey);
 
     makeJobNotActivatable(type);
 
@@ -254,7 +254,8 @@ public final class DbJobState implements JobState, MutableJobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().getValue();
-            return visitJob(jobKey1, callback::apply, () -> deadlinesColumnFamily.delete(key));
+            return visitJob(
+                jobKey1, callback::apply, () -> deadlinesColumnFamily.deleteExisting(key));
           }
           return false;
         });
@@ -319,7 +320,7 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().getValue();
-            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.delete(key));
+            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
@@ -390,11 +391,11 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
-    activatableColumnFamily.delete(typeJobKey);
+    activatableColumnFamily.deleteIfExists(typeJobKey);
   }
 
   private void removeJobDeadline(final long deadline) {
     deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.delete(deadlineJobKey);
+    deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
   }
 }

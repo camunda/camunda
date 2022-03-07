@@ -95,7 +95,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
             (key, value) -> deleteTrigger(key));
 
     this.eventScopeKey.wrapLong(eventScopeKey);
-    eventScopeInstanceColumnFamily.delete(this.eventScopeKey);
+    eventScopeInstanceColumnFamily.deleteIfExists(this.eventScopeKey);
   }
 
   @Override
@@ -195,6 +195,6 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   private void deleteTrigger(final DbCompositeKey<DbLong, DbLong> triggerKey) {
-    eventTriggerColumnFamily.delete(triggerKey);
+    eventTriggerColumnFamily.deleteIfExists(triggerKey);
   }
 }

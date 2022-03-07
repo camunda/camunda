@@ -68,10 +68,10 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   public void remove(final TimerInstance timer) {
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
     timerKey.wrapLong(timer.getKey());
-    timerInstanceColumnFamily.delete(elementAndTimerKey);
+    timerInstanceColumnFamily.deleteExisting(elementAndTimerKey);
 
     dueDateKey.wrapLong(timer.getDueDate());
-    dueDateColumnFamily.delete(dueDateCompositeKey);
+    dueDateColumnFamily.deleteExisting(dueDateCompositeKey);
   }
 
   @Override

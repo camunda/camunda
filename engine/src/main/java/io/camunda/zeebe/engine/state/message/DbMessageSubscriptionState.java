@@ -177,12 +177,12 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void remove(final MessageSubscription subscription) {
-    subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
 
     final var record = subscription.getRecord();
     messageName.wrapBuffer(record.getMessageNameBuffer());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
+    messageNameAndCorrelationKeyColumnFamily.deleteExisting(nameCorrelationAndElementInstanceKey);
 
     transientState.remove(subscription.getRecord());
   }

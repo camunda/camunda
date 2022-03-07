@@ -119,7 +119,7 @@ public class DbMigrationState implements MutableMigrationState {
             transientState.updateCommandSentTime(messageSubscription.getRecord(), sentTime);
           }
 
-          messageSubscriptionSentTimeColumnFamily.delete(key);
+          messageSubscriptionSentTimeColumnFamily.deleteExisting(key);
         });
   }
 
@@ -158,7 +158,7 @@ public class DbMigrationState implements MutableMigrationState {
             }
           }
 
-          processSubscriptionSentTimeColumnFamily.delete(key);
+          processSubscriptionSentTimeColumnFamily.deleteExisting(key);
         });
   }
 
@@ -199,7 +199,7 @@ public class DbMigrationState implements MutableMigrationState {
                 key.getValue(), eventKey, elementIdBuffer, value.get());
           }
 
-          temporaryVariableColumnFamily.delete(key);
+          temporaryVariableColumnFamily.deleteExisting(key);
         });
   }
 }
