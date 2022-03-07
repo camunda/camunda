@@ -54,7 +54,7 @@ public final class ExportersState {
 
   private void setPosition(final long position) {
     this.position.set(position);
-    exporterPositionColumnFamily.put(exporterId, this.position);
+    exporterPositionColumnFamily.upsert(exporterId, this.position);
   }
 
   public void visitPositions(final BiConsumer<String, Long> consumer) {

@@ -58,10 +58,10 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     timerKey.wrapLong(timer.getKey());
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
 
-    timerInstanceColumnFamily.put(elementAndTimerKey, timer);
+    timerInstanceColumnFamily.insert(elementAndTimerKey, timer);
 
     dueDateKey.wrapLong(timer.getDueDate());
-    dueDateColumnFamily.put(dueDateCompositeKey, DbNil.INSTANCE);
+    dueDateColumnFamily.insert(dueDateCompositeKey, DbNil.INSTANCE);
   }
 
   @Override

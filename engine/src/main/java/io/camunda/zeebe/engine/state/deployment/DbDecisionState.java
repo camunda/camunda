@@ -134,11 +134,11 @@ public final class DbDecisionState implements MutableDecisionState {
   public void putDecision(final DecisionRecord record) {
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbPersistedDecision.wrap(record);
-    decisionsByKey.put(dbDecisionKey, dbPersistedDecision);
+    decisionsByKey.upsert(dbDecisionKey, dbPersistedDecision);
 
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    decisionKeyByDecisionRequirementsKey.put(
+    decisionKeyByDecisionRequirementsKey.upsert(
         dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
 
     updateLatestDecisionVersion(record);
@@ -148,7 +148,7 @@ public final class DbDecisionState implements MutableDecisionState {
   public void putDecisionRequirements(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     dbPersistedDecisionRequirements.wrap(record);
-    decisionRequirementsByKey.put(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
+    decisionRequirementsByKey.upsert(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
 
     updateLatestDecisionRequirementsVersion(record);
   }
@@ -158,16 +158,22 @@ public final class DbDecisionState implements MutableDecisionState {
         .ifPresentOrElse(
             previousVersion -> {
               if (record.getVersion() > previousVersion.getVersion()) {
-                putDecisionAsLatestVersion(record);
+                updateDecisionAsLatestVersion(record);
               }
             },
-            () -> putDecisionAsLatestVersion(record));
+            () -> insertDecisionAsLatestVersion(record));
   }
 
-  private void putDecisionAsLatestVersion(final DecisionRecord record) {
+  private void updateDecisionAsLatestVersion(final DecisionRecord record) {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionKey.wrapLong(record.getDecisionKey());
-    latestDecisionKeysByDecisionId.put(dbDecisionId, dbDecisionKey);
+    latestDecisionKeysByDecisionId.update(dbDecisionId, dbDecisionKey);
+  }
+
+  private void insertDecisionAsLatestVersion(final DecisionRecord record) {
+    dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
+    dbDecisionKey.wrapLong(record.getDecisionKey());
+    latestDecisionKeysByDecisionId.insert(dbDecisionId, dbDecisionKey);
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
@@ -176,15 +182,21 @@ public final class DbDecisionState implements MutableDecisionState {
             previousVersion -> {
               if (record.getDecisionRequirementsVersion()
                   > previousVersion.getDecisionRequirementsVersion()) {
-                putDecisionRequirementsAsLatestVersion(record);
+                updateDecisionRequirementsAsLatestVersion(record);
               }
             },
-            () -> putDecisionRequirementsAsLatestVersion(record));
+            () -> insertDecisionRequirementsAsLatestVersion(record));
   }
 
-  private void putDecisionRequirementsAsLatestVersion(final DecisionRequirementsRecord record) {
+  private void updateDecisionRequirementsAsLatestVersion(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    latestDecisionRequirementsKeysById.put(dbDecisionRequirementsId, dbDecisionRequirementsKey);
+    latestDecisionRequirementsKeysById.update(dbDecisionRequirementsId, dbDecisionRequirementsKey);
+  }
+
+  private void insertDecisionRequirementsAsLatestVersion(final DecisionRequirementsRecord record) {
+    dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
+    dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
+    latestDecisionRequirementsKeysById.insert(dbDecisionRequirementsId, dbDecisionRequirementsKey);
   }
 }

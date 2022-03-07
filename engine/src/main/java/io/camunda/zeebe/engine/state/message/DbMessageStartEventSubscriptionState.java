@@ -64,9 +64,9 @@ public final class DbMessageStartEventSubscriptionState
 
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-    subscriptionsColumnFamily.put(
+    subscriptionsColumnFamily.upsert(
         messageNameAndProcessDefinitionKey, messageStartEventSubscription);
-    subscriptionsOfProcessDefinitionKeyColumnFamily.put(
+    subscriptionsOfProcessDefinitionKeyColumnFamily.upsert(
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
   }
 

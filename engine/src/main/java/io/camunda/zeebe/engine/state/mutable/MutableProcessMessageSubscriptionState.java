@@ -15,6 +15,8 @@ public interface MutableProcessMessageSubscriptionState extends ProcessMessageSu
 
   void put(final long key, ProcessMessageSubscriptionRecord record);
 
+  void updateToOpeningState(ProcessMessageSubscriptionRecord record);
+
   void updateToOpenedState(ProcessMessageSubscriptionRecord record);
 
   void updateToClosingState(ProcessMessageSubscriptionRecord record);

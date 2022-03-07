@@ -175,7 +175,7 @@ public final class TimerInstanceStateTest {
     state.put(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
-    timer2.setElementInstanceKey(1L);
+    timer2.setElementInstanceKey(2L);
     timer2.setDueDate(1000L);
     state.put(timer2);
 

@@ -70,8 +70,14 @@ public final class DbProcessMessageSubscriptionState
     processMessageSubscription.reset();
     processMessageSubscription.setKey(key).setRecord(record);
 
-    subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
+    subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
 
+    transientState.add(record);
+  }
+
+  @Override
+  public void updateToOpeningState(final ProcessMessageSubscriptionRecord record) {
+    update(record, s -> s.setRecord(record).setOpening());
     transientState.add(record);
   }
 
@@ -159,7 +165,7 @@ public final class DbProcessMessageSubscriptionState
     wrapSubscriptionKeys(
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
-    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    subscriptionColumnFamily.update(elementKeyAndMessageName, subscription);
   }
 
   private void remove(final ProcessMessageSubscription subscription) {

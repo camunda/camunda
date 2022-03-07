@@ -125,7 +125,7 @@ public final class DbJobState implements JobState, MutableJobState {
     makeJobNotActivatable(type);
 
     deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
+    deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -144,7 +144,7 @@ public final class DbJobState implements JobState, MutableJobState {
     validateParameters(type);
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
-    createJob(key, record, type);
+    updateJob(key, record, State.ACTIVATABLE);
     removeJobDeadline(deadline);
   }
 
@@ -191,7 +191,7 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         jobKey.wrapLong(key);
         backoffKey.wrapLong(updatedValue.getRecurringTime());
-        backoffColumnFamily.put(backoffJobKey, DbNil.INSTANCE);
+        backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
         updateJob(key, updatedValue, State.FAILED);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
@@ -217,8 +217,8 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
-    resetVariablesAndUpdateJobRecord(key, record);
-    updateJobState(State.ACTIVATABLE);
+    createJobRecord(key, record);
+    initializeJobState();
     makeJobActivatable(type, key);
   }
 
@@ -348,16 +348,28 @@ public final class DbJobState implements JobState, MutableJobState {
     }
   }
 
+  private void createJobRecord(final long key, final JobRecord record) {
+    jobKey.wrapLong(key);
+    // do not persist variables in job state
+    jobRecordToWrite.setRecordWithoutVariables(record);
+    jobsColumnFamily.insert(jobKey, jobRecordToWrite);
+  }
+
   private void resetVariablesAndUpdateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(updatedValue);
-    jobsColumnFamily.put(jobKey, jobRecordToWrite);
+    jobsColumnFamily.update(jobKey, jobRecordToWrite);
+  }
+
+  private void initializeJobState() {
+    jobState.setState(State.ACTIVATABLE);
+    statesJobColumnFamily.insert(jobKey, jobState);
   }
 
   private void updateJobState(final State newState) {
     jobState.setState(newState);
-    statesJobColumnFamily.put(jobKey, jobState);
+    statesJobColumnFamily.update(jobKey, jobState);
   }
 
   private void makeJobActivatable(final DirectBuffer type, final long key) {
@@ -366,7 +378,9 @@ public final class DbJobState implements JobState, MutableJobState {
     jobTypeKey.wrapBuffer(type);
 
     jobKey.wrapLong(key);
-    activatableColumnFamily.put(typeJobKey, DbNil.INSTANCE);
+    // Need to upsert here because jobs can be marked as failed (and thus made activatable)
+    // without activating them first
+    activatableColumnFamily.upsert(typeJobKey, DbNil.INSTANCE);
 
     // always notify
     notifyJobAvailable(type);

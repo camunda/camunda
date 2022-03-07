@@ -47,14 +47,14 @@ public final class DbCompositeKeyColumnFamilyTest {
   }
 
   @Test
-  public void shouldPutValue() {
+  public void shouldUpsertValue() {
     // given
     firstKey.wrapString("foo");
     secondKey.wrapLong(2);
     value.wrapString("baring");
 
     // when
-    columnFamily.put(compositeKey, value);
+    columnFamily.upsert(compositeKey, value);
     value.wrapString("yes");
 
     // then
@@ -70,12 +70,12 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseForeachValue() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     final List<String> values = new ArrayList<>();
@@ -89,12 +89,12 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseForeachPair() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     final List<String> firstKeyParts = new ArrayList<>();
@@ -122,12 +122,12 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseForeachToDelete() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     final List<String> firstKeyParts = new ArrayList<>();
@@ -155,12 +155,12 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseWhileTrue() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     final List<String> firstKeyParts = new ArrayList<>();
@@ -188,12 +188,12 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseWhileTrueToDelete() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     final List<String> firstKeyParts = new ArrayList<>();
@@ -225,15 +225,15 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseWhileEqualPrefix() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foobar", 53, "expected value");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("foo", 213, "oh wow");
-    putKeyValuePair("foo", 53, "expected value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     firstKey.wrapString("foo");
@@ -261,16 +261,16 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseGetWhileIterating() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foobar", 53, "expected value");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("foo", 213, "oh wow");
-    putKeyValuePair("foo", 53, "expected value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 213, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("hello", 13, "foo");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 213, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("hello", 13, "foo");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     firstKey.wrapString("foo");
@@ -299,15 +299,15 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseWhileEqualPrefixAndTrue() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foobar", 53, "expected value");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("foo", 213, "oh wow");
-    putKeyValuePair("foo", 53, "expected value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     firstKey.wrapString("foo");
@@ -337,12 +337,12 @@ public final class DbCompositeKeyColumnFamilyTest {
   @Test
   public void shouldUseWhileEqualPrefixToDelete() {
     // given
-    putKeyValuePair("foo", 12, "baring");
-    putKeyValuePair("foo", 13, "different value");
-    putKeyValuePair("this is the one", 255, "as you know");
-    putKeyValuePair("hello", 34, "world");
-    putKeyValuePair("another", 923113, "string");
-    putKeyValuePair("might", 37426, "be good");
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
 
     // when
     firstKey.wrapString("foo");
@@ -373,11 +373,11 @@ public final class DbCompositeKeyColumnFamilyTest {
     assertThat(secondKeyParts).containsExactly(34L, 37426L, 923113L, 255L);
   }
 
-  private void putKeyValuePair(final String firstKey, final long secondKey, final String value) {
+  private void upsertKeyValuePair(final String firstKey, final long secondKey, final String value) {
     this.firstKey.wrapString(firstKey);
     this.secondKey.wrapLong(secondKey);
 
     this.value.wrapString(value);
-    columnFamily.put(compositeKey, this.value);
+    columnFamily.upsert(compositeKey, this.value);
   }
 }

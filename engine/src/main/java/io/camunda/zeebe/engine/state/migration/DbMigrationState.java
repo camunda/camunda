@@ -148,7 +148,7 @@ public class DbMigrationState implements MutableMigrationState {
             if (processMessageSubscription.isOpening()) {
               // explicit call to put(..). This has the desired side-effect that the subscription
               // is added to transient state
-              persistentState.put(elementInstanceKey, exclusiveCopy);
+              persistentState.updateToOpeningState(exclusiveCopy);
               transientState.updateSentTime(exclusiveCopy, sentTime);
             } else if (processMessageSubscription.isClosing()) {
               // explicit call to updateToClosingState(..). This has the desired side-effect that

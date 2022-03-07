@@ -122,10 +122,10 @@ public final class DbMessageSubscriptionState
 
     messageSubscription.setKey(key).setRecord(record).setCorrelating(false);
 
-    subscriptionColumnFamily.put(elementKeyAndMessageName, messageSubscription);
+    subscriptionColumnFamily.insert(elementKeyAndMessageName, messageSubscription);
 
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.put(
+    messageNameAndCorrelationKeyColumnFamily.insert(
         nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
@@ -194,7 +194,7 @@ public final class DbMessageSubscriptionState
     messageName.wrapBuffer(record.getMessageNameBuffer());
 
     subscription.setCorrelating(correlating);
-    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    subscriptionColumnFamily.update(elementKeyAndMessageName, subscription);
   }
 
   private Boolean visitMessageSubscription(

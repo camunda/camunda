@@ -105,7 +105,7 @@ public class DbVariableState implements MutableVariableState {
     variableNameView.wrap(name, nameOffset, nameLength);
     variableName.wrapBuffer(variableNameView);
 
-    variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
+    variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
   }
 
   @Override
@@ -113,7 +113,7 @@ public class DbVariableState implements MutableVariableState {
     this.childKey.wrapLong(childKey);
     this.parentKey.set(parentKey);
 
-    childParentColumnFamily.put(this.childKey, this.parentKey);
+    childParentColumnFamily.insert(this.childKey, this.parentKey);
   }
 
   @Override

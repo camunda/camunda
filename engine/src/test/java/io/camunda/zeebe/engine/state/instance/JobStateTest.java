@@ -654,9 +654,15 @@ public final class JobStateTest {
         .hasStackTraceContaining("type must not be empty");
 
     // should not throw any exception
+    // TODO: maybe rewrite this a little bit
+    jobState.create(1L, newJobRecord());
     jobState.activate(1L, newJobRecord());
     jobState.complete(1L, jobWithoutDeadline);
+
+    jobState.create(1L, newJobRecord());
     jobState.cancel(1L, jobWithoutDeadline);
+
+    jobState.create(1L, newJobRecord());
     jobState.throwError(1L, jobWithoutDeadline);
   }
 

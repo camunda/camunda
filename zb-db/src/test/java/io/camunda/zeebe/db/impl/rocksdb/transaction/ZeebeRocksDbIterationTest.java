@@ -74,7 +74,7 @@ public final class ZeebeRocksDbIterationTest {
       firstKey.wrapLong(prefix);
       for (long suffix = 0; suffix < suffixes; suffix++) {
         secondKey.wrapLong(suffix);
-        columnFamily.put(compositeKey, DbNil.INSTANCE);
+        columnFamily.upsert(compositeKey, DbNil.INSTANCE);
       }
     }
 

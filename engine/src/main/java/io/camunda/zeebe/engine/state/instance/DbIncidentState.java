@@ -73,29 +73,18 @@ public final class DbIncidentState implements MutableIncidentState {
   public void createIncident(final long incidentKey, final IncidentRecord incident) {
     this.incidentKey.wrapLong(incidentKey);
     incidentWrite.setRecord(incident);
-    incidentColumnFamily.put(this.incidentKey, incidentWrite);
+    incidentColumnFamily.insert(this.incidentKey, incidentWrite);
 
     incidentKeyValue.set(incidentKey);
     if (isJobIncident(incident)) {
       jobKey.wrapLong(incident.getJobKey());
-      jobIncidentColumnFamily.put(jobKey, incidentKeyValue);
+      jobIncidentColumnFamily.insert(jobKey, incidentKeyValue);
     } else {
       elementInstanceKey.wrapLong(incident.getElementInstanceKey());
-      processInstanceIncidentColumnFamily.put(elementInstanceKey, incidentKeyValue);
+      processInstanceIncidentColumnFamily.insert(elementInstanceKey, incidentKeyValue);
     }
 
     metrics.incidentCreated();
-  }
-
-  @Override
-  public IncidentRecord getIncidentRecord(final long incidentKey) {
-    this.incidentKey.wrapLong(incidentKey);
-
-    final Incident incident = incidentColumnFamily.get(this.incidentKey);
-    if (incident != null) {
-      return incident.getRecord();
-    }
-    return null;
   }
 
   @Override
@@ -115,6 +104,17 @@ public final class DbIncidentState implements MutableIncidentState {
 
       metrics.incidentResolved();
     }
+  }
+
+  @Override
+  public IncidentRecord getIncidentRecord(final long incidentKey) {
+    this.incidentKey.wrapLong(incidentKey);
+
+    final Incident incident = incidentColumnFamily.get(this.incidentKey);
+    if (incident != null) {
+      return incident.getRecord();
+    }
+    return null;
   }
 
   @Override

@@ -41,6 +41,6 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
   @Override
   public void markAsProcessed(final long position) {
     this.position.set(position);
-    positionColumnFamily.put(positionKey, this.position);
+    positionColumnFamily.upsert(positionKey, this.position);
   }
 }
