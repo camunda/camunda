@@ -71,7 +71,7 @@ public final class ExportersState {
 
   public void removePosition(final String exporter) {
     exporterId.wrapString(exporter);
-    exporterPositionColumnFamily.deleteExisting(exporterId);
+    exporterPositionColumnFamily.deleteIfExists(exporterId);
   }
 
   public boolean hasExporters() {
