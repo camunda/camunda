@@ -68,11 +68,6 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public void put(final KeyType key, final ValueType value) {
-    upsert(key, value);
-  }
-
-  @Override
   public void insert(final KeyType key, final ValueType value) {
     ensureInOpenTransaction(
         transaction -> {

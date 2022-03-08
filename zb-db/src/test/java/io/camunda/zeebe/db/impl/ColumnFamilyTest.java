@@ -45,13 +45,13 @@ public final class ColumnFamilyTest {
   }
 
   @Test
-  public void shouldPutValue() {
+  public void shouldInsertValue() {
     // given
     key.wrapLong(1213);
     value.wrapLong(255);
 
     // when
-    columnFamily.put(key, value);
+    columnFamily.insert(key, value);
     value.wrapLong(221);
 
     // then

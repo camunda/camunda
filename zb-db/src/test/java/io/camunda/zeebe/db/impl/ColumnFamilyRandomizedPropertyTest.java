@@ -68,7 +68,6 @@ public class ColumnFamilyRandomizedPropertyTest {
   ListArbitrary<TestableOperation> operations() {
     final var op =
         Arbitraries.of(
-            PutOp.class,
             InsertOp.class,
             UpdateOp.class,
             UpsertOp.class,
@@ -119,19 +118,6 @@ public class ColumnFamilyRandomizedPropertyTest {
     @Override
     public BiConsumer<Long, Long> modify(final Map<Long, Long> map) {
       return map::putIfAbsent;
-    }
-  }
-
-  record PutOp(long key, long value) implements TestableOperation {
-
-    @Override
-    public BiConsumer<DbLong, DbLong> modify(final ColumnFamily<DbLong, DbLong> columnFamily) {
-      return columnFamily::put;
-    }
-
-    @Override
-    public BiConsumer<Long, Long> modify(final Map<Long, Long> map) {
-      return map::put;
     }
   }
 
