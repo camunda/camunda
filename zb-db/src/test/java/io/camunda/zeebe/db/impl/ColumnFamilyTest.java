@@ -154,7 +154,7 @@ public final class ColumnFamilyTest {
     upsertKeyValuePair(1213, 255);
 
     // when
-    columnFamily.delete(key);
+    columnFamily.deleteExisting(key);
 
     // then
     final boolean exists = columnFamily.exists(key);
@@ -171,7 +171,7 @@ public final class ColumnFamilyTest {
 
     // when
     key.wrapLong(700);
-    columnFamily.delete(key);
+    columnFamily.deleteIfExists(key);
 
     // then
     key.wrapLong(1213);
@@ -235,7 +235,7 @@ public final class ColumnFamilyTest {
     // when
     columnFamily.forEach(
         (key, value) -> {
-          columnFamily.delete(key);
+          columnFamily.deleteExisting(key);
         });
 
     final List<Long> keys = new ArrayList<>();
@@ -302,7 +302,7 @@ public final class ColumnFamilyTest {
     // when
     columnFamily.whileTrue(
         (key, value) -> {
-          columnFamily.delete(key);
+          columnFamily.deleteExisting(key);
           return key.getValue() != 4567;
         });
 
@@ -326,7 +326,7 @@ public final class ColumnFamilyTest {
     upsertKeyValuePair(1, 10);
     assertThat(columnFamily.isEmpty()).isFalse();
 
-    columnFamily.delete(key);
+    columnFamily.deleteExisting(key);
     assertThat(columnFamily.isEmpty()).isTrue();
   }
 
