@@ -68,7 +68,7 @@ public final class DecisionStateTest {
   void shouldPutDecision() {
     // given
     final var decisionRecord = sampleDecisionRecord();
-    decisionState.putDecision(decisionRecord);
+    decisionState.storeDecisionRecord(decisionRecord);
 
     // when
     final var persistedDecision =
@@ -97,8 +97,8 @@ public final class DecisionStateTest {
     final var decisionRecord2 =
         sampleDecisionRecord().setDecisionId("decision-2").setDecisionKey(2L);
 
-    decisionState.putDecision(decisionRecord1);
-    decisionState.putDecision(decisionRecord2);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
 
     // when
     final var persistedDecision1 =
@@ -124,9 +124,9 @@ public final class DecisionStateTest {
     final var decisionRecordV2 = sampleDecisionRecord().setDecisionKey(2L).setVersion(2);
     final var decisionRecordV3 = sampleDecisionRecord().setDecisionKey(3L).setVersion(3);
 
-    decisionState.putDecision(decisionRecordV1);
-    decisionState.putDecision(decisionRecordV3);
-    decisionState.putDecision(decisionRecordV2);
+    decisionState.storeDecisionRecord(decisionRecordV1);
+    decisionState.storeDecisionRecord(decisionRecordV3);
+    decisionState.storeDecisionRecord(decisionRecordV2);
 
     // when
     final var persistedDecision =
@@ -291,9 +291,9 @@ public final class DecisionStateTest {
             .setDecisionKey(3L)
             .setDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
 
-    decisionState.putDecision(decision1);
-    decisionState.putDecision(decision2);
-    decisionState.putDecision(decision3);
+    decisionState.storeDecisionRecord(decision1);
+    decisionState.storeDecisionRecord(decision2);
+    decisionState.storeDecisionRecord(decision3);
 
     // when
     final var decisionsOfDrg1 =

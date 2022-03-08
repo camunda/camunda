@@ -18,7 +18,7 @@ public interface MutableDecisionState extends DecisionState {
    *
    * @param record the record of the decision
    */
-  void putDecision(DecisionRecord record);
+  void storeDecisionRecord(DecisionRecord record);
 
   /**
    * Put the given decision requirements (DRG) in the state. Update the latest version of the DRG if

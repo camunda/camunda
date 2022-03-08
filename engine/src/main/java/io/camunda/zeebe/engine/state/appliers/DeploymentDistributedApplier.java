@@ -50,7 +50,7 @@ public class DeploymentDistributedApplier
               decisionState.putDecisionRequirements(decisionRequirementsRecord);
             });
 
-    value.decisionsMetadata().forEach(decisionState::putDecision);
+    value.decisionsMetadata().forEach(decisionState::storeDecisionRecord);
   }
 
   private DirectBuffer getResourceByName(

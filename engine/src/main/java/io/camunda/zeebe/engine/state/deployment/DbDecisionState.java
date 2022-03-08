@@ -131,14 +131,14 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public void putDecision(final DecisionRecord record) {
+  public void storeDecisionRecord(final DecisionRecord record) {
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbPersistedDecision.wrap(record);
-    decisionsByKey.upsert(dbDecisionKey, dbPersistedDecision);
+    decisionsByKey.insert(dbDecisionKey, dbPersistedDecision);
 
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    decisionKeyByDecisionRequirementsKey.upsert(
+    decisionKeyByDecisionRequirementsKey.insert(
         dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
 
     updateLatestDecisionVersion(record);
