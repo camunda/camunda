@@ -67,7 +67,7 @@ public final class DbDeploymentState implements MutableDeploymentState {
   public void removePendingDeploymentDistribution(final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
-    pendingDeploymentColumnFamily.deleteIfExists(deploymentPartitionKey);
+    pendingDeploymentColumnFamily.deleteExisting(deploymentPartitionKey);
   }
 
   @Override
