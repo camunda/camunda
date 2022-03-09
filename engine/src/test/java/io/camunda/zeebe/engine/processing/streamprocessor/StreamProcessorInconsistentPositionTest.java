@@ -60,9 +60,11 @@ public final class StreamProcessorInconsistentPositionTest {
     testStreams.createLogStream(getLogName(2), 2, listLogStorage);
 
     firstStreamProcessorComposite =
-        new StreamProcessingComposite(testStreams, 1, DefaultZeebeDbFactory.defaultFactory());
+        new StreamProcessingComposite(
+            testStreams, 1, DefaultZeebeDbFactory.defaultFactory(), actorSchedulerRule.get());
     secondStreamProcessorComposite =
-        new StreamProcessingComposite(testStreams, 2, DefaultZeebeDbFactory.defaultFactory());
+        new StreamProcessingComposite(
+            testStreams, 2, DefaultZeebeDbFactory.defaultFactory(), actorSchedulerRule.get());
   }
 
   @After

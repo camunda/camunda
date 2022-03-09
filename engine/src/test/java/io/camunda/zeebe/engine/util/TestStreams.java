@@ -322,10 +322,10 @@ public final class TestStreams {
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
 
-  public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {
+  public LogStreamBatchWriter setupBatchWriter(
+      final String logName, final RecordToWrite[] recordToWrites) {
     final SynchronousLogStream logStream = getLogStream(logName);
     final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-
     for (final RecordToWrite recordToWrite : recordToWrites) {
       logStreamBatchWriter
           .event()
@@ -335,7 +335,7 @@ public final class TestStreams {
           .valueWriter(recordToWrite.getUnifiedRecordValue())
           .done();
     }
-    return logStreamBatchWriter.tryWrite();
+    return logStreamBatchWriter;
   }
 
   public static class FluentLogWriter {
