@@ -26,7 +26,7 @@ if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
 fi
 
 mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" -pl clients/java \
- -P parallel-tests,extract-flaky-tests "${MAVEN_PROPERTIES[@]}" \
+ -P parallel-tests,extract-flaky-tests,disableCheckstyle "${MAVEN_PROPERTIES[@]}" \
  verify | tee "${tempFile}"
 status=${PIPESTATUS[0]}
 
