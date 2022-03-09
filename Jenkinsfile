@@ -103,8 +103,13 @@ pipeline {
                     // to simplify building the Docker image, we copy the distribution to a fixed
                     // filename that doesn't include the version
                     runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
-                    stash name: "zeebe-build", includes: "m2-repository/io/camunda/*/${VERSION}/*"
-                    stash name: "zeebe-distro", includes: "camunda-cloud-zeebe.tar.gz"
+
+                    container('python') {
+                        gcloudSaveTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+
+                        sh "tar -cf zeebe-build.tar ./m2-repository/io/camunda/*/${VERSION}/*"
+                        gcloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
+                    }
                 }
             }
         }
@@ -250,7 +255,10 @@ pipeline {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     prepareMavenContainer()
 
-                                    unstash name: "zeebe-build"
+                                    container('python') {
+                                        gcloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
+                                        sh "tar -xf zeebe-build.tar"
+                                    }
                                     runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
                                 }
                             }
@@ -265,7 +273,9 @@ pipeline {
 
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                                    unstash name: "zeebe-distro"
+                                    container('python') {
+                                        gcloudRestoreTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+                                    }
                                     container('docker') {
                                         sh '.ci/scripts/docker/build.sh'
                                     }

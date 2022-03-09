@@ -63,6 +63,10 @@ spec:
         requests:
           cpu: 18
           memory: 60Gi
+    - name: python
+      image: python:3.10
+      command: [ "cat" ]
+      tty: true
   volumes:
     - name: docker-storage
       emptyDir: { }
