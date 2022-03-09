@@ -104,12 +104,6 @@ public final class DbJobState implements JobState, MutableJobState {
     createJob(key, record, type);
   }
 
-  /**
-   * <b>Note:</b> calling this method will reset the variables of the job record. Make sure to write
-   * the job record to the log before updating it in the state.
-   *
-   * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
-   */
   @Override
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
@@ -118,7 +112,7 @@ public final class DbJobState implements JobState, MutableJobState {
     validateParameters(type);
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
-    resetVariablesAndUpdateJobRecord(key, record);
+    updateJobRecord(key, record);
 
     updateJobState(State.ACTIVATED);
 
@@ -211,7 +205,7 @@ public final class DbJobState implements JobState, MutableJobState {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
-      resetVariablesAndUpdateJobRecord(jobKey, job);
+      updateJobRecord(jobKey, job);
     }
     return job;
   }
@@ -228,7 +222,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     validateParameters(type);
 
-    resetVariablesAndUpdateJobRecord(key, updatedValue);
+    updateJobRecord(key, updatedValue);
 
     updateJobState(newState);
 
@@ -356,7 +350,8 @@ public final class DbJobState implements JobState, MutableJobState {
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
   }
 
-  private void resetVariablesAndUpdateJobRecord(final long key, final JobRecord updatedValue) {
+  /** Updates the job record without updating variables */
+  private void updateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(updatedValue);
