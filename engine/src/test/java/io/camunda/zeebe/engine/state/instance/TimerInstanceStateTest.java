@@ -38,7 +38,7 @@ public final class TimerInstanceStateTest {
     timer.setElementInstanceKey(1L);
     timer.setKey(2L);
     timer.setDueDate(1000L);
-    state.put(timer);
+    state.store(timer);
 
     // when
     final List<TimerInstance> timers = new ArrayList<>();
@@ -59,12 +59,12 @@ public final class TimerInstanceStateTest {
     final TimerInstance timer1 = new TimerInstance();
     timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
-    state.put(timer1);
+    state.store(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
     timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
-    state.put(timer2);
+    state.store(timer2);
 
     // when
     final TimerInstance timer = new TimerInstance();
@@ -88,7 +88,7 @@ public final class TimerInstanceStateTest {
     timer.setProcessInstanceKey(1L);
     timer.setKey(2L);
     timer.setDueDate(1000L);
-    state.put(timer);
+    state.store(timer);
 
     // when
     final TimerInstance readTimer = state.get(1L, 2L);
@@ -110,17 +110,17 @@ public final class TimerInstanceStateTest {
     final TimerInstance timer1 = new TimerInstance();
     timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
-    state.put(timer1);
+    state.store(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
     timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
-    state.put(timer2);
+    state.store(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
     timer3.setElementInstanceKey(3L);
     timer3.setDueDate(3000L);
-    state.put(timer3);
+    state.store(timer3);
 
     // when
     final List<Long> keys = new ArrayList<>();
@@ -137,17 +137,17 @@ public final class TimerInstanceStateTest {
     final TimerInstance timer1 = new TimerInstance();
     timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
-    state.put(timer1);
+    state.store(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
     timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
-    state.put(timer2);
+    state.store(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
     timer3.setElementInstanceKey(3L);
     timer3.setDueDate(3000L);
-    state.put(timer3);
+    state.store(timer3);
 
     // when
     final long nextDueDate = state.findTimersWithDueDateBefore(2000L, t -> true);
@@ -172,17 +172,17 @@ public final class TimerInstanceStateTest {
     final TimerInstance timer1 = new TimerInstance();
     timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
-    state.put(timer1);
+    state.store(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
     timer2.setElementInstanceKey(2L);
     timer2.setDueDate(1000L);
-    state.put(timer2);
+    state.store(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
     timer3.setElementInstanceKey(3L);
     timer3.setDueDate(3000L);
-    state.put(timer3);
+    state.store(timer3);
 
     // when
     final long nextDueDate = state.findTimersWithDueDateBefore(3000L, t -> true);
@@ -197,12 +197,12 @@ public final class TimerInstanceStateTest {
     final TimerInstance timer1 = new TimerInstance();
     timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
-    state.put(timer1);
+    state.store(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
     timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
-    state.put(timer2);
+    state.store(timer2);
 
     // when
     final List<Long> keys = new ArrayList<>();
@@ -227,19 +227,19 @@ public final class TimerInstanceStateTest {
     timer1.setElementInstanceKey(1L);
     timer1.setKey(1L);
     timer1.setDueDate(1000L);
-    state.put(timer1);
+    state.store(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
     timer2.setElementInstanceKey(1L);
     timer2.setKey(2L);
     timer2.setDueDate(2000L);
-    state.put(timer2);
+    state.store(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
     timer3.setElementInstanceKey(2L);
     timer3.setKey(3L);
     timer3.setDueDate(2000L);
-    state.put(timer3);
+    state.store(timer3);
 
     // when
     final List<Long> keys = new ArrayList<>();

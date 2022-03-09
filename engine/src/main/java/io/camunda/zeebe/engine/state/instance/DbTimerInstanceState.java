@@ -54,7 +54,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
-  public void put(final TimerInstance timer) {
+  public void store(final TimerInstance timer) {
     timerKey.wrapLong(timer.getKey());
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
 
