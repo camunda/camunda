@@ -132,7 +132,7 @@ public final class VariableInputMappingTransformerTest {
     return new ZeebeMapping() {
       @Override
       public String getSource() {
-        return source;
+        return "= " + source;
       }
 
       @Override
