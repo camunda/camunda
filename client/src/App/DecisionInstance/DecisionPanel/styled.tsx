@@ -16,7 +16,6 @@ const Container = styled.div<ContainerProps>`
 
     return css`
       background: ${colors.background};
-      padding: 30px 20px;
 
       .powered-by {
         display: none;
@@ -89,4 +88,18 @@ const Decision = styled.div`
   padding: 30px 20px;
 `;
 
-export {Container, Decision};
+const IncidentBanner = styled.div`
+  ${({theme}) => {
+    return css`
+      background-color: ${theme.colors.incidentsAndErrors};
+      color: ${theme.colors.white};
+      font-size: 15px;
+      font-weight: 500;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+  }}
+`;
+export {Container, Decision, IncidentBanner};

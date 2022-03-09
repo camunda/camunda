@@ -7,7 +7,10 @@
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {render, screen} from '@testing-library/react';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
+import {
+  invoiceClassification,
+  assignApproverGroup,
+} from 'modules/mocks/mockDecisionInstance';
 import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
@@ -48,6 +51,7 @@ describe('<DecisionPanel />', () => {
     expect(
       await screen.findByText('DecisionTable view mock')
     ).toBeInTheDocument();
+    expect(screen.queryByText('An error occured')).not.toBeInTheDocument();
   });
 
   it('should render literal expression', async () => {
@@ -64,5 +68,19 @@ describe('<DecisionPanel />', () => {
     expect(
       await screen.findByText('LiteralExpression view mock')
     ).toBeInTheDocument();
+  });
+
+  it('should render incident banner', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(assignApproverGroup))
+      )
+    );
+
+    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+
+    render(<DecisionPanel />, {wrapper: ThemeProvider});
+
+    expect(await screen.findByText('An error occured')).toBeInTheDocument();
   });
 });

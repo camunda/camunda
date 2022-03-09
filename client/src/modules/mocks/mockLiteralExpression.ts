@@ -14,6 +14,7 @@ const mockLiteralExpression: DecisionInstanceType = {
   decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '42',
+  errorMessage: null,
   inputs: [
     {
       id: '0',

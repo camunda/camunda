@@ -14,6 +14,7 @@ const invoiceClassification: DecisionInstanceType = {
   decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '666',
+  errorMessage: null,
   inputs: [
     {id: '0', name: 'Age', value: '16'},
     {id: '1', name: 'Stateless Person', value: 'false'},
@@ -105,6 +106,7 @@ const assignApproverGroup: DecisionInstanceType = {
   decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '777',
+  errorMessage: 'An error occured',
   inputs: [
     {
       id: '0',

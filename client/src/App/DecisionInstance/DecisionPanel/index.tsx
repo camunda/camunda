@@ -10,11 +10,12 @@ import {observer} from 'mobx-react';
 import {DecisionViewer} from 'modules/dmn-js/DecisionViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
-import {Container, Decision} from './styled';
+import {Container, Decision, IncidentBanner} from './styled';
 
 const DecisionPanel: React.FC = observer(() => {
   const decisionViewer = useRef<DecisionViewer | null>(null);
   const decisionViewerRef = useRef<HTMLDivElement | null>(null);
+  const {decisionInstance} = decisionInstanceStore.state;
 
   if (decisionViewer.current === null) {
     decisionViewer.current = new DecisionViewer();
@@ -53,6 +54,11 @@ const DecisionPanel: React.FC = observer(() => {
       data-testid="decision-panel"
       highlightableRows={highlightableRules}
     >
+      {decisionInstance?.state === 'FAILED' && (
+        <IncidentBanner data-testid="incident-banner">
+          {decisionInstance.errorMessage}
+        </IncidentBanner>
+      )}
       <Decision ref={decisionViewerRef} />
     </Container>
   );

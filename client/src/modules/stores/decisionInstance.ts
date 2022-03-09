@@ -18,6 +18,7 @@ type DecisionInstanceType = ReadonlyDeep<{
   decisionVersion: string;
   evaluationDate: string;
   processInstanceId: string | null;
+  errorMessage: string | null;
   inputs: Array<{
     id: string;
     name: string;
