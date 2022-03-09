@@ -37,7 +37,7 @@
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
-    <jackson.version>2.13.1</jackson.version>
+    <jackson.version>2.13.2</jackson.version>
     <jsonpath.version>2.7.0</jsonpath.version>
     <elasticsearch.version>7.17.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
