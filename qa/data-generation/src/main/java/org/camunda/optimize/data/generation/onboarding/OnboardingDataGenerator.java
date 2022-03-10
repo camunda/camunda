@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.data.generation;
+package org.camunda.optimize.data.generation.onboarding;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -12,14 +12,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.DataGenerationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
@@ -32,49 +33,86 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @Slf4j
 public class OnboardingDataGenerator {
 
+  private static final String CUSTOMER_ONBOARDING_DEFINITION = "onboarding-data/customer-onboarding-definition.json";
+  private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
-  private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
-  private static final String PROCESS_INSTANCE_LOCATION = "onboarding-data/process-instance-data.json";
+  private final OptimizeIndexNameService optimizeIndexNameService;
 
-  private OnboardingDataGenerator() {
+  public OnboardingDataGenerator() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    OptimizeIndexNameService optimizeIndexNameService = new OptimizeIndexNameService(configurationService);
+    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService);
     ElasticsearchMetadataService elasticsearchMetadataService = new ElasticsearchMetadataService(OBJECT_MAPPER);
-    elasticSearchSchemaManager = new ElasticSearchSchemaManager(
+    this.elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       elasticsearchMetadataService,
       configurationService,
+      optimizeIndexNameService,
+      List.of(new ProcessDefinitionIndex())
+    );
+    this.elasticsearchClient = new OptimizeElasticsearchClient(
+      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
       optimizeIndexNameService
     );
-    elasticsearchClient = new OptimizeElasticsearchClient(ElasticsearchHighLevelRestClientBuilder.build(configurationService), optimizeIndexNameService);
     elasticSearchSchemaManager.initializeSchema(elasticsearchClient);
   }
 
-  public static void main(String[] args) {
-    final OnboardingDataGenerator onboardingDataGenerator = new OnboardingDataGenerator();
-    final Map<String, String> arguments = extractArguments(args);
-    ProcessInstanceDto processInstanceDto = readProcessInstanceJson();
-    if (processInstanceDto != null) {
-      onboardingDataGenerator.addProcessInstanceCopiesToElasticSearch(Integer.parseInt(arguments.get(
-        "numberOfProcessInstances")), processInstanceDto);
-    } else {
-      log.error("The given json file does not contain a process instance.");
+  public void executeDataGeneration(Map<String, OnboardingDataGeneratorParameters> arguments) {
+    addCustomerOnboardingDefinitionToElasticSearch();
+    for (Map.Entry<String, OnboardingDataGeneratorParameters> argument : arguments.entrySet()) {
+      ProcessInstanceDto processInstanceDto = readProcessInstanceJson(argument.getValue());
+      if (processInstanceDto != null) {
+        addProcessInstanceCopiesToElasticSearch(
+          Integer.parseInt(argument.getValue().getNumberOfProcessInstances()),
+          processInstanceDto
+        );
+      } else {
+        throw new DataGenerationException("The given json file does not contain a process instance.");
+      }
     }
-    onboardingDataGenerator.close();
+    closeEsConnection();
+  }
+
+  private void addCustomerOnboardingDefinitionToElasticSearch() {
+    try {
+      ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
+      URL resource = classLoader.getResource(CUSTOMER_ONBOARDING_DEFINITION);
+      if (resource != null) {
+        File file = new File(resource.getFile());
+        ProcessDefinitionOptimizeDto processDefinitionDto = OBJECT_MAPPER.readValue(
+          file,
+          ProcessDefinitionOptimizeDto.class
+        );
+        if (processDefinitionDto != null) {
+          String json = OBJECT_MAPPER.writeValueAsString(processDefinitionDto);
+          IndexRequest request = new IndexRequest(optimizeIndexNameService.getOptimizeIndexAliasForIndex(PROCESS_DEFINITION_INDEX_NAME))
+            .id(processDefinitionDto.getId())
+            .source(json, XContentType.JSON);
+          elasticsearchClient.index(request);
+        } else {
+          throw new DataGenerationException("Could not read process definition json file in path: " + CUSTOMER_ONBOARDING_DEFINITION);
+        }
+      } else {
+        throw new DataGenerationException("The json file " + CUSTOMER_ONBOARDING_DEFINITION + " does not contain a " +
+                                            "process definition.");
+      }
+    } catch (IOException e) {
+      throw new DataGenerationException("Unable to add a process definition to elasticsearch", e);
+    }
   }
 
   private void addProcessInstanceCopiesToElasticSearch(final int amountOfProcessInstances,
@@ -91,30 +129,17 @@ public class OnboardingDataGenerator {
         processInstanceDto.setProcessInstanceId(processInstanceId);
         processInstanceDto.getFlowNodeInstances()
           .forEach(flowNodeInstanceDto -> flowNodeInstanceDto.setProcessInstanceId(processInstanceId));
-        processInstanceDto.getIncidents()
-          .forEach(incidentDto -> incidentDto.setProcessInstanceId(processInstanceId));
         String json = OBJECT_MAPPER.writeValueAsString(processInstanceDto);
-        IndexRequest request = new IndexRequest(PROCESS_INSTANCE_INDEX_PREFIX + processInstanceDto.getProcessDefinitionKey())
+        IndexRequest request =
+          new IndexRequest(new ProcessInstanceIndex(processInstanceDto.getProcessDefinitionKey()).getIndexName())
             .id(processInstanceDto.getProcessInstanceId())
             .source(json, XContentType.JSON);
         bulkRequest.add(request);
       }
       elasticsearchClient.bulk(bulkRequest);
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Unable to add process instances to elasticsearch", e);
+      throw new DataGenerationException("Unable to add process instances to elasticsearch", e);
     }
-  }
-
-  private static ProcessInstanceDto readProcessInstanceJson() {
-    ProcessInstanceDto processInstanceDto = null;
-    try {
-      ClassLoader classLoader = OnboardingDataGenerator.class.getClassLoader();
-      File file = new File(classLoader.getResource(PROCESS_INSTANCE_LOCATION).getFile());
-      processInstanceDto = OBJECT_MAPPER.readValue(file, ProcessInstanceDto.class);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Unable read process instances from json file.", e);
-    }
-    return processInstanceDto;
   }
 
   private static ObjectMapper createObjectMapper() {
@@ -140,43 +165,25 @@ public class OnboardingDataGenerator {
   }
 
   @SneakyThrows
-  private void close() {
+  private void closeEsConnection() {
     elasticsearchClient.close();
   }
 
-  private static Map<String, String> extractArguments(final String[] args) {
-    final Map<String, String> arguments = new HashMap<>();
-    fillArgumentMapWithDefaultValues(arguments);
-    for (int i = 0; i < args.length; i++) {
-      final String identifier = stripLeadingHyphens(args[i]);
-      ensureIdentifierIsKnown(arguments, identifier);
-      final String value = args.length > i + 1 ? args[i + 1] : null;
-      if (!StringUtils.isBlank(value) && value.indexOf("--") != 0) {
-        arguments.put(identifier, value);
-        // increase i one further as we have a value argument here
-        i += 1;
+  private ProcessInstanceDto readProcessInstanceJson(final OnboardingDataGeneratorParameters onboardingDataGeneratorParameter) {
+    ProcessInstanceDto processInstanceDto = null;
+    try {
+      ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
+      URL resource = classLoader.getResource(onboardingDataGeneratorParameter.getFilePath());
+      if (resource != null) {
+        File file = new File(resource.getFile());
+        processInstanceDto = OBJECT_MAPPER.readValue(file, ProcessInstanceDto.class);
+      } else {
+        throw new DataGenerationException("Could not read process instance json file in path: " + onboardingDataGeneratorParameter.getFilePath());
       }
+    } catch (IOException e) {
+      throw new DataGenerationException("Could not read process instance json file in path: " + onboardingDataGeneratorParameter.getFilePath());
     }
-    return arguments;
+    return processInstanceDto;
   }
 
-  private static void ensureIdentifierIsKnown(Map<String, String> arguments, String identifier) {
-    if (!arguments.containsKey(identifier)) {
-      throw new RuntimeException("Unknown argument [" + identifier + "]!");
-    }
-  }
-
-  private static String stripLeadingHyphens(String str) {
-    int index = str.lastIndexOf("-");
-    if (index != -1) {
-      return str.substring(index + 1);
-    } else {
-      return str;
-    }
-  }
-
-  private static Map<String, String> fillArgumentMapWithDefaultValues(Map<String, String> arguments) {
-    arguments.put("numberOfProcessInstances", String.valueOf(1000));
-    return arguments;
-  }
 }

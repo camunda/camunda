@@ -1,0 +1,1257 @@
+{
+  "processDefinitionKey": "customer_onboarding_en",
+  "processDefinitionVersion": "1",
+  "processDefinitionId": "customer_onboarding_en:1:535de296-92aa-11ec-bd87-0242ac120002",
+  "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+  "businessKey": "A-04810",
+  "startDate": "2021-12-04T14:21:32.453+0100",
+  "endDate": "2022-01-26T12:21:32.494+0100",
+  "duration": 4572000041,
+  "state": "COMPLETED",
+  "flowNodeInstances": [
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2022-01-04T06:21:32.476+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 457200004,
+      "startDate": "2021-12-29T23:21:32.472+0100",
+      "flowNodeInstanceId": "d365752e-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "StartEvent_1",
+      "endDate": "2021-12-04T14:21:32.453+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "startEvent",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-04T14:21:32.453+0100",
+      "flowNodeInstanceId": "StartEvent_1:bfc50ba5-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "EndEvent_DecisionAccelerated",
+      "endDate": "2021-12-06T17:21:32.456+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "noneEndEvent",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-06T17:21:32.456+0100",
+      "flowNodeInstanceId": "c142aa97-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "EndEvent_ApplicationIssued",
+      "endDate": "2022-01-26T06:21:32.497+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "noneEndEvent",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-26T06:21:32.497+0100",
+      "flowNodeInstanceId": "EndEvent_ApplicationIssued:eaa24046-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2021-12-19T03:21:32.465+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 349200004,
+      "startDate": "2021-12-15T02:21:32.461+0100",
+      "flowNodeInstanceId": "c7159a89-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "EndEvent_DecisionAccelerated",
+      "endDate": "2021-12-30T03:21:32.473+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "noneEndEvent",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-30T03:21:32.473+0100",
+      "flowNodeInstanceId": "d37e7b97-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "ServiceTask_0tixwo5",
+      "endDate": "2021-12-04T14:21:32.454+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "serviceTask",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-04T14:21:32.454+0100",
+      "flowNodeInstanceId": "ServiceTask_0tixwo5:bfc580e1-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "SendTask_SendPolicy",
+      "endDate": "2022-01-26T06:21:32.497+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "sendTask",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 1,
+      "startDate": "2022-01-26T06:21:32.496+0100",
+      "flowNodeInstanceId": "SendTask_SendPolicy:eaa1cb0b-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2022-01-20T16:21:32.488+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-20T16:21:32.488+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:e55fd0d9-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2022-01-05T17:21:32.477+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-05T17:21:32.477+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:d876ea33-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2022-01-12T18:21:32.482+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 608400005,
+      "startDate": "2022-01-05T17:21:32.477+0100",
+      "flowNodeInstanceId": "d876ea38-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BusinessRuleTask_CheckApplicationAutomatically",
+      "endDate": "2021-12-04T14:21:32.454+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "businessRuleTask",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-04T14:21:32.454+0100",
+      "flowNodeInstanceId": "bfc580e5-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "EndEvent_DecisionAccelerated",
+      "endDate": "2022-01-26T12:21:32.494+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "noneEndEvent",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-26T12:21:32.494+0100",
+      "flowNodeInstanceId": "eb2f8bfd-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_0mcjys5",
+      "endDate": "2022-01-26T06:21:32.493+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryTimer",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-26T06:21:32.493+0100",
+      "flowNodeInstanceId": "BoundaryEvent_0mcjys5:ea9ff631-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_0mcjys5",
+      "endDate": "2021-12-29T20:21:32.472+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryTimer",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-29T20:21:32.472+0100",
+      "flowNodeInstanceId": "BoundaryEvent_0mcjys5:d34b363d-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2021-12-06T15:21:32.455+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-06T15:21:32.455+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:c134a15a-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2021-12-27T20:21:32.471+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 608400005,
+      "startDate": "2021-12-20T19:21:32.466+0100",
+      "flowNodeInstanceId": "cbc9d3c7-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2022-01-14T00:21:32.483+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-14T00:21:32.483+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:df3b179e-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "ServiceTask_DeliverPolicy",
+      "endDate": "2022-01-26T06:21:32.495+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "serviceTask",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-26T06:21:32.495+0100",
+      "flowNodeInstanceId": "ServiceTask_DeliverPolicy:eaa12ec2-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2022-01-18T21:21:32.487+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 421200004,
+      "startDate": "2022-01-14T00:21:32.483+0100",
+      "flowNodeInstanceId": "df3b3eb3-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2021-12-13T19:21:32.460+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 619200005,
+      "startDate": "2021-12-06T15:21:32.455+0100",
+      "flowNodeInstanceId": "c134a160-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "ExclusiveGateway_2",
+      "endDate": "2022-01-26T06:21:32.495+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "exclusiveGateway",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2022-01-26T06:21:32.495+0100",
+      "flowNodeInstanceId": "ExclusiveGateway_2:eaa12ec1-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2021-12-15T02:21:32.461+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-15T02:21:32.461+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:c7159a84-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "ExclusiveGatewayPruefung",
+      "endDate": "2021-12-04T14:21:32.454+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "exclusiveGateway",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-04T14:21:32.454+0100",
+      "flowNodeInstanceId": "ExclusiveGatewayPruefung:bfc64449-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2021-12-29T23:21:32.472+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-29T23:21:32.472+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:d3657529-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "CallActivity_RequestDocument",
+      "endDate": "2022-01-24T06:21:32.492+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "callActivity",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 309600004,
+      "startDate": "2022-01-20T16:21:32.488+0100",
+      "flowNodeInstanceId": "e55fd0de-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_1i1spfe",
+      "endDate": "2021-12-20T19:21:32.466+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryMessage",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-20T19:21:32.466+0100",
+      "flowNodeInstanceId": "BoundaryEvent_1i1spfe:cbc9acb2-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "userTaskInstanceId": null,
+      "flowNodeId": "BoundaryEvent_0mcjys5",
+      "endDate": "2021-12-06T14:21:32.455+0100",
+      "idleDurationInMs": null,
+      "dueDate": null,
+      "deleteReason": null,
+      "canceled": false,
+      "workDurationInMs": null,
+      "definitionVersion": "1",
+      "candidateGroups": [],
+      "tenantId": null,
+      "definitionKey": "customer_onboarding_en",
+      "assignee": null,
+      "flowNodeType": "boundaryTimer",
+      "candidateGroupOperations": [],
+      "assigneeOperations": [],
+      "totalDurationInMs": 0,
+      "startDate": "2021-12-06T14:21:32.455+0100",
+      "flowNodeInstanceId": "BoundaryEvent_0mcjys5:c11d96d7-92aa-11ec-bd87-0242ac120002"
+    },
+    {
+      "flowNodeInstanceId": "ca5498f8-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 144000001,
+      "startDate": "2021-12-19T03:21:32.465+0100",
+      "endDate": "2021-12-20T19:21:32.466+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "ca5498fb-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2021-12-20T03:21:32.465+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "ca5498fd-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2021-12-19T03:21:32.465+0100"
+        }
+      ],
+      "idleDurationInMs": 144000001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "c628542a-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 111600001,
+      "startDate": "2021-12-13T19:21:32.460+0100",
+      "endDate": "2021-12-15T02:21:32.461+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "c628542d-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2021-12-14T19:21:32.460+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "c628542f-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2021-12-13T19:21:32.460+0100"
+        }
+      ],
+      "idleDurationInMs": 111600001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "bfc6444c-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 176400001,
+      "startDate": "2021-12-04T14:21:32.454+0100",
+      "endDate": "2021-12-06T15:21:32.455+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "bfc6444f-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2021-12-05T14:21:32.454+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "bfc66b61-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2021-12-04T14:21:32.454+0100"
+        }
+      ],
+      "idleDurationInMs": 176400001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "d7325bce-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 126000001,
+      "startDate": "2022-01-04T06:21:32.476+0100",
+      "endDate": "2022-01-05T17:21:32.477+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "d73282e1-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2022-01-05T06:21:32.476+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "d73282e3-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2022-01-04T06:21:32.476+0100"
+        }
+      ],
+      "idleDurationInMs": 126000001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "e3b3590a-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 154800001,
+      "startDate": "2022-01-18T21:21:32.487+0100",
+      "endDate": "2022-01-20T16:21:32.488+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "e3b3590d-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2022-01-19T21:21:32.487+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "e3b3590f-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2022-01-18T21:21:32.487+0100"
+        }
+      ],
+      "idleDurationInMs": 154800001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "UserTask_AccelerateDecision:ea9ff633-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_AccelerateDecision",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 21600001,
+      "startDate": "2022-01-26T06:21:32.493+0100",
+      "endDate": "2022-01-26T12:21:32.494+0100",
+      "canceled": false,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "ea9ff634-92aa-11ec-bd87-0242ac120002",
+      "dueDate": null,
+      "deleteReason": "completed",
+      "assignee": null,
+      "candidateGroups": [
+        "teamlead"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "ea9ff636-92aa-11ec-bd87-0242ac120002",
+          "groupId": "teamlead",
+          "operationType": "add",
+          "timestamp": "2022-01-26T06:21:32.493+0100"
+        }
+      ],
+      "idleDurationInMs": 0,
+      "workDurationInMs": 21600001
+    },
+    {
+      "flowNodeInstanceId": "UserTask_AccelerateDecision:c11dbde9-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_AccelerateDecision",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 10800001,
+      "startDate": "2021-12-06T14:21:32.455+0100",
+      "endDate": "2021-12-06T17:21:32.456+0100",
+      "canceled": false,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "c11dbdea-92aa-11ec-bd87-0242ac120002",
+      "dueDate": null,
+      "deleteReason": "completed",
+      "assignee": null,
+      "candidateGroups": [
+        "teamlead"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "c11dbdec-92aa-11ec-bd87-0242ac120002",
+          "groupId": "teamlead",
+          "operationType": "add",
+          "timestamp": "2021-12-06T14:21:32.455+0100"
+        }
+      ],
+      "idleDurationInMs": 0,
+      "workDurationInMs": 10800001
+    },
+    {
+      "flowNodeInstanceId": "e8cb0f51-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 172800002,
+      "startDate": "2022-01-24T06:21:32.492+0100",
+      "endDate": "2022-01-26T06:21:32.494+0100",
+      "canceled": false,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "e8cb0f54-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2022-01-25T06:21:32.492+0100",
+      "deleteReason": "completed",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "e8cb0f56-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2022-01-24T06:21:32.492+0100"
+        }
+      ],
+      "idleDurationInMs": 0,
+      "workDurationInMs": 172800002
+    },
+    {
+      "flowNodeInstanceId": "de3a48c9-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 108000001,
+      "startDate": "2022-01-12T18:21:32.482+0100",
+      "endDate": "2022-01-14T00:21:32.483+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "de3a6fdc-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2022-01-13T18:21:32.482+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "de3a6fde-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2022-01-12T18:21:32.482+0100"
+        }
+      ],
+      "idleDurationInMs": 108000001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "d1a29021-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_DecideOnApplication",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 183600001,
+      "startDate": "2021-12-27T20:21:32.471+0100",
+      "endDate": "2021-12-29T23:21:32.472+0100",
+      "canceled": true,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "d1a2b734-92aa-11ec-bd87-0242ac120002",
+      "dueDate": "2021-12-28T20:21:32.471+0100",
+      "deleteReason": "deleted",
+      "assignee": null,
+      "candidateGroups": [
+        "clerk"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "d1a2b736-92aa-11ec-bd87-0242ac120002",
+          "groupId": "clerk",
+          "operationType": "add",
+          "timestamp": "2021-12-27T20:21:32.471+0100"
+        }
+      ],
+      "idleDurationInMs": 183600001,
+      "workDurationInMs": 0
+    },
+    {
+      "flowNodeInstanceId": "UserTask_AccelerateDecision:d34b363f-92aa-11ec-bd87-0242ac120002",
+      "flowNodeId": "UserTask_AccelerateDecision",
+      "flowNodeType": "userTask",
+      "processInstanceId": "bfc4e48f-92aa-11ec-bd87-0242ac120002",
+      "totalDurationInMs": 25200001,
+      "startDate": "2021-12-29T20:21:32.472+0100",
+      "endDate": "2021-12-30T03:21:32.473+0100",
+      "canceled": false,
+      "definitionKey": "customer_onboarding_en",
+      "definitionVersion": "1",
+      "tenantId": null,
+      "userTaskInstanceId": "d34b3640-92aa-11ec-bd87-0242ac120002",
+      "dueDate": null,
+      "deleteReason": "completed",
+      "assignee": null,
+      "candidateGroups": [
+        "teamlead"
+      ],
+      "assigneeOperations": [],
+      "candidateGroupOperations": [
+        {
+          "id": "d34b3642-92aa-11ec-bd87-0242ac120002",
+          "groupId": "teamlead",
+          "operationType": "add",
+          "timestamp": "2021-12-29T20:21:32.472+0100"
+        }
+      ],
+      "idleDurationInMs": 0,
+      "workDurationInMs": 25200001
+    }
+  ],
+  "variables": [
+    {
+      "name": "approved",
+      "id": "c1347a45-92aa-11ec-bd87-0242ac120002",
+      "type": "Boolean",
+      "value": [
+        "true"
+      ],
+      "version": 8
+    },
+    {
+      "name": "mailSubject",
+      "id": "eaa1cb0e-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "Your request was issued"
+      ],
+      "version": 1
+    },
+    {
+      "name": "application.contractNumber",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.contractNumber",
+      "type": "Date",
+      "value": [
+        "2022-02-21T00:12:12.017+0000"
+      ],
+      "version": 2
+    },
+    {
+      "name": "applicationNumber",
+      "id": "bfc50ba8-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "A-5219917"
+      ],
+      "version": 1
+    },
+    {
+      "name": "category",
+      "id": "bfc50bac-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "Standard Package"
+      ],
+      "version": 1
+    },
+    {
+      "name": "riskLevel",
+      "id": "bfc64447-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "yellow"
+      ],
+      "version": 1
+    },
+    {
+      "name": "application.product",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.product",
+      "type": "String",
+      "value": [
+        "super cool product"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.applicant.score",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicant.score",
+      "type": "Double",
+      "value": [
+        "93.0"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.applicationNumber",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicationNumber",
+      "type": "String",
+      "value": [
+        "A-5219917"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.category",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.category",
+      "type": "String",
+      "value": [
+        "Standard Package"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.applicant.age",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicant.age",
+      "type": "Double",
+      "value": [
+        "29.0"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.priceIndication",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.priceIndication",
+      "type": "String",
+      "value": [
+        "320,00 €"
+      ],
+      "version": 2
+    },
+    {
+      "name": "documentReferenceId",
+      "id": "bfc72eb3-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "1645402328941"
+      ],
+      "version": 15
+    },
+    {
+      "name": "application",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002",
+      "type": "Object",
+      "value": [
+        "{\n  \"applicationNumber\" : \"A-5219917\",\n  \"applicant\" : {\n    \"name\" : \"Markus Bennett\",\n    \"email\" : \"markusbennett@hotmail.com\",\n    \"birthday\" : 730253460109,\n    \"gender\" : \"male\",\n    \"age\" : 29,\n    \"score\" : 93\n  },\n  \"employment\" : \"Freelancer\",\n  \"category\" : \"Standard Package\",\n  \"product\" : \"super cool product\",\n  \"corporation\" : \"Camunbankia\",\n  \"contractNumber\" : \"1645402332017\",\n  \"priceIndicationInCent\" : 32000,\n  \"premiumInCent\" : 0,\n  \"premium\" : \"0,00 €\",\n  \"priceIndication\" : \"320,00 €\"\n}"
+      ],
+      "version": 2
+    },
+    {
+      "name": "requestedDocumentDescription",
+      "id": "c134a157-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "someDocument"
+      ],
+      "version": 15
+    },
+    {
+      "name": "application.applicant.name",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicant.name",
+      "type": "String",
+      "value": [
+        "Markus Bennett"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.priceIndicationInCent",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.priceIndicationInCent",
+      "type": "Double",
+      "value": [
+        "32000.0"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.corporation",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.corporation",
+      "type": "String",
+      "value": [
+        "Camunbankia"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.applicant.email",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicant.email",
+      "type": "String",
+      "value": [
+        "markusbennett@hotmail.com"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.premiumInCent",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.premiumInCent",
+      "type": "Double",
+      "value": [
+        "0.0"
+      ],
+      "version": 2
+    },
+    {
+      "name": "score",
+      "id": "bfc580e2-92aa-11ec-bd87-0242ac120002",
+      "type": "Integer",
+      "value": [
+        "93"
+      ],
+      "version": 1
+    },
+    {
+      "name": "corporation",
+      "id": "bfc50ba6-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "Camunbankia"
+      ],
+      "version": 1
+    },
+    {
+      "name": "mailBody",
+      "id": "eaa1cb0c-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "Dear Markus Bennett.\n\nWe happily inform you that your request was accepted.\n\nPlease check the key facts: \n- Application Number: A-5219917\n- Premium per anno: 0,00 €\n- Product: super cool product\n\nKind regards,\nCamunbankia."
+      ],
+      "version": 1
+    },
+    {
+      "name": "applicantName",
+      "id": "bfc50baa-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "Markus Bennett"
+      ],
+      "version": 1
+    },
+    {
+      "name": "application.premium",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.premium",
+      "type": "String",
+      "value": [
+        "0,00 €"
+      ],
+      "version": 2
+    },
+    {
+      "name": "risks._listSize",
+      "id": "bfc64443-92aa-11ec-bd87-0242ac120002_risks._listSize",
+      "type": "Long",
+      "value": [
+        "1"
+      ],
+      "version": 1
+    },
+    {
+      "name": "risks",
+      "id": "bfc64443-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "Not Trustworthy"
+      ],
+      "version": 1
+    },
+    {
+      "name": "application.applicant.birthday",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicant.birthday",
+      "type": "Double",
+      "value": [
+        "7.30253460109E11"
+      ],
+      "version": 2
+    },
+    {
+      "name": "application.employment",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.employment",
+      "type": "String",
+      "value": [
+        "Freelancer"
+      ],
+      "version": 2
+    },
+    {
+      "name": "uiBaseUrl",
+      "id": "c134a15c-92aa-11ec-bd87-0242ac120002",
+      "type": "String",
+      "value": [
+        "\"camunda.com\""
+      ],
+      "version": 7
+    },
+    {
+      "name": "application.applicant.gender",
+      "id": "bfc4e491-92aa-11ec-bd87-0242ac120002_application.applicant.gender",
+      "type": "String",
+      "value": [
+        "male"
+      ],
+      "version": 2
+    }
+  ],
+  "incidents": [],
+  "dataSource": {
+    "name": "camunda-bpm",
+    "type": "engine"
+  },
+  "tenantId": null
+}
