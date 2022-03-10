@@ -5,11 +5,17 @@
  */
 package io.camunda.operate.util.rest;
 
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.util.RetryOperation;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
@@ -18,7 +24,7 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
-import io.camunda.operate.exceptions.OperateRuntimeException;
+import org.elasticsearch.ElasticsearchException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,7 +36,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 /**
  * Stateful Rest template that you can use to remember cookies, once you log in
@@ -105,14 +110,32 @@ public class StatefulRestTemplate extends RestTemplate {
     loginWhenNeeded(USERNAME_DEFAULT, PASSWORD_DEFAULT);
   }
 
-  public void loginWhenNeeded(String username, String password){
+  public void loginWhenNeeded(String username, String password) {
     //log in only once
     if (getCookieStore().getCookies().isEmpty()) {
-      ResponseEntity<Object> response = this.postForEntity(getURL(String.format(LOGIN_URL_PATTERN, username, password)), null, Object.class);
+      final ResponseEntity<Object> response = tryLoginAs(username, password);
       if (!response.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
-        throw new OperateRuntimeException(String.format("Unable to login user %s to %s:%s. Response: %s", username, host, port, response));
+        throw new OperateRuntimeException(
+            String.format("Unable to login user %s to %s:%s. Response: %s", username, host,
+                port, response));
       }
       saveCSRFTokenWhenAvailable(response);
+    }
+  }
+
+  private ResponseEntity<Object> tryLoginAs(final String username, final String password) {
+    try {
+      return RetryOperation.<ResponseEntity<Object>>newBuilder()
+          .retryConsumer(() -> postForEntity(
+              getURL(String.format(LOGIN_URL_PATTERN, username, password)), null, Object.class)
+              )
+              // retry for 5 minutes
+              .noOfRetry(50)
+              .delayInterval(6, TimeUnit.SECONDS)
+              .retryOn(IOException.class, RestClientException.class, ElasticsearchException.class)
+              .build().retry();
+    } catch (Exception e) {
+      throw new OperateRuntimeException("Unable to connect to Operate ", e);
     }
   }
 
