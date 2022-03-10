@@ -60,6 +60,29 @@ public final class ActivityTest {
           .moveToActivity("task")
           .endEvent("taskEnd")
           .done();
+  private static final BpmnModelInstance WITH_STATIC_INPUT_MAPPING =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask(
+              "task",
+              b ->
+                  b.zeebeJobType("type")
+                      .zeebeInput("text", "textStatic")
+                      .zeebeInputExpression("\"text\"", "textExpression")
+                      .zeebeInput("123", "numberStatic")
+                      .zeebeInputExpression("\"123\"", "numberExpression")
+                      .zeebeInput("true", "booleanStatic")
+                      .zeebeInputExpression("\"true\"", "booleanExpression")
+                      .zeebeInput("null", "nullStatic")
+                      .zeebeInputExpression("\"null\"", "nullExpression")
+                      .zeebeInput("https://github.com/{{orgId}}/{{repoId}}", "urlStatic")
+                      .zeebeInputExpression(
+                          "\"https://github.com/{{orgId}}/{{repoId}}\"", "urlExpression")
+                      .zeebeInput("My Name is \"Zeebe\", nice to meet you", "quotesStatic")
+                      .zeebeInputExpression(
+                          "\"My Name is \\\"Zeebe\\\", nice to meet you\"", "quotesExpression"))
+          .endEvent()
+          .done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -88,6 +111,40 @@ public final class ActivityTest {
     final Map<String, String> variables =
         ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
     assertThat(variables).contains(entry("bar", "1"));
+  }
+
+  @Test
+  public void shouldApplyStaticInputMapping() {
+    // given
+    ENGINE.deployment().withXmlResource(WITH_STATIC_INPUT_MAPPING).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords()
+            .withElementId("task")
+            .withIntent(ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // then
+    final Map<String, String> variables =
+        ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
+
+    assertThat(variables)
+        .contains(
+            entry("textStatic", "\"text\""),
+            entry("textExpression", "\"text\""),
+            entry("numberStatic", "\"123\""),
+            entry("numberExpression", "\"123\""),
+            entry("booleanStatic", "\"true\""),
+            entry("booleanExpression", "\"true\""),
+            entry("nullStatic", "\"null\""),
+            entry("nullExpression", "\"null\""),
+            entry("urlStatic", "\"https://github.com/{{orgId}}/{{repoId}}\""),
+            entry("urlExpression", "\"https://github.com/{{orgId}}/{{repoId}}\""),
+            entry("quotesStatic", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""),
+            entry("quotesExpression", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""));
   }
 
   @Test

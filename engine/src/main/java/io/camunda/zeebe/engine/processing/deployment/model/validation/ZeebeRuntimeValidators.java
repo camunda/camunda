@@ -33,8 +33,7 @@ public final class ZeebeRuntimeValidators {
     return List.of(
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
-            .hasValidExpression(
-                ZeebeInput::getSource, expression -> expression.isNonStatic().isMandatory())
+            .hasValidExpression(ZeebeInput::getSource, ExpressionVerification::isMandatory)
             .hasValidPath(ZeebeInput::getTarget)
             .build(expressionLanguage),
         // ----------------------------------------
@@ -44,7 +43,7 @@ public final class ZeebeRuntimeValidators {
             .hasValidPath(ZeebeOutput::getTarget)
             .build(expressionLanguage),
         ZeebeExpressionValidator.verifyThat(Message.class)
-            .hasValidExpression(Message::getName, expression -> expression.isOptional())
+            .hasValidExpression(Message::getName, ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // Checks message name expressions of start event messages
         new ProcessMessageStartEventMessageNameValidator(expressionLanguage),
@@ -71,15 +70,14 @@ public final class ZeebeRuntimeValidators {
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeTaskDefinition.class)
+            .hasValidExpression(ZeebeTaskDefinition::getType, ExpressionVerification::isMandatory)
             .hasValidExpression(
-                ZeebeTaskDefinition::getType, expression -> expression.isMandatory())
-            .hasValidExpression(
-                ZeebeTaskDefinition::getRetries, expression -> expression.isMandatory())
+                ZeebeTaskDefinition::getRetries, ExpressionVerification::isMandatory)
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
             .hasValidExpression(
-                ZeebeCalledElement::getProcessId, expression -> expression.isMandatory())
+                ZeebeCalledElement::getProcessId, ExpressionVerification::isMandatory)
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(TimerEventDefinition.class)

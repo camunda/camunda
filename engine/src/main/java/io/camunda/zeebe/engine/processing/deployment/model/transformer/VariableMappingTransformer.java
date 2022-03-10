@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Transform variable mappings into an expression.
@@ -150,7 +152,17 @@ public final class VariableMappingTransformer {
     return new MappingContextVisitor<>() {
       @Override
       public String onEntry(final String targetKey, final Expression sourceExpression) {
-        return targetKey + ":" + sourceExpression.getExpression();
+        final String expression;
+
+        if (sourceExpression instanceof StaticExpression) {
+          expression =
+              String.format(
+                  "\"%s\"", StringEscapeUtils.escapeJava(sourceExpression.getExpression()));
+        } else {
+          expression = sourceExpression.getExpression();
+        }
+
+        return targetKey + ":" + expression;
       }
 
       @Override
