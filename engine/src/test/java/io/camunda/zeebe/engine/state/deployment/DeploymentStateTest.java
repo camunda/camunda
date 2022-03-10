@@ -89,21 +89,6 @@ public class DeploymentStateTest {
   }
 
   @Test
-  public void shouldRemovePendingDeploymentIdempotent() {
-    // given
-    final var deploymentKey = 10L;
-    final var partition = 1;
-    deploymentState.addPendingDeploymentDistribution(deploymentKey, partition);
-    deploymentState.removePendingDeploymentDistribution(deploymentKey, partition);
-
-    // when
-    deploymentState.removePendingDeploymentDistribution(deploymentKey, partition);
-
-    // then
-    assertThat(deploymentState.hasPendingDeploymentDistribution(deploymentKey)).isFalse();
-  }
-
-  @Test
   public void shouldReturnTrueForDifferentPendingDeploymentOnHasPendingCheck() {
     // given
     final var deploymentKey = 10L;

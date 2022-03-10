@@ -646,6 +646,7 @@ public final class JobStateTest {
         .hasStackTraceContaining("type must not be empty");
 
     // cancel
+    jobState.create(1L, newJobRecord());
     assertThatThrownBy(() -> jobState.cancel(1L, jobWithoutType))
         .hasStackTraceContaining("type must not be empty");
 
@@ -654,9 +655,14 @@ public final class JobStateTest {
         .hasStackTraceContaining("type must not be empty");
 
     // should not throw any exception
+    jobState.create(1L, newJobRecord());
     jobState.activate(1L, newJobRecord());
     jobState.complete(1L, jobWithoutDeadline);
+
+    jobState.create(1L, newJobRecord());
     jobState.cancel(1L, jobWithoutDeadline);
+
+    jobState.create(1L, newJobRecord());
     jobState.throwError(1L, jobWithoutDeadline);
   }
 

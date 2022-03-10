@@ -37,7 +37,7 @@ public final class NextValueManager {
     final long previousKey = getCurrentValue(key);
     final long nextKey = previousKey + 1;
     nextValue.set(nextKey);
-    nextValueColumnFamily.put(nextValueKey, nextValue);
+    nextValueColumnFamily.upsert(nextValueKey, nextValue);
 
     return nextKey;
   }
@@ -45,7 +45,7 @@ public final class NextValueManager {
   public void setValue(final String key, final long value) {
     nextValueKey.wrapString(key);
     nextValue.set(value);
-    nextValueColumnFamily.put(nextValueKey, nextValue);
+    nextValueColumnFamily.upsert(nextValueKey, nextValue);
   }
 
   public long getCurrentValue(final String key) {

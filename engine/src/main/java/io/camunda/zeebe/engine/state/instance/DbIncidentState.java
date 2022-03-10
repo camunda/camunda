@@ -73,18 +73,37 @@ public final class DbIncidentState implements MutableIncidentState {
   public void createIncident(final long incidentKey, final IncidentRecord incident) {
     this.incidentKey.wrapLong(incidentKey);
     incidentWrite.setRecord(incident);
-    incidentColumnFamily.put(this.incidentKey, incidentWrite);
+    incidentColumnFamily.insert(this.incidentKey, incidentWrite);
 
     incidentKeyValue.set(incidentKey);
     if (isJobIncident(incident)) {
       jobKey.wrapLong(incident.getJobKey());
-      jobIncidentColumnFamily.put(jobKey, incidentKeyValue);
+      jobIncidentColumnFamily.insert(jobKey, incidentKeyValue);
     } else {
       elementInstanceKey.wrapLong(incident.getElementInstanceKey());
-      processInstanceIncidentColumnFamily.put(elementInstanceKey, incidentKeyValue);
+      processInstanceIncidentColumnFamily.insert(elementInstanceKey, incidentKeyValue);
     }
 
     metrics.incidentCreated();
+  }
+
+  @Override
+  public void deleteIncident(final long key) {
+    final IncidentRecord incidentRecord = getIncidentRecord(key);
+
+    if (incidentRecord != null) {
+      incidentColumnFamily.deleteExisting(incidentKey);
+
+      if (isJobIncident(incidentRecord)) {
+        jobKey.wrapLong(incidentRecord.getJobKey());
+        jobIncidentColumnFamily.deleteExisting(jobKey);
+      } else {
+        elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
+        processInstanceIncidentColumnFamily.deleteExisting(elementInstanceKey);
+      }
+
+      metrics.incidentResolved();
+    }
   }
 
   @Override
@@ -96,25 +115,6 @@ public final class DbIncidentState implements MutableIncidentState {
       return incident.getRecord();
     }
     return null;
-  }
-
-  @Override
-  public void deleteIncident(final long key) {
-    final IncidentRecord incidentRecord = getIncidentRecord(key);
-
-    if (incidentRecord != null) {
-      incidentColumnFamily.delete(incidentKey);
-
-      if (isJobIncident(incidentRecord)) {
-        jobKey.wrapLong(incidentRecord.getJobKey());
-        jobIncidentColumnFamily.delete(jobKey);
-      } else {
-        elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
-        processInstanceIncidentColumnFamily.delete(elementInstanceKey);
-      }
-
-      metrics.incidentResolved();
-    }
   }
 
   @Override

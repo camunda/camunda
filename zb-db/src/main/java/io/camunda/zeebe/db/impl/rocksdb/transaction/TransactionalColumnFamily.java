@@ -68,11 +68,6 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public void put(final KeyType key, final ValueType value) {
-    upsert(key, value);
-  }
-
-  @Override
   public void insert(final KeyType key, final ValueType value) {
     ensureInOpenTransaction(
         transaction -> {
@@ -187,11 +182,6 @@ class TransactionalColumnFamily<
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(keyPrefix, visitor));
-  }
-
-  @Override
-  public void delete(final KeyType key) {
-    deleteIfExists(key);
   }
 
   @Override

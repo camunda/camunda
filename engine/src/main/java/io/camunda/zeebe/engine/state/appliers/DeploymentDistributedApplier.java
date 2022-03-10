@@ -47,10 +47,10 @@ public class DeploymentDistributedApplier
               final var resource = getResourceByName(value, drg.getResourceName());
               final var decisionRequirementsRecord =
                   createDecisionRequirementsRecord(drg, resource);
-              decisionState.putDecisionRequirements(decisionRequirementsRecord);
+              decisionState.storeDecisionRequirements(decisionRequirementsRecord);
             });
 
-    value.decisionsMetadata().forEach(decisionState::putDecision);
+    value.decisionsMetadata().forEach(decisionState::storeDecisionRecord);
   }
 
   private DirectBuffer getResourceByName(

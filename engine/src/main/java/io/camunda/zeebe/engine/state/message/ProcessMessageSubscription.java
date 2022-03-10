@@ -39,6 +39,11 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
     return stateProp.getValue() == State.STATE_OPENING;
   }
 
+  public ProcessMessageSubscription setOpening() {
+    stateProp.setValue(State.STATE_OPENING);
+    return this;
+  }
+
   public ProcessMessageSubscription setOpened() {
     stateProp.setValue(State.STATE_OPENED);
     return this;

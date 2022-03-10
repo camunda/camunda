@@ -51,7 +51,7 @@ public final class DbBlackListState implements MutableBlackListState {
       LOG.warn(BLACKLIST_INSTANCE_MESSAGE, key);
 
       processInstanceKey.wrapLong(key);
-      blackListColumnFamily.put(processInstanceKey, DbNil.INSTANCE);
+      blackListColumnFamily.insert(processInstanceKey, DbNil.INSTANCE);
       blacklistMetrics.countBlacklistedInstance();
     }
   }

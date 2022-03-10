@@ -119,7 +119,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processIdBuffer);
     this.digest.set(digest);
 
-    digestByIdColumnFamily.put(processId, this.digest);
+    digestByIdColumnFamily.upsert(processId, this.digest);
   }
 
   @Override
@@ -133,12 +133,12 @@ public final class DbProcessState implements MutableProcessState {
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
     persistedProcess.wrap(processRecord, processDefinitionKey);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
-    processColumnFamily.put(this.processDefinitionKey, persistedProcess);
+    processColumnFamily.upsert(this.processDefinitionKey, persistedProcess);
 
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     processVersion.wrapLong(processRecord.getVersion());
 
-    processByIdAndVersionColumnFamily.put(idAndVersionKey, persistedProcess);
+    processByIdAndVersionColumnFamily.upsert(idAndVersionKey, persistedProcess);
   }
 
   private void updateLatestVersion(final ProcessRecord processRecord) {

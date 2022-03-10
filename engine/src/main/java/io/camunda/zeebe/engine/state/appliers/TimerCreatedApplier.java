@@ -32,6 +32,6 @@ final class TimerCreatedApplier implements TypedEventApplier<TimerIntent, TimerR
     timerInstance.setProcessDefinitionKey(value.getProcessDefinitionKey());
     timerInstance.setProcessInstanceKey(value.getProcessInstanceKey());
 
-    timerInstanceState.put(timerInstance);
+    timerInstanceState.store(timerInstance);
   }
 }
