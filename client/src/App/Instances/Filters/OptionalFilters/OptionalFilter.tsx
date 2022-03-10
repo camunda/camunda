@@ -5,23 +5,20 @@
  */
 
 import {Row, Delete} from './styled';
-import {
-  visibleFiltersStore,
-  OptionalFilter as OptionalFilterType,
-} from 'modules/stores/visibleFilters';
+import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {observer} from 'mobx-react';
 import {useForm} from 'react-final-form';
 import {ProcessInstanceFilterField} from 'modules/utils/filter';
 
 type Props = {
-  name: OptionalFilterType;
+  name: string;
   children: React.ReactNode;
   filterList: Array<ProcessInstanceFilterField>;
 };
 
 const OptionalFilter: React.FC<Props> = observer(
   ({name, children, filterList}) => {
-    const {visibleFilters} = visibleFiltersStore.state;
+    const {visibleFilters} = processInstancesVisibleFiltersStore.state;
     const form = useForm();
 
     return (
@@ -30,7 +27,7 @@ const OptionalFilter: React.FC<Props> = observer(
           icon="delete"
           data-testid={`delete-${name}`}
           onClick={() => {
-            visibleFiltersStore.hideFilter(name);
+            processInstancesVisibleFiltersStore.hideFilter(name);
 
             filterList.forEach((filter) => {
               form.change(filter, undefined);

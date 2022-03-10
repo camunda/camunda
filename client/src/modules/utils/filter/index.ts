@@ -399,7 +399,7 @@ function updateFiltersSearchString<Filters extends object>(
     Object.entries({
       ...oldParams,
       ...newFilters,
-    })
+    }).filter(([, value]) => value !== '')
   );
 
   fieldsToDelete.forEach((field) => {

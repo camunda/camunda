@@ -20,7 +20,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processesStore} from 'modules/stores/processes';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {mockProcessXML} from 'modules/testUtils';
-import {visibleFiltersStore} from 'modules/stores/visibleFilters';
+import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 type OptionalFilter =
@@ -123,7 +123,7 @@ describe('Filters', () => {
   afterEach(() => {
     processesStore.reset();
     instancesDiagramStore.reset();
-    visibleFiltersStore.reset();
+    processInstancesVisibleFiltersStore.reset();
 
     jest.clearAllTimers();
     jest.useRealTimers();

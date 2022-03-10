@@ -4,30 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {action, computed, makeAutoObservable} from 'mobx';
 
 type State = {
-  visibleFilters: Array<OptionalFilter>;
+  visibleFilters: string[];
 };
-
-type OptionalFilter =
-  | 'variable'
-  | 'ids'
-  | 'parentInstanceId'
-  | 'operationId'
-  | 'errorMessage'
-  | 'startDate'
-  | 'endDate';
-
-const optionalFilters: Array<OptionalFilter> = [
-  'variable',
-  'ids',
-  'parentInstanceId',
-  'operationId',
-  'errorMessage',
-  'startDate',
-  'endDate',
-];
 
 const DEFAULT_STATE: State = {
   visibleFilters: [],
@@ -35,26 +16,34 @@ const DEFAULT_STATE: State = {
 
 class VisibleFilters {
   state: State = {...DEFAULT_STATE};
+  possibleOptionalFilters: string[] = [];
 
-  constructor() {
-    makeAutoObservable(this);
+  constructor(possibleOptionalFilters: string[] = []) {
+    makeAutoObservable(this, {
+      addVisibleFilters: action,
+      hideFilter: action,
+      areAllFiltersVisible: computed,
+      reset: action,
+    });
+
+    this.possibleOptionalFilters = possibleOptionalFilters;
   }
 
-  addVisibleFilters = (filters: Array<OptionalFilter>) => {
-    this.state.visibleFilters = [
-      ...new Set([...this.state.visibleFilters, ...filters]),
-    ];
+  addVisibleFilters = (filters: string[]) => {
+    this.state.visibleFilters = Array.from(
+      new Set([...this.state.visibleFilters, ...filters])
+    );
   };
 
-  hideFilter = (filter: OptionalFilter) => {
+  hideFilter = (filter: string) => {
     this.state.visibleFilters = this.state.visibleFilters.filter(
       (visibleFilter) => visibleFilter !== filter
     );
   };
 
   get areAllFiltersVisible() {
-    return optionalFilters.every((optionalFilter) =>
-      this.state.visibleFilters.includes(optionalFilter)
+    return this.possibleOptionalFilters.every((possibleOptionalFilter) =>
+      this.state.visibleFilters.includes(possibleOptionalFilter)
     );
   }
 
@@ -63,6 +52,4 @@ class VisibleFilters {
   };
 }
 
-export const visibleFiltersStore = new VisibleFilters();
-export {optionalFilters};
-export type {OptionalFilter};
+export {VisibleFilters};

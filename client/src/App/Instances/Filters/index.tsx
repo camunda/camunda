@@ -31,11 +31,7 @@ import {
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
 import {observer} from 'mobx-react';
-import {
-  visibleFiltersStore,
-  optionalFilters,
-  OptionalFilter,
-} from 'modules/stores/visibleFilters';
+import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {Ids} from './OptionalFilters/Ids';
 import {ParentInstanceIds} from './OptionalFilters/ParentInstanceIds';
 import {ErrorMessage} from './OptionalFilters/ErrorMessage';
@@ -49,7 +45,7 @@ const Filters: React.FC = observer(() => {
   const location = useLocation();
   const filters = useFilters();
 
-  const {visibleFilters} = visibleFiltersStore.state;
+  const {visibleFilters} = processInstancesVisibleFiltersStore.state;
 
   const initialValues: ProcessInstanceFilters = {
     active: true,
@@ -62,12 +58,15 @@ const Filters: React.FC = observer(() => {
       filters,
     });
 
-    visibleFiltersStore.addVisibleFilters([
-      ...intersection(Object.keys(filters), optionalFilters),
+    processInstancesVisibleFiltersStore.addVisibleFilters([
+      ...intersection(
+        Object.keys(filters),
+        processInstancesVisibleFiltersStore.possibleOptionalFilters
+      ),
       ...('variableName' in filters && 'variableValue' in filters
         ? ['variable']
         : []),
-    ] as Array<OptionalFilter>);
+    ]);
   }, [location.search]);
 
   return (
@@ -134,7 +133,7 @@ const Filters: React.FC = observer(() => {
                 />
               </InstanceStates>
 
-              {!visibleFiltersStore.areAllFiltersVisible && (
+              {!processInstancesVisibleFiltersStore.areAllFiltersVisible && (
                 <MoreFiltersDropdown
                   trigger={{type: 'label', label: 'More Filters'}}
                   data-testid="more-filters-dropdown"
@@ -146,9 +145,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'Variable',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'variable',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['variable']
+                                  );
                                 },
                               },
                             ]
@@ -158,9 +157,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'Instance Id(s)',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'ids',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['ids']
+                                  );
                                 },
                               },
                             ]
@@ -170,9 +169,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'Operation Id',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'operationId',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['operationId']
+                                  );
                                 },
                               },
                             ]
@@ -182,9 +181,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'Parent Instance Id',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'parentInstanceId',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['parentInstanceId']
+                                  );
                                 },
                               },
                             ]
@@ -194,9 +193,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'Error Message',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'errorMessage',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['errorMessage']
+                                  );
                                 },
                               },
                             ]
@@ -206,9 +205,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'Start Date',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'startDate',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['startDate']
+                                  );
                                 },
                               },
                             ]
@@ -218,9 +217,9 @@ const Filters: React.FC = observer(() => {
                               {
                                 label: 'End Date',
                                 handler: () => {
-                                  visibleFiltersStore.addVisibleFilters([
-                                    'endDate',
-                                  ]);
+                                  processInstancesVisibleFiltersStore.addVisibleFilters(
+                                    ['endDate']
+                                  );
                                 },
                               },
                             ]
@@ -254,7 +253,7 @@ const Filters: React.FC = observer(() => {
                 onClick={() => {
                   form.reset();
                   filters.setFiltersToURL(initialValues);
-                  visibleFiltersStore.reset();
+                  processInstancesVisibleFiltersStore.reset();
                 }}
               >
                 Reset Filters

@@ -18,7 +18,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import userEvent from '@testing-library/user-event';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {visibleFiltersStore} from 'modules/stores/visibleFilters';
+import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 function createWrapper() {
@@ -55,7 +55,7 @@ const FinishingOperationsEntry: React.FC = () => {
 };
 
 afterEach(() => {
-  visibleFiltersStore.reset();
+  processInstancesVisibleFiltersStore.reset();
 });
 
 describe('OperationsEntry', () => {
@@ -190,14 +190,20 @@ describe('OperationsEntry', () => {
       {wrapper: createWrapper()}
     );
 
-    expect(visibleFiltersStore.state.visibleFilters).toEqual([]);
+    expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual(
+      []
+    );
 
     userEvent.click(screen.getByText('3 Instances'));
 
-    expect(visibleFiltersStore.state.visibleFilters).toEqual(['operationId']);
+    expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual([
+      'operationId',
+    ]);
 
     userEvent.click(screen.getByText('3 Instances'));
-    expect(visibleFiltersStore.state.visibleFilters).toEqual(['operationId']);
+    expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual([
+      'operationId',
+    ]);
   });
 
   it('should fake the first 10% progress', async () => {

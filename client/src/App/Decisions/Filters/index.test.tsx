@@ -6,6 +6,7 @@
 
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {decisionInstancesVisibleFiltersStore} from 'modules/stores/decisionInstancesVisibleFilters';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
@@ -38,6 +39,10 @@ const MOCK_FILTERS_PARAMS = {
 } as const;
 
 describe('<Filters />', () => {
+  beforeEach(() => {
+    decisionInstancesVisibleFiltersStore.reset();
+  });
+
   it('should render the correct elements', () => {
     render(<Filters />, {
       wrapper: getWrapper(),
@@ -54,10 +59,19 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/completed/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/failed/i)).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/decision instance id\(s\)/i)
+      screen.getByLabelText(/enable decisioninstanceid/i)
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/enable processinstanceid/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/enable evaluationdate/i)).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/decision instance id\(s\)/i)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/process instance id/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
 
   it('should write filters to url', () => {
@@ -72,8 +86,11 @@ describe('<Filters />', () => {
     userEvent.selectOptions(screen.getByLabelText(/version/i), ['2']);
     userEvent.click(screen.getByLabelText(/completed/i));
     userEvent.click(screen.getByLabelText(/failed/i));
+    userEvent.click(screen.getByLabelText(/enable decisioninstanceid/i));
     userEvent.type(screen.getByLabelText(/decision instance id\(s\)/i), '123');
+    userEvent.click(screen.getByLabelText(/enable processinstanceid/i));
     userEvent.type(screen.getByLabelText(/process instance id/i), '456');
+    userEvent.click(screen.getByLabelText(/enable evaluationdate/i));
     userEvent.type(screen.getByLabelText(/evaluation date/i), '789');
     userEvent.click(screen.getByRole('button', {name: /submit/i}));
 
@@ -104,5 +121,59 @@ describe('<Filters />', () => {
     expect(screen.getByDisplayValue(/123/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/456/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/789/i)).toBeInTheDocument();
+  });
+
+  it('should persist enabled filters on session', () => {
+    const {unmount} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      screen.queryByLabelText(/decision instance id\(s\)/i)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/process instance id/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
+
+    userEvent.click(screen.getByLabelText(/enable decisioninstanceid/i));
+    userEvent.click(screen.getByLabelText(/enable processinstanceid/i));
+    userEvent.click(screen.getByLabelText(/enable evaluationdate/i));
+
+    unmount();
+
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      screen.getByLabelText(/decision instance id\(s\)/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+  });
+
+  it('should persist enabled filters from URL on session', () => {
+    const {unmount} = render(<Filters />, {
+      wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
+    });
+
+    expect(
+      screen.getByLabelText(/decision instance id\(s\)/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+
+    unmount();
+
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      screen.getByLabelText(/decision instance id\(s\)/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
   });
 });
