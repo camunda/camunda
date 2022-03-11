@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  destination:
+    name: camunda-ci
+  ignoreDifferences:
+  - jsonPointers:
+    - /data/tls.crt
+    - /data/tls.key
+    - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
+    kind: Secret
+    name: operate-tls
+  project: operate-previews
+  source:
+    helm:
+      parameters:
+      - name: global.ingress.vouchUrl
+        value: https://dev.vouch.camunda.cloud
+    path: .ci/preview-environments
+    repoURL: https://github.com/camunda-cloud/operate.git
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

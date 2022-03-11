@@ -1,0 +1,17 @@
+---
+name: deploy-preview-env
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Deployable ref, commit or branch'
+        required: true
+        default: main
+      name:
+        description: 'Name of deployment/docker tag.'
+        required: false
+        default: latest
+jobs:
+  deploy-dev:
+    steps:
+    - run: echo Hello, this is a placeholder workflow to support future development.
