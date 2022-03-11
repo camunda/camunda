@@ -55,6 +55,8 @@ zeebe:
       value: "0.8"
     - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
       value: "0.9"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS
+      value: "true"
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
   resources:
