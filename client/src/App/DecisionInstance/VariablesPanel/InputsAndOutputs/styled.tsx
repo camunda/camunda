@@ -8,21 +8,24 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import styled, {css} from 'styled-components';
 import {BaseBlock} from 'modules/components/Skeleton';
 
-const Panel = styled.div`
-  ${({theme}) => {
+type PanelProps = {
+  $hasBorder?: boolean;
+};
+
+const Panel = styled.div<PanelProps>`
+  ${({theme, $hasBorder}) => {
     const colors = theme.colors.decisionInstance;
 
     return css`
-      width: 50%;
       height: 100%;
       display: flex;
       flex-direction: column;
       background-color: ${colors.backgroundColor};
 
-      &:first-of-type {
+      ${$hasBorder &&
+      css`
         border-right: 1px solid ${colors.borderColor};
-        width: calc(50% - 1px);
-      }
+      `}
 
       & ${StatusMessage} {
         width: 100%;
@@ -60,4 +63,8 @@ const SkeletonBlock = styled(BaseBlock)<SkeletonBlockProps>`
   }}
 `;
 
-export {Panel, Title, SkeletonBlock};
+const PanelContainer = styled.div`
+  height: 100%;
+`;
+
+export {Panel, Title, SkeletonBlock, PanelContainer};

@@ -9,7 +9,7 @@ import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
-import {Container, Content, Header, Tab} from './styled';
+import {Container, Header, Tab} from './styled';
 
 const LOCAL_STORAGE_KEY = 'decisionInstanceTab';
 
@@ -46,10 +46,10 @@ const VariablesPanel: React.FC = observer(() => {
           Result
         </Tab>
       </Header>
-      <Content>
+      <>
         {selectedTab === 'inputs-and-outputs' && <InputsAndOutputs />}
         {selectedTab === 'result' && <Result />}
-      </Content>
+      </>
     </Container>
   );
 });

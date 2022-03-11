@@ -67,10 +67,4 @@ const Header = styled.header`
   }}
 `;
 
-const Content = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-`;
-
-export {Container, Header, Content, Tab};
+export {Container, Header, Tab};

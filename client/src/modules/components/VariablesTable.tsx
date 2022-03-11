@@ -88,7 +88,6 @@ type THProps = {
 const TH = styled.th<THProps>`
   ${({theme, $width}) => {
     const colors = theme.colors.decisionInstance;
-
     return css`
       height: 44px;
       text-align: left;

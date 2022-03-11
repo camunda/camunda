@@ -17,6 +17,7 @@
   position: absolute;
   width: 100%;
   height: 1px;
+  top: 0;
 }
 
 .custom-dragger-Vertical {
@@ -24,12 +25,39 @@
   height: 10px !important;
 }
 
-.nsResizing .topPanel {
+.nsResizing .VerticalPanel {
   cursor: ns-resize;
 }
-.nsResizing .bottomPanel {
-  cursor: ns-resize;
-}
+
 .nsResizing .custom-gutter-Vertical:after {
+  background-color: #4d90ff;
+}
+
+.custom-gutter-Horizontal {
+  padding: 0 !important;
+  height: 100%;
+  width: 0;
+  position: relative;
+  cursor: ew-resize !important;
+}
+
+.custom-gutter-Horizontal:after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  right: 0;
+}
+
+.custom-dragger-Horizontal {
+  height: 100% !important;
+  width: 10px !important;
+}
+
+.ewResizing .HorizontalPanel {
+  cursor: ew-resize;
+}
+
+.ewResizing .custom-gutter-Horizontal:after {
   background-color: #4d90ff;
 }

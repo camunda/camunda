@@ -4,12 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
-import {Panel, Title, SkeletonBlock} from './styled';
+import {Panel, Title, SkeletonBlock, PanelContainer} from './styled';
 import {Table, TR, TH, TD} from 'modules/components/VariablesTable';
 import {Skeleton} from './Skeleton';
+import {
+  ResizablePanel,
+  SplitDirection,
+} from 'modules/components/ResizablePanel';
 
 const InputsAndOutputs: React.FC = observer(() => {
   const {
@@ -45,84 +50,107 @@ const InputsAndOutputs: React.FC = observer(() => {
     },
   ] as const;
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [clientWidth, setClientWidth] = useState(0);
+
+  useEffect(() => {
+    setClientWidth(containerRef?.current?.clientWidth ?? 0);
+  }, []);
+
+  const initialWidthPercentages = {
+    leftPanel: 50,
+    rightPanel: 50,
+  };
+
+  const panelMinWidth = clientWidth / 3;
+
   return (
-    <>
-      <Panel>
-        {status !== 'error' && <Title>Inputs</Title>}
-        {status === 'initial' && (
-          <Skeleton
-            structure={INPUTS_STRUCTURE}
-            data-testid="inputs-skeleton"
-          />
-        )}
-        {status === 'fetched' && (
-          <Table>
-            <thead>
-              <TR>
-                {INPUTS_STRUCTURE.map(({header, columnWidth}, index) => (
-                  <TH key={index} $width={columnWidth}>
-                    {header}
-                  </TH>
-                ))}
-              </TR>
-            </thead>
-            <tbody>
-              {decisionInstance?.inputs.map(({id, name, value}) => {
-                return (
-                  <TR key={id}>
-                    <TD>{name}</TD>
-                    <TD>{value}</TD>
-                  </TR>
-                );
-              })}
-            </tbody>
-          </Table>
-        )}
-        {status === 'error' && (
-          <StatusMessage variant="error">
-            Data could not be fetched
-          </StatusMessage>
-        )}
-      </Panel>
-      <Panel>
-        {status !== 'error' && <Title>Outputs</Title>}
-        {status === 'initial' && (
-          <Skeleton
-            structure={OUTPUTS_STRUCTURE}
-            data-testid="outputs-skeleton"
-          />
-        )}
-        {status === 'fetched' && (
-          <Table>
-            <thead>
-              <TR>
-                {OUTPUTS_STRUCTURE.map(({header, columnWidth}, index) => (
-                  <TH key={index} $width={columnWidth}>
-                    {header}
-                  </TH>
-                ))}
-              </TR>
-            </thead>
-            <tbody>
-              {decisionInstance?.outputs.map(({id, rule, name, value}) => {
-                return (
-                  <TR key={id}>
-                    <TD>{rule}</TD>
-                    <TD>{name}</TD>
-                    <TD>{value}</TD>
-                  </TR>
-                );
-              })}
-            </tbody>
-          </Table>
-        )}
-        {status === 'error' && (
-          <StatusMessage variant="error">
-            Data could not be fetched
-          </StatusMessage>
-        )}
-      </Panel>
-    </>
+    <PanelContainer ref={containerRef}>
+      <ResizablePanel
+        direction={SplitDirection.Horizontal}
+        initialSizePercentages={[
+          initialWidthPercentages.leftPanel,
+          initialWidthPercentages.rightPanel,
+        ]}
+        minWidths={[panelMinWidth, panelMinWidth]}
+      >
+        <Panel $hasBorder>
+          {status !== 'error' && <Title>Inputs</Title>}
+          {status === 'initial' && (
+            <Skeleton
+              structure={INPUTS_STRUCTURE}
+              data-testid="inputs-skeleton"
+            />
+          )}
+          {status === 'fetched' && (
+            <Table>
+              <thead>
+                <TR>
+                  {INPUTS_STRUCTURE.map(({header, columnWidth}, index) => (
+                    <TH key={index} $width={columnWidth}>
+                      {header}
+                    </TH>
+                  ))}
+                </TR>
+              </thead>
+              <tbody>
+                {decisionInstance?.inputs.map(({id, name, value}) => {
+                  return (
+                    <TR key={id}>
+                      <TD>{name}</TD>
+                      <TD>{value}</TD>
+                    </TR>
+                  );
+                })}
+              </tbody>
+            </Table>
+          )}
+          {status === 'error' && (
+            <StatusMessage variant="error">
+              Data could not be fetched
+            </StatusMessage>
+          )}
+        </Panel>
+        <Panel>
+          {status !== 'error' && <Title>Outputs</Title>}
+          {status === 'initial' && (
+            <Skeleton
+              structure={OUTPUTS_STRUCTURE}
+              data-testid="outputs-skeleton"
+            />
+          )}
+          {status === 'fetched' && (
+            <Table>
+              <thead>
+                <TR>
+                  {OUTPUTS_STRUCTURE.map(({header, columnWidth}, index) => (
+                    <TH key={index} $width={columnWidth}>
+                      {header}
+                    </TH>
+                  ))}
+                </TR>
+              </thead>
+              <tbody>
+                {decisionInstance?.outputs.map(({id, rule, name, value}) => {
+                  return (
+                    <TR key={id}>
+                      <TD>{rule}</TD>
+                      <TD>{name}</TD>
+                      <TD>{value}</TD>
+                    </TR>
+                  );
+                })}
+              </tbody>
+            </Table>
+          )}
+          {status === 'error' && (
+            <StatusMessage variant="error">
+              Data could not be fetched
+            </StatusMessage>
+          )}
+        </Panel>
+      </ResizablePanel>
+    </PanelContainer>
   );
 });
 
