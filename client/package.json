@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "3.4.17",
-    "@bpmn-io/form-js": "0.6.1",
+    "@bpmn-io/form-js": "0.7.0",
     "@camunda-cloud/common-ui": "0.0.18-rc4",
     "@camunda-cloud/common-ui-react": "0.0.18-rc4",
     "brace": "0.11.1",
