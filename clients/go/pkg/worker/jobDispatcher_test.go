@@ -195,6 +195,10 @@ func (stub *jobClientStub) NewCompleteJobCommand() commands.CompleteJobCommandSt
 	return nil
 }
 
+func (stub *jobClientStub) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
+	panic("implement me")
+}
+
 func (jobClientStub) NewFailJobCommand() commands.FailJobCommandStep1 {
 	panic("implement me")
 }

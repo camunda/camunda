@@ -24,6 +24,7 @@ import (
 type JobClient interface {
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1
+	NewThrowErrorCommand() commands.ThrowErrorCommandStep1
 }
 
 type JobHandler func(client JobClient, job entities.Job)
