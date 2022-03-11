@@ -85,8 +85,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedDefinitionKey1);
-    final ProcessDefinitionOptimizeDto notAuthorizedToSee =
-      addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
+    addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
     final String authorizedProcessId = addProcessDefinitionToElasticsearch(authorizedDefinitionKey1).getId();
     final String authorizedEventProcessId1 = elasticSearchIntegrationTestExtension
       .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey2, new UserDto(KERMIT_USER)).getId();

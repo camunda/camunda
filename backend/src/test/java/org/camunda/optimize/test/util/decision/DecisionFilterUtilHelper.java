@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Eva
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
@@ -39,14 +39,14 @@ public class DecisionFilterUtilHelper {
     return filter;
   }
 
-  public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, DateFilterUnit unit) {
+  public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, DateUnit unit) {
     RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
     filter.setData(filterData);
     return filter;
   }
 
-  public static EvaluationDateFilterDto createRelativeEvaluationDateFilter (Long value, DateFilterUnit unit) {
+  public static EvaluationDateFilterDto createRelativeEvaluationDateFilter (Long value, DateUnit unit) {
     RelativeDateFilterStartDto evaluationDate = new RelativeDateFilterStartDto(value, unit);
     RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto(evaluationDate);
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
@@ -122,7 +122,7 @@ public class DecisionFilterUtilHelper {
 
   public static InputVariableFilterDto createRollingDateInputVariableFilter(final String variableName,
                                                                             final Long value,
-                                                                            final DateFilterUnit unit) {
+                                                                            final DateUnit unit) {
     return createDateInputVariableFilter(
       variableName, new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit))
     );
@@ -130,7 +130,7 @@ public class DecisionFilterUtilHelper {
 
   public static InputVariableFilterDto createRelativeDateInputVariableFilter(final String variableName,
                                                                             final Long value,
-                                                                            final DateFilterUnit unit) {
+                                                                            final DateUnit unit) {
     return createDateInputVariableFilter(
       variableName, new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit))
     );

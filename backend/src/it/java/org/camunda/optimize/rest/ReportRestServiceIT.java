@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -314,7 +314,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     reportDataDto.getFilter()
-      .add(DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS));
+      .add(DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS));
 
     // when
     final String id = addSingleDecisionReportWithDefinition(reportDataDto);
@@ -333,7 +333,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of(definitionIdentifier));
     reportDataDto.getFilter().add(filterDto);
 
@@ -354,7 +354,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of("invalid"));
     reportDataDto.getFilter().add(filterDto);
 
@@ -373,7 +373,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(Collections.emptyList());
     reportDataDto.getFilter().add(filterDto);
 
@@ -542,7 +542,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       reportClient.getSingleDecisionReportById(reportId);
     final String definitionIdentifier = reportDefinition.getData().getDefinitions().get(0).getIdentifier();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of(definitionIdentifier));
     reportDefinition.getData().getFilter().add(filterDto);
 
@@ -560,7 +560,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final SingleDecisionReportDefinitionRequestDto reportDefinition =
       reportClient.getSingleDecisionReportById(reportId);
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of("invalid"));
     reportDefinition.getData().getFilter().add(filterDto);
 
@@ -578,7 +578,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final SingleDecisionReportDefinitionRequestDto reportDefinition =
       reportClient.getSingleDecisionReportById(reportId);
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(Collections.emptyList());
     reportDefinition.getData().getFilter().add(filterDto);
 

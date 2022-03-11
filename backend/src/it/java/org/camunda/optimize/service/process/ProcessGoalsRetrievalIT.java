@@ -5,21 +5,15 @@
  */
 package org.camunda.optimize.service.process;
 
-import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.dto.optimize.query.ProcessGoalDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -30,37 +24,25 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT.EXTERNAL_EVENT_GROUP;
-import static org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT.EXTERNAL_EVENT_SOURCE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT;
-import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class ProcessGoalsIT extends AbstractIT {
-
-  private static final String FIRST_PROCESS_DEFINITION_KEY = "firstProcessDefinition";
-  private static final String SECOND_PROCESS_DEFINITION_KEY = "secondProcessDefinition";
+public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
 
   @Test
   public void getProcessGoals_notPossibleForUnauthenticatedUser() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionGoalsRequest()
+      .buildGetProcessGoalsRequest()
       .withoutAuthentication()
       .execute();
 
@@ -71,10 +53,10 @@ public class ProcessGoalsIT extends AbstractIT {
   @Test
   public void getProcessGoals_noProcessDefinitionGoalsFound() {
     // when
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
 
     // then
-    assertThat(processGoalDtos).isEmpty();
+    assertThat(processGoalsDtos).isEmpty();
   }
 
   @Test
@@ -85,24 +67,24 @@ public class ProcessGoalsIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, null);
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalsResponseDto.Fields.processName, null);
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(sorter);
 
     // then sort in ascending order
-    assertThat(processGoalDtos).hasSize(2)
-      .isSortedAccordingTo(Comparator.comparing(ProcessGoalDto::getProcessName))
+    assertThat(processGoalsDtos).hasSize(2)
+      .isSortedAccordingTo(Comparator.comparing(ProcessGoalsResponseDto::getProcessName))
       .containsExactly(
-        new ProcessGoalDto(
+        new ProcessGoalsResponseDto(
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
-          Collections.emptyList(),
-          null
+          null,
+          Collections.emptyList()
         ),
-        new ProcessGoalDto(
+        new ProcessGoalsResponseDto(
           SECOND_PROCESS_DEFINITION_KEY,
           SECOND_PROCESS_DEFINITION_KEY,
-          Collections.emptyList(),
-          null
+          null,
+          Collections.emptyList()
         )
       );
   }
@@ -116,13 +98,13 @@ public class ProcessGoalsIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessGoalDto> processGoalDtos = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionGoalsRequest()
+    List<ProcessGoalsDto> processGoalsDtos = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessGoalsRequest()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .executeAndReturnList(ProcessGoalDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(ProcessGoalsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(processGoalDtos).isEmpty();
+    assertThat(processGoalsDtos).isEmpty();
   }
 
   @Test
@@ -134,23 +116,23 @@ public class ProcessGoalsIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
 
     // then
-    assertThat(processGoalDtos).hasSize(2)
-      .isSortedAccordingTo(Comparator.comparing(ProcessGoalDto::getProcessName))
+    assertThat(processGoalsDtos).hasSize(2)
+      .isSortedAccordingTo(Comparator.comparing(ProcessGoalsResponseDto::getProcessName))
       .containsExactly(
-        new ProcessGoalDto(
+        new ProcessGoalsResponseDto(
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
-          Collections.emptyList(),
-          null
+          null,
+          Collections.emptyList()
         ),
-        new ProcessGoalDto(
-          eventProcessDefinitionDto.getKey(),
+        new ProcessGoalsResponseDto(
           eventProcessDefinitionDto.getName(),
-          Collections.emptyList(),
-          null
+          eventProcessDefinitionDto.getKey(),
+          null,
+          Collections.emptyList()
         )
       );
   }
@@ -158,36 +140,36 @@ public class ProcessGoalsIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("getSortOrderAndExpectedProcessNameComparator")
   public void getProcessGoals_sortByProcessName(final SortOrder sortingOrder,
-                                                final Comparator<ProcessGoalDto> comparator) {
+                                                final Comparator<ProcessGoalsResponseDto> comparator) {
     // given
     deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
     deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, sortingOrder);
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalsResponseDto.Fields.processName, sortingOrder);
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(sorter);
 
     // then
-    assertThat(processGoalDtos).hasSize(2).isSortedAccordingTo(comparator);
+    assertThat(processGoalsDtos).hasSize(2).isSortedAccordingTo(comparator);
   }
 
   @ParameterizedTest
   @MethodSource("getSortOrderAndExpectedProcessNameComparator")
   public void getProcessGoals_useDefinitionKeyForSortOrderForProcessWithNoName(final SortOrder sortOrder,
-                                                                               final Comparator<ProcessGoalDto> comparator) {
+                                                                               final Comparator<ProcessGoalsResponseDto> comparator) {
     // given
     ProcessDefinitionEngineDto processDefinitionWithName = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
     String processDefinitionKeyForProcessWithNoName = addProcessDefinitionWithNoNameToElasticSearch();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, sortOrder);
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalsResponseDto.Fields.processName, sortOrder);
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(sorter);
 
     // then
-    assertThat(processGoalDtos).hasSize(2).isSortedAccordingTo(comparator)
-      .extracting(ProcessGoalDto::getProcessName, ProcessGoalDto::getProcessDefinitionKey)
+    assertThat(processGoalsDtos).hasSize(2).isSortedAccordingTo(comparator)
+      .extracting(ProcessGoalsResponseDto::getProcessName, ProcessGoalsResponseDto::getProcessDefinitionKey)
       .containsExactlyInAnyOrder(
         Tuple.tuple(processDefinitionWithName.getName(), processDefinitionWithName.getKey()),
         Tuple.tuple(processDefinitionKeyForProcessWithNoName, processDefinitionKeyForProcessWithNoName)
@@ -209,15 +191,15 @@ public class ProcessGoalsIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
 
     // then
-    assertThat(processGoalDtos).hasSize(1).containsExactly(
-      new ProcessGoalDto(
+    assertThat(processGoalsDtos).hasSize(1).containsExactly(
+      new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        Collections.emptyList(),
-        null
+        null,
+        Collections.emptyList()
       )
     );
   }
@@ -248,22 +230,22 @@ public class ProcessGoalsIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals();
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
 
     // then
-    assertThat(processGoalDtos).hasSize(1).containsExactly(
-      new ProcessGoalDto(
-        processDefinitionVersion1.getKey(),
+    assertThat(processGoalsDtos).hasSize(1).containsExactly(
+      new ProcessGoalsResponseDto(
         processDefinitionVersion1.getName(),
-        Collections.emptyList(),
-        null
+        processDefinitionVersion1.getKey(),
+        null,
+        Collections.emptyList()
       ));
   }
 
   @ParameterizedTest
   @MethodSource("getSortOrderAndExpectedDefinitionKeyComparator")
   public void getProcessGoals_sortByKeyWhenNamesAreIdentical(final SortOrder sortOrder,
-                                                             final Comparator<ProcessGoalDto> comparator) {
+                                                             final Comparator<ProcessGoalsResponseDto> comparator) {
     // given
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "a");
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "b");
@@ -272,11 +254,11 @@ public class ProcessGoalsIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalDto.Fields.processName, sortOrder);
-    List<ProcessGoalDto> processGoalDtos = getProcessGoals(sorter);
+    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalsResponseDto.Fields.processName, sortOrder);
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(sorter);
 
     // then
-    assertThat(processGoalDtos).hasSize(3).isSortedAccordingTo(comparator);
+    assertThat(processGoalsDtos).hasSize(3).isSortedAccordingTo(comparator);
   }
 
   @ParameterizedTest
@@ -287,7 +269,7 @@ public class ProcessGoalsIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionGoalsRequest(processGoalSorter)
+      .buildGetProcessGoalsRequest(processGoalSorter)
       .execute();
 
     // then
@@ -298,87 +280,14 @@ public class ProcessGoalsIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(processDefinitionKey));
   }
 
-  private EventProcessMappingDto buildSimpleEventProcessMappingDto() {
-    return buildSimpleEventProcessMappingDto(
-      buildEventMappingDto(START_EVENT),
-      buildEventMappingDto(END_EVENT)
-    );
-  }
-
-  private EventMappingDto buildEventMappingDto(final String endEvent) {
-    return EventMappingDto.builder()
-      .end(EventTypeDto.builder()
-             .group(EXTERNAL_EVENT_GROUP)
-             .source(EXTERNAL_EVENT_SOURCE)
-             .eventName(endEvent)
-             .build())
-      .build();
-  }
-
-  private EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
-                                                                   final EventMappingDto endEventMapping) {
-    final Map<String, EventMappingDto> eventMappings = new HashMap<>();
-    eventMappings.put(START_EVENT, startEventMapping);
-    eventMappings.put(END_EVENT, endEventMapping);
-    return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-      eventMappings, "myEventProcess", createTwoEventAndOneTaskActivitiesProcessDefinitionXml()
-    );
-  }
-
-  @SneakyThrows
-  private void executeImportCycle() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler()
-      .runImportRound(true)
-      .get(10, TimeUnit.SECONDS);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  private void publishMappingAndExecuteImport(final String eventProcessId) {
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
-    // we execute the import cycle so the event instance index gets created
-    executeImportCycle();
-  }
-
-  private void ingestTestEvent(final String eventId,
-                               final String eventName,
-                               final OffsetDateTime eventTimestamp) {
-    embeddedOptimizeExtension.getEventService()
-      .saveEventBatch(
-        Collections.singletonList(
-          EventDto.builder()
-            .id(eventId)
-            .eventName(eventName)
-            .timestamp(eventTimestamp.toInstant().toEpochMilli())
-            .traceId("myTraceId1")
-            .group(EXTERNAL_EVENT_GROUP)
-            .source(EXTERNAL_EVENT_SOURCE)
-            .build()
-        )
-      );
-  }
-
-  private List<ProcessGoalDto> getProcessGoals() {
+  private List<ProcessGoalsResponseDto> getProcessGoals() {
     return getProcessGoals(null);
   }
 
-  private List<ProcessGoalDto> getProcessGoals(ProcessGoalSorter sorter) {
+  private List<ProcessGoalsResponseDto> getProcessGoals(ProcessGoalSorter sorter) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionGoalsRequest(sorter)
-      .executeAndReturnList(ProcessGoalDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private EventProcessDefinitionDto deployEventBasedProcessDefinition() {
-    ingestTestEvent(IdGenerator.getNextId(), START_EVENT, OffsetDateTime.now());
-    ingestTestEvent(IdGenerator.getNextId(), END_EVENT, OffsetDateTime.now());
-    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
-    publishMappingAndExecuteImport(eventProcessDefinitionKey);
-    executeImportCycle();
-    final EventProcessDefinitionDto eventProcessDefinitionDto = new EventProcessDefinitionDto();
-    eventProcessDefinitionDto.setName(simpleEventProcessMappingDto.getName());
-    eventProcessDefinitionDto.setKey(eventProcessDefinitionKey);
-    return eventProcessDefinitionDto;
+      .buildGetProcessGoalsRequest(sorter)
+      .executeAndReturnList(ProcessGoalsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinition() {
@@ -417,9 +326,9 @@ public class ProcessGoalsIT extends AbstractIT {
 
   private static Stream<Arguments> getSortOrderAndExpectedProcessNameComparator() {
     return Stream.of(
-      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalDto::getProcessName)),
-      Arguments.of(null, Comparator.comparing(ProcessGoalDto::getProcessName)),
-      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalDto::getProcessName).reversed())
+      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalsResponseDto::getProcessName)),
+      Arguments.of(null, Comparator.comparing(ProcessGoalsResponseDto::getProcessName)),
+      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalsResponseDto::getProcessName).reversed())
     );
   }
 
@@ -429,21 +338,10 @@ public class ProcessGoalsIT extends AbstractIT {
 
   private static Stream<Arguments> getSortOrderAndExpectedDefinitionKeyComparator() {
     return Stream.of(
-      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalDto::getProcessDefinitionKey)),
-      Arguments.of(null, Comparator.comparing(ProcessGoalDto::getProcessDefinitionKey)),
-      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalDto::getProcessDefinitionKey).reversed())
+      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalsResponseDto::getProcessDefinitionKey)),
+      Arguments.of(null, Comparator.comparing(ProcessGoalsResponseDto::getProcessDefinitionKey)),
+      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalsResponseDto::getProcessDefinitionKey).reversed())
     );
-  }
-
-  @SneakyThrows
-  private static String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {
-    return convertBpmnModelToXmlString(getSingleUserTaskDiagram("aProcessName"));
-  }
-
-  private static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {
-    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
-    return xmlOutput.toString(StandardCharsets.UTF_8);
   }
 
 }

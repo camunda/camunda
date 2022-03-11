@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
@@ -41,7 +40,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByInputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -142,7 +141,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     final DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
     groupByDto.setValue(variableValueDto);
     groupByVarReport.setGroupBy(new DecisionGroupByInputVariableDto());
-    groupByVarReport.getFilter().add(createRollingEvaluationDateFilter(1L, DateFilterUnit.DAYS));
+    groupByVarReport.getFilter().add(createRollingEvaluationDateFilter(1L, DateUnit.DAYS));
     groupByVarReport.getConfiguration().getCustomBucket().setActive(true);
     groupByVarReport.getConfiguration().getCustomBucket().setBaseline(500.0);
     groupByVarReport.getConfiguration().getCustomBucket().setBucketSize(15.0);
@@ -179,7 +178,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
 
     // A distributedBy report with filters and custom bucket config
     final RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(new RollingDateFilterStartDto(
-      4L, DateFilterUnit.DAYS));
+      4L, DateUnit.DAYS));
     final InstanceEndDateFilterDto endDateFilter = new InstanceEndDateFilterDto();
     endDateFilter.setData(filterData);
     endDateFilter.setFilterLevel(FilterApplicationLevel.INSTANCE);

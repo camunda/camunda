@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -496,15 +497,23 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest(ProcessGoalSorter sorter) {
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest(ProcessGoalSorter sorter) {
     this.path = "process/goals";
     this.method = GET;
     Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest() {
-    return buildGetProcessDefinitionGoalsRequest(null);
+  public OptimizeRequestExecutor buildUpdateProcessGoalsRequest(final String processDefinitionKey,
+                                                                final List<ProcessDurationGoalDto> goals) {
+    this.path = "process/" + processDefinitionKey + "/goals";
+    this.method = PUT;
+    this.body = getBody(goals);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
+    return buildGetProcessGoalsRequest(null);
   }
 
   public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
@@ -943,7 +952,8 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
     this.path = PUBLIC_PATH + LABELS_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(definitionVariableLabelsDto);
     return this;
@@ -1608,7 +1618,8 @@ public class OptimizeRequestExecutor {
                                                                     final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(secret).ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + s));
+    Optional.ofNullable(secret)
+      .ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + s));
     this.mediaType = mediaType;
     this.body = getBody(eventDtos);
     return this;
@@ -1698,7 +1709,8 @@ public class OptimizeRequestExecutor {
                                                               final String accessToken) {
     this.path = INGESTION_PATH + VARIABLE_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(externalVariables);
     return this;
@@ -1716,7 +1728,8 @@ public class OptimizeRequestExecutor {
   }
 
   private void setAccessToken(final String accessToken) {
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
   }
 
   private void setCollectionIdQueryParam(final String collectionId) {

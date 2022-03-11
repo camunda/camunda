@@ -292,7 +292,7 @@ public class DefinitionService implements ConfigurationReloadable {
           .filter(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
             userId, tenantId, definition
           ))
-          // sort by name case insensitive
+          // sort by name case-insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
           .collect(toList());
         return new TenantWithDefinitionsResponseDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);

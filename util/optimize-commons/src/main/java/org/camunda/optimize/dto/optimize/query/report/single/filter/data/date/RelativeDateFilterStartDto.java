@@ -21,6 +21,6 @@ import lombok.experimental.FieldNameConstants;
 public class RelativeDateFilterStartDto {
 
   protected Long value;
-  protected DateFilterUnit unit;
+  protected DateUnit unit;
 
 }

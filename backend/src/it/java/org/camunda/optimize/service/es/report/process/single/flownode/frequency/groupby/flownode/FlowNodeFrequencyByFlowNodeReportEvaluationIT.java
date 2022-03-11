@@ -238,8 +238,10 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getFirstMeasureData()).isNotEmpty();
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), START_EVENT).get().getValue()).isEqualTo(1);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), END_EVENT).get().getValue()).isEqualTo(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), START_EVENT)).isPresent()
+      .get().satisfies(data -> assertThat(data.getValue()).isEqualTo(1));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), END_EVENT)).isPresent()
+      .get().satisfies(data -> assertThat(data.getValue()).isEqualTo(1));
   }
 
   @Test

@@ -79,7 +79,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   /**
    * The clientConfigCallback can be set only once per builder.
-   * This method cares about all aspects that need to be considered in it's setup.
+   * This method cares about all aspects that need to be considered in its setup.
    *
    * @param configurationService configuration source for the client callback
    * @param sslContext           ssl setup to apply, might be <code>null</code> if there is no ssl setup

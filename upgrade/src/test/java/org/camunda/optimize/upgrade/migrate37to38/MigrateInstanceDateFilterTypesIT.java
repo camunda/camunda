@@ -7,13 +7,11 @@ package org.camunda.optimize.upgrade.migrate37to38;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -35,7 +33,7 @@ public class MigrateInstanceDateFilterTypesIT extends AbstractUpgrade37IT {
 
   private final List<ProcessFilterDto<?>> EXPECTED_FILTERS_REPORT_2 = ProcessFilterBuilder.filter()
     .relativeInstanceStartDate()
-    .start(1L, DateFilterUnit.YEARS)
+    .start(1L, DateUnit.YEARS)
     .add()
     .fixedInstanceEndDate()
     .start(OffsetDateTime.parse("2021-07-08T00:00:00+02:00"))
@@ -43,7 +41,7 @@ public class MigrateInstanceDateFilterTypesIT extends AbstractUpgrade37IT {
     .add()
     .relativeFlowNodeStartDate()
     .filterLevel(FilterApplicationLevel.VIEW)
-    .start(1L, DateFilterUnit.WEEKS)
+    .start(1L, DateUnit.WEEKS)
     .add()
     .buildList();
 

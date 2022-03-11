@@ -20,11 +20,11 @@ import java.util.Map;
 public class StatusNotifier implements ImportObserver {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private StatusCheckingService statusCheckingService;
-  private ObjectMapper objectMapper;
-  private Session session;
+  private final StatusCheckingService statusCheckingService;
+  private final ObjectMapper objectMapper;
+  private final Session session;
 
-  private Map<String, EngineStatusDto> engineStatusMap;
+  private final Map<String, EngineStatusDto> engineStatusMap;
 
   public StatusNotifier(StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
     this.statusCheckingService = statusCheckingService;

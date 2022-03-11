@@ -20,9 +20,9 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
-  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(
-    secondaryEngineIntegrationExtension);
+  private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient secondAuthorizationClient =
+    new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @Test
   public void getAllStoredTenantsGrantedAccessToByAllEngines() {

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.filter.process;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
@@ -383,11 +383,11 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filter()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
-      .start(1L, DateFilterUnit.YEARS)
+      .start(1L, DateUnit.YEARS)
       .add()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
-      .start(1L, DateFilterUnit.WEEKS)
+      .start(1L, DateUnit.WEEKS)
       .add()
       .buildList();
     result = evaluateReport(reportType, processDefinition, filterList);
@@ -435,12 +435,12 @@ public class MixedFilterIT extends AbstractFilterIT {
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)
       .flowNodeIds(Collections.singletonList(START_EVENT))
-      .start(1L, DateFilterUnit.YEARS)
+      .start(1L, DateUnit.YEARS)
       .add()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)
       .flowNodeIds(Collections.singletonList(START_EVENT))
-      .start(1L, DateFilterUnit.WEEKS)
+      .start(1L, DateUnit.WEEKS)
       .add()
       .buildList();
     result = evaluateReport(reportType, processDefinition, filterList);
@@ -477,7 +477,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .rollingFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
-      .start(1L, DateFilterUnit.DAYS)
+      .start(1L, DateUnit.DAYS)
       .add()
       .buildList();
     ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
@@ -491,11 +491,11 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filter()
       .rollingFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
-      .start(1L, DateFilterUnit.WEEKS)
+      .start(1L, DateUnit.WEEKS)
       .add()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
-      .start(1L, DateFilterUnit.WEEKS)
+      .start(1L, DateUnit.WEEKS)
       .add()
       .buildList();
     result = evaluateReport(reportType, processDefinition, filterList);
@@ -514,7 +514,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
-      .start(3L, DateFilterUnit.DAYS)
+      .start(3L, DateUnit.DAYS)
       .add()
       .buildList();
     result = evaluateReport(reportType, processDefinition, filterList);
@@ -553,7 +553,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .rollingFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)
       .flowNodeIds(Collections.singletonList(USER_TASK_1))
-      .start(1L, DateFilterUnit.DAYS)
+      .start(1L, DateUnit.DAYS)
       .add()
       .buildList();
     ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
@@ -568,12 +568,12 @@ public class MixedFilterIT extends AbstractFilterIT {
       .rollingFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)
       .flowNodeIds(Collections.singletonList(START_EVENT))
-      .start(1L, DateFilterUnit.WEEKS)
+      .start(1L, DateUnit.WEEKS)
       .add()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)
       .flowNodeIds(Collections.singletonList(USER_TASK_1))
-      .start(1L, DateFilterUnit.WEEKS)
+      .start(1L, DateUnit.WEEKS)
       .add()
       .buildList();
     result = evaluateReport(reportType, processDefinition, filterList);
@@ -594,7 +594,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)
       .flowNodeIds(Collections.singletonList(USER_TASK_1))
-      .start(3L, DateFilterUnit.DAYS)
+      .start(3L, DateUnit.DAYS)
       .add()
       .buildList();
     result = evaluateReport(reportType, processDefinition, filterList);
@@ -768,9 +768,9 @@ public class MixedFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter().withOpenIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
-        .rollingInstanceStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
+        .rollingInstanceStartDate().start(10L, DateUnit.HOURS).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
-        .relativeInstanceStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
+        .relativeInstanceStartDate().start(10L, DateUnit.HOURS).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
         .fixedInstanceStartDate()
         .start(LocalDateUtil.getCurrentDateTime().minusMinutes(60)).end(LocalDateUtil.getCurrentDateTime())

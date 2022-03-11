@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter.process.date.modelelement;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -28,7 +28,7 @@ public class RelativeFlowNodeEndDateFilterIT extends AbstractRelativeFlowNodeDat
 
   @Override
   protected List<ProcessFilterDto<?>> createRelativeDateViewFilter(final Long value,
-                                                                   final DateFilterUnit unit) {
+                                                                   final DateUnit unit) {
     return ProcessFilterBuilder.filter()
       .relativeFlowNodeEndDate()
       .filterLevel(FilterApplicationLevel.VIEW)
@@ -40,7 +40,7 @@ public class RelativeFlowNodeEndDateFilterIT extends AbstractRelativeFlowNodeDat
   @Override
   protected List<ProcessFilterDto<?>> createRelativeDateInstanceFilter(final List<String> flowNodeIds,
                                                                        final Long value,
-                                                                       final DateFilterUnit unit) {
+                                                                       final DateUnit unit) {
     return ProcessFilterBuilder.filter()
       .relativeFlowNodeEndDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)

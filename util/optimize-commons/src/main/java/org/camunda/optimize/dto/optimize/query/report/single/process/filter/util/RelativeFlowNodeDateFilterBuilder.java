@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.RelativeFlowNodeDateFilterDataDto;
@@ -42,7 +42,7 @@ public class RelativeFlowNodeDateFilterBuilder {
     return builder;
   }
 
-  public RelativeFlowNodeDateFilterBuilder start(Long value, DateFilterUnit unit) {
+  public RelativeFlowNodeDateFilterBuilder start(Long value, DateUnit unit) {
     this.start = new RelativeDateFilterStartDto(value, unit);
     return this;
   }

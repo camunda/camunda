@@ -21,6 +21,7 @@ import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessGoalIndex;
 import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
@@ -455,7 +456,8 @@ public class ElasticSearchSchemaManager {
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex(),
       new ExternalProcessVariableIndex(),
-      new VariableLabelIndex()
+      new VariableLabelIndex(),
+      new ProcessGoalIndex()
     );
   }
 

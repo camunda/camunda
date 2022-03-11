@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.none;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -68,7 +68,7 @@ public class ProcessInstanceDurationByInstanceStartDateWithProcessPartReportEval
 
     // when
     final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
-      new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)
+      new RollingDateFilterStartDto(4L, DateUnit.DAYS)
     );
     final InstanceStartDateFilterDto startDateFilterDto = new InstanceStartDateFilterDto();
     startDateFilterDto.setData(dateFilterDataDto);

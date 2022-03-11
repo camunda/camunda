@@ -11,7 +11,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -146,7 +146,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @ParameterizedTest
   @MethodSource("supportedRollingDateFilterUnits")
   @SneakyThrows
-  public void resultFilterByRollingEvaluationDateStartFrom(DateFilterUnit dateFilterUnit) {
+  public void resultFilterByRollingEvaluationDateStartFrom(DateUnit dateUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
@@ -155,7 +155,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, dateFilterUnit)));
+    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, dateUnit)));
 
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
       reportClient.evaluateDecisionRawReport(reportData)
@@ -172,7 +172,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     // when
     DecisionReportDataDto reportData =
       createReportWithAllVersion(engineIntegrationExtension.deployDecisionDefinition());
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, DateFilterUnit.QUARTERS)));
+    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, DateUnit.QUARTERS)));
 
     // then
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
@@ -189,7 +189,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, DateFilterUnit.DAYS)));
+    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, DateUnit.DAYS)));
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
@@ -205,7 +205,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @ParameterizedTest
   @MethodSource("dateFilterUnits")
   @SneakyThrows
-  public void resultFilterByRelativeEvaluationDateCurrentInterval(DateFilterUnit dateFilterUnit) {
+  public void resultFilterByRelativeEvaluationDateCurrentInterval(DateUnit dateUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
@@ -214,7 +214,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(0L, dateFilterUnit)));
+    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(0L, dateUnit)));
 
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
       reportClient.evaluateDecisionRawReport(reportData)
@@ -229,7 +229,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @ParameterizedTest
   @MethodSource("dateFilterUnits")
   @SneakyThrows
-  public void resultFilterByRelativeEvaluationDatePreviousInterval(DateFilterUnit dateFilterUnit) {
+  public void resultFilterByRelativeEvaluationDatePreviousInterval(DateUnit dateUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
@@ -238,7 +238,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, dateFilterUnit)));
+    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, dateUnit)));
 
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
       reportClient.evaluateDecisionRawReport(reportData)
@@ -258,21 +258,21 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), frozenTime);
   }
 
-  private static Stream<DateFilterUnit> supportedRollingDateFilterUnits() {
+  private static Stream<DateUnit> supportedRollingDateFilterUnits() {
     return Stream.of(
-      DateFilterUnit.MINUTES,
-      DateFilterUnit.HOURS,
-      DateFilterUnit.DAYS,
-      DateFilterUnit.WEEKS,
-      DateFilterUnit.MONTHS,
-      DateFilterUnit.YEARS
+      DateUnit.MINUTES,
+      DateUnit.HOURS,
+      DateUnit.DAYS,
+      DateUnit.WEEKS,
+      DateUnit.MONTHS,
+      DateUnit.YEARS
     );
   }
 
-  private static Stream<DateFilterUnit> dateFilterUnits() {
+  private static Stream<DateUnit> dateFilterUnits() {
     return Stream.concat(
       supportedRollingDateFilterUnits(),
-      Stream.of(DateFilterUnit.QUARTERS)
+      Stream.of(DateUnit.QUARTERS)
     );
   }
 
