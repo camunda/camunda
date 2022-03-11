@@ -436,7 +436,7 @@ const theme = {
           focusInner: DARK_COLORS.focusInner,
         },
       },
-      decisionPanel: {
+      decisionViewer: {
         background: DARK_COLORS.ui02,
         text: SEMANTIC_COLORS.white,
         border: SEMANTIC_COLORS.grey,
@@ -1388,7 +1388,7 @@ const theme = {
           focusInner: DARK_COLORS.focusInner,
         },
       },
-      decisionPanel: {
+      decisionViewer: {
         background: LIGHT_COLORS.ui04,
         text: DARK_COLORS.ui01,
         border: LIGHT_COLORS.ui06,

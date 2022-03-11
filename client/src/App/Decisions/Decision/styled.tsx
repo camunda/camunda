@@ -15,19 +15,5 @@ const Container = styled.div`
     `;
   }}
 `;
-const IncidentBanner = styled.div`
-  ${({theme}) => {
-    return css`
-      background-color: ${theme.colors.incidentsAndErrors};
-      color: ${theme.colors.white};
-      font-size: 15px;
-      font-weight: 500;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    `;
-  }}
-`;
 
-export {IncidentBanner, Container};
+export {Container};
