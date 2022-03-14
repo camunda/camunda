@@ -8,10 +8,10 @@ package io.camunda.operate.data.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -35,10 +37,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionDataUtil {
 
-  public static final String DECISION_INSTANCE_ID_1 = "12121212";
-  public static final String DECISION_INSTANCE_ID_2 = "13131313";
+  public static final String DECISION_INSTANCE_ID_1 = "12121212-1";
+  public static final String DECISION_INSTANCE_ID_2 = "13131313-2";
+  public static final String DECISION_DEFINITION_ID_1 = "decisionDef1";
+  public static final String DECISION_DEFINITION_ID_2 = "decisionDef2";
+  public static final long PROCESS_INSTANCE_ID = 555555;
+  public static final String DECISION_DEFINITION_NAME_1 = "Assign Approver Group";
 
   private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
+  private Random random = new Random();
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -125,6 +132,61 @@ public class DecisionDataUtil {
   public List<DecisionInstanceEntity> createDecisionInstances() {
     List<DecisionInstanceEntity> result = new ArrayList<>();
 
+    //3 EVALUATED, 1 decision1 + 2 decision2, 2 version1 + 1 version2
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1, DecisionInstanceState.COMPLETED,
+        DECISION_DEFINITION_NAME_1,
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, "invoice-assign-approver", 35467,
+        PROCESS_INSTANCE_ID)
+    );
+    result.add(createDecisionInstance(DecisionInstanceState.COMPLETED, "Invoice Classification",
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 1, "invoiceClassification", 35467,
+        random.nextInt(1000))
+    );
+    result.add(createDecisionInstance(DecisionInstanceState.COMPLETED, "Invoice Classification",
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, "invoiceClassification", 35467,
+        random.nextInt(1000))
+    );
+    //2 FAILED
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_2, DecisionInstanceState.FAILED, DECISION_DEFINITION_NAME_1,
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, "invoice-assign-approver", 35467, PROCESS_INSTANCE_ID)
+    );
+    result.add(createDecisionInstance(DecisionInstanceState.FAILED, "Invoice Classification",
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, "invoiceClassification", 35467, random.nextInt(1000))
+    );
+
+    return result;
+  }
+
+  public DecisionInstanceEntity createDecisionInstance(final OffsetDateTime evaluationDate) {
+    return createDecisionInstance(
+        random.nextInt(1) == 0 ? DecisionInstanceState.COMPLETED : DecisionInstanceState.FAILED,
+        UUID.randomUUID().toString(),
+        evaluationDate,
+        random.nextInt(1) == 0 ? DECISION_DEFINITION_ID_1 : DECISION_DEFINITION_ID_2,
+        1,
+        UUID.randomUUID().toString(),
+        random.nextInt(1000),
+        random.nextInt(1000));
+  }
+
+  public DecisionInstanceEntity createDecisionInstance(
+      final DecisionInstanceState state, final String decisionName,
+      final OffsetDateTime evaluationDate, final String decisionDefinitionId,
+      final int decisionVersion, final String decisionId, final long processDefinitionKey,
+      final long processInstanceKey) {
+    return createDecisionInstance(String.valueOf(random.nextInt(1000)), state, decisionName,
+        evaluationDate, decisionDefinitionId,
+        decisionVersion, decisionId, processDefinitionKey,
+        processInstanceKey);
+  }
+
+  private DecisionInstanceEntity createDecisionInstance(final String decisionInstanceId,
+      final DecisionInstanceState state, final String decisionName,
+      final OffsetDateTime evaluationDate, final String decisionDefinitionId,
+      final int decisionVersion, final String decisionId, final long processDefinitionKey,
+      final long processInstanceKey) {
+
+
     final List<DecisionInstanceInputEntity> inputs = new ArrayList<>();
     inputs.add(new DecisionInstanceInputEntity()
         .setId("InputClause_0og2hn3")
@@ -158,14 +220,23 @@ public class DecisionDataUtil {
         .setRuleIndex(1)
         .setRuleId("row-49839158-1")
     );
-    result.add(new DecisionInstanceEntity()
-        .setId(DECISION_INSTANCE_ID_1)
-        .setState(DecisionInstanceState.COMPLETED)
-        .setDecisionName("Assign Approver Group")
+
+    String evaluationFailure = null;
+    if (state == DecisionInstanceState.FAILED) {
+      evaluationFailure = "Variable not found: invoiceClassification";
+    }
+
+    return new DecisionInstanceEntity()
+        .setId(decisionInstanceId)
+        .setKey(Long.valueOf(decisionInstanceId.split("-")[0]))
+        .setState(state)
+        .setEvaluationFailure(evaluationFailure)
+        .setDecisionName(decisionName)
+        .setDecisionVersion(decisionVersion)
         .setDecisionType(DecisionType.TABLE)
-        .setEvaluationTime(OffsetDateTime.now())
-        .setDecisionDefinitionId("1333")
-        .setDecisionId("invoice-assign-approver")
+        .setEvaluationDate(evaluationDate)
+        .setDecisionDefinitionId(decisionDefinitionId)
+        .setDecisionId(decisionId)
         .setDecisionRequirementsId("1111")
         .setDecisionRequirementsKey(1111)
         .setElementId("taskA")
@@ -173,28 +244,9 @@ public class DecisionDataUtil {
         .setEvaluatedInputs(inputs)
         .setEvaluatedOutputs(outputs)
         .setPosition(1000L)
-        .setProcessDefinitionKey(35467)
-        .setProcessInstanceKey(876423)
-        .setResult("{\"total\": 100.0}")
-    );
-    result.add(new DecisionInstanceEntity()
-        .setId(DECISION_INSTANCE_ID_2)
-        .setState(DecisionInstanceState.FAILED)
-        .setDecisionName("Assign Approver Group")
-        .setDecisionType(DecisionType.TABLE)
-        .setEvaluationTime(OffsetDateTime.now())
-        .setEvaluationFailure("Variable not found: invoiceClassification")
-        .setDecisionDefinitionId("1333")
-        .setDecisionId("invoice-assign-approver")
-        .setDecisionRequirementsId("1111")
-        .setDecisionRequirementsKey(1111)
-        .setElementId("taskA")
-        .setElementInstanceKey(547547)
-        .setPosition(1005L)
-        .setProcessDefinitionKey(234545)
-        .setProcessInstanceKey(567386)
-    );
-    return result;
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
+        .setResult("{\"total\": 100.0}");
   }
 
   public void persistOperateEntities(List<? extends OperateEntity> operateEntities)

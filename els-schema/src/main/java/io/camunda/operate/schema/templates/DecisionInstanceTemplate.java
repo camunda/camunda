@@ -16,7 +16,13 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor {
   public static final String KEY = "key";
   public static final String STATE = "state";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
-  //TODO more fields will be added when needed
+  public static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
+  public static final String DECISION_NAME = "decisionName";
+  public static final String DECISION_VERSION = "decisionVersion";
+  public static final String EVALUATION_DATE = "evaluationDate";
+  public static final String RESULT = "result";
+  public static final String EVALUATED_INPUTS = "evaluatedInputs";
+  public static final String EVALUATED_OUTPUTS = "evaluatedOutputs";
 
   @Override
   public String getIndexName() {

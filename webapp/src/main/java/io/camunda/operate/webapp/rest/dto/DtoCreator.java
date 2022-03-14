@@ -5,7 +5,6 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ import java.util.stream.Collectors;
 
 public abstract class DtoCreator {
 
-  public static <T extends CreatableFromEntity<T, E>, E extends OperateEntity> T create(E from,
+  public static <T extends CreatableFromEntity<T, E>, E extends Object> T create(E from,
       Class<T> clazz) {
     if (from == null) {
       return null;
@@ -28,7 +27,7 @@ public abstract class DtoCreator {
     }
   }
 
-  public static <T extends CreatableFromEntity<T, E>, E extends OperateEntity> List<T> create(
+  public static <T extends CreatableFromEntity<T, E>, E extends Object> List<T> create(
       List<E> entities, Class<T> clazz) {
     if (entities == null) {
       return new ArrayList<>();

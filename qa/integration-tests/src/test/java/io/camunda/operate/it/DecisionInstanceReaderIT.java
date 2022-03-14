@@ -48,10 +48,10 @@ public class DecisionInstanceReaderIT extends OperateIntegrationTest {
     assertThat(response.getDecisionDefinitionId()).isEqualTo(entity.getDecisionDefinitionId());
     assertThat(response.getDecisionId()).isEqualTo(entity.getDecisionId());
     assertThat(response.getDecisionName()).isEqualTo(entity.getDecisionName());
-    assertThat(response.getDecisionVersion()).isEqualTo(1); //TODO
+    assertThat(response.getDecisionVersion()).isEqualTo(entity.getDecisionVersion());
     assertThat(response.getDecisionType()).isEqualTo(entity.getDecisionType());
     assertThat(response.getErrorMessage()).isEqualTo(entity.getEvaluationFailure());
-    assertThat(response.getEvaluationDate()).isEqualTo(entity.getEvaluationTime().truncatedTo(
+    assertThat(response.getEvaluationDate()).isEqualTo(entity.getEvaluationDate().truncatedTo(
         ChronoUnit.MILLIS));
     assertThat(response.getId()).isEqualTo(entity.getId());
     assertThat(Long.valueOf(response.getProcessInstanceId())).isEqualTo(entity.getProcessInstanceKey());

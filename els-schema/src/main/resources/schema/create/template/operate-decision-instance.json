@@ -17,7 +17,7 @@
       "position": {
         "type": "long"
       },
-      "evaluationTime": {
+      "evaluationDate": {
         "format": "date_time || epoch_millis",
         "type": "date"
       },
@@ -52,6 +52,9 @@
         "type": "keyword"
       },
       "decisionType": {
+        "type": "keyword"
+      },
+      "decisionVersion": {
         "type": "keyword"
       },
       "result": {

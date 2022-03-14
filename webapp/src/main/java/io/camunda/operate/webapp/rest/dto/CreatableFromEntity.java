@@ -5,9 +5,7 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.entities.OperateEntity;
-
-public interface CreatableFromEntity<T extends CreatableFromEntity<T, E>, E extends OperateEntity> {
+public interface CreatableFromEntity<T extends CreatableFromEntity<T, E>, E extends Object> {
 
   T fillFrom(E entity);
 

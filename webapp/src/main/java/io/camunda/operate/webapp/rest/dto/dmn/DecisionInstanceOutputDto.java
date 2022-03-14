@@ -6,11 +6,11 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
-import java.util.ArrayList;
-import java.util.List;
+import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import java.util.Objects;
 
-public class DecisionInstanceOutputDto {
+public class DecisionInstanceOutputDto implements
+    CreatableFromEntity<DecisionInstanceOutputDto, DecisionInstanceOutputEntity> {
 
   private String id;
   private String name;
@@ -63,29 +63,13 @@ public class DecisionInstanceOutputDto {
     return this;
   }
 
-  public static DecisionInstanceOutputDto createFrom(DecisionInstanceOutputEntity outputEntity) {
-    if (outputEntity == null) {
-      return null;
-    }
-    DecisionInstanceOutputDto outputDto = new DecisionInstanceOutputDto()
-        .setId(outputEntity.getId())
+  @Override
+  public DecisionInstanceOutputDto fillFrom(final DecisionInstanceOutputEntity outputEntity) {
+    return this.setId(outputEntity.getId())
         .setName(outputEntity.getName())
         .setValue(outputEntity.getValue())
         .setRuleId(outputEntity.getRuleId())
         .setRuleIndex(outputEntity.getRuleIndex());
-    return outputDto;
-  }
-
-  public static List<DecisionInstanceOutputDto> createFrom(List<DecisionInstanceOutputEntity> outputEntities) {
-    List<DecisionInstanceOutputDto> result = new ArrayList<>();
-    if (outputEntities != null) {
-      for (DecisionInstanceOutputEntity outputEntity: outputEntities) {
-        if (outputEntity != null) {
-          result.add(createFrom(outputEntity));
-        }
-      }
-    }
-    return result;
   }
 
   @Override

@@ -7,9 +7,16 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.es.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
@@ -18,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,9 +44,19 @@ public class DecisionInstanceRestService {
   @Autowired
   private DecisionInstanceReader decisionInstanceReader;
 
+  @ApiOperation("Query decision instances by different parameters")
+  @PostMapping
+  public DecisionInstanceListResponseDto queryDecisionInstances(
+      @RequestBody DecisionInstanceListRequestDto decisionInstanceRequest) {
+    if (decisionInstanceRequest.getQuery() == null) {
+      throw new InvalidRequestException("Query must be provided.");
+    }
+    return decisionInstanceReader.queryDecisionInstances(decisionInstanceRequest);
+  }
+
   @ApiOperation("Get decision instance by id")
   @GetMapping("/{decisionInstanceId}")
-  public DecisionInstanceDto queryProcessInstanceById(@PathVariable @ValidLongId String decisionInstanceId) {
+  public DecisionInstanceDto queryProcessInstanceById(@PathVariable String decisionInstanceId) {
     return decisionInstanceReader.getDecisionInstance(decisionInstanceId);
   }
 

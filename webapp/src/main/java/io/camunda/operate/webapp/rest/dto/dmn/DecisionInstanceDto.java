@@ -7,13 +7,16 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionType;
+import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
+import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public class DecisionInstanceDto {
+public class DecisionInstanceDto implements
+    CreatableFromEntity<DecisionInstanceDto, DecisionInstanceEntity> {
 
   public static final Comparator<DecisionInstanceOutputDto> DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR =
       Comparator
@@ -158,33 +161,30 @@ public class DecisionInstanceDto {
     return this;
   }
 
-  public static DecisionInstanceDto createFrom(DecisionInstanceEntity decisionInstanceEntity) {
-    if (decisionInstanceEntity == null) {
-      return null;
-    }
-    final List<DecisionInstanceInputDto> inputs = DecisionInstanceInputDto
-        .createFrom(decisionInstanceEntity.getEvaluatedInputs());
+  @Override
+  public DecisionInstanceDto fillFrom(final DecisionInstanceEntity entity) {
+    final List<DecisionInstanceInputDto> inputs = DtoCreator
+        .create(entity.getEvaluatedInputs(), DecisionInstanceInputDto.class);
     Collections.sort(inputs, DECISION_INSTANCE_INPUT_DTO_COMPARATOR);
 
-    final List<DecisionInstanceOutputDto> outputs = DecisionInstanceOutputDto
-        .createFrom(decisionInstanceEntity.getEvaluatedOutputs());
+    final List<DecisionInstanceOutputDto> outputs = DtoCreator
+        .create(entity.getEvaluatedOutputs(), DecisionInstanceOutputDto.class);
     Collections.sort(outputs, DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
 
-    DecisionInstanceDto decision = new DecisionInstanceDto()
-        .setId(decisionInstanceEntity.getId())
-        .setDecisionDefinitionId(decisionInstanceEntity.getDecisionDefinitionId())
-        .setDecisionId(decisionInstanceEntity.getDecisionId())
-        .setDecisionName(decisionInstanceEntity.getDecisionName())
-        .setDecisionType(decisionInstanceEntity.getDecisionType())
-        .setDecisionVersion(1)   //TODO
-        .setErrorMessage(decisionInstanceEntity.getEvaluationFailure())
-        .setEvaluationDate(decisionInstanceEntity.getEvaluationTime())
+    this.setId(entity.getId())
+        .setDecisionDefinitionId(entity.getDecisionDefinitionId())
+        .setDecisionId(entity.getDecisionId())
+        .setDecisionName(entity.getDecisionName())
+        .setDecisionType(entity.getDecisionType())
+        .setDecisionVersion(entity.getDecisionVersion())
+        .setErrorMessage(entity.getEvaluationFailure())
+        .setEvaluationDate(entity.getEvaluationDate())
         .setEvaluatedInputs(inputs)
         .setEvaluatedOutputs(outputs)
-        .setProcessInstanceId(decisionInstanceEntity.getProcessInstanceKey())
-        .setResult(decisionInstanceEntity.getResult())
-        .setState(DecisionInstanceStateDto.getState(decisionInstanceEntity.getState()));
-    return decision;
+        .setProcessInstanceId(entity.getProcessInstanceKey())
+        .setResult(entity.getResult())
+        .setState(DecisionInstanceStateDto.getState(entity.getState()));
+    return this;
   }
 
   @Override

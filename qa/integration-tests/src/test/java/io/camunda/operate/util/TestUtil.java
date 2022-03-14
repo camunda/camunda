@@ -28,6 +28,8 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.zeebeimport.util.TreePath;
@@ -364,15 +366,38 @@ public abstract class TestUtil {
 
   public static ListViewRequestDto createGetAllProcessInstancesRequest() {
     return
-        new ListViewRequestDto(createProcessInstanceQuery(q -> {
-          q.setRunning(true);
-          q.setActive(true);
-          q.setIncidents(true);
-          q.setFinished(true);
-          q.setCompleted(true);
-          q.setCanceled(true);
-        }));
+        new ListViewRequestDto(createGetAllProcessInstancesQuery());
   }
+
+  public static DecisionInstanceListQueryDto createDecisionInstanceQuery(Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
+    DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
+    filtersSupplier.accept(query);
+    return query;
+  }
+
+  public static DecisionInstanceListRequestDto createDecisionInstanceRequest(Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
+    DecisionInstanceListRequestDto request = new DecisionInstanceListRequestDto();
+    DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
+    filtersSupplier.accept(query);
+    request.setQuery(query);
+    return request;
+  }
+
+  public static DecisionInstanceListQueryDto createGetAllDecisionInstancesQuery() {
+    return createDecisionInstanceQuery(q -> q.setFailed(true).setCompleted(true));
+  }
+
+  public static DecisionInstanceListRequestDto createGetAllDecisionInstancesRequest() {
+    return
+        new DecisionInstanceListRequestDto(createGetAllDecisionInstancesQuery());
+  }
+
+  public static DecisionInstanceListRequestDto createGetAllDecisionInstancesRequest(Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
+    final DecisionInstanceListQueryDto decisionInstanceQuery = createGetAllDecisionInstancesQuery();
+    filtersSupplier.accept(decisionInstanceQuery);
+    return new DecisionInstanceListRequestDto(decisionInstanceQuery);
+  }
+
 
   public static ListViewRequestDto createGetAllProcessInstancesRequest(Consumer<ListViewQueryDto> filtersSupplier) {
     final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery();
@@ -401,7 +426,6 @@ public abstract class TestUtil {
           q.setIncidents(true);
         }));
   }
-
 
   public static VariableForListViewEntity createVariableForListView(Long processInstanceKey, Long scopeKey, String name, String value) {
     VariableForListViewEntity variable = new VariableForListViewEntity();
@@ -494,7 +518,7 @@ public abstract class TestUtil {
         .setDecisionType(DecisionType.TABLE)
         .setElementId("businessTask")
         .setElementInstanceKey(Math.abs(random.nextLong()))
-        .setEvaluationTime(OffsetDateTime.now())
+        .setEvaluationDate(OffsetDateTime.now())
         .setPosition(Math.abs(random.nextLong()))
         .setProcessDefinitionKey(Math.abs(random.nextLong()))
         .setProcessInstanceKey(Math.abs(random.nextLong()))
