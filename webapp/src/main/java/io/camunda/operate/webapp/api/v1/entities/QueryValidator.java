@@ -16,12 +16,24 @@ import java.util.stream.Collectors;
 
 public class QueryValidator<T> {
 
+  public interface CustomQueryValidator<T> {
+    void validate(Query<T> query) throws ValidationException;
+  }
+
   private List<String> fields;
 
   public void validate(final Query<T> query, Class<T> queriedClass) throws ValidationException {
+    validate(query, queriedClass, null);
+  }
+
+  public void validate(final Query<T> query, Class<T> queriedClass,
+      CustomQueryValidator<T> customValidator) {
     retrieveFieldsFor(queriedClass);
     validateSorting(query.getSort(), fields);
     validatePaging(query);
+    if (customValidator != null) {
+      customValidator.validate(query);
+    }
   }
 
   private void retrieveFieldsFor(final Class<T> queriedClass) {

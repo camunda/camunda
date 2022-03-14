@@ -80,7 +80,6 @@ public class Query<T> {
   // search_after paging method
   private Object[] searchAfter = null;
 
-  // Specify sorting: fieldnames with optional prefix for asc '+' and desc '-'
   private List<Sort> sort = null;
 
   public Query(){

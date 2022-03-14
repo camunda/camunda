@@ -6,6 +6,8 @@
 package io.camunda.operate.webapp.api.v1.dao;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
+
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -17,6 +19,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -96,6 +99,14 @@ public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao
   protected QueryBuilder buildTermQuery(final String name, final Long value) {
     if (value != null) {
       return termQuery(name, value);
+    }
+    return null;
+  }
+
+
+  protected QueryBuilder buildMatchQuery(final String name, final String value) {
+    if (value != null) {
+      return matchQuery(name,  value).operator(Operator.AND);
     }
     return null;
   }
