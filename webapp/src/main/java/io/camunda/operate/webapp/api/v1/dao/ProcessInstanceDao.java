@@ -5,15 +5,13 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
-public interface ProcessDefinitionDao extends
-    SearchableDao<ProcessDefinition>,
-    SortableDao<ProcessDefinition>,
-    PageableDao<ProcessDefinition> {
+public interface ProcessInstanceDao extends
+    SearchableDao<ProcessInstance>,
+    SortableDao<ProcessInstance>,
+    PageableDao<ProcessInstance> {
 
-  ProcessDefinition byKey(Long key) throws APIException;
-
-  String xmlByKey(Long key) throws APIException;
+  ProcessInstance byKey(Long key) throws APIException;
 }

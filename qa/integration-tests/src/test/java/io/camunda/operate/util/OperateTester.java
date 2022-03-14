@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
@@ -235,6 +236,18 @@ public class OperateTester {
 
   public OperateTester startProcessInstance(String bpmnProcessId, String payload) {
     processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
+    return this;
+  }
+
+  public OperateTester startProcessInstanceWithVariables(String bpmnProcessId, Map<String,String> nameValuePairs) {
+    try {
+      processInstanceKey = ZeebeTestUtil.startProcessInstance(
+          zeebeClient,
+          bpmnProcessId,
+          objectMapper.writeValueAsString(nameValuePairs));
+    } catch (JsonProcessingException e) {
+      throw new OperateRuntimeException(e);
+    }
     return this;
   }
 

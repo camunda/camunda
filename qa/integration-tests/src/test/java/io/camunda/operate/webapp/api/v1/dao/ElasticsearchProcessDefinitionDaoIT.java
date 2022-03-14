@@ -13,10 +13,11 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
+import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.entities.Query.SortOrder;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import java.io.ByteArrayInputStream;
@@ -25,7 +26,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.xml.parsers.ParserConfigurationException;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
+import org.mockito.internal.matchers.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -44,7 +47,7 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
   @Test
   public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
     given(() -> { /*"no process definitions"*/ });
-    when(() -> processDefinitionResults = dao.listBy(new Query<>()));
+    when(() -> processDefinitionResults = dao.search(new Query<>()));
     then(() -> {
       assertThat(processDefinitionResults.getItems()).isEmpty();
       assertThat(processDefinitionResults.getTotal()).isZero();
@@ -52,7 +55,7 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
 
     given(() -> deployProcesses(
         "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn"));
-    when(() -> processDefinitionResults = dao.listBy(new Query<>()));
+    when(() -> processDefinitionResults = dao.search(new Query<>()));
     then(() -> {
       assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
       assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
@@ -64,7 +67,7 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
   public void shouldReturnWhenByKey() throws Exception {
     given(() -> {
       deployProcesses("complexProcess_v_3.bpmn");
-      processDefinitionResults = dao.listBy(new Query<>());
+      processDefinitionResults = dao.search(new Query<>());
       key = processDefinitionResults.getItems().get(0).getKey();
     });
     when(() -> processDefinition = dao.byKey(key));
@@ -92,7 +95,7 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
   public void shouldReturnWhenXmlByKey() throws Exception {
     given(() -> {
       deployProcesses("complexProcess_v_3.bpmn");
-      processDefinitionResults = dao.listBy(new Query<>());
+      processDefinitionResults = dao.search(new Query<>());
       key = processDefinitionResults.getItems().get(0).getKey();
     });
     when(() -> processDefinitionAsXML = dao.xmlByKey(key));
@@ -117,35 +120,15 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
   }
 
   @Test
-  public void shouldPagedWithFromSizeAndSorted() throws Exception {
-    given(() -> deployProcesses(
-        "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn",
-        "error-end-event.bpmn","intermediate-throw-event.bpmn","message-end-event.bpmn"));
-
-    when(() ->
-        processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
-          .setSize(2).setFrom(2)
-          .setSortBy(BPMN_PROCESS_ID).setSortOrder(SortOrder.DESC))
-    );
-    then(() -> {
-      assertThat(processDefinitionResults.getTotal()).isEqualTo(6);
-      List<ProcessDefinition> processDefinitions = processDefinitionResults.getItems();
-      assertThat(processDefinitions).hasSize(2);
-      assertThat(processDefinitions).extracting(BPMN_PROCESS_ID)
-          .containsExactly("errorProcess", "error-end-process");
-    });
-  }
-
-  @Test
   public void shouldPagedWithSearchAfterSizeAndSorted() throws Exception {
     given(() -> processDefinitionKeys = deployProcesses(
         "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn",
         "error-end-event.bpmn","intermediate-throw-event.bpmn","message-end-event.bpmn"));
 
     when(() ->
-        processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
+        processDefinitionResults = dao.search(new Query<ProcessDefinition>()
             .setSize(3).setSearchAfter(new Object[]{"errorProcess", processDefinitionKeys.get(2).toString()})
-            .setSortBy(BPMN_PROCESS_ID).setSortOrder(SortOrder.DESC))
+            .setSort(Sort.listOf(BPMN_PROCESS_ID, Order.DESC)))
     );
     then(() -> {
       assertThat(processDefinitionResults.getTotal()).isEqualTo(6);
@@ -163,9 +146,9 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
         "error-end-event.bpmn","intermediate-throw-event.bpmn","message-end-event.bpmn"));
 
     when(() ->
-        processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
+        processDefinitionResults = dao.search(new Query<ProcessDefinition>()
             .setSize(3).setSearchAfter(new Object[]{"errorProcess", processDefinitionKeys.get(3)})
-            .setSortBy(BPMN_PROCESS_ID).setSortOrder(SortOrder.ASC))
+            .setSort(Sort.listOf(BPMN_PROCESS_ID, Order.ASC)))
     );
     then(() -> {
       assertThat(processDefinitionResults.getTotal()).isEqualTo(6);
@@ -185,9 +168,9 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
     when(() -> {
       final ProcessDefinition processDefinitionExample = new ProcessDefinition()
           .setName("Demo process");
-      processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
-          .setExample(processDefinitionExample)
-          .setSortBy(VERSION).setSortOrder(SortOrder.DESC));
+      processDefinitionResults = dao.search(new Query<ProcessDefinition>()
+          .setFilter(processDefinitionExample)
+          .setSort(Sort.listOf(VERSION, Order.DESC)));
     });
     then(() -> {
       assertThat(processDefinitionResults.getTotal()).isEqualTo(2);
@@ -209,18 +192,17 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
     when(() -> {
       final ProcessDefinition processDefinitionExample = new ProcessDefinition()
           .setVersion(1);
-      processDefinitionResults = dao.listBy(new Query<ProcessDefinition>()
-          .setExample(processDefinitionExample)
-          .setFrom(2)
+      processDefinitionResults = dao.search(new Query<ProcessDefinition>()
+          .setFilter(processDefinitionExample)
           .setSize(2)
-          .setSortBy(BPMN_PROCESS_ID).setSortOrder(SortOrder.DESC));
+          .setSort(Sort.listOf(BPMN_PROCESS_ID, Order.DESC)));
     });
     then(() -> {
       assertThat(processDefinitionResults.getTotal()).isEqualTo(5);
       List<ProcessDefinition> processDefinitions = processDefinitionResults.getItems();
       assertThat(processDefinitions).hasSize(2);
       assertThat(processDefinitions).extracting(BPMN_PROCESS_ID)
-          .containsExactly("error-end-process","demoProcess");
+          .containsExactly("message-end-event-process","intermediate-throw-event-process");
       assertThat(processDefinitions).extracting(VERSION)
           .containsExactly(1,1);
     });

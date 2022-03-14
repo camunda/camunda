@@ -6,38 +6,85 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public class Query<T> {
 
-  public enum SortOrder {
-    ASC, DESC
+  public static class Sort {
+
+    public enum Order {
+      ASC,
+      DESC
+    }
+
+    private String field;
+    private Order order = Order.ASC;
+
+    public String getField() {
+      return field;
+    }
+
+    public Sort setField(final String field) {
+      this.field = field;
+      return this;
+    }
+
+    public Order getOrder() {
+      return order;
+    }
+
+    public Sort setOrder(final Order order) {
+      this.order = order;
+      return this;
+    }
+
+    public static Sort of(String field, Order order) {
+      return new Sort().setField(field).setOrder(order);
+    }
+
+    public static Sort of(String field) {
+      return of(field, Order.ASC);
+    }
+
+    public static List<Sort> listOf(String field, Order order){
+      return List.of(of(field, order));
+    }
+
+    public static List<Sort> listOf(String field){
+      return List.of(of(field));
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final Sort sort = (Sort) o;
+      return Objects.equals(field, sort.field) && order == sort.order;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(field, order);
+    }
   }
 
-  private T example = null;
+  private T filter;
 
-  // standard paging paging method
-  private int from = 0;
   private int size = 10;
 
   // search_after paging method
   private Object[] searchAfter = null;
 
-  // Specify sorting, for now only by one field
-  private String sortBy = null;
-  private SortOrder sortOrder = SortOrder.ASC;
+  // Specify sorting: fieldnames with optional prefix for asc '+' and desc '-'
+  private List<Sort> sort = null;
 
   public Query(){
     super();
-  }
-
-  public int getFrom() {
-    return from;
-  }
-
-  public Query<T> setFrom(final int from) {
-    this.from = from;
-    return this;
   }
 
   public int getSize() {
@@ -58,30 +105,21 @@ public class Query<T> {
     return this;
   }
 
-  public String getSortBy() {
-    return sortBy;
+  public List<Sort> getSort() {
+    return sort;
   }
 
-  public Query<T> setSortBy(final String sortBy) {
-    this.sortBy = sortBy;
+  public Query<T> setSort(final List<Sort> sort) {
+    this.sort = sort;
     return this;
   }
 
-  public SortOrder getSortOrder() {
-    return sortOrder;
+  public T getFilter() {
+    return filter;
   }
 
-  public Query<T> setSortOrder(final SortOrder sortOrder) {
-    this.sortOrder = sortOrder;
-    return this;
-  }
-
-  public T getExample() {
-    return example;
-  }
-
-  public Query<T> setExample(final T example) {
-    this.example = example;
+  public Query<T> setFilter(final T filter) {
+    this.filter = filter;
     return this;
   }
 
@@ -94,14 +132,14 @@ public class Query<T> {
       return false;
     }
     final Query<?> query = (Query<?>) o;
-    return from == query.from && size == query.size && Objects.equals(example,
-        query.example) && Arrays.equals(searchAfter, query.searchAfter)
-        && Objects.equals(sortBy, query.sortBy) && sortOrder == query.sortOrder;
+    return size == query.size && Objects.equals(filter, query.filter)
+        && Arrays.equals(searchAfter, query.searchAfter) && Objects.equals(sort,
+        query.sort);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(example, from, size, sortBy, sortOrder);
+    int result = Objects.hash(filter, size, sort);
     result = 31 * result + Arrays.hashCode(searchAfter);
     return result;
   }
@@ -109,12 +147,10 @@ public class Query<T> {
   @Override
   public String toString() {
     return "Query{" +
-        "example=" + example +
-        ", from=" + from +
+        "filter=" + filter +
         ", size=" + size +
         ", searchAfter=" + Arrays.toString(searchAfter) +
-        ", sortBy='" + sortBy + '\'' +
-        ", sortOrder=" + sortOrder +
+        ", sort=" + sort +
         '}';
   }
 }

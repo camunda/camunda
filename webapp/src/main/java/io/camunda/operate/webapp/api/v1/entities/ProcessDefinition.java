@@ -5,9 +5,12 @@
  */
 package io.camunda.operate.webapp.api.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import java.util.Objects;
 
+@JsonInclude(Include.NON_NULL)
 public class ProcessDefinition {
 
   // Used for index field search and sorting
@@ -17,12 +20,12 @@ public class ProcessDefinition {
       VERSION = ProcessIndex.VERSION,
       BPMN_PROCESS_ID = ProcessIndex.BPMN_PROCESS_ID;
 
-  private long key = -1L;
-  private String name = null;
-  private int version = -1;
-  private String bpmnProcessId = null;
+  private Long key;
+  private String name;
+  private Integer version;
+  private String bpmnProcessId;
 
-  public long getKey() {
+  public Long getKey() {
     return key;
   }
 
@@ -40,7 +43,7 @@ public class ProcessDefinition {
     return this;
   }
 
-  public int getVersion() {
+  public Integer getVersion() {
     return version;
   }
 
@@ -67,8 +70,9 @@ public class ProcessDefinition {
       return false;
     }
     final ProcessDefinition that = (ProcessDefinition) o;
-    return key == that.key && version == that.version && Objects.equals(name, that.name)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId);
+    return Objects.equals(key, that.key) && Objects.equals(name, that.name)
+        && Objects.equals(version, that.version) && Objects.equals(bpmnProcessId,
+        that.bpmnProcessId);
   }
 
   @Override

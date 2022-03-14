@@ -4,16 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 package io.camunda.operate.webapp.api.v1.dao;
-
-import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
-public interface ProcessDefinitionDao extends
-    SearchableDao<ProcessDefinition>,
-    SortableDao<ProcessDefinition>,
-    PageableDao<ProcessDefinition> {
+public interface SearchableDao<T> {
 
-  ProcessDefinition byKey(Long key) throws APIException;
+  Results<T> search(final Query<T> query) throws APIException;
 
-  String xmlByKey(Long key) throws APIException;
 }

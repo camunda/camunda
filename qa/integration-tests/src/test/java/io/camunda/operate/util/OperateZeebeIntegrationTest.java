@@ -439,4 +439,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
                 .getProcessDefinitionKey()
         ).collect(Collectors.toList());
   }
+
+  protected List<Long> startProcesses(String... bpmnProcessIds) {
+     return Stream.of(bpmnProcessIds)
+        .map(bpmnProcessId ->
+            tester.startProcessInstance(bpmnProcessId)
+                .and()
+                .waitUntil()
+                .processInstanceIsStarted()
+                .getProcessInstanceKey())
+        .collect(Collectors.toList());
+  }
 }
