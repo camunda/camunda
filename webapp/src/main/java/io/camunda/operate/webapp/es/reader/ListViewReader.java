@@ -55,7 +55,6 @@ import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_ARCHIVE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
@@ -246,10 +245,6 @@ public class ListViewReader {
   }
 
   public QueryBuilder createQueryFragment(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
-    //archived instances can't have active incidents, error message filter will always return empty list
-    if (queryType == ONLY_ARCHIVE && query.getErrorMessage() != null) {
-      return ElasticsearchUtil.createMatchNoneQuery();
-    }
     return joinWithAnd(
         createRunningFinishedQuery(query, queryType),
         createActivityIdQuery(query, queryType),
@@ -397,7 +392,7 @@ public class ListViewReader {
 
     QueryBuilder runningQuery = null;
 
-    if (running && (active || incidents) && queryType != ONLY_ARCHIVE) {
+    if (running && (active || incidents)) {
       //running query
       runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
@@ -445,11 +440,11 @@ public class ListViewReader {
       return null;
     }
     QueryBuilder activeActivityIdQuery = null;
-    if (query.isActive() && queryType != ONLY_ARCHIVE) {
+    if (query.isActive()) {
       activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), FlowNodeState.ACTIVE);
     }
     QueryBuilder incidentActivityIdQuery = null;
-    if (query.isIncidents() && queryType != ONLY_ARCHIVE) {
+    if (query.isIncidents()) {
       incidentActivityIdQuery = createActivityIdIncidentQuery(query.getActivityId());
     }
     QueryBuilder completedActivityIdQuery = null;

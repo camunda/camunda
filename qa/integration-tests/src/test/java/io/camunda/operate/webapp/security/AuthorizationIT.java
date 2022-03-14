@@ -11,7 +11,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -19,6 +22,8 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.util.List;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +47,24 @@ public class AuthorizationIT {
 
   @Autowired
   private ProcessInstanceRestService processInstanceRestService;
+
+  @Autowired
+  private TestElasticsearchSchemaManager elasticsearchSchemaManager;
+
+  @Autowired
+  private OperateProperties operateProperties;
+
+  @Before
+  public void before() {
+    operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+ TestUtil.createRandomString(5));
+    elasticsearchSchemaManager.createSchema();
+  }
+
+  @After
+  public void after() {
+    elasticsearchSchemaManager.deleteSchemaQuietly();
+    operateProperties.getElasticsearch().setDefaultIndexPrefix();
+  }
 
   @Test(expected = AccessDeniedException.class)
   public void testNoWritePermissionsForBatchOperation() {

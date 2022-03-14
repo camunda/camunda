@@ -137,7 +137,6 @@ public abstract class ElasticsearchUtil {
   }
 
   public enum QueryType {
-    ONLY_ARCHIVE,
     ONLY_RUNTIME,
     ALL
   }
@@ -149,14 +148,12 @@ public abstract class ElasticsearchUtil {
   }
 
   public static SearchRequest createSearchRequest(TemplateDescriptor template, QueryType queryType) {
-    SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType)).indicesOptions(IndicesOptions.lenientExpandOpen());
+    SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType));
     return searchRequest;
   }
 
   private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     switch (queryType) {
-    case ONLY_ARCHIVE:
-      return template.getIndexPattern() + ",-" + template.getFullQualifiedName();
     case ONLY_RUNTIME:
       return template.getFullQualifiedName();
     case ALL:

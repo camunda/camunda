@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_ARCHIVE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
@@ -79,21 +79,19 @@ public class ActivityStatisticsReader {
 
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
 
-    Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
-
-    SearchRequest searchRequest = createQuery(query, ONLY_RUNTIME);
-    runQueryAndCollectStats(statisticsMap, searchRequest);
-
-    if (query.isFinished()) {
-      searchRequest = createQuery(query, ONLY_ARCHIVE);
-      runQueryAndCollectStats(statisticsMap, searchRequest);
+    SearchRequest searchRequest;
+    if (!query.isFinished()) {
+      searchRequest = createQuery(query, ONLY_RUNTIME);
+    } else {
+      searchRequest = createQuery(query, ALL);
     }
-
+    Map<String, FlowNodeStatisticsDto> statisticsMap = runQueryAndCollectStats(searchRequest);
     return statisticsMap.values();
   }
 
-  public void runQueryAndCollectStats(Map<String, FlowNodeStatisticsDto> statisticsMap, SearchRequest searchRequest) {
+  public Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest) {
     try {
+      Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
       if (searchResponse.getAggregations() != null) {
@@ -105,6 +103,7 @@ public class ActivityStatisticsReader {
             AGG_FINISHED_ACTIVITIES,   (MapUpdater) FlowNodeStatisticsDto::addCompleted)
             .forEach((aggName,mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (MapUpdater)mapUpdater));
       }
+      return statisticsMap;
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
       logger.error(message, e);
@@ -118,13 +117,13 @@ public class ActivityStatisticsReader {
     ChildrenAggregationBuilder agg =
         children(AGG_ACTIVITIES, ACTIVITIES_JOIN_RELATION);
 
-    if (queryType != ONLY_ARCHIVE && query.isActive()) {
+    if (query.isActive()) {
       agg = agg.subAggregation(getActiveFlowNodesAgg());
     }
     if (query.isCanceled()) {
       agg = agg.subAggregation(getTerminatedActivitiesAgg());
     }
-    if (queryType != ONLY_ARCHIVE && query.isIncidents()) {
+    if (query.isIncidents()) {
       agg = agg.subAggregation(getIncidentActivitiesAgg());
     }
     agg = agg.subAggregation(getFinishedActivitiesAgg());
