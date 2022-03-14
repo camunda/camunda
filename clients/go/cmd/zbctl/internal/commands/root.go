@@ -46,7 +46,7 @@ var clientCacheFlag string
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
 	Short: "zeebe command line interface",
-	Long: `zbctl is a command line interface for Camunda Cloud designed to create and read resources inside a Zeebe broker.
+	Long: `zbctl is a command line interface designed to create and read resources inside a Zeebe cluster.
 It can be used for regular development and maintenance tasks such as:
 	* deploying processes,
 	* creating process instances and job workers
