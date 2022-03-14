@@ -45,6 +45,16 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.camunda.feel</groupId>
+      <artifactId>feel-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-core</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
 
     <dependency>

@@ -59,6 +59,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

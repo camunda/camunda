@@ -294,6 +294,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.netty:netty-handler</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>

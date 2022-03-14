@@ -475,12 +475,14 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${version.mockito}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-junit-jupiter</artifactId>
         <version>${version.mockito-jupiter}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
@@ -1460,8 +1462,6 @@
               <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
               <phase>verify</phase>
               <configuration>
-                <!-- Disabled due to https://issues.apache.org/jira/projects/MDEP/issues/MDEP-774 and https://issues.apache.org/jira/browse/MDEP-753 -->
-                <skip>true</skip>
                 <failOnWarning>true</failOnWarning>
                 <outputXML>true</outputXML>
                 <!-- dependencies not directly used in all projects during tests -->
@@ -1810,9 +1810,6 @@
                 </goals>
                 <phase>verify</phase>
                 <configuration>
-                  <!-- Disabled due to https://issues.apache.org/jira/projects/MDEP/issues/MDEP-774
-                  and https://issues.apache.org/jira/browse/MDEP-753 -->
-                  <skip>true</skip>
                   <ignoredUnusedDeclaredDependencies combine.children="append">
                     <dep>org.revapi:revapi-java</dep>
                     <dep>io.zeebe:flaky-test-extractor-maven-plugin</dep>

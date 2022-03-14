@@ -14,12 +14,12 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class SubscriptionUtilTest {
+final class SubscriptionUtilTest {
 
   @Test
-  public void shouldGetSubscriptionHashCode() {
+  void shouldGetSubscriptionHashCode() {
     assertThat(getSubscriptionHashCode(wrapString("a"))).isEqualTo(97);
     assertThat(getSubscriptionHashCode(wrapString("b"))).isEqualTo(98);
     assertThat(getSubscriptionHashCode(wrapString("c"))).isEqualTo(99);
@@ -27,12 +27,12 @@ public final class SubscriptionUtilTest {
   }
 
   @Test
-  public void shouldGetZeroSubscriptionHashCodeIfEmpty() {
+  void shouldGetZeroSubscriptionHashCodeIfEmpty() {
     assertThat(getSubscriptionHashCode(new UnsafeBuffer())).isEqualTo(0);
   }
 
   @Test
-  public void shouldGetPartitionIdForCorrelationKey() {
+  void shouldGetPartitionIdForCorrelationKey() {
     assertThat(getSubscriptionPartitionId(wrapString("a"), 10)).isEqualTo(7 + START_PARTITION_ID);
     assertThat(getSubscriptionPartitionId(wrapString("b"), 3)).isEqualTo(2 + START_PARTITION_ID);
     assertThat(getSubscriptionPartitionId(wrapString("c"), 11)).isEqualTo(0 + START_PARTITION_ID);
