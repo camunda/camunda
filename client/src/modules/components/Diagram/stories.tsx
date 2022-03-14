@@ -20,6 +20,15 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import DiagramComponent from '.';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {
+  calledDecisionMetadata,
+  calledFailedDecisionMetadata,
+  calledInstanceMetadata,
+  calledUnevaluatedDecisionMetadata,
+  multiInstanceMetadata,
+  multiInstancesMetadata,
+  singleInstanceMetadata,
+} from 'modules/mocks/metadata';
 
 export default {
   title: 'Components/Diagram',
@@ -84,33 +93,7 @@ SingleInstance.parameters = {
     rest.post(
       '/api/process-instances/:processInstanceId/flow-node-metadata',
       (_, res, ctx) => {
-        return res(
-          ctx.json({
-            flowNodeInstanceId: '2251799813695582',
-            flowNodeId: null,
-            flowNodeType: null,
-            instanceCount: null,
-            breadcrumb: [],
-            instanceMetadata: {
-              flowNodeId: 'start',
-              flowNodeInstanceId: '2251799813695582',
-              flowNodeType: 'START_EVENT',
-              startDate: '2021-08-04T10:13:02.374+0000',
-              endDate: '2021-08-04T10:13:02.376+0000',
-              calledProcessInstanceId: null,
-              calledProcessDefinitionName: null,
-              eventId: '2251799813695565_2251799813695582',
-              jobType: null,
-              jobRetries: null,
-              jobWorker: null,
-              jobDeadline: null,
-              jobCustomHeaders: null,
-              incidentErrorType: null,
-              incidentErrorMessage: null,
-              jobId: null,
-            },
-          })
-        );
+        return res(ctx.json(singleInstanceMetadata));
       }
     ),
   ],
@@ -126,34 +109,7 @@ CalledInstance.parameters = {
     rest.post(
       '/api/process-instances/:processInstanceId/flow-node-metadata',
       (_, res, ctx) => {
-        return res(
-          ctx.json({
-            flowNodeInstanceId: '2251799813691726',
-            flowNodeId: null,
-            flowNodeType: null,
-            instanceCount: null,
-            breadcrumb: [],
-            instanceMetadata: {
-              flowNodeId: 'CallActivity',
-              flowNodeInstanceId: '2251799813691726',
-              flowNodeType: 'CALL_ACTIVITY',
-              startDate: '2021-08-04T10:12:00.244+0000',
-              endDate: null,
-              calledProcessInstanceId: '2251799813673452',
-              calledProcessDefinitionName: 'Called Process',
-              eventId: '2251799813691692_2251799813691726',
-              jobType: null,
-              jobRetries: null,
-              jobWorker: null,
-              jobDeadline: null,
-              jobCustomHeaders: null,
-              incidentErrorType: 'CALLED_ELEMENT_ERROR',
-              incidentErrorMessage:
-                "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
-              jobId: null,
-            },
-          })
-        );
+        return res(ctx.json(calledInstanceMetadata));
       }
     ),
   ],
@@ -169,16 +125,7 @@ MultipleInstances.parameters = {
     rest.post(
       '/api/process-instances/:processInstanceId/flow-node-metadata',
       (_, res, ctx) => {
-        return res(
-          ctx.json({
-            flowNodeInstanceId: null,
-            flowNodeId: 'Task',
-            flowNodeType: 'SERVICE_TASK',
-            instanceCount: 3,
-            breadcrumb: [],
-            instanceMetadata: null,
-          })
-        );
+        return res(ctx.json(multiInstancesMetadata));
       }
     ),
   ],
@@ -194,45 +141,74 @@ MultiInstance.parameters = {
     rest.post(
       '/api/process-instances/:processInstanceId/flow-node-metadata',
       (_, res, ctx) => {
-        return res(
-          ctx.json({
-            flowNodeInstanceId: '2251799813695594',
-            flowNodeId: null,
-            flowNodeType: null,
-            instanceCount: null,
-            breadcrumb: [
-              {
-                flowNodeId: 'Task',
-                flowNodeType: 'MULTI_INSTANCE_BODY',
-              },
-              {
-                flowNodeId: 'Task',
-                flowNodeType: 'SERVICE_TASK',
-              },
-            ],
-            instanceMetadata: {
-              flowNodeId: 'Task',
-              flowNodeInstanceId: '2251799813695594',
-              flowNodeType: 'SERVICE_TASK',
-              startDate: '2021-08-04T10:13:02.413+0000',
-              endDate: null,
-              calledProcessInstanceId: null,
-              calledProcessDefinitionName: null,
-              eventId: '2251799813695565_2251799813695594',
-              jobType: null,
-              jobRetries: null,
-              jobWorker: null,
-              jobDeadline: null,
-              jobCustomHeaders: null,
-              incidentErrorType: null,
-              incidentErrorMessage: null,
-              jobId: null,
-            },
-          })
-        );
+        return res(ctx.json(multiInstanceMetadata));
       }
     ),
   ],
 };
 
-export {SingleInstance, MultipleInstances, MultiInstance, CalledInstance};
+const CalledCompletedDecision: Story = () => (
+  <Diagram flowNodeId="BusinessRuleTask" />
+);
+CalledCompletedDecision.storyName = 'Metadata - Called Completed Decision';
+CalledCompletedDecision.parameters = {
+  msw: {
+    handlers: [
+      rest.get('/api/processes/:processInstanceId/xml', (_, res, ctx) => {
+        return res(ctx.text(metadataDemoProcess));
+      }),
+      rest.post(
+        '/api/process-instances/:processInstanceId/flow-node-metadata',
+        (_, res, ctx) => {
+          return res(ctx.json(calledDecisionMetadata));
+        }
+      ),
+    ],
+  },
+};
+
+const CalledFailedDecision: Story = () => (
+  <Diagram flowNodeId="BusinessRuleTask" />
+);
+CalledFailedDecision.storyName = 'Metadata - Called Failed Decision';
+CalledFailedDecision.parameters = {
+  msw: [
+    rest.get('/api/processes/:processInstanceId/xml', (_, res, ctx) => {
+      return res(ctx.text(metadataDemoProcess));
+    }),
+    rest.post(
+      '/api/process-instances/:processInstanceId/flow-node-metadata',
+      (_, res, ctx) => {
+        return res(ctx.json(calledFailedDecisionMetadata));
+      }
+    ),
+  ],
+};
+
+const CalledUnevaluatedDecision: Story = () => (
+  <Diagram flowNodeId="BusinessRuleTask" />
+);
+CalledUnevaluatedDecision.storyName = 'Metadata - Called Unevaluated Decision';
+CalledUnevaluatedDecision.parameters = {
+  msw: [
+    rest.get('/api/processes/:processInstanceId/xml', (_, res, ctx) => {
+      return res(ctx.text(metadataDemoProcess));
+    }),
+    rest.post(
+      '/api/process-instances/:processInstanceId/flow-node-metadata',
+      (_, res, ctx) => {
+        return res(ctx.json(calledUnevaluatedDecisionMetadata));
+      }
+    ),
+  ],
+};
+
+export {
+  SingleInstance,
+  MultipleInstances,
+  MultiInstance,
+  CalledInstance,
+  CalledCompletedDecision,
+  CalledUnevaluatedDecision,
+  CalledFailedDecision,
+};

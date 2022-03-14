@@ -20,105 +20,41 @@ import {
 import {mockIncidents} from 'modules/mocks/incidents';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {
+  calledDecisionMetadata,
+  calledFailedDecisionMetadata,
+  calledInstanceMetadata,
+  calledUnevaluatedDecisionMetadata,
+  incidentFlowNodeMetaData,
+  multiInstanceCallActivityMetadata,
+  multiInstancesMetadata,
+  rootIncidentFlowNodeMetaData,
+  CALL_ACTIVITY_FLOW_NODE_ID,
+  PROCESS_INSTANCE_ID,
+  FLOW_NODE_ID,
+} from 'modules/mocks/metadata';
+import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
+import {LocationLog} from 'modules/utils/LocationLog';
 
-const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
-const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
-const FLOW_NODE_INSTANCE_ID = '2251799813699889';
-const PROCESS_INSTANCE_ID = '2251799813685591';
+jest.mock('modules/feature-flags.ts', () => ({
+  IS_DMN: true,
+}));
 
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Routes>
+          <Route path="/instances/:processInstanceId" element={children} />
+          <Route path="/decisions/:decisionInstanceId" element={<></>} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
     </ThemeProvider>
   );
-};
-
-const completedFlowNodeMetaData = {
-  flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-  flowNodeId: null,
-  flowNodeType: null,
-  instanceCount: null,
-  breadcrumb: [],
-  incident: null,
-  instanceMetadata: {
-    flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-    flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-    flowNodeType: 'TASK_CALL_ACTIVITY',
-    startDate: '2021-03-26T09:50:22.457+0000',
-    endDate: '2021-03-26T11:00:00.000+0000',
-    jobId: null,
-    jobType: null,
-    jobRetries: null,
-    jobWorker: null,
-    jobDeadline: '2021-03-26T10:00:00.000+0000',
-    jobCustomHeaders: null,
-    calledProcessInstanceId: '229843728748927482',
-    calledProcessDefinitionName: 'Called Process',
-  },
-};
-
-const multiInstanceCallActivityMetaData = {
-  ...completedFlowNodeMetaData,
-  flowNodeType: 'MULTI_INSTANCE_BODY',
-};
-
-const incidentFlowNodeMetaData = {
-  flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-  flowNodeId: null,
-  flowNodeType: null,
-  instanceCount: null,
-  breadcrumb: [],
-  incident: {
-    errorType: {id: 'JOB_NO_RETRIES', name: 'No more retries left.'},
-    errorMessage: 'There are no more retries left.',
-    rootCauseInstance: {
-      instanceId: '00000000000000',
-      processDefinitionId: '111111111111111',
-      processDefinitionName: 'Called Process',
-    },
-  },
-  incidentCount: 1,
-  instanceMetadata: {
-    flowNodeId: FLOW_NODE_ID,
-    flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-    flowNodeType: 'START_EVENT',
-    startDate: '2021-03-26T10:00:00.000+0000',
-    endDate: null,
-    jobId: '2251799813690876',
-    jobType: null,
-    jobRetries: null,
-    jobWorker: null,
-    jobDeadline: null,
-    jobCustomHeaders: null,
-    calledProcessInstanceId: null,
-    calledProcessDefinitionName: null,
-  },
-};
-
-const rootIncidentFlowNodeMetaData = {
-  ...incidentFlowNodeMetaData,
-  incident: {
-    ...incidentFlowNodeMetaData.incident,
-    rootCauseInstance: {
-      ...incidentFlowNodeMetaData.incident.rootCauseInstance,
-      instanceId: PROCESS_INSTANCE_ID,
-    },
-  },
-};
-
-const multiInstanceFlowNodeData = {
-  flowNodeInstanceId: null,
-  flowNodeId: FLOW_NODE_ID,
-  flowNodeType: 'START_EVENT',
-  instanceCount: 10,
-  breadcrumb: [],
-  instanceMetadata: null,
-  incidentCount: 3,
-  incident: null,
 };
 
 const renderPopover = () => {
@@ -183,12 +119,11 @@ describe('PopoverOverlay', () => {
     expect(screen.getAllByText(/View/)).toHaveLength(2);
     expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
 
-    const {
-      incident,
-      instanceMetadata: {flowNodeInstanceId},
-    } = incidentFlowNodeMetaData;
+    const {incident, instanceMetadata} = incidentFlowNodeMetaData;
 
-    expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
+    expect(
+      screen.getByText(instanceMetadata!.flowNodeInstanceId)
+    ).toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText(incident.errorMessage)).toBeInTheDocument();
     expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
@@ -206,7 +141,7 @@ describe('PopoverOverlay', () => {
       ),
       rest.post(
         `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
+        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
     currentInstanceStore.setCurrentInstance(
@@ -231,13 +166,15 @@ describe('PopoverOverlay', () => {
 
     expect(
       screen.getByText(
-        completedFlowNodeMetaData.instanceMetadata.flowNodeInstanceId
+        calledInstanceMetadata.instanceMetadata!.flowNodeInstanceId
       )
     ).toBeInTheDocument();
     expect(screen.getAllByText(MOCK_TIMESTAMP)).toHaveLength(2);
     expect(
       screen.getByText(
-        `Called Process - ${completedFlowNodeMetaData.instanceMetadata.calledProcessInstanceId}`
+        `Called Process - ${
+          calledInstanceMetadata.instanceMetadata!.calledProcessInstanceId
+        }`
       )
     ).toBeInTheDocument();
 
@@ -252,7 +189,7 @@ describe('PopoverOverlay', () => {
       ),
       rest.post(
         `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
+        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
     currentInstanceStore.setCurrentInstance(
@@ -319,7 +256,7 @@ describe('PopoverOverlay', () => {
       ),
       rest.post(
         `/api/process-instances/:processInstanceId/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(multiInstanceFlowNodeData))
+        (_, res, ctx) => res.once(ctx.json(multiInstancesMetadata))
       )
     );
     currentInstanceStore.setCurrentInstance(
@@ -354,7 +291,7 @@ describe('PopoverOverlay', () => {
       ),
       rest.post(
         `/api/process-instances/:processInstanceId/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(multiInstanceCallActivityMetaData))
+        (_, res, ctx) => res.once(ctx.json(multiInstanceCallActivityMetadata))
       )
     );
     currentInstanceStore.setCurrentInstance(
@@ -410,5 +347,123 @@ describe('PopoverOverlay', () => {
         `${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`
       )
     ).not.toBeInTheDocument();
+  });
+
+  it('should render completed decision', async () => {
+    const {instanceMetadata} = calledDecisionMetadata;
+
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(metadataDemoProcess))
+      ),
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(calledDecisionMetadata))
+      )
+    );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'COMPLETED',
+      })
+    );
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
+
+    renderPopover();
+
+    expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
+    expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
+
+    userEvent.click(
+      screen.getByText(
+        `${instanceMetadata!.calledDecisionName} - ${
+          instanceMetadata!.calledDecisionInstanceId
+        }`
+      )
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      `/decisions/${instanceMetadata!.calledDecisionInstanceId}`
+    );
+  });
+
+  it('should render failed decision', async () => {
+    const {instanceMetadata} = calledFailedDecisionMetadata;
+    const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
+
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(metadataDemoProcess))
+      ),
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(calledFailedDecisionMetadata))
+      )
+    );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'INCIDENT',
+      })
+    );
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
+
+    renderPopover();
+
+    expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
+    expect(screen.getByText(/incident/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `${instanceMetadata!.calledDecisionName} - ${
+          instanceMetadata!.calledDecisionInstanceId
+        }`
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText(/root cause decision/i)).toBeInTheDocument();
+    expect(screen.queryByText(/root cause instance/i)).not.toBeInTheDocument();
+
+    userEvent.click(
+      screen.getByText(
+        `${rootCauseDecision!.decisionName!} - ${rootCauseDecision!.instanceId}`
+      )
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      `/decisions/${rootCauseDecision!.instanceId}`
+    );
+  });
+
+  it('should render unevaluated decision', async () => {
+    const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
+
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(metadataDemoProcess))
+      ),
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(calledUnevaluatedDecisionMetadata))
+      )
+    );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      })
+    );
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
+
+    renderPopover();
+
+    expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(instanceMetadata.calledDecisionName!)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
   });
 });

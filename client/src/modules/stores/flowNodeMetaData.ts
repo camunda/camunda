@@ -36,6 +36,8 @@ type InstanceMetaData = {
   jobWorker: string | null;
   calledProcessInstanceId: string | null;
   calledProcessDefinitionName: string | null;
+  calledDecisionInstanceId: string | null;
+  calledDecisionName: string | null;
 };
 
 type Breadcrumb = {flowNodeId: string; flowNodeType: string};
@@ -44,19 +46,30 @@ type MetaData = {
   breadcrumb: Breadcrumb[];
   flowNodeId: string | null;
   flowNodeInstanceId: string | null;
-  flowNodeType: string;
+  flowNodeType: string | null;
   instanceCount: number | null;
   instanceMetadata: InstanceMetaData | null;
   incident: {
+    id: string;
     errorMessage: string;
     errorType: {
       id: string;
       name: string;
     };
+    flowNodeId: string;
+    flowNodeInstanceId: string;
+    jobId: string | null;
+    creationTime: string;
+    hasActiveOperation: boolean;
+    lastOperation: boolean | null;
     rootCauseInstance: {
       instanceId: string;
       processDefinitionId: string;
       processDefinitionName: string;
+    } | null;
+    rootCauseDecision: {
+      instanceId: string;
+      decisionName: string;
     } | null;
   } | null;
   incidentCount: number;

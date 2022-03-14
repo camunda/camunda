@@ -13,6 +13,12 @@ import {
 import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
 import {mockDecisionInstancesLargeData} from 'modules/mocks/mockDecisionInstances';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
+import {MetaDataEntity} from 'modules/stores/flowNodeMetaData';
+import {
+  calledDecisionMetadata,
+  calledFailedDecisionMetadata,
+  calledUnevaluatedDecisionMetadata,
+} from 'modules/mocks/metadata';
 
 const handlers: RequestHandler[] = [
   rest.get('/api/decision-instances/:decisionInstanceId', (req, res, ctx) => {
@@ -94,6 +100,26 @@ const handlers: RequestHandler[] = [
 
     return res(ctx.json(mockDecisionInstancesLargeData));
   }),
+  rest.post(
+    '/api/process-instances/:processInstanceId/flow-node-metadata',
+    async (req, res, ctx) => {
+      const response = await ctx.fetch(req);
+      const metadata: MetaDataEntity = await response.json();
+
+      if (metadata.instanceMetadata?.flowNodeType === 'BUSINESS_RULE_TASK') {
+        if (metadata.incident !== null) {
+          return res(ctx.json(calledFailedDecisionMetadata));
+        }
+
+        if (metadata.instanceMetadata.endDate !== null) {
+          return res(ctx.json(calledDecisionMetadata));
+        }
+
+        return res(ctx.json(calledUnevaluatedDecisionMetadata));
+      }
+      return res(ctx.json(metadata));
+    }
+  ),
 ];
 
 export {handlers};

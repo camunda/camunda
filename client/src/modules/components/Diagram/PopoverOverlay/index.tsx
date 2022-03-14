@@ -33,6 +33,7 @@ import {getModalHeadline} from './getModalHeadline';
 import {Locations} from 'modules/routes';
 import {Link} from 'modules/components/Link';
 import {useLocation} from 'react-router-dom';
+import {IS_DMN} from 'modules/feature-flags';
 
 type Props = {
   selectedFlowNodeRef: SVGGraphicsElement | null;
@@ -87,9 +88,12 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
     endDate,
     calledProcessInstanceId,
     calledProcessDefinitionName,
+    calledDecisionInstanceId,
+    calledDecisionName,
     flowNodeType,
   } = instanceMetadata || {};
   const rootCauseInstance = incident?.rootCauseInstance || null;
+  const rootCauseDecision = incident?.rootCauseDecision || null;
 
   return selectedFlowNodeRef !== null
     ? createPortal(
@@ -176,6 +180,30 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                       </SummaryDataValue>
                     </>
                   )}
+                {IS_DMN &&
+                  flowNodeMetaData?.type.elementType ===
+                    'TASK_BUSINESS_RULE' && (
+                    <>
+                      <SummaryDataKey>Called Decision</SummaryDataKey>
+                      <SummaryDataValue>
+                        {endDate === null ? (
+                          '—'
+                        ) : calledDecisionInstanceId ? (
+                          <Link
+                            to={Locations.decisionInstance(
+                              location,
+                              calledDecisionInstanceId
+                            )}
+                            title={`View ${calledDecisionName} instance ${calledDecisionInstanceId}`}
+                          >
+                            {`${calledDecisionName} - ${calledDecisionInstanceId}`}
+                          </Link>
+                        ) : (
+                          calledDecisionName ?? '—'
+                        )}
+                      </SummaryDataValue>
+                    </>
+                  )}
                 {incident !== null && (
                   <>
                     <Divider />
@@ -208,7 +236,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                         </SummaryDataValue>
                       </>
                     )}
-                    {rootCauseInstance !== null && (
+                    {rootCauseInstance !== null && rootCauseDecision === null && (
                       <>
                         <SummaryDataKey>Root Cause Instance</SummaryDataKey>
                         <SummaryDataValue>
@@ -229,6 +257,24 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                         </SummaryDataValue>
                       </>
                     )}
+                    {IS_DMN &&
+                      rootCauseDecision !== null &&
+                      rootCauseInstance === null && (
+                        <>
+                          <SummaryDataKey>Root Cause Decision</SummaryDataKey>
+                          <SummaryDataValue>
+                            <Link
+                              to={Locations.decisionInstance(
+                                location,
+                                rootCauseDecision.instanceId
+                              )}
+                              title={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
+                            >
+                              {`${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
+                            </Link>
+                          </SummaryDataValue>
+                        </>
+                      )}
                   </>
                 )}
 
