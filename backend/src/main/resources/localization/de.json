@@ -518,8 +518,7 @@
         "avg": "Durchschnitt",
         "median": "Median",
         "max": "Maximum",
-        "p50": "P50 (median)",
-        "multiProcessWarning": "Berichte die nach Prozess gruppiert sind unterstützen keine Median-Aggregation."
+        "p50": "P50 (median)"
       },
       "aggregationShort": {
         "sum": "Se",

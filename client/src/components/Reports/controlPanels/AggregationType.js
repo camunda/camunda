@@ -6,21 +6,21 @@
 
 import React, {useState, useEffect} from 'react';
 
-import {Popover, Icon, Form, Switch, Tooltip} from 'components';
+import {Popover, Icon, Form, Switch} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
 import './AggregationType.scss';
 
 const orders = {
-  aggregationTypes: ['sum', 'min', 'avg', 'median', 'max', 'percentile'],
+  aggregationTypes: ['sum', 'min', 'avg', 'max', 'percentile'],
   userTaskDurationTimes: ['total', 'work', 'idle'],
-  percentileAggregations: ['99', '95', '90', '75', '50', '25'],
+  percentileAggregations: [99, 95, 90, 75, 50, 25],
 };
 
 export default function AggregationType({report, onChange}) {
   const {configuration, distributedBy} = report;
-  const {aggregationTypes} = report.configuration;
+  const {aggregationTypes, processPart} = report.configuration;
 
   const isDurationReport = report?.view?.properties.includes('duration');
   const isUserTaskReport = report?.view?.entity === 'userTask';
@@ -53,6 +53,10 @@ export default function AggregationType({report, onChange}) {
       ...configuration[field],
       constructNewAggregation(field, type, value),
     ].sort((a, b) => {
+      if (a.type === 'percentile' && b.type === 'percentile') {
+        return b.value - a.value;
+      }
+
       return orders[field].indexOf(getType(field, a)) - orders[field].indexOf(getType(field, b));
     });
 
@@ -91,9 +95,6 @@ export default function AggregationType({report, onChange}) {
       availableAggregations.push('sum');
     }
     availableAggregations.push('min', 'avg');
-    if (!report.configuration.processPart) {
-      availableAggregations.push('median');
-    }
     availableAggregations.push('max');
 
     const {type, value} = aggregationTypes[0];
@@ -155,35 +156,24 @@ export default function AggregationType({report, onChange}) {
           <fieldset>
             {availableAggregations.map((type) => (
               <div key={type}>
-                <Tooltip
-                  content={
-                    type === 'median' && distributedBy.type === 'process'
-                      ? t('report.config.aggregation.multiProcessWarning')
-                      : undefined
-                  }
-                >
-                  <span>
-                    <Switch
-                      label={t('report.config.aggregation.' + type)}
-                      checked={hasAggregation('aggregationTypes', type)}
-                      disabled={
-                        isLastAggregation('aggregationTypes', type) ||
-                        (type === 'median' && distributedBy.type === 'process')
+                <span>
+                  <Switch
+                    label={t('report.config.aggregation.' + type)}
+                    checked={hasAggregation('aggregationTypes', type)}
+                    disabled={isLastAggregation('aggregationTypes', type)}
+                    onChange={({target}) => {
+                      if (target.checked) {
+                        addAggregation('aggregationTypes', type);
+                      } else {
+                        removeAggregation('aggregationTypes', type);
                       }
-                      onChange={({target}) => {
-                        if (target.checked) {
-                          addAggregation('aggregationTypes', type);
-                        } else {
-                          removeAggregation('aggregationTypes', type);
-                        }
-                      }}
-                    />
-                  </span>
-                </Tooltip>
+                    }}
+                  />
+                </span>
               </div>
             ))}
           </fieldset>
-          {distributedBy.type !== 'process' && (
+          {distributedBy.type !== 'process' && !processPart && (
             <>
               <h4>{t('report.config.aggregation.percentileLegend')}</h4>
               <fieldset>
@@ -191,7 +181,7 @@ export default function AggregationType({report, onChange}) {
                   <div key={value}>
                     <span>
                       <Switch
-                        label={value === '50' ? t('report.config.aggregation.p50') : 'P' + value}
+                        label={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
                         checked={hasAggregation('aggregationTypes', 'percentile', value)}
                         disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
                         onChange={({target}) => {
@@ -236,5 +226,5 @@ function sameValue(agg, value) {
     return true;
   }
 
-  return agg.value === Number(value);
+  return agg.value === value;
 }

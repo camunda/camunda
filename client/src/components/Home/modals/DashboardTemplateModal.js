@@ -126,7 +126,7 @@ export default function DashboardTemplateModal({onClose}) {
                   configuration: {
                     aggregationTypes: [
                       {type: 'avg', value: null},
-                      {type: 'median', value: null},
+                      {type: 'percentile', value: 50},
                       {type: 'max', value: null},
                     ],
                   },
@@ -146,7 +146,7 @@ export default function DashboardTemplateModal({onClose}) {
                     aggregationTypes: [
                       {type: 'min', value: null},
                       {type: 'avg', value: null},
-                      {type: 'median', value: null},
+                      {type: 'percentile', value: 50},
                       {type: 'max', value: null},
                     ],
                   },
@@ -205,7 +205,7 @@ export default function DashboardTemplateModal({onClose}) {
                   configuration: {
                     aggregationTypes: [
                       {type: 'avg', value: null},
-                      {type: 'median', value: null},
+                      {type: 'percentile', value: 50},
                       {type: 'max', value: null},
                     ],
                   },
@@ -699,7 +699,7 @@ export default function DashboardTemplateModal({onClose}) {
                 configuration: {
                   aggregationTypes: [
                     {type: 'avg', value: null},
-                    {type: 'median', value: null},
+                    {type: 'percentile', value: 50},
                     {type: 'max', value: null},
                   ],
                   userTaskDurationTimes: ['total'],

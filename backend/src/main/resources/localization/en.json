@@ -518,8 +518,7 @@
         "avg": "Average",
         "median": "Median",
         "max": "Maximum",
-        "p50": "P50 (median)",
-        "multiProcessWarning": "Reports that are grouped by process cannot display median aggregations."
+        "p50": "P50 (median)"
       },
       "aggregationShort": {
         "sum": "Sum",

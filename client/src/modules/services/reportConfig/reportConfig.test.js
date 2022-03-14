@@ -191,7 +191,7 @@ describe('process exclusive updates', () => {
     ).toEqual([{type: 'avg', value: null}]);
   });
 
-  it('should remove median and percentile aggregations for group by process reports', () => {
+  it('should remove percentile aggregations for group by process reports', () => {
     const processReport = {
       ...report,
       definitions: [{}, {}],
@@ -201,7 +201,7 @@ describe('process exclusive updates', () => {
         aggregationTypes: [
           {type: 'avg', value: null},
           {type: 'sum', value: null},
-          {type: 'median', value: null},
+          {type: 'percentile', value: 50},
           {type: 'min', value: null},
           {type: 'percentile', value: '95'},
         ],
@@ -225,7 +225,7 @@ describe('process exclusive updates', () => {
       view: {entity: 'processInstance', properties: ['duration']},
       configuration: {
         ...report.configuration,
-        aggregationTypes: [{type: 'median', value: null}],
+        aggregationTypes: [{type: 'percentile', value: 50}],
       },
     };
 

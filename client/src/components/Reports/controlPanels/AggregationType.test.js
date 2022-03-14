@@ -35,7 +35,7 @@ it('should render an aggregation selection for duration reports', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: [{type: 'median', value: null}]},
+        configuration: {aggregationTypes: [{type: 'percentile', value: 50}]},
       }}
     />
   );
@@ -50,7 +50,7 @@ it('should render a user task duration selection for user task duration reports'
         view: {entity: 'userTask', properties: ['duration']},
         distributedBy: {type: 'none'},
         configuration: {
-          aggregationTypes: [{type: 'median', value: null}],
+          aggregationTypes: [{type: 'percentile', value: 50}],
           userTaskDurationTimes: ['idle'],
         },
       }}
@@ -98,7 +98,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: [{type: 'median', value: null}]},
+        configuration: {aggregationTypes: [{type: 'percentile', value: 50}]},
       }}
       onChange={spy}
     />
@@ -114,8 +114,8 @@ it('should reevaluate the report when changing the aggregation type', () => {
       configuration: {
         aggregationTypes: {
           $set: [
-            {type: 'median', value: null},
-            {type: 'percentile', value: '25'},
+            {type: 'percentile', value: 50},
+            {type: 'percentile', value: 25},
           ],
         },
         targetValue: {active: {$set: false}},
@@ -125,7 +125,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
   );
 });
 
-it('should hide median aggregation if processpart is defined', () => {
+it('should hide percentile aggregations if processpart is defined', () => {
   const spy = jest.fn();
 
   const node = shallow(
@@ -142,25 +142,9 @@ it('should hide median aggregation if processpart is defined', () => {
     />
   );
 
-  expect(node.find({label: 'Median'})).not.toExist();
-});
-
-it('should disable median aggregation for reports distributed by process', () => {
-  const spy = jest.fn();
-
-  const node = shallow(
-    <AggregationType
-      report={{
-        view: {properties: ['duration']},
-        distributedBy: {type: 'process'},
-        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
-      }}
-      onChange={spy}
-    />
-  );
-
-  expect(node.find({label: 'Median'})).toExist();
-  expect(node.find({label: 'Median'}).prop('disabled')).toBe(true);
+  expect(node.find({label: 'P25'})).not.toExist();
+  expect(node.find({label: 'P50'})).not.toExist();
+  expect(node.find({label: 'P95'})).not.toExist();
 });
 
 it('should not show user task duration selection for user task duration reports in cloud environment', async () => {

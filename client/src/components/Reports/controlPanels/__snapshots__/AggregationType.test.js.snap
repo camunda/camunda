@@ -9,7 +9,7 @@ exports[`should render a user task duration selection for user task duration rep
       <span
         className="content"
       >
-        Med
+        P50
       </span>
       <Icon
         className="editIcon"
@@ -69,72 +69,50 @@ exports[`should render a user task duration selection for user task duration rep
       <div
         key="sum"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Sum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Sum"
+            onChange={[Function]}
+          />
+        </span>
       </div>
       <div
         key="min"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Minimum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Minimum"
+            onChange={[Function]}
+          />
+        </span>
       </div>
       <div
         key="avg"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Average"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-      <div
-        key="median"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={true}
-              disabled={true}
-              label="Median"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Average"
+            onChange={[Function]}
+          />
+        </span>
       </div>
       <div
         key="max"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Maximum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Maximum"
+            onChange={[Function]}
+          />
+        </span>
       </div>
     </fieldset>
     <h4>
@@ -194,8 +172,8 @@ exports[`should render a user task duration selection for user task duration rep
       >
         <span>
           <Switch
-            checked={false}
-            disabled={false}
+            checked={true}
+            disabled={true}
             label="P50 (median)"
             onChange={[Function]}
           />
@@ -227,7 +205,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       <span
         className="content"
       >
-        Med
+        P50
       </span>
       <Icon
         className="editIcon"
@@ -246,72 +224,50 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       <div
         key="sum"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Sum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Sum"
+            onChange={[Function]}
+          />
+        </span>
       </div>
       <div
         key="min"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Minimum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Minimum"
+            onChange={[Function]}
+          />
+        </span>
       </div>
       <div
         key="avg"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Average"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
-      </div>
-      <div
-        key="median"
-      >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={true}
-              disabled={true}
-              label="Median"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Average"
+            onChange={[Function]}
+          />
+        </span>
       </div>
       <div
         key="max"
       >
-        <Tooltip>
-          <span>
-            <Switch
-              checked={false}
-              disabled={false}
-              label="Maximum"
-              onChange={[Function]}
-            />
-          </span>
-        </Tooltip>
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Maximum"
+            onChange={[Function]}
+          />
+        </span>
       </div>
     </fieldset>
     <h4>
@@ -371,8 +327,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       >
         <span>
           <Switch
-            checked={false}
-            disabled={false}
+            checked={true}
+            disabled={true}
             label="P50 (median)"
             onChange={[Function]}
           />

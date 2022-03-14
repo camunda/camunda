@@ -91,7 +91,6 @@ export function getCombinedTableProps(
           }
           return frequencyColumns;
         } else if (measure.property === 'duration') {
-          console.log(measure.aggregationType);
           return [
             viewString +
               ': ' +

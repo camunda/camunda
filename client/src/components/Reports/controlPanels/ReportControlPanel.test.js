@@ -160,7 +160,7 @@ it('should only display process part button if view is process instance duration
   expect(node.find('ProcessPart')).not.toExist();
 });
 
-it('should remove median aggregation after setting a process part', () => {
+it('should remove percentile aggregations after setting a process part', () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -175,8 +175,9 @@ it('should remove median aggregation after setting a process part', () => {
             ...report.data.configuration,
             aggregationTypes: [
               {type: 'min', value: null},
-              {type: 'median', value: null},
               {type: 'max', value: null},
+              {type: 'percentile', value: 50},
+              {type: 'percentile', value: 95},
             ],
           },
         },
@@ -198,7 +199,7 @@ it('should remove median aggregation after setting a process part', () => {
         view: {entity: 'processInstance', properties: ['duration']},
         configuration: {
           ...report.data.configuration,
-          aggregationTypes: [{type: 'median', value: null}],
+          aggregationTypes: [{type: 'percentile', value: 50}],
         },
       },
     },
