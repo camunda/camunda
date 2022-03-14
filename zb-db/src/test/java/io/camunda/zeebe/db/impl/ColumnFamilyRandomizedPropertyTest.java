@@ -68,11 +68,9 @@ public class ColumnFamilyRandomizedPropertyTest {
   ListArbitrary<TestableOperation> operations() {
     final var op =
         Arbitraries.of(
-            PutOp.class,
             InsertOp.class,
             UpdateOp.class,
             UpsertOp.class,
-            DeleteOp.class,
             DeleteExisting.class,
             DeleteIfExists.class);
     final var k = Arbitraries.longs().greaterOrEqual(0);
@@ -122,19 +120,6 @@ public class ColumnFamilyRandomizedPropertyTest {
     }
   }
 
-  record PutOp(long key, long value) implements TestableOperation {
-
-    @Override
-    public BiConsumer<DbLong, DbLong> modify(final ColumnFamily<DbLong, DbLong> columnFamily) {
-      return columnFamily::put;
-    }
-
-    @Override
-    public BiConsumer<Long, Long> modify(final Map<Long, Long> map) {
-      return map::put;
-    }
-  }
-
   record UpdateOp(long key, long value) implements TestableOperation {
 
     @Override
@@ -158,19 +143,6 @@ public class ColumnFamilyRandomizedPropertyTest {
     @Override
     public BiConsumer<Long, Long> modify(final Map<Long, Long> map) {
       return map::put;
-    }
-  }
-
-  record DeleteOp(long key, long value) implements TestableOperation {
-
-    @Override
-    public BiConsumer<DbLong, DbLong> modify(final ColumnFamily<DbLong, DbLong> columnFamily) {
-      return (k, v) -> columnFamily.delete(k);
-    }
-
-    @Override
-    public BiConsumer<Long, Long> modify(final Map<Long, Long> map) {
-      return (k, v) -> map.remove(k);
     }
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import java.io.File;
@@ -43,19 +44,13 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private final RocksDbConfiguration rocksDbConfiguration;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
 
-  private ZeebeRocksDbFactory(final RocksDbConfiguration rocksDbConfiguration) {
+  public ZeebeRocksDbFactory(
+      final RocksDbConfiguration rocksDbConfiguration,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
-  }
-
-  public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> newFactory() {
-    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration());
-  }
-
-  public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> newFactory(final RocksDbConfiguration rocksDbConfiguration) {
-    return new ZeebeRocksDbFactory<>(rocksDbConfiguration);
+    this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
   }
 
   @Override
@@ -74,7 +69,11 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
       db =
           ZeebeTransactionDb.openTransactionalDb(
-              options, pathName.getAbsolutePath(), closeables, rocksDbConfiguration);
+              options,
+              pathName.getAbsolutePath(),
+              closeables,
+              rocksDbConfiguration,
+              consistencyChecksSettings);
 
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);

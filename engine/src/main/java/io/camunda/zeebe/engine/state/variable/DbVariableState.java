@@ -105,7 +105,7 @@ public class DbVariableState implements MutableVariableState {
     variableNameView.wrap(name, nameOffset, nameLength);
     variableName.wrapBuffer(variableNameView);
 
-    variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
+    variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
   }
 
   @Override
@@ -113,7 +113,7 @@ public class DbVariableState implements MutableVariableState {
     this.childKey.wrapLong(childKey);
     this.parentKey.set(parentKey);
 
-    childParentColumnFamily.put(this.childKey, this.parentKey);
+    childParentColumnFamily.insert(this.childKey, this.parentKey);
   }
 
   @Override
@@ -123,7 +123,8 @@ public class DbVariableState implements MutableVariableState {
     removeAllVariables(scopeKey);
 
     childKey.wrapLong(scopeKey);
-    childParentColumnFamily.delete(childKey);
+    // TODO: Could be deleteExisting except for tests
+    childParentColumnFamily.deleteIfExists(childKey);
   }
 
   @Override
@@ -131,7 +132,7 @@ public class DbVariableState implements MutableVariableState {
     visitVariablesLocal(
         scopeKey,
         dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.delete(scopeKeyVariableNameKey),
+        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
         () -> false);
   }
 

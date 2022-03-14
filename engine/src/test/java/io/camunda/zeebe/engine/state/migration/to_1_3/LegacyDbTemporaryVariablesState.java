@@ -38,7 +38,7 @@ public class LegacyDbTemporaryVariablesState {
     temporaryVariables.set(variables);
     temporaryVariablesKeyInstance.wrapLong(key);
 
-    temporaryVariableColumnFamily.put(temporaryVariablesKeyInstance, temporaryVariables);
+    temporaryVariableColumnFamily.upsert(temporaryVariablesKeyInstance, temporaryVariables);
   }
 
   public boolean isEmpty() {

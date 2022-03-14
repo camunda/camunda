@@ -44,13 +44,13 @@ public final class DbStringColumnFamilyTest {
   }
 
   @Test
-  public void shouldPutValue() {
+  public void shouldUpsertValue() {
     // given
     key.wrapString("foo");
     value.wrapString("baring");
 
     // when
-    columnFamily.put(key, value);
+    columnFamily.upsert(key, value);
     value.wrapString("yes");
 
     // then
@@ -66,11 +66,11 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldUseForeachValue() {
     // given
-    putKeyValuePair("foo", "baring");
-    putKeyValuePair("this is the one", "as you know");
-    putKeyValuePair("hello", "world");
-    putKeyValuePair("another", "string");
-    putKeyValuePair("might", "be good");
+    upsertKeyValuePair("foo", "baring");
+    upsertKeyValuePair("this is the one", "as you know");
+    upsertKeyValuePair("hello", "world");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("might", "be good");
 
     // when
     final List<String> values = new ArrayList<>();
@@ -83,11 +83,11 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldUseForeachPair() {
     // given
-    putKeyValuePair("foo", "baring");
-    putKeyValuePair("this is the one", "as you know");
-    putKeyValuePair("hello", "world");
-    putKeyValuePair("another", "string");
-    putKeyValuePair("might", "be good");
+    upsertKeyValuePair("foo", "baring");
+    upsertKeyValuePair("this is the one", "as you know");
+    upsertKeyValuePair("hello", "world");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("might", "be good");
 
     // when
     final List<String> keys = new ArrayList<>();
@@ -106,11 +106,11 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldUseWhileTrue() {
     // given
-    putKeyValuePair("foo", "baring");
-    putKeyValuePair("this is the one", "as you know");
-    putKeyValuePair("hello", "world");
-    putKeyValuePair("another", "string");
-    putKeyValuePair("might", "be good");
+    upsertKeyValuePair("foo", "baring");
+    upsertKeyValuePair("this is the one", "as you know");
+    upsertKeyValuePair("hello", "world");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("might", "be good");
 
     // when
     final List<String> keys = new ArrayList<>();
@@ -131,11 +131,11 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldUseWhileEqualPrefix() {
     // given
-    putKeyValuePair("foo", "baring");
-    putKeyValuePair("this is the one", "as you know");
-    putKeyValuePair("hello", "world");
-    putKeyValuePair("another", "string");
-    putKeyValuePair("and", "be good");
+    upsertKeyValuePair("foo", "baring");
+    upsertKeyValuePair("this is the one", "as you know");
+    upsertKeyValuePair("hello", "world");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("and", "be good");
 
     // when
     key.wrapString("an");
@@ -161,11 +161,11 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldUseWhileEqualPrefixLikeGet() {
     // given
-    putKeyValuePair("foo", "baring");
-    putKeyValuePair("this is the one", "as you know");
-    putKeyValuePair("hello", "world");
-    putKeyValuePair("another", "string");
-    putKeyValuePair("and", "be good");
+    upsertKeyValuePair("foo", "baring");
+    upsertKeyValuePair("this is the one", "as you know");
+    upsertKeyValuePair("hello", "world");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("and", "be good");
 
     // when
     key.wrapString("and");
@@ -188,7 +188,7 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldAllowSingleNestedWhileEqualPrefix() {
     // given
-    putKeyValuePair("and", "be good");
+    upsertKeyValuePair("and", "be good");
     key.wrapString("and");
 
     // when
@@ -204,7 +204,7 @@ public final class DbStringColumnFamilyTest {
   @Test
   public void shouldThrowExceptionOnMultipleNestedWhileEqualPrefix() {
     // given
-    putKeyValuePair("and", "be good");
+    upsertKeyValuePair("and", "be good");
     key.wrapString("and");
 
     // when
@@ -225,9 +225,9 @@ public final class DbStringColumnFamilyTest {
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
 
-  private void putKeyValuePair(final String key, final String value) {
+  private void upsertKeyValuePair(final String key, final String value) {
     this.key.wrapString(key);
     this.value.wrapString(value);
-    columnFamily.put(this.key, this.value);
+    columnFamily.upsert(this.key, this.value);
   }
 }

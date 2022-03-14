@@ -120,7 +120,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       instance = new ElementInstance(key, parent, state, value);
       updateInstance(parent);
     }
-    updateInstance(instance);
+    createInstance(instance);
 
     return instance;
   }
@@ -133,12 +133,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       elementInstanceKey.wrapLong(key);
       parentKey.wrapLong(instance.getParentKey());
 
-      parentChildColumnFamily.delete(parentChildKey);
-      elementInstanceColumnFamily.delete(elementInstanceKey);
+      parentChildColumnFamily.deleteIfExists(parentChildKey);
+      elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
 
       variableState.removeScope(key);
 
-      awaitProcessInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
+      awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
       removeNumberOfTakenSequenceFlows(key);
 
       final long parentKey = instance.getParentKey();
@@ -156,8 +156,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void createInstance(final ElementInstance instance) {
+    elementInstanceKey.wrapLong(instance.getKey());
+    parentKey.wrapLong(instance.getParentKey());
+
+    elementInstanceColumnFamily.insert(elementInstanceKey, instance);
+    parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
+    variableState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
+  }
+
+  @Override
   public void updateInstance(final ElementInstance scopeInstance) {
-    writeElementInstance(scopeInstance);
+    elementInstanceKey.wrapLong(scopeInstance.getKey());
+    parentKey.wrapLong(scopeInstance.getParentKey());
+    elementInstanceColumnFamily.update(elementInstanceKey, scopeInstance);
   }
 
   @Override
@@ -171,7 +183,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   public void setAwaitResultRequestMetadata(
       final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(processInstanceKey);
-    awaitProcessInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
+    awaitProcessInstanceResultMetadataColumnFamily.insert(elementInstanceKey, metadata);
   }
 
   @Override
@@ -191,7 +203,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     }
     numberOfTakenSequenceFlows.wrapInt(newValue);
 
-    numberOfTakenSequenceFlowsColumnFamily.put(
+    numberOfTakenSequenceFlowsColumnFamily.upsert(
         numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
   }
 
@@ -207,20 +219,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
           final var newValue = number.getValue() - 1;
           if (newValue > 0) {
             numberOfTakenSequenceFlows.wrapInt(newValue);
-            numberOfTakenSequenceFlowsColumnFamily.put(key, numberOfTakenSequenceFlows);
+            numberOfTakenSequenceFlowsColumnFamily.update(key, numberOfTakenSequenceFlows);
           } else {
-            numberOfTakenSequenceFlowsColumnFamily.delete(key);
+            numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
           }
         });
-  }
-
-  private void writeElementInstance(final ElementInstance instance) {
-    elementInstanceKey.wrapLong(instance.getKey());
-    parentKey.wrapLong(instance.getParentKey());
-
-    elementInstanceColumnFamily.put(elementInstanceKey, instance);
-    parentChildColumnFamily.put(parentChildKey, DbNil.INSTANCE);
-    variableState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
   }
 
   @Override
@@ -292,7 +295,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         this.flowScopeKey,
         (key, number) -> {
-          numberOfTakenSequenceFlowsColumnFamily.delete(key);
+          numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
         });
   }
 

@@ -104,12 +104,6 @@ public final class DbJobState implements JobState, MutableJobState {
     createJob(key, record, type);
   }
 
-  /**
-   * <b>Note:</b> calling this method will reset the variables of the job record. Make sure to write
-   * the job record to the log before updating it in the state.
-   *
-   * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
-   */
   @Override
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
@@ -118,14 +112,14 @@ public final class DbJobState implements JobState, MutableJobState {
     validateParameters(type);
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
-    resetVariablesAndUpdateJobRecord(key, record);
+    updateJobRecord(key, record);
 
     updateJobState(State.ACTIVATED);
 
     makeJobNotActivatable(type);
 
     deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
+    deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -133,7 +127,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJob(key, record, State.ACTIVATABLE);
     jobKey.wrapLong(key);
     backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.delete(backoffJobKey);
+    backoffColumnFamily.deleteExisting(backoffJobKey);
   }
 
   @Override
@@ -144,7 +138,7 @@ public final class DbJobState implements JobState, MutableJobState {
     validateParameters(type);
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
-    createJob(key, record, type);
+    updateJob(key, record, State.ACTIVATABLE);
     removeJobDeadline(deadline);
   }
 
@@ -176,9 +170,9 @@ public final class DbJobState implements JobState, MutableJobState {
     final long deadline = record.getDeadline();
 
     jobKey.wrapLong(key);
-    jobsColumnFamily.delete(jobKey);
+    jobsColumnFamily.deleteExisting(jobKey);
 
-    statesJobColumnFamily.delete(jobKey);
+    statesJobColumnFamily.deleteExisting(jobKey);
 
     makeJobNotActivatable(type);
 
@@ -191,7 +185,7 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         jobKey.wrapLong(key);
         backoffKey.wrapLong(updatedValue.getRecurringTime());
-        backoffColumnFamily.put(backoffJobKey, DbNil.INSTANCE);
+        backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
         updateJob(key, updatedValue, State.FAILED);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
@@ -211,14 +205,14 @@ public final class DbJobState implements JobState, MutableJobState {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
-      resetVariablesAndUpdateJobRecord(jobKey, job);
+      updateJobRecord(jobKey, job);
     }
     return job;
   }
 
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
-    resetVariablesAndUpdateJobRecord(key, record);
-    updateJobState(State.ACTIVATABLE);
+    createJobRecord(key, record);
+    initializeJobState();
     makeJobActivatable(type, key);
   }
 
@@ -228,7 +222,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     validateParameters(type);
 
-    resetVariablesAndUpdateJobRecord(key, updatedValue);
+    updateJobRecord(key, updatedValue);
 
     updateJobState(newState);
 
@@ -254,7 +248,8 @@ public final class DbJobState implements JobState, MutableJobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().getValue();
-            return visitJob(jobKey1, callback::apply, () -> deadlinesColumnFamily.delete(key));
+            return visitJob(
+                jobKey1, callback::apply, () -> deadlinesColumnFamily.deleteExisting(key));
           }
           return false;
         });
@@ -319,7 +314,7 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().getValue();
-            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.delete(key));
+            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
@@ -348,16 +343,29 @@ public final class DbJobState implements JobState, MutableJobState {
     }
   }
 
-  private void resetVariablesAndUpdateJobRecord(final long key, final JobRecord updatedValue) {
+  private void createJobRecord(final long key, final JobRecord record) {
+    jobKey.wrapLong(key);
+    // do not persist variables in job state
+    jobRecordToWrite.setRecordWithoutVariables(record);
+    jobsColumnFamily.insert(jobKey, jobRecordToWrite);
+  }
+
+  /** Updates the job record without updating variables */
+  private void updateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(updatedValue);
-    jobsColumnFamily.put(jobKey, jobRecordToWrite);
+    jobsColumnFamily.update(jobKey, jobRecordToWrite);
+  }
+
+  private void initializeJobState() {
+    jobState.setState(State.ACTIVATABLE);
+    statesJobColumnFamily.insert(jobKey, jobState);
   }
 
   private void updateJobState(final State newState) {
     jobState.setState(newState);
-    statesJobColumnFamily.put(jobKey, jobState);
+    statesJobColumnFamily.update(jobKey, jobState);
   }
 
   private void makeJobActivatable(final DirectBuffer type, final long key) {
@@ -366,7 +374,9 @@ public final class DbJobState implements JobState, MutableJobState {
     jobTypeKey.wrapBuffer(type);
 
     jobKey.wrapLong(key);
-    activatableColumnFamily.put(typeJobKey, DbNil.INSTANCE);
+    // Need to upsert here because jobs can be marked as failed (and thus made activatable)
+    // without activating them first
+    activatableColumnFamily.upsert(typeJobKey, DbNil.INSTANCE);
 
     // always notify
     notifyJobAvailable(type);
@@ -376,11 +386,11 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
-    activatableColumnFamily.delete(typeJobKey);
+    activatableColumnFamily.deleteIfExists(typeJobKey);
   }
 
   private void removeJobDeadline(final long deadline) {
     deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.delete(deadlineJobKey);
+    deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
   }
 }

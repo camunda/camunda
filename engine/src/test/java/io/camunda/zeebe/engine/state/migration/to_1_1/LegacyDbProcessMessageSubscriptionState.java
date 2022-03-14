@@ -69,10 +69,10 @@ public final class LegacyDbProcessMessageSubscriptionState {
     processMessageSubscription.reset();
     processMessageSubscription.setKey(key).setRecord(record).setCommandSentTime(commandSentTime);
 
-    subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
+    subscriptionColumnFamily.upsert(elementKeyAndMessageName, processMessageSubscription);
 
     sentTime.wrapLong(commandSentTime);
-    sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+    sentTimeColumnFamily.upsert(sentTimeCompositeKey, DbNil.INSTANCE);
   }
 
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
@@ -165,18 +165,18 @@ public final class LegacyDbProcessMessageSubscriptionState {
     wrapSubscriptionKeys(
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
-    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    subscriptionColumnFamily.upsert(elementKeyAndMessageName, subscription);
 
     final long updatedSentTime = subscription.getCommandSentTime();
     if (updatedSentTime != previousSentTime) {
       if (previousSentTime > 0) {
         sentTime.wrapLong(previousSentTime);
-        sentTimeColumnFamily.delete(sentTimeCompositeKey);
+        sentTimeColumnFamily.deleteIfExists(sentTimeCompositeKey);
       }
 
       if (updatedSentTime > 0) {
         sentTime.wrapLong(updatedSentTime);
-        sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+        sentTimeColumnFamily.upsert(sentTimeCompositeKey, DbNil.INSTANCE);
       }
     }
   }
@@ -186,10 +186,10 @@ public final class LegacyDbProcessMessageSubscriptionState {
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
 
-    subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteIfExists(elementKeyAndMessageName);
 
     sentTime.wrapLong(subscription.getCommandSentTime());
-    sentTimeColumnFamily.delete(sentTimeCompositeKey);
+    sentTimeColumnFamily.deleteIfExists(sentTimeCompositeKey);
   }
 
   private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {

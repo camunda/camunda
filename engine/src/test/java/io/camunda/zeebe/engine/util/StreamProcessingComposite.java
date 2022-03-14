@@ -21,6 +21,10 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.Callable;
 
 public class StreamProcessingComposite {
 
@@ -28,15 +32,21 @@ public class StreamProcessingComposite {
 
   private final TestStreams streams;
   private final int partitionId;
-  private final ZeebeDbFactory zeebeDbFactory;
+  private final ZeebeDbFactory<?> zeebeDbFactory;
   private MutableZeebeState zeebeState;
   private LastProcessedPositionState lastProcessedPositionState;
 
+  private final WriteActor writeActor = new WriteActor();
+
   public StreamProcessingComposite(
-      final TestStreams streams, final int partitionId, final ZeebeDbFactory zeebeDbFactory) {
+      final TestStreams streams,
+      final int partitionId,
+      final ZeebeDbFactory<?> zeebeDbFactory,
+      final ActorScheduler actorScheduler) {
     this.streams = streams;
     this.partitionId = partitionId;
     this.zeebeDbFactory = zeebeDbFactory;
+    actorScheduler.submitActor(writeActor);
   }
 
   public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
@@ -136,91 +146,96 @@ public class StreamProcessingComposite {
     return new RecordStream(streams.events(getLogName(partitionId)));
   }
 
-  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent) {
-    return writeProcessInstanceEvent(intent, 1);
-  }
-
   public long writeProcessInstanceEventWithSource(
       final ProcessInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .event(processInstance(instanceKey))
-        .recordType(RecordType.EVENT)
-        .sourceRecordPosition(sourceEventPosition)
-        .intent(intent)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .event(processInstance(instanceKey))
+            .recordType(RecordType.EVENT)
+            .sourceRecordPosition(sourceEventPosition)
+            .intent(intent);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeProcessInstanceEvent(final ProcessInstanceIntent intent, final int instanceKey) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .event(processInstance(instanceKey))
-        .recordType(RecordType.EVENT)
-        .intent(intent)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .event(processInstance(instanceKey))
+            .recordType(RecordType.EVENT)
+            .intent(intent);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeEvent(final long key, final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .recordType(RecordType.EVENT)
-        .key(key)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.EVENT)
+            .key(key)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeEvent(final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .recordType(RecordType.EVENT)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.EVENT)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
-  public long writeBatch(final RecordToWrite... recordToWrites) {
-    return streams.writeBatch(getLogName(partitionId), recordToWrites);
+  public long writeBatch(final RecordToWrite... recordsToWrite) {
+    final var batchWriter = streams.setupBatchWriter(getLogName(partitionId), recordsToWrite);
+    return writeActor.submit(batchWriter::tryWrite).join();
   }
 
   public long writeCommandOnPartition(
       final int partition, final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partition))
-        .recordType(RecordType.COMMAND)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partition))
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partition))
-        .key(key)
-        .recordType(RecordType.COMMAND)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partition))
+            .key(key)
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeCommand(final long key, final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .recordType(RecordType.COMMAND)
-        .key(key)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .key(key)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeCommand(final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .recordType(RecordType.COMMAND)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeCommand(
@@ -228,27 +243,36 @@ public class StreamProcessingComposite {
       final long requestId,
       final Intent intent,
       final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .recordType(RecordType.COMMAND)
-        .requestId(requestId)
-        .requestStreamId(requestStreamId)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public long writeCommandRejection(final Intent intent, final UnpackedObject value) {
-    return streams
-        .newRecord(getLogName(partitionId))
-        .recordType(RecordType.COMMAND_REJECTION)
-        .intent(intent)
-        .event(value)
-        .write();
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND_REJECTION)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
   }
 
   public static String getLogName(final int partitionId) {
     return STREAM_NAME + partitionId;
+  }
+
+  /** Used to run writes within an actor thread. */
+  private static final class WriteActor extends Actor {
+    public ActorFuture<Long> submit(final Callable<Long> write) {
+      return actor.call(write);
+    }
   }
 
   @FunctionalInterface

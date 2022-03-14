@@ -93,6 +93,10 @@ spec:
         requests:
           cpu: 4
           memory: 8Gi
+    - name: python
+      image: python:3.10
+      command: [ "cat" ]
+      tty: true
   volumes:
     - name: docker-storage
       emptyDir: { }

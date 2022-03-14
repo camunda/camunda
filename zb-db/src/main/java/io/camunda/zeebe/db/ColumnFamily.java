@@ -20,18 +20,6 @@ import java.util.function.Consumer;
 public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> {
 
   /**
-   * Stores the key-value pair into the column family.
-   *
-   * @deprecated Prefer {@link ColumnFamily#insert} or {@link ColumnFamily#update} which check that
-   *     the key does not exist (insert) or does exist (update). If update and insert can't be used,
-   *     use {@link ColumnFamily#upsert} instead of this method.
-   * @param key the key
-   * @param value the value
-   */
-  @Deprecated(forRemoval = true)
-  void put(KeyType key, ValueType value);
-
-  /**
    * Inserts a new key value pair into the column family.
    *
    * @throws IllegalStateException if key already exists
@@ -112,16 +100,6 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * @param visitor the visitor which visits the key-value pairs
    */
   void whileEqualPrefix(DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor);
-
-  /**
-   * Deletes the key-value pair with the given key from the column family.
-   *
-   * @deprecated Prefer the {@link ColumnFamily#deleteExisting} which checks that the key does exist
-   *     or the unchecked {@link ColumnFamily#deleteIfExists}.
-   * @param key the key which identifies the pair
-   */
-  @Deprecated(forRemoval = true)
-  void delete(KeyType key);
 
   /**
    * Deletes the key-value pair with the given key if it exists in the column family

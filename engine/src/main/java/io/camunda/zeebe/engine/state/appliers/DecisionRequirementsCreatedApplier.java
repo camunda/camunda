@@ -23,6 +23,6 @@ public final class DecisionRequirementsCreatedApplier
 
   @Override
   public void applyState(final long key, final DecisionRequirementsRecord value) {
-    decisionState.putDecisionRequirements(value);
+    decisionState.storeDecisionRequirements(value);
   }
 }

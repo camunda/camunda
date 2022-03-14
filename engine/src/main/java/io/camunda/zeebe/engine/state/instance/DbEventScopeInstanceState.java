@@ -53,7 +53,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     if (instance != null) {
       this.eventScopeKey.wrapLong(eventScopeKey);
       instance.setAccepting(false);
-      eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
+      eventScopeInstanceColumnFamily.update(this.eventScopeKey, instance);
     }
   }
 
@@ -82,7 +82,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       eventScopeInstance.addInterrupting(interruptingId);
     }
 
-    eventScopeInstanceColumnFamily.put(this.eventScopeKey, eventScopeInstance);
+    eventScopeInstanceColumnFamily.insert(this.eventScopeKey, eventScopeInstance);
   }
 
   @Override
@@ -95,7 +95,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
             (key, value) -> deleteTrigger(key));
 
     this.eventScopeKey.wrapLong(eventScopeKey);
-    eventScopeInstanceColumnFamily.delete(this.eventScopeKey);
+    eventScopeInstanceColumnFamily.deleteIfExists(this.eventScopeKey);
   }
 
   @Override
@@ -125,7 +125,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     if (isAcceptingEvent(instance)) {
       if (instance.isInterrupting(elementId)) {
         instance.setAccepting(false);
-        eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
+        eventScopeInstanceColumnFamily.update(this.eventScopeKey, instance);
       }
 
       createTrigger(eventScopeKey, eventKey, elementId, variables);
@@ -191,10 +191,10 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
 
     eventTrigger.setElementId(elementId).setVariables(variables).setEventKey(eventKey);
 
-    eventTriggerColumnFamily.put(eventTriggerKey, eventTrigger);
+    eventTriggerColumnFamily.insert(eventTriggerKey, eventTrigger);
   }
 
   private void deleteTrigger(final DbCompositeKey<DbLong, DbLong> triggerKey) {
-    eventTriggerColumnFamily.delete(triggerKey);
+    eventTriggerColumnFamily.deleteIfExists(triggerKey);
   }
 }

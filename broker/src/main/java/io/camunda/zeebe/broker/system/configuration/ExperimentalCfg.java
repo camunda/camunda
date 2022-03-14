@@ -28,6 +28,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
   private QueryApiCfg queryApi = new QueryApiCfg();
+  private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -95,6 +96,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.queryApi = queryApi;
   }
 
+  public ConsistencyCheckCfg getConsistencyChecks() {
+    return consistencyChecks;
+  }
+
+  public void setConsistencyChecks(final ConsistencyCheckCfg consistencyChecks) {
+    this.consistencyChecks = consistencyChecks;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -110,6 +119,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + partitioning
         + ", queryApi="
         + queryApi
+        + ", consistencyChecks="
+        + consistencyChecks
         + '}';
   }
 }

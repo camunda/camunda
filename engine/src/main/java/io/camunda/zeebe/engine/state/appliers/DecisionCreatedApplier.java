@@ -23,6 +23,6 @@ public final class DecisionCreatedApplier
 
   @Override
   public void applyState(final long key, final DecisionRecord value) {
-    decisionState.putDecision(value);
+    decisionState.storeDecisionRecord(value);
   }
 }

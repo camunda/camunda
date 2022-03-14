@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.sched.ActorControl;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,9 +48,13 @@ public final class JobTimeoutTriggerTest {
     processingContext.enableLogStreamWriter();
     jobTimeoutTrigger.onRecovered(processingContext);
 
-    jobState.activate(0, newJobRecord());
-    jobState.activate(1, newJobRecord());
-    jobState.activate(2, newJobRecord());
+    IntStream.range(0, 3)
+        .forEach(
+            (i) -> {
+              final var job = newJobRecord();
+              jobState.create(i, job);
+              jobState.activate(i, job);
+            });
   }
 
   private JobRecord newJobRecord() {

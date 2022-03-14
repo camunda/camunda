@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
@@ -61,7 +61,7 @@ public final class StateControllerImplTest {
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
     snapshotController =
         new StateControllerImpl(
-            ZeebeRocksDbFactory.newFactory(),
+            DefaultZeebeDbFactory.defaultFactory(),
             store,
             runtimeDirectory,
             l ->

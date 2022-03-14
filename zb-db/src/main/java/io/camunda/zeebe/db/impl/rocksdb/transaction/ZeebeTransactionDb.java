@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
@@ -44,23 +45,26 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final WriteOptions defaultWriteOptions;
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
-      final RocksDbConfiguration rocksDbConfiguration) {
+      final RocksDbConfiguration rocksDbConfiguration,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
+    this.consistencyChecksSettings = consistencyChecksSettings;
 
     prefixReadOptions =
         new ReadOptions()
             .setPrefixSameAsStart(true)
             .setTotalOrderSeek(false)
-            // setting a positive value to readahead is only useful when using network storage with
-            // high latency, at the cost of making iterators expensiver (memory and computation
+            // setting a positive value to read-ahead is only useful when using network storage with
+            // high latency, at the cost of making iterators more expensive (memory and computation
             // wise)
             .setReadaheadSize(0);
     closables.add(prefixReadOptions);
@@ -75,7 +79,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final Options options,
           final String path,
           final List<AutoCloseable> closables,
-          final RocksDbConfiguration rocksDbConfiguration)
+          final RocksDbConfiguration rocksDbConfiguration,
+          final ConsistencyChecksSettings consistencyChecksSettings)
           throws RocksDBException {
     final OptimisticTransactionDB optimisticTransactionDB =
         OptimisticTransactionDB.open(options, path);
@@ -83,7 +88,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
 
     return new ZeebeTransactionDb<>(
-        defaultColumnFamilyHandle, optimisticTransactionDB, closables, rocksDbConfiguration);
+        defaultColumnFamilyHandle,
+        optimisticTransactionDB,
+        closables,
+        rocksDbConfiguration,
+        consistencyChecksSettings);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -118,7 +127,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final TransactionContext context,
           final KeyType keyInstance,
           final ValueType valueInstance) {
-    return new TransactionalColumnFamily<>(this, columnFamily, context, keyInstance, valueInstance);
+    return new TransactionalColumnFamily<>(
+        this, consistencyChecksSettings, columnFamily, context, keyInstance, valueInstance);
   }
 
   @Override

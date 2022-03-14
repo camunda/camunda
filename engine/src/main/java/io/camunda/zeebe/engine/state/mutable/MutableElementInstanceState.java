@@ -24,6 +24,8 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   void removeInstance(long key);
 
+  void createInstance(ElementInstance instance);
+
   void updateInstance(ElementInstance scopeInstance);
 
   void updateInstance(long key, Consumer<ElementInstance> modifier);

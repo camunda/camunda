@@ -60,27 +60,27 @@ public final class DbDeploymentState implements MutableDeploymentState {
   public void addPendingDeploymentDistribution(final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
-    pendingDeploymentColumnFamily.put(deploymentPartitionKey, DbNil.INSTANCE);
+    pendingDeploymentColumnFamily.insert(deploymentPartitionKey, DbNil.INSTANCE);
   }
 
   @Override
   public void removePendingDeploymentDistribution(final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
-    pendingDeploymentColumnFamily.delete(deploymentPartitionKey);
+    pendingDeploymentColumnFamily.deleteExisting(deploymentPartitionKey);
   }
 
   @Override
   public void storeDeploymentRecord(final long key, final DeploymentRecord value) {
     deploymentKey.wrapLong(key);
     deploymentRaw.setDeploymentRecord(value);
-    deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+    deploymentRawColumnFamily.insert(deploymentKey, deploymentRaw);
   }
 
   @Override
   public void removeDeploymentRecord(final long key) {
     deploymentKey.wrapLong(key);
-    deploymentRawColumnFamily.delete(deploymentKey);
+    deploymentRawColumnFamily.deleteIfExists(deploymentKey);
   }
 
   @Override

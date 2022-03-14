@@ -119,7 +119,7 @@ public class DbMigrationState implements MutableMigrationState {
             transientState.updateCommandSentTime(messageSubscription.getRecord(), sentTime);
           }
 
-          messageSubscriptionSentTimeColumnFamily.delete(key);
+          messageSubscriptionSentTimeColumnFamily.deleteExisting(key);
         });
   }
 
@@ -148,7 +148,7 @@ public class DbMigrationState implements MutableMigrationState {
             if (processMessageSubscription.isOpening()) {
               // explicit call to put(..). This has the desired side-effect that the subscription
               // is added to transient state
-              persistentState.put(elementInstanceKey, exclusiveCopy);
+              persistentState.updateToOpeningState(exclusiveCopy);
               transientState.updateSentTime(exclusiveCopy, sentTime);
             } else if (processMessageSubscription.isClosing()) {
               // explicit call to updateToClosingState(..). This has the desired side-effect that
@@ -158,7 +158,7 @@ public class DbMigrationState implements MutableMigrationState {
             }
           }
 
-          processSubscriptionSentTimeColumnFamily.delete(key);
+          processSubscriptionSentTimeColumnFamily.deleteExisting(key);
         });
   }
 
@@ -199,7 +199,7 @@ public class DbMigrationState implements MutableMigrationState {
                 key.getValue(), eventKey, elementIdBuffer, value.get());
           }
 
-          temporaryVariableColumnFamily.delete(key);
+          temporaryVariableColumnFamily.deleteExisting(key);
         });
   }
 }
