@@ -7,11 +7,11 @@ def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
-String agent() {
+String gCloudAndMavenAgent() {
   """
 metadata:
   labels:
-    agent: operate-ci-build
+    agent: optimize-ci-build
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
@@ -29,7 +29,7 @@ spec:
       - "sh"
       args:
       - "-c"
-      - "sysctl -w vm.max_map_count=262144 && \\
+      - "sysctl -w vm.max_map_count=262144 && \
          cp -r /usr/share/elasticsearch/config/* /usr/share/elasticsearch/config_new/"
       securityContext:
         privileged: true
@@ -42,8 +42,8 @@ spec:
       - "sh"
       args:
       - "-c"
-      - "elasticsearch-plugin install --batch repository-gcs && \\
-        elasticsearch-keystore create && \\
+      - "elasticsearch-plugin install --batch repository-gcs && \
+        elasticsearch-keystore create && \
         elasticsearch-keystore add-file gcs.client.optimize_ci_service_account.credentials_file /usr/share/elasticsearch/svc/ci-service-account"
       securityContext:
         privileged: true
@@ -85,7 +85,7 @@ spec:
         - name: discovery.type
           value: single-node
         - name: action.auto_create_index
-          value: "true"
+          value: "false"
         - name: bootstrap.memory_lock
           value: "true"
       livenessProbe:
@@ -122,20 +122,6 @@ spec:
         requests:
           cpu: 4
           memory: 8Gi
-    - name: zeebe
-      image: camunda/zeebe:${params.ZEEBE_VERSION}
-      env:
-        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-          value: io.camunda.zeebe.exporter.ElasticsearchExporter
-        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-          value: ${params.ZEEBE_PARTITION_COUNT}
-      resources:
-        limits:
-          cpu: 10
-          memory: 16Gi
-        requests:
-          cpu: 10
-          memory: 16Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -153,7 +139,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml agent()
+      yaml gCloudAndMavenAgent()
     }
   }
 
@@ -164,53 +150,50 @@ pipeline {
   }
 
   options {
-    buildDiscarder(logRotator(daysToKeepStr: '10'))
+    buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 7, unit: 'DAYS')
+    timeout(time: 10, unit: 'HOURS')
   }
 
   stages {
     stage('Prepare') {
-      steps {
-        optimizeCloneGitRepo(params.BRANCH)
-        container('maven') {
-          // Compile Optimize and skip tests
-          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -Dskip.fe.build -Dskip.docker clean install -B')
+      parallel {
+        stage('Clone Optimize Repo') {
+          steps {
+            optimizeCloneGitRepo(params.BRANCH)
+          }
+        }
+        stage('Import ES Snapshot') {
+          steps {
+            container('maven') {
+              // Create repository
+              sh ("""
+                    echo \$(curl -sq -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "optimize-data", "base_path": "zeebe-ci-test", "client": "optimize_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
+                """)
+              // Restore Snapshot
+              sh ("""
+                    echo \$(curl -sq -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1/_restore?wait_for_completion=true')
+                """)
+            }
           }
         }
       }
     }
-    stage('Data Generation') {
+    stage('Run performance tests') {
       steps {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-            // Generate Data
             sh("""
-              mvn -B -s $MAVEN_SETTINGS_XML -f qa/zeebe-data-generation spring-boot:run \
-              -Dinstancestarterthreadcount=$params.INSTANCE_STARTER_THREAD_COUNT \
-              -Ddata.processdefinitioncount=$params.NUM_PROCESS_DEFINITIONS \
-              -Ddata.instancecount=$params.NUM_PROCESS_INSTANCES \
+              mvn -B -s \$MAVEN_SETTINGS_XML -f qa/import-performance-tests -P zeebe-data-import-performance-test test \
+              -Dzeebe.enabled=true \
+              -Dzeebe.name=zeebe-record \
+              -Dzeebe.partition.count=$params.ZEEBE_PARTITION_COUNT \
+              -Dzeebe.maximportpagesize=$params.ZEEBE_MAX_IMPORT_PAGE_SIZE \
+              -Ddata.process.definition.count=$params.DATA_PROCESS_DEFINITION_COUNT \
+              -Ddata.instance.count=$params.DATA_INSTANCE_COUNT \
+              -Dimport.timeout.in.minutes=$params.IMPORT_TIMEOUT_IN_MINUTES \
             """)
           }
-        }
-      }
-    }
-    stage('Upload snapshot') {
-      steps {
-        container('maven') {
-          // Create repository
-          sh("""
-                echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "optimize-data", "base_path": "zeebe-ci-test", "client": "optimize_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
-            """)
-          // Delete previous Snapshot
-          sh("""
-                echo \$(curl -qs -XDELETE "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1")
-            """)
-          // Trigger Snapshot
-          sh("""
-                echo \$(curl -qs -H "Content-Type: application/json" -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true" -d '{"indices": "zeebe-record*", "ignore_unavailable": "true", "include_global_state": false}')
-            """)
         }
       }
     }

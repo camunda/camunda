@@ -34,9 +34,6 @@ roleRef:
   name: optimize-team-read-permissions
 subjects:
   - kind: ServiceAccount
-    name: johannes-heinemann
-    namespace: optimize
-  - kind: ServiceAccount
     name: sebastian-bathke
     namespace: optimize
   - kind: ServiceAccount

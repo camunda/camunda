@@ -16,6 +16,7 @@
   <logger name="org.camunda.optimize.data.generation" level="OFF" />
   <logger name="org.camunda.optimize.data.generation.DataGenerationExecutor" level="INFO" />
   <logger name="org.camunda.optimize.service.es.ElasticsearchImportJobExecutor" level="DEBUG" />
+  <logger name="org.elasticsearch.client.RestClient" level="OFF" />
 
   <root level="WARN">
     <appender-ref ref="STDOUT" />
