@@ -1,0 +1,4 @@
+@use '@carbon/react' as * with (
+  $font-path: 'https://fonts.camunda.io',
+  $css--reset: false // Remove on #1682
+);
