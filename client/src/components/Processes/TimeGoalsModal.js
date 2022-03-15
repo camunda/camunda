@@ -46,15 +46,15 @@ const defaultGoals = [
 ];
 
 export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process}) {
-  const isEditing = process.timeGoals?.length > 0;
+  const isEditing = process.durationGoals?.length > 0;
   const [data, setData] = useState();
   const [visibleGoals, setVisibleGoals] = useState(
     defaultGoals.map((goal) =>
-      isEditing ? process.timeGoals.some(({type}) => goal.type === type) : true
+      isEditing ? process.durationGoals.some(({type}) => goal.type === type) : true
     )
   );
   const [goals, setGoals] = useState(
-    defaultGoals.map((goal) => process.timeGoals?.find(({type}) => goal.type === type) || goal)
+    defaultGoals.map((goal) => process.durationGoals?.find(({type}) => goal.type === type) || goal)
   );
   const [deleting, setDeleting] = useState();
 

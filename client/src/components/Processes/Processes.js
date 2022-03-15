@@ -52,7 +52,7 @@ export function Processes({mightFail}) {
         ]}
         sorting={sorting}
         onChange={loadProcessesList}
-        data={processes?.map(({processDefinitionKey, processName, owner, timeGoals}) => ({
+        data={processes?.map(({processDefinitionKey, processName, owner, durationGoals}) => ({
           id: processDefinitionKey,
           type: t('common.process.label'),
           icon: 'data-source',
@@ -62,10 +62,10 @@ export function Processes({mightFail}) {
             <Button
               className="setGoalBtn"
               onClick={() => {
-                setOpenProcess({processDefinitionKey, processName, timeGoals});
+                setOpenProcess({processDefinitionKey, processName, durationGoals});
               }}
             >
-              {timeGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
+              {durationGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
             </Button>,
           ],
         }))}
@@ -77,7 +77,7 @@ export function Processes({mightFail}) {
           onConfirm={(goals) => {
             mightFail(
               updateGoals(openProcess.processDefinitionKey, goals),
-              setOpenProcess,
+              () => setOpenProcess(),
               showError
             );
           }}

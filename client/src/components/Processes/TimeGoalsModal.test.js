@@ -36,7 +36,7 @@ const props = {
 
 const processWithGoals = {
   ...props.process,
-  timeGoals: [
+  durationGoals: [
     {
       type: 'targetDuration',
       percentile: '25',
@@ -67,7 +67,7 @@ it('should use default goals if one of the initial goals is not present', async 
   const node = shallow(
     <TimeGoalsModal
       {...props}
-      process={{...processWithGoals, timeGoals: [processWithGoals.timeGoals[1]]}}
+      process={{...processWithGoals, durationGoals: [processWithGoals.durationGoals[1]]}}
     />
   );
 
@@ -182,14 +182,17 @@ it('should filter out hidden goals when saving', async () => {
     .simulate('change', {target: {checked: false}});
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([processWithGoals.timeGoals[1]]);
+  expect(spy).toHaveBeenCalledWith([processWithGoals.durationGoals[1]]);
 });
 
 it('should disable save button and show an error message if duration input is invalid', async () => {
   const node = shallow(
     <TimeGoalsModal
       {...props}
-      process={{...processWithGoals, timeGoals: [{...processWithGoals.timeGoals[0], value: '-1'}]}}
+      process={{
+        ...processWithGoals,
+        durationGoals: [{...processWithGoals.durationGoals[0], value: '-1'}],
+      }}
     />
   );
 
