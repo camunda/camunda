@@ -81,7 +81,7 @@
     "@types/styled-components": "5.1.24",
     "babel-loader": "8.1.0",
     "chromatic": "6.5.3",
-    "eslint-config-prettier": "8.4.0",
+    "eslint-config-prettier": "8.5.0",
     "eslint-plugin-camunda-licensed": "0.4.4",
     "eslint-plugin-prettier": "4.0.0",
     "http-proxy-middleware": "2.0.4",
