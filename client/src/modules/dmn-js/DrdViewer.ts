@@ -4,12 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {isEqual} from 'lodash';
+import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
 
 type Definitions = {
   name: string;
 };
+
+type DecisionStates = {
+  decisionId: string;
+  state: DecisionInstanceEntityState;
+}[];
 
 class DrdViewer {
   #xml: string | null = null;
@@ -18,6 +25,7 @@ class DrdViewer {
   #viewer: Viewer | null = null;
   #onDefinitionsChange?: (definitions: Definitions) => void;
   #onDecisionSelection?: (decisionId: string) => void;
+  #decisionStates: DecisionStates = [];
 
   constructor(
     onDefinitionsChange?: (definitions: Definitions) => void,
@@ -35,7 +43,8 @@ class DrdViewer {
     container: HTMLElement,
     xml: string,
     selectableDecisions: string[],
-    selectedDecision: string | null
+    selectedDecision: string | null,
+    decisionStates: DecisionStates
   ) => {
     if (this.#viewer === null) {
       this.#viewer = new Viewer('drd', {
@@ -71,8 +80,8 @@ class DrdViewer {
       canvas.zoom('fit-viewport', 'auto');
     }
 
-    if (this.#selectableDecisions !== selectableDecisions) {
-      const activeViewer = this.#viewer.getActiveViewer()!;
+    if (!isEqual(this.#selectableDecisions, selectableDecisions)) {
+      const activeViewer = this.#viewer.getActiveViewer();
       const canvas = activeViewer!.get('canvas');
 
       this.#selectableDecisions.forEach((decisionId) => {
@@ -87,7 +96,7 @@ class DrdViewer {
     }
 
     if (this.#selectedDecision !== selectedDecision) {
-      const activeViewer = this.#viewer.getActiveViewer()!;
+      const activeViewer = this.#viewer.getActiveViewer();
       const canvas = activeViewer!.get('canvas');
 
       if (this.#selectedDecision !== null) {
@@ -99,6 +108,30 @@ class DrdViewer {
       }
 
       this.#selectedDecision = selectedDecision;
+    }
+
+    if (!isEqual(this.#decisionStates, decisionStates)) {
+      const activeViewer = this.#viewer.getActiveViewer();
+      const overlays = activeViewer!.get('overlays');
+
+      overlays.remove({type: 'decisionState'});
+      drdDataStore.clearDecisionStateOverlays();
+
+      decisionStates.forEach(({decisionId, state}) => {
+        const container = document.createElement('div');
+
+        overlays.add(decisionId, 'decisionState', {
+          position: {
+            bottom: 12,
+            left: -12,
+          },
+          html: container,
+        });
+
+        drdDataStore.addDecisionStateOverlay({decisionId, state, container});
+      });
+
+      this.#decisionStates = decisionStates;
     }
   };
 

@@ -11,6 +11,10 @@ const mockedModules: {[module: string]: any} = {
     addMarker: jest.fn(),
     removeMarker: jest.fn(),
   },
+  overlays: {
+    add: jest.fn(),
+    remove: jest.fn(),
+  },
 };
 
 class Manager {

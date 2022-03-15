@@ -6,8 +6,10 @@
 
 import {
   action,
+  computed,
   IReactionDisposer,
   makeObservable,
+  observable,
   override,
   reaction,
 } from 'mobx';
@@ -26,14 +28,22 @@ type DrdData = ReadonlyDeep<{
   ];
 }>;
 
+type DecisionStateOverlay = {
+  state: DecisionInstanceEntityState;
+  container: HTMLDivElement;
+  decisionId: string;
+};
+
 type State = {
   drdData: DrdData | null;
   status: 'initial' | 'fetched' | 'error';
+  decisionStateOverlays: DecisionStateOverlay[];
 };
 
 const DEFAULT_STATE: State = {
   drdData: null,
   status: 'initial',
+  decisionStateOverlays: [],
 };
 
 class Drd extends NetworkReconnectionHandler {
@@ -46,6 +56,12 @@ class Drd extends NetworkReconnectionHandler {
     makeObservable(this, {
       handleFetchSuccess: action,
       handleFetchFailure: action,
+      addDecisionStateOverlay: action,
+      clearDecisionStateOverlays: action,
+      currentDecision: computed,
+      selectableDecisions: computed,
+      decisionStates: computed,
+      state: observable,
       reset: override,
     });
   }
@@ -60,6 +76,7 @@ class Drd extends NetworkReconnectionHandler {
       }
     );
   };
+
   fetchDrdData = this.retryOnConnectionLost(
     async (decisionInstanceId: DecisionInstanceEntity['id']) => {
       try {
@@ -90,6 +107,14 @@ class Drd extends NetworkReconnectionHandler {
     }
   };
 
+  addDecisionStateOverlay = (decisionStateOverlay: DecisionStateOverlay) => {
+    this.state.decisionStateOverlays.push(decisionStateOverlay);
+  };
+
+  clearDecisionStateOverlays = () => {
+    this.state.decisionStateOverlays = [];
+  };
+
   get currentDecision() {
     const {drdData} = this.state;
 
@@ -106,6 +131,29 @@ class Drd extends NetworkReconnectionHandler {
           );
         })
       ) ?? null
+    );
+  }
+
+  get selectableDecisions() {
+    if (this.state.drdData === null) {
+      return [];
+    }
+
+    return Object.keys(this.state.drdData);
+  }
+
+  get decisionStates() {
+    if (this.state.drdData === null) {
+      return [];
+    }
+
+    return Object.entries(this.state.drdData).map(
+      ([decisionId, decisionInstances]) => {
+        return {
+          decisionId,
+          state: decisionInstances[decisionInstances.length - 1].state,
+        };
+      }
     );
   }
 

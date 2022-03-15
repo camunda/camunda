@@ -6,15 +6,17 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {autorun} from 'mobx';
+import {observer} from 'mobx-react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
 import {drdDataStore} from 'modules/stores/drdData';
+import {DecisionState} from './DecisionState';
 import {Container, PanelHeader} from './styled';
 
-const Drd: React.FC = () => {
+const Drd: React.FC = observer(() => {
   const {
     setPanelState,
     state: {panelState},
@@ -48,14 +50,14 @@ const Drd: React.FC = () => {
     const disposer = autorun(() => {
       if (
         drdViewerRef.current !== null &&
-        decisionXmlStore.state.xml !== null &&
-        drdDataStore.state.drdData !== null
+        decisionXmlStore.state.xml !== null
       ) {
         drdViewer.current!.render(
           drdViewerRef.current,
           decisionXmlStore.state.xml,
-          Object.keys(drdDataStore.state.drdData),
-          drdDataStore.currentDecision
+          drdDataStore.selectableDecisions,
+          drdDataStore.currentDecision,
+          drdDataStore.decisionStates
         );
       }
     });
@@ -95,8 +97,14 @@ const Drd: React.FC = () => {
         </div>
       </PanelHeader>
       <div data-testid="drd-viewer" ref={drdViewerRef} />
+
+      {drdDataStore.state.decisionStateOverlays.map(
+        ({decisionId, state, container}) => (
+          <DecisionState key={decisionId} state={state} container={container} />
+        )
+      )}
     </Container>
   );
-};
+});
 
 export {Drd};
