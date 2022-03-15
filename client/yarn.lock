@@ -2208,23 +2208,23 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@mswjs/cookies@^0.1.7":
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/@mswjs/cookies/-/cookies-0.1.7.tgz#d334081b2c51057a61c1dd7b76ca3cac02251651"
-  integrity sha512-bDg1ReMBx+PYDB4Pk7y1Q07Zz1iKIEUWQpkEXiA2lEWg9gvOZ8UBmGXilCEUvyYoRFlmr/9iXTRR69TrgSwX/Q==
+"@mswjs/cookies@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@mswjs/cookies/-/cookies-0.2.0.tgz#7ef2b5d7e444498bb27cf57720e61f76a4ce9f23"
+  integrity sha512-GTKYnIfXVP8GL8HRWrse+ujqDXCLKvu7+JoL6pvZFzS/d2i9pziByoWD69cOe35JNoSrx2DPNqrhUF+vgV3qUA==
   dependencies:
     "@types/set-cookie-parser" "^2.4.0"
     set-cookie-parser "^2.4.6"
 
-"@mswjs/interceptors@^0.13.3":
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.13.3.tgz#07dff2fd2ef46ee164f732ae50128c634663063e"
-  integrity sha512-YGC25Rp7ugywBL1bqvy1fJ9HHvQJ9yEJcYLbHdsQCiQ89zmnY0b0ZfJAMqXHhTOHV6oKaunN7y0fdWkRlfuTIg==
+"@mswjs/interceptors@^0.15.1":
+  version "0.15.1"
+  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.15.1.tgz#4a0009f56e51bc2cd3176f1507065c7d2f6c0d5e"
+  integrity sha512-D5B+ZJNlfvBm6ZctAfRBdNJdCHYAe2Ix4My5qfbHV5WH+3lkt3mmsjiWJzEh5ZwGDauzY487TldI275If7DJVw==
   dependencies:
     "@open-draft/until" "^1.0.3"
     "@xmldom/xmldom" "^0.7.5"
     debug "^4.3.3"
-    headers-polyfill "^3.0.3"
+    headers-polyfill "^3.0.4"
     outvariant "^1.2.1"
     strict-event-emitter "^0.2.0"
 
@@ -9251,10 +9251,10 @@ he@^1.2.0:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-headers-polyfill@^3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/headers-polyfill/-/headers-polyfill-3.0.3.tgz#222bd9a6b5a1f610ad563473efb0d34a13eb7ebc"
-  integrity sha512-Ak5m549Y+5vBtWNnIUcyARJjF0tQpINuy3+vOqG8tK/qjF0itYhAPgrzJc0zsZJh7AX8PalzICMPuWIqHpZlEA==
+headers-polyfill@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/headers-polyfill/-/headers-polyfill-3.0.4.tgz#cd70c815a441dd882372fcd6eda212ce997c9b18"
+  integrity sha512-I1DOM1EdWYntdrnCvqQtcKwSSuiTzoqOExy4v1mdcFixFZABlWP4IPHdmoLtPda0abMHqDOY4H9svhQ10DFR4w==
 
 hex-color-regex@^1.1.0:
   version "1.1.0"
@@ -12290,13 +12290,13 @@ ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-msw@0.38.1:
-  version "0.38.1"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.38.1.tgz#87b59f4ea49a4d1b7abde080de2ecceea7f78c5a"
-  integrity sha512-4BMEc54nX12UzOAxw6cB31tEytuxfTPwmGoBrItCHoD9Aj9ZLO9aoBaZjCA1W0wfiYcd7sjekLpnT0lE/uR0qA==
+msw@0.39.2:
+  version "0.39.2"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.39.2.tgz#832e9274db62c43cb79854d5a69dce031c700de8"
+  integrity sha512-ju/HpqQpE4/qCxZ23t5Gaau0KREn4QuFzdG28nP1EpidMrymMJuIvNd32+2uGTGG031PMwrC41YW7vCxHOwyHA==
   dependencies:
-    "@mswjs/cookies" "^0.1.7"
-    "@mswjs/interceptors" "^0.13.3"
+    "@mswjs/cookies" "^0.2.0"
+    "@mswjs/interceptors" "^0.15.1"
     "@open-draft/until" "^1.0.3"
     "@types/cookie" "^0.4.1"
     "@types/js-levenshtein" "^1.1.1"
@@ -12304,7 +12304,7 @@ msw@0.38.1:
     chokidar "^3.4.2"
     cookie "^0.4.2"
     graphql "^16.3.0"
-    headers-polyfill "^3.0.3"
+    headers-polyfill "^3.0.4"
     inquirer "^8.2.0"
     is-node-process "^1.0.1"
     js-levenshtein "^1.1.6"
