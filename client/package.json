@@ -122,6 +122,6 @@
     "enabled": false
   },
   "resolutions": {
-    "react-scripts/postcss-preset-env/postcss-custom-properties": "^10.0.0"
+    "react-scripts/postcss-preset-env/postcss-custom-properties": "^12.0.0"
   }
 }
