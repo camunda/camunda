@@ -139,7 +139,7 @@
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
     <plugin.version.spotless>2.21.0</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
-    <plugin.version.versions>2.9.0</plugin.version.versions>
+    <plugin.version.versions>2.10.0</plugin.version.versions>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
