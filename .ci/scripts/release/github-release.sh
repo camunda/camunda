@@ -15,8 +15,8 @@ declare -a GH_OPTIONS=()
 # compute their sha1 sum and upload those as well, but no need to list that here. If there are new
 # binaries to ship with a Zeebe release, add them here.
 declare -a ARTIFACTS=( \
-  "dist/target/camunda-cloud-zeebe-${RELEASE_VERSION}.tar.gz" \
-  "dist/target/camunda-cloud-zeebe-${RELEASE_VERSION}.zip" \
+  "dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz" \
+  "dist/target/camunda-zeebe-${RELEASE_VERSION}.zip" \
   "clients/go/cmd/zbctl/dist/zbctl" \
   "clients/go/cmd/zbctl/dist/zbctl.exe" \
   "clients/go/cmd/zbctl/dist/zbctl.darwin" \
