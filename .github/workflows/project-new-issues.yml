@@ -13,5 +13,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PROJECT_ADMIN_TOKEN }}
         with:
           project_type: "org"
-          project_owner: "camunda-cloud"
+          project_owner: "camunda"
           project_name: "Zeebe"
