@@ -41,7 +41,7 @@ grafana:
   dashboards:
     default:
       zeebe:
-        url: https://raw.githubusercontent.com/camunda-cloud/zeebe/main/monitor/grafana/zeebe.json
+        url: https://raw.githubusercontent.com/camunda/zeebe/main/monitor/grafana/zeebe.json
   persistence:
     enabled: true
     storageClassName: ssd
