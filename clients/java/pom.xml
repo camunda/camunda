@@ -161,6 +161,9 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <failOnWarning>true</failOnWarning>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>io.grpc:grpc-core</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
           </ignoredDependencies>

@@ -44,6 +44,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
@@ -57,7 +63,8 @@
 
     <dependency>
       <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
