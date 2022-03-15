@@ -73,8 +73,7 @@ spec:
             steps {
                 git url: 'https://github.com/camunda/zeebe.git',
                         branch: "${params.BRANCH}",
-                        // TODO: update when the new credentials is available
-                        credentialsId: 'github-cloud-zeebe-app',
+                        credentialsId: 'github-camunda-zeebe-app',
                         poll: false
 
                 container('maven') {

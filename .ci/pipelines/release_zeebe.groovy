@@ -61,7 +61,7 @@ spec:
         GPG_PASS = credentials('password_maven_central_gpg_signing_key')
         GPG_PUB_KEY = credentials('maven_central_gpg_signing_key_pub')
         GPG_SEC_KEY = credentials('maven_central_gpg_signing_key_sec')
-        GITHUB_TOKEN = credentials('github-cloud-zeebe-app')
+        GITHUB_TOKEN = credentials('github-camunda-zeebe-app')
         RELEASE_VERSION = "${params.RELEASE_VERSION}"
         RELEASE_BRANCH = "release-${params.RELEASE_VERSION}"
         DEVELOPMENT_VERSION = "${params.DEVELOPMENT_VERSION}"
@@ -83,8 +83,7 @@ spec:
             steps {
                 git url: 'https://github.com/camunda/zeebe.git',
                         branch: "${env.RELEASE_BRANCH}",
-                        // TODO: update credentials when they exist
-                        credentialsId: 'github-cloud-zeebe-app',
+                        credentialsId: 'github-camunda-zeebe-app',
                         poll: false
 
                 container('maven') {

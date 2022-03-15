@@ -8,8 +8,7 @@ organizationFolder('camunda') {
     organizations {
         github {
             repoOwner('camunda')
-            // TODO: update credentials when they exist
-            credentialsId('github-cloud-zeebe-app')
+            credentialsId('github-camunda-zeebe-app')
 
             traits {
                 cleanBeforeCheckoutTrait {
