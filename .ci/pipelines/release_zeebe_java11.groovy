@@ -80,8 +80,9 @@ spec:
     stages {
         stage('Prepare') {
             steps {
-                git url: 'https://github.com/camunda-cloud/zeebe.git',
+                git url: 'https://github.com/camunda/zeebe.git',
                     branch: "${env.RELEASE_BRANCH}",
+                    // TODO: update when the new credentials are available
                     credentialsId: 'github-cloud-zeebe-app',
                     poll: false
 

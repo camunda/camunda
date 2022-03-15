@@ -1,5 +1,5 @@
 #!/bin/sh -eux
-ORG_DIR=${GOPATH}/src/github.com/camunda-cloud
+ORG_DIR=${GOPATH}/src/github.com/camunda
 
 cd "${ORG_DIR}/zeebe/clients/go"
 
