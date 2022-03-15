@@ -110,7 +110,7 @@ public final class ProcessBuilder {
                 // which will not trigger the event sub process then. We use here a static value to
                 // trigger the event sub process.
                 //
-                // See https://github.com/camunda-cloud/zeebe/issues/4099
+                // See https://github.com/camunda/zeebe/issues/4099
                 b.name(eventSubProcessMessageName)
                     .zeebeCorrelationKeyExpression(
                         '\"' + EVENT_SUBPROCESS_CORRELATION_KEY_VALUE + '\"'))

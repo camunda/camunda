@@ -561,7 +561,7 @@ public final class TimerCatchEventTest {
         .hasSize(expectedRepetitions);
   }
 
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/5420
+  // regression test for https://github.com/camunda/zeebe/issues/5420
   @Test
   public void shouldHaveNoSourceRecordPositionOnTimerTrigger() {
     // given

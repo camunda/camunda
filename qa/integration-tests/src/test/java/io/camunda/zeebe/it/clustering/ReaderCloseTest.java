@@ -41,7 +41,7 @@ public class ReaderCloseTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
-  // Regression test for https://github.com/camunda-cloud/zeebe/issues/7767
+  // Regression test for https://github.com/camunda/zeebe/issues/7767
   @Test
   public void shouldDeleteCompactedSegmentsFiles() throws IOException {
     // given
@@ -56,7 +56,7 @@ public class ReaderCloseTest {
     }
   }
 
-  // Regression test for https://github.com/camunda-cloud/zeebe/issues/7767
+  // Regression test for https://github.com/camunda/zeebe/issues/7767
   @Test
   public void shouldDeleteCompactedSegmentsFilesAfterLeaderChange() throws IOException {
     // given
@@ -70,7 +70,7 @@ public class ReaderCloseTest {
             .getCluster()
             .getNodeId();
     clusteringRule.forceClusterToHaveNewLeader(followerId);
-    // because of https://github.com/camunda-cloud/zeebe/issues/8329
+    // because of https://github.com/camunda/zeebe/issues/8329
     // we need to add another record so we can do a snapshot
     clientRule
         .getClient()

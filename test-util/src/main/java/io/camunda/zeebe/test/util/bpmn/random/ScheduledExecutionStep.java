@@ -32,8 +32,8 @@ import java.util.Map;
  * <p>Distinguishing the activation vs. the execution time is important for calculating correct
  * values for timeouts.
  *
- * <p>For a broader discussion, please consult https://github.com/camunda-cloud/zeebe/issues/6568
- * which discusses the problem and the concept.
+ * <p>For a broader discussion, please consult https://github.com/camunda/zeebe/issues/6568 which
+ * discusses the problem and the concept.
  */
 public class ScheduledExecutionStep {
 

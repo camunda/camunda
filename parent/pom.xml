@@ -1602,7 +1602,7 @@
             <configuration>
               <excludes>
                 <exclude>**/*RandomizedPropertyTest.java</exclude>
-                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda-cloud/zeebe/issues/8637 -->
+                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/zeebe/issues/8637 -->
                 <exclude>**/*$*.java</exclude>
               </excludes>
             </configuration>

@@ -407,7 +407,7 @@ public final class ActivateJobsTest {
     assertThat(remainingJobKeys).hasSize(jobCount - expectedJobsInBatch);
   }
 
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/6207
+  // regression test for https://github.com/camunda/zeebe/issues/6207
   @Test
   public void shouldActivateJobUpToMaxMessageSize() {
     // given
