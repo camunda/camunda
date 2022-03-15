@@ -50,6 +50,7 @@ const STAGE_ENV = getStage(window.location.host);
 
 mixpanel.init(process.env.REACT_APP_MIXPANEL_TOKEN, {
   opt_out_tracking_by_default: true,
+  api_host: process.env.REACT_MIXPANEL_HOST,
 });
 
 class Tracking {
