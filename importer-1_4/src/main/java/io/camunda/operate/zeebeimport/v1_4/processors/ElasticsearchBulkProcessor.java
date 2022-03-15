@@ -6,13 +6,17 @@
 package io.camunda.operate.zeebeimport.v1_4.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.AbstractImportBatchProcessor;
 import io.camunda.operate.zeebeimport.ImportBatch;
+import io.camunda.operate.zeebeimport.v1_4.record.RecordImpl;
+import io.camunda.operate.zeebeimport.v1_4.record.value.DecisionEvaluationRecordValueImpl;
 import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -64,19 +68,29 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private DecisionRequirementsZeebeRecordProcessor decisionRequirementsZeebeRecordProcessor;
 
   @Autowired
+  private DecisionEvaluationZeebeRecordProcessor decisionEvaluationZeebeRecordProcessor;
+
+  @Autowired
   private ObjectMapper objectMapper;
 
   @Override
   protected void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException {
-
-    final List<Record> zeebeRecords = importBatch.getHits().stream()
-        .map(searchHit -> {
-          try {
-            return objectMapper.readValue(searchHit.getSourceAsString(), AbstractRecord.class);
-          } catch (JsonProcessingException e) {
-            throw new OperateRuntimeException(e.getMessage(), e);
-          }
-        }).collect(Collectors.toList());
+    final List<Record> zeebeRecords;
+    if (importBatch.getImportValueType().equals(ImportValueType.DECISION_EVALUATION)) {
+      //FIXME delete this and classes in v1_4.record package, when protocol-jackson is fixed
+      JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, DecisionEvaluationRecordValueImpl.class);
+      zeebeRecords = ElasticsearchUtil
+          .mapSearchHits(importBatch.getHits(), objectMapper, valueType);
+    } else {
+      zeebeRecords = importBatch.getHits().stream()
+          .map(searchHit -> {
+            try {
+              return objectMapper.readValue(searchHit.getSourceAsString(), AbstractRecord.class);
+            } catch (JsonProcessingException e) {
+              throw new OperateRuntimeException(e.getMessage(), e);
+            }
+          }).collect(Collectors.toList());
+    }
     logger.debug(
         "Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}",
         zeebeRecords.size(), getZeebeVersion(), importBatch.getImportValueType(),
@@ -89,6 +103,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         break;
       case DECISION_REQUIREMENTS:
         processDecisionRequirementsRecord(bulkRequest, zeebeRecords);
+        break;
+      case DECISION_EVALUATION:
+        processDecisionEvaluationRecords(bulkRequest, zeebeRecords);
         break;
       case PROCESS_INSTANCE:
         processProcessInstanceRecords(importBatch, bulkRequest, zeebeRecords);
@@ -127,6 +144,13 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     for (Record record : zeebeRecords) {
       // deployment records can be processed one by one
       decisionRequirementsZeebeRecordProcessor.processDecisionRequirementsRecord(record, bulkRequest);
+    }
+  }
+
+  private void processDecisionEvaluationRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+      throws PersistenceException {
+    for (Record record : zeebeRecords) {
+      decisionEvaluationZeebeRecordProcessor.processDecisionEvaluationRecord(record, bulkRequest);
     }
   }
 

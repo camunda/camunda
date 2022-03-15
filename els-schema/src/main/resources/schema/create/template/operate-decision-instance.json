@@ -11,6 +11,9 @@
       "key": {
         "type": "long"
       },
+      "executionIndex": {
+        "type": "integer"
+      },
       "partitionId": {
         "type": "integer"
       },
@@ -49,6 +52,12 @@
         "type": "keyword"
       },
       "decisionName": {
+        "type": "keyword"
+      },
+      "rootDecisionName": {
+        "type": "keyword"
+      },
+      "rootDecisionDefinitionId": {
         "type": "keyword"
       },
       "decisionType": {

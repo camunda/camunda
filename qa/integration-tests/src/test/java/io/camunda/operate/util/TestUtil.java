@@ -515,7 +515,7 @@ public abstract class TestUtil {
         .setDecisionName("Decision Name")
         .setDecisionRequirementsId(UUID.randomUUID().toString())
         .setDecisionRequirementsKey(Math.abs(random.nextLong()))
-        .setDecisionType(DecisionType.TABLE)
+        .setDecisionType(DecisionType.DECISION_TABLE)
         .setElementId("businessTask")
         .setElementInstanceKey(Math.abs(random.nextLong()))
         .setEvaluationDate(OffsetDateTime.now())

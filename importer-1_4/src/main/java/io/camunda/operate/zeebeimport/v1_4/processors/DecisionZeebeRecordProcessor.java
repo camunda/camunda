@@ -53,7 +53,7 @@ public class DecisionZeebeRecordProcessor {
   private void persistDecision(final DecisionRecordValue decision, final BulkRequest bulkRequest)
       throws PersistenceException {
     final DecisionDefinitionEntity decisionEntity = createEntity(decision);
-    logger.debug("Process: key {}, decisionId {}", decisionEntity.getKey(),
+    logger.debug("Decision: key {}, decisionId {}", decisionEntity.getKey(),
         decisionEntity.getDecisionId());
 
     try {

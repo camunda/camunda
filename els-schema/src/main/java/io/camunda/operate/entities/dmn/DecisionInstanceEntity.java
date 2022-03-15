@@ -15,6 +15,7 @@ import java.util.Objects;
 
 public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
 
+  private Integer executionIndex;
   private DecisionInstanceState state;
   private OffsetDateTime evaluationDate;
   private String evaluationFailure;
@@ -29,12 +30,23 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String decisionDefinitionId;
   private String decisionName;
   private int decisionVersion;
+  private String rootDecisionName;
+  private String rootDecisionDefinitionId;
   private DecisionType decisionType;
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
   @JsonIgnore
   private Object[] sortValues;
+
+  public Integer getExecutionIndex() {
+    return executionIndex;
+  }
+
+  public DecisionInstanceEntity setExecutionIndex(final Integer executionIndex) {
+    this.executionIndex = executionIndex;
+    return this;
+  }
 
   public DecisionInstanceState getState() {
     return state;
@@ -165,6 +177,25 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
+  public String getRootDecisionName() {
+    return rootDecisionName;
+  }
+
+  public DecisionInstanceEntity setRootDecisionName(final String rootDecisionName) {
+    this.rootDecisionName = rootDecisionName;
+    return this;
+  }
+
+  public String getRootDecisionDefinitionId() {
+    return rootDecisionDefinitionId;
+  }
+
+  public DecisionInstanceEntity setRootDecisionDefinitionId(
+      final String rootDecisionDefinitionId) {
+    this.rootDecisionDefinitionId = rootDecisionDefinitionId;
+    return this;
+  }
+
   public DecisionType getDecisionType() {
     return decisionType;
   }
@@ -229,6 +260,8 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
         processDefinitionKey == that.processDefinitionKey &&
         processInstanceKey == that.processInstanceKey &&
         elementInstanceKey == that.elementInstanceKey &&
+        decisionVersion == that.decisionVersion &&
+        Objects.equals(executionIndex, that.executionIndex) &&
         state == that.state &&
         Objects.equals(evaluationDate, that.evaluationDate) &&
         Objects.equals(evaluationFailure, that.evaluationFailure) &&
@@ -238,7 +271,8 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
         Objects.equals(decisionId, that.decisionId) &&
         Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
         Objects.equals(decisionName, that.decisionName) &&
-        Objects.equals(decisionVersion, that.decisionVersion) &&
+        Objects.equals(rootDecisionName, that.rootDecisionName) &&
+        Objects.equals(rootDecisionDefinitionId, that.rootDecisionDefinitionId) &&
         decisionType == that.decisionType &&
         Objects.equals(result, that.result) &&
         Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
@@ -248,11 +282,12 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   @Override
   public int hashCode() {
-    int result1 = Objects.hash(super.hashCode(), state, evaluationDate, evaluationFailure, position,
-        decisionRequirementsKey, decisionRequirementsId, processDefinitionKey, processInstanceKey,
-        elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName,
-        decisionVersion, decisionType, result, evaluatedInputs, evaluatedOutputs);
-    result1 = 31 * result1 + Arrays.hashCode(sortValues);
-    return result1;
+    return Objects
+        .hash(super.hashCode(), executionIndex, state, evaluationDate, evaluationFailure, position,
+            decisionRequirementsKey, decisionRequirementsId, processDefinitionKey,
+            processInstanceKey,
+            elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName,
+            rootDecisionName, rootDecisionDefinitionId, decisionVersion, decisionType, result,
+            evaluatedInputs, evaluatedOutputs);
   }
 }

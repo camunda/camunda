@@ -10,16 +10,23 @@ import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceState;
+import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -42,6 +49,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +74,16 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private DecisionInstanceTemplate decisionInstanceTemplate;
+
+  @Autowired
+  private ObjectMapper objectMapper;
+
 
   @Test
   public void testProcessNameAndVersionAreLoaded() {
@@ -439,6 +459,150 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
     assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
   }
+
+
+  @Test
+  public void testDecisionInstanceFailed() throws Exception {
+    //given
+    final String bpmnProcessId = "process";
+    final String demoDecisionId1 = "invoiceClassification";
+    final String demoDecisionId2 = "invoiceAssignApprover";
+    final String decision1Name = "Invoice Classification";
+    final String decision2Name = "Assign Approver Group";
+
+    final String elementId = "task";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .businessRuleTask(elementId, task -> task.zeebeCalledDecisionId(demoDecisionId2)
+                .zeebeResultVariable("approverGroups"))
+            .done();
+
+    tester.deployProcess(instance, "test.bpmn")
+        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .decisionsAreDeployed(2)
+        //when
+        .startProcessInstance(bpmnProcessId)
+        .waitUntil()
+        .decisionInstancesAreCreated(1);
+
+    //then
+    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
+        new SearchSourceBuilder()
+            .query(matchAllQuery())
+    );
+    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil
+        .scroll(request, DecisionInstanceEntity.class, objectMapper, esClient);
+
+    assertThat(decisionEntities).hasSize(1);
+    final DecisionInstanceEntity entity = decisionEntities.get(0);
+    assertThat(entity.getId()).isNotNull();
+    assertThat(entity.getKey()).isNotNull();
+    assertThat(entity.getExecutionIndex()).isNotNull();
+    assertThat(entity.getId()).isEqualTo(String.format("%s-%s", entity.getKey(), entity.getExecutionIndex()));
+    assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId1);
+    assertThat(entity.getDecisionName()).isEqualTo(decision1Name);
+    assertThat(entity.getDecisionVersion()).isEqualTo(1);
+    assertThat(entity.getState()).isEqualTo(DecisionInstanceState.FAILED);
+    assertThat(entity.getDecisionDefinitionId()).isNotNull();
+    assertThat(entity.getDecisionRequirementsId()).isNotNull();
+    assertThat(entity.getDecisionRequirementsKey()).isNotNull();
+    assertThat(entity.getElementId()).isEqualTo(elementId);
+    assertThat(entity.getElementInstanceKey()).isNotNull();
+    assertThat(entity.getEvaluationFailure()).isNotNull();
+    assertThat(entity.getEvaluationFailure()).containsIgnoringCase("no variable found for name 'amount'");
+    assertThat(entity.getEvaluationDate()).isNotNull();
+    assertThat(entity.getPosition()).isNotNull();
+    assertThat(entity.getProcessDefinitionKey()).isNotNull();
+    assertThat(entity.getProcessInstanceKey()).isNotNull();
+    assertThat(entity.getResult()).isEqualTo("null");
+    assertThat(entity.getEvaluatedOutputs()).isEmpty();
+    assertThat(entity.getEvaluatedInputs()).isEmpty();
+    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
+    assertThat(entity.getDecisionType()).isEqualTo(DecisionType.DECISION_TABLE);
+    assertThat(entity.getRootDecisionName()).isEqualTo(decision2Name);
+    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
+    assertThat(entity.getRootDecisionDefinitionId()).isNotEqualTo(entity.getDecisionDefinitionId());
+
+  }
+
+  @Test
+  public void testDecisionInstanceEvaluated() throws Exception {
+    //given
+    final String bpmnProcessId = "process";
+    final String demoDecisionId1 = "invoiceClassification";
+    final String demoDecisionId2 = "invoiceAssignApprover";
+    final String decision1Name = "Invoice Classification";
+    final String decision2Name = "Assign Approver Group";
+
+    final String elementId = "task";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .businessRuleTask(elementId, task -> task.zeebeCalledDecisionId(demoDecisionId2)
+                .zeebeResultVariable("approverGroups"))
+            .done();
+
+    tester.deployProcess(instance, "test.bpmn")
+        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .decisionsAreDeployed(2)
+        //when
+        .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
+        .waitUntil()
+        .decisionInstancesAreCreated(2);
+
+    //then
+    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
+        new SearchSourceBuilder()
+            .query(matchAllQuery())
+    );
+    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil
+        .scroll(request, DecisionInstanceEntity.class, objectMapper, esClient);
+
+    assertThat(decisionEntities).hasSize(2);
+    decisionEntities.forEach(entity ->
+    {
+      assertThat(entity.getId()).isNotNull();
+      assertThat(entity.getKey()).isNotNull();
+      assertThat(entity.getExecutionIndex()).isNotNull();
+      assertThat(entity.getId())
+          .isEqualTo(String.format("%s-%s", entity.getKey(), entity.getExecutionIndex()));
+      if (entity.getExecutionIndex().equals(1)) {
+        assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId1);
+        assertThat(entity.getDecisionName()).isEqualTo(decision1Name);
+      } else {
+        assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId2);
+        assertThat(entity.getDecisionName()).isEqualTo(decision2Name);
+      }
+      assertThat(entity.getDecisionVersion()).isEqualTo(1);
+      assertThat(entity.getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+      assertThat(entity.getDecisionDefinitionId()).isNotNull();
+      assertThat(entity.getDecisionRequirementsId()).isNotNull();
+      assertThat(entity.getDecisionRequirementsKey()).isNotNull();
+      assertThat(entity.getElementId()).isEqualTo(elementId);
+      assertThat(entity.getElementInstanceKey()).isNotNull();
+      assertThat(entity.getEvaluationFailure()).isNull();
+      assertThat(entity.getEvaluationDate()).isNotNull();
+      assertThat(entity.getPosition()).isNotNull();
+      assertThat(entity.getProcessDefinitionKey()).isNotNull();
+      assertThat(entity.getProcessInstanceKey()).isNotNull();
+      assertThat(entity.getResult()).isNotEmpty();
+      assertThat(entity.getEvaluatedOutputs()).isNotEmpty();
+      assertThat(entity.getEvaluatedInputs()).isNotEmpty();
+      assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
+      assertThat(entity.getDecisionType()).isEqualTo(DecisionType.DECISION_TABLE);
+      //root decision is one and the same for both instances
+      assertThat(entity.getRootDecisionName()).isEqualTo(decision2Name);
+      assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
+    });
+  }
+
 
   private void assertStartActivityCompleted(FlowNodeInstanceEntity activity) {
     assertFlowNodeIsCompleted(activity, "start");

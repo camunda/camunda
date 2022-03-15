@@ -23,6 +23,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
@@ -93,6 +94,9 @@ public class ElasticsearchChecks {
   private DecisionIndex decisionIndex;
 
   @Autowired
+  private DecisionInstanceTemplate decisionInstanceTemplate;
+
+  @Autowired
   private IncidentReader incidentReader;
 
   @Autowired
@@ -130,6 +134,26 @@ public class ElasticsearchChecks {
       try {
         final int docCount = io.camunda.operate.qa.util.ElasticsearchUtil
             .getDocCount(esClient, decisionIndex.getAlias());
+        return docCount == count;
+      } catch (IOException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the process of given args[0] processDefinitionKey (Long) is deployed.
+   * @return
+   */
+  @Bean(name = "decisionInstancesAreCreated")
+  public Predicate<Object[]> getDecisionInstancesAreCreated() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Integer.class);
+      int count = (Integer)objects[0];
+      try {
+        final int docCount = io.camunda.operate.qa.util.ElasticsearchUtil
+            .getDocCount(esClient, decisionInstanceTemplate.getAlias());
         return docCount == count;
       } catch (IOException ex) {
         return false;

@@ -105,6 +105,10 @@ public class OperateTester {
   private Predicate<Object[]> decisionsAreDeployedCheck;
 
   @Autowired
+  @Qualifier("decisionInstancesAreCreated")
+  private Predicate<Object[]> decisionInstancesAreCreated;
+
+  @Autowired
   @Qualifier("processInstancesAreStartedCheck")
   private Predicate<Object[]> processInstancesAreStartedCheck;
 
@@ -229,6 +233,12 @@ public class OperateTester {
     elasticsearchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
     return this;
   }
+
+  public OperateTester decisionInstancesAreCreated(int count) {
+    elasticsearchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
+    return this;
+  }
+
 
   public OperateTester startProcessInstance(String bpmnProcessId) {
    return startProcessInstance(bpmnProcessId, null);

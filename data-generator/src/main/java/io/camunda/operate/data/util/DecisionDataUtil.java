@@ -233,7 +233,7 @@ public class DecisionDataUtil {
         .setEvaluationFailure(evaluationFailure)
         .setDecisionName(decisionName)
         .setDecisionVersion(decisionVersion)
-        .setDecisionType(DecisionType.TABLE)
+        .setDecisionType(DecisionType.DECISION_TABLE)
         .setEvaluationDate(evaluationDate)
         .setDecisionDefinitionId(decisionDefinitionId)
         .setDecisionId(decisionId)

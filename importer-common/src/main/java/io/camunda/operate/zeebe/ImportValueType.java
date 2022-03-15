@@ -10,6 +10,7 @@ public enum ImportValueType {
   PROCESS_INSTANCE(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME),
   DECISION(ZeebeESConstants.DECISION_INDEX_NAME),
   DECISION_REQUIREMENTS(ZeebeESConstants.DECISION_REQUIREMENTS_INDEX_NAME),
+  DECISION_EVALUATION(ZeebeESConstants.DECISION_EVALUATION_INDEX_NAME),
   JOB(ZeebeESConstants.JOB_INDEX_NAME),
   INCIDENT(ZeebeESConstants.INCIDENT_INDEX_NAME),
   PROCESS(ZeebeESConstants.PROCESS_INDEX_NAME),
@@ -22,14 +23,15 @@ public enum ImportValueType {
   }
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
-      ImportValueType.PROCESS,
-      ImportValueType.DECISION,
-      ImportValueType.DECISION_REQUIREMENTS,
-      ImportValueType.PROCESS_INSTANCE,
-      ImportValueType.JOB,
-      ImportValueType.INCIDENT,
-      ImportValueType.VARIABLE,
-      ImportValueType.VARIABLE_DOCUMENT};
+      PROCESS,
+      DECISION,
+      DECISION_REQUIREMENTS,
+      DECISION_EVALUATION,
+      PROCESS_INSTANCE,
+      JOB,
+      INCIDENT,
+      VARIABLE,
+      VARIABLE_DOCUMENT};
 
   public String getAliasTemplate() {
     return aliasTemplate;

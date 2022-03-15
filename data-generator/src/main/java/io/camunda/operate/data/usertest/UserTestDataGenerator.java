@@ -651,30 +651,14 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "usertest/message-end-event.bpmn");
 
-    deployDMN();
+    ZeebeTestUtil.deployProcess(client, "usertest/invoice.bpmn");
 
-    createDecisionInstances();
-  }
-
-  private void createDecisionInstances() {
-    try {
-      testUtil.persistOperateEntities(testUtil.createDecisionInstances());
-    } catch (PersistenceException e) {
-      throw new OperateRuntimeException("Exception occurred when creating test data", e);
-    }
-  }
-
-  private void deployDMN() {
-    try {
-      testUtil.persistOperateEntities(testUtil.createDecisionDefinitions());
-    } catch (PersistenceException e) {
-      throw new OperateRuntimeException("Exception occurred when creating test data", e);
-    }
   }
 
   protected void startProcessInstances(int version) {
-    final int instancesCount = random.nextInt(50) + 50;
+    final int instancesCount = random.nextInt(50) + 10;
     for (int i = 0; i < instancesCount; i++) {
+      processInstanceKeys.add(startDMNInvoice());
       if (version < 2) {
         processInstanceKeys.add(startLoanProcess());
         processInstanceKeys.add(startManualProcess());
@@ -687,7 +671,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         processInstanceKeys.add(startFlightRegistrationProcess());
         processInstanceKeys.add(startMultiInstanceProcess());
       }
-
     }
   }
 
@@ -752,6 +735,18 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         + "}");
   }
 
+  private long startDMNInvoice() {
+    final String[] invoiceCategories = new String[]{"Misc", "Travel Expenses", "Software License Costs"};
+    if (random.nextInt(3) > 0) {
+      return ZeebeTestUtil.startProcessInstance(client, "invoice",
+          "{\"amount\": " + (random.nextInt(1200)) + ",\n"
+              + "  \"invoiceCategory\": \"" + invoiceCategories[random.nextInt(3)] + "\"\n"
+              + "}");
+    } else {
+      return ZeebeTestUtil.startProcessInstance(client, "invoice", null);
+    }
+  }
+
   private long startManualProcess() {
     return ZeebeTestUtil.startProcessInstance(client, "manual-task-process", null);
   }
@@ -780,10 +775,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_2.bpmn");
 
-    ZeebeTestUtil.deployDecision(client, "usertest/invoiceBusinessDecisions_v_2.dmn");
+    ZeebeTestUtil.deployDecision(client, "usertest/invoiceBusinessDecisions_v_1.dmn");
   }
 
   protected void deployVersion3() {
+
+    ZeebeTestUtil.deployDecision(client, "usertest/invoiceBusinessDecisions_v_2.dmn");
+
   }
 
   private static class CompleteJobHandler implements JobHandler {
