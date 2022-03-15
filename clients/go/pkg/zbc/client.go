@@ -18,7 +18,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/embedded"
+	"github.com/camunda/zeebe/clients/go/internal/embedded"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
@@ -31,9 +31,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
+	"github.com/camunda/zeebe/clients/go/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/pkg/worker"
 )
 
 const DefaultKeepAlive = 45 * time.Second

@@ -18,8 +18,8 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"

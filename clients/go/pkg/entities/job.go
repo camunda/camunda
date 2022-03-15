@@ -17,7 +17,7 @@ package entities
 import (
 	"encoding/json"
 
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
 )
 
 // Job represents a single work item of a process.
