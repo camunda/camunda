@@ -461,8 +461,8 @@ public final class BusinessRuleTaskTest {
         .hasDecisionOutput("null")
         .satisfies(
             evaluatedDecision -> {
-              assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(0);
-              assertThat(evaluatedDecision.getMatchedRules()).hasSize(0);
+              assertThat(evaluatedDecision.getEvaluatedInputs()).isEmpty();
+              assertThat(evaluatedDecision.getMatchedRules()).isEmpty();
             });
   }
 
