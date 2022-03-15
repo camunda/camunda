@@ -510,7 +510,7 @@
       },
       "aggregation": {
         "userTaskLegend": "Benutzeraufgabendauer",
-        "durationLegend": "Grundlegende Aggregationen",
+        "durationLegend": "Basis-Aggregationen",
         "variableLegend": "Variablenaggregationen",
         "percentileLegend": "Perzentilaggregationen",
         "sum": "Summe",
