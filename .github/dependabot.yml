@@ -17,13 +17,10 @@ updates:
     schedule:
       interval: "daily"
     commit-message:
-      # "deps(clients/go): " is too long
       prefix: "deps(go): "
     labels:
       - "dependencies"
     open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "github.com/docker/*"
 
   # Enable version updates for the github actions
   - package-ecosystem: "github-actions"
