@@ -46,7 +46,7 @@ If you want to use your own or a different Zeebe snapshot then you could do the 
 # builds the dist with zbctl packed
 clients/go/cmd/zbctl/build.sh && mvn clean install -T1C -DskipTests -pl dist -am
 # builds the a new zeebe docker image
-docker build --build-arg DISTBALL=dist/target/camunda-cloud-zeebe-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app .
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app .
 # pushes the image to our docker registry
 docker push gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```

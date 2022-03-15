@@ -29,8 +29,8 @@ run the command: `mvn clean install -DskipTests` in the root folder.
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 
 ```
-dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.tar.gz
-dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.zip
+dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz
+dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
 This is a small overview of the contents of the different modules:
