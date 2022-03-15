@@ -6,7 +6,7 @@
 
 import {useState} from 'react';
 import Table from 'modules/components/Table';
-import Button from 'modules/components/Button';
+import {Button} from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/IncidentOperation';

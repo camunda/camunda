@@ -8,8 +8,8 @@ import styled, {css} from 'styled-components';
 import {rgba} from 'polished';
 
 import {ReactComponent as CloseLarge} from 'modules/components/Icon/close-large.svg';
-import Panel from 'modules/components/Panel';
-import Button from 'modules/components/Button';
+import {Panel} from 'modules/components/Panel';
+import {Button} from 'modules/components/Button';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import {SIZES} from './constants';

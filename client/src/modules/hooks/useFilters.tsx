@@ -17,7 +17,6 @@ const useFilters = () => {
 
   const setFiltersToURL = (filters: ProcessInstanceFilters) => {
     navigate({
-      ...location,
       search: updateProcessFiltersSearchString(location.search, filters),
     });
   };

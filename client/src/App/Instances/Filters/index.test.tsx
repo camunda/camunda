@@ -33,14 +33,14 @@ type OptionalFilter =
   | 'End Date';
 
 const displayOptionalFilter = (filterName: OptionalFilter) => {
-  userEvent.click(screen.getByTestId('more-filters-dropdown'));
+  userEvent.click(screen.getByText(/^more filters$/i));
   userEvent.click(
     within(screen.getByTestId('more-filters-dropdown')).getByText(filterName)
   );
 };
 
 const validateFieldRemovedFromDropdown = (filterName: string) => {
-  userEvent.click(screen.getByTestId('more-filters-dropdown'));
+  userEvent.click(screen.getByText(/^more filters$/i));
   expect(
     // eslint-disable-next-line testing-library/prefer-presence-queries
     within(screen.getByTestId('more-filters-dropdown')).queryByText(filterName)
@@ -1102,7 +1102,7 @@ describe('Filters', () => {
           wrapper: getWrapper(),
         });
 
-        expect(screen.getByTestId('more-filters-dropdown')).toBeInTheDocument();
+        expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
         displayOptionalFilter('Variable');
         displayOptionalFilter('Instance Id(s)');
         displayOptionalFilter('Operation Id');
@@ -1117,7 +1117,7 @@ describe('Filters', () => {
 
         userEvent.click(screen.getByTestId('delete-variable'));
 
-        expect(screen.getByTestId('more-filters-dropdown')).toBeInTheDocument();
+        expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
       });
 
       it('should delete optional filters', async () => {

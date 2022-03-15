@@ -8,7 +8,7 @@ import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
-import Button from 'modules/components/Button';
+import {Button} from 'modules/components/Button';
 import {PAGE_TITLE} from 'modules/constants';
 import {Disclaimer} from './Disclaimer';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';

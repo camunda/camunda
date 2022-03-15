@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 import Dropdown from 'modules/components/Dropdown';
-import Button from 'modules/components/Button';
+import {Button} from 'modules/components/Button';
 
 const FiltersWrapper = styled.div`
   ${({theme}) => {

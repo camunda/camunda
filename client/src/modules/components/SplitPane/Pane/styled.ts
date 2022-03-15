@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-import Panel from 'modules/components/Panel';
+import {Panel} from 'modules/components/Panel';
 import CollapseButton from 'modules/components/CollapseButton';
 import {EXPAND_STATE} from 'modules/constants';
 

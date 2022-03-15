@@ -6,7 +6,7 @@
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
-import Panel from 'modules/components/Panel';
+import {Panel} from 'modules/components/Panel';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import IconButton from 'modules/components/IconButton';
 import Modal from 'modules/components/Modal';
@@ -17,7 +17,7 @@ import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg'
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
-import DefaultButton from 'modules/components/Button';
+import {Button as BaseButton} from 'modules/components/Button';
 import {TextField} from 'modules/components/TextField';
 
 const Spinner = styled(OperationSpinner)`
@@ -252,7 +252,7 @@ const EmptyPanel = styled(EmptyPanelComponent)`
   z-index: 1;
 `;
 
-const Button = styled(DefaultButton)`
+const Button = styled(BaseButton)`
   display: flex;
   justify-content: center;
   align-items: center;

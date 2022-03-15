@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-import Panel from 'modules/components/Panel';
+import {Panel} from 'modules/components/Panel';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
 const VariablesPanel = styled(Panel)`

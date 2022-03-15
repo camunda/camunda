@@ -7,7 +7,7 @@
 import React, {Children, cloneElement, useContext} from 'react';
 import {isEqual} from 'lodash';
 
-import Panel from 'modules/components/Panel';
+import {Panel} from 'modules/components/Panel';
 import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 
 import * as Styled from './styled';

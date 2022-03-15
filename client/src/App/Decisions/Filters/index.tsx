@@ -14,9 +14,53 @@ import {
 import {Field, Form} from 'react-final-form';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {CollapsablePanel} from './CollapsablePanel';
-import {FormElement} from './styled';
+import {
+  FormElement,
+  Dropdown,
+  Select,
+  SectionTitle,
+  Checkbox,
+  TextField,
+  ResetButtonContainer,
+  Fields,
+  FormGroup,
+  OptionalFilters,
+  DeleteIcon,
+} from './styled';
 import {observer} from 'mobx-react';
-import {decisionInstancesVisibleFiltersStore} from 'modules/stores/decisionInstancesVisibleFilters';
+import {
+  decisionInstancesVisibleFiltersStore,
+  OptionalFilter,
+} from 'modules/stores/decisionInstancesVisibleFilters';
+import {Button} from 'modules/components/Button';
+import {isEqual} from 'lodash';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
+
+const OPTIONAL_FILTER_FIELDS: Record<
+  OptionalFilter,
+  {
+    label: string;
+    placeholder?: string;
+    type: 'multiline' | 'text';
+    rows?: number;
+  }
+> = {
+  decisionInstanceIds: {
+    label: 'Decision Instance Id(s)',
+    type: 'multiline',
+    placeholder: 'separated by space or comma',
+    rows: 1,
+  },
+  processInstanceId: {
+    label: 'Process Instance Id',
+    type: 'text',
+  },
+  evaluationDate: {
+    label: 'Evaluation Date',
+    placeholder: 'YYYY-MM-DD hh:mm:ss',
+    type: 'text',
+  },
+};
 
 const Filters: React.FC = observer(() => {
   const location = useLocation();
@@ -25,15 +69,25 @@ const Filters: React.FC = observer(() => {
     possibleOptionalFilters,
     state: {visibleFilters},
   } = decisionInstancesVisibleFiltersStore;
+  const unselectedOptionalFilters = possibleOptionalFilters.filter(
+    (filter) => !visibleFilters.includes(filter)
+  );
+  const initialValues: DecisionInstanceFilters = {
+    evaluated: true,
+    failed: true,
+  };
 
   useEffect(() => {
     const {possibleOptionalFilters} = decisionInstancesVisibleFiltersStore;
+
     const params = Array.from(
       new URLSearchParams(location.search).keys()
-    ).filter((param) => possibleOptionalFilters.includes(param));
+    ).filter((param) =>
+      (possibleOptionalFilters as string[]).includes(param)
+    ) as OptionalFilter[];
 
     decisionInstancesVisibleFiltersStore.addVisibleFilters(params);
-  }, [location]);
+  }, [location.search]);
 
   return (
     <CollapsablePanel header="Filters">
@@ -43,168 +97,177 @@ const Filters: React.FC = observer(() => {
             search: updateDecisionsFiltersSearchString(location.search, values),
           });
         }}
-        initialValues={{
-          ...visibleFilters.reduce(
-            (accumulator, filter) =>
-              Object.assign(accumulator, {[filter]: undefined}),
-            {}
-          ),
-          ...getDecisionInstanceFilters(location.search),
-        }}
-        keepDirtyOnReinitialize
+        initialValues={getDecisionInstanceFilters(location.search)}
       >
         {({handleSubmit, form, values}) => (
           <FormElement onSubmit={handleSubmit}>
-            <h3>Decision</h3>
-            <Field name="name">
-              {({input}) => (
-                <label htmlFor={input.name}>
-                  Name
-                  <select
-                    name={input.name}
-                    id={input.name}
-                    value={input.value}
-                    onChange={input.onChange}
-                  >
-                    <option value="1">Decision 1</option>
-                    <option value="2">Decision 2</option>
-                    <option value="3">Decision 3</option>
-                  </select>
-                </label>
-              )}
-            </Field>
-            <Field name="version">
-              {({input}) => (
-                <label htmlFor={input.name}>
-                  Version
-                  <select
-                    name={input.name}
-                    id={input.name}
-                    value={input.value}
-                    onChange={input.onChange}
-                  >
-                    <option value="1">Version 1</option>
-                    <option value="2">Version 2</option>
-                    <option value="3">Version 3</option>
-                  </select>
-                </label>
-              )}
-            </Field>
-            <h3>Instance States</h3>
-            <Field name="completed" type="checkbox">
-              {({input}) => (
-                <label htmlFor={input.name}>
-                  <input
-                    type="checkbox"
-                    name={input.name}
-                    id={input.name}
-                    checked={input.checked}
-                    onChange={input.onChange}
-                  />
-                  Completed
-                </label>
-              )}
-            </Field>
-            <Field name="failed" type="checkbox">
-              {({input}) => (
-                <label htmlFor={input.name}>
-                  <input
-                    type="checkbox"
-                    name={input.name}
-                    id={input.name}
-                    checked={input.checked}
-                    onChange={input.onChange}
-                  />
-                  Failed
-                </label>
-              )}
-            </Field>
-            {visibleFilters.includes('decisionInstanceId') && (
-              <Field name="decisionInstanceId">
-                {({input}) => (
-                  <label htmlFor={input.name}>
-                    Decision Instance Id(s)
-                    <textarea
-                      name={input.name}
-                      id={input.name}
-                      value={input.value}
-                      onChange={input.onChange}
+            <AutoSubmit
+              fieldsToSkipTimeout={['name', 'version', 'evaluated', 'failed']}
+            />
+            <Fields>
+              <FormGroup>
+                <SectionTitle appearance="emphasis">Decision</SectionTitle>
+                <Field name="name">
+                  {({input}) => (
+                    <Select
+                      label="Name"
+                      selectedOptions={[input.value]}
+                      onCmInput={(event) => {
+                        input.onChange(event.detail.selectedOptions[0]);
+                      }}
+                      options={[
+                        {
+                          options: [
+                            {
+                              label: 'All',
+                              value: '',
+                            },
+                            {
+                              label: 'Decision 1',
+                              value: '1',
+                            },
+                            {
+                              label: 'Decision 2',
+                              value: '2',
+                            },
+                            {
+                              label: 'Decision 3',
+                              value: '3',
+                            },
+                          ],
+                        },
+                      ]}
                     />
-                  </label>
-                )}
-              </Field>
-            )}
-            {visibleFilters.includes('processInstanceId') && (
-              <Field name="processInstanceId">
-                {({input}) => (
-                  <label htmlFor={input.name}>
-                    Process Instance Id
-                    <input
-                      type="text"
-                      name={input.name}
-                      id={input.name}
-                      value={input.value}
-                      onChange={input.onChange}
+                  )}
+                </Field>
+                <Field name="version">
+                  {({input}) => (
+                    <Select
+                      label="Version"
+                      selectedOptions={[input.value]}
+                      onCmInput={(event) => {
+                        input.onChange(event.detail.selectedOptions[0]);
+                      }}
+                      options={[
+                        {
+                          options: [
+                            {
+                              label: 'All',
+                              value: '',
+                            },
+                            {
+                              label: 'Version 1',
+                              value: '1',
+                            },
+                            {
+                              label: 'Version 2',
+                              value: '2',
+                            },
+                            {
+                              label: 'Version 3',
+                              value: '3',
+                            },
+                          ],
+                        },
+                      ]}
                     />
-                  </label>
-                )}
-              </Field>
-            )}
-            {visibleFilters.includes('evaluationDate') && (
-              <Field name="evaluationDate">
-                {({input}) => (
-                  <label htmlFor={input.name}>
-                    Evaluation Date
-                    <input
-                      type="text"
-                      name={input.name}
+                  )}
+                </Field>
+              </FormGroup>
+              <FormGroup>
+                <SectionTitle appearance="emphasis">
+                  Instance States
+                </SectionTitle>
+                <Field name="evaluated" component="input" type="checkbox">
+                  {({input}) => (
+                    <Checkbox
+                      {...input}
+                      label="Evaluated"
                       id={input.name}
-                      value={input.value}
-                      onChange={input.onChange}
+                      checked={input.checked}
+                      onCmInput={input.onChange}
+                      icon={{icon: 'state:completed', color: 'medLight'}}
                     />
-                  </label>
-                )}
-              </Field>
-            )}
-            {(
-              possibleOptionalFilters as Array<keyof DecisionInstanceFilters>
-            ).map((filterControl) => (
-              <label htmlFor={`${filterControl}Control`} key={filterControl}>
-                {`${
-                  values[filterControl] === undefined ? 'enable' : 'disable'
-                } ${filterControl}`}
-                <input
-                  type="checkbox"
-                  name={`${filterControl}Control`}
-                  id={`${filterControl}Control`}
-                  checked={visibleFilters.includes(filterControl)}
-                  onChange={(event) => {
-                    if (event.target.checked) {
-                      form.change(filterControl, '');
-                      decisionInstancesVisibleFiltersStore.addVisibleFilters([
-                        filterControl,
-                      ]);
-                    } else {
-                      form.change(filterControl, undefined);
-                      decisionInstancesVisibleFiltersStore.hideFilter(
-                        filterControl
-                      );
-                    }
-                  }}
+                  )}
+                </Field>
+                <Field name="failed" component="input" type="checkbox">
+                  {({input}) => (
+                    <Checkbox
+                      {...input}
+                      label="Failed"
+                      id={input.name}
+                      checked={input.checked}
+                      onCmInput={input.onChange}
+                      icon={{icon: 'state:incident', color: 'danger'}}
+                    />
+                  )}
+                </Field>
+              </FormGroup>
+              {unselectedOptionalFilters.length > 0 && (
+                <Dropdown
+                  trigger={{type: 'label', label: 'More Filters'}}
+                  options={[
+                    {
+                      options: unselectedOptionalFilters.map((filter) => ({
+                        label: OPTIONAL_FILTER_FIELDS[filter].label,
+                        handler: () => {
+                          decisionInstancesVisibleFiltersStore.addVisibleFilters(
+                            [filter]
+                          );
+                        },
+                      })),
+                    },
+                  ]}
                 />
-              </label>
-            ))}
-            <button type="submit">Submit</button>
-            <button
-              type="reset"
-              onClick={() => {
-                decisionInstancesVisibleFiltersStore.reset();
-                navigate(Locations.decisions(location));
-                form.reset();
-              }}
-            >
-              Reset
-            </button>
+              )}
+              <OptionalFilters>
+                {visibleFilters.map((filter) => (
+                  <FormGroup key={filter}>
+                    <DeleteIcon
+                      icon="delete"
+                      data-testid={`delete-${filter}`}
+                      onClick={() => {
+                        decisionInstancesVisibleFiltersStore.hideFilter(filter);
+                        form.change(filter, undefined);
+                        form.submit();
+                      }}
+                    />
+                    <Field name={filter}>
+                      {({input}) => (
+                        <TextField
+                          {...input}
+                          label={OPTIONAL_FILTER_FIELDS[filter].label}
+                          type={OPTIONAL_FILTER_FIELDS[filter].type}
+                          rows={OPTIONAL_FILTER_FIELDS[filter].rows}
+                          placeholder={
+                            OPTIONAL_FILTER_FIELDS[filter].placeholder
+                          }
+                          shouldDebounceError={false}
+                          autoFocus
+                        />
+                      )}
+                    </Field>
+                  </FormGroup>
+                ))}
+              </OptionalFilters>
+            </Fields>
+            <ResetButtonContainer>
+              <Button
+                title="Reset Filters"
+                size="small"
+                disabled={
+                  isEqual(initialValues, values) && visibleFilters.length === 0
+                }
+                type="reset"
+                onClick={() => {
+                  form.reset();
+                  navigate(Locations.decisions(location));
+                  decisionInstancesVisibleFiltersStore.reset();
+                }}
+              >
+                Reset Filters
+              </Button>
+            </ResetButtonContainer>
           </FormElement>
         )}
       </Form>

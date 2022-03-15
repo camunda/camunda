@@ -7,7 +7,7 @@
 import React, {useRef, useEffect} from 'react';
 
 import usePrevious from 'modules/hooks/usePrevious';
-import Panel from 'modules/components/Panel';
+import {Panel} from 'modules/components/Panel';
 import * as Styled from './styled';
 
 const TRANSITION_TIMEOUT = 200;

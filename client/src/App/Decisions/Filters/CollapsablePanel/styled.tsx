@@ -11,7 +11,7 @@ const CollapsedPanel = styled.div`
 `;
 
 const ExpandedPanel = styled.div`
-  min-width: 320px;
+  min-width: 328px;
   height: 100%;
 `;
 

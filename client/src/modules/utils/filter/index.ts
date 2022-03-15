@@ -29,9 +29,9 @@ type ProcessInstanceFilterField =
 type DecisionInstanceFilterField =
   | 'name'
   | 'version'
-  | 'completed'
+  | 'evaluated'
   | 'failed'
-  | 'decisionInstanceId'
+  | 'decisionInstanceIds'
   | 'processInstanceId'
   | 'evaluationDate';
 
@@ -56,9 +56,9 @@ type ProcessInstanceFilters = {
 type DecisionInstanceFilters = {
   name?: string;
   version?: string;
-  completed?: boolean;
+  evaluated?: boolean;
   failed?: boolean;
-  decisionInstanceId?: string;
+  decisionInstanceIds?: string;
   processInstanceId?: string;
   evaluationDate?: string;
 };
@@ -116,9 +116,9 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
 const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'name',
   'version',
-  'completed',
+  'evaluated',
   'failed',
-  'decisionInstanceId',
+  'decisionInstanceIds',
   'processInstanceId',
   'evaluationDate',
 ];
@@ -132,7 +132,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
 
 const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'failed',
-  'completed',
+  'evaluated',
 ];
 
 function getFilters<Fields extends string, Filters>(

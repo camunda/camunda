@@ -8,7 +8,7 @@ import {observer} from 'mobx-react';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {drdStore} from 'modules/stores/drd';
 import {Container, CompletedIcon, FailedIcon, SkeletonCircle} from './styled';
-import Button from 'modules/components/Button';
+import {Button} from 'modules/components/Button';
 import {Details} from './Details';
 
 const Header: React.FC = observer(() => {

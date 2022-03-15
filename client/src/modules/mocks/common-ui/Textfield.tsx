@@ -13,6 +13,7 @@ type Props = {
   onCmInput: React.ChangeEventHandler<HTMLInputElement>;
   fieldSuffix: React.ComponentProps<typeof CmTextfield>['fieldSuffix'];
   shouldDebounceError: boolean;
+  label?: string;
 };
 
 const Textfield = React.forwardRef<
@@ -27,6 +28,7 @@ const Textfield = React.forwardRef<
       validationStyle,
       onCmInput,
       shouldDebounceError,
+      label,
       ...props
     },
     ref
@@ -51,7 +53,10 @@ const Textfield = React.forwardRef<
 
     return (
       <>
-        <input {...props} onChange={onCmInput} />
+        <label>
+          {label}
+          <input {...props} onChange={onCmInput} />
+        </label>
         <div>{errorMessage}</div>
         {fieldSuffix?.type === 'icon' && (
           <div title="open json editor modal" onClick={fieldSuffix.press}></div>

@@ -4,24 +4,23 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {decisionInstancesVisibleFiltersStore} from 'modules/stores/decisionInstancesVisibleFilters';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 
-function getWrapper(initialPath: string = '/') {
-  type Props = {
-    initialPath?: string;
-  };
-
-  const Wrapper: React.FC<Props> = ({children}) => {
+function getWrapper(initialPath: string = '/decisions') {
+  const Wrapper: React.FC = ({children}) => {
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <LocationLog />
-      </MemoryRouter>
+      <ThemeProvider>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <LocationLog />
+        </MemoryRouter>
+      </ThemeProvider>
     );
   };
 
@@ -31,9 +30,9 @@ function getWrapper(initialPath: string = '/') {
 const MOCK_FILTERS_PARAMS = {
   name: '3',
   version: '2',
-  completed: 'true',
+  evaluated: 'true',
   failed: 'true',
-  decisionInstanceId: '123',
+  decisionInstanceIds: '123',
   processInstanceId: '456',
   evaluationDate: '789',
 } as const;
@@ -41,6 +40,12 @@ const MOCK_FILTERS_PARAMS = {
 describe('<Filters />', () => {
   beforeEach(() => {
     decisionInstancesVisibleFiltersStore.reset();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should render the correct elements', () => {
@@ -48,23 +53,13 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(
-      screen.getByRole('heading', {name: /decision/i})
-    ).toBeInTheDocument();
+    expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/version/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', {name: /instance states/i})
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/completed/i)).toBeInTheDocument();
+    expect(screen.getByText(/^instance states$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evaluated/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/failed/i)).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/enable decisioninstanceid/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/enable processinstanceid/i)
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/enable evaluationdate/i)).toBeInTheDocument();
+    expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
     expect(
       screen.queryByLabelText(/decision instance id\(s\)/i)
     ).not.toBeInTheDocument();
@@ -74,7 +69,7 @@ describe('<Filters />', () => {
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
 
-  it('should write filters to url', () => {
+  it('should write filters to url', async () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -83,30 +78,42 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('search')).toHaveTextContent('');
 
     userEvent.selectOptions(screen.getByLabelText(/name/i), ['3']);
+
     userEvent.selectOptions(screen.getByLabelText(/version/i), ['2']);
-    userEvent.click(screen.getByLabelText(/completed/i));
+
+    userEvent.click(screen.getByLabelText(/evaluated/i));
+
     userEvent.click(screen.getByLabelText(/failed/i));
-    userEvent.click(screen.getByLabelText(/enable decisioninstanceid/i));
-    userEvent.type(screen.getByLabelText(/decision instance id\(s\)/i), '123');
-    userEvent.click(screen.getByLabelText(/enable processinstanceid/i));
-    userEvent.type(screen.getByLabelText(/process instance id/i), '456');
-    userEvent.click(screen.getByLabelText(/enable evaluationdate/i));
-    userEvent.type(screen.getByLabelText(/evaluation date/i), '789');
-    userEvent.click(screen.getByRole('button', {name: /submit/i}));
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
+    userEvent.paste(screen.getByLabelText(/decision instance id\(s\)/i), '123');
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/process instance id/i));
+    userEvent.paste(screen.getByLabelText(/process instance id/i), '456');
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/evaluation date/i));
+    userEvent.paste(screen.getByLabelText(/evaluation date/i), '789');
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    expect(
-      Object.fromEntries(
-        new URLSearchParams(
-          screen.getByTestId('search').textContent ?? ''
-        ).entries()
-      )
-    ).toEqual(MOCK_FILTERS_PARAMS);
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? ''
+          ).entries()
+        )
+      ).toEqual(MOCK_FILTERS_PARAMS)
+    );
 
     userEvent.click(screen.getByRole('button', {name: /reset/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?evaluated=true&failed=true'
+    );
   });
 
   it('initialise filter values from url', () => {
@@ -116,7 +123,7 @@ describe('<Filters />', () => {
 
     expect(screen.getByDisplayValue(/decision 3/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/version 2/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/completed/i)).toBeChecked();
+    expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/123/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/456/i)).toBeInTheDocument();
@@ -136,9 +143,14 @@ describe('<Filters />', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByLabelText(/enable decisioninstanceid/i));
-    userEvent.click(screen.getByLabelText(/enable processinstanceid/i));
-    userEvent.click(screen.getByLabelText(/enable evaluationdate/i));
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/process instance id/i));
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/evaluation date/i));
 
     unmount();
 
@@ -175,5 +187,38 @@ describe('<Filters />', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+  });
+
+  it('should hide optional filters', () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/process instance id/i));
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/evaluation date/i));
+
+    expect(
+      screen.getByLabelText(/decision instance id\(s\)/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+
+    userEvent.click(screen.getByTestId('delete-decisionInstanceIds'));
+    userEvent.click(screen.getByTestId('delete-processInstanceId'));
+    userEvent.click(screen.getByTestId('delete-evaluationDate'));
+
+    expect(
+      screen.queryByLabelText(/decision instance id\(s\)/i)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/process instance id/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
 });

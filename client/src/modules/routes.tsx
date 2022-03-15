@@ -103,9 +103,16 @@ const Locations = {
     };
   },
   decisions(location: Location): To {
+    const params = new URLSearchParams(
+      getPersistentQueryParams(location.search)
+    );
+
+    params.set('evaluated', 'true');
+    params.set('failed', 'true');
+
     return {
       pathname: Paths.decisions(),
-      search: getPersistentQueryParams(location.search),
+      search: params.toString(),
     };
   },
   decisionInstance(location: Location, id: string): To {

@@ -8,7 +8,7 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import {rgba} from 'polished';
 
 import BasicCollapseButton from 'modules/components/CollapseButton';
-import BasicPanel from '../Panel';
+import {Panel as BasePanel} from '../Panel';
 
 const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 type PanelPosition = 'RIGHT' | 'LEFT';
@@ -87,7 +87,7 @@ type ExpandedPanelProps = {
   transitionTimeout?: number;
 };
 
-const ExpandedPanel = styled(BasicPanel)<ExpandedPanelProps>`
+const ExpandedPanel = styled(BasePanel)<ExpandedPanelProps>`
   ${({theme, isCollapsed, panelPosition, hasBackgroundColor}) => {
     return css`
       opacity: ${isCollapsed ? 0 : 1};
@@ -113,7 +113,7 @@ type CollapsedPanelProps = {
   transitionTimeout?: number;
 };
 
-const CollapsedPanel = styled(BasicPanel)<CollapsedPanelProps>`
+const CollapsedPanel = styled(BasePanel)<CollapsedPanelProps>`
   ${({isCollapsed}) => {
     return css`
       opacity: ${isCollapsed ? 1 : 0};
@@ -128,7 +128,7 @@ type HeaderProps = {
   panelPosition?: PanelPosition;
 };
 
-const Header = styled(BasicPanel.Header)<HeaderProps>`
+const Header = styled(BasePanel.Header)<HeaderProps>`
   ${({panelPosition}) => {
     return css`
       border-radius: inherit;

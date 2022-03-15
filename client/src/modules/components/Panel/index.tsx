@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import {Component} from 'react';
 import PanelHeader from './PanelHeader';
 import PanelFooter from './PanelFooter';
 import PanelBody from './PanelBody';
@@ -22,4 +22,4 @@ class Panel extends Component<{}> {
   }
 }
 
-export default Panel;
+export {Panel};

@@ -8,21 +8,30 @@ import {CmDropdown} from '@camunda-cloud/common-ui-react';
 import React, {useState} from 'react';
 
 type Props = {
-  trigger: React.ComponentProps<typeof CmDropdown>['trigger'];
+  trigger: {type: 'label'; label: string};
   options: React.ComponentProps<typeof CmDropdown>['options'];
+  'data-testid'?: string;
 };
 
-const Dropdown: React.FC<Props> = ({trigger, options, ...props}) => {
+const Dropdown: React.FC<Props> = ({
+  trigger,
+  options,
+  'data-testid': dataTestId,
+  ...props
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   if (options === undefined) {
     return null;
   }
 
   return (
-    <div {...props} onClick={() => setIsDropdownOpen(true)}>
+    <>
+      <button {...props} type="button" onClick={() => setIsDropdownOpen(true)}>
+        {trigger.label}
+      </button>
       {isDropdownOpen && (
         <>
-          <ul>
+          <ul data-testid={dataTestId}>
             {options[0].options?.map((option, index) => {
               return (
                 <li
@@ -30,6 +39,7 @@ const Dropdown: React.FC<Props> = ({trigger, options, ...props}) => {
                   onClick={() => {
                     if (option.handler !== undefined) {
                       option.handler({preventDismissal: () => false});
+                      setIsDropdownOpen(false);
                     }
                   }}
                 >
@@ -40,7 +50,7 @@ const Dropdown: React.FC<Props> = ({trigger, options, ...props}) => {
           </ul>
         </>
       )}
-    </div>
+    </>
   );
 };
 

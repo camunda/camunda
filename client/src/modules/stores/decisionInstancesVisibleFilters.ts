@@ -7,14 +7,20 @@
 import {DecisionInstanceFilters} from 'modules/utils/filter';
 import {VisibleFilters} from './visibleFilters';
 
-const optionalFilters: Array<keyof DecisionInstanceFilters> = [
-  'decisionInstanceId',
+type OptionalFilter = keyof Pick<
+  DecisionInstanceFilters,
+  'decisionInstanceIds' | 'processInstanceId' | 'evaluationDate'
+>;
+
+const optionalFilters: Array<OptionalFilter> = [
+  'decisionInstanceIds',
   'processInstanceId',
   'evaluationDate',
 ];
 
-const decisionInstancesVisibleFiltersStore = new VisibleFilters(
+const decisionInstancesVisibleFiltersStore = new VisibleFilters<OptionalFilter>(
   optionalFilters
 );
 
 export {decisionInstancesVisibleFiltersStore};
+export type {OptionalFilter};

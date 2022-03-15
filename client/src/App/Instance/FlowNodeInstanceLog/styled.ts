@@ -6,10 +6,10 @@
 
 import styled, {css} from 'styled-components';
 
-import {default as PanelComponent} from 'modules/components/Panel';
+import {Panel as BasePanel} from 'modules/components/Panel';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
-const Panel = styled(PanelComponent)`
+const Panel = styled(BasePanel)`
   border-right: none;
 `;
 

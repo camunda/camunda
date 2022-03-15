@@ -8,6 +8,7 @@ import styled, {css} from 'styled-components';
 import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
+import {Copyright as BaseCopyright} from 'modules/components/Copyright';
 
 const Container = styled.section`
   ${({theme}) => {
@@ -101,6 +102,10 @@ const Spinner = styled(SpinnerSkeleton)`
   margin-top: 36px;
 `;
 
+const Copyright = styled(BaseCopyright)`
+  text-align: right;
+`;
+
 export {
   Container,
   Name,
@@ -114,4 +119,5 @@ export {
   THead,
   TRHeader,
   Spinner,
+  Copyright,
 };

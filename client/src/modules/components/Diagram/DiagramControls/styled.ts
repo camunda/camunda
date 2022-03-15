@@ -6,7 +6,7 @@
 
 import styled from 'styled-components';
 
-import Button from 'modules/components/Button';
+import {Button} from 'modules/components/Button';
 
 const DiagramControls = styled.div`
   display: flex;

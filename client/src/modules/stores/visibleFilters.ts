@@ -6,19 +6,19 @@
 
 import {action, computed, makeAutoObservable} from 'mobx';
 
-type State = {
-  visibleFilters: string[];
-};
+interface State<PossibleFilters extends string> {
+  visibleFilters: PossibleFilters[];
+}
 
-const DEFAULT_STATE: State = {
+const DEFAULT_STATE = {
   visibleFilters: [],
 };
 
-class VisibleFilters {
-  state: State = {...DEFAULT_STATE};
-  possibleOptionalFilters: string[] = [];
+class VisibleFilters<PossibleFilters extends string> {
+  state: State<PossibleFilters> = {...DEFAULT_STATE};
+  possibleOptionalFilters: PossibleFilters[] = [];
 
-  constructor(possibleOptionalFilters: string[] = []) {
+  constructor(possibleOptionalFilters: PossibleFilters[] = []) {
     makeAutoObservable(this, {
       addVisibleFilters: action,
       hideFilter: action,
@@ -29,13 +29,13 @@ class VisibleFilters {
     this.possibleOptionalFilters = possibleOptionalFilters;
   }
 
-  addVisibleFilters = (filters: string[]) => {
+  addVisibleFilters = (filters: PossibleFilters[]) => {
     this.state.visibleFilters = Array.from(
       new Set([...this.state.visibleFilters, ...filters])
     );
   };
 
-  hideFilter = (filter: string) => {
+  hideFilter = (filter: PossibleFilters) => {
     this.state.visibleFilters = this.state.visibleFilters.filter(
       (visibleFilter) => visibleFilter !== filter
     );

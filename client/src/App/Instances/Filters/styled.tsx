@@ -5,7 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import Panel from 'modules/components/Panel';
+import {Panel} from 'modules/components/Panel';
 import {CmText, CmDropdown, CmSelect} from '@camunda-cloud/common-ui-react';
 
 const FiltersForm = styled.form`

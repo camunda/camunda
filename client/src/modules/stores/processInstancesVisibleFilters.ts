@@ -25,6 +25,9 @@ const optionalFilters: Array<OptionalFilter> = [
   'endDate',
 ];
 
-const processInstancesVisibleFiltersStore = new VisibleFilters(optionalFilters);
+const processInstancesVisibleFiltersStore = new VisibleFilters<OptionalFilter>(
+  optionalFilters
+);
 
 export {processInstancesVisibleFiltersStore};
+export type {OptionalFilter};

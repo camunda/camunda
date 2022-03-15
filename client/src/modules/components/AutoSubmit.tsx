@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useRef} from 'react';
+import {useEffect, useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
 import {throttle} from 'lodash';
 

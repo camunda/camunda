@@ -12,15 +12,16 @@ import {Paths} from 'modules/routes';
 
 const Layout: React.FC = () => {
   const instancesMatch = useMatch(Paths.instances());
+  const decisionsMatch = useMatch(Paths.decisions());
   const dashboardMatch = useMatch(Paths.dashboard());
-  const showFooter = instancesMatch === null;
+  const showFooter = instancesMatch === null && decisionsMatch === null;
 
   return (
     <Grid numberOfRows={showFooter ? 3 : 2}>
       <Header />
       <Outlet />
       {showFooter && (
-        <Footer variant={dashboardMatch !== null ? 'dashboard' : 'default'}>
+        <Footer variant={dashboardMatch === null ? 'default' : 'dashboard'}>
           <Copyright />
         </Footer>
       )}

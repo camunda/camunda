@@ -5,13 +5,16 @@
  */
 
 import {Row, Delete} from './styled';
-import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
+import {
+  processInstancesVisibleFiltersStore,
+  OptionalFilter as OptionalFilterType,
+} from 'modules/stores/processInstancesVisibleFilters';
 import {observer} from 'mobx-react';
 import {useForm} from 'react-final-form';
 import {ProcessInstanceFilterField} from 'modules/utils/filter';
 
 type Props = {
-  name: string;
+  name: OptionalFilterType;
   children: React.ReactNode;
   filterList: Array<ProcessInstanceFilterField>;
 };

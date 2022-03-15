@@ -7,7 +7,7 @@
 import React from 'react';
 import {createPortal} from 'react-dom';
 
-import Button from 'modules/components/Button';
+import {Button} from 'modules/components/Button';
 import * as Styled from './styled';
 
 const ModalContext = React.createContext({});

@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {observer} from 'mobx-react';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';

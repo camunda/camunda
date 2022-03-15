@@ -22,8 +22,8 @@ import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
 import {FlowNodeField} from './FlowNodeField';
 import {CheckboxGroup} from './CheckboxGroup';
-import Button from 'modules/components/Button';
-import {AutoSubmit} from './AutoSubmit';
+import {Button} from 'modules/components/Button';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {
   getProcessInstanceFilters,
   ProcessInstanceFilters,
@@ -31,7 +31,10 @@ import {
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
 import {observer} from 'mobx-react';
-import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
+import {
+  OptionalFilter,
+  processInstancesVisibleFiltersStore,
+} from 'modules/stores/processInstancesVisibleFilters';
 import {Ids} from './OptionalFilters/Ids';
 import {ParentInstanceIds} from './OptionalFilters/ParentInstanceIds';
 import {ErrorMessage} from './OptionalFilters/ErrorMessage';
@@ -66,7 +69,7 @@ const Filters: React.FC = observer(() => {
       ...('variableName' in filters && 'variableValue' in filters
         ? ['variable']
         : []),
-    ]);
+    ] as OptionalFilter[]);
   }, [location.search]);
 
   return (

@@ -12,6 +12,7 @@ type Props = {
   options: React.ComponentProps<typeof CmSelect>['options'];
   selectedOptions: React.ComponentProps<typeof CmSelect>['selectedOptions'];
   indeterminate: boolean;
+  label: React.ComponentProps<typeof CmSelect>['label'];
 };
 
 const Select: React.FC<Props> = ({
@@ -19,23 +20,28 @@ const Select: React.FC<Props> = ({
   options,
   selectedOptions,
   indeterminate,
+  label,
   ...props
 }) => {
   return (
-    <select
-      onChange={(event) => {
-        onCmInput({detail: {selectedOptions: [event.target.value]}});
-      }}
-      {...props}
-    >
-      {options !== undefined &&
-        options.length > 0 &&
-        options[0].options.map(({label, value}) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-    </select>
+    <label>
+      {label}
+      <select
+        onChange={(event) => {
+          onCmInput({detail: {selectedOptions: [event.target.value]}});
+        }}
+        value={selectedOptions?.[0]}
+        {...props}
+      >
+        {options !== undefined &&
+          options.length > 0 &&
+          options[0].options.map(({label, value}) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+      </select>
+    </label>
   );
 };
 
