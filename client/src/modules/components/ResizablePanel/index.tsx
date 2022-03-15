@@ -6,20 +6,21 @@
 
 import './index.css';
 import Splitter, {SplitDirection} from '@devbookhq/splitter';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 type Props = {
   direction: SplitDirection.Vertical | SplitDirection.Horizontal;
-  initialSizePercentages: number[];
   minHeights?: number[];
   minWidths?: number[];
+  panelId: string;
 };
 
 const ResizablePanel: React.FC<Props> = ({
   children,
   direction,
-  initialSizePercentages,
   minHeights,
   minWidths,
+  panelId,
 }) => {
   const cursorResizingClassName =
     direction === SplitDirection.Vertical ? 'nsResizing' : 'ewResizing';
@@ -30,13 +31,14 @@ const ResizablePanel: React.FC<Props> = ({
       direction={direction}
       minHeights={minHeights}
       minWidths={minWidths}
-      initialSizes={initialSizePercentages}
+      initialSizes={getStateLocally('panelStates')[panelId] ?? [50, 50]}
       gutterClassName={`custom-gutter-${direction}`}
       draggerClassName={`custom-dragger-${direction}`}
       onResizeStarted={() => {
         document.body.classList.add(cursorResizingClassName);
       }}
-      onResizeFinished={() => {
+      onResizeFinished={(_, newSizes) => {
+        storeStateLocally({[panelId]: newSizes}, 'panelStates');
         document.body.classList.remove(cursorResizingClassName);
       }}
     >

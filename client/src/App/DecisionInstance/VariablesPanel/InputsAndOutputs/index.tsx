@@ -57,21 +57,13 @@ const InputsAndOutputs: React.FC = observer(() => {
     setClientWidth(containerRef?.current?.clientWidth ?? 0);
   }, []);
 
-  const initialWidthPercentages = {
-    leftPanel: 50,
-    rightPanel: 50,
-  };
-
   const panelMinWidth = clientWidth / 3;
 
   return (
     <PanelContainer ref={containerRef}>
       <ResizablePanel
+        panelId="decision-instance-horizontal-panel"
         direction={SplitDirection.Horizontal}
-        initialSizePercentages={[
-          initialWidthPercentages.leftPanel,
-          initialWidthPercentages.rightPanel,
-        ]}
         minWidths={[panelMinWidth, panelMinWidth]}
       >
         <Panel $hasBorder>

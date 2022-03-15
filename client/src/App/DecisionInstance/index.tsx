@@ -45,11 +45,6 @@ const DecisionInstance: React.FC = observer(() => {
     decisionInstanceStore.fetchDecisionInstance(decisionInstanceId);
   }, [decisionInstanceId]);
 
-  const initialHeightPercentages = {
-    topPanel: 50,
-    bottomPanel: 50,
-  };
-
   const panelMinHeight = clientHeight / 4;
 
   return (
@@ -61,11 +56,8 @@ const DecisionInstance: React.FC = observer(() => {
           <Header />
           <PanelContainer ref={containerRef}>
             <ResizablePanel
+              panelId="decision-instance-vertical-panel"
               direction={SplitDirection.Vertical}
-              initialSizePercentages={[
-                initialHeightPercentages.topPanel,
-                initialHeightPercentages.bottomPanel,
-              ]}
               minHeights={[panelMinHeight, panelMinHeight]}
             >
               <DecisionPanel />

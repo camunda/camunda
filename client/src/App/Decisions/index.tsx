@@ -22,11 +22,6 @@ const Decisions: React.FC = () => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
   }, []);
 
-  const initialHeightPercentages = {
-    topPanel: 50,
-    bottomPanel: 50,
-  };
-
   const panelMinHeight = clientHeight / 4;
 
   return (
@@ -34,11 +29,8 @@ const Decisions: React.FC = () => {
       <Filters />
       <RightContainer ref={containerRef}>
         <ResizablePanel
+          panelId="decision-instances-vertical-panel"
           direction={SplitDirection.Vertical}
-          initialSizePercentages={[
-            initialHeightPercentages.topPanel,
-            initialHeightPercentages.bottomPanel,
-          ]}
           minHeights={[panelMinHeight, panelMinHeight]}
         >
           <Decision />
