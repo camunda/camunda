@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
-import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_REQUIREMENTS_KEY;
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.XML;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -67,13 +67,15 @@ public class DecisionReader extends AbstractReader {
         throw new NotFoundException(
             "No decision definition found for id " + decisionDefinitionId);
       }
-      final String decisionRequirementsId = (String) response.getHits().getHits()[0]
-          .getSourceAsMap().get(DECISION_REQUIREMENTS_ID);
+      final Object key = response.getHits().getHits()[0].getSourceAsMap()
+          .get(DECISION_REQUIREMENTS_KEY);
+      //key is either Integer or Long depending on value
+      final Long decisionRequirementsId = Long.valueOf(String.valueOf(key));
 
       //get XML
       searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias())
           .source(new SearchSourceBuilder()
-              .query(idsQuery().addIds(decisionRequirementsId))
+              .query(idsQuery().addIds(String.valueOf(decisionRequirementsId)))
               .fetchSource(XML, null));
 
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);

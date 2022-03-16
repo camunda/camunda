@@ -84,7 +84,7 @@ public class DecisionDataUtil {
         .setDecisionId("invoiceClassification")
         .setName("Invoice Classification")
         .setVersion(1)
-        .setDecisionRequirementsId("1111")
+        .setDecisionRequirementsId("invoiceBusinessDecisions")
         .setDecisionRequirementsKey(1111)
     );
     decisionEntities.add(new DecisionDefinitionEntity()
@@ -93,7 +93,7 @@ public class DecisionDataUtil {
         .setDecisionId("invoice-assign-approver")
         .setName("Assign Approver Group")
         .setVersion(1)
-        .setDecisionRequirementsId("1111")
+        .setDecisionRequirementsId("invoiceBusinessDecisions")
         .setDecisionRequirementsKey(1111)
     );
 
@@ -113,7 +113,7 @@ public class DecisionDataUtil {
         .setDecisionId("invoiceClassification")
         .setName("Invoice Classification")
         .setVersion(2)
-        .setDecisionRequirementsId("2222")
+        .setDecisionRequirementsId("invoiceBusinessDecisions")
         .setDecisionRequirementsKey(2222)
     );
     decisionEntities.add(new DecisionDefinitionEntity()
@@ -122,7 +122,7 @@ public class DecisionDataUtil {
         .setDecisionId("invoice-assign-approver")
         .setName("Assign Approver Group")
         .setVersion(2)
-        .setDecisionRequirementsId("2222")
+        .setDecisionRequirementsId("invoiceBusinessDecisions")
         .setDecisionRequirementsKey(2222)
     );
 
