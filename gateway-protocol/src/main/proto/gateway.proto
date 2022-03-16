@@ -160,6 +160,37 @@ message DeployProcessResponse {
   repeated ProcessMetadata processes = 2;
 }
 
+message DeployRequest {
+  // list of resources to deploy
+  repeated Resource resources = 1;
+}
+
+message Resource {
+  // the resource name, e.g. myProcess.bpmn or myDecision.dmn
+  string name = 1;
+  // the file content as a UTF8-encoded string
+  bytes content = 2;
+}
+
+message DeployResponse {
+  // the unique key identifying the deployment
+  int64 key = 1;
+  // a list of deployed resources, e.g. processes
+  repeated Deployment deployments = 2;
+}
+
+message Deployment {
+  // each deployment has only one metadata
+  oneof Metadata {
+    // metadata of a deployed process
+    ProcessMetadata process = 1;
+    // metadata of a deployed decision
+    DecisionMetadata decision = 2;
+    // metadata of a deployed decision requirements
+    DecisionRequirementsMetadata decisionRequirements = 3;
+  }
+}
+
 message ProcessMetadata {
   // the bpmn process ID, as parsed during deployment; together with the version forms a
   // unique identifier for a specific process definition
@@ -171,6 +202,50 @@ message ProcessMetadata {
   // the resource name (see: ProcessRequestObject.name) from which this process was
   // parsed
   string resourceName = 4;
+}
+
+message DecisionMetadata {
+  // the dmn decision ID, as parsed during deployment; together with the
+  // versions forms a unique identifier for a specific decision
+  string dmnDecisionId = 1;
+  // the dmn name of the decision, as parsed during deployment
+  string dmnDecisionName = 2;
+  // the assigned decision version
+  int32 version = 3;
+  // the assigned decision key, which acts as a unique identifier for this
+  // decision
+  int64 decisionKey = 4;
+  // the dmn ID of the decision requirements graph that this decision is part
+  // of, as parsed during deployment
+  string dmnDecisionRequirementsId = 5;
+  // the assigned key of the decision requirements graph that this decision is
+  // part of
+  int64 decisionRequirementsKey = 6;
+  // whether this decision was already deployed previously
+  // todo: debate this field
+  bool isDuplicate = 7;
+}
+
+message DecisionRequirementsMetadata {
+  // the dmn decision requirements ID, as parsed during deployment; together
+  // with the versions forms a unique identifier for a specific decision
+  string dmnDecisionRequirementsId = 1;
+  // the dmn name of the decision requirements, as parsed during deployment
+  string dmnDecisionRequirementsName = 2;
+  // the assigned decision requirements version
+  int32 version = 3;
+  // the assigned decision requirements key, which acts as a unique identifier
+  // for this decision requirements
+  int64 decisionRequirementsKey = 4;
+  // the dmn namespace, as parsed during deployment
+  // todo: debate this field (e.g. http://camunda.org/schema/1.0/dmn)
+  string namespace = 5;
+  // the resource name (see: Resource.name) from which this decision
+  // requirements was parsed
+  string resourceName = 6;
+  // whether this decision requirements was already deployed previously
+  // todo: debate this field
+  bool isDuplicate = 7;
 }
 
 message FailJobRequest {
@@ -397,6 +472,13 @@ service Gateway {
    */
   rpc DeployProcess (DeployProcessRequest) returns (DeployProcessResponse) {
   }
+
+  /*
+    Deploys one or more resources (i.e. processes or decision models) to Zeebe.
+  */
+  rpc DeployResource (DeployRequest) returns (DeployResponse) {
+  }
+
 
   /*
     Marks the job as failed; if the retries argument is positive, then the job will be immediately
