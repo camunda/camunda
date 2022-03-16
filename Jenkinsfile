@@ -105,10 +105,10 @@ pipeline {
                     runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
 
                     container('python') {
-                        gcloudSaveTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+                        camundaGCloudSaveTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
 
                         sh "tar -cf zeebe-build.tar ./m2-repository/io/camunda/*/${VERSION}/*"
-                        gcloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
+                        camundaGCloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
                     }
                 }
             }
@@ -256,7 +256,7 @@ pipeline {
                                     prepareMavenContainer()
 
                                     container('python') {
-                                        gcloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
+                                        camundaGCloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
                                         sh "tar -xf zeebe-build.tar"
                                     }
                                     runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
@@ -274,7 +274,7 @@ pipeline {
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     container('python') {
-                                        gcloudRestoreTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+                                        camundaGCloudRestoreTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
                                     }
                                     container('docker') {
                                         sh '.ci/scripts/docker/build.sh'
