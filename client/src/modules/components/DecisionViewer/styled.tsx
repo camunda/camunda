@@ -71,6 +71,7 @@ const Container = styled.div<ContainerProps>`
         .textarea {
           border-color: ${colors.border};
           border-width: 1px 2px;
+          height: auto;
         }
 
         .literal-expression-properties {
