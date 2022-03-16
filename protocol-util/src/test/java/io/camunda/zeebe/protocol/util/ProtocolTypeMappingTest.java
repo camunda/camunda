@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.Mapping;
 import java.lang.reflect.Method;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.agrona.collections.MutableReference;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -20,21 +19,22 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.platform.commons.util.ReflectionUtils;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ProtocolTypeMappingTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("protocolClassProvider")
   void shouldMapProtocolClass(
-      @SuppressWarnings("unused") final String testName, final Class<?> protocolClass) {
+      @SuppressWarnings("unused") final String testName, final Class<?> protocolClass)
+      throws NoSuchMethodException {
     assertTypeMappingForAbstractType(protocolClass);
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("valueClassProvider")
   void shouldMapEveryKnownValueClass(
-      @SuppressWarnings("unused") final String testName, final Class<?> valueClass) {
+      @SuppressWarnings("unused") final String testName, final Class<?> valueClass)
+      throws NoSuchMethodException {
     assertTypeMappingForAbstractType(valueClass);
   }
 
@@ -43,7 +43,8 @@ final class ProtocolTypeMappingTest {
    * the given protocol class, its concrete class a concrete implementation of the protocol class,
    * and that it has a builder which is an inner class of the concrete type.
    */
-  private void assertTypeMappingForAbstractType(final Class<?> abstractType) {
+  private void assertTypeMappingForAbstractType(final Class<?> abstractType)
+      throws NoSuchMethodException {
     final Mapping<?> mapping = findTypeMappingForAbstractType(abstractType);
     assertThat(mapping)
         .as(
@@ -65,19 +66,18 @@ final class ProtocolTypeMappingTest {
         .isAssignableFrom(mapping.getConcreteClass());
   }
 
-  private void assertTypeMappingBuilder(final Mapping<?> mapping) {
+  private void assertTypeMappingBuilder(final Mapping<?> mapping) throws NoSuchMethodException {
     assertThat(mapping.getBuilderClass())
         .as(
             "a builder class should have been assigned to the type mapping for '%s'",
             mapping.getAbstractClass())
         .isNotNull();
 
-    final Optional<Method> buildMethod =
-        ReflectionUtils.findMethod(mapping.getBuilderClass(), "build");
+    final Method buildMethod = mapping.getBuilderClass().getMethod("build");
     assertThat(buildMethod)
         .as("there should be a no-args build method on the builder class")
-        .isPresent()
-        .get(InstanceOfAssertFactories.type(Method.class))
+        .isNotNull()
+        .asInstanceOf(InstanceOfAssertFactories.type(Method.class))
         .extracting(Method::getReturnType)
         .as("the build method should return a value of the concrete type")
         .isEqualTo(mapping.getConcreteClass());

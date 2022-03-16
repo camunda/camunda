@@ -56,6 +56,12 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>
