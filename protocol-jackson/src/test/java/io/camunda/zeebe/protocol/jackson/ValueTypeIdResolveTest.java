@@ -15,7 +15,9 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerFactory;
 import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.util.ValueTypeMapping;
 import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,7 +31,7 @@ final class ValueTypeIdResolveTest {
    * forgotten. It does NOT check that the value type is mapped to the right value implementation.
    */
   @ParameterizedTest
-  @MethodSource("io.camunda.zeebe.protocol.util.ValueTypes#getAcceptedValueTypes")
+  @MethodSource("provideValueTypes")
   void shouldHandleEveryKnownValueType(final ValueType type) throws IOException {
     // given
     final ObjectMapper mapper = new ObjectMapper();
@@ -44,5 +46,9 @@ final class ValueTypeIdResolveTest {
     final JavaType resolvedType = resolver.typeFromId(context, resolver.idFromValue(type));
 
     assertThat(RecordValue.class).isAssignableFrom(resolvedType.getRawClass());
+  }
+
+  private static Stream<ValueType> provideValueTypes() {
+    return ValueTypeMapping.getAcceptedValueTypes().stream();
   }
 }
