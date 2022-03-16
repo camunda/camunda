@@ -7,12 +7,38 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public record DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>(
-    FirstKeyType first, SecondKeyType second) implements DbKey {
+public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
+    implements DbKey, ContainsForeignKeys {
+  final FirstKeyType first;
+  final SecondKeyType second;
+  final Collection<DbForeignKey<?>> containedForeignKeys;
+
+  public DbCompositeKey(final FirstKeyType first, final SecondKeyType second) {
+    this.first = first;
+    this.second = second;
+    containedForeignKeys = collectContainedForeignKeys(first, second);
+  }
+
+  public FirstKeyType first() {
+    return first;
+  }
+
+  public SecondKeyType second() {
+    return second;
+  }
+
+  @Override
+  public Collection<DbForeignKey<?>> containedForeignKeys() {
+    return containedForeignKeys;
+  }
 
   @Override
   public void wrap(final DirectBuffer directBuffer, final int offset, final int length) {
@@ -31,5 +57,22 @@ public record DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends D
     first.write(mutableDirectBuffer, offset);
     final int firstKeyPartLength = first.getLength();
     second.write(mutableDirectBuffer, offset + firstKeyPartLength);
+  }
+
+  private static Collection<DbForeignKey<?>> collectContainedForeignKeys(
+      final DbKey first, final DbKey second) {
+    final var result = new ArrayList<DbForeignKey<?>>();
+    if (first instanceof ContainsForeignKeys firstForeignKeyProvider) {
+      result.addAll(firstForeignKeyProvider.containedForeignKeys());
+    }
+    if (second instanceof ContainsForeignKeys secondForeignKeyProvider) {
+      result.addAll(secondForeignKeyProvider.containedForeignKeys());
+    }
+    return Collections.unmodifiableList(result);
+  }
+
+  @Override
+  public String toString() {
+    return "DbCompositeKey{" + "first=" + first + ", second=" + second + '}';
   }
 }

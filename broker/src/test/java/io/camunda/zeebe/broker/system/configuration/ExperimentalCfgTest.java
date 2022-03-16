@@ -123,13 +123,36 @@ public class ExperimentalCfgTest {
   @Test
   public void shouldSetEnablePreconditionsFromEnv() {
     // given
-    environment.put("zeebe.broker.experimental.consistencyChecks.enablePreconditions", "true");
+    environment.put("zeebe.broker.experimental.consistencyChecks.enablePreconditions", "false");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
 
     // then
-    assertThat(consistencyChecks.isEnablePreconditions()).isTrue();
+    assertThat(consistencyChecks.isEnablePreconditions()).isFalse();
+  }
+
+  @Test
+  public void shouldSetEnableForeignKeyChecksFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
+
+    // then
+    assertThat(consistencyChecks.isEnableForeignKeyChecks()).isTrue();
+  }
+
+  @Test
+  public void shouldSetEnableForeignKeyChecksFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
+
+    // then
+    assertThat(consistencyChecks.isEnableForeignKeyChecks()).isFalse();
   }
 }

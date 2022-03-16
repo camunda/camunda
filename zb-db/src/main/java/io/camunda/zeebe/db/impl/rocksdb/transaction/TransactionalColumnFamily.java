@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
@@ -51,6 +52,8 @@ class TransactionalColumnFamily<
   private final KeyType keyInstance;
   private final ColumnFamilyContext columnFamilyContext;
 
+  private final ForeignKeyChecker foreignKeyChecker;
+
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
       final ConsistencyChecksSettings consistencyChecksSettings,
@@ -65,6 +68,7 @@ class TransactionalColumnFamily<
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.ordinal());
+    foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
   }
 
   @Override
@@ -75,6 +79,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeValue(value);
 
           assertKeyDoesNotExist(transaction);
+          assertForeignKeysExist(transaction, key, value);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
@@ -91,6 +96,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
           assertKeyExists(transaction);
+          assertForeignKeysExist(transaction, key, value);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
@@ -106,6 +112,7 @@ class TransactionalColumnFamily<
         transaction -> {
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
+          assertForeignKeysExist(transaction, key, value);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
@@ -238,6 +245,18 @@ class TransactionalColumnFamily<
                 }));
 
     return isEmpty.get();
+  }
+
+  private void assertForeignKeysExist(final ZeebeTransaction transaction, final Object... keys)
+      throws Exception {
+    if (!consistencyChecksSettings.enableForeignKeyChecks()) {
+      return;
+    }
+    for (final var key : keys) {
+      if (key instanceof ContainsForeignKeys containsForeignKey) {
+        foreignKeyChecker.assertExists(transaction, containsForeignKey);
+      }
+    }
   }
 
   private void assertKeyDoesNotExist(final ZeebeTransaction transaction) throws Exception {

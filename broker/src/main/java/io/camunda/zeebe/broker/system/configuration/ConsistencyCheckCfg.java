@@ -11,7 +11,9 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 
 public class ConsistencyCheckCfg {
   private static final boolean DEFAULT_ENABLE_PRECONDITIONS = false;
+  private static final boolean DEFAULT_ENABLE_FOREIGN_KEY_CHECKS = false;
   private boolean enablePreconditions = DEFAULT_ENABLE_PRECONDITIONS;
+  private boolean enableForeignKeyChecks = DEFAULT_ENABLE_FOREIGN_KEY_CHECKS;
 
   public boolean isEnablePreconditions() {
     return enablePreconditions;
@@ -21,8 +23,16 @@ public class ConsistencyCheckCfg {
     this.enablePreconditions = enablePreconditions;
   }
 
+  public boolean isEnableForeignKeyChecks() {
+    return enableForeignKeyChecks;
+  }
+
+  public void setEnableForeignKeyChecks(final boolean enableForeignKeyChecks) {
+    this.enableForeignKeyChecks = enableForeignKeyChecks;
+  }
+
   public ConsistencyChecksSettings getSettings() {
-    return new ConsistencyChecksSettings(enablePreconditions);
+    return new ConsistencyChecksSettings(enablePreconditions, enableForeignKeyChecks);
   }
 
   @Override

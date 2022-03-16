@@ -11,3 +11,4 @@ zeebe:
         enabled: true
       consistencyChecks:
         enablePreconditions: true
+        enableForeignKeyChecks: true
