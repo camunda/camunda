@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -26,12 +25,13 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
  *
  * @param <T> the record value type
  */
+@SuppressWarnings("unused")
 abstract class RecordMixin<T extends RecordValue> {
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
   @JsonTypeIdResolver(IntentTypeIdResolver.class)
-  private @Nullable Intent intent;
+  private Intent intent;
 
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
   @JsonTypeIdResolver(RecordValueTypeIdResolver.class)
-  private @Nullable T value;
+  private T value;
 }

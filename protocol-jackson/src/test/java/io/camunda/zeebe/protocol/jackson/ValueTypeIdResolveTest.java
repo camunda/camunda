@@ -19,8 +19,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ValueTypeIdResolveTest {
@@ -29,11 +28,8 @@ final class ValueTypeIdResolveTest {
    * correctness of the result - its goal is to be a smoke test to make sure no value types are
    * forgotten. It does NOT check that the value type is mapped to the right value implementation.
    */
-  @EnumSource(
-      value = ValueType.class,
-      names = {"NULL_VAL", "SBE_UNKNOWN"},
-      mode = Mode.EXCLUDE)
   @ParameterizedTest
+  @MethodSource("io.camunda.zeebe.protocol.util.ValueTypes#getAcceptedValueTypes")
   void shouldHandleEveryKnownValueType(final ValueType type) throws IOException {
     // given
     final ObjectMapper mapper = new ObjectMapper();

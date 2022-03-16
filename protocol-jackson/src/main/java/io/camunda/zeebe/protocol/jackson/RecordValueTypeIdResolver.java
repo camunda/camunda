@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.util.ValueTypes;
+import io.camunda.zeebe.protocol.util.ValueTypeMapping;
 import java.util.Objects;
 
 /**
@@ -22,9 +21,9 @@ import java.util.Objects;
 final class RecordValueTypeIdResolver extends AbstractValueTypeIdResolver {
 
   @Override
-  @NonNull
-  protected Class<? extends RecordValue> mapFromValueType(@NonNull final ValueType valueType) {
-    return ValueTypes.getTypeInfo(Objects.requireNonNull(valueType, "must specify a value type"))
+  protected Class<? extends RecordValue> mapFromValueType(final ValueType valueType) {
+    return ValueTypeMapping.getTypeInfo(
+            Objects.requireNonNull(valueType, "must specify a value type"))
         .getValueClass();
   }
 }

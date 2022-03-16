@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.lang.reflect.Type;
 
@@ -43,6 +42,5 @@ abstract class AbstractValueTypeIdResolver extends TypeIdResolverBase {
     return typeFactory.constructType(mapFromValueType(valueType));
   }
 
-  @NonNull
-  protected abstract Type mapFromValueType(@NonNull final ValueType valueType);
+  protected abstract Type mapFromValueType(final ValueType valueType);
 }

@@ -9,29 +9,24 @@ package io.camunda.zeebe.protocol.jackson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.test.broker.protocol.record.ProtocolRecordFactory;
 import java.io.IOException;
-import java.util.stream.Stream;
 import org.assertj.core.util.Maps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ZeebeProtocolModuleTest {
+  private final ObjectMapper mapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
+
   @Test
   void shouldDeserialize() throws IOException {
-    final ObjectMapper mapper = ZeebeProtocolModule.createMapper();
+    // given
     final JobRecordValue value =
         ImmutableJobRecordValue.builder()
             .withBpmnProcessId("bpmnProcessId")
@@ -51,26 +46,5 @@ final class ZeebeProtocolModuleTest {
     final JobBatchRecordValue other = mapper.readValue(serialized, JobBatchRecordValue.class);
 
     assertThat(deserialized).isEqualTo(other).isEqualTo(batch);
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("recordProvider")
-  void shouldDeserializeRecord(
-      @SuppressWarnings("unused") final String testName, final Record<?> record)
-      throws IOException {
-    // given
-    final ObjectMapper mapper = ZeebeProtocolModule.createMapper();
-
-    // when
-    final byte[] serialized = mapper.writeValueAsBytes(record);
-    final Record<?> deserialized = mapper.readValue(serialized, new TypeReference<Record<?>>() {});
-
-    // then
-    assertThat(deserialized).isEqualTo(record);
-  }
-
-  private static Stream<Arguments> recordProvider() {
-    final ProtocolRecordFactory factory = new ProtocolRecordFactory();
-    return factory.generateForAllValueTypes().map(r -> Arguments.of(r.getValueType().name(), r));
   }
 }

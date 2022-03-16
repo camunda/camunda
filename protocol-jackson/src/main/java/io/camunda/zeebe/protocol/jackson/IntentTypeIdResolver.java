@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.util.ValueTypeInfo;
-import io.camunda.zeebe.protocol.util.ValueTypes;
+import io.camunda.zeebe.protocol.util.ValueTypeMapping;
+import io.camunda.zeebe.protocol.util.ValueTypeMapping.Mapping;
 import java.util.Objects;
 
 /**
@@ -21,10 +20,9 @@ import java.util.Objects;
  */
 final class IntentTypeIdResolver extends AbstractValueTypeIdResolver {
   @Override
-  @NonNull
-  protected Class<? extends Intent> mapFromValueType(@NonNull final ValueType valueType) {
-    final ValueTypeInfo<?, ?> typeInfo =
-        ValueTypes.getTypeInfoOrNull(
+  protected Class<? extends Intent> mapFromValueType(final ValueType valueType) {
+    final Mapping<?, ?> typeInfo =
+        ValueTypeMapping.getTypeInfoOrNull(
             Objects.requireNonNull(valueType, "must specify a value type"));
     if (typeInfo == null) {
       return Intent.UNKNOWN.getClass();
