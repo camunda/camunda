@@ -83,7 +83,7 @@
     "lint-staged": "12.3.5",
     "msw": "0.39.1",
     "node-fetch": "2.6.7",
-    "prettier": "2.5.1",
+    "prettier": "2.6.0",
     "react-scripts": "4.0.3",
     "react-test-renderer": "17.0.2",
     "testcafe": "1.18.4",
