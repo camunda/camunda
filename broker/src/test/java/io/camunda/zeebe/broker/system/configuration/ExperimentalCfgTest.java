@@ -133,6 +133,6 @@ public class ExperimentalCfgTest {
     // when
     assertThatThrownBy(() -> TestConfigReader.readConfig("experimental-cfg", environment))
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
-        .hasRootCauseMessage("Invalid boolean value [yolo]");
+        .hasRootCauseMessage("Invalid boolean value 'yolo'");
   }
 }
