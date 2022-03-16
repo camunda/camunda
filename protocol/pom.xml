@@ -72,7 +72,7 @@
 
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
-      <artifactId>archunit-junit5</artifactId>
+      <artifactId>archunit-junit5-api</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
