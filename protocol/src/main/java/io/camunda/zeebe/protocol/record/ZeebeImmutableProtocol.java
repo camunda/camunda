@@ -22,6 +22,15 @@ import java.lang.annotation.Target;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ValidationMethod;
 
+/**
+ * Types annotated with this are considered concrete types of the protocol (e.g. {@link Record}, and
+ * not simply behavioral types (e.g. {@link JsonSerializable}.
+ *
+ * <p>For every abstract type annotated with this, an immutable, concrete type will be generated.
+ * For example, given {@link Record}, then {@link ImmutableRecord} will be generated. Every leaf
+ * type of the protocol - that is, any type which may end up in {@link Record} or nested in one of
+ * its properties - should be annotated with this.
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
 @Value.Style(
