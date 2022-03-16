@@ -35,6 +35,7 @@ import {
 import {Button} from 'modules/components/Button';
 import {isEqual} from 'lodash';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 const OPTIONAL_FILTER_FIELDS: Record<
   OptionalFilter,
@@ -77,6 +78,11 @@ const Filters: React.FC = observer(() => {
     failed: true,
   };
 
+  const {
+    areDecisionsEmpty,
+    state: {decisions},
+  } = groupedDecisionsStore;
+
   useEffect(() => {
     const {possibleOptionalFilters} = decisionInstancesVisibleFiltersStore;
 
@@ -115,6 +121,7 @@ const Filters: React.FC = observer(() => {
                       onCmInput={(event) => {
                         input.onChange(event.detail.selectedOptions[0]);
                       }}
+                      disabled={areDecisionsEmpty}
                       options={[
                         {
                           options: [
@@ -122,18 +129,10 @@ const Filters: React.FC = observer(() => {
                               label: 'All',
                               value: '',
                             },
-                            {
-                              label: 'Decision 1',
-                              value: '1',
-                            },
-                            {
-                              label: 'Decision 2',
-                              value: '2',
-                            },
-                            {
-                              label: 'Decision 3',
-                              value: '3',
-                            },
+                            ...(decisions.map(({name, decisionId}) => ({
+                              label: name,
+                              value: decisionId,
+                            })) ?? []),
                           ],
                         },
                       ]}
@@ -148,6 +147,7 @@ const Filters: React.FC = observer(() => {
                       onCmInput={(event) => {
                         input.onChange(event.detail.selectedOptions[0]);
                       }}
+                      disabled={areDecisionsEmpty}
                       options={[
                         {
                           options: [

@@ -6,26 +6,36 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
+import {useLocation} from 'react-router-dom';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {Container} from './styled';
 
 const Decision: React.FC = observer(() => {
-  useEffect(() => {
-    // TODO: fetch xml depending on filters
-    decisionXmlStore.fetchDiagramXml('xml');
+  const location = useLocation();
+  const {status} = groupedDecisionsStore.state;
+  const params = new URLSearchParams(location.search);
+  const decisionId = params.get('name');
+  const version = Number(params.get('version'));
 
-    return () => {
-      decisionXmlStore.reset();
-    };
+  useEffect(() => {
+    if (status === 'fetched' && decisionId !== null && version !== null) {
+      decisionXmlStore.fetchDiagramXml(
+        groupedDecisionsStore.getDecisionDefinitionId({decisionId, version})
+      );
+    }
+  }, [decisionId, version, status]);
+
+  useEffect(() => {
+    return decisionXmlStore.reset;
   }, []);
 
   return (
     <Container>
-      {/* TODO: pass decisionViewId depending on filters */}
       <DecisionViewer
         xml={decisionXmlStore.state.xml}
-        decisionViewId="invoiceClassification"
+        decisionViewId={decisionId}
       />
     </Container>
   );

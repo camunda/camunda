@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {logger} from 'modules/logger';
 import {Viewer} from './Viewer';
 
 class DecisionViewer {
@@ -29,9 +30,12 @@ class DecisionViewer {
       const view = this.#viewer.getViews().find((view) => {
         return view.id === decisionViewId;
       });
+
       if (view !== undefined) {
         this.#viewer.open(view);
         this.#decisionViewId = decisionViewId;
+      } else {
+        logger.error(`decision "${decisionViewId}" not found in xml`);
       }
     }
   };

@@ -13,6 +13,7 @@ import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 const Decisions: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -20,6 +21,9 @@ const Decisions: React.FC = () => {
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
+    groupedDecisionsStore.fetchDecisions();
+
+    return groupedDecisionsStore.reset;
   }, []);
 
   const panelMinHeight = clientHeight / 4;

@@ -11,7 +11,7 @@ import {Container} from './styled';
 
 type Props = {
   xml: string | null;
-  decisionViewId?: string;
+  decisionViewId: string | null;
   highlightableRules?: number[];
 };
 
@@ -28,7 +28,7 @@ const DecisionViewer: React.FC<Props> = observer(
       if (
         decisionViewerRef.current === null ||
         xml === null ||
-        decisionViewId === undefined
+        decisionViewId === null
       ) {
         return;
       }

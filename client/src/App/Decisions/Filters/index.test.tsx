@@ -6,9 +6,13 @@
 
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {mockServer} from 'modules/mock-server/node';
+import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {decisionInstancesVisibleFiltersStore} from 'modules/stores/decisionInstancesVisibleFilters';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 
@@ -28,7 +32,7 @@ function getWrapper(initialPath: string = '/decisions') {
 }
 
 const MOCK_FILTERS_PARAMS = {
-  name: '3',
+  name: 'invoice-assign-approver',
   version: '2',
   evaluated: 'true',
   failed: 'true',
@@ -38,7 +42,13 @@ const MOCK_FILTERS_PARAMS = {
 } as const;
 
 describe('<Filters />', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    mockServer.use(
+      rest.get('/api/decisions/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedDecisions))
+      )
+    );
+    await groupedDecisionsStore.fetchDecisions();
     decisionInstancesVisibleFiltersStore.reset();
     jest.useFakeTimers();
   });
@@ -46,6 +56,7 @@ describe('<Filters />', () => {
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+    groupedDecisionsStore.reset();
   });
 
   it('should render the correct elements', () => {
@@ -77,7 +88,9 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     expect(screen.getByTestId('search')).toHaveTextContent('');
 
-    userEvent.selectOptions(screen.getByLabelText(/name/i), ['3']);
+    userEvent.selectOptions(screen.getByLabelText(/name/i), [
+      'invoice-assign-approver',
+    ]);
 
     userEvent.selectOptions(screen.getByLabelText(/version/i), ['2']);
 
@@ -121,7 +134,9 @@ describe('<Filters />', () => {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
 
-    expect(screen.getByDisplayValue(/decision 3/i)).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(/assign approver group/i)
+    ).toBeInTheDocument();
     expect(screen.getByDisplayValue(/version 2/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
     expect(screen.getByLabelText(/failed/i)).toBeChecked();

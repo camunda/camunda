@@ -29,7 +29,7 @@ const DecisionPanel: React.FC = observer(() => {
       )}
       <DecisionViewer
         xml={decisionXmlStore.state.xml}
-        decisionViewId={decisionInstance?.decisionId}
+        decisionViewId={decisionInstance?.decisionId ?? null}
         highlightableRules={highlightableRules}
       />
     </Container>

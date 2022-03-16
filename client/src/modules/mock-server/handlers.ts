@@ -19,6 +19,7 @@ import {
   calledFailedDecisionMetadata,
   calledUnevaluatedDecisionMetadata,
 } from 'modules/mocks/metadata';
+import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 
 const handlers: RequestHandler[] = [
   rest.get('/api/decision-instances/:decisionInstanceId', (req, res, ctx) => {
@@ -120,6 +121,9 @@ const handlers: RequestHandler[] = [
       return res(ctx.json(metadata));
     }
   ),
+  rest.get('/api/decisions/grouped', async (_, res, ctx) => {
+    return res(ctx.json(groupedDecisions));
+  }),
 ];
 
 export {handlers};
