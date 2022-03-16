@@ -188,9 +188,11 @@ pipeline {
             // Generate Data
             sh("""
               mvn -B -s $MAVEN_SETTINGS_XML -f qa/zeebe-data-generation spring-boot:run \
-              -Dinstancestarterthreadcount=$params.INSTANCE_STARTER_THREAD_COUNT \
-              -Ddata.processdefinitioncount=$params.NUM_PROCESS_DEFINITIONS \
-              -Ddata.instancecount=$params.NUM_PROCESS_INSTANCES \
+              -Dinstance.starter.thread.count=$params.INSTANCE_STARTER_THREAD_COUNT \
+              -Djobworker.execution.thread.count=$params.JOBWORKER_EXECUTION_THREAD_COUNT \
+              -Djobworker.max.active.count=$params.JOBWORKER_MAX_ACTIVE_COUNT \
+              -Ddata.process.definition.count=$params.NUM_PROCESS_DEFINITIONS \
+              -Ddata.instance.count=$params.NUM_PROCESS_INSTANCES \
             """)
           }
         }

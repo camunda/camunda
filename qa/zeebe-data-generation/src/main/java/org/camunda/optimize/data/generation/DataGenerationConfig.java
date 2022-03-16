@@ -17,16 +17,20 @@ import java.util.concurrent.ThreadFactory;
 
 @Configuration
 public class DataGenerationConfig {
-  private static final int JOB_WORKER_MAX_JOBS_ACTIVE = 5;
   private static final String ZEEBE_GATEWAY_ADDRESS = "localhost:26500";
   @Value("${INSTANCE_STARTER_THREAD_COUNT:8}")
   private Integer threadCount;
+  @Value("${JOBWORKER_MAX_ACTIVE_COUNT:5}")
+  private Integer jobworkerCount;
+  @Value("${JOBWORKER_EXECUTION_THREAD_COUNT:1}")
+  private Integer jobworkerExecutionThreadCount;
 
   @Bean
   public ZeebeClient getZeebeClient() {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
       .gatewayAddress(ZEEBE_GATEWAY_ADDRESS)
-      .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
+      .defaultJobWorkerMaxJobsActive(jobworkerCount)
+      .numJobWorkerExecutionThreads(jobworkerExecutionThreadCount)
       .usePlaintext();
     return builder.build();
   }
