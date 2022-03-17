@@ -34,7 +34,7 @@ spec:
           defaultMode: 0555
       initContainers:
       - name: migration
-        image: registry.camunda.cloud/optimize-ee/optimize:3.6.0
+        image: registry.camunda.cloud/optimize-ee/optimize:3.7.3
         command: ['./upgrade/upgrade.sh', '--skip-warning']
         volumeMounts:
           - name: configuration
@@ -42,7 +42,7 @@ spec:
             subPath: environment-config.yaml
       containers:
       - name: optimize
-        image: registry.camunda.cloud/optimize-ee/optimize:3.6.0
+        image: registry.camunda.cloud/optimize-ee/optimize:3.7.3
         imagePullPolicy: Always
         env:
         - name: OPTIMIZE_JAVA_OPTS
