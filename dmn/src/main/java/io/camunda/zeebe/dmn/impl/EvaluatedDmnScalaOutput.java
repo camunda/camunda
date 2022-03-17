@@ -20,6 +20,8 @@ public record EvaluatedDmnScalaOutput(String outputId, String outputName, Direct
       final Audit.EvaluatedOutput evaluatedOutput, final Function<Val, DirectBuffer> converter) {
     final var output = evaluatedOutput.output();
     final var outputValue = evaluatedOutput.value();
-    return new EvaluatedDmnScalaOutput(output.id(), output.name(), converter.apply(outputValue));
+    // Just like the Modeler, we favor the label over the name
+    final var outputName = output.label() != null ? output.label() : output.name();
+    return new EvaluatedDmnScalaOutput(output.id(), outputName, converter.apply(outputValue));
   }
 }
