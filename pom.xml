@@ -46,7 +46,7 @@
     <version.graphql>11.1.0</version.graphql>
     <version.graphql.tools>11.0.1</version.graphql.tools>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.netty>4.1.70.Final</version.netty>
+    <version.netty>4.1.75.Final</version.netty>
     <version.guava>31.0.1-jre</version.guava>
 
     <version.node>v14.19.0</version.node>
