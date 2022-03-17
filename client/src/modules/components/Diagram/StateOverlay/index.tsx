@@ -11,7 +11,7 @@ import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-ba
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import {ReactComponent as CompletedIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed.svg';
 import {ReactComponent as CanceledIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled.svg';
-import {FLOW_NODE_STATE_OVERLAY_ID, STATE} from 'modules/constants';
+import {FLOW_NODE_STATE_OVERLAY_ID} from 'modules/constants';
 import {OverlayType} from 'modules/types/modeler';
 import {Overlay} from '../Overlay';
 
@@ -33,16 +33,16 @@ const StateOverlay: React.FC<Props> = observer(
     let TargetIcon;
 
     switch (state) {
-      case STATE.INCIDENT:
+      case 'INCIDENT':
         TargetIcon = IncidentIcon;
         break;
-      case STATE.ACTIVE:
+      case 'ACTIVE':
         TargetIcon = ActiveIcon;
         break;
-      case STATE.COMPLETED:
+      case 'COMPLETED':
         TargetIcon = CompletedIcon;
         break;
-      case STATE.TERMINATED:
+      case 'TERMINATED':
         TargetIcon = CanceledIcon;
         break;
       default:

@@ -137,19 +137,21 @@ describe('<InstancesTable />', () => {
 
     const [, firstDecisionInstance, secondDecisionInstance] = rows;
     expect(
-      within(firstDecisionInstance).getByText('test decision instance 1')
+      within(firstDecisionInstance!).getByText('test decision instance 1')
     ).toBeInTheDocument();
     expect(
-      within(firstDecisionInstance).getByTestId(
+      within(firstDecisionInstance!).getByTestId(
         'COMPLETED-icon-2251799813689541'
       )
     ).toBeInTheDocument();
 
     expect(
-      within(secondDecisionInstance).getByText('test decision instance 2')
+      within(secondDecisionInstance!).getByText('test decision instance 2')
     ).toBeInTheDocument();
     expect(
-      within(secondDecisionInstance).getByTestId('FAILED-icon-2251799813689542')
+      within(secondDecisionInstance!).getByTestId(
+        'FAILED-icon-2251799813689542'
+      )
     ).toBeInTheDocument();
     expect(screen.getByText('2 results found')).toBeInTheDocument();
   });

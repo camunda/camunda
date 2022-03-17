@@ -151,20 +151,35 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
     this.startFetchNext();
 
-    const children = this.state.flowNodeInstances[treePath].children;
+    const children = this.state.flowNodeInstances[treePath]?.children;
+    const sortValues = children && children[children.length - 1]?.sortValues;
+
+    if (sortValues === undefined) {
+      this.handleFetchFailure('sortValues not found');
+      return;
+    }
+
     const flowNodeInstances = await this.fetchFlowNodeInstances({
       treePath,
       pageSize: MAX_INSTANCES_PER_REQUEST,
-      searchAfter: children[children.length - 1].sortValues,
+      searchAfter: sortValues,
     });
 
     if (flowNodeInstances === undefined) {
       return;
     }
 
-    flowNodeInstances[treePath].children = [
-      ...this.state.flowNodeInstances[treePath].children,
-      ...flowNodeInstances[treePath].children,
+    const subTree = flowNodeInstances[treePath];
+    const subTreeChildren = this.state.flowNodeInstances[treePath]?.children;
+
+    if (subTree === undefined || subTreeChildren === undefined) {
+      this.handleFetchFailure(`subTree not found: ${treePath}`);
+      return;
+    }
+
+    flowNodeInstances[treePath]!.children = [
+      ...subTreeChildren,
+      ...subTree.children,
     ].slice(-MAX_INSTANCES_STORED);
 
     this.handleFetchSuccess(flowNodeInstances);
@@ -179,22 +194,37 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
     this.startFetchPrev();
 
-    const children = this.state.flowNodeInstances[treePath].children;
+    const children = this.state.flowNodeInstances[treePath]?.children;
+    const sortValues = children && children[0]?.sortValues;
+
+    if (sortValues === undefined) {
+      this.handleFetchFailure('sortValues not found');
+      return;
+    }
+
     const flowNodeInstances = await this.fetchFlowNodeInstances({
       treePath,
       pageSize: MAX_INSTANCES_PER_REQUEST,
-      searchBefore: children[0]?.sortValues,
+      searchBefore: sortValues,
     });
 
     if (flowNodeInstances === undefined) {
       return;
     }
 
-    const fetchedInstancesCount = flowNodeInstances[treePath].children.length;
+    const subTree = flowNodeInstances[treePath];
+    const subTreeChildren = this.state.flowNodeInstances[treePath]?.children;
 
-    flowNodeInstances[treePath].children = [
-      ...flowNodeInstances[treePath].children,
-      ...this.state.flowNodeInstances[treePath].children,
+    if (subTree === undefined || subTreeChildren === undefined) {
+      this.handleFetchFailure(`subTree not found: ${treePath}`);
+      return;
+    }
+
+    const fetchedInstancesCount = subTree.children.length;
+
+    flowNodeInstances[treePath]!.children = [
+      ...subTree.children,
+      ...subTreeChildren,
     ].slice(0, MAX_INSTANCES_STORED);
 
     this.handleFetchSuccess(flowNodeInstances);

@@ -4,22 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
-
 /**
  * @returns a boolean showing if the current instance has an incident
  * @param {*} instance object with full instance data
  */
-const hasIncident = (instance: any) => {
-  return instance.state === STATE.INCIDENT;
+const hasIncident = (instance: Pick<ProcessInstanceEntity, 'state'>) => {
+  return instance.state === 'INCIDENT';
 };
 
 /**
  * @returns a boolean showing if the current instance is running.
  * @param {*} instance object with full instance data
  */
-const isRunning = (instance: any) => {
-  return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
+const isRunning = (instance: Pick<ProcessInstanceEntity, 'state'>) => {
+  return instance.state === 'ACTIVE' || instance.state === 'INCIDENT';
 };
 
 const getProcessName = (instance: ProcessInstanceEntity | null) => {

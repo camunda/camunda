@@ -208,7 +208,10 @@ describe('PopoverOverlay', () => {
       await screen.findByText(/Flow Node Instance Id/)
     ).toBeInTheDocument();
 
-    userEvent.click(screen.getAllByText(/View/)[0]);
+    const [firstViewLink] = screen.getAllByText(/View/);
+    expect(firstViewLink).toBeInTheDocument();
+
+    userEvent.click(firstViewLink!);
 
     expect(
       screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)

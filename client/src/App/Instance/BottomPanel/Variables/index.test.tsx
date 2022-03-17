@@ -200,8 +200,9 @@ describe('Variables', () => {
         ({hasActiveOperation}) => hasActiveOperation
       );
 
+      expect(activeOperationVariable).toBeDefined();
       expect(
-        within(screen.getByTestId(activeOperationVariable.name)).getByTestId(
+        within(screen.getByTestId(activeOperationVariable!.name)).getByTestId(
           'edit-variable-spinner'
         )
       ).toBeInTheDocument();
@@ -506,8 +507,9 @@ describe('Variables', () => {
         ({hasActiveOperation}) => !hasActiveOperation
       );
 
+      expect(inactiveOperationVariable).toBeDefined();
       expect(
-        within(screen.getByTestId(inactiveOperationVariable.name)).getByTestId(
+        within(screen.getByTestId(inactiveOperationVariable!.name)).getByTestId(
           'edit-variable-button'
         )
       ).toBeInTheDocument();
@@ -535,8 +537,9 @@ describe('Variables', () => {
         ({hasActiveOperation}) => !hasActiveOperation
       );
 
+      expect(inactiveOperationVariable).toBeDefined();
       expect(
-        within(screen.getByTestId(inactiveOperationVariable.name)).getByTestId(
+        within(screen.getByTestId(inactiveOperationVariable!.name)).getByTestId(
           'edit-variable-button'
         )
       ).toBeInTheDocument();
@@ -549,7 +552,7 @@ describe('Variables', () => {
       expect(
         within(
           // eslint-disable-next-line testing-library/prefer-presence-queries
-          screen.getByTestId(inactiveOperationVariable.name)
+          screen.getByTestId(inactiveOperationVariable!.name)
         ).queryByTestId('edit-variable-button')
       ).not.toBeInTheDocument();
     });
@@ -576,8 +579,10 @@ describe('Variables', () => {
         screen.queryByTestId('add-variable-value')
       ).not.toBeInTheDocument();
 
+      const [firstVariable] = variablesStore.state.items;
+      expect(firstVariable).toBeDefined();
       const withinFirstVariable = within(
-        screen.getByTestId(variablesStore.state.items[0].name)
+        screen.getByTestId(firstVariable!.name)
       );
       expect(
         withinFirstVariable.queryByTestId('edit-variable-value')
@@ -624,8 +629,10 @@ describe('Variables', () => {
         screen.queryByTestId('add-variable-value')
       ).not.toBeInTheDocument();
 
+      const [firstVariable] = variablesStore.state.items;
+      expect(firstVariable).toBeDefined();
       const withinFirstVariable = within(
-        screen.getByTestId(variablesStore.state.items[0].name)
+        screen.getByTestId(firstVariable!.name)
       );
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
@@ -660,8 +667,10 @@ describe('Variables', () => {
         screen.queryByTestId('edit-variable-value')
       ).not.toBeInTheDocument();
 
+      const [firstVariable] = variablesStore.state.items;
+      expect(firstVariable).toBeDefined();
       const withinFirstVariable = within(
-        screen.getByTestId(variablesStore.state.items[0].name)
+        screen.getByTestId(firstVariable!.name)
       );
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
@@ -939,7 +948,11 @@ describe('Variables', () => {
       userEvent.click(screen.getByTitle(/exit edit mode/i));
       expect(screen.getByText(/add variable/i)).toBeEnabled();
 
-      userEvent.click(screen.getAllByTestId('edit-variable-button')[0]);
+      const [firstEditVariableButton] = screen.getAllByTestId(
+        'edit-variable-button'
+      );
+      expect(firstEditVariableButton).toBeInTheDocument();
+      userEvent.click(firstEditVariableButton!);
       expect(screen.getByText(/add variable/i)).toBeDisabled();
 
       userEvent.click(screen.getByTitle(/exit edit mode/i));

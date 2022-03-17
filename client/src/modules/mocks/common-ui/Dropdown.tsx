@@ -32,7 +32,7 @@ const Dropdown: React.FC<Props> = ({
       {isDropdownOpen && (
         <>
           <ul data-testid={dataTestId}>
-            {options[0].options?.map((option, index) => {
+            {options[0]?.options?.map((option, index) => {
               return (
                 <li
                   key={index}

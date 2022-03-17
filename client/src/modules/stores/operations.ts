@@ -101,7 +101,7 @@ class Operations extends NetworkReconnectionHandler {
   fetchNextOperations = async () => {
     this.increasePage();
     this.fetchOperations(
-      this.state.operations[this.state.operations.length - 1].sortValues
+      this.state.operations[this.state.operations.length - 1]!.sortValues
     );
   };
 

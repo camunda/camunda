@@ -78,21 +78,26 @@ describe('<InputsAndOutputs />', () => {
     );
 
     const [inputsTable, outputsTable] = screen.getAllByRole('table');
-    const [inputsNameColumnHeader, inputsValueColumnHeader] =
-      within(inputsTable).getAllByRole('columnheader');
+
+    const [inputsNameColumnHeader, inputsValueColumnHeader] = within(
+      inputsTable!
+    ).getAllByRole('columnheader');
     const [
       outputsRuleColumnHeader,
       outputsNameColumnHeader,
       outputsValueColumnHeader,
-    ] = within(outputsTable).getAllByRole('columnheader');
-    const [, inputsFirstTableBodyRow] = within(inputsTable).getAllByRole('row');
-    const [, outputsFirstTableBodyRow] =
-      within(outputsTable).getAllByRole('row');
+    ] = within(outputsTable!).getAllByRole('columnheader');
+    const [, inputsFirstTableBodyRow] = within(inputsTable!).getAllByRole(
+      'row'
+    );
+    const [, outputsFirstTableBodyRow] = within(outputsTable!).getAllByRole(
+      'row'
+    );
     const [inputsNameCell, inputsValueCell] = within(
-      inputsFirstTableBodyRow
+      inputsFirstTableBodyRow!
     ).getAllByRole('cell');
     const [outputsRuleCell, outputsNameCell, outputsValueCell] = within(
-      outputsFirstTableBodyRow
+      outputsFirstTableBodyRow!
     ).getAllByRole('cell');
 
     expect(inputsNameColumnHeader).toBeInTheDocument();

@@ -75,14 +75,6 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,
 } as const;
 
-export const STATE = {
-  ACTIVE: 'ACTIVE',
-  COMPLETED: 'COMPLETED',
-  CANCELED: 'CANCELED',
-  INCIDENT: 'INCIDENT',
-  TERMINATED: 'TERMINATED',
-};
-
 export const SORT_ORDER = {
   ASC: 'asc',
   DESC: 'desc',

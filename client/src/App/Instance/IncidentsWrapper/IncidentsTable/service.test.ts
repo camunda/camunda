@@ -42,24 +42,24 @@ describe('sortIncidents', () => {
   it('should sort by secondary key', () => {
     const sorted = sortIncidents(incidents, 'errorType', SORT_ORDER.ASC);
 
-    expect(sorted[0].id).toEqual('2');
-    expect(sorted[1].id).toEqual('3');
-    expect(sorted[2].id).toEqual('1');
+    expect(sorted[0]?.id).toEqual('2');
+    expect(sorted[1]?.id).toEqual('3');
+    expect(sorted[2]?.id).toEqual('1');
   });
 
   it('should sort descending', () => {
     const sorted = sortIncidents(incidents, 'flowNodeName', SORT_ORDER.DESC);
 
-    expect(sorted[0].id).toEqual('3');
-    expect(sorted[1].id).toEqual('1');
-    expect(sorted[2].id).toEqual('2');
+    expect(sorted[0]?.id).toEqual('3');
+    expect(sorted[1]?.id).toEqual('1');
+    expect(sorted[2]?.id).toEqual('2');
   });
 
   it('should sort correctly the dates', () => {
     const sorted = sortIncidents(incidents, 'creationTime', SORT_ORDER.ASC);
 
-    expect(sorted[0].id).toEqual('1');
-    expect(sorted[1].id).toEqual('3');
-    expect(sorted[2].id).toEqual('2');
+    expect(sorted[0]?.id).toEqual('1');
+    expect(sorted[1]?.id).toEqual('3');
+    expect(sorted[2]?.id).toEqual('2');
   });
 });

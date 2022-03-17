@@ -15,7 +15,8 @@ const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcess} = processesStore;
   const selectedProcess = useField('process').input.value;
 
-  const versions = versionsByProcess[selectedProcess];
+  const versions = versionsByProcess[selectedProcess] ?? [];
+
   const mappedVersions =
     versions?.map(({version}) => ({
       value: version.toString(),

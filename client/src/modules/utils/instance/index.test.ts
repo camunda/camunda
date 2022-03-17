@@ -5,7 +5,6 @@
  */
 
 import {createInstance} from 'modules/testUtils';
-import {STATE} from 'modules/constants';
 
 import * as instanceUtils from './index';
 import {hasIncident, isRunning} from 'modules/utils/instance';
@@ -13,12 +12,12 @@ import {hasIncident, isRunning} from 'modules/utils/instance';
 const mockIncidentInstance = {
   id: '8590375632-2',
   state: 'INCIDENT',
-};
+} as const;
 
 const mockActiveInstance = {
   id: '8590375632-2',
   state: 'ACTIVE',
-};
+} as const;
 
 describe('instance utils', () => {
   describe('hasIncident', () => {
@@ -34,12 +33,12 @@ describe('instance utils', () => {
   describe('isRunning', () => {
     const mockCompletedInstance = {
       id: '8590375632-2',
-      state: STATE.COMPLETED,
-    };
+      state: 'COMPLETED',
+    } as const;
     const mockCanceldInstance = {
       id: '8590375632-2',
-      state: STATE.CANCELED,
-    };
+      state: 'CANCELED',
+    } as const;
 
     it('should return true if an instance is running', () => {
       expect(isRunning(mockIncidentInstance)).toBe(true);
@@ -62,7 +61,7 @@ describe('instance utils', () => {
 
     it('should fallback to bpmnProcessId', () => {
       // given
-      const instance = createInstance({processName: null});
+      const instance = createInstance({processName: undefined});
       const instanceName = instanceUtils.getProcessName(instance);
 
       // then

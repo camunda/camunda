@@ -70,7 +70,9 @@ export const createOperation = (options = {}): InstanceOperationEntity => {
  * @returns a mocked instance Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const createInstance = (options = {}): ProcessInstanceEntity => {
+export const createInstance = (
+  options: Partial<ProcessInstanceEntity> = {}
+): ProcessInstanceEntity => {
   return {
     id: randomIdIterator.next().value,
     processId: '2',
@@ -823,14 +825,7 @@ export const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
 
 export const createMultiInstanceFlowNodeInstances = (
   processInstanceId: string
-): {
-  level1: FlowNodeInstances;
-  level1Poll: FlowNodeInstances;
-  level1Next: FlowNodeInstances;
-  level1Prev: FlowNodeInstances;
-  level2: FlowNodeInstances;
-  level3: FlowNodeInstances;
-} => {
+) => {
   return {
     level1: {
       [processInstanceId]: {
@@ -954,7 +949,7 @@ export const createMultiInstanceFlowNodeInstances = (
         ],
       },
     },
-  };
+  } as const;
 };
 
 export const createEventSubProcessFlowNodeInstances = (

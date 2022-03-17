@@ -4,18 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
-
 import * as Styled from './styled';
 
 const stateIconsMap = {
   FAILED: Styled.IncidentIcon,
-  [STATE.INCIDENT]: Styled.IncidentIcon,
-  [STATE.ACTIVE]: Styled.ActiveIcon,
-  [STATE.COMPLETED]: Styled.CompletedIcon,
-  [STATE.CANCELED]: Styled.CanceledIcon,
-  [STATE.TERMINATED]: Styled.CanceledIcon,
-};
+  INCIDENT: Styled.IncidentIcon,
+  ACTIVE: Styled.ActiveIcon,
+  COMPLETED: Styled.CompletedIcon,
+  EVALUATED: Styled.CompletedIcon,
+  CANCELED: Styled.CanceledIcon,
+  TERMINATED: Styled.CanceledIcon,
+} as const;
 
 type Props = {
   state?: InstanceEntityState | DecisionInstanceEntityState;

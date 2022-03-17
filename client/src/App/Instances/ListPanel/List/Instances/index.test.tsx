@@ -57,58 +57,64 @@ describe('List/Instances', () => {
 
     const rows = await screen.findAllByRole('row');
     expect(rows).toHaveLength(3);
+    const withinFirstRow = within(rows[0]!);
+    const withinSecondRow = within(rows[1]!);
 
-    const firstInstance = mockProcessInstances.processInstances[0];
+    const firstInstance = mockProcessInstances.processInstances[0]!;
+    expect(firstInstance).toBeDefined();
+
     expect(
-      within(rows[0]).getByRole('checkbox', {
+      withinFirstRow.getByRole('checkbox', {
         name: `Select instance ${firstInstance.id}`,
       })
     ).toBeInTheDocument();
     expect(
-      within(rows[0]).getByText(firstInstance.processName)
+      withinFirstRow.getByText(firstInstance.processName)
     ).toBeInTheDocument();
     expect(
-      within(rows[0]).getByRole('link', {
+      withinFirstRow.getByRole('link', {
         name: `View instance ${firstInstance.id}`,
       })
     ).toBeInTheDocument();
     expect(
-      within(rows[0]).getByText(`Version ${firstInstance.processVersion}`)
+      withinFirstRow.getByText(`Version ${firstInstance.processVersion}`)
     ).toBeInTheDocument();
-    expect(within(rows[0]).getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(withinFirstRow.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(
-      within(rows[0]).getByRole('link', {
+      withinFirstRow.getByRole('link', {
         name: `View parent instance ${firstInstance.parentInstanceId}`,
       })
     ).toBeInTheDocument();
-    expect(within(rows[0]).queryByText('None')).not.toBeInTheDocument();
+    expect(withinFirstRow.queryByText('None')).not.toBeInTheDocument();
     expect(
-      within(rows[0]).getByRole('button', {
+      withinFirstRow.getByRole('button', {
         name: `Cancel Instance ${firstInstance.id}`,
       })
     ).toBeInTheDocument();
 
-    const secondInstance = mockProcessInstances.processInstances[1];
+    const secondInstance = mockProcessInstances.processInstances[1]!;
+    expect(secondInstance).toBeDefined();
+
     expect(
-      within(rows[1]).getByRole('checkbox', {
+      withinSecondRow.getByRole('checkbox', {
         name: `Select instance ${secondInstance.id}`,
       })
     ).toBeInTheDocument();
     expect(
-      within(rows[1]).getByText(secondInstance.processName)
+      withinSecondRow.getByText(secondInstance.processName)
     ).toBeInTheDocument();
     expect(
-      within(rows[1]).getByRole('link', {
+      withinSecondRow.getByRole('link', {
         name: `View instance ${secondInstance.id}`,
       })
     ).toBeInTheDocument();
     expect(
-      within(rows[1]).getByText(`Version ${secondInstance.processVersion}`)
+      withinSecondRow.getByText(`Version ${secondInstance.processVersion}`)
     ).toBeInTheDocument();
-    expect(within(rows[1]).getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(within(rows[1]).getByText('None')).toBeInTheDocument();
+    expect(withinSecondRow.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(withinSecondRow.getByText('None')).toBeInTheDocument();
     expect(
-      within(rows[1]).getByRole('button', {
+      withinSecondRow.getByRole('button', {
         name: `Cancel Instance ${secondInstance.id}`,
       })
     ).toBeInTheDocument();
@@ -136,17 +142,19 @@ describe('List/Instances', () => {
 
     const rows = await screen.findAllByRole('row');
     expect(rows).toHaveLength(3);
+    const withinFirstRow = within(rows[0]!);
 
-    const firstInstance = mockProcessInstances.processInstances[0];
+    const firstInstance = mockProcessInstances.processInstances[0]!;
+    expect(firstInstance).toBeDefined();
 
     expect(
-      within(rows[0]).getByRole('button', {
+      withinFirstRow.getByRole('button', {
         name: `Cancel Instance ${firstInstance.id}`,
       })
     ).toBeEnabled();
 
     userEvent.click(
-      within(rows[0]).getByRole('button', {
+      withinFirstRow.getByRole('button', {
         name: `Cancel Instance ${firstInstance.id}`,
       })
     );
@@ -158,7 +166,7 @@ describe('List/Instances', () => {
     );
 
     expect(
-      within(rows[0]).getByRole('button', {
+      withinFirstRow.getByRole('button', {
         name: `Cancel Instance ${firstInstance.id}`,
       })
     ).toBeDisabled();
@@ -186,22 +194,24 @@ describe('List/Instances', () => {
 
     const rows = await screen.findAllByRole('row');
     expect(rows).toHaveLength(3);
+    const withinSecondRow = within(rows[1]!);
 
-    const instanceWithIncident = mockProcessInstances.processInstances[1];
+    const instanceWithIncident = mockProcessInstances.processInstances[1]!;
+    expect(instanceWithIncident).toBeDefined();
 
     expect(
-      within(rows[1]).getByRole('button', {
+      withinSecondRow.getByRole('button', {
         name: `Retry Instance ${instanceWithIncident.id}`,
       })
     ).toBeEnabled();
 
     userEvent.click(
-      within(rows[1]).getByRole('button', {
+      withinSecondRow.getByRole('button', {
         name: `Retry Instance ${instanceWithIncident.id}`,
       })
     );
     expect(
-      within(rows[1]).getByRole('button', {
+      withinSecondRow.getByRole('button', {
         name: `Retry Instance ${instanceWithIncident.id}`,
       })
     ).toBeDisabled();
@@ -229,17 +239,19 @@ describe('List/Instances', () => {
 
     const rows = await screen.findAllByRole('row');
     expect(rows).toHaveLength(3);
+    const withinThirdRow = within(rows[2]!);
 
-    const finishedInstance = mockProcessInstances.processInstances[2];
+    const finishedInstance = mockProcessInstances.processInstances[2]!;
+    expect(finishedInstance).toBeDefined();
 
     expect(
-      within(rows[2]).getByRole('button', {
+      withinThirdRow.getByRole('button', {
         name: `Delete Instance ${finishedInstance.id}`,
       })
     ).toBeEnabled();
 
     userEvent.click(
-      within(rows[2]).getByRole('button', {
+      withinThirdRow.getByRole('button', {
         name: `Delete Instance ${finishedInstance.id}`,
       })
     );
@@ -251,7 +263,7 @@ describe('List/Instances', () => {
     );
 
     expect(
-      within(rows[2]).getByRole('button', {
+      withinThirdRow.getByRole('button', {
         name: `Delete Instance ${finishedInstance.id}`,
       })
     ).toBeDisabled();

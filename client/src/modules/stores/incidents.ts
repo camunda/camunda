@@ -237,7 +237,7 @@ class Incidents extends NetworkReconnectionHandler {
 
     return (
       selectedInstances.length === 1 &&
-      selectedInstances[0].flowNodeInstanceId === flowNodeInstanceId
+      selectedInstances[0]?.flowNodeInstanceId === flowNodeInstanceId
     );
   }
 

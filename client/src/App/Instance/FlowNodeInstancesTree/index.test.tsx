@@ -196,7 +196,9 @@ describe('<FlowNodeInstancesTree />', () => {
 
       const withinMultiInstanceFlowNode = within(
         screen.getByTestId(
-          `tree-node-${flowNodeInstances.level1Poll[processInstanceId].children[1].id}`
+          `tree-node-${
+            flowNodeInstances.level1Poll[processInstanceId]!.children[1].id
+          }`
         )
       );
 

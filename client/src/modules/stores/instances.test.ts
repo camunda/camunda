@@ -127,8 +127,8 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     expect(instancesStore.state.processInstances.length).toBe(4);
-    expect(instancesStore.state.processInstances[2].id).toBe('100');
-    expect(instancesStore.state.processInstances[3].id).toBe('101');
+    expect(instancesStore.state.processInstances[2]?.id).toBe('100');
+    expect(instancesStore.state.processInstances[3]?.id).toBe('101');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'next',
       processInstancesCount: 2,
@@ -150,7 +150,7 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     expect(instancesStore.state.processInstances.length).toBe(5);
-    expect(instancesStore.state.processInstances[4].id).toBe('200');
+    expect(instancesStore.state.processInstances[4]!.id).toBe('200');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'next',
       processInstancesCount: 1,
@@ -192,7 +192,7 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     expect(instancesStore.state.processInstances.length).toBe(3);
-    expect(instancesStore.state.processInstances[0].id).toBe('100');
+    expect(instancesStore.state.processInstances[0]?.id).toBe('100');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'prev',
       processInstancesCount: 1,
@@ -214,8 +214,8 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     expect(instancesStore.state.processInstances.length).toBe(4);
-    expect(instancesStore.state.processInstances[0].id).toBe('200');
-    expect(instancesStore.state.processInstances[1].id).toBe('100');
+    expect(instancesStore.state.processInstances[0]?.id).toBe('200');
+    expect(instancesStore.state.processInstances[1]?.id).toBe('100');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'prev',
       processInstancesCount: 1,
@@ -658,7 +658,7 @@ describe('stores/instances', () => {
     });
 
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1']);
-    expect(instancesStore.state.processInstances[0].hasActiveOperation).toBe(
+    expect(instancesStore.state.processInstances[0]?.hasActiveOperation).toBe(
       true
     );
   });

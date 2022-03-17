@@ -42,7 +42,7 @@ const incidentsMock = [
     flowNodeName: 'Event_1db567d',
     flowNodeInstanceId: id,
   }),
-];
+] as const;
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -231,7 +231,7 @@ describe('IncidentsTable', () => {
         rootCauseInstance: null,
         jobId: null,
       }),
-    ];
+    ] as const;
 
     incidentsStore.setIncidents({incidents, count: 1});
 
@@ -320,7 +320,7 @@ describe('IncidentsTable', () => {
 
   describe('Selection', () => {
     it('should deselect selected incident', () => {
-      const incidents = [createIncident()];
+      const incidents = [createIncident()] as const;
 
       incidentsStore.setIncidents({incidents, count: 1});
       flowNodeSelectionStore.selectFlowNode({
@@ -339,7 +339,7 @@ describe('IncidentsTable', () => {
       const incidents = [
         createIncident({flowNodeId: 'myTask'}),
         createIncident({flowNodeId: 'myTask'}),
-      ];
+      ] as const;
 
       incidentsStore.setIncidents({incidents, count: 2});
       flowNodeSelectionStore.selectFlowNode({
@@ -350,9 +350,12 @@ describe('IncidentsTable', () => {
       render(<IncidentsTable />, {wrapper: Wrapper});
       expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);
 
-      userEvent.click(
-        screen.getAllByRole('row', {name: 'Incident Condition error'})[0]
-      );
+      const [firstRow] = screen.getAllByRole('row', {
+        name: 'Incident Condition error',
+      });
+
+      expect(firstRow).toBeInTheDocument();
+      userEvent.click(firstRow!);
 
       expect(
         screen.getByRole('row', {

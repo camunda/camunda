@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
-
 import {
   createInstance,
   createDiagramNode,
@@ -61,13 +59,13 @@ const noIncidents = {count: 0, incidents: [], errorTypes: [], flowNodes: []};
 
 const processInstance = createInstance({
   id: '4294980768',
-  state: STATE.ACTIVE,
+  state: 'ACTIVE',
   processId: 'processId',
 });
 
 const processInstanceWithIncident = createInstance({
   id: '4294980768',
-  state: STATE.INCIDENT,
+  state: 'INCIDENT',
 });
 
 export const testData = {

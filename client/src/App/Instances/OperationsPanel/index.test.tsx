@@ -69,20 +69,26 @@ describe('OperationsPanel', () => {
     const [firstOperation, secondOperation] =
       screen.getAllByTestId('operations-entry');
 
+    expect(firstOperation).toBeInTheDocument();
+    expect(secondOperation).toBeInTheDocument();
+
+    const withinFirstOperation = within(firstOperation!);
+    const withinSecondOperation = within(secondOperation!);
+
     expect(
-      within(firstOperation).getByText(mockOperationRunning.id)
+      withinFirstOperation.getByText(mockOperationRunning.id)
     ).toBeInTheDocument();
-    expect(within(firstOperation).getByText('Retry')).toBeInTheDocument();
+    expect(withinFirstOperation.getByText('Retry')).toBeInTheDocument();
     expect(
-      within(firstOperation).getByTestId('operation-retry-icon')
+      withinFirstOperation.getByTestId('operation-retry-icon')
     ).toBeInTheDocument();
 
     expect(
-      within(secondOperation).getByText(mockOperationFinished.id)
+      withinSecondOperation.getByText(mockOperationFinished.id)
     ).toBeInTheDocument();
-    expect(within(secondOperation).getByText('Cancel')).toBeInTheDocument();
+    expect(withinSecondOperation.getByText('Cancel')).toBeInTheDocument();
     expect(
-      within(secondOperation).getByTestId('operation-cancel-icon')
+      withinSecondOperation.getByTestId('operation-cancel-icon')
     ).toBeInTheDocument();
   });
 

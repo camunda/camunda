@@ -700,7 +700,7 @@ describe('stores/variables', () => {
       )
     );
 
-    eventListeners.online();
+    eventListeners.online?.();
 
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual(newMockVariables)
@@ -721,9 +721,9 @@ describe('stores/variables', () => {
     );
     expect(variablesStore.state.status).toBe('fetched');
 
-    expect(variablesStore.state.items[0].name).toBe('mwst');
+    expect(variablesStore.state.items[0]?.name).toBe('mwst');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1].name
+      variablesStore.state.items[variablesStore.state.items.length - 1]?.name
     ).toBe('paid');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
@@ -771,9 +771,9 @@ describe('stores/variables', () => {
     expect(variablesStore.shouldFetchNextVariables()).toBe(false);
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
-    expect(variablesStore.state.items[0].name).toBe('orderStatus');
+    expect(variablesStore.state.items[0]?.name).toBe('orderStatus');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1].name
+      variablesStore.state.items[variablesStore.state.items.length - 1]!.name
     ).toBe('test3');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(true);
@@ -813,9 +813,9 @@ describe('stores/variables', () => {
     expect(variablesStore.shouldFetchNextVariables()).toBe(false);
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
-    expect(variablesStore.state.items[0].name).toBe('test1');
+    expect(variablesStore.state.items[0]?.name).toBe('test1');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1].name
+      variablesStore.state.items[variablesStore.state.items.length - 1]?.name
     ).toBe('test5');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(true);
@@ -833,9 +833,9 @@ describe('stores/variables', () => {
     expect(variablesStore.shouldFetchNextVariables()).toBe(false);
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
-    expect(variablesStore.state.items[0].name).toBe('mwst');
+    expect(variablesStore.state.items[0]?.name).toBe('mwst');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1].name
+      variablesStore.state.items[variablesStore.state.items.length - 1]?.name
     ).toBe('test2');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);

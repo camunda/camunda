@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
-
-const isInstanceRunning = (instance: any) => {
-  return instance?.state === STATE.ACTIVE || instance?.state === STATE.INCIDENT;
+const isInstanceRunning = (instance: ProcessInstanceEntity | null) => {
+  return instance?.state === 'ACTIVE' || instance?.state === 'INCIDENT';
 };
 
 export {isInstanceRunning};

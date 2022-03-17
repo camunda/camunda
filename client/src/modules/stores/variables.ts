@@ -23,7 +23,6 @@ import {
 } from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {STATE} from 'modules/constants';
 import {
   MAX_VARIABLES_PER_REQUEST,
   MAX_VARIABLES_STORED,
@@ -106,7 +105,7 @@ class Variables extends NetworkReconnectionHandler {
     this.instanceId = instanceId;
 
     this.variablesWithActiveOperationsDisposer = when(
-      () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
+      () => currentInstanceStore.state.instance?.state === 'CANCELED',
       this.removeVariablesWithActiveOperations
     );
 
@@ -313,8 +312,8 @@ class Variables extends NetworkReconnectionHandler {
     const {items} = this.state;
 
     if (fetchType === 'initial') {
-      if (items.length > 0 && !items[0].isFirst) {
-        return items[0].sortValues ?? undefined;
+      if (items.length > 0 && !items[0]?.isFirst) {
+        return items[0]?.sortValues ?? undefined;
       }
 
       return undefined;

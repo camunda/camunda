@@ -29,9 +29,15 @@ const ProcessField: React.FC = observer(() => {
           data-testid="filter-process-name"
           disabled={processes.length === 0}
           onCmInput={(event) => {
-            const versions = versionsByProcess[event.detail.selectedOptions[0]];
+            const [selectedOptions] = event.detail.selectedOptions;
+            const versions =
+              selectedOptions === undefined
+                ? []
+                : versionsByProcess[selectedOptions];
             const initialVersionSelection =
-              versions?.[versions.length - 1].version;
+              versions === undefined
+                ? undefined
+                : versions[versions.length - 1]?.version;
 
             input.onChange(event.detail.selectedOptions[0]);
             form.change('version', initialVersionSelection);

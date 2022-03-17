@@ -16,7 +16,8 @@
     "jsx": "react-jsx",
     "baseUrl": "src",
     "useDefineForClassFields": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": ["src"]
 }

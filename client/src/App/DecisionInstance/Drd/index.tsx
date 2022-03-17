@@ -35,9 +35,11 @@ const Drd: React.FC = observer(() => {
     }
 
     const decisionInstanceId =
-      decisionInstances[decisionInstances.length - 1].decisionInstanceId;
+      decisionInstances[decisionInstances.length - 1]?.decisionInstanceId;
 
-    navigate(Locations.decisionInstance(location, decisionInstanceId));
+    if (decisionInstanceId !== undefined) {
+      navigate(Locations.decisionInstance(location, decisionInstanceId));
+    }
   };
 
   if (drdViewer.current === null) {
