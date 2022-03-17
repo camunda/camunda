@@ -475,34 +475,21 @@ public final class BusinessRuleTaskTest {
   @Test
   public void shouldWriteDecisionEvaluationEventIfInputOutputNamesAreNull() {
     // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource(DMN_RESOURCE_WITH_NAMELESS_INPUTS)
-            .withXmlResource(
-                processWithBusinessRuleTask(
-                    t ->
-                        t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
-            .deploy();
-
-    final var deployedDecisionsById =
-        deployment.getValue().getDecisionsMetadata().stream()
-            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
-
-    final var calledDecision = deployedDecisionsById.get("force_user");
-    final var requiredDecision = deployedDecisionsById.get("jedi_or_sith");
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE_WITH_NAMELESS_INPUTS)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t -> t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
 
     // when
-    final Map<String, Object> variables =
-        Map.ofEntries(entry("lightsaberColor", "blue"), entry("height", 182));
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
-
-    final var businessRuleTaskActivated =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
-            .getFirst();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.ofEntries(entry("lightsaberColor", "blue"), entry("height", 182)))
+            .create();
 
     // then
     final var decisionEvaluationRecord =
@@ -510,97 +497,23 @@ public final class BusinessRuleTaskTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    assertThat(decisionEvaluationRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasValueType(ValueType.DECISION_EVALUATION)
-        .hasIntent(DecisionEvaluationIntent.EVALUATED)
-        .hasSourceRecordPosition(businessRuleTaskActivated.getSourceRecordPosition());
-    assertThat(decisionEvaluationRecord.getKey())
-        .describedAs("Expect that the decision evaluation event has a key")
-        .isPositive();
-
-    final var decisionEvaluationValue = decisionEvaluationRecord.getValue();
-    assertThat(decisionEvaluationValue)
-        .hasDecisionKey(calledDecision.getDecisionKey())
-        .hasDecisionId(calledDecision.getDecisionId())
-        .hasDecisionName(calledDecision.getDecisionName())
-        .hasDecisionVersion(calledDecision.getVersion())
-        .hasDecisionRequirementsKey(calledDecision.getDecisionRequirementsKey())
-        .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
-        .hasDecisionOutput("\"Obi-Wan Kenobi\"")
-        .hasFailedDecisionId("")
-        .hasEvaluationFailureMessage("");
-
-    assertThat(decisionEvaluationValue)
-        .hasProcessDefinitionKey(businessRuleTaskActivated.getValue().getProcessDefinitionKey())
-        .hasBpmnProcessId(businessRuleTaskActivated.getValue().getBpmnProcessId())
-        .hasProcessInstanceKey(businessRuleTaskActivated.getValue().getProcessInstanceKey())
-        .hasElementInstanceKey(businessRuleTaskActivated.getKey())
-        .hasElementId(businessRuleTaskActivated.getValue().getElementId());
-
-    final var evaluatedDecisions = decisionEvaluationValue.getEvaluatedDecisions();
-    assertThat(evaluatedDecisions).hasSize(2);
-
-    assertThat(evaluatedDecisions.get(0))
-        .hasDecisionId("jedi_or_sith")
-        .hasDecisionName("Jedi or Sith")
-        .hasDecisionKey(requiredDecision.getDecisionKey())
-        .hasDecisionVersion(requiredDecision.getVersion())
-        .hasDecisionType("DECISION_TABLE")
-        .hasDecisionOutput("\"Jedi\"")
-        .satisfies(
+    assertThat(decisionEvaluationRecord.getValue().getEvaluatedDecisions())
+        .isNotEmpty()
+        .allSatisfy(
             evaluatedDecision -> {
-              assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(1);
-              assertThat(evaluatedDecision.getEvaluatedInputs().get(0))
-                  .hasInputId("Input_1")
-                  .hasInputName("")
-                  .hasInputValue("\"blue\"");
+              assertThat(evaluatedDecision.getEvaluatedInputs())
+                  .isNotEmpty()
+                  .describedAs("Expect that evaluated input's name is empty string")
+                  .allSatisfy(input -> assertThat(input).hasInputName(""));
 
-              assertThat(evaluatedDecision.getMatchedRules()).hasSize(1);
-              assertThat(evaluatedDecision.getMatchedRules().get(0))
-                  .hasRuleId("DecisionRule_0zumznl")
-                  .hasRuleIndex(1)
-                  .satisfies(
-                      matchedRule -> {
-                        assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
-                        assertThat(matchedRule.getEvaluatedOutputs().get(0))
-                            .hasOutputId("Output_1")
-                            .hasOutputName("")
-                            .hasOutputValue("\"Jedi\"");
-                      });
-            });
-
-    assertThat(evaluatedDecisions.get(1))
-        .hasDecisionId("force_user")
-        .hasDecisionName("Which force user?")
-        .hasDecisionKey(calledDecision.getDecisionKey())
-        .hasDecisionVersion(calledDecision.getVersion())
-        .hasDecisionType("DECISION_TABLE")
-        .hasDecisionOutput("\"Obi-Wan Kenobi\"")
-        .satisfies(
-            evaluatedDecision -> {
-              assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(2);
-              assertThat(evaluatedDecision.getEvaluatedInputs().get(0))
-                  .hasInputId("InputClause_0qnqj25")
-                  .hasInputName("")
-                  .hasInputValue("\"Jedi\"");
-              assertThat(evaluatedDecision.getEvaluatedInputs().get(1))
-                  .hasInputId("InputClause_0k64hys")
-                  .hasInputName("")
-                  .hasInputValue("182");
-
-              assertThat(evaluatedDecision.getMatchedRules()).hasSize(1);
-              assertThat(evaluatedDecision.getMatchedRules().get(0))
-                  .hasRuleId("DecisionRule_0uin2hk")
-                  .hasRuleIndex(2)
-                  .satisfies(
-                      matchedRule -> {
-                        assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
-                        assertThat(matchedRule.getEvaluatedOutputs().get(0))
-                            .hasOutputId("OutputClause_0hhe1yo")
-                            .hasOutputName("")
-                            .hasOutputValue("\"Obi-Wan Kenobi\"");
-                      });
+              assertThat(evaluatedDecision.getMatchedRules())
+                  .isNotEmpty()
+                  .allSatisfy(
+                      matchedRule ->
+                          assertThat(matchedRule.getEvaluatedOutputs())
+                              .isNotEmpty()
+                              .describedAs("Expect that evaluated output's name is empty string")
+                              .allSatisfy(output -> assertThat(output).hasOutputName("")));
             });
   }
 }
