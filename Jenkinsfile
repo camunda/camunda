@@ -23,6 +23,10 @@ String getImageTag() {
   return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
 }
 
+String getCiImageTag() {
+  return "ci-${getGitCommitHash()}"
+}
+
 /******** START PIPELINE *******/
 
 pipeline {
@@ -145,13 +149,15 @@ pipeline {
           }
           environment {
             IMAGE_TAG = getImageTag()
+            CI_IMAGE_TAG = getCiImageTag()
           }
           steps {
             lock('operate-dockerimage-upload') {
               container('docker') {
                 sh """
-                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} .
+                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
                   docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
+                  docker push ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
                   if [ "${env.BRANCH_NAME}" = 'master' ]; then
                     docker tag ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
@@ -190,10 +196,11 @@ pipeline {
         }
       }
       steps {
-        build job: '/deploy-branch-to-k8s',
+        build job: '/deploy-branch-to-k8s-gha',
           parameters: [
-              string(name: 'BRANCH', value: getBranchSlug()),
-              string(name: 'OPERATE_BRANCH', value: env.BRANCH_NAME),
+              string(name: 'BRANCH', value: env.BRANCH_NAME),
+              string(name: 'DOCKER_TAG', value: getCiImageTag()),
+              string(name: 'REF', value: env.BRANCH_NAME),
           ]
       }
     }

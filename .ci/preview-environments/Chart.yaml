@@ -10,5 +10,6 @@ version: 0.1.0
 
 dependencies:
 - name: ccsm-helm
-  repository: "@camunda-cloud"
+  # @camunda-cloud references https://helm.camunda.io repository configured as camunda-cloud in Argo CD
+  repository: "@helm-camunda-io"
   version: 0.0.22

@@ -1,5 +1,6 @@
 pipelineJob('query-performance-large-static-dataset') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Query performance test on large static dataset'
   description '''Test performance of Operate queries against a large static dataset.
   <br>Following steps are being performed:

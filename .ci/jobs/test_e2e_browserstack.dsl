@@ -1,5 +1,6 @@
 pipelineJob('browserstack/test_e2e_browserstack') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'e2e browserstack'
   description '''Running our e2e tests remotely in Browserstack'''
 

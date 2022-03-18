@@ -13,9 +13,7 @@ spec:
   project: operate-previews
   source:
     helm:
-      parameters:
-      - name: global.ingress.vouchUrl
-        value: https://dev.vouch.camunda.cloud
+      parameters: []
     path: .ci/preview-environments
     repoURL: https://github.com/camunda-cloud/operate.git
 

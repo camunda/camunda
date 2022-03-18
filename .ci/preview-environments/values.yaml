@@ -15,7 +15,7 @@ ingress:
 
 git:
   # Defines the branch name to use for annotating resources
-  branch: INFRA-3089
+  branch: master
   # Defines the repository URL to use for annotating resources
   repoUrl: https://github.com/camunda-cloud/operate
 
@@ -27,10 +27,19 @@ git:
 ccsm-helm:
   operate:
     fullnameOverride: operate
+    # Defines the image repo and tag to be deployed. Tag is usually overridden to a specific tag produced by CI.
+    image:
+      repository: gcr.io/ci-30-162810/camunda-operate
+      tag: latest
+
   tasklist:
     enabled: false
+
   zeebe:
     fullnameOverride: zeebe
+    # Defines the version of Zeebe to use
+    image:
+      tag: SNAPSHOT
     persistence:
       # Defines whether persistence should be enabled for the `zeebe` StatefulSet.
       # Depends on https://github.com/camunda/camunda-cloud-helm/issues/232
@@ -38,12 +47,18 @@ ccsm-helm:
     # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
     pvcSize: 2Gi
   zeebe-gateway:
+    # Defines the version of Zeebe to use
+    image:
+      tag: SNAPSHOT
     fullnameOverride: zeebe-gateway
+
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
   # in order to avoid being too wasteful.
   # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
   elasticsearch:
+    # Defines the version of ElasticSearch to use
+    imageTag: 7.16.2
     persistence:
       enabled: false
     volumeClaimTemplate:
