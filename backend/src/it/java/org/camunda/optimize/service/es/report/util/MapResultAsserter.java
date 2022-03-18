@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
@@ -43,12 +43,12 @@ public class MapResultAsserter {
   }
 
   public MeasureAdder measure(final ViewProperty viewProperty,
-                              final AggregationType aggregationType) {
+                              final AggregationDto aggregationType) {
     return measure(viewProperty, aggregationType, null);
   }
 
   public MeasureAdder measure(final ViewProperty viewProperty,
-                              final AggregationType aggregationType,
+                              final AggregationDto aggregationType,
                               final UserTaskDurationTime userTaskDurationTime) {
     return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
   }
@@ -101,12 +101,12 @@ public class MapResultAsserter {
 
   public class MeasureAdder {
 
-    private MapResultAsserter asserter;
-    private MapMeasureResponseDto measure;
+    private final MapResultAsserter asserter;
+    private final MapMeasureResponseDto measure;
 
     public MeasureAdder(final MapResultAsserter mapAsserter,
                         final ViewProperty viewProperty,
-                        final AggregationType aggregationType,
+                        final AggregationDto aggregationType,
                         final UserTaskDurationTime userTaskDurationTime) {
       this.asserter = mapAsserter;
       this.measure = MapMeasureResponseDto.builder()

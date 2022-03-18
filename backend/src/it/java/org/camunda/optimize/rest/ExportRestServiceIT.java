@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -365,7 +365,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .includedColumns(Collections.singletonList(COLUMN_PROCESS_INSTANCE_ID))
       .filter(
         ProcessFilterBuilder.filter()
-          .rollingInstanceStartDate().start(10L, DateFilterUnit.SECONDS).add()
+          .rollingInstanceStartDate().start(10L, DateUnit.SECONDS).add()
           .buildList()
       )
       .build();

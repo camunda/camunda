@@ -643,6 +643,35 @@ public class VariableImportIT extends AbstractImportIT {
 
   @SneakyThrows
   @Test
+  public void objectVariablesCanHaveNullOrEmptyPropertyValues() {
+    // given
+    final Map<String, Object> object = new HashMap<>();
+    object.put("emptyProp", "");
+    object.put("nullProp", null);
+    VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(object);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVariableDto);
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleUserTaskDiagram(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instance);
+
+    // then
+    assertThat(instanceVariables)
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple("objectVar", OBJECT.getId(), singletonList(objectVariableDto.getValue()))
+      );
+  }
+
+  @SneakyThrows
+  @Test
   public void largeObjectVariableCanBeStored() {
     // given an object variable with string fields that go above lucenes character limit
     final String longString1 = CharBuffer.allocate(8000).toString().replace('\0', 'a');

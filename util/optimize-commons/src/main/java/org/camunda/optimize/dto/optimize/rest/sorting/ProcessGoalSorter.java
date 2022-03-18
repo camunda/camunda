@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.ProcessGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
 import javax.ws.rs.BadRequestException;
@@ -15,19 +15,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.dto.optimize.query.ProcessGoalDto.Fields.processName;
 
 @NoArgsConstructor
-public class ProcessGoalSorter extends Sorter<ProcessGoalDto> {
+public class ProcessGoalSorter extends Sorter<ProcessGoalsResponseDto> {
 
-  private static final Map<String, Comparator<ProcessGoalDto>> sortComparators = Map.of(
-    processName.toLowerCase(),
-    Comparator.comparing(ProcessGoalDto::getProcessName)
+  private static final Map<String, Comparator<ProcessGoalsResponseDto>> sortComparators = Map.of(
+    ProcessGoalsResponseDto.Fields.processName.toLowerCase(),
+    Comparator.comparing(ProcessGoalsResponseDto::getProcessName)
   );
 
-  private static final Comparator<ProcessGoalDto> DEFAULT_PROCESS_GOAL_COMPARATOR =
-    sortComparators.get(processName.toLowerCase())
-    .thenComparing(ProcessGoalDto::getProcessDefinitionKey);
+  private static final Comparator<ProcessGoalsResponseDto> DEFAULT_PROCESS_GOAL_COMPARATOR =
+    sortComparators.get(ProcessGoalsResponseDto.Fields.processName.toLowerCase())
+      .thenComparing(ProcessGoalsResponseDto::getProcessDefinitionKey);
 
 
   public ProcessGoalSorter(final String sortBy, final SortOrder sortOrder) {
@@ -35,8 +34,8 @@ public class ProcessGoalSorter extends Sorter<ProcessGoalDto> {
   }
 
   @Override
-  public List<ProcessGoalDto> applySort(final List<ProcessGoalDto> processGoals) {
-    Comparator<ProcessGoalDto> processGoalSorterComparator = DEFAULT_PROCESS_GOAL_COMPARATOR;
+  public List<ProcessGoalsResponseDto> applySort(final List<ProcessGoalsResponseDto> processGoals) {
+    Comparator<ProcessGoalsResponseDto> processGoalSorterComparator = DEFAULT_PROCESS_GOAL_COMPARATOR;
     final Optional<SortOrder> sortOrderOpt = getSortOrder();
     final Optional<String> sortByOpt = getSortBy();
     if (sortByOpt.isPresent()) {

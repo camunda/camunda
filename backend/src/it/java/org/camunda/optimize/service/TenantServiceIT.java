@@ -115,6 +115,7 @@ public class TenantServiceIT extends AbstractIT {
     // when
     final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
+
     // then
     assertThat(isAuthorized).isFalse();
   }
@@ -132,6 +133,7 @@ public class TenantServiceIT extends AbstractIT {
     // when
     final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
+
     // then
     assertThat(isAuthorized).isTrue();
   }
@@ -149,6 +151,7 @@ public class TenantServiceIT extends AbstractIT {
     // when
     final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
+
     // then
     assertThat(isAuthorized).isTrue();
   }
@@ -167,6 +170,7 @@ public class TenantServiceIT extends AbstractIT {
     // when
     final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
+
     // then
     assertThat(isAuthorized).isFalse();
   }

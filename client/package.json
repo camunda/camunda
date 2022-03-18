@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.6",
-    "ansi-html": "^0.0.7",
+    "ansi-html": "^0.0.8",
     "chalk": "^4.1.2",
     "date-fns": "^2.28.0",
     "enzyme": "3.11.0",
@@ -92,7 +92,7 @@
     "opn": "^6.0.0",
     "prettier": "2.5.1",
     "react-scripts": "4.0.3",
-    "sass": "^1.49.7",
+    "sass": "^1.49.9",
     "shelljs": "^0.8.5",
     "testcafe": "^1.18.3",
     "testcafe-browser-provider-browserstack": "^1.13.1",

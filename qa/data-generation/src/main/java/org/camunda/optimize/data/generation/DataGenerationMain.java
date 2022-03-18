@@ -16,8 +16,6 @@ import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
 import org.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.process.ProcessDataGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -28,7 +26,6 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class DataGenerationMain {
-  private static final Logger logger = LoggerFactory.getLogger(DataGenerationMain.class);
 
   private final DataGenerationInformation dataGenerationInformation;
 
@@ -50,10 +47,10 @@ public class DataGenerationMain {
   public void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
       new DataGenerationExecutor(dataGenerationInformation);
-    logger.info("Start generating data...");
+    log.info("Start generating data...");
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
-    logger.info("Finished data generation!");
+    log.info("Finished data generation!");
   }
 
   private static void validateProcessInstanceDateParameters(final Map<String, String> arguments) throws ParseException {
@@ -180,9 +177,9 @@ public class DataGenerationMain {
         arguments.get("dbPassword")
       );
       dbConnector.updateProcessInstances(arguments.get("startDate"), arguments.get("endDate"));
-      logger.info("Updated endDate and startDate of process instances in db!");
+      log.info("Updated endDate and startDate of process instances in db!");
     } else {
-      logger.info("Skipping process instance start- and endDate adjustments.");
+      log.info("Skipping process instance start- and endDate adjustments.");
     }
   }
 }

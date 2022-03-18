@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.DefinitionService;
@@ -115,7 +116,9 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
       final String key = identityBucket.getKeyAsString();
       if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
         for (CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
-          if (viewMeasure.getAggregationType() == AggregationType.SUM && (viewMeasure.getValue() != null && viewMeasure.getValue() == 0)) {
+          final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
+          if (aggTypeDto != null && aggTypeDto.getType() == AggregationType.SUM &&
+            (viewMeasure.getValue() != null && viewMeasure.getValue() == 0)) {
             viewMeasure.setValue(null);
           }
         }

@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.AllArgsConstructor;
 
-public enum DateFilterUnit {
+@AllArgsConstructor
+public enum DateUnit {
   YEARS("years"),
   QUARTERS("quarters"),
   MONTHS("months"),
@@ -19,10 +21,6 @@ public enum DateFilterUnit {
   ;
 
   private final String id;
-
-  DateFilterUnit(final String id) {
-    this.id = id;
-  }
 
   @JsonValue
   public String getId() {

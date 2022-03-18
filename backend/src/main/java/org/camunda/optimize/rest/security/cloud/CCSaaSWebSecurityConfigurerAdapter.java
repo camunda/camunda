@@ -13,12 +13,13 @@ import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -56,15 +57,16 @@ import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 @RequiredArgsConstructor
 @EnableWebSecurity
 @Conditional(CCSaaSCondition.class)
+@Order(2)
 public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
+  public static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";
+  public static final String URL_TEMPLATE = "https://%s%s";
   private static final String OAUTH_AUTH_ENDPOINT = "/sso";
   private static final String OAUTH_REDIRECT_ENDPOINT = "/sso-callback";
   private static final String AUTH0_AUTH_ENDPOINT = "/authorize";
   private static final String AUTH0_TOKEN_ENDPOINT = "/oauth/token";
   private static final String AUTH0_USERINFO_ENDPOINT = "/userinfo";
-  private static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";
-  private static final String URL_TEMPLATE = "https://%s%s";
 
   private final SessionService sessionService;
   private final AuthCookieService authCookieService;

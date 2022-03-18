@@ -37,18 +37,18 @@
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
-    <jackson.version>2.13.1</jackson.version>
+    <jackson.version>2.13.2</jackson.version>
     <jsonpath.version>2.7.0</jsonpath.version>
-    <elasticsearch.version>7.16.3</elasticsearch.version>
+    <elasticsearch.version>7.17.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.17.1</elasticsearch.log4j.version>
-    <guava.version>31.0.1-jre</guava.version>
-    <spring.version>5.3.16</spring.version>
-    <mockito.version>4.3.1</mockito.version>
+    <elasticsearch.log4j.version>2.17.2</elasticsearch.log4j.version>
+    <guava.version>31.1-jre</guava.version>
+    <spring.version>5.3.17</spring.version>
+    <mockito.version>4.4.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
     <junit.platform.version>1.8.2</junit.platform.version>
@@ -58,7 +58,7 @@
     <postgres.version>42.3.3</postgres.version>
 
     <lombok.version>1.18.22</lombok.version>
-    <logback.version>1.2.10</logback.version>
+    <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.36</slf4j.version>
 
     <version.node>v14.15.4</version.node>
@@ -328,7 +328,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.1.1</version>
+      <version>4.2.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -339,7 +339,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -424,7 +424,7 @@
           <extensions>true</extensions>
           <configuration>
             <serverId>camunda-nexus</serverId>
-            <nexusUrl>https://app.camunda.com/nexus/</nexusUrl>
+            <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
             <skipStaging>true</skipStaging>
           </configuration>
         </plugin>
@@ -525,7 +525,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.10.0</version>
+        <version>3.10.1</version>
         <configuration>
           <release>11</release>
         </configuration>
@@ -537,11 +537,11 @@
   <distributionManagement>
     <snapshotRepository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize-snapshots</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize-snapshots/</url>
     </snapshotRepository>
     <repository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize/</url>
     </repository>
   </distributionManagement>
 

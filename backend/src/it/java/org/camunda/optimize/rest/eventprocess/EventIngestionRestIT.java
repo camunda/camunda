@@ -48,8 +48,6 @@ import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields
 import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.type;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.rest.IngestionRestService.QUERY_PARAMETER_ACCESS_TOKEN;
-import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 
 public class EventIngestionRestIT extends AbstractIT {
@@ -109,25 +107,6 @@ public class EventIngestionRestIT extends AbstractIT {
   }
 
   @Test
-  public void ingestEventBatch_accessTokenAsQueryParameter() {
-    // given
-    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, 1)
-      .mapToObj(operand -> ingestionClient.createCloudEventDto())
-      .collect(toList());
-
-    // when
-    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, null)
-      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .execute();
-
-    // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-
-    assertEventDtosArePersisted(eventDtos);
-  }
-
-  @Test
   public void ingestEventBatch_maxRequestsConfiguredReached() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxRequests(0);
@@ -177,7 +156,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(Collections.singletonList(eventDto), AUTH_COOKIE_TOKEN_VALUE_PREFIX + customSecret)
+      .buildIngestEventBatch(Collections.singletonList(eventDto), customSecret)
       .execute();
 
     // then

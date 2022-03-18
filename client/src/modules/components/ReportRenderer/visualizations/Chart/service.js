@@ -136,7 +136,11 @@ export function getLabel({property, aggregationType, userTaskDurationTime}) {
       ? `${t('report.config.userTaskDuration.' + userTaskDurationTime)} `
       : '') +
     t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
-    (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '')
+    (aggregationType
+      ? ` - ${t('report.config.aggregationShort.' + aggregationType.type, {
+          value: aggregationType.value,
+        })}`
+      : '')
   );
 }
 

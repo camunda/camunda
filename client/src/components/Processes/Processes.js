@@ -12,7 +12,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import TimeGoalsModal from './TimeGoalsModal';
-import {loadProcesses, saveGoals} from './service';
+import {loadProcesses, updateGoals} from './service';
 
 import './Processes.scss';
 
@@ -52,7 +52,7 @@ export function Processes({mightFail}) {
         ]}
         sorting={sorting}
         onChange={loadProcessesList}
-        data={processes?.map(({processDefinitionKey, processName, owner, timeGoals}) => ({
+        data={processes?.map(({processDefinitionKey, processName, owner, durationGoals}) => ({
           id: processDefinitionKey,
           type: t('common.process.label'),
           icon: 'data-source',
@@ -62,26 +62,26 @@ export function Processes({mightFail}) {
             <Button
               className="setGoalBtn"
               onClick={() => {
-                setOpenProcess({processDefinitionKey, timeGoals});
+                setOpenProcess({processDefinitionKey, processName, durationGoals});
               }}
             >
-              {timeGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
+              {durationGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
             </Button>,
           ],
         }))}
       />
       {openProcess && (
         <TimeGoalsModal
-          processDefinitionKey={openProcess.processDefinitionKey}
-          initialGoals={openProcess.timeGoals}
+          process={openProcess}
           onClose={() => setOpenProcess()}
           onConfirm={(goals) => {
             mightFail(
-              saveGoals(openProcess.processDefinitionKey, goals),
-              setOpenProcess,
+              updateGoals(openProcess.processDefinitionKey, goals),
+              () => setOpenProcess(),
               showError
             );
           }}
+          onRemove={loadProcessesList}
         />
       )}
     </div>

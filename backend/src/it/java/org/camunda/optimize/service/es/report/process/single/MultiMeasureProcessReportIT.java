@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single;
 
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -36,6 +36,9 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK;
@@ -98,9 +101,9 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   @MethodSource("multiAggregationScenarios")
   public void numberResultSupportsMultipleViewPropertiesAlongWithMultipleAggregations(
-    final AggregationType[] aggregationTypes) {
+    final AggregationDto[] aggregationTypes) {
     // given
-    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationDto> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     // modifying duration to make sure the result for count does never equal the duration average
@@ -189,9 +192,9 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   @MethodSource("multiAggregationScenarios")
   public void mapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregations(
-    final AggregationType[] aggregationTypes) {
+    final AggregationDto[] aggregationTypes) {
     // given
-    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationDto> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
@@ -227,10 +230,10 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   @MethodSource("multiAggregationAndUserTaskTimeScenarios")
   public void mapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregationsAndMultipleTimes(
-    final AggregationType[] aggregationTypes,
+    final AggregationDto[] aggregationTypes,
     final UserTaskDurationTime[] userTaskDurationTimes) {
     // given
-    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationDto> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final Set<UserTaskDurationTime> distinctUserTaskDurationTimes =
       new LinkedHashSet<>(Arrays.asList(userTaskDurationTimes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
@@ -251,8 +254,8 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     reportData.getConfiguration().setUserTaskDurationTimes(userTaskDurationTimes);
 
     // when
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient
-      .evaluateMapReport(reportData);
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
@@ -341,9 +344,9 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   @MethodSource("multiAggregationScenarios")
   public void hyperMapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregations(
-    final AggregationType[] aggregationTypes) {
+    final AggregationDto[] aggregationTypes) {
     // given
-    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationDto> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -383,10 +386,10 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   @MethodSource("multiAggregationAndUserTaskTimeScenarios")
   public void hyperMapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregationsAndMultipleUserTaskTimes(
-    final AggregationType[] aggregationTypes,
+    final AggregationDto[] aggregationTypes,
     final UserTaskDurationTime[] userTaskDurationTimes) {
     // given
-    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationDto> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final Set<UserTaskDurationTime> distinctUserTaskDurationTimes =
       new LinkedHashSet<>(Arrays.asList(userTaskDurationTimes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
@@ -462,21 +465,17 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   }
 
   private int calculateExpectedMeasureCount(final List<ViewProperty> viewProperties,
-                                            final Set<AggregationType> aggregationTypes) {
+                                            final Set<AggregationDto> aggregationTypes) {
     return calculateExpectedMeasureCount(
       viewProperties, aggregationTypes, Collections.singleton(UserTaskDurationTime.TOTAL)
     );
   }
 
   private int calculateExpectedMeasureCount(final List<ViewProperty> viewProperties,
-                                            final Set<AggregationType> aggregationTypes,
+                                            final Set<AggregationDto> aggregationTypes,
                                             final Set<UserTaskDurationTime> userTaskDurationTimes) {
     return (viewProperties.contains(ViewProperty.FREQUENCY) ? 1 : 0)
       + (viewProperties.contains(ViewProperty.DURATION) ? aggregationTypes.size() * userTaskDurationTimes.size() : 0);
-  }
-
-  private static AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
   }
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
@@ -503,8 +502,11 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     return Stream.of(
       Arguments.of((Object) getSupportedAggregationTypes()),
       // duplicate aggregations should be handled by only considering the first occurrence
-      Arguments.of((Object) new AggregationType[]{AggregationType.MIN, AggregationType.MIN}),
-      Arguments.of((Object) new AggregationType[]{AggregationType.MIN, AggregationType.MAX, AggregationType.MIN})
+      Arguments.of((Object) new AggregationDto[]{new AggregationDto(MIN), new AggregationDto(MIN)}),
+      Arguments.of((Object) new AggregationDto[]{
+        new AggregationDto(MIN),
+        new AggregationDto(MAX),
+        new AggregationDto(MIN)})
     );
   }
 
@@ -514,11 +516,11 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       Arguments.of(getSupportedAggregationTypes(), UserTaskDurationTime.values()),
       // duplicate aggregations/userTaskTimes should be handled by only considering the first occurrence
       Arguments.of(
-        new AggregationType[]{AggregationType.MIN, AggregationType.MIN},
+        new AggregationDto[]{new AggregationDto(MIN), new AggregationDto(MIN)},
         new UserTaskDurationTime[]{UserTaskDurationTime.IDLE, UserTaskDurationTime.IDLE}
       ),
       Arguments.of(
-        new AggregationType[]{AggregationType.MIN, AggregationType.MAX, AggregationType.MIN},
+        new AggregationDto[]{new AggregationDto(MIN), new AggregationDto(MAX), new AggregationDto(MIN)},
         new UserTaskDurationTime[]{UserTaskDurationTime.IDLE, UserTaskDurationTime.WORK, UserTaskDurationTime.IDLE}
       )
     );

@@ -170,15 +170,20 @@
     "endedThisMonth": "ended in the current month",
     "setGoal": "Set Goal",
     "editGoal": "Edit Goal",
+    "goals": "Goals",
+    "goalRemoved": "Goals removed from '{processName}' process",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
-      "targetDuration": "Target duration",
-      "slaDuration": "SLA duration",
+      "setDuration": "Set a duration goal by setting a percentage of process instances that should take less than a certain duration to complete.",
+      "availableGoals": "You can use duration goals to track how many instances are fully automated (target duration) or meet your service level agreements (SLAs).",
+      "targetDuration": "Target",
+      "slaDuration": "SLA",
       "instancesTake": "of process instances take",
       "lessThan": "less than",
       "displayGoal": "Display goal",
       "durationDistribution": "Duration distribution",
+      "durationDistributionInfo": "This chart shows durations for process instances ending in the current month.",
       "saveGoals": "Save Goals",
       "updateGoals": "Update Goals"
     }
@@ -505,21 +510,23 @@
       },
       "aggregation": {
         "userTaskLegend": "User Task Duration",
-        "durationLegend": "Duration aggregations",
+        "durationLegend": "Basic aggregations",
         "variableLegend": "Variable aggregations",
+        "percentileLegend": "Percentile aggregations",
         "sum": "Sum",
         "min": "Minimum",
         "avg": "Average",
         "median": "Median",
         "max": "Maximum",
-        "multiProcessWarning": "Reports that are grouped by process cannot display median aggregations."
+        "p50": "P50 (median)"
       },
       "aggregationShort": {
         "sum": "Sum",
         "min": "Min",
         "avg": "Avg",
         "median": "Med",
-        "max": "Max"
+        "max": "Max",
+        "percentile": "P{value}"
       },
       "userTaskDuration": {
         "idle": "Idle",
@@ -1011,6 +1018,7 @@
           "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
           "includesOpenIncident": "Open",
           "includesResolvedIncident": "Resolved",
+          "includesClosedIncident": "Closed",
           "doesNotIncludeIncident": "No"
         },
         "modalLabels": {
@@ -1026,6 +1034,7 @@
           "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
           "includesOpenIncident": "Open Incidents",
           "includesResolvedIncident": "Resolved Incidents",
+          "includesClosedIncident": "Closed Incidents",
           "doesNotIncludeIncident": "Without Incidents"
         }
       },
@@ -1241,7 +1250,8 @@
         "process": "Process",
         "processEvents": "process events",
         "ingestedEvents": "Events",
-        "items": "Items"
+        "items": "Items",
+        "goals": "Goals"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",

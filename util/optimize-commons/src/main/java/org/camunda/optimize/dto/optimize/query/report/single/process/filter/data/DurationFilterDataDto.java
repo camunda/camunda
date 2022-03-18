@@ -11,7 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 
 @Builder
@@ -21,7 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operato
 public class DurationFilterDataDto implements FilterDataDto {
 
   protected Long value;
-  protected DurationFilterUnit unit;
+  protected DurationUnit unit;
   protected ComparisonOperator operator;
   protected boolean includeNull;
 

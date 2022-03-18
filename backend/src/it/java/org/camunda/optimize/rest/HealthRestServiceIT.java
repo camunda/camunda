@@ -37,7 +37,7 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  public void getReadiness_noAuthorization() {
+  public void getReadiness_noAuthentication() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetReadinessRequest()

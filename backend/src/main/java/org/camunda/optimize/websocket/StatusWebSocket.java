@@ -34,7 +34,7 @@ public class StatusWebSocket {
   private final ConfigurationService configurationService;
   private final ImportSchedulerManagerService importSchedulerManagerService;
 
-  private Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
+  private final Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
   @OnOpen
   public void onOpen(Session session) {

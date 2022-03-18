@@ -3,16 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest.security;
+package org.camunda.optimize.rest.security.platform;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
+import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
+import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
+import org.camunda.optimize.rest.security.SingleSignOnRequestFilter;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,13 +46,9 @@ import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_VA
 import static org.camunda.optimize.rest.FlowNodeRestService.FLOW_NODE_NAMES_SUB_PATH;
 import static org.camunda.optimize.rest.FlowNodeRestService.FLOW_NODE_PATH;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
-import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
-import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static org.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.ProcessVariableRestService.PROCESS_VARIABLES_PATH;
-import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 import static org.camunda.optimize.rest.SharingRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.EVALUATE_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
@@ -61,6 +62,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @AllArgsConstructor
 @EnableWebSecurity
 @Conditional(CamundaPlatformCondition.class)
+@Order(2)
 public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
   private static final String CSV_SUFFIX = ".csv";
@@ -114,11 +116,6 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
           createApiPath(LICENSE_PATH, SUB_PATH_ANY),
           createApiPath(AUTHENTICATION_PATH)
         ).permitAll()
-        // public ingestion api
-        .antMatchers(createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH)).permitAll()
-        .antMatchers(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH)).permitAll()
-        // public api
-        .antMatchers(createApiPath(PUBLIC_PATH, DEEP_SUB_PATH_ANY)).permitAll()
       // public share related resources
         .antMatchers(EXTERNAL_SUB_PATH).permitAll()
         .antMatchers(

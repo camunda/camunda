@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -32,8 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_NONE_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_BY_PROCESS;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
@@ -95,7 +96,7 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
     assertThat(result.getMeasures()).hasSize(1)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
-      .containsExactly(Tuple.tuple(AVERAGE, createHyperMapEntries(
+      .containsExactly(Tuple.tuple(new AggregationDto(AVERAGE), createHyperMapEntries(
         new MapResultEntryDto(firstProcessIdentifier, 1000.0, processDisplayName),
         new MapResultEntryDto(secondProcessIdentifier, 1000.0, processDisplayName)
       )));
@@ -116,7 +117,10 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     ReportDataDefinitionDto definition = new ReportDataDefinitionDto(
       processIdentifier, firstInstance.getProcessDefinitionKey(), processDisplayName);
     final ProcessReportDataDto reportData = createDurationGroupedByNoneByProcessReport(List.of(definition));
-    reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
+    reportData.getConfiguration().setAggregationTypes(
+      new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
+    );
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
@@ -126,15 +130,25 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getMeasures()).hasSize(5)
+    assertThat(result.getMeasures()).hasSize(6)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(MAX, createHyperMapEntry(processDisplayName, processIdentifier, 10000.0)),
-        Tuple.tuple(MIN, createHyperMapEntry(processDisplayName, processIdentifier, 2000.0)),
-        Tuple.tuple(AVERAGE, createHyperMapEntry(processDisplayName, processIdentifier, 6000.0)),
-        Tuple.tuple(SUM, createHyperMapEntry(processDisplayName, processIdentifier, 12000.0)),
-        // We can't work out the median, so it has a null value
-        Tuple.tuple(MEDIAN, createHyperMapEntry(processDisplayName, processIdentifier, null))
+        Tuple.tuple(new AggregationDto(MAX), createHyperMapEntry(processDisplayName, processIdentifier, 10000.0)),
+        Tuple.tuple(new AggregationDto(MIN), createHyperMapEntry(processDisplayName, processIdentifier, 2000.0)),
+        Tuple.tuple(
+          new AggregationDto(AVERAGE),
+          createHyperMapEntry(processDisplayName, processIdentifier, 6000.0)
+        ),
+        Tuple.tuple(new AggregationDto(SUM), createHyperMapEntry(processDisplayName, processIdentifier, 12000.0)),
+        // We can't work out percentile aggregation types, so it has a null value
+        Tuple.tuple(
+          new AggregationDto(PERCENTILE, 50.),
+          createHyperMapEntry(processDisplayName, processIdentifier, null)
+        ),
+        Tuple.tuple(
+          new AggregationDto(PERCENTILE, 99.),
+          createHyperMapEntry(processDisplayName, processIdentifier, null)
+        )
       );
   }
 
@@ -149,7 +163,10 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     ReportDataDefinitionDto definition = new ReportDataDefinitionDto(
       processIdentifier, procDef.getKey(), processDisplayName);
     final ProcessReportDataDto reportData = createDurationGroupedByNoneByProcessReport(List.of(definition));
-    reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
+    reportData.getConfiguration().setAggregationTypes(
+      new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
+    );
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
@@ -159,14 +176,21 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isZero();
-    assertThat(result.getMeasures()).hasSize(5)
+    assertThat(result.getMeasures()).hasSize(6)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(MAX, createHyperMapEntry(processDisplayName, processIdentifier, null)),
-        Tuple.tuple(MIN, createHyperMapEntry(processDisplayName, processIdentifier, null)),
-        Tuple.tuple(AVERAGE, createHyperMapEntry(processDisplayName, processIdentifier, null)),
-        Tuple.tuple(SUM, createHyperMapEntry(processDisplayName, processIdentifier, null)),
-        Tuple.tuple(MEDIAN, createHyperMapEntry(processDisplayName, processIdentifier, null))
+        Tuple.tuple(new AggregationDto(MAX), createHyperMapEntry(processDisplayName, processIdentifier, null)),
+        Tuple.tuple(new AggregationDto(MIN), createHyperMapEntry(processDisplayName, processIdentifier, null)),
+        Tuple.tuple(new AggregationDto(AVERAGE), createHyperMapEntry(processDisplayName, processIdentifier, null)),
+        Tuple.tuple(new AggregationDto(SUM), createHyperMapEntry(processDisplayName, processIdentifier, null)),
+        Tuple.tuple(
+          new AggregationDto(PERCENTILE, 50.),
+          createHyperMapEntry(processDisplayName, processIdentifier, null)
+        ),
+        Tuple.tuple(
+          new AggregationDto(PERCENTILE, 99.),
+          createHyperMapEntry(processDisplayName, processIdentifier, null)
+        )
       );
   }
 
@@ -207,7 +231,7 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     assertThat(result.getMeasures()).hasSize(1)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(AVERAGE, createHyperMapEntries(
+        Tuple.tuple(new AggregationDto(AVERAGE), createHyperMapEntries(
           new MapResultEntryDto(firstIdentifier, null, processDisplayName),
           new MapResultEntryDto(secondIdentifier, 2000.0, processDisplayName)
         ))
@@ -251,7 +275,7 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
 
     final ProcessReportDataDto reportData =
       createDurationGroupedByNoneByProcessReport(List.of(firstDefinition, secondDefinition));
-    reportData.getConfiguration().setAggregationTypes(MAX, MIN);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(MAX), new AggregationDto(MIN));
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
@@ -264,11 +288,11 @@ public class ProcessInstanceDurationByNoneByProcessReportEvaluationIT extends Ab
     assertThat(result.getMeasures()).hasSize(2)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(MAX, createHyperMapEntries(
+        Tuple.tuple(new AggregationDto(MAX), createHyperMapEntries(
           new MapResultEntryDto(firstProcessIdentifier, 10000.0, firstProcessDisplayName),
           new MapResultEntryDto(secondProcessIdentifier, 5000.0, secondProcessDisplayName)
         )),
-        Tuple.tuple(MIN, createHyperMapEntries(
+        Tuple.tuple(new AggregationDto(MIN), createHyperMapEntries(
           new MapResultEntryDto(firstProcessIdentifier, 2000.0, firstProcessDisplayName),
           new MapResultEntryDto(secondProcessIdentifier, 5000.0, secondProcessDisplayName)
         ))

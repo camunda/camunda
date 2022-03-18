@@ -13,8 +13,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
@@ -65,6 +66,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -170,7 +172,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE))
         .groupedByContains(SERVICE_TASK_ID, calculateExpectedValueGivenDurationsDefaultAggr(10.))
         .groupedByContains(SERVICE_TASK_ID_2, calculateExpectedValueGivenDurationsDefaultAggr(30.))
         .groupedByContains(END_EVENT, calculateExpectedValueGivenDurationsDefaultAggr(10., 30.))
@@ -1025,7 +1027,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(START_EVENT_ID, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(START_EVENT_ID, durationFilterData(DurationUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(VIEW)
         .add()
         .buildList());
@@ -1101,10 +1103,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() {

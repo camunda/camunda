@@ -1,3 +1,10 @@
 ---
 plugin:
   directory: '.'
+
+zeebe:
+  enabled: ${ZEEBE_ENABLED:false}
+  name: ${ZEEBE_NAME:zeebe-record}
+  partitionCount: ${ZEEBE_PARTITION_COUNT:1}
+  maxImportPageSize: ${ZEEBE_MAX_IMPORT_PAGE_SIZE:10000}
+  

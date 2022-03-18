@@ -125,4 +125,4 @@ At the moment of writing, following issues are known
 
 [docker-containers]: https://github.com/camunda/docker-camunda-bpm-platform
 [camunda-distro]: https://camunda.org/release/camunda-bpm/tomcat/
-[ojdbc6]: https://app.camunda.com/nexus/service/local/repositories/thirdparty/content/com/oracle/jdbc/ojdbc6/12.1.0.2/ojdbc6-12.1.0.2.jar
+[ojdbc6]: https://artifacts.camunda.com/artifactory/thirdparty/com/oracle/jdbc/ojdbc6/12.1.0.2/ojdbc6-12.1.0.2.jar

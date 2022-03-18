@@ -423,13 +423,13 @@ export default withErrorHandling(
                       xml={data.configuration.xml}
                       processPart={data.configuration.processPart}
                       update={(newPart) => {
+                        const aggregations = data.configuration.aggregationTypes;
                         const change = {configuration: {processPart: {$set: newPart}}};
-                        if (data.configuration.aggregationTypes.includes('median')) {
-                          const newAggregations = data.configuration.aggregationTypes.filter(
-                            (type) => type !== 'median'
-                          );
+                        const isPercentile = (agg) => agg.type === 'percentile';
+                        if (aggregations.find(isPercentile)) {
+                          const newAggregations = aggregations.filter((agg) => !isPercentile(agg));
                           if (newAggregations.length === 0) {
-                            newAggregations.push('avg');
+                            newAggregations.push({type: 'avg', value: null});
                           }
 
                           change.configuration.aggregationTypes = {$set: newAggregations};

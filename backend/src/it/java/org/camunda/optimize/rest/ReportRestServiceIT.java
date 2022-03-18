@@ -19,10 +19,11 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -34,6 +35,7 @@ import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
@@ -49,6 +51,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.POST;
@@ -58,6 +61,11 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
@@ -123,7 +131,6 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     );
 
     // when
-
     final String id;
     switch (reportType) {
       case PROCESS:
@@ -187,8 +194,46 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
+  private static Stream<AggregationDto> invalidAggregationTypes() {
+    return Stream.of(
+      new AggregationDto(PERCENTILE, 101.),
+      new AggregationDto(PERCENTILE, -1.),
+      new AggregationDto(PERCENTILE, null),
+      new AggregationDto(AVERAGE, 5.),
+      new AggregationDto(MAX, 5.),
+      new AggregationDto(MIN, 5.),
+      new AggregationDto(SUM, 5.)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidAggregationTypes")
+  public void createNewSingleProcessReportWithFiltersAppliedToDefaultsToAll(final AggregationDto aggregationDto) {
+    // given
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
+    final ProcessReportDataDto reportDataDto = ProcessReportDataDto.builder().definitions(definitions).build();
+    reportDataDto.getConfiguration().setAggregationTypes(aggregationDto);
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
+    singleProcessReportDefinitionDto.setData(reportDataDto);
+    singleProcessReportDefinitionDto.setId(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setName(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setCreated(OffsetDateTime.now());
+    singleProcessReportDefinitionDto.setLastModified(OffsetDateTime.now());
+    singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   @Test
-  public void createNewSingleProcessReportWithFiltersAppliedToDefaultsToAll() {
+  public void createNewSingleProcessReportWithInvalidAggregationValueIsRejected() {
     // given
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
     final ProcessReportDataDto reportDataDto = ProcessReportDataDto.builder().definitions(definitions).build();
@@ -267,7 +312,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     reportDataDto.getFilter()
-      .add(DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS));
+      .add(DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS));
 
     // when
     final String id = addSingleDecisionReportWithDefinition(reportDataDto);
@@ -286,7 +331,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of(definitionIdentifier));
     reportDataDto.getFilter().add(filterDto);
 
@@ -307,7 +352,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of("invalid"));
     reportDataDto.getFilter().add(filterDto);
 
@@ -326,7 +371,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
     final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(Collections.emptyList());
     reportDataDto.getFilter().add(filterDto);
 
@@ -491,10 +536,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void updateSingleDecisionReportWithFiltersAppliedToSetToProvidedDefinition() {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(DECISION);
-    final SingleDecisionReportDefinitionRequestDto reportDefinition = reportClient.getSingleDecisionReportById(reportId);
+    final SingleDecisionReportDefinitionRequestDto reportDefinition =
+      reportClient.getSingleDecisionReportById(reportId);
     final String definitionIdentifier = reportDefinition.getData().getDefinitions().get(0).getIdentifier();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of(definitionIdentifier));
     reportDefinition.getData().getFilter().add(filterDto);
 
@@ -509,9 +555,10 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void updateSingleDecisionReportWithFiltersAppliedToSetToInvalidIdFails() {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(DECISION);
-    final SingleDecisionReportDefinitionRequestDto reportDefinition = reportClient.getSingleDecisionReportById(reportId);
+    final SingleDecisionReportDefinitionRequestDto reportDefinition =
+      reportClient.getSingleDecisionReportById(reportId);
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of("invalid"));
     reportDefinition.getData().getFilter().add(filterDto);
 
@@ -526,9 +573,10 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void updateSingleDecisionReportWithEmptyFiltersAppliedToFails() {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(DECISION);
-    final SingleDecisionReportDefinitionRequestDto reportDefinition = reportClient.getSingleDecisionReportById(reportId);
+    final SingleDecisionReportDefinitionRequestDto reportDefinition =
+      reportClient.getSingleDecisionReportById(reportId);
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(Collections.emptyList());
     reportDefinition.getData().getFilter().add(filterDto);
 

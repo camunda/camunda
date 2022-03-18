@@ -6,30 +6,33 @@
 package org.camunda.optimize.service.es.report.command.aggregations;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Max;
+import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
 import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.max;
 
-public class MaxAggregation implements AggregationStrategy {
+public class MaxAggregation extends AggregationStrategy<MaxAggregationBuilder> {
+
   private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
-  public Double getValue(final String customIdentifier, final Aggregations aggs) {
+  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
     final Max aggregation = aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION));
     return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?> createAggregationBuilder(final String customIdentifier) {
+  public ValuesSourceAggregationBuilder<MaxAggregationBuilder> createAggregationBuilderForAggregation(final String customIdentifier) {
     return max(createAggregationName(customIdentifier, MAX_AGGREGATION));
   }
 
   @Override
-  public AggregationType getAggregationType() {
-    return AggregationType.MAX;
+  public AggregationDto getAggregationType() {
+    return new AggregationDto(AggregationType.MAX);
   }
 
 }

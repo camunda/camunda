@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -15,7 +15,7 @@ public class DurationFilterBuilder {
   protected final ProcessFilterBuilder filterBuilder;
 
   protected Long value;
-  protected DurationFilterUnit unit;
+  protected DurationUnit unit;
   protected ComparisonOperator comparisonOperator;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
@@ -32,7 +32,7 @@ public class DurationFilterBuilder {
     return this;
   }
 
-  public DurationFilterBuilder unit(DurationFilterUnit unit) {
+  public DurationFilterBuilder unit(DurationUnit unit) {
     this.unit = unit;
     return this;
   }

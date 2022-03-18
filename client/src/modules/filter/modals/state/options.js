@@ -53,6 +53,10 @@ export default function getMapping(type) {
             label: t('common.filter.state.modalLabels.includesResolvedIncident'),
           },
           {
+            key: 'includesClosedIncident',
+            label: t('common.filter.state.modalLabels.includesClosedIncident'),
+          },
+          {
             key: 'doesNotIncludeIncident',
             label: t('common.filter.state.modalLabels.doesNotIncludeIncident'),
           },

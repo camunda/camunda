@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter.process;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -111,7 +111,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
         .flowNodeDuration()
         .flowNode(
           START_EVENT,
-          DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(15L).operator(GREATER_THAN).build()
+          DurationFilterDataDto.builder().unit(DurationUnit.SECONDS).value(15L).operator(GREATER_THAN).build()
         )
         .add()
         .buildList()

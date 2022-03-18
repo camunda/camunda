@@ -170,15 +170,20 @@
     "endedThisMonth": "die im aktuellen Monat beendet wurden",
     "setGoal": "Ziel setzen",
     "editGoal": "Ziel bearbeiten",
+    "goals": "Ziele",
+    "goalRemoved": "Ziele aus dem '{processName}' Prozess wurden entfernt",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
-      "targetDuration": "Ziellaufzeit",
-      "slaDuration": "SLA Laufzeit",
+      "setDuration": "Legen Sie eine Ziellaufzeit fest, indem Sie einen Prozentsatz der Prozessinstanzen festlegen, die weniger als die festgelegte Dauer brauchen, um abzuschließen.",
+      "availableGoals": "Sie können Ziellaufzeiten verwenden, um zu verfolgen, wie viele Instanzen vollständig automatisiert sind oder Ihre Service Level-Agreements (SLAs) erreichen.",
+      "targetDuration": "Ziel",
+      "slaDuration": "SLA",
       "instancesTake": "der Prozessinstanzen benötigen",
       "lessThan": "weniger als",
       "displayGoal": "Ziel anzeigen",
       "durationDistribution": "Laufzeitverteilung",
+      "durationDistributionInfo": "Diese Grafik zeigt die Laufzeiten für Prozessinstanzen, die im aktuellen Monat enden",
       "saveGoals": "Ziele speichern",
       "updateGoals": "Ziele aktualisieren"
     }
@@ -505,21 +510,23 @@
       },
       "aggregation": {
         "userTaskLegend": "Benutzeraufgabendauer",
-        "durationLegend": "Daueraggregationen",
+        "durationLegend": "Basis-Aggregationen",
         "variableLegend": "Variablenaggregationen",
+        "percentileLegend": "Perzentilaggregationen",
         "sum": "Summe",
         "min": "Minimum",
         "avg": "Durchschnitt",
         "median": "Median",
         "max": "Maximum",
-        "multiProcessWarning": "Berichte die nach Prozess gruppiert sind unterstützen keine Median-Aggregation."
+        "p50": "P50 (median)"
       },
       "aggregationShort": {
         "sum": "Se",
         "min": "Min",
         "avg": "Durchschn",
         "median": "Med",
-        "max": "Max"
+        "max": "Max",
+        "percentile": "P{value}"
       },
       "userTaskDuration": {
         "idle": "Wartezeit",
@@ -1011,6 +1018,7 @@
           "completedOrCanceledFlowNodesOnly": "abgeschlossene oder abgebrochene",
           "includesOpenIncident": "Offene",
           "includesResolvedIncident": "Gelöste",
+          "includesClosedIncident": "Geschlossene",
           "doesNotIncludeIncident": "Keine"
         },
         "modalLabels": {
@@ -1026,6 +1034,7 @@
           "completedOrCanceledFlowNodesOnly": "Abgeschlossen oder Abgebrochen",
           "includesOpenIncident": "Offenen Zwischenfällen",
           "includesResolvedIncident": "Gelösten Zwischenfällen",
+          "includesClosedIncident": "Geschlossenen Zwischenfällen",
           "doesNotIncludeIncident": "Keinen Zwischenfällen"
         }
       },
@@ -1241,7 +1250,8 @@
         "process": "Prozess",
         "processEvents": "Prozessevents",
         "ingestedEvents": "Events",
-        "items": "Elemente"
+        "items": "Elemente",
+        "goals": "Ziele"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

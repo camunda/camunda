@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -132,6 +133,7 @@ import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_SUB_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
@@ -495,15 +497,23 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest(ProcessGoalSorter sorter) {
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest(ProcessGoalSorter sorter) {
     this.path = "process/goals";
     this.method = GET;
     Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest() {
-    return buildGetProcessDefinitionGoalsRequest(null);
+  public OptimizeRequestExecutor buildUpdateProcessGoalsRequest(final String processDefinitionKey,
+                                                                final List<ProcessDurationGoalDto> goals) {
+    this.path = "process/" + processDefinitionKey + "/goals";
+    this.method = PUT;
+    this.body = getBody(goals);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
+    return buildGetProcessGoalsRequest(null);
   }
 
   public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
@@ -942,7 +952,8 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
     this.path = PUBLIC_PATH + LABELS_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(definitionVariableLabelsDto);
     return this;
@@ -1083,9 +1094,11 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildPublicExportJsonReportResultRequest(String reportId) {
+  public OptimizeRequestExecutor buildPublicExportJsonReportResultRequest(final String reportId,
+                                                                          final String accessToken) {
     this.path = PUBLIC_PATH + EXPORT_SUB_PATH + "/report/" + reportId + "/result/json";
     this.method = GET;
+    setAccessToken(accessToken);
     return this;
   }
 
@@ -1605,7 +1618,8 @@ public class OptimizeRequestExecutor {
                                                                     final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(secret).ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, s));
+    Optional.ofNullable(secret)
+      .ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + s));
     this.mediaType = mediaType;
     this.body = getBody(eventDtos);
     return this;
@@ -1615,7 +1629,7 @@ public class OptimizeRequestExecutor {
                                                           final String secret) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
-    addSingleHeader(HttpHeaders.AUTHORIZATION, secret);
+    addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + secret);
     this.mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
     this.body = Entity.json(bodyJson);
     return this;
@@ -1695,7 +1709,8 @@ public class OptimizeRequestExecutor {
                                                               final String accessToken) {
     this.path = INGESTION_PATH + VARIABLE_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(externalVariables);
     return this;
@@ -1713,7 +1728,8 @@ public class OptimizeRequestExecutor {
   }
 
   private void setAccessToken(final String accessToken) {
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
   }
 
   private void setCollectionIdQueryParam(final String collectionId) {

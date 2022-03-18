@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -688,7 +688,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final DecisionReportDataDto reportDataDto = createDecisionReportData();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of("invalid"));
     reportDataDto.getFilter().add(filterDto);
 

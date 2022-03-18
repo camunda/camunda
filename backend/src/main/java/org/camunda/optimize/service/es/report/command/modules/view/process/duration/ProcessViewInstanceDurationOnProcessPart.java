@@ -56,9 +56,10 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
                                    final ExecutionContext<ProcessReportDataDto> context) {
     final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
     getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
-      Double measureResult = getProcessPartAggregationResult(aggs, aggregationStrategy.getAggregationType());
+      Double measureResult = getProcessPartAggregationResult(
+        aggs, aggregationStrategy.getAggregationType());
       if (measureResult != null) {
-        // rounding to closest integer since the lowest precision
+        // rounding to the closest integer since the lowest precision
         // for duration in the data is milliseconds anyway for data types.
         measureResult = Precision.round(measureResult, 0);
       }

@@ -33,8 +33,6 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.rest.IngestionRestService.QUERY_PARAMETER_ACCESS_TOKEN;
-import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
@@ -167,25 +165,6 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   }
 
   @Test
-  public void ingestExternalVariable_accessTokenAsQueryParam() {
-    // given
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
-
-    final String accessToken = "aToken";
-    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(accessToken);
-
-    // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestExternalVariables(Collections.singletonList(variable), null)
-      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, accessToken)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertExternalVariablesArePersisted(Collections.singletonList(variable));
-  }
-
-  @Test
   public void ingestExternalVariable_accessTokenUsingBearerScheme() {
     // given
     final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
@@ -197,7 +176,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     final Response ingestResponse =
       ingestionClient.ingestVariablesAndReturnResponse(
         Collections.singletonList(variable),
-        AUTH_COOKIE_TOKEN_VALUE_PREFIX + accessToken
+        accessToken
       );
 
     // then

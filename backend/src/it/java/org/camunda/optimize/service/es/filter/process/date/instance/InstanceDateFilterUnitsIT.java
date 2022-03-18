@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
@@ -27,7 +27,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRollingSupportedFilterUnits")
-  public void rollingDateFilterInReport(DateFilterUnit dateFilterUnit) {
+  public void rollingDateFilterInReport(DateUnit dateUnit) {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
@@ -44,7 +44,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        dateFilterUnit,
+        dateUnit,
         1L,
         true,
         DateFilterType.ROLLING
@@ -63,7 +63,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
     // when
     ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
                                                    processInstance.getProcessDefinitionVersion());
-    List<ProcessFilterDto<?>> rollingStartDateFilter = createRollingStartDateFilter(DateFilterUnit.QUARTERS, 1L);
+    List<ProcessFilterDto<?>> rollingStartDateFilter = createRollingStartDateFilter(DateUnit.QUARTERS, 1L);
     reportData.setFilter(rollingStartDateFilter);
 
     // then
@@ -73,7 +73,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRelativeSupportedFilterUnits")
-  public void relativeDateFilterInReportCurrentInterval(DateFilterUnit dateFilterUnit) {
+  public void relativeDateFilterInReportCurrentInterval(DateUnit dateUnit) {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
@@ -86,7 +86,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        dateFilterUnit,
+        dateUnit,
         1L,
         true,
         DateFilterType.RELATIVE
@@ -98,7 +98,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRelativeSupportedFilterUnits")
-  public void relativeDateFilterInReportPreviousInterval(DateFilterUnit dateFilterUnit) {
+  public void relativeDateFilterInReportPreviousInterval(DateUnit dateUnit) {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
@@ -111,7 +111,7 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        dateFilterUnit,
+        dateUnit,
         0L,
         true,
         DateFilterType.RELATIVE

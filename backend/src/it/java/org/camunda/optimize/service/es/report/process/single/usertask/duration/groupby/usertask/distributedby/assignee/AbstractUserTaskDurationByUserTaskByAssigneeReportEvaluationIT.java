@@ -58,6 +58,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
@@ -1196,10 +1197,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs);
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
-
-  protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
-  }
 
   private void doReportDataAssertions(final ProcessReportDataDto resultReportDataDto,
                                       final ProcessDefinitionEngineDto processDefinition) {

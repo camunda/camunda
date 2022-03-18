@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
@@ -62,7 +62,7 @@ public class DurationAggregationService {
   private static final String DURATION_HISTOGRAM_AGGREGATION = "durationHistogram";
   private static final int AUTOMATIC_BUCKET_LIMIT = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
   private static final BucketUnit DEFAULT_UNIT = BucketUnit.MILLISECOND;
-  private static final DurationFilterUnit FILTER_UNIT = DurationFilterUnit.MILLIS;
+  private static final DurationUnit FILTER_UNIT = DurationUnit.MILLIS;
 
   private final MinMaxStatsService minMaxStatsService;
 

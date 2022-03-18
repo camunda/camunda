@@ -30,6 +30,7 @@ public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
 
   public static final String CONFIGURATION = SingleReportDataDto.Fields.configuration;
   public static final String XML = SingleReportConfigurationDto.Fields.xml;
+  public static final String AGGREGATION_TYPES = SingleReportConfigurationDto.Fields.aggregationTypes;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {

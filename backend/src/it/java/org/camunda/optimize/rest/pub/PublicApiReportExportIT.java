@@ -38,7 +38,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
-import static org.camunda.optimize.rest.PublicApiRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -218,9 +217,7 @@ public class PublicApiReportExportIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .buildPublicExportJsonReportResultRequest(reportId)
-      .withoutAuthentication()
+      .buildPublicExportJsonReportResultRequest(reportId, getAccessToken())
       .execute();
 
     // then
@@ -359,10 +356,8 @@ public class PublicApiReportExportIT extends AbstractIT {
     // when
     ErrorResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, 5)
-      .buildPublicExportJsonReportResultRequest(combinedReportId)
-      .withoutAuthentication()
+      .buildPublicExportJsonReportResultRequest(combinedReportId, getAccessToken())
       .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
     String errorMessage = response.getDetailedMessage();
 
@@ -399,6 +394,17 @@ public class PublicApiReportExportIT extends AbstractIT {
     assertThat(data.getData()).isInstanceOf(List.class);
     List<?> nestedData = (List<?>) data.getData();
     assertThat(nestedData.size()).isEqualTo(2);
+  }
+
+  @Test
+  public void exportNonExistingReportResult() {
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildPublicExportJsonReportResultRequest("IWishIExisted_ButIDont", getAccessToken())
+      .execute();
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private String extractFirstProcessInstanceId(List<?> data) {

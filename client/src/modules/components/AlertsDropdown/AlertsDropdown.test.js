@@ -23,7 +23,7 @@ jest.mock('services', () => {
         data: {
           visualization: 'table',
           view: {properties: ['frequency']},
-          configuration: {aggregationTypes: ['avg']},
+          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         },
         name: 'Report 1',
       },
@@ -32,7 +32,7 @@ jest.mock('services', () => {
         data: {
           visualization: 'number',
           view: {properties: ['duration']},
-          configuration: {aggregationTypes: ['avg']},
+          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         },
         name: 'Report 2',
       },
@@ -42,7 +42,7 @@ jest.mock('services', () => {
         data: {
           visualization: 'number',
           view: {properties: ['duration']},
-          configuration: {aggregationTypes: ['avg']},
+          configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         },
         name: 'Report 4',
       },

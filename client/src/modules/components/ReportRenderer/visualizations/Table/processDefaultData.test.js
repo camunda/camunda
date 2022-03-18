@@ -147,7 +147,7 @@ it('should display multi-measure reports', () => {
         measures: {
           $set: [
             {property: 'frequency', data: []},
-            {property: 'duration', aggregationType: 'avg', data: []},
+            {property: 'duration', aggregationType: {type: 'avg', value: null}, data: []},
           ],
         },
       },

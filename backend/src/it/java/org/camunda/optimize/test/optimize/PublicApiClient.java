@@ -20,7 +20,6 @@ import java.util.function.Supplier;
 
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_SCROLL_ID_PARAM;
-import static org.camunda.optimize.rest.PublicApiRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 
 @AllArgsConstructor
 public class PublicApiClient {
@@ -29,7 +28,6 @@ public class PublicApiClient {
   public List<ReportDefinitionExportDto> exportReportDefinitionsAndReturnResponse(final List<String> reportIds,
                                                                                   final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicExportJsonReportDefinitionRequest(reportIds, accessToken)
       .executeAndReturnList(ReportDefinitionExportDto.class, Response.Status.OK.getStatusCode());
   }
@@ -37,7 +35,6 @@ public class PublicApiClient {
   public Response exportReportDefinitions(final List<String> reportIds,
                                           final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicExportJsonReportDefinitionRequest(reportIds, accessToken)
       .execute();
   }
@@ -46,7 +43,6 @@ public class PublicApiClient {
   public Response exportDashboardDefinitions(final List<String> dashboardIds, final String accessToken) {
     return getRequestExecutor()
       .buildPublicExportJsonDashboardDefinitionRequest(dashboardIds, accessToken)
-      .withoutAuthentication()
       .execute();
   }
 
@@ -54,7 +50,6 @@ public class PublicApiClient {
                                                                            final String accessToken) {
     return getRequestExecutor()
       .buildPublicExportJsonDashboardDefinitionRequest(dashboardIds, accessToken)
-      .withoutAuthentication()
       .executeAndReturnList(OptimizeEntityExportDto.class, Response.Status.OK.getStatusCode());
   }
 
@@ -62,7 +57,6 @@ public class PublicApiClient {
                                                 final String collectionId,
                                                 final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicImportEntityDefinitionsRequest(collectionId, Sets.newHashSet(exportedDtos), accessToken)
       .execute();
   }
@@ -71,21 +65,18 @@ public class PublicApiClient {
                                                             final String collectionId,
                                                             final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicImportEntityDefinitionsRequest(collectionId, Sets.newHashSet(exportedDtos), accessToken)
       .executeAndReturnList(EntityIdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response deleteReport(final String reportId, final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicDeleteReportRequest(reportId, accessToken)
       .execute();
   }
 
   public Response deleteDashboard(final String dashboardId, final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicDeleteDashboardRequest(dashboardId, accessToken)
       .execute();
   }
@@ -93,24 +84,20 @@ public class PublicApiClient {
   public Response exportReport(final String reportId, final String accessToken, final Integer limit,
                                final String searchRequestId) {
     return getRequestExecutor()
-      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, accessToken)
       .addSingleQueryParam(QUERY_LIMIT_PARAM, limit)
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, searchRequestId)
-      .buildPublicExportJsonReportResultRequest(reportId)
-      .withoutAuthentication()
+      .buildPublicExportJsonReportResultRequest(reportId, accessToken)
       .execute();
   }
 
   public List<IdResponseDto> getAllReportIdsInCollection(final String collectionId, final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicGetAllReportIdsInCollectionRequest(collectionId, accessToken)
       .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<IdResponseDto> getAllDashboardIdsInCollection(final String collectionId, final String accessToken) {
     return getRequestExecutor()
-      .withoutAuthentication()
       .buildPublicGetAllDashboardIdsInCollectionRequest(collectionId, accessToken)
       .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }

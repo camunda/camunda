@@ -124,7 +124,11 @@ export default function DashboardTemplateModal({onClose}) {
                   groupBy: {type: 'flowNodes', value: null},
                   visualization: 'heat',
                   configuration: {
-                    aggregationTypes: ['avg', 'median', 'max'],
+                    aggregationTypes: [
+                      {type: 'avg', value: null},
+                      {type: 'percentile', value: 50},
+                      {type: 'max', value: null},
+                    ],
                   },
                 },
               },
@@ -139,7 +143,12 @@ export default function DashboardTemplateModal({onClose}) {
                   groupBy: {type: 'startDate', value: {unit: 'automatic'}},
                   visualization: 'line',
                   configuration: {
-                    aggregationTypes: ['min', 'avg', 'median', 'max'],
+                    aggregationTypes: [
+                      {type: 'min', value: null},
+                      {type: 'avg', value: null},
+                      {type: 'percentile', value: 50},
+                      {type: 'max', value: null},
+                    ],
                   },
                 },
               },
@@ -194,7 +203,11 @@ export default function DashboardTemplateModal({onClose}) {
                   groupBy: {type: 'flowNodes', value: null},
                   visualization: 'heat',
                   configuration: {
-                    aggregationTypes: ['avg', 'median', 'max'],
+                    aggregationTypes: [
+                      {type: 'avg', value: null},
+                      {type: 'percentile', value: 50},
+                      {type: 'max', value: null},
+                    ],
                   },
                 },
               },
@@ -422,7 +435,10 @@ export default function DashboardTemplateModal({onClose}) {
                   configuration: {
                     measureVisualizations: {frequency: 'bar', duration: 'line'},
                     stackedBar: true,
-                    aggregationTypes: ['avg', 'max'],
+                    aggregationTypes: [
+                      {type: 'avg', value: null},
+                      {type: 'max', value: null},
+                    ],
                   },
                 },
               },
@@ -438,7 +454,7 @@ export default function DashboardTemplateModal({onClose}) {
                   distributedBy: {type: 'process', value: null},
                   visualization: 'line',
                   configuration: {
-                    aggregationTypes: ['max'],
+                    aggregationTypes: [{type: 'max', value: null}],
                     targetValue: {
                       active: true,
                       durationChart: {unit: 'hours', isBelow: true, value: '4'},
@@ -559,7 +575,7 @@ export default function DashboardTemplateModal({onClose}) {
                 groupBy: {type: 'userTasks', value: null},
                 visualization: 'heat',
                 configuration: {
-                  aggregationTypes: ['avg'],
+                  aggregationTypes: [{type: 'avg', value: null}],
                   userTaskDurationTimes: ['total', 'work', 'idle'],
                 },
               },
@@ -584,7 +600,7 @@ export default function DashboardTemplateModal({onClose}) {
                 ],
                 visualization: 'bar',
                 configuration: {
-                  aggregationTypes: ['avg'],
+                  aggregationTypes: [{type: 'avg', value: null}],
                   userTaskDurationTimes: ['total'],
                   stackedBar: true,
                 },
@@ -602,7 +618,7 @@ export default function DashboardTemplateModal({onClose}) {
                 distributedBy: {type: 'userTask', value: null},
                 visualization: 'bar',
                 configuration: {
-                  aggregationTypes: ['avg'],
+                  aggregationTypes: [{type: 'avg', value: null}],
                   userTaskDurationTimes: ['work', 'idle'],
                   stackedBar: true,
                 },
@@ -633,7 +649,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 ],
                 configuration: {
-                  aggregationTypes: ['avg'],
+                  aggregationTypes: [{type: 'avg', value: null}],
                   userTaskDurationTimes: ['work', 'idle'],
                   stackedBar: true,
                 },
@@ -664,7 +680,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 ],
                 configuration: {
-                  aggregationTypes: ['avg'],
+                  aggregationTypes: [{type: 'avg', value: null}],
                   userTaskDurationTimes: ['work', 'idle'],
                   stackedBar: true,
                 },
@@ -681,7 +697,11 @@ export default function DashboardTemplateModal({onClose}) {
                 groupBy: {type: 'endDate', value: {unit: 'automatic'}},
                 visualization: 'line',
                 configuration: {
-                  aggregationTypes: ['avg', 'median', 'max'],
+                  aggregationTypes: [
+                    {type: 'avg', value: null},
+                    {type: 'percentile', value: 50},
+                    {type: 'max', value: null},
+                  ],
                   userTaskDurationTimes: ['total'],
                 },
               },
@@ -730,7 +750,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 ],
                 configuration: {
-                  aggregationTypes: ['avg'],
+                  aggregationTypes: [{type: 'avg', value: null}],
                   userTaskDurationTimes: ['work'],
                 },
               },
@@ -861,7 +881,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               ],
               configuration: {
-                aggregationTypes: ['sum'],
+                aggregationTypes: [{type: 'sum', value: null}],
                 userTaskDurationTimes: ['work'],
                 stackedBar: true,
               },
@@ -892,7 +912,7 @@ export default function DashboardTemplateModal({onClose}) {
               distributedBy: {type: 'process', value: null},
               visualization: 'bar',
               configuration: {
-                aggregationTypes: ['sum'],
+                aggregationTypes: [{type: 'sum', value: null}],
                 userTaskDurationTimes: ['work'],
                 stackedBar: true,
               },
@@ -917,7 +937,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               ],
               configuration: {
-                aggregationTypes: ['avg'],
+                aggregationTypes: [{type: 'avg', value: null}],
                 targetValue: {
                   active: true,
                   durationChart: {unit: 'hours', isBelow: true, value: '1'},

@@ -140,7 +140,7 @@ export const convertDurationToObject = (value) => {
   };
 };
 
-export const convertToBiggestPossibleDuration = (value) => {
+export const convertToDecimalTimeUnit = (value) => {
   // sort the time units in descending order, then find
   // the biggest one that fits the provided value even if it
   // has decimal places
@@ -154,7 +154,7 @@ export const convertToBiggestPossibleDuration = (value) => {
     possibleUnits[possibleUnits.length - 1];
 
   return {
-    value: Number((value / divisor).toFixed(3)).toString(),
+    value: String(Number((value / divisor).toFixed(3))),
     unit,
   };
 };

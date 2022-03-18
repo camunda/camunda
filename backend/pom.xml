@@ -124,6 +124,11 @@
       <artifactId>spring-security-oauth2-jose</artifactId>
       <version>${spring.security.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-resource-server</artifactId>
+      <version>${spring.security.version}</version>
+    </dependency>
 
     <!-- Jetty -->
     <dependency>
@@ -213,7 +218,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.18.3</version>
+      <version>3.19.0</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -314,7 +319,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.5</version>
+      <version>1.6.7</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

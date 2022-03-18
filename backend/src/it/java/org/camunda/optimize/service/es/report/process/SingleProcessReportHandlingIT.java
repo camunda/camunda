@@ -30,12 +30,10 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -71,14 +69,6 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 
 public class SingleProcessReportHandlingIT extends AbstractIT {
-
-  private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
-  private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
-
-  @AfterEach
-  public void cleanUp() {
-    LocalDateUtil.reset();
-  }
 
   @Test
   public void reportIsWrittenToElasticsearch() throws IOException {
@@ -353,8 +343,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     String reportId = reportClient.createEmptySingleProcessReport();
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(FOO_PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion(FOO_PROCESS_DEFINITION_VERSION)
+      .setProcessDefinitionKey("fooProcessDefinitionKey")
+      .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();

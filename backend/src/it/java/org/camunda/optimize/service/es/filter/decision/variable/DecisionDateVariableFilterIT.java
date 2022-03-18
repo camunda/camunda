@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
@@ -85,14 +85,14 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
         Arguments.of(
           "Include value and Null/Undefined for type " + DateFilterType.ROLLING,
           createSupplier(() -> new RollingDateFilterDataDto(
-            new RollingDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+            new RollingDateFilterStartDto(0L, DateUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         ),
         Arguments.of(
           "Include value and Null/Undefined for type " + DateFilterType.RELATIVE,
           createSupplier(() -> new RelativeDateFilterDataDto(
-            new RelativeDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+            new RelativeDateFilterStartDto(0L, DateUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         )
@@ -281,12 +281,12 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
-      INPUT_INVOICE_DATE_ID, 1L, DateFilterUnit.DAYS
+      INPUT_INVOICE_DATE_ID, 1L, DateUnit.DAYS
     )));
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result1 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     reportData.setFilter(Lists.newArrayList(createRollingDateInputVariableFilter(
-      INPUT_INVOICE_DATE_ID, 3L, DateFilterUnit.DAYS
+      INPUT_INVOICE_DATE_ID, 3L, DateUnit.DAYS
     )));
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result2 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
@@ -312,7 +312,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
-      INPUT_INVOICE_DATE_ID, 0L, DateFilterUnit.DAYS
+      INPUT_INVOICE_DATE_ID, 0L, DateUnit.DAYS
     )));
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result1 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
@@ -321,7 +321,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result2 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     reportData.setFilter(Lists.newArrayList(createRelativeDateInputVariableFilter(
-      INPUT_INVOICE_DATE_ID, 1L, DateFilterUnit.DAYS
+      INPUT_INVOICE_DATE_ID, 1L, DateUnit.DAYS
     )));
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result3 = reportClient.evaluateDecisionRawReport(reportData).getResult();
 

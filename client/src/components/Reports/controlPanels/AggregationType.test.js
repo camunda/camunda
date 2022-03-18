@@ -19,7 +19,7 @@ it('should render nothing if the current result is no duration and the view is n
   const node = shallow(
     <AggregationType
       report={{
-        configuration: {aggregationTypes: ['avg']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
         view: {entity: null, properties: ['rawData']},
         distributedBy: {type: 'none'},
       }}
@@ -35,7 +35,7 @@ it('should render an aggregation selection for duration reports', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['median']},
+        configuration: {aggregationTypes: [{type: 'percentile', value: 50}]},
       }}
     />
   );
@@ -43,13 +43,16 @@ it('should render an aggregation selection for duration reports', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should render an user task duration selection for user task duration reports', async () => {
+it('should render a user task duration selection for user task duration reports', async () => {
   const node = shallow(
     <AggregationType
       report={{
         view: {entity: 'userTask', properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['median'], userTaskDurationTimes: ['idle']},
+        configuration: {
+          aggregationTypes: [{type: 'percentile', value: 50}],
+          userTaskDurationTimes: ['idle'],
+        },
       }}
     />
   );
@@ -65,7 +68,7 @@ it('should render sum field for variable reports', () => {
       report={{
         view: {entity: 'variable', properties: [{}]},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['sum']},
+        configuration: {aggregationTypes: [{type: 'sum', value: null}]},
       }}
     />
   );
@@ -79,7 +82,7 @@ it('should hide sum field for incident reports', () => {
       report={{
         view: {entity: 'incident', properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['avg']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
       }}
     />
   );
@@ -95,7 +98,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['median']},
+        configuration: {aggregationTypes: [{type: 'percentile', value: 50}]},
       }}
       onChange={spy}
     />
@@ -109,7 +112,12 @@ it('should reevaluate the report when changing the aggregation type', () => {
   expect(spy).toHaveBeenCalledWith(
     {
       configuration: {
-        aggregationTypes: {$set: ['median', 'max']},
+        aggregationTypes: {
+          $set: [
+            {type: 'percentile', value: 50},
+            {type: 'percentile', value: 25},
+          ],
+        },
         targetValue: {active: {$set: false}},
       },
     },
@@ -117,7 +125,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
   );
 });
 
-it('should hide median aggregation if processpart is defined', () => {
+it('should hide percentile aggregations if processpart is defined', () => {
   const spy = jest.fn();
 
   const node = shallow(
@@ -125,31 +133,18 @@ it('should hide median aggregation if processpart is defined', () => {
       report={{
         view: {properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['avg'], processPart: 'defined'},
+        configuration: {
+          aggregationTypes: [{type: 'avg', value: null}],
+          processPart: 'defined',
+        },
       }}
       onChange={spy}
     />
   );
 
-  expect(node.find({label: 'Median'})).not.toExist();
-});
-
-it('should disable median aggregation for reports distributed by process', () => {
-  const spy = jest.fn();
-
-  const node = shallow(
-    <AggregationType
-      report={{
-        view: {properties: ['duration']},
-        distributedBy: {type: 'process'},
-        configuration: {aggregationTypes: ['avg']},
-      }}
-      onChange={spy}
-    />
-  );
-
-  expect(node.find({label: 'Median'})).toExist();
-  expect(node.find({label: 'Median'}).prop('disabled')).toBe(true);
+  expect(node.find({label: 'P25'})).not.toExist();
+  expect(node.find({label: 'P50'})).not.toExist();
+  expect(node.find({label: 'P95'})).not.toExist();
 });
 
 it('should not show user task duration selection for user task duration reports in cloud environment', async () => {
@@ -159,7 +154,10 @@ it('should not show user task duration selection for user task duration reports 
       report={{
         view: {entity: 'userTask', properties: ['duration']},
         distributedBy: {type: 'none'},
-        configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+        configuration: {
+          aggregationTypes: [{type: 'avg', value: null}],
+          userTaskDurationTimes: ['total'],
+        },
       }}
     />
   );
@@ -168,4 +166,23 @@ it('should not show user task duration selection for user task duration reports 
 
   expect(node.find({label: 'Work'})).not.toExist();
   expect(node.find({label: 'Idle'})).not.toExist();
+});
+
+it('should not show percentile aggregations when report is grouped by process ', async () => {
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'processInstance', properties: ['duration']},
+        distributedBy: {type: 'process'},
+        configuration: {
+          aggregationTypes: [{type: 'avg', value: null}],
+        },
+      }}
+    />
+  );
+
+  await runAllEffects();
+
+  expect(node.find({label: 'P25'})).not.toExist();
+  expect(node.find({label: 'P95'})).not.toExist();
 });

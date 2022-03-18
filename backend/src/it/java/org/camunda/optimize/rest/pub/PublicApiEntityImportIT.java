@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
@@ -33,6 +34,9 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -225,6 +229,70 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
       .hasSize(2)
       .extracting(DashboardDefinitionRestDto::getName)
       .containsExactlyInAnyOrder("Dashboard1", "Dashboard2");
+  }
+
+  @Test
+  public void importInvalidEntities() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
+    final SingleProcessReportDefinitionExportDto exportDto = new SingleProcessReportDefinitionExportDto(reportDef);
+    exportDto.setId(null);
+
+    // when
+    final Response response = publicApiClient.importEntityAndReturnResponse(
+      Collections.singleton(exportDto),
+      collectionId,
+      ACCESS_TOKEN
+    );
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+    assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
+      .contains("Could not import entities because the provided file contains invalid OptimizeExportDtos.");
+  }
+
+  @Test
+  public void importInvalidJson() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildPublicImportEntityDefinitionsRequest(
+        Entity.entity("Invalid Json String", MediaType.APPLICATION_JSON_TYPE),
+        collectionId,
+        ACCESS_TOKEN
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+    assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
+      .contains("Could not import entities because the provided file is not a valid list of OptimizeEntityExportDtos.");
+  }
+
+  @Test
+  public void importEmptyBody() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildPublicImportEntityDefinitionsRequest(
+        Entity.entity("", MediaType.APPLICATION_JSON_TYPE),
+        collectionId,
+        ACCESS_TOKEN
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+    assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
+      .contains("Could not import entity because the provided file is null or empty.");
   }
 
   private String createCollectionWithScope() {
