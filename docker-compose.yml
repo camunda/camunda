@@ -80,7 +80,7 @@ services:
 
   operate:
     container_name: tasklist-operate
-    image: camunda/operate:latest
+    image: camunda/operate:SNAPSHOT
     ports:
       - 8088:8080
     environment:
@@ -114,7 +114,7 @@ services:
 
   tasklist-e2e:
     container_name: tasklist-e2e
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:SNAPSHOT
     ports:
       - 8081:8080
     environment:
@@ -137,7 +137,7 @@ services:
 
   tasklist-sso:
     container_name: tasklist
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:SNAPSHOT
     ports:
       - 8080:8080
     environment:
