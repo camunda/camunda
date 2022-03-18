@@ -40,7 +40,7 @@
     <version.junit>4.13.2</version.junit>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.8.2</version.micrometer>
-    <version.mockito>4.3.1</version.mockito>
+    <version.mockito>4.4.0</version.mockito>
     <version.assertj-core>3.22.0</version.assertj-core>
     <version.jackson>2.13.1</version.jackson>
     <version.graphql>11.1.0</version.graphql>
