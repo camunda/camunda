@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
@@ -32,14 +33,14 @@ public final class DbIncidentState implements MutableIncidentState {
   private final ColumnFamily<DbLong, Incident> incidentColumnFamily;
 
   /** element instance key -> incident key */
-  private final DbLong elementInstanceKey;
+  private final DbForeignKey<DbLong> elementInstanceKey;
 
-  private final ColumnFamily<DbLong, IncidentKey> processInstanceIncidentColumnFamily;
+  private final ColumnFamily<DbForeignKey<DbLong>, IncidentKey> processInstanceIncidentColumnFamily;
 
   /** job key -> incident key */
-  private final DbLong jobKey;
+  private final DbForeignKey<DbLong> jobKey;
 
-  private final ColumnFamily<DbLong, IncidentKey> jobIncidentColumnFamily;
+  private final ColumnFamily<DbForeignKey<DbLong>, IncidentKey> jobIncidentColumnFamily;
   private final IncidentKey incidentKeyValue = new IncidentKey();
 
   private final IncidentMetrics metrics;
@@ -53,7 +54,7 @@ public final class DbIncidentState implements MutableIncidentState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENTS, transactionContext, incidentKey, incidentRead);
 
-    elementInstanceKey = new DbLong();
+    elementInstanceKey = new DbForeignKey<>(new DbLong(), ZbColumnFamilies.ELEMENT_INSTANCE_KEY);
     processInstanceIncidentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_PROCESS_INSTANCES,
@@ -61,7 +62,7 @@ public final class DbIncidentState implements MutableIncidentState {
             elementInstanceKey,
             incidentKeyValue);
 
-    jobKey = new DbLong();
+    jobKey = new DbForeignKey<>(new DbLong(), ZbColumnFamilies.JOBS);
     jobIncidentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
@@ -77,10 +78,10 @@ public final class DbIncidentState implements MutableIncidentState {
 
     incidentKeyValue.set(incidentKey);
     if (isJobIncident(incident)) {
-      jobKey.wrapLong(incident.getJobKey());
+      jobKey.inner().wrapLong(incident.getJobKey());
       jobIncidentColumnFamily.insert(jobKey, incidentKeyValue);
     } else {
-      elementInstanceKey.wrapLong(incident.getElementInstanceKey());
+      elementInstanceKey.inner().wrapLong(incident.getElementInstanceKey());
       processInstanceIncidentColumnFamily.insert(elementInstanceKey, incidentKeyValue);
     }
 
@@ -95,10 +96,10 @@ public final class DbIncidentState implements MutableIncidentState {
       incidentColumnFamily.deleteExisting(incidentKey);
 
       if (isJobIncident(incidentRecord)) {
-        jobKey.wrapLong(incidentRecord.getJobKey());
+        jobKey.inner().wrapLong(incidentRecord.getJobKey());
         jobIncidentColumnFamily.deleteExisting(jobKey);
       } else {
-        elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
+        elementInstanceKey.inner().wrapLong(incidentRecord.getElementInstanceKey());
         processInstanceIncidentColumnFamily.deleteExisting(elementInstanceKey);
       }
 
@@ -119,7 +120,7 @@ public final class DbIncidentState implements MutableIncidentState {
 
   @Override
   public long getProcessInstanceIncidentKey(final long processInstanceKey) {
-    elementInstanceKey.wrapLong(processInstanceKey);
+    elementInstanceKey.inner().wrapLong(processInstanceKey);
 
     final IncidentKey incidentKey = processInstanceIncidentColumnFamily.get(elementInstanceKey);
 
@@ -132,7 +133,7 @@ public final class DbIncidentState implements MutableIncidentState {
 
   @Override
   public long getJobIncidentKey(final long jobKey) {
-    this.jobKey.wrapLong(jobKey);
+    this.jobKey.inner().wrapLong(jobKey);
     final IncidentKey incidentKey = jobIncidentColumnFamily.get(this.jobKey);
 
     if (incidentKey != null) {

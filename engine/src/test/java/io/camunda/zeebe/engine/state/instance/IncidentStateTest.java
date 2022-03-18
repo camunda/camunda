@@ -11,10 +11,15 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,11 +30,15 @@ public final class IncidentStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableIncidentState incidentState;
+  private MutableElementInstanceState elementInstanceState;
+  private MutableJobState jobState;
   private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {
     zeebeState = stateRule.getZeebeState();
+    elementInstanceState = zeebeState.getElementInstanceState();
+    jobState = zeebeState.getJobState();
     incidentState = zeebeState.getIncidentState();
   }
 
@@ -161,12 +170,13 @@ public final class IncidentStateTest {
 
     // then
     final IncidentRecord readRecord = incidentState.getIncidentRecord(1L);
-    assertThat(readRecord.getJobKey()).isNotEqualTo(writtenRecord.getJobKey());
-    assertThat(readRecord.getJobKey()).isEqualTo(1234);
+    assertThat(readRecord.getJobKey()).isNotEqualTo(writtenRecord.getJobKey()).isEqualTo(1234);
     assertThat(writtenRecord.getJobKey()).isEqualTo(2048);
   }
 
   public IncidentRecord createJobIncident() {
+    jobState.create(1234, new JobRecord().setType("test"));
+
     final IncidentRecord expectedRecord = new IncidentRecord();
     expectedRecord.setJobKey(1234);
     expectedRecord.setErrorMessage("Error because of error");
@@ -175,6 +185,10 @@ public final class IncidentStateTest {
   }
 
   public IncidentRecord createProcessInstanceIncident() {
+    elementInstanceState.createInstance(
+        new ElementInstance(
+            1234, ProcessInstanceIntent.ELEMENT_ACTIVATED, new ProcessInstanceRecord()));
+
     final IncidentRecord expectedRecord = new IncidentRecord();
     expectedRecord.setElementInstanceKey(1234);
     expectedRecord.setBpmnProcessId(wrapString("process"));
