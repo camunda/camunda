@@ -46,8 +46,8 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
   private static final String OPTIMIZE_REST_PACKAGE = "org.camunda.optimize.rest";
-  public static final String CONTEXT_CLASS_PARAMETER_NAME = "contextClass";
-  public static final String CONTEXT_CLASS_PARAMETER_VALUE =
+  private static final String CONTEXT_CLASS_PARAMETER_NAME = "contextClass";
+  private static final String CONTEXT_CLASS_PARAMETER_VALUE =
     "org.springframework.web.context.support.AnnotationConfigWebApplicationContext";
 
   private final ContextLoaderListener contextLoaderListener = new ContextLoaderListener();

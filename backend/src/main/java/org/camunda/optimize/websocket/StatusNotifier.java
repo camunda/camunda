@@ -77,7 +77,8 @@ public class StatusNotifier implements ImportObserver {
         logger.debug("Could not write to websocket session [{}], because it already seems closed.", session.getId());
       }
     } catch (IOException e) {
-      logger.error("can't write status to web socket", e);
+      logger.warn("can't write status to web socket");
+      logger.debug("Exception when writing status", e);
     }
   }
 }
