@@ -77,7 +77,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- IAM-->
+    <!-- IDENTITY-->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
