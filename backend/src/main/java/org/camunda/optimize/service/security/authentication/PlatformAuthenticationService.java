@@ -73,15 +73,6 @@ public class PlatformAuthenticationService extends AbstractAuthenticationService
     throw new NotSupportedException("Login callback called but not supported");
   }
 
-  /*
-  @Override
-  public Response logoutCallback(final ContainerRequestContext requestContext,
-                                 final LogoutRequestDto logoutRequestDto) {
-    throw new NotSupportedException("Logout callback called but not supported");
-  }
-
-   */
-
   @Override
   public Response logout(@Context ContainerRequestContext requestContext) {
     sessionService.invalidateSession(requestContext);

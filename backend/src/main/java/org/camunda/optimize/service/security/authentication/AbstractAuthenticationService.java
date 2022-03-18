@@ -26,9 +26,6 @@ public abstract class AbstractAuthenticationService {
 
   public abstract Response loginCallback(@Context ContainerRequestContext requestContext, AuthCodeDto authCode);
 
-  // public abstract Response logoutCallback(@Context ContainerRequestContext requestContext,
-  //                                        LogoutRequestDto logoutRequestDto);
-
   public abstract Response logout(@Context ContainerRequestContext requestContext);
 
   public Response testAuthentication() {

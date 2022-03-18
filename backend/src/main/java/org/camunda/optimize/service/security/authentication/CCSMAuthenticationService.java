@@ -74,20 +74,6 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       )
       .build();
   }
-/*
-  @Override
-  public Response logoutCallback(final ContainerRequestContext requestContext,
-                                 final LogoutRequestDto logoutRequestDto) {
-    final Optional<String> redirectUri = iamApi
-      .authentication()
-      .getLogoutRequestRedirectUri(logoutRequestDto);
-    sessionService.invalidateSession(requestContext);
-    return Response.seeOther(URI.create(redirectUri.orElse(buildRootRedirect(requestContext))))
-      .cookie(authCookieService.createDeleteOptimizeAuthCookie(requestContext.getUriInfo().getRequestUri().getScheme()))
-      .build();
-  }
-
- */
 
   @Override
   public Response logout(final ContainerRequestContext requestContext) {

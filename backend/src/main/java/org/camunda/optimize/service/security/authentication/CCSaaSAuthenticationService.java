@@ -43,14 +43,6 @@ public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 
-  /*
-  @Override
-  public Response logoutCallback(final ContainerRequestContext requestContext,
-                                 final LogoutRequestDto logoutRequestDto) {
-    throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
-  }
-   */
-
   @Override
   public Response logout(final ContainerRequestContext requestContext) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
