@@ -17,7 +17,6 @@ import {CollapsablePanel} from './CollapsablePanel';
 import {
   FormElement,
   Dropdown,
-  Select,
   SectionTitle,
   Checkbox,
   TextField,
@@ -35,7 +34,7 @@ import {
 import {Button} from 'modules/components/Button';
 import {isEqual} from 'lodash';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {DecisionsFormGroup} from './DecisionsFormGroup';
 
 const OPTIONAL_FILTER_FIELDS: Record<
   OptionalFilter,
@@ -78,11 +77,6 @@ const Filters: React.FC = observer(() => {
     failed: true,
   };
 
-  const {
-    areDecisionsEmpty,
-    state: {decisions},
-  } = groupedDecisionsStore;
-
   useEffect(() => {
     const {possibleOptionalFilters} = decisionInstancesVisibleFiltersStore;
 
@@ -111,69 +105,7 @@ const Filters: React.FC = observer(() => {
               fieldsToSkipTimeout={['name', 'version', 'evaluated', 'failed']}
             />
             <Fields>
-              <FormGroup>
-                <SectionTitle appearance="emphasis">Decision</SectionTitle>
-                <Field name="name">
-                  {({input}) => (
-                    <Select
-                      label="Name"
-                      selectedOptions={[input.value]}
-                      onCmInput={(event) => {
-                        input.onChange(event.detail.selectedOptions[0]);
-                      }}
-                      disabled={areDecisionsEmpty}
-                      options={[
-                        {
-                          options: [
-                            {
-                              label: 'All',
-                              value: '',
-                            },
-                            ...(decisions.map(({name, decisionId}) => ({
-                              label: name,
-                              value: decisionId,
-                            })) ?? []),
-                          ],
-                        },
-                      ]}
-                    />
-                  )}
-                </Field>
-                <Field name="version">
-                  {({input}) => (
-                    <Select
-                      label="Version"
-                      selectedOptions={[input.value]}
-                      onCmInput={(event) => {
-                        input.onChange(event.detail.selectedOptions[0]);
-                      }}
-                      disabled={areDecisionsEmpty}
-                      options={[
-                        {
-                          options: [
-                            {
-                              label: 'All',
-                              value: '',
-                            },
-                            {
-                              label: 'Version 1',
-                              value: '1',
-                            },
-                            {
-                              label: 'Version 2',
-                              value: '2',
-                            },
-                            {
-                              label: 'Version 3',
-                              value: '3',
-                            },
-                          ],
-                        },
-                      ]}
-                    />
-                  )}
-                </Field>
-              </FormGroup>
+              <DecisionsFormGroup />
               <FormGroup>
                 <SectionTitle appearance="emphasis">
                   Instance States

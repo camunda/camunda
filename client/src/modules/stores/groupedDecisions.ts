@@ -15,27 +15,22 @@ import {
 import {logger} from 'modules/logger';
 import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 import {fetchGroupedDecisions} from 'modules/api/decisions';
+import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
-type Decisions = ReadonlyDeep<
-  [
-    {
-      decisionId: string;
-      name: string;
-      decisions: [
-        {
-          id: string;
-          name: string;
-          version: number;
-          decisionId: string;
-        }
-      ];
-    }
-  ]
->;
+type Decision = ReadonlyDeep<{
+  decisionId: string;
+  name: string;
+  decisions: {
+    id: string;
+    name: string;
+    version: number;
+    decisionId: string;
+  }[];
+}>;
 
 type State = {
-  decisions: Decisions | [];
+  decisions: ReadonlyArray<Decision>;
   status: 'initial' | 'fetched' | 'error';
 };
 
@@ -56,7 +51,9 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       handleFetchSuccess: action,
       handleFetchFailure: action,
       reset: override,
+      decisions: computed,
       areDecisionsEmpty: computed,
+      decisionVersionsById: computed,
     });
   }
 
@@ -74,7 +71,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     }
   });
 
-  handleFetchSuccess = (decisions: Decisions) => {
+  handleFetchSuccess = (decisions: Decision[]) => {
     this.state.decisions = decisions;
     this.state.status = 'fetched';
   };
@@ -88,6 +85,28 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     }
   };
 
+  get decisions() {
+    return this.state.decisions
+      .map(({decisionId, name}) => ({
+        value: decisionId,
+        label: name ?? decisionId,
+      }))
+      .sort(sortOptions);
+  }
+
+  get decisionVersionsById() {
+    return this.state.decisions.reduce<{
+      [decisionId: string]: Decision['decisions'];
+    }>((decisions, decision) => {
+      return {
+        ...decisions,
+        [decision.decisionId]: [...decision.decisions].sort(
+          (decisionA, decisionB) => decisionA.version - decisionB.version
+        ),
+      };
+    }, {});
+  }
+
   getDecisionDefinitionId = ({
     decisionId,
     version,
@@ -95,13 +114,22 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     decisionId: string;
     version: number;
   }) => {
-    const {decisions} = this.state;
-
     return (
-      decisions
-        .find((decision) => decision.decisionId === decisionId)
-        ?.decisions.find((decision) => decision.version === version)?.id ?? null
+      this.decisionVersionsById[decisionId]?.find(
+        (decision) => decision.version === version
+      )?.id ?? null
     );
+  };
+
+  getVersions = (decisionId: string) => {
+    return (
+      this.decisionVersionsById[decisionId]?.map(({version}) => version) ?? []
+    );
+  };
+
+  getDefaultVersion = (decisionId: string) => {
+    const versions = this.getVersions(decisionId);
+    return versions[versions.length - 1];
   };
 
   get areDecisionsEmpty() {

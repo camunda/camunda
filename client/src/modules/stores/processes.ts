@@ -10,6 +10,7 @@ import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {sortOptions} from 'modules/utils/sortOptions';
 
 type ProcessVersion = {
   bpmnProcessId: string;
@@ -118,19 +119,7 @@ class Processes extends NetworkReconnectionHandler {
         value: bpmnProcessId,
         label: name ?? bpmnProcessId,
       }))
-      .sort((process, nextProcess) => {
-        const label = process.label.toUpperCase();
-        const nextLabel = nextProcess.label.toUpperCase();
-
-        if (label < nextLabel) {
-          return -1;
-        }
-        if (label > nextLabel) {
-          return 1;
-        }
-
-        return 0;
-      });
+      .sort(sortOptions);
   }
 
   get versionsByProcess(): {

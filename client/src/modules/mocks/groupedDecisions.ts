@@ -12,26 +12,14 @@ const groupedDecisions = [
       {
         id: '0',
         name: 'Assign Approver Group',
-        version: 1,
+        version: 2,
         decisionId: 'invoice-assign-approver',
       },
       {
         id: '0',
         name: 'Assign Approver Group',
-        version: 2,
-        decisionId: 'invoice-assign-approver',
-      },
-    ],
-  },
-  {
-    decisionId: 'calc-key-figures',
-    name: 'Calculate Credit History Key Figures',
-    decisions: [
-      {
-        id: '2',
-        name: 'Calculate Credit History Key Figures',
         version: 1,
-        decisionId: 'calc-key-figures',
+        decisionId: 'invoice-assign-approver',
       },
     ],
   },
@@ -47,6 +35,18 @@ const groupedDecisions = [
       },
     ],
   },
-];
+  {
+    decisionId: 'calc-key-figures',
+    name: 'Calculate Credit History Key Figures',
+    decisions: [
+      {
+        id: '2',
+        name: 'Calculate Credit History Key Figures',
+        version: 1,
+        decisionId: 'calc-key-figures',
+      },
+    ],
+  },
+] as const;
 
 export {groupedDecisions};

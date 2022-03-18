@@ -236,4 +236,35 @@ describe('<Filters />', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
+
+  it('should select decision name and version', () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.queryByDisplayValue(/version 1/i)).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(/version 2/i)).not.toBeInTheDocument();
+    expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
+    expect(screen.getByLabelText(/version/i)).toBeDisabled();
+
+    userEvent.selectOptions(screen.getByLabelText(/name/i), [
+      'invoice-assign-approver',
+    ]);
+
+    expect(screen.getByDisplayValue(/version 2/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
+    expect(screen.queryByDisplayValue(/all/i)).not.toBeInTheDocument();
+
+    userEvent.selectOptions(screen.getByLabelText(/version/i), ['1']);
+
+    expect(screen.getByDisplayValue(/version 1/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
+
+    userEvent.selectOptions(screen.getByLabelText(/name/i), ['']);
+
+    expect(screen.queryByDisplayValue(/version 1/i)).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(/version 2/i)).not.toBeInTheDocument();
+    expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
+    expect(screen.getByLabelText(/version/i)).toBeDisabled();
+  });
 });
