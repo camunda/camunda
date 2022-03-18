@@ -1,0 +1,73 @@
+# Default values for Tasklist Preview Environments
+
+# The values file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
+# This means:
+#   * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
+#   * Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
+
+
+ingress:
+  # Defines the domain under which to expose the ingress
+  domain: zeebe-tasklist.camunda.cloud
+  # Defines the Vouch IDP URL to use for authenticating against Okta
+  vouchUrl: https://dev.vouch.camunda.cloud
+
+
+git:
+  # Defines the branch name to use for annotating resources
+  branch: main
+  # Defines the repository URL to use for annotating resources
+  repoUrl: https://github.com/camunda-cloud/tasklist
+
+
+# Configuration of the ccsm-helm chart, in particular we disable some features that
+# we don't want to deploy.
+# We also change the `fullNameOverride` and `zeebeClusterName`
+# to simpler values, so we don't duplicate the ReleaseName everwhere
+# (as that's already reflected in the Namespace and can be quite long).
+ccsm-helm:
+  tasklist:
+    fullnameOverride: tasklist
+  operate:
+    # Defines the version of Operate to use
+    image:
+      tag: SNAPSHOT
+    fullnameOverride: operate
+  zeebe:
+    fullnameOverride: zeebe
+    # Defines the version of Zeebe to use
+    image:
+      tag: 1.4.0-alpha2
+    persistence:
+      # Defines whether persistence should be enabled for the `zeebe` StatefulSet.
+      # Depends on https://github.com/camunda/camunda-cloud-helm/issues/232
+      enabled: false
+    # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
+    pvcSize: 2Gi
+  zeebe-gateway:
+    fullnameOverride: zeebe-gateway
+    # Defines the version of Zeebe to use
+    image:
+      tag: 1.4.0-alpha2
+  # Configuration for ElasticSearch. Persistence is disabled by default,
+  # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
+  # in order to avoid being too wasteful.
+  # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
+  elasticsearch:
+    imageTag: 7.16.2
+    persistence:
+      enabled: false
+    volumeClaimTemplate:
+      resources:
+        requests:
+          storage: 2Gi
+
+# Configuration of global values as required by the ccsm-helm chart and to comply
+# with Infra best practices.
+global:
+  zeebeClusterName: zeebe
+  labels:
+    camunda.cloud/source: argocd
+    camunda.cloud/managed-by: Helm
+    app: preview-tasklist-camunda-cloud # Should be overridden by Argo app
+    branch: main # Should be overridden by Argo app

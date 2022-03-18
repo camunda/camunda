@@ -1,0 +1,15 @@
+apiVersion: v2
+name: preview-environments
+appVersion: dev
+description: A Helm chart to deploy a Tasklist preview environment to the Camunda-CI cluster managed by the Infrastructure team.
+icon: https://console.cloud.camunda.io/favicon.ico
+type: application
+# Chart version; expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+
+dependencies:
+- name: ccsm-helm
+  # @helm-camunda-io references https://helm.camunda.io repository configured as camunda-cloud in Argo CD
+  repository: "@helm-camunda-io"
+  version: 0.0.22

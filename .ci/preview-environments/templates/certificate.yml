@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tasklist-tls
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+    replicator.v1.mittwald.de/replicate-from: zeebe-tasklist/zeebe-tasklist-wildcard-certificate-tls
+    # The following overwrites an "internal" annotation (one that the user
+    # should not interfere with as it is not documented in the README at
+    # https://github.com/mittwald/kubernetes-replicator/). We do this anyways to
+    # force replicator-tool to replicate the contents of this secret again.
+    # This is necessary as we have to set empty default data fields to create a
+    # valid `type: kubernetes.io/tls` secret but this will purge the previously
+    # replicated contents.
+    replicator.v1.mittwald.de/replicated-from-version: "0"
+    argocd.argoproj.io/sync-wave: "-3"
+type: kubernetes.io/tls
+data:
+  tls.key: ""
+  tls.crt: ""
+...

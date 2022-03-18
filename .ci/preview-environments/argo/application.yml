@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  destination:
+    name: camunda-ci
+  ignoreDifferences:
+  - jsonPointers:
+    - /data/tls.crt
+    - /data/tls.key
+    - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
+    kind: Secret
+    name: tasklist-tls
+  project: tasklist-previews
+  source:
+    helm:
+      parameters: []
+    path: .ci/preview-environments
+    repoURL: https://github.com/camunda-cloud/tasklist.git
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
