@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -128,7 +128,7 @@ public class ProcessInstanceFrequencyByDurationReportEvaluationIT extends Abstra
     final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
-      .unit(DurationFilterUnit.HOURS)
+      .unit(DurationUnit.HOURS)
       .value(1L)
       .add()
       .buildList();

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -482,7 +482,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
-  protected DurationFilterDataDto durationFilterData(final DurationFilterUnit unit, final Long value,
+  protected DurationFilterDataDto durationFilterData(final DurationUnit unit, final Long value,
                                                      final ComparisonOperator operator) {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
@@ -510,7 +510,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
           START_EVENT,
           DurationFilterDataDto.builder()
             .operator(ComparisonOperator.GREATER_THAN)
-            .unit(DurationFilterUnit.HOURS)
+            .unit(DurationUnit.HOURS)
             .value(1L)
             .build()
         )

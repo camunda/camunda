@@ -32,7 +32,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.proce
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -315,7 +315,7 @@ public class ReportsGenerator {
         .completedInstancesOnly()
       .add()
         .duration()
-        .unit(DurationFilterUnit.MONTHS)
+        .unit(DurationUnit.MONTHS)
         .value((long) 100)
         .operator(LESS_THAN)
       .add()

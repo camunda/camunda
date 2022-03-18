@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * This Enum is a subset of the values available in {@link java.time.temporal.ChronoUnit}.
  * It reflects the values allowed for duration filters on the Optimize Report API.
  */
-public enum DurationFilterUnit {
+public enum DurationUnit {
   YEARS("years"),
   MONTHS("months"),
   WEEKS("weeks"),
@@ -25,7 +25,7 @@ public enum DurationFilterUnit {
 
   private final String id;
 
-  DurationFilterUnit(final String id) {
+  DurationUnit(final String id) {
     this.id = id;
   }
 

@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,6 +23,12 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.SLA_DURATION;
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.TARGET_DURATION;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.DAYS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.HOURS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MILLIS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MONTHS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.SECONDS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.YEARS;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -120,7 +125,7 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateProcessGoalsRequest(
         DEF_KEY,
-        List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.DAYS))
+        List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS))
       )
       .execute();
 
@@ -154,7 +159,7 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
     // given
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.DAYS)));
+    setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS)));
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -171,7 +176,7 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
     // given
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.DAYS)));
+    setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS)));
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -185,26 +190,26 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
   private static Stream<List<ProcessDurationGoalDto>> validGoalsLists() {
     return Stream.of(
       Collections.emptyList(),
-      List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.DAYS)),
-      List.of(new ProcessDurationGoalDto(TARGET_DURATION, 99., 1, DateUnit.MONTHS)),
+      List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS)),
+      List.of(new ProcessDurationGoalDto(TARGET_DURATION, 99., 1, MONTHS)),
       List.of(
-        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.MONTHS),
-        new ProcessDurationGoalDto(TARGET_DURATION, 99., 1, DateUnit.MONTHS)
+        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, MONTHS),
+        new ProcessDurationGoalDto(TARGET_DURATION, 99., 1, MONTHS)
       )
     );
   }
 
   private static Stream<List<ProcessDurationGoalDto>> invalidGoalsLists() {
     return Stream.of(
-      List.of(new ProcessDurationGoalDto(SLA_DURATION, -5., 5, DateUnit.DAYS)),
-      List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., -5, DateUnit.DAYS)),
-      List.of(new ProcessDurationGoalDto(TARGET_DURATION, 105., 1, DateUnit.MONTHS)),
+      List.of(new ProcessDurationGoalDto(SLA_DURATION, -5., 5, DAYS)),
+      List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., -5, MILLIS)),
+      List.of(new ProcessDurationGoalDto(TARGET_DURATION, 105., 1, MONTHS)),
       List.of(
-        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.MONTHS),
-        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DateUnit.MONTHS)
+        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, YEARS)
       ),
       List.of(new ProcessDurationGoalDto(TARGET_DURATION, 50., 1, null)),
-      List.of(new ProcessDurationGoalDto(null, 50., 1, DateUnit.MONTHS))
+      List.of(new ProcessDurationGoalDto(null, 50., 1, HOURS))
     );
   }
 

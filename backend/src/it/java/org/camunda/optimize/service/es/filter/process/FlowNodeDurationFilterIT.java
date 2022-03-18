@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.filter.process;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -59,7 +59,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -69,7 +69,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN_EQUALS))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, LESS_THAN_EQUALS))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -103,7 +103,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       definition,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+        .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList()
@@ -113,7 +113,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       definition,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList()
@@ -149,8 +149,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       processDefinitionEngineDto,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 9L, GREATER_THAN))
-        .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 11L, LESS_THAN))
+        .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 9L, GREATER_THAN))
+        .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 11L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.INSTANCE)
         .add()
         .buildList()
@@ -180,8 +180,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       processDefinitionEngineDto,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 9L, GREATER_THAN))
-        .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 11L, LESS_THAN))
+        .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 9L, GREATER_THAN))
+        .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 11L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList()
@@ -214,8 +214,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -225,9 +225,9 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           // although this will not match any results, the previous one will
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -265,8 +265,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .buildList()
@@ -276,8 +276,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .buildList()
@@ -314,8 +314,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -326,10 +326,10 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 100L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 100L, GREATER_THAN))
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -340,10 +340,10 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -379,8 +379,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .buildList()
@@ -391,10 +391,10 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .buildList()
@@ -405,10 +405,10 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .buildList()
@@ -426,8 +426,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
   }
 
   @ParameterizedTest
-  @EnumSource(DurationFilterUnit.class)
-  public void testInstanceLevelFlowNodeDurationFilterUnits(final DurationFilterUnit unit) {
+  @EnumSource(DurationUnit.class)
+  public void testInstanceLevelFlowNodeDurationFilterUnits(final DurationUnit unit) {
     // given
     final ProcessDefinitionEngineDto processDefinitionEngineDto = deployTwoUserTasksProcessDefinition();
     final int actualUserTaskDuration = 2;
@@ -472,8 +472,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
   }
 
   @ParameterizedTest
-  @EnumSource(DurationFilterUnit.class)
-  public void testViewLevelFlowNodeDurationFilterUnits(final DurationFilterUnit unit) {
+  @EnumSource(DurationUnit.class)
+  public void testViewLevelFlowNodeDurationFilterUnits(final DurationUnit unit) {
     // given
     final ProcessDefinitionEngineDto processDefinitionEngineDto = deployTwoUserTasksProcessDefinition();
     final int actualUserTaskDuration = 2;
@@ -534,11 +534,11 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         definition,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -549,11 +549,11 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         definition,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_2, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_2, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -564,11 +564,11 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         definition,
         ProcessFilterBuilder.filter()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, GREATER_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, GREATER_THAN))
           .filterLevel(FilterApplicationLevel.VIEW)
           .add()
           .flowNodeDuration()
-          .flowNode(USER_TASK_1, filterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+          .flowNode(USER_TASK_1, filterData(DurationUnit.SECONDS, 10L, LESS_THAN))
           .filterLevel(FilterApplicationLevel.INSTANCE)
           .add()
           .buildList()
@@ -600,7 +600,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       .build();
   }
 
-  private DurationFilterDataDto filterData(final DurationFilterUnit unit, final Long value,
+  private DurationFilterDataDto filterData(final DurationUnit unit, final Long value,
                                            final ComparisonOperator operator) {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }

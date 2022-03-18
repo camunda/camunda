@@ -11,7 +11,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -586,7 +586,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(USER_TASK_1, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(USER_TASK_1, durationFilterData(DurationUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList());

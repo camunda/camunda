@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter.process;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -43,7 +43,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     List<ProcessFilterDto<?>> gte = ProcessFilterBuilder
       .filter()
       .duration()
-      .unit(DurationFilterUnit.SECONDS)
+      .unit(DurationUnit.SECONDS)
       .value((long) 2)
       .operator(GREATER_THAN_EQUALS)
       .add()
@@ -51,7 +51,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     List<ProcessFilterDto<?>> lt = ProcessFilterBuilder
       .filter()
       .duration()
-      .unit(DurationFilterUnit.DAYS)
+      .unit(DurationUnit.DAYS)
       .value((long) 1)
       .operator(LESS_THAN)
       .add()

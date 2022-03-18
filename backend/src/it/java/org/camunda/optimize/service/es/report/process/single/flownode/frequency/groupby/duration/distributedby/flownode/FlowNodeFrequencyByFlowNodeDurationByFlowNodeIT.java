@@ -10,7 +10,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -158,7 +158,7 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
     final List<ProcessFilterDto<?>> filterYieldingNoResults = ProcessFilterBuilder.filter()
       .flowNodeDuration()
-      .flowNode(USER_TASK_1, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+      .flowNode(USER_TASK_1, durationFilterData(DurationUnit.SECONDS, 10L, LESS_THAN))
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();

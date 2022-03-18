@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -273,7 +273,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
       .flowNode(
         USER_TASK_1,
         DurationFilterDataDto.builder()
-          .unit(DurationFilterUnit.MILLIS)
+          .unit(DurationUnit.MILLIS)
           .value(10000L)
           .operator(GREATER_THAN_EQUALS)
           .build()

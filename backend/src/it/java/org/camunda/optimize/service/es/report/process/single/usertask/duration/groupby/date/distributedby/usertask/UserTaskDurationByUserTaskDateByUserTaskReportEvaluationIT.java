@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -862,7 +862,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     final List<ProcessFilterDto<?>> flowNodeDurationFilter = ProcessFilterBuilder.filter()
       .flowNodeDuration()
-      .flowNode(userTaskId, DurationFilterDataDto.builder().unit(DurationFilterUnit.MILLIS)
+      .flowNode(userTaskId, DurationFilterDataDto.builder().unit(DurationUnit.MILLIS)
         .value(filterValueInMs).operator(filterOperator).build())
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()

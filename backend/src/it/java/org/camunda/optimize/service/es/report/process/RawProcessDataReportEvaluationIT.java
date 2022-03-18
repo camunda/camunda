@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -597,7 +597,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit(DurationFilterUnit.DAYS)
+                           .unit(DurationUnit.DAYS)
                            .value((long) 1)
                            .operator(GREATER_THAN)
                            .add()
@@ -621,7 +621,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit(DurationFilterUnit.DAYS)
+                           .unit(DurationUnit.DAYS)
                            .value((long) 1)
                            .operator(LESS_THAN)
                            .add()

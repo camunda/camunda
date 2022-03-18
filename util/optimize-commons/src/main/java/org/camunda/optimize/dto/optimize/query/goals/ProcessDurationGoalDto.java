@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -30,6 +30,6 @@ public class ProcessDurationGoalDto implements OptimizeDto {
   @Min(0)
   private long value;
   @NotNull
-  private DateUnit unit;
+  private DurationUnit unit;
 
 }

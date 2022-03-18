@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -238,14 +238,14 @@ public class MixedFilterIT extends AbstractFilterIT {
       .flowNodeDuration()
       .flowNode(
         SERVICE_TASK_ID_1,
-        DurationFilterDataDto.builder().unit(DurationFilterUnit.HOURS).value(1L).operator(GREATER_THAN_EQUALS).build()
+        DurationFilterDataDto.builder().unit(DurationUnit.HOURS).value(1L).operator(GREATER_THAN_EQUALS).build()
       )
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .flowNodeDuration()
       .flowNode(
         SERVICE_TASK_ID_1,
-        DurationFilterDataDto.builder().unit(DurationFilterUnit.HOURS).value(1L).operator(LESS_THAN).build()
+        DurationFilterDataDto.builder().unit(DurationUnit.HOURS).value(1L).operator(LESS_THAN).build()
       )
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
@@ -782,7 +782,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         .duration()
         .operator(ComparisonOperator.GREATER_THAN)
-        .unit(DurationFilterUnit.HOURS)
+        .unit(DurationUnit.HOURS)
         .value(10L)
         .filterLevel(levelToApply)
         .add()
@@ -795,7 +795,7 @@ public class MixedFilterIT extends AbstractFilterIT {
         .flowNode(
           "someId",
           DurationFilterDataDto.builder()
-            .unit(DurationFilterUnit.SECONDS)
+            .unit(DurationUnit.SECONDS)
             .value(0L)
             .operator(ComparisonOperator.GREATER_THAN)
             .build()
