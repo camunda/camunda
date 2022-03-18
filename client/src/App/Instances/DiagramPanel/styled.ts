@@ -6,11 +6,6 @@
 
 import styled, {css} from 'styled-components';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
-import {default as SplitPaneComponent} from 'modules/components/SplitPane';
-
-const EmptyMessageWrapper = styled.div`
-  position: relative;
-`;
 
 const DiagramEmptyMessage = styled(EmptyMessage)`
   position: absolute;
@@ -20,19 +15,24 @@ const DiagramEmptyMessage = styled(EmptyMessage)`
   top: 0;
 `;
 
-const PaneHeader = styled(SplitPaneComponent.Pane.Header)`
-  border-radius: inherit;
+const DiagramContainer = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 `;
 
-const PaneBody = styled(SplitPaneComponent.Pane.Body)`
+const Container = styled.div`
   ${({theme}) => {
     const colors = theme.colors.modules.panel;
 
     return css`
-      position: relative;
-      border-bottom: 1px solid ${colors.borderColor};
+      display: flex;
+      flex-direction: column;
+      background-color: ${colors.backgroundColor};
+      height: 100%;
     `;
   }}
 `;
 
-export {EmptyMessageWrapper, DiagramEmptyMessage, PaneHeader, PaneBody};
+export {DiagramEmptyMessage, DiagramContainer, Container};

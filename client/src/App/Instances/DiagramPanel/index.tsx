@@ -4,10 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import SplitPane from 'modules/components/SplitPane';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
-import * as Styled from './styled';
+import {DiagramContainer, DiagramEmptyMessage, Container} from './styled';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {observer} from 'mobx-react';
@@ -20,13 +19,10 @@ import {
 } from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
+import {PanelHeader} from 'modules/components/PanelHeader';
 
 const Message: React.FC = ({children}) => {
-  return (
-    <Styled.EmptyMessageWrapper>
-      <Styled.DiagramEmptyMessage message={children} />
-    </Styled.EmptyMessageWrapper>
-  );
+  return <DiagramEmptyMessage message={children} />;
 };
 
 function setSearchParam(
@@ -43,11 +39,7 @@ function setSearchParam(
   };
 }
 
-type Props = {
-  expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
-};
-
-const DiagramPanel: React.FC<Props> = observer((props) => {
+const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const {status, diagramModel, xml} = instancesDiagramStore.state;
@@ -71,11 +63,10 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
     processesStore.state.status === 'fetching';
 
   return (
-    <SplitPane.Pane {...props}>
-      <Styled.PaneHeader>
-        <span>{processName ?? 'Process'}</span>
-      </Styled.PaneHeader>
-      <Styled.PaneBody>
+    <Container>
+      <PanelHeader title={processName ?? 'Process'} />
+
+      <DiagramContainer>
         {isDiagramLoading ? (
           <SpinnerSkeleton data-testid="diagram-spinner" />
         ) : (
@@ -134,11 +125,10 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             flowNodesStatistics={statistics}
             selectedFlowNodeId={flowNodeId}
             selectableFlowNodes={selectableIds}
-            expandState={props.expandState}
           />
         ) : null}
-      </Styled.PaneBody>
-    </SplitPane.Pane>
+      </DiagramContainer>
+    </Container>
   );
 });
 

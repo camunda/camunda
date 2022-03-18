@@ -73,7 +73,7 @@ test('Navigation to Instances View', async (t) => {
   });
 
   await t
-    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .expect(screen.getByTestId('result-count').textContent)
     .eql(`${activeInstancesCount} results found`);
 
   await t.click(
@@ -92,7 +92,7 @@ test('Navigation to Instances View', async (t) => {
   });
 
   await t
-    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .expect(screen.getByTestId('result-count').textContent)
     .eql(`${instancesWithIncidentCount} results found`);
 });
 
@@ -125,7 +125,7 @@ test('Select instances by process', async (t) => {
   });
 
   await t
-    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .expect(screen.getByTestId('result-count').textContent)
     .eql(`${totalInstanceCount} results found`);
 });
 
@@ -151,7 +151,7 @@ test('Select instances by error message', async (t) => {
   });
 
   await t
-    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .expect(screen.getByTestId('result-count').textContent)
     .eql(`${incidentCount} results found`);
 
   await t
@@ -192,7 +192,7 @@ test('Select instances by error message (expanded)', async (t) => {
   });
 
   await t
-    .expect(screen.getByTestId('filtered-instances-count').textContent)
+    .expect(screen.getByTestId('result-count').textContent)
     .eql(`${incidentCount} results found`);
 
   await t

@@ -1,6 +1,7 @@
 {
   "clientScripts": [
-    {"module": "@testing-library/dom/dist/@testing-library/dom.umd.js"}
+    {"module": "@testing-library/dom/dist/@testing-library/dom.umd.js"},
+    "e2e/scripts/explicitErrorHandler.js"
   ],
   "assertionTimeout": 40000
 }

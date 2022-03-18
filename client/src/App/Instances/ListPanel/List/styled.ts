@@ -23,7 +23,7 @@ const TableContainer = styled.div`
 `;
 
 const Spinner = styled(SpinnerSkeleton)`
-  margin-top: 39px;
+  margin-top: 37px;
 `;
 
 export {List, TableContainer, Spinner};

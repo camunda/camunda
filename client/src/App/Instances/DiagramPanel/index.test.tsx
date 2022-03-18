@@ -11,7 +11,6 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockProps} from './index.setup';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -63,7 +62,7 @@ describe('DiagramPanel', () => {
   });
 
   it('should render header', async () => {
-    render(<DiagramPanel {...mockProps} />, {
+    render(<DiagramPanel />, {
       wrapper: getWrapper('/instances?process=bigVarProcess&version=1'),
     });
 
@@ -71,7 +70,7 @@ describe('DiagramPanel', () => {
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
-    render(<DiagramPanel {...mockProps} />, {
+    render(<DiagramPanel />, {
       wrapper: getWrapper(),
     });
     instancesDiagramStore.fetchProcessXml('1');
@@ -85,7 +84,7 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an empty state message when no process is selected', async () => {
-    render(<DiagramPanel {...mockProps} />, {
+    render(<DiagramPanel />, {
       wrapper: getWrapper(),
     });
 
@@ -101,7 +100,7 @@ describe('DiagramPanel', () => {
   });
 
   it('should show a message when no process version is selected', async () => {
-    render(<DiagramPanel {...mockProps} />, {
+    render(<DiagramPanel />, {
       wrapper: getWrapper('/instances?process=bigVarProcess&version=all'),
     });
 
@@ -118,7 +117,7 @@ describe('DiagramPanel', () => {
   });
 
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
-    render(<DiagramPanel {...mockProps} />, {
+    render(<DiagramPanel />, {
       wrapper: getWrapper(
         '/instances?process=eventBasedGatewayProcess&version=all'
       ),
@@ -138,7 +137,7 @@ describe('DiagramPanel', () => {
       )
     );
 
-    render(<DiagramPanel {...mockProps} />, {
+    render(<DiagramPanel />, {
       wrapper: getWrapper(),
     });
 

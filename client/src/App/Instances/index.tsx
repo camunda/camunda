@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {PAGE_TITLE} from 'modules/constants';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {DiagramPanel} from './DiagramPanel';
@@ -21,9 +21,14 @@ import {
   deleteSearchParams,
 } from 'modules/utils/filter';
 import {observer} from 'mobx-react';
-import {Content, Container, Separator, SplitPane} from './styled';
+import {Content, Container, Separator, RightContainer} from './styled';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
+import {
+  ResizablePanel,
+  SplitDirection,
+} from 'modules/components/ResizablePanel';
+import {ListFooter} from './ListPanel/ListFooter';
 
 const Instances: React.FC = observer(() => {
   const location = useLocation();
@@ -98,19 +103,32 @@ const Instances: React.FC = observer(() => {
     }
   }, [location.search, isSingleProcessSelected]);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [clientHeight, setClientHeight] = useState(0);
+
+  useEffect(() => {
+    setClientHeight(containerRef?.current?.clientHeight ?? 0);
+  }, []);
+
+  const panelMinHeight = clientHeight / 4;
+
   return (
     <Container>
       <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
       <Content>
         <Filters />
         <Separator />
-        <SplitPane
-          titles={{top: 'Process', bottom: 'Instances'}}
-          expandedPaneId="instancesExpandedPaneId"
-        >
-          <DiagramPanel />
-          <ListPanel />
-        </SplitPane>
+        <RightContainer ref={containerRef}>
+          <ResizablePanel
+            panelId="process-instances-vertical-panel"
+            direction={SplitDirection.Vertical}
+            minHeights={[panelMinHeight, panelMinHeight]}
+          >
+            <DiagramPanel />
+            <ListPanel />
+          </ResizablePanel>
+          <ListFooter />
+        </RightContainer>
       </Content>
       <OperationsPanel />
     </Container>

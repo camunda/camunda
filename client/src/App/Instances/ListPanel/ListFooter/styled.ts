@@ -6,16 +6,10 @@
 
 import styled from 'styled-components';
 import {Copyright as BasicCopyright} from 'modules/components/Copyright';
+import PanelFooter from 'modules/components/Panel/PanelFooter';
 
-const Footer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  padding-left: 20px;
-  margin-bottom: 1px;
+const Footer = styled(PanelFooter)`
+  padding: 0 20px 1px 20px;
 
   div {
     flex: 1 0 0;

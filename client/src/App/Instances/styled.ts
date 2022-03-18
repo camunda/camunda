@@ -5,7 +5,6 @@
  */
 
 import styled, {css} from 'styled-components';
-import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
 const Container = styled.main`
@@ -24,19 +23,6 @@ const Content = styled.div`
   width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
-const SplitPane = styled(SplitPaneComponent)`
-  border-radius: 3px 0 0 0;
-  width: 100%;
-`;
-
-const Pane = styled(SplitPane.Pane)`
-  border-radius: inherit;
-`;
-
-const PaneHeader = styled(SplitPane.Pane.Header)`
-  border-radius: inherit;
-`;
-
 const Separator = styled.div`
   ${({theme}) => {
     const colors = theme.colors.modules.panel;
@@ -48,4 +34,10 @@ const Separator = styled.div`
   }}
 `;
 
-export {Container, Content, SplitPane, Pane, PaneHeader, Separator};
+const RightContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+export {Container, Content, Separator, RightContainer};

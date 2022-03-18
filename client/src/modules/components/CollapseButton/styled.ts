@@ -25,7 +25,7 @@ const CollapseButton = styled.button`
     const opacity = theme.opacity.modules.collapseButton;
 
     return css`
-      margin: 3px;
+      margin: 2px 3px;
       display: flex;
       justify-content: center;
       align-items: center;

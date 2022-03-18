@@ -4,15 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import Table from 'modules/components/Table';
 import {InstancesMessage} from 'modules/components/InstancesMessage';
-import {EXPAND_STATE} from 'modules/constants';
 import {Skeleton} from './Skeleton';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {instancesStore, MAX_INSTANCES_STORED} from 'modules/stores/instances';
-import usePrevious from 'modules/hooks/usePrevious';
 import {autorun} from 'mobx';
 import {Header} from './Header';
 import {Instances} from './Instances';
@@ -24,32 +22,17 @@ const ROW_HEIGHT = 38;
 type ListProps = {
   Overlay?: any;
   onSort?: () => void;
-  expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
 };
 
 const List: React.FC<ListProps> = observer((props) => {
   let containerRef: any = React.createRef();
   let listRef: any = useRef();
-  const prevExpandState = usePrevious(props.expandState);
-  const [entriesPerPage, setEntriesPerPage] = useState(0);
   const filters = useFilters();
 
   const {
     areProcessInstancesEmpty,
     state: {status},
   } = instancesStore;
-
-  useEffect(() => {
-    if (
-      prevExpandState !== props.expandState &&
-      props.expandState !== EXPAND_STATE.COLLAPSED
-    ) {
-      if (containerRef.current?.clientHeight > 0) {
-        const rows = ~~(containerRef.current.clientHeight / ROW_HEIGHT) - 1;
-        setEntriesPerPage(rows);
-      }
-    }
-  }, [props.expandState, prevExpandState, containerRef]);
 
   useEffect(() => {
     let disposer = autorun(() => {
@@ -75,7 +58,7 @@ const List: React.FC<ListProps> = observer((props) => {
         <Table>
           <Header />
           {['initial', 'first-fetch'].includes(status) && (
-            <Skeleton {...props} rowsToDisplay={entriesPerPage} />
+            <Skeleton {...props} rowsToDisplay={50} />
           )}
           {status === 'error' && <InstancesMessage type="error" />}
           {status === 'fetched' && areProcessInstancesEmpty && (

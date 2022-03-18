@@ -23,6 +23,7 @@ import {NotificationProvider} from 'modules/notifications';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {ListFooter} from './ListFooter';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC = ({children}) => {
@@ -31,6 +32,7 @@ function createWrapper(initialPath: string = '/') {
         <NotificationProvider>
           <MemoryRouter initialEntries={[initialPath]}>
             {children}
+            <ListFooter />
             <Link to="/instances?incidents=true&active=true&process=bigVarProcess">
               go to big var
             </Link>

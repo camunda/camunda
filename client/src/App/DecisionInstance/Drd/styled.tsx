@@ -63,6 +63,7 @@ const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
   align-items: end;
   padding: 18px 20px;
+  height: auto;
 `;
 
 export {Container, PanelHeader};

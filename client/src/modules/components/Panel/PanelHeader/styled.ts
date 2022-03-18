@@ -18,7 +18,8 @@ const Header = styled.div`
       font-weight: 600;
       padding: 8px 10px;
       padding-left: 20px;
-      min-height: 38px;
+      min-height: 37px;
+      height: 37px;
       display: flex;
       align-items: center;
     `;

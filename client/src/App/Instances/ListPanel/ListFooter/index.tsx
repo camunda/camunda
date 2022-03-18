@@ -13,16 +13,12 @@ import {instancesStore} from 'modules/stores/instances';
 import * as Styled from './styled';
 import CreateOperationDropdown from './CreateOperationDropdown';
 
-type Props = {
-  isCollapsed: boolean;
-};
-
-const ListFooter: React.FC<Props> = observer(({isCollapsed}) => {
+const ListFooter: React.FC = observer(() => {
   const selectedCount = instanceSelectionStore.getSelectedInstanceCount();
 
   return (
     <Styled.Footer>
-      {!isCollapsed && !instancesStore.areProcessInstancesEmpty && (
+      {!instancesStore.areProcessInstancesEmpty && (
         <Styled.OperationButtonContainer>
           {selectedCount > 0 && (
             <CreateOperationDropdown
@@ -40,4 +36,4 @@ const ListFooter: React.FC<Props> = observer(({isCollapsed}) => {
   );
 });
 
-export default ListFooter;
+export {ListFooter};

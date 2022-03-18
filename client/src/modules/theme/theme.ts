@@ -362,6 +362,8 @@ const theme = {
         },
       },
       list: {
+        backgroundColor: DARK_COLORS.ui02,
+        borderColor: DARK_COLORS.ui04,
         selectionStatusIndicator: {
           borderColor: DARK_COLORS.ui04,
         },
@@ -1320,6 +1322,8 @@ const theme = {
         },
       },
       list: {
+        backgroundColor: LIGHT_COLORS.ui04,
+        borderColor: LIGHT_COLORS.ui05,
         selectionStatusIndicator: {
           borderColor: LIGHT_COLORS.ui05,
         },

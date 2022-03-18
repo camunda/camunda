@@ -7,7 +7,7 @@
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {instancesStore} from 'modules/stores/instances';
-import ListFooter from './index';
+import {ListFooter} from './index';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 
 const DROPDOWN_REGEX = /^Apply Operation on \d+ Instance[s]?...$/;
@@ -16,10 +16,6 @@ const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
 jest.mock('./CreateOperationDropdown', () => ({label}: any) => (
   <button>{label}</button>
 ));
-
-const defaultProps = {
-  isCollapsed: false,
-};
 
 const mockInstances: ProcessInstanceEntity[] = [
   {
@@ -66,7 +62,7 @@ describe('ListFooter', () => {
       processInstances: mockInstances,
     });
 
-    render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
+    render(<ListFooter />, {wrapper: ThemeProvider});
 
     const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
@@ -80,7 +76,7 @@ describe('ListFooter', () => {
       filteredInstancesCount: 9,
       processInstances: mockInstances,
     });
-    render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
+    render(<ListFooter />, {wrapper: ThemeProvider});
     instanceSelectionStore.selectInstance('1');
     instanceSelectionStore.selectInstance('2');
     const dropdownButton = screen.getByText(

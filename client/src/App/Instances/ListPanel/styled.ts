@@ -6,27 +6,17 @@
 
 import styled, {css} from 'styled-components';
 
-import SplitPane from 'modules/components/SplitPane';
-
-const PaneBody = styled(SplitPane.Pane.Body)`
-  border-top: none;
-`;
-
-const Title = styled.span`
-  padding-right: 34px;
-`;
-
-const InstancesCount = styled.span`
+const Container = styled.section`
   ${({theme}) => {
-    const colors = theme.colors.list.header.title;
-
+    const colors = theme.colors.list;
     return css`
-      border-left: 1px solid ${colors.borderColor};
-      padding-left: 30px;
-      font-size: 14px;
-      font-weight: 500;
+      border-top: 1px solid ${colors.borderColor};
+      background-color: ${colors.backgroundColor};
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     `;
   }}
 `;
 
-export {PaneBody, Title, InstancesCount};
+export {Container};

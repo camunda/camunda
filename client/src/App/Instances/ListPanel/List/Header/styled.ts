@@ -11,7 +11,7 @@ import {CmCheckbox} from '@camunda-cloud/common-ui-react';
 
 const TRHeader = styled(Table.TR)`
   border-top: none;
-  height: 38px;
+  height: 37px;
 `;
 
 const THPositionStyles = css`

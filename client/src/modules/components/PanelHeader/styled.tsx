@@ -12,6 +12,7 @@ const Container = styled.div`
 
     return css`
       display: flex;
+      min-height: 37px;
       align-items: center;
       background-color: ${colors.backgroundColor};
       padding: 8px 0 8px 19px;
@@ -23,10 +24,6 @@ const Container = styled.div`
   }}
 `;
 
-const Title = styled.span`
-  padding-right: 34px;
-`;
-
 const InstancesCount = styled.span`
   ${({theme}) => {
     const colors = theme.colors.list.header.title;
@@ -36,8 +33,9 @@ const InstancesCount = styled.span`
       padding-left: 30px;
       font-size: 14px;
       font-weight: 500;
+      margin-left: 34px;
     `;
   }}
 `;
 
-export {Container, InstancesCount, Title};
+export {Container, InstancesCount};

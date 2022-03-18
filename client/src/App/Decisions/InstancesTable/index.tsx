@@ -24,7 +24,7 @@ import {
 } from './styled';
 import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
 import {useLocation} from 'react-router-dom';
-import {Header} from './Header';
+import {PanelHeader} from 'modules/components/PanelHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {DecisionInstances} from './DecisionInstances';
 import {Panel} from 'modules/components/Panel';
@@ -67,7 +67,7 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container>
-      <Header instancesCount={filteredInstancesCount} />
+      <PanelHeader title="Instances" count={filteredInstancesCount} />
       <List>
         <ScrollableContent
           overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}

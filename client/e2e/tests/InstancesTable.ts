@@ -53,9 +53,7 @@ test('Sorting', async (t) => {
     }
   );
 
-  await t
-    .expect(screen.getByTestId('filtered-instances-count').textContent)
-    .eql('3 results found', {timeout: 10000});
+  await t.expect(screen.queryByText(/3 results found/).exists).ok();
 
   const instanceRows = within(
     screen.queryByTestId('instances-list')
