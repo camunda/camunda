@@ -15,14 +15,19 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
 import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
+import {OverlayPosition} from 'modules/types/modeler';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
 import {IncidentsBanner} from './IncidentsBanner';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
+import {StateOverlay} from './StateOverlay';
+
+const OVERLAY_TYPE = 'flowNodeState';
 
 type Props = {
   incidents?: unknown;
@@ -49,6 +54,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
       sequenceFlowsStore.reset();
       flowNodeStatesStore.reset();
       flowNodeMetaDataStore.reset();
+      diagramOverlaysStore.reset();
     };
   }, [processInstanceId]);
 
@@ -66,9 +72,36 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     }, [])
   );
 
+  const flowNodeStateOverlaysNext = computed(() =>
+    Object.entries(flowNodes).reduce<
+      {
+        flowNodeId: string;
+        type: string;
+        payload: {state: InstanceEntityState};
+        position: OverlayPosition;
+      }[]
+    >((flowNodeStates, [flowNodeId, state]) => {
+      const metaData = singleInstanceDiagramStore.getMetaData(flowNodeId);
+
+      if (state === 'COMPLETED' && metaData?.type.elementType !== 'END') {
+        return flowNodeStates;
+      } else {
+        return [
+          ...flowNodeStates,
+          {
+            flowNodeId,
+            type: OVERLAY_TYPE,
+            position: {bottom: 17, left: -7},
+            payload: {state},
+          },
+        ];
+      }
+    }, [])
+  );
+
   const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {instance} = currentInstanceStore.state;
-
+  const stateOverlays = diagramOverlaysStore.state.overlays[OVERLAY_TYPE];
   const {
     state: {status, diagramModel, xml},
   } = singleInstanceDiagramStore;
@@ -125,7 +158,22 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
                         isMultiInstance,
                       });
                     }}
-                  />
+                    overlaysData={flowNodeStateOverlaysNext.get()}
+                  >
+                    {stateOverlays?.map((overlay) => {
+                      const payload = overlay.payload as {
+                        state: InstanceEntityState;
+                      };
+
+                      return (
+                        <StateOverlay
+                          key={overlay.flowNodeId}
+                          state={payload.state}
+                          container={overlay.container}
+                        />
+                      );
+                    })}
+                  </Diagram>
                 )
               : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
                 diagramModel?.definitions && (

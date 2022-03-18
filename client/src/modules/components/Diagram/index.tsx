@@ -5,7 +5,7 @@
  */
 
 import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
-import {BpmnJS, OnFlowNodeSelection} from 'modules/bpmn-js/BpmnJS';
+import {BpmnJS, OnFlowNodeSelection, OverlayData} from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import DiagramLegacy from './index.legacy';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
@@ -15,6 +15,7 @@ type Props = {
   selectableFlowNodes?: string[];
   selectedFlowNodeId?: string;
   onFlowNodeSelection?: OnFlowNodeSelection;
+  overlaysData?: OverlayData[];
 };
 
 const Diagram: React.FC<Props> = ({
@@ -22,6 +23,8 @@ const Diagram: React.FC<Props> = ({
   selectableFlowNodes,
   selectedFlowNodeId,
   onFlowNodeSelection,
+  overlaysData,
+  children,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -43,14 +46,15 @@ const Diagram: React.FC<Props> = ({
           containerRef.current,
           xml,
           selectableFlowNodes,
-          selectedFlowNodeId
+          selectedFlowNodeId,
+          overlaysData
         );
         setIsDiagramRendered(true);
       }
     }
 
     renderDiagram();
-  }, [xml, selectableFlowNodes, selectedFlowNodeId, viewer]);
+  }, [xml, selectableFlowNodes, selectedFlowNodeId, overlaysData, viewer]);
 
   useEffect(() => {
     return () => {
@@ -62,11 +66,14 @@ const Diagram: React.FC<Props> = ({
     <StyledDiagram data-testid="diagram">
       <DiagramCanvas ref={containerRef} />
       {isDiagramRendered && (
-        <DiagramControls
-          handleZoomIn={viewer.zoomIn}
-          handleZoomOut={viewer.zoomOut}
-          handleZoomReset={viewer.zoomReset}
-        />
+        <>
+          <DiagramControls
+            handleZoomIn={viewer.zoomIn}
+            handleZoomOut={viewer.zoomOut}
+            handleZoomReset={viewer.zoomReset}
+          />
+          {children}
+        </>
       )}
     </StyledDiagram>
   );

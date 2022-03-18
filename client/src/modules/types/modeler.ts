@@ -4,14 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+type OverlayPosition = {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+};
+
 type OverlayType = {
-  position: {
-    top?: number;
-    right?: number;
-    bottom?: number;
-    left?: number;
-  };
+  position: OverlayPosition;
   html: HTMLDivElement;
 };
 
-export type {OverlayType};
+export type {OverlayType, OverlayPosition};

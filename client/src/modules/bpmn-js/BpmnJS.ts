@@ -7,8 +7,11 @@
 // @ts-expect-error ts-migrate(7016) FIXME: Try `npm install @types/bpmn-js` if it exists or a... Remove this comment to see the full error message
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import {IReactionDisposer, reaction} from 'mobx';
+import {isEqual} from 'lodash';
 import {theme} from 'modules/theme';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
+import {OverlayPosition} from 'modules/types/modeler';
 import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
 import {isMultiInstance} from './isMultiInstance';
 
@@ -20,6 +23,20 @@ type BpmnJSElement = {
   id: string;
   type: string;
   businessObject: {loopCharacteristics?: {$type: string}; di: {set: Function}};
+};
+
+type BpmnJSOverlay = {
+  type: string;
+  elementId: string;
+  position: OverlayPosition;
+  children: React.ReactNode;
+};
+
+type OverlayData = {
+  payload: unknown;
+  type: string;
+  flowNodeId: string;
+  position: OverlayPosition;
 };
 
 type NavigatedViewerType = {
@@ -44,6 +61,7 @@ class BpmnJS {
   #selectableFlowNodes: string[] = [];
   #selectedFlowNodeId?: string;
   #onFlowNodeSelection?: OnFlowNodeSelection;
+  #overlaysData: OverlayData[] = [];
 
   constructor(onFlowNodeSelection?: OnFlowNodeSelection) {
     this.#onFlowNodeSelection = onFlowNodeSelection;
@@ -53,7 +71,8 @@ class BpmnJS {
     container: HTMLElement,
     xml: string,
     selectableFlowNodes: string[] = [],
-    selectedFlowNodeId?: string
+    selectedFlowNodeId?: string,
+    overlaysData: OverlayData[] = []
   ) => {
     if (this.#navigatedViewer === null) {
       this.#createViewer(container);
@@ -66,6 +85,7 @@ class BpmnJS {
       this.#navigatedViewer!.off('element.click', this.#handleElementClick);
       this.#selectableFlowNodes = [];
       this.#selectedFlowNodeId = undefined;
+      this.#overlaysData = [];
 
       await this.#navigatedViewer!.importXML(xml);
 
@@ -80,7 +100,13 @@ class BpmnJS {
       () => currentTheme.state.selectedTheme,
       () => {
         this.#createViewer(container);
-        this.render(container, xml, selectableFlowNodes, selectedFlowNodeId);
+        this.render(
+          container,
+          xml,
+          selectableFlowNodes,
+          selectedFlowNodeId,
+          overlaysData
+        );
       }
     );
 
@@ -107,6 +133,31 @@ class BpmnJS {
 
       this.#selectedFlowNodeId = selectedFlowNodeId;
     }
+
+    // handle overlays
+    if (!isEqual(this.#overlaysData, overlaysData)) {
+      this.#overlaysData = overlaysData;
+
+      overlaysData.forEach(({payload, flowNodeId, position, type}) => {
+        diagramOverlaysStore.removeOverlay(type, flowNodeId);
+        this.#detachOverlay(type, flowNodeId);
+
+        const container = document.createElement('div');
+
+        this.#attachOverlay({
+          elementId: flowNodeId,
+          children: container,
+          position,
+          type,
+        });
+
+        diagramOverlaysStore.addOverlay(type, {
+          container,
+          payload,
+          flowNodeId,
+        });
+      });
+    }
   };
 
   #createViewer = (container: HTMLElement) => {
@@ -130,6 +181,22 @@ class BpmnJS {
       gfx.setAttribute('rx', '14px');
       gfx.setAttribute('ry', '14px');
     }
+  };
+
+  #attachOverlay = ({
+    elementId,
+    children,
+    position,
+    type,
+  }: BpmnJSOverlay): string => {
+    return this.#navigatedViewer?.get('overlays')?.add(elementId, type, {
+      html: children,
+      position: position,
+    });
+  };
+
+  #detachOverlay = (type: string, elementId: string) => {
+    this.#navigatedViewer?.get('overlays')?.remove({type, elementId});
   };
 
   #removeMarker = (elementId: string, className: string) => {
@@ -191,4 +258,4 @@ class BpmnJS {
 }
 
 export {BpmnJS};
-export type {BpmnJSElement, OnFlowNodeSelection};
+export type {BpmnJSElement, OnFlowNodeSelection, OverlayData};

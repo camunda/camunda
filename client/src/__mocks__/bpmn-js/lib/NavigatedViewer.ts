@@ -31,7 +31,12 @@ const mockedModules: {[module: string]: any} = {
   },
   graphicsFactory: {update: jest.fn(() => {})},
   eventBus: {on: jest.fn()},
-  overlays: {add: jest.fn(), remove: jest.fn()},
+  overlays: {
+    add: jest.fn((elementId, type, {html: children}) => {
+      document.body.appendChild(children);
+    }),
+    remove: jest.fn(),
+  },
 };
 
 class Viewer {
