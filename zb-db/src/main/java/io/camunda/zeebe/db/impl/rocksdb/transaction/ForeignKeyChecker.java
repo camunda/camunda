@@ -40,7 +40,7 @@ public final class ForeignKeyChecker {
             transactionDb.getDefaultNativeHandle(),
             transactionDb.getReadOptionsNativeHandle(),
             keyBuffer.byteArray(),
-            keyBuffer.capacity());
+            Long.BYTES + foreignKey.getLength());
     if (value == null) {
       throw new ZeebeDbInconsistentException(
           "Foreign key " + foreignKey.inner() + " does not exist in " + foreignKey.columnFamily());
