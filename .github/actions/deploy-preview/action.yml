@@ -90,7 +90,6 @@ runs:
       --file .ci/preview-environments/argo/application.yml
       --helm-set ccsm-helm.operate.image.tag=${{ inputs.docker_tag }}
       --helm-set git.branch=${{ inputs.revision }}
-      --helm-set global.labels.branch=${{ inputs.revision }}
       --helm-set global.labels.app=${APP_NAME}
       --name ${APP_NAME}
       --revision ${{ inputs.revision }}

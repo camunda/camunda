@@ -1,24 +1,12 @@
----
-name: deploy-preview-env
 on:
-  workflow_dispatch:
-    inputs:
-      app_name:
-        description: 'Name of deployment.'
-        required: false
-        default: latest
-      chart_ref:
-        description: 'Deployable ref, commit or branch. This will be checked out.'
-        required: true
-      docker_tag:
-        description: 'Docker tag to deploy'
-        required: false
-        default: latest
+  delete:
+    branches:
+    - "!master"
+
+name: teardown-preview-env
 jobs:
-  deploy-preview:
-    timeout-minutes: 10
-    concurrency: deploy-${{ github.events.inputs.ref }}
-    name: Deploy Preview Environment
+  teardown:
+    name: teardown-${{ github.event.ref }}
     runs-on: ubuntu-20.04
     steps:
       #########################################################################
@@ -39,11 +27,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       #########################################################################
-      # Create a preview environment
-      - name: Deploy Preview Environment
+      # Tear down preview environment
+      - name: Get deployment ID for branch
+        id: params
+        run: |-
+          echo "::set-output name=deployment_id::$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ github.ref_name }}").metadata.name')
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          ARGOCD_OPTS: "--grpc-web"
+          ARGOCD_SERVER: argocd.int.camunda.com
+      - name: Tear down ${{ steps.params.outputs.deployment_id }} Preview Environment
         uses: ./.github/actions/deploy-preview
         with:
-          deployment_id: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-          revision: ${{ github.event.inputs.chart_ref }}
-          docker_tag: ${{ github.event.inputs.docker_tag }}
+          deployment_id: ${{ steps.params.outputs.deployment_id }}
+          revision: ${{ github.ref_name }}
+          docker_tag: ci-${{ github.sha }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          step: stop
