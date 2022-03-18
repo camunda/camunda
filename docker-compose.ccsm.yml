@@ -24,7 +24,7 @@ services:
       - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
     networks:
       - optimize
-      - iam-network
+      - identity-network
   keycloak:
     container_name: keycloak
     image: jboss/keycloak:16.1.1
@@ -34,7 +34,7 @@ services:
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
     networks:
-      - iam-network
+      - identity-network
   identity:
     depends_on:
       - keycloak
@@ -55,7 +55,7 @@ services:
       KEYCLOAK_USERS_0_ROLES_0: "Full Access"
       KEYCLOAK_USERS_0_ROLES_1: "Optimize"
     networks:
-      - iam-network
+      - identity-network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.10.0}
     container_name: elasticsearch
@@ -98,4 +98,4 @@ services:
       - optimize
 networks:
   optimize: { }
-  iam-network: { }
+  identity-network: { }

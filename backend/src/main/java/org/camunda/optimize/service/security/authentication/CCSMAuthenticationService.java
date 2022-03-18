@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.service.security.authentication;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.Claim;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
-import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
@@ -25,8 +22,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Optional;
 
 @Component
 @Conditional(CCSMCondition.class)
@@ -62,7 +57,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
         .build();
     }
     final String securityToken =
-        sessionService.createAuthToken(accessToken.getUserDetails().getName().orElse(""));
+      sessionService.createAuthToken(accessToken.getUserDetails().getName().orElse(""));
     return Response.seeOther(URI.create(buildRootRedirect(requestContext)))
       .entity(securityToken)
       .header(

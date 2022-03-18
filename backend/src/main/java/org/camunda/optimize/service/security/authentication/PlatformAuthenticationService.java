@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security.authentication;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-// import io.camunda.identity.sdk.authentication.dto.LogoutRequestDto;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
