@@ -1,9 +1,10 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself",
         "include": [
           "io\\.camunda:zeebe-bpmn-model:.*"
         ]
@@ -12,8 +13,8 @@
   },
   {
     "extension": "revapi.differences",
+    "id": "differences",
     "configuration": {
-      "ignore": true,
       "differences": [
         {
           "justification": "Ignore new methods for Zeebe extensions, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
@@ -30,12 +31,6 @@
             "matcher": "java-package",
             "match": "io.camunda.zeebe.model.bpmn.builder"
           }
-        },
-        {
-          "justification": "No longer inherits from BaseElement",
-          "code": "java.class.noLongerInheritsFromClass",
-          "old": "class io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeUserTaskFormImpl",
-          "superClass": "io.camunda.zeebe.model.bpmn.impl.instance.BaseElementImpl"
         },
         {
           "justification": "Validators are used only internally; they should not used or referenced from outside of the module",
