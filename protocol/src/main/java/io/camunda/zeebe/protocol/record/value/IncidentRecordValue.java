@@ -15,14 +15,18 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a process incident.
  *
  * <p>See {@link IncidentIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated {
   /**
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
@@ -52,6 +56,7 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
    * @return the key of the process instance this incident belongs to. Can be <code>-1</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
+  @Override
   long getProcessInstanceKey();
 
   /**
