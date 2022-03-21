@@ -249,4 +249,64 @@ class DmnEvaluatedDecisionsTest {
 
     record DecisionTest(String decisionId, DecisionType expectedType, String expectedResult) {}
   }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @DisplayName("If successfully evaluated, the decision table")
+  class DecisionTableTest {
+
+    // This drg contains different decision tables, each with a special case
+    private static final String DRG_DECISION_TABLE = "/drg-decision-table-io-names.dmn";
+
+    @Test
+    @DisplayName("Should use input label as input name, if label defined")
+    void shouldUseInputLabelAsInputName() {
+
+      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "labeled_input");
+
+      assertThat(decision_table.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::evaluatedInputs)
+          .extracting(EvaluatedInput::inputName)
+          .containsExactly("input_label_is_used_as_input_name");
+    }
+
+    @Test
+    @DisplayName("Should use input expression as input name, if no label defined")
+    void shouldUseInputExpressionAsInputName() {
+
+      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_input");
+
+      assertThat(decision_table.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::evaluatedInputs)
+          .extracting(EvaluatedInput::inputName)
+          .containsExactly(
+              "\"expression is used as input name\" = \"expression is used as input name\"");
+    }
+
+    @Test
+    @DisplayName("Should use output label as output name, if label defined")
+    void shouldUseOutputLabelAsOutputName() {
+
+      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "labeled_output");
+
+      assertThat(decision_table.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::matchedRules)
+          .flatMap(MatchedRule::evaluatedOutputs)
+          .extracting(EvaluatedOutput::outputName)
+          .containsExactly("output_label_is_used_as_output_name");
+    }
+
+    @Test
+    @DisplayName("Should use output name as output name, if no label defined")
+    void shouldUseOutputNameAsOutputName() {
+
+      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_output");
+
+      assertThat(decision_table.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::matchedRules)
+          .flatMap(MatchedRule::evaluatedOutputs)
+          .extracting(EvaluatedOutput::outputName)
+          .containsExactly("output_name_is_used_as_output_name");
+    }
+  }
 }
