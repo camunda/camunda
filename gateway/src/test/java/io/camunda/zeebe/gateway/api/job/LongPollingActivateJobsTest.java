@@ -11,6 +11,8 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
@@ -705,6 +708,56 @@ public final class LongPollingActivateJobsTest {
 
     // then
     verify(stub, atLeast(partitionsCount)).handle(any());
+  }
+
+  @Test
+  public void shouldNotContinueWithNextPartitionIfResponseIsNotSend() throws Exception {
+    // given
+    final var request =
+        spy(
+            new InflightActivateJobsRequest(
+                getNextRequestId(),
+                ActivateJobsRequest.newBuilder()
+                    .setType(TYPE)
+                    .setMaxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
+                    .setRequestTimeout(500)
+                    .build(),
+                spy(ServerStreamObserver.class)));
+
+    stub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+    doReturn(Either.right(false)).when(request).tryToSendActivatedJobs(any());
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    verify(stub, times(1)).handle(request.getRequest());
+  }
+
+  @Test
+  public void shouldNotContinueWithNextPartitionIfResponseFailed() throws Exception {
+    // given
+    final var request =
+        new InflightActivateJobsRequest(
+            getNextRequestId(),
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
+                .setRequestTimeout(500)
+                .build(),
+            spy(ServerStreamObserver.class));
+
+    stub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+    final var responseObserver = request.getResponseObserver();
+    doThrow(new RuntimeException("foo")).when(responseObserver).onNext(any());
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    verify(stub, times(1)).handle(request.getRequest());
   }
 
   private List<InflightActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {

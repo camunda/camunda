@@ -153,7 +153,6 @@ public final class LongPollingActivateJobsHandler
       activateJobsHandler.activateJobs(
           partitionsCount,
           request,
-          response -> onResponse(request, response),
           error -> onError(state, request, error),
           (remainingAmount, containedResourceExhaustedResponse) ->
               onCompleted(state, request, remainingAmount, containedResourceExhaustedResponse));
@@ -217,11 +216,6 @@ public final class LongPollingActivateJobsHandler
             resetFailedAttemptsAndHandlePendingRequests(request.getType());
           });
     }
-  }
-
-  private void onResponse(
-      final InflightActivateJobsRequest request, final ActivateJobsResponse activateJobsResponse) {
-    actor.submit(() -> request.onResponse(activateJobsResponse));
   }
 
   private void onError(

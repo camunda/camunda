@@ -9,6 +9,8 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import static io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler.toInflightActivateJobsRequest;
 
+import com.google.rpc.Code;
+import com.google.rpc.Status;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
@@ -24,7 +26,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.ActorControl;
+import io.grpc.protobuf.StatusProto;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -36,6 +40,10 @@ import java.util.function.Consumer;
  */
 public final class RoundRobinActivateJobsHandler
     implements ActivateJobsHandler, Consumer<ActorControl> {
+
+  private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
+  private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
+      ACTIVATE_JOB_NOT_SENT_MSG + ", failed with: %s";
 
   private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
@@ -64,7 +72,6 @@ public final class RoundRobinActivateJobsHandler
       activateJobs(
           topology.getPartitionsCount(),
           inflightRequest,
-          responseObserver::onNext,
           responseObserver::onError,
           (remainingAmount, resourceExhaustedWasPresent) -> responseObserver.onCompleted());
     }
@@ -73,7 +80,6 @@ public final class RoundRobinActivateJobsHandler
   public void activateJobs(
       final int partitionsCount,
       final InflightActivateJobsRequest request,
-      final Consumer<ActivateJobsResponse> onResponse,
       final Consumer<Throwable> onError,
       final BiConsumer<Integer, Boolean> onCompleted) {
     final var jobType = request.getType();
@@ -82,7 +88,7 @@ public final class RoundRobinActivateJobsHandler
 
     final var requestState =
         new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
-    final var delegate = new ResponseObserverDelegate(onResponse, onError, onCompleted);
+    final var delegate = new ResponseObserverDelegate(onError, onCompleted);
 
     activateJobs(request, requestState, delegate);
   }
@@ -142,9 +148,22 @@ public final class RoundRobinActivateJobsHandler
           final var response = brokerResponse.getResponse();
           final ActivateJobsResponse grpcResponse =
               ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
-          final int jobsCount = grpcResponse.getJobsCount();
-          if (jobsCount > 0) {
-            delegate.onResponse(grpcResponse);
+
+          final var jobsCount = grpcResponse.getJobsCount();
+          final var jobsActivated = jobsCount > 0;
+
+          if (jobsActivated) {
+            final var result = request.tryToSendActivatedJobs(grpcResponse);
+            final var responseWasSent = result.isRight() && result.get();
+
+            if (!responseWasSent) {
+              final var reason = createReasonMessage(result);
+              final var jobType = request.getType();
+
+              logResponseNotSent(jobType, reason);
+              cancelActivateJobsRequest(reason, delegate);
+              return;
+            }
           }
 
           final var remainingJobsToActivate = requestState.getRemainingAmount() - jobsCount;
@@ -154,6 +173,23 @@ public final class RoundRobinActivateJobsHandler
           requestState.setPollPrevPartition(shouldPollCurrentPartitionAgain);
           activateJobs(request, requestState, delegate);
         });
+  }
+
+  private String createReasonMessage(final Either<Exception, Boolean> resultValue) {
+    final String errorMessage;
+    if (resultValue.isLeft()) {
+      final var exception = resultValue.getLeft();
+      errorMessage = String.format(ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON, exception.getMessage());
+    } else {
+      errorMessage = ACTIVATE_JOB_NOT_SENT_MSG;
+    }
+    return errorMessage;
+  }
+
+  private void cancelActivateJobsRequest(
+      final String reason, final ResponseObserverDelegate delegate) {
+    final var status = Status.newBuilder().setCode(Code.CANCELLED_VALUE).setMessage(reason).build();
+    delegate.onError(StatusProto.toStatusException(status));
   }
 
   private void handleResponseError(
@@ -195,6 +231,11 @@ public final class RoundRobinActivateJobsHandler
         "Failed to activate jobs for type {} from partition {}", jobType, partition, error);
   }
 
+  private void logResponseNotSent(final String jobType, final String reason) {
+    Loggers.GATEWAY_LOGGER.debug(
+        "Failed to send back activated jobs for type {}, because: {}", jobType, reason);
+  }
+
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount) {
     final RequestDispatchStrategy nextPartitionSupplier =
@@ -206,21 +247,14 @@ public final class RoundRobinActivateJobsHandler
 
   private static final class ResponseObserverDelegate {
 
-    private final Consumer<ActivateJobsResponse> onResponseDelegate;
     private final Consumer<Throwable> onErrorDelegate;
     private final BiConsumer<Integer, Boolean> onCompletedDelegate;
 
     private ResponseObserverDelegate(
-        final Consumer<ActivateJobsResponse> onResponseDelegate,
         final Consumer<Throwable> onErrorDelegate,
         final BiConsumer<Integer, Boolean> onCompletedDelegate) {
-      this.onResponseDelegate = onResponseDelegate;
       this.onErrorDelegate = onErrorDelegate;
       this.onCompletedDelegate = onCompletedDelegate;
-    }
-
-    public void onResponse(final ActivateJobsResponse response) {
-      onResponseDelegate.accept(response);
     }
 
     public void onError(final Throwable t) {
