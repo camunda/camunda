@@ -69,13 +69,10 @@ public final class LongPollingActivateJobsHandler
     metrics = new LongPollingMetrics();
   }
 
-  public String getName() {
-    return "GatewayLongPollingJobHandler";
-  }
-
   @Override
   public void accept(ActorControl actor) {
     this.actor = actor;
+    activateJobsHandler.accept(actor);
     onActorStarted();
   }
 
