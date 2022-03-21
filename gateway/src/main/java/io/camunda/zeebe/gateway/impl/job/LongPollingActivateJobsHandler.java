@@ -152,9 +152,7 @@ public final class LongPollingActivateJobsHandler
       final int partitionsCount = topology.getPartitionsCount();
       activateJobsHandler.activateJobs(
           partitionsCount,
-          request.getRequest(),
-          request.getMaxJobsToActivate(),
-          request.getType(),
+          request,
           response -> onResponse(request, response),
           error -> onError(state, request, error),
           (remainingAmount, containedResourceExhaustedResponse) ->
