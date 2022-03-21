@@ -22,6 +22,8 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -35,6 +37,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -108,7 +111,7 @@ public final class Gateway {
     if (gatewayCfg.getLongPolling().isEnabled()) {
       final LongPollingActivateJobsHandler longPollingHandler =
           buildLongPollingHandler(brokerClient);
-      actorSchedulingService.submitActor(longPollingHandler);
+      submitLongPollingActor(longPollingHandler);
       activateJobsHandler = longPollingHandler;
     } else {
       activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
@@ -138,6 +141,17 @@ public final class Gateway {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
         .permitKeepAliveWithoutCalls(false);
+  }
+
+  private void submitLongPollingActor(final LongPollingActivateJobsHandler handler) {
+    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var actor =
+        Actor.newActor()
+            .name(handler.getName())
+            .actorStartedHandler(handler.andThen(actorStartedFuture::complete))
+            .build();
+    actorSchedulingService.submitActor(actor);
+    actorStartedFuture.join();
   }
 
   private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {

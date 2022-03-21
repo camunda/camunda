@@ -18,7 +18,7 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.grpc.protobuf.StatusProto;
 import java.time.Duration;
@@ -27,13 +27,15 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
  * Adds long polling to the handling of activate job requests. When there are no jobs available to
  * activate, the response will be kept open.
  */
-public final class LongPollingActivateJobsHandler extends Actor implements ActivateJobsHandler {
+public final class LongPollingActivateJobsHandler
+    implements ActivateJobsHandler, Consumer<ActorControl> {
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
@@ -53,6 +55,8 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private final LongPollingMetrics metrics;
   private final AtomicLong requestIdGenerator = new AtomicLong(1);
 
+  private ActorControl actor;
+
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
       final long longPollingTimeout,
@@ -66,15 +70,23 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
     metrics = new LongPollingMetrics();
   }
 
-  @Override
   public String getName() {
     return "GatewayLongPollingJobHandler";
   }
 
   @Override
+  public void accept(ActorControl actor) {
+    this.actor = actor;
+    onActorStarted();
+  }
+
   protected void onActorStarted() {
-    brokerClient.subscribeJobAvailableNotification(JOBS_AVAILABLE_TOPIC, this::onNotification);
-    actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
+    actor.run(
+        () -> {
+          brokerClient.subscribeJobAvailableNotification(
+              JOBS_AVAILABLE_TOPIC, this::onNotification);
+          actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
+        });
   }
 
   @Override
