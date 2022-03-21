@@ -198,7 +198,7 @@ class DmnEvaluatedDecisionsTest {
     // then
     assertThat(result.isFailure())
         .describedAs(
-            "Expect that the decision is evaluated successfully: ", result.getFailureMessage())
+            "Expect that the decision is evaluated successfully: %s", result.getFailureMessage())
         .isFalse();
 
     return result;
