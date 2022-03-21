@@ -5,29 +5,24 @@
  */
 
 import styled, {css} from 'styled-components';
-import {BaseBlock} from 'modules/components/Skeleton';
+import Table from 'modules/components/Table';
 
-const TD = styled.td`
-  padding: 9px 0 9px 5px;
-`;
-const TR = styled.tr`
-  height: 37px;
+const TR = styled(Table.TR)`
+  line-height: 36px;
   &:first-child {
     border-top-style: hidden;
   }
 `;
 
-type Props = {
-  width: string;
-};
-
-const Block = styled(BaseBlock)<Props>`
-  ${({width}) => {
+const TD = styled(Table.TD)`
+  ${({theme}) => {
     return css`
-      height: 14px;
-      width: ${width};
+      color: ${theme.colors.text01};
+      &:first-child {
+        padding-left: 19px;
+      }
     `;
   }}
 `;
 
-export {TD, TR, Block};
+export {TR, TD};

@@ -40,7 +40,7 @@ function toggleSorting(
 
 type Props = {
   disabled?: boolean;
-  label: string;
+  label: string | React.ReactNode;
   sortKey?: string;
   isDefault?: boolean;
 };

@@ -22,7 +22,7 @@ import {
   Spinner,
   Copyright,
 } from './styled';
-import {ColumnHeader} from 'modules/components/Table/ColumnHeader';
+import {ColumnHeader} from 'modules/components/SortableTable/ColumnHeader';
 import {useLocation} from 'react-router-dom';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';

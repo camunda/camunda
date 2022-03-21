@@ -40,7 +40,7 @@ const SortableHeader = styled.button<Props & SortableHeaderProps>`
       background: transparent;
       font-weight: 500;
       font-size: 14px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
     `;
   }}
@@ -63,7 +63,8 @@ const Label = styled.span<Props>`
 `;
 
 const SortIcon = styled(DefaultSortIcon)<Props>`
-  margin-left: 5px;
+  margin-left: 6px;
+  margin-top: 2px;
 `;
 
 export {Header, SortableHeader, Label, SortIcon};

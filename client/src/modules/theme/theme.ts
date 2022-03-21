@@ -414,6 +414,15 @@ const theme = {
       operationsProgressBar: {
         shimmerColor: SEMANTIC_COLORS.shimmer,
       },
+      sortableTable: {
+        backgroundColor: DARK_COLORS.ui02,
+        borderColor: DARK_COLORS.ui04,
+        header: {
+          th: {
+            borderColor: DARK_COLORS.ui04,
+          },
+        },
+      },
       filtersPanel: {
         modalIcon: {
           color: LIGHT_COLORS.ui02,
@@ -1373,6 +1382,15 @@ const theme = {
       },
       operationsProgressBar: {
         shimmerColor: SEMANTIC_COLORS.shimmer,
+      },
+      sortableTable: {
+        backgroundColor: LIGHT_COLORS.ui04,
+        borderColor: LIGHT_COLORS.ui05,
+        header: {
+          th: {
+            borderColor: LIGHT_COLORS.ui05,
+          },
+        },
       },
       filtersPanel: {
         modalIcon: {

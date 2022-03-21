@@ -5,7 +5,7 @@
  */
 
 import {DecisionContainer, CircleBlock, DecisionBlock} from './styled';
-import {TableSkeleton} from 'modules/components/TableSkeleton';
+import {Skeleton as TableSkeleton} from 'modules/components/SortableTable/Skeleton';
 
 const Skeleton: React.FC = () => {
   return (
