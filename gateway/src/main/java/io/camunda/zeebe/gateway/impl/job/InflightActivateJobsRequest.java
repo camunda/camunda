@@ -32,6 +32,7 @@ public final class InflightActivateJobsRequest {
   private ScheduledTimer scheduledTimer;
   private boolean isTimedOut;
   private boolean isCompleted;
+  private boolean isAborted;
 
   public InflightActivateJobsRequest(
       final long requestId,
@@ -66,7 +67,7 @@ public final class InflightActivateJobsRequest {
   }
 
   public void complete() {
-    if (isCompleted() || isCanceled()) {
+    if (!isOpen()) {
       return;
     }
     cancelTimerIfScheduled();
@@ -83,7 +84,7 @@ public final class InflightActivateJobsRequest {
   }
 
   public void onResponse(final ActivateJobsResponse grpcResponse) {
-    if (!(isCompleted() || isCanceled())) {
+    if (isOpen()) {
       try {
         responseObserver.onNext(grpcResponse);
       } catch (final Exception e) {
@@ -93,15 +94,16 @@ public final class InflightActivateJobsRequest {
   }
 
   public void onError(final Throwable error) {
-    if (isCompleted() || isCanceled()) {
+    if (!isOpen()) {
       return;
     }
     cancelTimerIfScheduled();
     try {
       responseObserver.onError(error);
     } catch (final Exception e) {
-      LOG.warn("Failed to send response to client.", e);
+      LOG.warn("Failed to send terminating error to client.", e);
     }
+    isAborted = true;
   }
 
   public void timeout() {
@@ -161,6 +163,14 @@ public final class InflightActivateJobsRequest {
       scheduledTimer.cancel();
       scheduledTimer = null;
     }
+  }
+
+  public boolean isAborted() {
+    return isAborted;
+  }
+
+  public boolean isOpen() {
+    return !(isCompleted() || isCanceled() || isAborted());
   }
 
   @Override
