@@ -23,6 +23,8 @@ public interface EvaluatedOutput {
    * from the label. The label is usually the one that is displayed in the decision table. But the
    * name is used in the decision output if the decision table has more than one output.
    *
+   * <p>If a label is defined, it is favored as the output name. Otherwise, the name is used.
+   *
    * @return the name of the evaluated output
    */
   String outputName();
