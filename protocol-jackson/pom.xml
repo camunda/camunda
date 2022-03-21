@@ -30,6 +30,22 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- these two dependencies are temporarily required, as they're now picked up transitively by
+      immutables from the protocol module, which means they're now annotating the code generated
+      here, and thus are "hard" dependencies; this will be removed once we stop generating code in
+      this module -->
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <version>4.5.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>3.0.2</version>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
