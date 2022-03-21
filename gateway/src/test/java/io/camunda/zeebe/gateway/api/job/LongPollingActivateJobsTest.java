@@ -35,6 +35,8 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.grpc.Status.Code;
@@ -44,6 +46,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -80,7 +83,7 @@ public final class LongPollingActivateJobsTest {
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
             .build();
-    actorSchedulerRule.submitActor(handler);
+    submitLongPollingActor(handler);
     stub = spy(new ActivateJobsStub());
     stub.registerWith(brokerClient);
     stub.addAvailableJobs(TYPE, 0);
@@ -231,7 +234,7 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
-    actorSchedulerRule.submitActor(handler);
+    submitLongPollingActor(handler);
 
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
@@ -255,7 +258,7 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
-    actorSchedulerRule.submitActor(handler);
+    submitLongPollingActor(handler);
 
     final int threshold = FAILED_RESPONSE_THRESHOLD;
     final List<LongPollingActivateJobsRequest> requests =
@@ -752,5 +755,16 @@ public final class LongPollingActivateJobsTest {
             return stub.handle(request);
           }
         });
+  }
+
+  private void submitLongPollingActor(final LongPollingActivateJobsHandler handler) {
+    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var actor =
+        Actor.newActor()
+            .name("LongPollingHandler-Test")
+            .actorStartedHandler(handler.andThen(actorStartedFuture::complete))
+            .build();
+    actorSchedulerRule.submitActor(actor);
+    actorStartedFuture.join();
   }
 }
