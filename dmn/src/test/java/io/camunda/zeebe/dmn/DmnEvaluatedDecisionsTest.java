@@ -187,6 +187,23 @@ class DmnEvaluatedDecisionsTest {
     assertThat(evaluatedDecision.matchedRules()).hasSize(0);
   }
 
+  private DecisionEvaluationResult evaluateDecision(
+      final String resource, final String decisionId) {
+    final var inputStream = getClass().getResourceAsStream(resource);
+    final var parsedDrg = decisionEngine.parse(inputStream);
+
+    // when
+    final var result = decisionEngine.evaluateDecisionById(parsedDrg, decisionId, null);
+
+    // then
+    assertThat(result.isFailure())
+        .describedAs(
+            "Expect that the decision is evaluated successfully: ", result.getFailureMessage())
+        .isFalse();
+
+    return result;
+  }
+
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   @DisplayName("If successfully evaluated, the decision")
@@ -204,28 +221,12 @@ class DmnEvaluatedDecisionsTest {
           new DecisionTest("relation", DecisionType.RELATION, "[{'is':'okay'}]"));
     }
 
-    private DecisionEvaluationResult evaluateDecision(final String decisionId) {
-      final var inputStream = getClass().getResourceAsStream(DECISION_TYPES_DRG);
-      final var parsedDrg = decisionEngine.parse(inputStream);
-
-      // when
-      final var result = decisionEngine.evaluateDecisionById(parsedDrg, decisionId, null);
-
-      // then
-      assertThat(result.isFailure())
-          .describedAs(
-              "Expect that the decision is evaluated successfully", result.getFailureMessage())
-          .isFalse();
-
-      return result;
-    }
-
     @ParameterizedTest
     @MethodSource("decisions")
     @DisplayName("Should return the type of the decision")
     void shouldReturnTheDecisionType(final DecisionTest test) {
       // when
-      final var result = evaluateDecision(test.decisionId);
+      final var result = evaluateDecision(DECISION_TYPES_DRG, test.decisionId);
 
       // then
       assertThat(result.getEvaluatedDecisions())
@@ -238,7 +239,7 @@ class DmnEvaluatedDecisionsTest {
     @DisplayName("Should return the output of the decision")
     void shouldReturnDecisionResult(final DecisionTest test) {
       // when
-      final var result = evaluateDecision(test.decisionId);
+      final var result = evaluateDecision(DECISION_TYPES_DRG, test.decisionId);
 
       // then
       assertThat(result.getEvaluatedDecisions())
