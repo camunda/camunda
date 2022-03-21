@@ -11,6 +11,7 @@ import io.camunda.zeebe.dmn.EvaluatedInput;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.camunda.dmn.Audit;
+import org.camunda.dmn.parser.FeelExpression;
 import org.camunda.feel.syntaxtree.Val;
 
 public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuffer inputValue)
@@ -20,6 +21,16 @@ public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuf
       final Audit.EvaluatedInput evaluatedInput, final Function<Val, DirectBuffer> converter) {
     final var input = evaluatedInput.input();
     final var inputValue = evaluatedInput.value();
-    return new EvaluatedDmnScalaInput(input.id(), input.name(), converter.apply(inputValue));
+
+    final String inputName;
+    if (input.name() != null) {
+      inputName = input.name();
+    } else if (input.expression() instanceof FeelExpression feelExpression) {
+      inputName = feelExpression.expression().text();
+    } else {
+      inputName = null;
+    }
+
+    return new EvaluatedDmnScalaInput(input.id(), inputName, converter.apply(inputValue));
   }
 }
