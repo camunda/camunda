@@ -16,7 +16,7 @@ cw=$(date +%V)
 commitHash=$(git rev-parse --short HEAD)
 benchmark="medic-cw-$cw-$commitHash-benchmark"
 
-docker build --build-arg DISTBALL=dist/target/camunda-cloud-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
 docker push "gcr.io/zeebe-io/zeebe:$benchmark"
 
 cd benchmarks/project
