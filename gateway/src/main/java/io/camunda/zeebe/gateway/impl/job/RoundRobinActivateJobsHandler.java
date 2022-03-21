@@ -91,33 +91,34 @@ public final class RoundRobinActivateJobsHandler
       final InflightActivateJobsRequest request,
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
+    actor.run(
+        () -> {
+          if (requestState.shouldActivateJobs()) {
+            final var brokerRequest = request.getRequest();
+            final var partitionId = requestState.getNextPartition();
+            final var remainingAmount = requestState.getRemainingAmount();
 
-    if (requestState.shouldActivateJobs()) {
-      final var brokerRequest = request.getRequest();
-      final var partitionId = requestState.getNextPartition();
-      final var remainingAmount = requestState.getRemainingAmount();
+            // partitions to check and jobs to activate left
+            brokerRequest.setPartitionId(partitionId);
+            brokerRequest.setMaxJobsToActivate(remainingAmount);
 
-      // partitions to check and jobs to activate left
-      brokerRequest.setPartitionId(partitionId);
-      brokerRequest.setMaxJobsToActivate(remainingAmount);
+            brokerClient
+                .sendRequest(brokerRequest)
+                .whenComplete(handleBrokerResponse(request, requestState, delegate));
 
-      brokerClient
-          .sendRequest(brokerRequest)
-          .whenComplete(handleBrokerResponse(request, requestState, delegate));
-
-    } else {
-      // enough jobs activated or no more partitions left to check
-      final var remainingAmount = requestState.getRemainingAmount();
-      final var resourceExhaustedWasPresent = requestState.wasResourceExhaustedPresent();
-      delegate.onCompleted(remainingAmount, resourceExhaustedWasPresent);
-    }
+          } else {
+            // enough jobs activated or no more partitions left to check
+            final var remainingAmount = requestState.getRemainingAmount();
+            final var resourceExhaustedWasPresent = requestState.wasResourceExhaustedPresent();
+            delegate.onCompleted(remainingAmount, resourceExhaustedWasPresent);
+          }
+        });
   }
 
   private BiConsumer<BrokerResponse<JobBatchRecord>, Throwable> handleBrokerResponse(
       final InflightActivateJobsRequest request,
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
-
     return (brokerResponse, error) -> {
       if (error == null) {
         handleResponseSuccess(request, requestState, delegate, brokerResponse);
@@ -132,20 +133,23 @@ public final class RoundRobinActivateJobsHandler
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate,
       final BrokerResponse<JobBatchRecord> brokerResponse) {
-    final var response = brokerResponse.getResponse();
-    final ActivateJobsResponse grpcResponse =
-        ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
-    final int jobsCount = grpcResponse.getJobsCount();
-    if (jobsCount > 0) {
-      delegate.onResponse(grpcResponse);
-    }
+    actor.run(
+        () -> {
+          final var response = brokerResponse.getResponse();
+          final ActivateJobsResponse grpcResponse =
+              ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
+          final int jobsCount = grpcResponse.getJobsCount();
+          if (jobsCount > 0) {
+            delegate.onResponse(grpcResponse);
+          }
 
-    final var remainingJobsToActivate = requestState.getRemainingAmount() - jobsCount;
-    final var shouldPollCurrentPartitionAgain = response.getTruncated();
+          final var remainingJobsToActivate = requestState.getRemainingAmount() - jobsCount;
+          final var shouldPollCurrentPartitionAgain = response.getTruncated();
 
-    requestState.setRemainingAmount(remainingJobsToActivate);
-    requestState.setPollPrevPartition(shouldPollCurrentPartitionAgain);
-    activateJobs(request, requestState, delegate);
+          requestState.setRemainingAmount(remainingJobsToActivate);
+          requestState.setPollPrevPartition(shouldPollCurrentPartitionAgain);
+          activateJobs(request, requestState, delegate);
+        });
   }
 
   private void handleResponseError(
@@ -153,17 +157,20 @@ public final class RoundRobinActivateJobsHandler
       final InflightActivateJobsRequestState state,
       final ResponseObserverDelegate delegate,
       final Throwable error) {
-    final var wasResourceExhausted = wasResourceExhausted(error);
-    if (isRejection(error)) {
-      delegate.onError(error);
-      return;
-    } else if (!wasResourceExhausted) {
-      logErrorResponse(state.getCurrentPartition(), request.getType(), error);
-    }
+    actor.run(
+        () -> {
+          final var wasResourceExhausted = wasResourceExhausted(error);
+          if (isRejection(error)) {
+            delegate.onError(error);
+            return;
+          } else if (!wasResourceExhausted) {
+            logErrorResponse(state.getCurrentPartition(), request.getType(), error);
+          }
 
-    state.setResourceExhaustedWasPresent(wasResourceExhausted);
-    state.setPollPrevPartition(false);
-    activateJobs(request, state, delegate);
+          state.setResourceExhaustedWasPresent(wasResourceExhausted);
+          state.setPollPrevPartition(false);
+          activateJobs(request, state, delegate);
+        });
   }
 
   private boolean isRejection(final Throwable error) {
