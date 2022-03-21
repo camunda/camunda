@@ -99,7 +99,7 @@ public class ControlledTestExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    final Record<?> copiedRecord = record.clone();
+    final Record<?> copiedRecord = record.copyOf();
     if (onExport != null) {
       onExport.accept(copiedRecord);
     }

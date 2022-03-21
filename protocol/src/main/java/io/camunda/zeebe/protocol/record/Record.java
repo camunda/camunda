@@ -18,7 +18,7 @@ package io.camunda.zeebe.protocol.record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Represents a record published to the log stream. */
-public interface Record<T extends RecordValue> extends JsonSerializable, Cloneable {
+public interface Record<T extends RecordValue> extends JsonSerializable {
   /**
    * Retrieves the position of the record. Positions are locally unique to the partition, and
    * monotonically increasing. Records are then ordered on the partition by their positions, i.e.
@@ -93,5 +93,5 @@ public interface Record<T extends RecordValue> extends JsonSerializable, Cloneab
    *
    * @return a deep copy of this record
    */
-  Record<T> clone();
+  Record<T> copyOf();
 }

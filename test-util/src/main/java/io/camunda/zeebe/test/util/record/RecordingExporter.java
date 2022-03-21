@@ -80,7 +80,7 @@ public final class RecordingExporter implements Exporter {
   public void export(final Record<?> record) {
     LOCK.lock();
     try {
-      RECORDS.add(record.clone());
+      RECORDS.add(record.copyOf());
       IS_EMPTY.signal();
       if (controller != null) { // the engine tests do not open the exporter
         controller.updateLastExportedRecordPosition(record.getPosition());
