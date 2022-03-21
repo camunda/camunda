@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
@@ -30,6 +31,7 @@ public final class DbMessageState implements MutableMessageState {
   private final ColumnFamily<DbLong, StoredMessage> messageColumnFamily;
 
   private final DbLong messageKey;
+  private final DbForeignKey<DbLong> fkMessage;
   private final StoredMessage message;
 
   /**
@@ -40,10 +42,11 @@ public final class DbMessageState implements MutableMessageState {
   private final DbString messageName;
 
   private final DbString correlationKey;
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>
+  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>
       nameCorrelationMessageKey;
   private final DbCompositeKey<DbString, DbString> nameAndCorrelationKey;
-  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
+  private final ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
       nameCorrelationMessageColumnFamily;
 
   /**
@@ -53,8 +56,9 @@ public final class DbMessageState implements MutableMessageState {
    */
   private final DbLong deadline;
 
-  private final DbCompositeKey<DbLong, DbLong> deadlineMessageKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlineColumnFamily;
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineMessageKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
+      deadlineColumnFamily;
 
   /**
    * <pre>name | correlation key | message id -> []
@@ -73,10 +77,11 @@ public final class DbMessageState implements MutableMessageState {
    *
    * check if a message is correlated to a process
    */
-  private final DbCompositeKey<DbLong, DbString> messageBpmnProcessIdKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbString> messageBpmnProcessIdKey;
 
   private final DbString bpmnProcessIdKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil> correlatedMessageColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbString>, DbNil>
+      correlatedMessageColumnFamily;
 
   /**
    * <pre> bpmn process id | correlation key -> []
@@ -100,6 +105,7 @@ public final class DbMessageState implements MutableMessageState {
   public DbMessageState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     messageKey = new DbLong();
+    fkMessage = new DbForeignKey<>(messageKey, ZbColumnFamilies.MESSAGE_KEY);
     message = new StoredMessage();
     messageColumnFamily =
         zeebeDb.createColumnFamily(
@@ -108,7 +114,7 @@ public final class DbMessageState implements MutableMessageState {
     messageName = new DbString();
     correlationKey = new DbString();
     nameAndCorrelationKey = new DbCompositeKey<>(messageName, correlationKey);
-    nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, messageKey);
+    nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, fkMessage);
     nameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGES,
@@ -117,7 +123,7 @@ public final class DbMessageState implements MutableMessageState {
             DbNil.INSTANCE);
 
     deadline = new DbLong();
-    deadlineMessageKey = new DbCompositeKey<>(deadline, messageKey);
+    deadlineMessageKey = new DbCompositeKey<>(deadline, fkMessage);
     deadlineColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_DEADLINES,
@@ -135,7 +141,7 @@ public final class DbMessageState implements MutableMessageState {
             DbNil.INSTANCE);
 
     bpmnProcessIdKey = new DbString();
-    messageBpmnProcessIdKey = new DbCompositeKey<>(messageKey, bpmnProcessIdKey);
+    messageBpmnProcessIdKey = new DbCompositeKey<>(fkMessage, bpmnProcessIdKey);
     correlatedMessageColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_CORRELATED,
@@ -317,7 +323,7 @@ public final class DbMessageState implements MutableMessageState {
     nameCorrelationMessageColumnFamily.whileEqualPrefix(
         nameAndCorrelationKey,
         (compositeKey, nil) -> {
-          final long messageKey = compositeKey.second().getValue();
+          final long messageKey = compositeKey.second().inner().getValue();
           final StoredMessage message = getMessage(messageKey);
           return visitor.visit(message);
         });
@@ -335,7 +341,7 @@ public final class DbMessageState implements MutableMessageState {
         ((compositeKey, zbNil) -> {
           final long deadline = compositeKey.first().getValue();
           if (deadline <= timestamp) {
-            final long messageKey = compositeKey.second().getValue();
+            final long messageKey = compositeKey.second().inner().getValue();
             final StoredMessage message = getMessage(messageKey);
             return visitor.visit(message);
           }

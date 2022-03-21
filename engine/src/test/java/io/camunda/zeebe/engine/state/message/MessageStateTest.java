@@ -368,20 +368,25 @@ public final class MessageStateTest {
   @Test
   public void shouldExistCorrelatedMessage() {
     // when
-    messageState.putMessageCorrelation(1L, wrapString("a"));
+    final var messageKey = 1L;
+    final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
+    messageState.put(messageKey, message);
+    messageState.putMessageCorrelation(messageKey, wrapString("a"));
 
     // then
-    assertThat(messageState.existMessageCorrelation(1L, wrapString("a"))).isTrue();
+    assertThat(messageState.existMessageCorrelation(messageKey, wrapString("a"))).isTrue();
 
-    assertThat(messageState.existMessageCorrelation(3L, wrapString("a"))).isFalse();
-    assertThat(messageState.existMessageCorrelation(1L, wrapString("b"))).isFalse();
+    assertThat(messageState.existMessageCorrelation(messageKey + 1, wrapString("a"))).isFalse();
+    assertThat(messageState.existMessageCorrelation(messageKey, wrapString("b"))).isFalse();
   }
 
   @Test
   public void shouldRemoveMessageCorrelation() {
     // given
     final long messageKey = 6L;
-    final long processInstanceKey = 9L;
+    final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
+    messageState.put(messageKey, message);
+
     messageState.putMessageCorrelation(messageKey, wrapString("a"));
 
     // when
