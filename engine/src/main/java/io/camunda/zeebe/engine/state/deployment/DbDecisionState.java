@@ -27,24 +27,25 @@ import org.agrona.DirectBuffer;
 public final class DbDecisionState implements MutableDecisionState {
 
   private final DbLong dbDecisionKey;
-
   private final DbForeignKey<DbLong> fkDecision;
-  private final DbLong dbDecisionRequirementsKey;
-  private final DbForeignKey<DbLong> fkDecisionRequirements;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>
-      dbDecisionRequirementsKeyAndDecisionKey;
   private final PersistedDecision dbPersistedDecision;
   private final DbString dbDecisionId;
+
+  private final DbLong dbDecisionRequirementsKey;
+  private final DbForeignKey<DbLong> fkDecisionRequirements;
   private final PersistedDecisionRequirements dbPersistedDecisionRequirements;
   private final DbString dbDecisionRequirementsId;
+
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>
+      dbDecisionRequirementsKeyAndDecisionKey;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+      decisionKeyByDecisionRequirementsKey;
+
   private final ColumnFamily<DbLong, PersistedDecision> decisionsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
 
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
-
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
-      decisionKeyByDecisionRequirementsKey;
 
   public DbDecisionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
