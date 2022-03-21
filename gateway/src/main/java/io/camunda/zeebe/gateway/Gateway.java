@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
@@ -107,15 +108,8 @@ public final class Gateway {
     status = Status.STARTING;
     brokerClient = buildBrokerClient();
 
-    final ActivateJobsHandler activateJobsHandler;
-    if (gatewayCfg.getLongPolling().isEnabled()) {
-      final LongPollingActivateJobsHandler longPollingHandler =
-          buildLongPollingHandler(brokerClient);
-      submitLongPollingActor(longPollingHandler);
-      activateJobsHandler = longPollingHandler;
-    } else {
-      activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
-    }
+    final var activateJobsHandler = buildActivateJobsHandler(brokerClient);
+    submitActivateJobsActor((Consumer<ActorControl>) activateJobsHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
@@ -141,17 +135,6 @@ public final class Gateway {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
         .permitKeepAliveWithoutCalls(false);
-  }
-
-  private void submitLongPollingActor(final LongPollingActivateJobsHandler handler) {
-    final var actorStartedFuture = new CompletableFuture<ActorControl>();
-    final var actor =
-        Actor.newActor()
-            .name(handler.getName())
-            .actorStartedHandler(handler.andThen(actorStartedFuture::complete))
-            .build();
-    actorSchedulingService.submitActor(actor);
-    actorStartedFuture.join();
   }
 
   private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
@@ -189,6 +172,25 @@ public final class Gateway {
 
   private BrokerClient buildBrokerClient() {
     return brokerClientFactory.apply(gatewayCfg);
+  }
+
+  private void submitActivateJobsActor(final Consumer<ActorControl> consumer) {
+    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var actor =
+        Actor.newActor()
+            .name("ActivateJobsHandler")
+            .actorStartedHandler(consumer.andThen(actorStartedFuture::complete))
+            .build();
+    actorSchedulingService.submitActor(actor);
+    actorStartedFuture.join();
+  }
+
+  private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
+    if (gatewayCfg.getLongPolling().isEnabled()) {
+      return buildLongPollingHandler(brokerClient);
+    } else {
+      return new RoundRobinActivateJobsHandler(brokerClient);
+    }
   }
 
   private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {

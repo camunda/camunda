@@ -9,8 +9,11 @@ package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.util.sched.Actor;
@@ -22,30 +25,30 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public final class StubbedGateway {
 
   private static final String SERVER_NAME = "server";
 
   private final StubbedBrokerClient brokerClient;
-  private final ActivateJobsHandler activateJobsHandler;
   private final ActorScheduler actorScheduler;
+  private final GatewayCfg config;
   private Server server;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
       final StubbedBrokerClient brokerClient,
-      final ActivateJobsHandler activateJobsHandler) {
+      final GatewayCfg config) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
-    this.activateJobsHandler = activateJobsHandler;
+    this.config = config;
   }
 
   public void start() throws IOException {
-    if (activateJobsHandler instanceof LongPollingActivateJobsHandler handler) {
-      submitLongPollingActor(handler);
-    }
+    final var activateJobsHandler = buildActivateJobsHandler(brokerClient);
+    submitActivateJobsActor((Consumer<ActorControl>) activateJobsHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
@@ -54,17 +57,6 @@ public final class StubbedGateway {
         InProcessServerBuilder.forName(SERVER_NAME).addService(gatewayGrpcService);
     server = serverBuilder.build();
     server.start();
-  }
-
-  private void submitLongPollingActor(final LongPollingActivateJobsHandler handler) {
-    final var actorStartedFuture = new CompletableFuture<ActorControl>();
-    final var actor =
-        Actor.newActor()
-            .name(handler.getName())
-            .actorStartedHandler(handler.andThen(actorStartedFuture::complete))
-            .build();
-    actorScheduler.submitActor(actor);
-    actorStartedFuture.join();
   }
 
   public void stop() {
@@ -82,5 +74,28 @@ public final class StubbedGateway {
     final ManagedChannel channel =
         InProcessChannelBuilder.forName(SERVER_NAME).directExecutor().build();
     return GatewayGrpc.newBlockingStub(channel);
+  }
+
+  private void submitActivateJobsActor(final Consumer<ActorControl> consumer) {
+    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var actor =
+        Actor.newActor()
+            .name("ActivateJobsHandler")
+            .actorStartedHandler(consumer.andThen(actorStartedFuture::complete))
+            .build();
+    actorScheduler.submitActor(actor);
+    actorStartedFuture.join();
+  }
+
+  private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
+    if (config.getLongPolling().isEnabled()) {
+      return buildLongPollingHandler(brokerClient);
+    } else {
+      return new RoundRobinActivateJobsHandler(brokerClient);
+    }
+  }
+
+  private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
+    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 }

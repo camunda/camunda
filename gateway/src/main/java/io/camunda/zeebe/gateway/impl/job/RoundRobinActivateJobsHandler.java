@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -32,16 +33,24 @@ import java.util.function.Consumer;
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
  * partition-IDs to determine the next partition to use.
  */
-public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler {
+public final class RoundRobinActivateJobsHandler
+    implements ActivateJobsHandler, Consumer<ActorControl> {
 
   private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
 
+  private ActorControl actor;
+
   public RoundRobinActivateJobsHandler(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
+  }
+
+  @Override
+  public void accept(ActorControl actor) {
+    this.actor = actor;
   }
 
   @Override
