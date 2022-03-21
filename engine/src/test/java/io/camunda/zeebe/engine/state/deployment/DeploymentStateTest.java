@@ -52,6 +52,7 @@ public class DeploymentStateTest {
     // given
     final var deploymentKey = 10L;
     final var partition = 1;
+    deploymentState.storeDeploymentRecord(deploymentKey, createDeployment());
 
     // when
     deploymentState.addPendingDeploymentDistribution(deploymentKey, partition);
@@ -65,6 +66,7 @@ public class DeploymentStateTest {
     // given
     final var deploymentKey = 10L;
     final var partition = 1;
+    deploymentState.storeDeploymentRecord(deploymentKey, createDeployment());
     deploymentState.addPendingDeploymentDistribution(deploymentKey, partition);
 
     // when
@@ -79,6 +81,7 @@ public class DeploymentStateTest {
     // given
     final var deploymentKey = 10L;
     final var partition = 1;
+    deploymentState.storeDeploymentRecord(deploymentKey, createDeployment());
     deploymentState.addPendingDeploymentDistribution(deploymentKey, partition);
 
     // when
@@ -93,6 +96,10 @@ public class DeploymentStateTest {
     // given
     final var deploymentKey = 10L;
     final var partition = 1;
+    deploymentState.storeDeploymentRecord(deploymentKey, createDeployment());
+    deploymentState.storeDeploymentRecord(12, createDeployment());
+
+    // when
     deploymentState.addPendingDeploymentDistribution(deploymentKey, partition);
     deploymentState.addPendingDeploymentDistribution(12L, partition);
     deploymentState.removePendingDeploymentDistribution(deploymentKey, partition);

@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
@@ -31,8 +32,9 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
   private final DbLong deploymentKey;
   private final DbInt partitionKey;
-  private final DbCompositeKey<DbLong, DbInt> deploymentPartitionKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil> pendingDeploymentColumnFamily;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbInt> deploymentPartitionKey;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DbNil>
+      pendingDeploymentColumnFamily;
 
   private final DeploymentRaw deploymentRaw;
   private final ColumnFamily<DbLong, DeploymentRaw> deploymentRawColumnFamily;
@@ -42,7 +44,9 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
     deploymentKey = new DbLong();
     partitionKey = new DbInt();
-    deploymentPartitionKey = new DbCompositeKey<>(deploymentKey, partitionKey);
+    deploymentPartitionKey =
+        new DbCompositeKey<>(
+            new DbForeignKey<>(deploymentKey, ZbColumnFamilies.DEPLOYMENT_RAW), partitionKey);
     pendingDeploymentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PENDING_DEPLOYMENT,
@@ -120,11 +124,11 @@ public final class DbDeploymentState implements MutableDeploymentState {
     final MutableLong lastDeploymentKey = new MutableLong(0);
     pendingDeploymentColumnFamily.forEach(
         (compositeKey, nil) -> {
-          final var deploymentKey = compositeKey.first().getValue();
+          final var deploymentKey = compositeKey.first().inner().getValue();
           final var partitionId = compositeKey.second().getValue();
 
           if (lastDeploymentKey.value != deploymentKey) {
-            final var deploymentRaw = deploymentRawColumnFamily.get(compositeKey.first());
+            final var deploymentRaw = deploymentRawColumnFamily.get(compositeKey.first().inner());
             if (deploymentRaw == null) {
               LOG.warn(
                   "Expected to find a deployment with key {} for a pending partition {}, but none found. The state is inconsistent.",
