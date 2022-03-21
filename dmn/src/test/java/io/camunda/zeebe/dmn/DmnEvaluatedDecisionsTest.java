@@ -279,8 +279,8 @@ class DmnEvaluatedDecisionsTest {
       assertThat(decision_table.getEvaluatedDecisions())
           .flatMap(EvaluatedDecision::evaluatedInputs)
           .extracting(EvaluatedInput::inputName)
-          .containsExactly(
-              "\"expression is used as input name\" = \"expression is used as input name\"");
+          // the expression is truncated at 30 chars when used as name
+          .containsExactly("\"expression is used as input n");
     }
 
     @Test
