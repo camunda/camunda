@@ -261,10 +261,11 @@ class DmnEvaluatedDecisionsTest {
     @Test
     @DisplayName("Should use input label as input name, if label defined")
     void shouldUseInputLabelAsInputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "labeled_input");
 
-      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "labeled_input");
-
-      assertThat(decision_table.getEvaluatedDecisions())
+      // then
+      assertThat(result.getEvaluatedDecisions())
           .flatMap(EvaluatedDecision::evaluatedInputs)
           .extracting(EvaluatedInput::inputName)
           .containsExactly("input_label_is_used_as_input_name");
@@ -273,10 +274,11 @@ class DmnEvaluatedDecisionsTest {
     @Test
     @DisplayName("Should use input expression as input name, if no label defined")
     void shouldUseInputExpressionAsInputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_input");
 
-      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_input");
-
-      assertThat(decision_table.getEvaluatedDecisions())
+      // then
+      assertThat(result.getEvaluatedDecisions())
           .flatMap(EvaluatedDecision::evaluatedInputs)
           .extracting(EvaluatedInput::inputName)
           // the expression is truncated at 30 chars when used as name
@@ -286,10 +288,11 @@ class DmnEvaluatedDecisionsTest {
     @Test
     @DisplayName("Should use output label as output name, if label defined")
     void shouldUseOutputLabelAsOutputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "labeled_output");
 
-      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "labeled_output");
-
-      assertThat(decision_table.getEvaluatedDecisions())
+      // then
+      assertThat(result.getEvaluatedDecisions())
           .flatMap(EvaluatedDecision::matchedRules)
           .flatMap(MatchedRule::evaluatedOutputs)
           .extracting(EvaluatedOutput::outputName)
@@ -299,10 +302,11 @@ class DmnEvaluatedDecisionsTest {
     @Test
     @DisplayName("Should use output name as output name, if no label defined")
     void shouldUseOutputNameAsOutputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_output");
 
-      final var decision_table = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_output");
-
-      assertThat(decision_table.getEvaluatedDecisions())
+      // then
+      assertThat(result.getEvaluatedDecisions())
           .flatMap(EvaluatedDecision::matchedRules)
           .flatMap(MatchedRule::evaluatedOutputs)
           .extracting(EvaluatedOutput::outputName)
