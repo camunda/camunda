@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler.toInflightActivateJobsRequest;
 import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
 import com.google.rpc.Code;
@@ -26,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -53,7 +53,6 @@ public final class LongPollingActivateJobsHandler
   private final int failedAttemptThreshold;
 
   private final LongPollingMetrics metrics;
-  private final AtomicLong requestIdGenerator = new AtomicLong(1);
 
   private ActorControl actor;
 
@@ -93,9 +92,7 @@ public final class LongPollingActivateJobsHandler
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    final var requestId = getNextActivateJobsRequestId();
-    final var longPollingRequest =
-        new InflightActivateJobsRequest(requestId, request, responseObserver);
+    final var longPollingRequest = toInflightActivateJobsRequest(request, responseObserver);
     activateJobs(longPollingRequest);
   }
 
@@ -140,10 +137,6 @@ public final class LongPollingActivateJobsHandler
             completeOrResubmitRequest(request, false);
           }
         });
-  }
-
-  private long getNextActivateJobsRequestId() {
-    return requestIdGenerator.getAndIncrement();
   }
 
   private InFlightLongPollingActivateJobsRequestsState getJobTypeState(final String jobType) {
