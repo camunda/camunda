@@ -57,6 +57,8 @@ zeebe:
       value: "0.9"
     - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS
       value: "true"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS
+      value: "true"
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
   resources:
