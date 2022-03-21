@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.gateway.impl.job.InflightActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -52,6 +54,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -72,7 +75,8 @@ public final class LongPollingActivateJobsTest {
   private final ControlledActorClock actorClock = new ControlledActorClock();
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   private LongPollingActivateJobsHandler handler;
-  private ActivateJobsStub stub;
+  private ActivateJobsStub activateJobsStub;
+  private FailJobStub failJobStub;
   private int partitionsCount;
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
   private final AtomicLong requestIdGenerator = new AtomicLong(1);
@@ -86,10 +90,15 @@ public final class LongPollingActivateJobsTest {
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
             .build();
-    submitLongPollingActor(handler);
-    stub = spy(new ActivateJobsStub());
-    stub.registerWith(brokerClient);
-    stub.addAvailableJobs(TYPE, 0);
+    submitActorToActivateJobs(handler);
+
+    activateJobsStub = spy(new ActivateJobsStub());
+    activateJobsStub.registerWith(brokerClient);
+    activateJobsStub.addAvailableJobs(TYPE, 0);
+
+    failJobStub = spy(new FailJobStub());
+    failJobStub.registerWith(brokerClient);
+
     partitionsCount = brokerClient.getTopologyManager().getTopology().getPartitionsCount();
   }
 
@@ -116,7 +125,7 @@ public final class LongPollingActivateJobsTest {
 
     // when
     waitUntil(request::hasScheduledTimer);
-    stub.addAvailableJobs(TYPE, 1);
+    activateJobsStub.addAvailableJobs(TYPE, 1);
     verify(responseSpy, times(0)).onCompleted();
     brokerClient.notifyJobsAvailable(TYPE);
 
@@ -132,7 +141,7 @@ public final class LongPollingActivateJobsTest {
     activateJobsAndWaitUntilBlocked(amount);
 
     // then
-    verify(stub, times(amount * partitionsCount)).handle(any());
+    verify(activateJobsStub, times(amount * partitionsCount)).handle(any());
   }
 
   @Test
@@ -147,7 +156,7 @@ public final class LongPollingActivateJobsTest {
     waitUntil(request::hasScheduledTimer);
 
     // then
-    verify(stub, times(amount * partitionsCount)).handle(any());
+    verify(activateJobsStub, times(amount * partitionsCount)).handle(any());
   }
 
   @Test
@@ -157,10 +166,10 @@ public final class LongPollingActivateJobsTest {
     activateJobsAndWaitUntilBlocked(amount);
     final int firstRound = amount * partitionsCount;
 
-    verify(stub, times(firstRound)).handle(any());
+    verify(activateJobsStub, times(firstRound)).handle(any());
 
     // when
-    stub.addAvailableJobs(TYPE, 1);
+    activateJobsStub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
 
     // then
@@ -170,7 +179,7 @@ public final class LongPollingActivateJobsTest {
     // the one request which has a result, re-triggers the remaining requests
     final int invTriggeredBySuccessfulRequest = (amount - 1) * partitionsCount;
     verify(
-            stub,
+            activateJobsStub,
             timeout(2000)
                 .times(firstRound + invTriggeredByNotification + invTriggeredBySuccessfulRequest))
         .handle(any());
@@ -201,7 +210,7 @@ public final class LongPollingActivateJobsTest {
 
     // when
     final InflightActivateJobsRequest successRequest = getLongPollingActivateJobsRequest();
-    stub.addAvailableJobs(TYPE, 1);
+    activateJobsStub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
     handler.activateJobs(successRequest);
 
@@ -214,7 +223,7 @@ public final class LongPollingActivateJobsTest {
   public void shouldNotBlockOtherJobTypes() {
     // given
     final String otherType = "other-type";
-    stub.addAvailableJobs(otherType, 2);
+    activateJobsStub.addAvailableJobs(otherType, 2);
     final int threshold = FAILED_RESPONSE_THRESHOLD;
     activateJobsAndWaitUntilBlocked(threshold);
 
@@ -236,7 +245,7 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
-    submitLongPollingActor(handler);
+    submitActorToActivateJobs(handler);
 
     final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
@@ -246,7 +255,7 @@ public final class LongPollingActivateJobsTest {
     actorClock.addTime(Duration.ofMillis(probeTimeout));
 
     // then
-    verify(stub, timeout(2000).times(2 * partitionsCount)).handle(any());
+    verify(activateJobsStub, timeout(2000).times(2 * partitionsCount)).handle(any());
   }
 
   @Test
@@ -260,7 +269,7 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
-    submitLongPollingActor(handler);
+    submitActorToActivateJobs(handler);
 
     final int threshold = FAILED_RESPONSE_THRESHOLD;
     final List<InflightActivateJobsRequest> requests = activateJobsAndWaitUntilBlocked(threshold);
@@ -276,7 +285,7 @@ public final class LongPollingActivateJobsTest {
 
     // then
     final int totalRequests = threshold + 1;
-    verify(stub, timeout(1000).times(totalRequests * partitionsCount)).handle(any());
+    verify(activateJobsStub, timeout(1000).times(totalRequests * partitionsCount)).handle(any());
   }
 
   @Test
@@ -335,7 +344,7 @@ public final class LongPollingActivateJobsTest {
     // when
     actorClock.addTime(Duration.ofMillis(requestTimeout));
     waitUntil(shortRequest::isTimedOut);
-    stub.addAvailableJobs(TYPE, 2);
+    activateJobsStub.addAvailableJobs(TYPE, 2);
     brokerClient.notifyJobsAvailable(TYPE);
 
     // then
@@ -553,7 +562,7 @@ public final class LongPollingActivateJobsTest {
           }
         });
 
-    stub.addAvailableJobs(TYPE, 3 * MAX_JOBS_TO_ACTIVATE);
+    activateJobsStub.addAvailableJobs(TYPE, 3 * MAX_JOBS_TO_ACTIVATE);
 
     // when
     handler.activateJobs(firstRequest);
@@ -571,10 +580,10 @@ public final class LongPollingActivateJobsTest {
     assertThat(secondRequest.isCompleted()).isTrue();
     assertThat(thirdRequest.isCompleted()).isTrue();
 
-    verify(stub, times(1)).handle(firstRequest.getRequest());
-    verify(stub, times(1)).handle(secondRequest.getRequest());
-    verify(stub, times(1)).handle(thirdRequest.getRequest());
-    verify(stub, times(partitionsCount * 2)).handle(fourthRequest.getRequest());
+    verify(activateJobsStub, times(1)).handle(firstRequest.getRequest());
+    verify(activateJobsStub, times(1)).handle(secondRequest.getRequest());
+    verify(activateJobsStub, times(1)).handle(thirdRequest.getRequest());
+    verify(activateJobsStub, times(partitionsCount * 2)).handle(fourthRequest.getRequest());
   }
 
   @Test
@@ -600,7 +609,7 @@ public final class LongPollingActivateJobsTest {
                   new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
             }
             count += 1;
-            return stub.handle(request);
+            return activateJobsStub.handle(request);
           }
         });
     // when
@@ -641,7 +650,7 @@ public final class LongPollingActivateJobsTest {
                       Intent.UNKNOWN, 1, RejectionType.INVALID_ARGUMENT, "expected"));
             }
             count += 1;
-            return stub.handle(request);
+            return activateJobsStub.handle(request);
           }
         });
     // when
@@ -684,7 +693,7 @@ public final class LongPollingActivateJobsTest {
 
     // then
     waitUntil(request::isCompleted);
-    verify(stub, times(partitionsCount)).handle(any());
+    verify(activateJobsStub, times(partitionsCount)).handle(any());
   }
 
   @Test
@@ -707,7 +716,7 @@ public final class LongPollingActivateJobsTest {
     waitUntil(request::isTimedOut);
 
     // then
-    verify(stub, atLeast(partitionsCount)).handle(any());
+    verify(activateJobsStub, atLeast(partitionsCount)).handle(any());
   }
 
   @Test
@@ -724,15 +733,17 @@ public final class LongPollingActivateJobsTest {
                     .build(),
                 spy(ServerStreamObserver.class)));
 
-    stub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
-    doReturn(Either.right(false)).when(request).tryToSendActivatedJobs(any());
+    activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+
+    final var responseNotSent = Either.right(false);
+    doReturn(responseNotSent).when(request).tryToSendActivatedJobs(any());
 
     // when
     handler.activateJobs(request);
     waitUntil(request::isAborted);
 
     // then
-    verify(stub, times(1)).handle(request.getRequest());
+    verify(activateJobsStub, times(1)).handle(any());
   }
 
   @Test
@@ -748,16 +759,186 @@ public final class LongPollingActivateJobsTest {
                 .build(),
             spy(ServerStreamObserver.class));
 
-    stub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+    activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+
+    final var sendResponseException = new RuntimeException("foo");
     final var responseObserver = request.getResponseObserver();
-    doThrow(new RuntimeException("foo")).when(responseObserver).onNext(any());
+    doThrow(sendResponseException).when(responseObserver).onNext(any());
 
     // when
     handler.activateJobs(request);
     waitUntil(request::isAborted);
 
     // then
-    verify(stub, times(1)).handle(request.getRequest());
+    verify(activateJobsStub, times(1)).handle(any());
+  }
+
+  @Test
+  public void shouldMakeAllActivatedJobReactivatableWhenJobsAreNotSend() throws Exception {
+    // given
+    activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+    final var request = spy(getLongPollingActivateJobsRequest());
+
+    final var responseNotSent = Either.right(false);
+    doReturn(responseNotSent).when(request).tryToSendActivatedJobs(any());
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    verify(request.getResponseObserver(), times(1)).onError(any());
+    verify(failJobStub, times(MAX_JOBS_TO_ACTIVATE)).handle(any());
+  }
+
+  @Test
+  public void shouldMakeAllActivatedJobReactivatableWhenJobsAreNotSendDueException()
+      throws Exception {
+    // given
+    activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+    final var request = getLongPollingActivateJobsRequest();
+
+    final var sendResponseException = new RuntimeException("foo");
+    final var responseObserver = request.getResponseObserver();
+    doThrow(sendResponseException).when(responseObserver).onNext(any());
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    verify(responseObserver, times(1)).onError(any());
+    verify(failJobStub, times(MAX_JOBS_TO_ACTIVATE)).handle(any());
+  }
+
+  @Test
+  public void shouldOnlyMakeJobsReactivatableInCurrentIterationWhenJobsAreNotReturned()
+      throws Exception {
+    // given
+    final var responseNotSent = Either.right(false);
+
+    final var request =
+        spy(
+            new InflightActivateJobsRequest(
+                getNextRequestId(),
+                ActivateJobsRequest.newBuilder()
+                    .setType(TYPE)
+                    .setMaxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
+                    .setRequestTimeout(500)
+                    .build(),
+                spy(ServerStreamObserver.class)));
+    final var responseObserver = request.getResponseObserver();
+
+    registerCustomHandlerWithNotification(
+        (r) -> {
+          final var partitionId = r.getPartitionId();
+          if (partitionId == 1) {
+            activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+          } else if (partitionId == 2) {
+            activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+            doReturn(responseNotSent).when(request).tryToSendActivatedJobs(any());
+          }
+        });
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    verify(responseObserver, times(1)).onNext(any());
+    verify(activateJobsStub, times(2)).handle(request.getRequest());
+
+    verify(responseObserver, times(1)).onError(any());
+    verify(failJobStub, times(MAX_JOBS_TO_ACTIVATE)).handle(any());
+  }
+
+  @Test
+  public void shouldOnlyMakeJobsReactivatableInCurrentIterationWhenJobsAreNotReturnedDueException()
+      throws Exception {
+    // given
+    final var request =
+        new InflightActivateJobsRequest(
+            getNextRequestId(),
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
+                .setRequestTimeout(500)
+                .build(),
+            spy(ServerStreamObserver.class));
+
+    final var responseObserver = request.getResponseObserver();
+    final var sendResponseException = new RuntimeException("foo");
+
+    registerCustomHandlerWithNotification(
+        (r) -> {
+          final var partitionId = r.getPartitionId();
+          if (partitionId == 1) {
+            activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+          } else if (partitionId == 2) {
+            activateJobsStub.addAvailableJobs(TYPE, MAX_JOBS_TO_ACTIVATE);
+            doThrow(sendResponseException).when(responseObserver).onNext(any());
+          }
+        });
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    verify(responseObserver, times(2)).onNext(any());
+    verify(activateJobsStub, times(2)).handle(request.getRequest());
+
+    verify(responseObserver, times(1)).onError(any());
+    verify(failJobStub, times(MAX_JOBS_TO_ACTIVATE)).handle(any());
+  }
+
+  @Test
+  public void shouldSetCurrentRetriesAndNoBackoff() throws Exception {
+    // given
+    final var activatedJobRef = new AtomicReference<ActivatedJob>();
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    final var request =
+        new InflightActivateJobsRequest(
+            getNextRequestId(),
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
+                .setRequestTimeout(500)
+                .build(),
+            spy(ServerStreamObserver.class)) {
+
+          @Override
+          public Either<Exception, Boolean> tryToSendActivatedJobs(
+              ActivateJobsResponse grpcResponse) {
+            activatedJobRef.set(grpcResponse.getJobs(0));
+            super.tryToSendActivatedJobs(grpcResponse);
+            return Either.right(false);
+          }
+        };
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::isAborted);
+
+    // then
+    final var brokerRequests = brokerClient.getBrokerRequests();
+    assertThat(brokerRequests)
+        .describedAs("Expected 2 requests: 1 to activate jobs and 1 to fail a job")
+        .hasSize(2);
+
+    final var firstBrokerRequest = brokerRequests.get(0);
+    assertThat(firstBrokerRequest).isInstanceOf(BrokerActivateJobsRequest.class);
+
+    final var secondBrokerRequest = brokerRequests.get(1);
+    assertThat(secondBrokerRequest).isInstanceOf(BrokerFailJobRequest.class);
+
+    final var failRequest = (BrokerFailJobRequest) secondBrokerRequest;
+    final var brokerRequestValue = failRequest.getRequestWriter();
+    final var activatedJob = activatedJobRef.get();
+
+    assertThat(failRequest.getKey()).isEqualTo(activatedJob.getKey());
+    assertThat(brokerRequestValue.getRetries()).isEqualTo(activatedJob.getRetries());
+    assertThat(brokerRequestValue.getErrorMessageBuffer()).isNotNull();
   }
 
   private List<InflightActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
@@ -803,12 +984,12 @@ public final class LongPollingActivateJobsTest {
           public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
               throws Exception {
             notification.accept(request);
-            return stub.handle(request);
+            return activateJobsStub.handle(request);
           }
         });
   }
 
-  private void submitLongPollingActor(final LongPollingActivateJobsHandler handler) {
+  private void submitActorToActivateJobs(final LongPollingActivateJobsHandler handler) {
     final var actorStartedFuture = new CompletableFuture<ActorControl>();
     final var actor =
         Actor.newActor()

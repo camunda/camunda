@@ -224,8 +224,8 @@ public final class LongPollingActivateJobsHandler
       final Throwable error) {
     actor.submit(
         () -> {
-          state.removeActiveRequest(request);
           request.onError(error);
+          state.removeActiveRequest(request);
         });
   }
 
