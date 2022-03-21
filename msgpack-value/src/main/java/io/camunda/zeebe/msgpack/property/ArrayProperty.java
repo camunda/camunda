@@ -12,6 +12,8 @@ import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public final class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>>
     implements ValueArray<T> {
@@ -38,5 +40,12 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     } catch (final Exception e) {
       throw new MsgpackPropertyException(getKey(), e);
     }
+  }
+
+  @Override
+  public Stream<T> stream() {
+    // ArrayValue is not a thread-safe Iterable
+    final var parallel = false;
+    return StreamSupport.stream(spliterator(), parallel);
   }
 }
