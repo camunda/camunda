@@ -103,6 +103,12 @@ public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao
     return null;
   }
 
+  protected QueryBuilder buildTermQuery(final String name, final Boolean value) {
+    if (value != null) {
+      return termQuery(name, value);
+    }
+    return null;
+  }
 
   protected QueryBuilder buildMatchQuery(final String name, final String value) {
     if (value != null) {
@@ -121,4 +127,5 @@ public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao
       }
       return null;
   }
+
 }
