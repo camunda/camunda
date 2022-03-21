@@ -19,8 +19,10 @@ import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
 import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.Map;
@@ -101,43 +103,67 @@ public final class RoundRobinActivateJobsHandler
 
       brokerClient
           .sendRequest(brokerRequest)
-          .whenComplete(
-              (brokerResponse, error) -> {
-                if (error == null) {
-                  final var response = brokerResponse.getResponse();
-                  final ActivateJobsResponse grpcResponse =
-                      ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
-                  final int jobsCount = grpcResponse.getJobsCount();
-                  if (jobsCount > 0) {
-                    delegate.onResponse(grpcResponse);
-                  }
+          .whenComplete(handleBrokerResponse(request, requestState, delegate));
 
-                  final var remainingJobsToActivate = requestState.getRemainingAmount() - jobsCount;
-                  final var shouldPollCurrentPartitionAgain = response.getTruncated();
-
-                  requestState.setRemainingAmount(remainingJobsToActivate);
-                  requestState.setPollPrevPartition(shouldPollCurrentPartitionAgain);
-                  activateJobs(request, requestState, delegate);
-                } else {
-                  final boolean wasResourceExhausted = wasResourceExhausted(error);
-                  if (isRejection(error)) {
-                    delegate.onError(error);
-                    return;
-                  } else if (!wasResourceExhausted) {
-                    logErrorResponse(requestState.getCurrentPartition(), request.getType(), error);
-                  }
-
-                  requestState.setResourceExhaustedWasPresent(wasResourceExhausted);
-                  requestState.setPollPrevPartition(false);
-                  activateJobs(request, requestState, delegate);
-                }
-              });
     } else {
       // enough jobs activated or no more partitions left to check
       final var remainingAmount = requestState.getRemainingAmount();
       final var resourceExhaustedWasPresent = requestState.wasResourceExhaustedPresent();
       delegate.onCompleted(remainingAmount, resourceExhaustedWasPresent);
     }
+  }
+
+  private BiConsumer<BrokerResponse<JobBatchRecord>, Throwable> handleBrokerResponse(
+      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequestState requestState,
+      final ResponseObserverDelegate delegate) {
+
+    return (brokerResponse, error) -> {
+      if (error == null) {
+        handleResponseSuccess(request, requestState, delegate, brokerResponse);
+      } else {
+        handleResponseError(request, requestState, delegate, error);
+      }
+    };
+  }
+
+  private void handleResponseSuccess(
+      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequestState requestState,
+      final ResponseObserverDelegate delegate,
+      final BrokerResponse<JobBatchRecord> brokerResponse) {
+    final var response = brokerResponse.getResponse();
+    final ActivateJobsResponse grpcResponse =
+        ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
+    final int jobsCount = grpcResponse.getJobsCount();
+    if (jobsCount > 0) {
+      delegate.onResponse(grpcResponse);
+    }
+
+    final var remainingJobsToActivate = requestState.getRemainingAmount() - jobsCount;
+    final var shouldPollCurrentPartitionAgain = response.getTruncated();
+
+    requestState.setRemainingAmount(remainingJobsToActivate);
+    requestState.setPollPrevPartition(shouldPollCurrentPartitionAgain);
+    activateJobs(request, requestState, delegate);
+  }
+
+  private void handleResponseError(
+      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequestState state,
+      final ResponseObserverDelegate delegate,
+      final Throwable error) {
+    final var wasResourceExhausted = wasResourceExhausted(error);
+    if (isRejection(error)) {
+      delegate.onError(error);
+      return;
+    } else if (!wasResourceExhausted) {
+      logErrorResponse(state.getCurrentPartition(), request.getType(), error);
+    }
+
+    state.setResourceExhaustedWasPresent(wasResourceExhausted);
+    state.setPollPrevPartition(false);
+    activateJobs(request, state, delegate);
   }
 
   private boolean isRejection(final Throwable error) {
