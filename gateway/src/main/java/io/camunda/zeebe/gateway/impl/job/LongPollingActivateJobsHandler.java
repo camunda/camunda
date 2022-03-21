@@ -166,7 +166,7 @@ public final class LongPollingActivateJobsHandler
           request.getMaxJobsToActivate(),
           request.getType(),
           response -> onResponse(request, response),
-          error -> onError(request, error),
+          error -> onError(state, request, error),
           (remainingAmount, containedResourceExhaustedResponse) ->
               onCompleted(state, request, remainingAmount, containedResourceExhaustedResponse));
     }
@@ -237,8 +237,15 @@ public final class LongPollingActivateJobsHandler
     actor.submit(() -> request.onResponse(activateJobsResponse));
   }
 
-  private void onError(final LongPollingActivateJobsRequest request, final Throwable error) {
-    actor.submit(() -> request.onError(error));
+  private void onError(
+      final InFlightLongPollingActivateJobsRequestsState state,
+      final LongPollingActivateJobsRequest request,
+      final Throwable error) {
+    actor.submit(
+        () -> {
+          state.removeActiveRequest(request);
+          request.onError(error);
+        });
   }
 
   private void resetFailedAttemptsAndHandlePendingRequests(final String jobType) {
