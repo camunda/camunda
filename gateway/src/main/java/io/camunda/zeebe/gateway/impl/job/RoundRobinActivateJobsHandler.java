@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler.toInflightActivateJobsRequest;
+
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
@@ -17,9 +18,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
 import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -57,14 +56,12 @@ public final class RoundRobinActivateJobsHandler
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
+    final var topology = topologyManager.getTopology();
     if (topology != null) {
-      final int partitionsCount = topology.getPartitionsCount();
+      final var inflightRequest = toInflightActivateJobsRequest(request, responseObserver);
       activateJobs(
-          partitionsCount,
-          RequestMapper.toActivateJobsRequest(request),
-          request.getMaxJobsToActivate(),
-          request.getType(),
+          topology.getPartitionsCount(),
+          inflightRequest,
           responseObserver::onNext,
           responseObserver::onError,
           (remainingAmount, resourceExhaustedWasPresent) -> responseObserver.onCompleted());
@@ -73,109 +70,73 @@ public final class RoundRobinActivateJobsHandler
 
   public void activateJobs(
       final int partitionsCount,
-      final BrokerActivateJobsRequest request,
-      final int maxJobsToActivate,
-      final String type,
+      final InflightActivateJobsRequest request,
       final Consumer<ActivateJobsResponse> onResponse,
       final Consumer<Throwable> onError,
       final BiConsumer<Integer, Boolean> onCompleted) {
-    activateJobs(
-        request,
-        partitionIdIteratorForType(type, partitionsCount),
-        maxJobsToActivate,
-        type,
-        onResponse,
-        onError,
-        onCompleted);
+    final var jobType = request.getType();
+    final var maxJobsToActivate = request.getMaxJobsToActivate();
+    final var partitionIterator = partitionIdIteratorForType(jobType, partitionsCount);
+
+    final var requestState =
+        new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
+    final var delegate = new ResponseObserverDelegate(onResponse, onError, onCompleted);
+
+    activateJobs(request, requestState, delegate);
   }
 
   private void activateJobs(
-      final BrokerActivateJobsRequest request,
-      final PartitionIdIterator partitionIdIterator,
-      final int remainingAmount,
-      final String jobType,
-      final Consumer<ActivateJobsResponse> onResponse,
-      final Consumer<Throwable> onError,
-      final BiConsumer<Integer, Boolean> onCompleted) {
-    activateJobs(
-        request,
-        partitionIdIterator,
-        remainingAmount,
-        jobType,
-        onResponse,
-        onError,
-        onCompleted,
-        false,
-        false);
-  }
+      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequestState requestState,
+      final ResponseObserverDelegate delegate) {
 
-  private void activateJobs(
-      final BrokerActivateJobsRequest request,
-      final PartitionIdIterator partitionIdIterator,
-      final int remainingAmount,
-      final String jobType,
-      final Consumer<ActivateJobsResponse> onResponse,
-      final Consumer<Throwable> onError,
-      final BiConsumer<Integer, Boolean> onCompleted,
-      final boolean pollPrevPartition,
-      final boolean resourceExhaustedWasPresent) {
-
-    if (remainingAmount > 0 && (pollPrevPartition || partitionIdIterator.hasNext())) {
-      final int partitionId =
-          pollPrevPartition
-              ? partitionIdIterator.getCurrentPartitionId()
-              : partitionIdIterator.next();
+    if (requestState.shouldActivateJobs()) {
+      final var brokerRequest = request.getRequest();
+      final var partitionId = requestState.getNextPartition();
+      final var remainingAmount = requestState.getRemainingAmount();
 
       // partitions to check and jobs to activate left
-      request.setPartitionId(partitionId);
-      request.setMaxJobsToActivate(remainingAmount);
+      brokerRequest.setPartitionId(partitionId);
+      brokerRequest.setMaxJobsToActivate(remainingAmount);
+
       brokerClient
-          .sendRequest(request)
+          .sendRequest(brokerRequest)
           .whenComplete(
-              (response, error) -> {
+              (brokerResponse, error) -> {
                 if (error == null) {
+                  final var response = brokerResponse.getResponse();
                   final ActivateJobsResponse grpcResponse =
-                      ResponseMapper.toActivateJobsResponse(
-                          response.getKey(), response.getResponse());
+                      ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
                   final int jobsCount = grpcResponse.getJobsCount();
                   if (jobsCount > 0) {
-                    onResponse.accept(grpcResponse);
+                    delegate.onResponse(grpcResponse);
                   }
 
-                  activateJobs(
-                      request,
-                      partitionIdIterator,
-                      remainingAmount - jobsCount,
-                      jobType,
-                      onResponse,
-                      onError,
-                      onCompleted,
-                      response.getResponse().getTruncated(),
-                      resourceExhaustedWasPresent);
+                  final var remainingJobsToActivate = requestState.getRemainingAmount() - jobsCount;
+                  final var shouldPollCurrentPartitionAgain = response.getTruncated();
+
+                  requestState.setRemainingAmount(remainingJobsToActivate);
+                  requestState.setPollPrevPartition(shouldPollCurrentPartitionAgain);
+                  activateJobs(request, requestState, delegate);
                 } else {
                   final boolean wasResourceExhausted = wasResourceExhausted(error);
                   if (isRejection(error)) {
-                    onError.accept(error);
+                    delegate.onError(error);
                     return;
                   } else if (!wasResourceExhausted) {
-                    logErrorResponse(partitionIdIterator, jobType, error);
+                    logErrorResponse(requestState.getCurrentPartition(), request.getType(), error);
                   }
 
-                  activateJobs(
-                      request,
-                      partitionIdIterator,
-                      remainingAmount,
-                      jobType,
-                      onResponse,
-                      onError,
-                      onCompleted,
-                      false,
-                      wasResourceExhausted);
+                  requestState.setResourceExhaustedWasPresent(wasResourceExhausted);
+                  requestState.setPollPrevPartition(false);
+                  activateJobs(request, requestState, delegate);
                 }
               });
     } else {
       // enough jobs activated or no more partitions left to check
-      onCompleted.accept(remainingAmount, resourceExhaustedWasPresent);
+      final var remainingAmount = requestState.getRemainingAmount();
+      final var resourceExhaustedWasPresent = requestState.wasResourceExhaustedPresent();
+      delegate.onCompleted(remainingAmount, resourceExhaustedWasPresent);
     }
   }
 
@@ -192,13 +153,9 @@ public final class RoundRobinActivateJobsHandler
     return false;
   }
 
-  private void logErrorResponse(
-      final PartitionIdIterator partitionIdIterator, final String jobType, final Throwable error) {
+  private void logErrorResponse(final int partition, final String jobType, final Throwable error) {
     Loggers.GATEWAY_LOGGER.warn(
-        "Failed to activate jobs for type {} from partition {}",
-        jobType,
-        partitionIdIterator.getCurrentPartitionId(),
-        error);
+        "Failed to activate jobs for type {} from partition {}", jobType, partition, error);
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
@@ -208,5 +165,33 @@ public final class RoundRobinActivateJobsHandler
             jobType, t -> new RoundRobinDispatchStrategy(topologyManager));
     return new PartitionIdIterator(
         nextPartitionSupplier.determinePartition(), partitionsCount, topologyManager);
+  }
+
+  private static final class ResponseObserverDelegate {
+
+    private final Consumer<ActivateJobsResponse> onResponseDelegate;
+    private final Consumer<Throwable> onErrorDelegate;
+    private final BiConsumer<Integer, Boolean> onCompletedDelegate;
+
+    private ResponseObserverDelegate(
+        final Consumer<ActivateJobsResponse> onResponseDelegate,
+        final Consumer<Throwable> onErrorDelegate,
+        final BiConsumer<Integer, Boolean> onCompletedDelegate) {
+      this.onResponseDelegate = onResponseDelegate;
+      this.onErrorDelegate = onErrorDelegate;
+      this.onCompletedDelegate = onCompletedDelegate;
+    }
+
+    public void onResponse(final ActivateJobsResponse response) {
+      onResponseDelegate.accept(response);
+    }
+
+    public void onError(final Throwable t) {
+      onErrorDelegate.accept(t);
+    }
+
+    public void onCompleted(final int remainingAmount, final boolean resourceExhaustedWasPresent) {
+      onCompletedDelegate.accept(remainingAmount, resourceExhaustedWasPresent);
+    }
   }
 }
