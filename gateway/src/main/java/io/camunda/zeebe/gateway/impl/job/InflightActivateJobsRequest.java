@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.slf4j.Logger;
 
-public final class InflightActivateJobsRequest {
+public class InflightActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final long requestId;
@@ -84,11 +84,24 @@ public final class InflightActivateJobsRequest {
     return isCompleted;
   }
 
+  /**
+   * Sends activated jobs to the respective client.
+   *
+   * @param activatedJobs to send back to the client
+   * @return an instance of {@link Either} indicating the following:
+   *     <ul>
+   *       <li>{@link Either#get() == true}: if the activated jobs have been sent back to the client
+   *       <li>{@link Either#get() == false}: if the activated jobs couldn't be sent back to the
+   *           client
+   *       <li>{@link Either#getLeft() != null}: if sending back the activated jobs failed with an
+   *           exception (note: in this case {@link Either#isRight() == false})
+   *     </ul>
+   */
   public Either<Exception, Boolean> tryToSendActivatedJobs(
-      final ActivateJobsResponse grpcResponse) {
+      final ActivateJobsResponse activatedJobs) {
     if (isOpen()) {
       try {
-        responseObserver.onNext(grpcResponse);
+        responseObserver.onNext(activatedJobs);
         return Either.right(true);
       } catch (final Exception e) {
         LOG.warn("Failed to send response to client.", e);

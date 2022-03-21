@@ -48,7 +48,7 @@ public final class StubbedGateway {
 
   public void start() throws IOException {
     final var activateJobsHandler = buildActivateJobsHandler(brokerClient);
-    submitActivateJobsActor((Consumer<ActorControl>) activateJobsHandler);
+    submitActorToActivateJobs((Consumer<ActorControl>) activateJobsHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
@@ -76,7 +76,7 @@ public final class StubbedGateway {
     return GatewayGrpc.newBlockingStub(channel);
   }
 
-  private void submitActivateJobsActor(final Consumer<ActorControl> consumer) {
+  private void submitActorToActivateJobs(final Consumer<ActorControl> consumer) {
     final var actorStartedFuture = new CompletableFuture<ActorControl>();
     final var actor =
         Actor.newActor()
