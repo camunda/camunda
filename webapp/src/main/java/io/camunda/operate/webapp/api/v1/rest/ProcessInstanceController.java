@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.api.v1.rest;
 import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.URI;
 
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.Error;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -24,6 +25,16 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import javax.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -129,4 +140,33 @@ public class ProcessInstanceController extends ErrorController implements Search
     return processInstanceDao.byKey(key);
   }
 
+  @Operation(
+      summary = "Delete process instance and all dependant data by key",
+      tags = {"Process instance","delete","dependant data"},
+      responses = {
+          @ApiResponse(
+              description = "Success",
+              responseCode = "200"
+          ),
+          @ApiResponse(
+              description = ServerException.TYPE,
+              responseCode = "500",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ClientException.TYPE,
+              responseCode = "400",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ResourceNotFoundException.TYPE,
+              responseCode = "404",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          )
+      })
+  @ResponseStatus(HttpStatus.OK)
+  @DeleteMapping(value = BY_KEY, produces = {MediaType.APPLICATION_JSON_VALUE})
+  public ChangeStatus delete(@Parameter(description = "Key of process instance",required = true) @Valid @PathVariable final Long key) {
+    return processInstanceDao.delete(key);
+  }
 }

@@ -13,6 +13,7 @@ import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -165,6 +167,36 @@ public class ProcessDefinitionController extends ErrorController
   @GetMapping(value = BY_KEY + AS_XML, produces = {MediaType.TEXT_XML_VALUE})
   public String xmlByKey(@Parameter(description = "Key of process definition",required = true) @Valid @PathVariable final Long key) {
     return processDefinitionDao.xmlByKey(key);
+  }
+
+  @Operation(
+      summary = "Delete process definition by key",
+      tags = {"Process","delete"},
+      responses = {
+          @ApiResponse(
+              description = "Success",
+              responseCode = "200"
+          ),
+          @ApiResponse(
+              description = ServerException.TYPE,
+              responseCode = "500",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ClientException.TYPE,
+              responseCode = "400",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ResourceNotFoundException.TYPE,
+              responseCode = "404",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          )
+      })
+  @ResponseStatus(HttpStatus.OK)
+  @DeleteMapping(value = BY_KEY, produces = {MediaType.APPLICATION_JSON_VALUE})
+  public ChangeStatus delete(@Parameter(description = "Key of process definition",required = true) @Valid @PathVariable final Long key) {
+    return processDefinitionDao.delete(key);
   }
 
 }

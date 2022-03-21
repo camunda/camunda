@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
@@ -14,4 +15,7 @@ public interface ProcessInstanceDao extends
     PageableDao<ProcessInstance> {
 
   ProcessInstance byKey(Long key) throws APIException;
+
+  ChangeStatus delete(Long key) throws APIException;
+
 }

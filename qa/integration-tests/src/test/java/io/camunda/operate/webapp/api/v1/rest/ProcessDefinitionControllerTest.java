@@ -12,6 +12,7 @@ import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
@@ -168,6 +170,30 @@ public class ProcessDefinitionControllerTest {
     // then
     assertGetWithFailed(URI + "/235" + AS_XML)
         .andExpect(status().isInternalServerError())
+        .andExpect(content().string(expectedJSONContent));
+  }
+
+  @Test
+  public void shouldDeleteProcessDefinition() throws Exception {
+    final String expectedJSONContent = "{\"message\":\"Is deleted\",\"deleted\":1}";
+    // given
+    when(processDefinitionDao.delete(123L)).thenReturn(
+        new ChangeStatus().setMessage("Is deleted").setDeleted(1));
+
+    mockMvc.perform(delete(URI + "/123"))
+        .andExpect(status().isOk())
+        .andExpect(content().string(expectedJSONContent));
+  }
+
+  @Test
+  public void shouldReturnErrorMessageForDeleteByKeyFailure() throws Exception {
+    final String expectedJSONContent = "{\"status\":404,\"message\":\"Not found\",\"instance\":\"instanceValue\",\"type\":\"Requested resource not found\"}";
+    // given
+    when(processDefinitionDao.delete(123L)).thenThrow(
+        new ResourceNotFoundException("Not found").setInstance("instanceValue"));
+    // then
+    mockMvc.perform(delete(URI + "/123"))
+        .andExpect(status().is4xxClientError())
         .andExpect(content().string(expectedJSONContent));
   }
 

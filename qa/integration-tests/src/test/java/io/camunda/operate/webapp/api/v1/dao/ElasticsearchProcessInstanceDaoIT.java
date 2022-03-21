@@ -9,6 +9,10 @@ import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PRO
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.ThreadUtil;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -32,6 +36,8 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
   private ProcessInstance processInstance;
   private Long key;
   private List<Long> processInstanceKeys;
+
+  private ChangeStatus changeStatus;
 
   @Test
   public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
@@ -69,6 +75,38 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
       assertThat(processInstance.getKey()).isEqualTo(key);
       assertThat(processInstance.getBpmnProcessId()).isEqualTo("complexProcess");
     });
+  }
+
+  @Test
+  public void shouldDeleteByKey() throws Exception {
+    given(() -> {
+      deployProcesses("single-task.bpmn", "complexProcess_v_3.bpmn", "demoProcess_v_2.bpmn");
+      key  = tester.startProcessInstance("process", null)
+              .and().completeTask("task", null)
+              .waitUntil()
+              .processInstanceIsFinished()
+              .getProcessInstanceKey();
+      startProcesses("complexProcess", "demoProcess");
+      processInstanceResults = dao.search(new Query<>());
+    });
+    when(() -> changeStatus = dao.delete(key));
+    then(() -> {
+      assertThat(changeStatus.getDeleted()).isEqualTo(1);
+      assertThat(changeStatus.getMessage()).contains(""+key);
+      elasticsearchTestRule.refreshIndexesInElasticsearch();
+      processInstanceResults = dao.search(new Query<>());
+      assertThat(processInstanceResults.getItems().stream()
+          .noneMatch(pi -> pi.getKey().equals(key))).isTrue();
+    });
+  }
+
+  @Test(expected = ResourceNotFoundException.class)
+  public void shouldThrowForDeleteWhenKeyNotExists() throws Exception {
+    given(() -> {
+      deployProcesses("single-task.bpmn", "complexProcess_v_3.bpmn", "demoProcess_v_2.bpmn");
+      startProcesses("process", "complexProcess", "demoProcess");
+    });
+    when(() -> dao.delete(123L));
   }
 
   @Test(expected = ResourceNotFoundException.class)

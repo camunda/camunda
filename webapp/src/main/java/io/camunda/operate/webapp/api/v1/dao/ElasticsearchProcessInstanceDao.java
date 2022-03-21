@@ -12,10 +12,15 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
+import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.es.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.io.IOException;
@@ -32,9 +37,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("ElasticsearchProcessInstanceDaoV1")
-public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessInstance> implements ProcessInstanceDao {
+public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessInstance>
+    implements ProcessInstanceDao {
   @Autowired
   private ListViewTemplate processInstanceIndex;
+
+  @Autowired
+  private ProcessInstanceWriter processInstanceWriter;
 
   @Override
   public Results<ProcessInstance> search(final Query<ProcessInstance> query)
@@ -91,7 +100,24 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
     return processInstances.get(0);
   }
 
-   protected void buildFiltering(final Query<ProcessInstance> query, final SearchSourceBuilder searchSourceBuilder) {
+  @Override
+  public ChangeStatus delete(final Long key) throws APIException {
+    // Check for not exists
+    byKey(key);
+    try {
+      processInstanceWriter.deleteInstanceById(key);
+      return new ChangeStatus().setDeleted(1)
+          .setMessage(
+              String.format( "Process instance and dependant data deleted for key '%s'", key));
+    } catch(IllegalArgumentException iae){
+      throw new ClientException(iae.getMessage(), iae);
+    } catch (Exception e) {
+      throw new ServerException(
+          String.format("Error in deleting process instance and dependant data for key '%s'", key),e);
+    }
+  }
+
+  protected void buildFiltering(final Query<ProcessInstance> query, final SearchSourceBuilder searchSourceBuilder) {
     final ProcessInstance filter = query.getFilter();
     List<QueryBuilder> queryBuilders = new ArrayList<>();
     queryBuilders.add(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));

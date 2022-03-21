@@ -6,6 +6,7 @@
 package io.camunda.operate.webapp.api.v1.dao;
 
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
 public interface ProcessDefinitionDao extends
@@ -16,4 +17,6 @@ public interface ProcessDefinitionDao extends
   ProcessDefinition byKey(Long key) throws APIException;
 
   String xmlByKey(Long key) throws APIException;
+
+  ChangeStatus delete(Long key) throws APIException;
 }

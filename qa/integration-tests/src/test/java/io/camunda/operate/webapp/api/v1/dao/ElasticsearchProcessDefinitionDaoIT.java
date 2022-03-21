@@ -11,7 +11,10 @@ import static io.camunda.operate.webapp.api.v1.entities.ProcessDefinition.VERSIO
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.ThreadUtil;
+import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
@@ -43,6 +46,7 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
   private Long key;
   private String processDefinitionAsXML;
   private List<Long> processDefinitionKeys;
+  private ChangeStatus changeStatus;
 
   @Test
   public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
@@ -206,6 +210,33 @@ public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeIntegration
       assertThat(processDefinitions).extracting(VERSION)
           .containsExactly(1,1);
     });
+  }
+
+  @Test
+  public void shouldDeleteByKey() throws Exception {
+    given(() -> deployProcesses(
+        "demoProcess_v_1.bpmn", "demoProcess_v_2.bpmn", "complexProcess_v_3.bpmn",
+        "error-end-event.bpmn","intermediate-throw-event.bpmn","message-end-event.bpmn"));
+    when(() -> {
+      processDefinitionResults = dao.search(new Query<>());
+      key = processDefinitionResults.getItems().get(0).getKey();
+      changeStatus = dao.delete(key);
+    });
+    then(() -> {
+      assertThat(changeStatus.getDeleted()).isEqualTo(1);
+      assertThat(changeStatus.getMessage()).contains(""+key);
+      elasticsearchTestRule.refreshIndexesInElasticsearch();
+      processDefinitionResults = dao.search(new Query<>());
+      assertThat(processDefinitionResults.getItems().stream()
+          .noneMatch(pd -> pd.getKey().equals(key))).isTrue();
+    });
+  }
+
+  @Test(expected = ResourceNotFoundException.class)
+  public void shouldThrowForDeleteWhenKeyNotExists() throws Exception {
+    given(() -> deployProcesses(
+        "demoProcess_v_1.bpmn", "demoProcess_v_2.bpmn", "complexProcess_v_3.bpmn"));
+    when(() -> dao.delete(123L));
   }
 
   protected void assertThatIsXML(String xml) {
