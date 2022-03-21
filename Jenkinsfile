@@ -93,7 +93,7 @@ pipeline {
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                    // since zbctl is included in camunda-cloud-zeebe.tar.gz, which is produced by
+                    // since zbctl is included in camunda-zeebe.tar.gz, which is produced by
                     // maven, we have to build the go artifacts first
                     container('golang') {
                         sh '.ci/scripts/distribution/build-go.sh'
@@ -102,13 +102,13 @@ pipeline {
 
                     // to simplify building the Docker image, we copy the distribution to a fixed
                     // filename that doesn't include the version
-                    runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
+                    runMavenContainerCommand('cp dist/target/camunda-zeebe-*.tar.gz camunda-zeebe.tar.gz')
 
                     container('python') {
-                        gcloudSaveTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+                        camundaGCloudSaveTmpFile('zeebe-distro', ['camunda-zeebe.tar.gz'])
 
                         sh "tar -cf zeebe-build.tar ./m2-repository/io/camunda/*/${VERSION}/*"
-                        gcloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
+                        camundaGCloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
                     }
                 }
             }
@@ -256,7 +256,7 @@ pipeline {
                                     prepareMavenContainer()
 
                                     container('python') {
-                                        gcloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
+                                        camundaGCloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
                                         sh "tar -xf zeebe-build.tar"
                                     }
                                     runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
@@ -274,7 +274,7 @@ pipeline {
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     container('python') {
-                                        gcloudRestoreTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+                                        camundaGCloudRestoreTmpFile('zeebe-distro', ['camunda-zeebe.tar.gz'])
                                     }
                                     container('docker') {
                                         sh '.ci/scripts/docker/build.sh'

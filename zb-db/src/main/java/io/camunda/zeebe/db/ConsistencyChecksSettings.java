@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.db;
 
-public record ConsistencyChecksSettings(boolean enablePreconditions) {
+public record ConsistencyChecksSettings(
+    boolean enablePreconditions, boolean enableForeignKeyChecks) {
   private static final boolean DEFAULT_ENABLE_PRECONDITIONS = false;
+  private static final boolean DEFAULT_ENABLE_FOREIGN_KEY_CHECKS = false;
 
   /** Intended for tests, uses the default settings for all consistency checks. */
   public ConsistencyChecksSettings() {
-    this(DEFAULT_ENABLE_PRECONDITIONS);
+    this(DEFAULT_ENABLE_PRECONDITIONS, DEFAULT_ENABLE_FOREIGN_KEY_CHECKS);
   }
 }

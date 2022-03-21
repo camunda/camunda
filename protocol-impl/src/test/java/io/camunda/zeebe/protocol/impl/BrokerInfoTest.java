@@ -18,12 +18,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class BrokerInfoTest {
+final class BrokerInfoTest {
 
   @Test
-  public void shouldEncodeDecodeBrokerInfo() {
+  void shouldEncodeDecodeBrokerInfo() {
     // given
     final int nodeId = 123;
     final int partitionsCount = 345;
@@ -67,7 +67,7 @@ public final class BrokerInfoTest {
   }
 
   @Test
-  public void shouldEncodeDecodeBrokerInfoWithEmptyMaps() {
+  void shouldEncodeDecodeBrokerInfoWithEmptyMaps() {
     // given
     final int nodeId = 123;
     final int partitionsCount = 345;
@@ -95,7 +95,7 @@ public final class BrokerInfoTest {
   }
 
   @Test
-  public void shouldEncodeDecodeNullValues() {
+  void shouldEncodeDecodeNullValues() {
     // given
     final BrokerInfo brokerInfo = new BrokerInfo();
 

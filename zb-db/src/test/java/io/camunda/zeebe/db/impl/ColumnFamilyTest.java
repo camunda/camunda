@@ -233,10 +233,7 @@ public final class ColumnFamilyTest {
     upsertKeyValuePair(Short.MAX_VALUE, 1);
 
     // when
-    columnFamily.forEach(
-        (key, value) -> {
-          columnFamily.deleteExisting(key);
-        });
+    columnFamily.forEach((key, value) -> columnFamily.deleteExisting(key));
 
     final List<Long> keys = new ArrayList<>();
     final List<Long> values = new ArrayList<>();
@@ -358,6 +355,36 @@ public final class ColumnFamilyTest {
         .getRootCause()
         .hasMessageContaining("does not exist")
         .isInstanceOf(ZeebeDbInconsistentException.class);
+  }
+
+  @Test
+  public void shouldThrowOnMissingForeignKeyInKeyPosition() {
+    // given
+    key.wrapLong(1);
+    final var foreignKey = new DbForeignKey<>(key, DefaultColumnFamily.DEFAULT);
+    final var value = new DbLong();
+    final var columnFamilyWithForeignKey =
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), foreignKey, value);
+
+    // then
+    assertThatThrownBy(() -> columnFamilyWithForeignKey.insert(foreignKey, value))
+        .hasRootCauseInstanceOf(ZeebeDbInconsistentException.class)
+        .hasStackTraceContaining("Foreign key");
+  }
+
+  @Test
+  public void shouldThrowOnMissingForeignKeyInValuePosition() {
+    // given
+    key.wrapLong(1);
+    final var foreignKey = new DbForeignKey<>(new DbLong(), DefaultColumnFamily.DEFAULT);
+    final var columnFamilyWithForeignKey =
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), key, foreignKey);
+    // then
+    assertThatThrownBy(() -> columnFamilyWithForeignKey.insert(key, foreignKey))
+        .hasRootCauseInstanceOf(ZeebeDbInconsistentException.class)
+        .hasStackTraceContaining("Foreign key");
   }
 
   private void upsertKeyValuePair(final int key, final int value) {
