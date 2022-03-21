@@ -25,5 +25,6 @@ pipelineJob('generate-zeebe-test-data') {
       stringParam('JOBWORKER_EXECUTION_THREAD_COUNT', '1', 'Amount of jobworker execution threads to complete tasks of deployed instances.')
       stringParam('NUM_PROCESS_INSTANCES', '1000000', 'Number of process instances to generate, instances will be spread evenly among definitions.')
       stringParam('NUM_PROCESS_DEFINITIONS', '100', 'Number of process definitions to deploy.')
+      choiceParam('SNAPSHOT_FOLDER_NAME', ['zeebe-data-import-performance', 'zeebe-data-test'])
   }
 }

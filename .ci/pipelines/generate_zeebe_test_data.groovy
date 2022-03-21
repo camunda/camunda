@@ -203,7 +203,7 @@ pipeline {
         container('maven') {
           // Create repository
           sh("""
-                echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "optimize-data", "base_path": "zeebe-ci-test", "client": "optimize_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
+                echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "optimize-data", "base_path": "$params.SNAPSHOT_FOLDER_NAME", "client": "optimize_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
             """)
           // Delete previous Snapshot
           sh("""

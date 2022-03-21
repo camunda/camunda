@@ -30,6 +30,7 @@ pipelineJob('import-zeebe-data-performance') {
     stringParam('IMPORT_TIMEOUT_IN_MINUTES', '240', 'The max. time in minutes the import performance tests are allowed to run')
     stringParam('ES_VERSION', '7.16.2', 'Elasticsearch version to use.')
     stringParam('ES_REFRESH_INTERVAL', '2s', 'Elasticsearch index refresh interval')
+    choiceParam('SNAPSHOT_FOLDER_NAME', ['zeebe-data-import-performance', 'zeebe-data-test'])
   }
 
   properties {
