@@ -1,6 +1,7 @@
 [
   {
     "extension": "revapi.java",
+    "id": "java",
     "configuration": {
       "reportUsesFor": "all-differences",
       "missing-classes": {
@@ -12,6 +13,7 @@
   },
   {
     "extension": "revapi.versions",
+    "id": "version",
     "configuration": {
       "enabled": true,
       "passThroughDifferences": [
@@ -39,5 +41,17 @@
         }
       }
     }
+  },
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "ignore": true
+    }
+  },
+  {
+    "extension": "revapi.filter",
+    "id": "filter",
+    "configuration": {}
   }
 ]
