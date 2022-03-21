@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
@@ -25,41 +26,49 @@ import org.agrona.DirectBuffer;
 
 public final class DbDecisionState implements MutableDecisionState {
 
-  private final DbLong dbDecisionKey = new DbLong();
-  private final PersistedDecision dbPersistedDecision = new PersistedDecision();
-  private final DbString dbDecisionId = new DbString();
+  private final DbLong dbDecisionKey;
+  private final DbForeignKey<DbLong> fkDecision;
+  private final PersistedDecision dbPersistedDecision;
+  private final DbString dbDecisionId;
 
-  private final DbLong dbDecisionRequirementsKey = new DbLong();
-  private final PersistedDecisionRequirements dbPersistedDecisionRequirements =
-      new PersistedDecisionRequirements();
-  private final DbString dbDecisionRequirementsId = new DbString();
+  private final DbLong dbDecisionRequirementsKey;
+  private final DbForeignKey<DbLong> fkDecisionRequirements;
+  private final PersistedDecisionRequirements dbPersistedDecisionRequirements;
+  private final DbString dbDecisionRequirementsId;
 
-  private final DbCompositeKey<DbLong, DbLong> dbDecisionRequirementsKeyAndDecisionKey =
-      new DbCompositeKey<>(dbDecisionRequirementsKey, dbDecisionKey);
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>
+      dbDecisionRequirementsKeyAndDecisionKey;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+      decisionKeyByDecisionRequirementsKey;
 
   private final ColumnFamily<DbLong, PersistedDecision> decisionsByKey;
-  private final ColumnFamily<DbString, DbLong> latestDecisionKeysByDecisionId;
+  private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
 
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
-  private final ColumnFamily<DbString, DbLong> latestDecisionRequirementsKeysById;
-
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
-      decisionKeyByDecisionRequirementsKey;
+  private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
 
   public DbDecisionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    dbDecisionKey = new DbLong();
+    fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
 
+    dbPersistedDecision = new PersistedDecision();
     decisionsByKey =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISIONS, transactionContext, dbDecisionKey, dbPersistedDecision);
 
+    dbDecisionId = new DbString();
     latestDecisionKeysByDecisionId =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_LATEST_DECISION_BY_ID,
             transactionContext,
             dbDecisionId,
-            dbDecisionKey);
+            fkDecision);
 
+    dbDecisionRequirementsKey = new DbLong();
+    fkDecisionRequirements =
+        new DbForeignKey<>(dbDecisionRequirementsKey, ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
+    dbPersistedDecisionRequirements = new PersistedDecisionRequirements();
     decisionRequirementsByKey =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISION_REQUIREMENTS,
@@ -67,13 +76,16 @@ public final class DbDecisionState implements MutableDecisionState {
             dbDecisionRequirementsKey,
             dbPersistedDecisionRequirements);
 
+    dbDecisionRequirementsId = new DbString();
     latestDecisionRequirementsKeysById =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_LATEST_DECISION_REQUIREMENTS_BY_ID,
             transactionContext,
             dbDecisionRequirementsId,
-            dbDecisionRequirementsKey);
+            fkDecisionRequirements);
 
+    dbDecisionRequirementsKeyAndDecisionKey =
+        new DbCompositeKey<>(fkDecisionRequirements, fkDecision);
     decisionKeyByDecisionRequirementsKey =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY,
@@ -87,7 +99,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionId.wrapBuffer(decisionId);
 
     return Optional.ofNullable(latestDecisionKeysByDecisionId.get(dbDecisionId))
-        .flatMap(decisionKey -> findDecisionByKey(decisionKey.getValue()));
+        .flatMap(decisionKey -> findDecisionByKey(decisionKey.inner().getValue()));
   }
 
   @Override
@@ -96,7 +108,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
 
     return Optional.ofNullable(latestDecisionRequirementsKeysById.get(dbDecisionRequirementsId))
-        .map(DbLong::getValue)
+        .map((requirementsKey) -> requirementsKey.inner().getValue())
         .flatMap(this::findDecisionRequirementsByKey);
   }
 
@@ -119,7 +131,7 @@ public final class DbDecisionState implements MutableDecisionState {
         dbDecisionRequirementsKey,
         ((key, nil) -> {
           final var decisionKey = key.second();
-          findDecisionByKey(decisionKey.getValue()).ifPresent(decisions::add);
+          findDecisionByKey(decisionKey.inner().getValue()).ifPresent(decisions::add);
         }));
 
     return decisions;
@@ -167,13 +179,13 @@ public final class DbDecisionState implements MutableDecisionState {
   private void updateDecisionAsLatestVersion(final DecisionRecord record) {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionKey.wrapLong(record.getDecisionKey());
-    latestDecisionKeysByDecisionId.update(dbDecisionId, dbDecisionKey);
+    latestDecisionKeysByDecisionId.update(dbDecisionId, fkDecision);
   }
 
   private void insertDecisionAsLatestVersion(final DecisionRecord record) {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionKey.wrapLong(record.getDecisionKey());
-    latestDecisionKeysByDecisionId.insert(dbDecisionId, dbDecisionKey);
+    latestDecisionKeysByDecisionId.insert(dbDecisionId, fkDecision);
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
@@ -191,12 +203,12 @@ public final class DbDecisionState implements MutableDecisionState {
   private void updateDecisionRequirementsAsLatestVersion(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    latestDecisionRequirementsKeysById.update(dbDecisionRequirementsId, dbDecisionRequirementsKey);
+    latestDecisionRequirementsKeysById.update(dbDecisionRequirementsId, fkDecisionRequirements);
   }
 
   private void insertDecisionRequirementsAsLatestVersion(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    latestDecisionRequirementsKeysById.insert(dbDecisionRequirementsId, dbDecisionRequirementsKey);
+    latestDecisionRequirementsKeysById.insert(dbDecisionRequirementsId, fkDecisionRequirements);
   }
 }
