@@ -80,7 +80,10 @@ public final class InFlightLongPollingActivateJobsRequestsState {
   }
 
   private boolean isObsolete(final InflightActivateJobsRequest request) {
-    return request.isTimedOut() || request.isCanceled() || request.isCompleted();
+    return request.isTimedOut()
+        || request.isCanceled()
+        || request.isCompleted()
+        || request.isAborted();
   }
 
   public void removeRequest(final InflightActivateJobsRequest request) {
