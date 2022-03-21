@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
@@ -59,7 +59,7 @@ public final class DeployProcessTest extends GatewayTest {
     assertThat(process.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
     assertThat(process.getVersion()).isEqualTo(stub.getProcessVersion());
 
-    final BrokerDeployProcessRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final BrokerDeployRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.DEPLOYMENT);
   }

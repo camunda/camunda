@@ -15,7 +15,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
@@ -28,10 +28,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -42,12 +44,23 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class RequestMapper {
 
-  public static BrokerDeployProcessRequest toDeployProcessRequest(
+  public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
-    final BrokerDeployProcessRequest brokerRequest = new BrokerDeployProcessRequest();
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
+    }
+
+    return brokerRequest;
+  }
+
+  public static BrokerDeployResourceRequest toDeployResourceRequest(
+      final DeployResourceRequest grpcRequest) {
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
+
+    for (final Resource resource : grpcRequest.getResourcesList()) {
+      brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
     }
 
     return brokerRequest;
