@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.slf4j.Logger;
 
-public final class LongPollingActivateJobsRequest {
+public final class InflightActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final long requestId;
@@ -33,7 +33,7 @@ public final class LongPollingActivateJobsRequest {
   private boolean isTimedOut;
   private boolean isCompleted;
 
-  public LongPollingActivateJobsRequest(
+  public InflightActivateJobsRequest(
       final long requestId,
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
@@ -47,7 +47,7 @@ public final class LongPollingActivateJobsRequest {
         request.getRequestTimeout());
   }
 
-  private LongPollingActivateJobsRequest(
+  private InflightActivateJobsRequest(
       final long requestId,
       final BrokerActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
@@ -179,7 +179,7 @@ public final class LongPollingActivateJobsRequest {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    final var other = (LongPollingActivateJobsRequest) obj;
+    final var other = (InflightActivateJobsRequest) obj;
     return Objects.equals(jobType, other.jobType)
         && maxJobsToActivate == other.maxJobsToActivate
         && requestId == other.requestId
