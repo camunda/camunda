@@ -93,6 +93,10 @@ public final class RoundRobinActivateJobsHandler
       final ResponseObserverDelegate delegate) {
     actor.run(
         () -> {
+          if (!request.isOpen()) {
+            return;
+          }
+
           if (requestState.shouldActivateJobs()) {
             final var brokerRequest = request.getRequest();
             final var partitionId = requestState.getNextPartition();
