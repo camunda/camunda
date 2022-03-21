@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 import java.util.Objects;
@@ -83,14 +84,18 @@ public final class InflightActivateJobsRequest {
     return isCompleted;
   }
 
-  public void onResponse(final ActivateJobsResponse grpcResponse) {
+  public Either<Exception, Boolean> tryToSendActivatedJobs(
+      final ActivateJobsResponse grpcResponse) {
     if (isOpen()) {
       try {
         responseObserver.onNext(grpcResponse);
+        return Either.right(true);
       } catch (final Exception e) {
         LOG.warn("Failed to send response to client.", e);
+        return Either.left(e);
       }
     }
+    return Either.right(false);
   }
 
   public void onError(final Throwable error) {
