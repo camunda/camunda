@@ -95,12 +95,12 @@ public final class LongPollingActivateJobsHandler
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     final var requestId = getNextActivateJobsRequestId();
     final var longPollingRequest =
-        new LongPollingActivateJobsRequest(requestId, request, responseObserver);
+        new InflightActivateJobsRequest(requestId, request, responseObserver);
     activateJobs(longPollingRequest);
   }
 
   private void completeOrResubmitRequest(
-      final LongPollingActivateJobsRequest request, final boolean activateImmediately) {
+      final InflightActivateJobsRequest request, final boolean activateImmediately) {
     if (request.isLongPollingDisabled()) {
       // request is not supposed to use the
       // long polling capabilities -> just
@@ -128,7 +128,7 @@ public final class LongPollingActivateJobsHandler
     }
   }
 
-  public void activateJobs(final LongPollingActivateJobsRequest request) {
+  public void activateJobs(final InflightActivateJobsRequest request) {
     actor.run(
         () -> {
           final InFlightLongPollingActivateJobsRequestsState state =
@@ -153,7 +153,7 @@ public final class LongPollingActivateJobsHandler
 
   private void activateJobsUnchecked(
       final InFlightLongPollingActivateJobsRequestsState state,
-      final LongPollingActivateJobsRequest request) {
+      final InflightActivateJobsRequest request) {
 
     final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
     if (topology != null) {
@@ -193,7 +193,7 @@ public final class LongPollingActivateJobsHandler
 
   private void onCompleted(
       final InFlightLongPollingActivateJobsRequestsState state,
-      final LongPollingActivateJobsRequest request,
+      final InflightActivateJobsRequest request,
       final int remainingAmount,
       final boolean containedResourceExhaustedResponse) {
 
@@ -232,14 +232,13 @@ public final class LongPollingActivateJobsHandler
   }
 
   private void onResponse(
-      final LongPollingActivateJobsRequest request,
-      final ActivateJobsResponse activateJobsResponse) {
+      final InflightActivateJobsRequest request, final ActivateJobsResponse activateJobsResponse) {
     actor.submit(() -> request.onResponse(activateJobsResponse));
   }
 
   private void onError(
       final InFlightLongPollingActivateJobsRequestsState state,
-      final LongPollingActivateJobsRequest request,
+      final InflightActivateJobsRequest request,
       final Throwable error) {
     actor.submit(
         () -> {
@@ -253,7 +252,7 @@ public final class LongPollingActivateJobsHandler
 
     state.resetFailedAttempts();
 
-    final Queue<LongPollingActivateJobsRequest> pendingRequests = state.getPendingRequests();
+    final Queue<InflightActivateJobsRequest> pendingRequests = state.getPendingRequests();
 
     if (!pendingRequests.isEmpty()) {
       pendingRequests.forEach(
@@ -270,7 +269,7 @@ public final class LongPollingActivateJobsHandler
 
   private void enqueueRequest(
       final InFlightLongPollingActivateJobsRequestsState state,
-      final LongPollingActivateJobsRequest request) {
+      final InflightActivateJobsRequest request) {
     LOG.trace(
         "Worker '{}' asked for '{}' jobs of type '{}', but none are available. This request will"
             + " be kept open until a new job of this type is created or until timeout of '{}'.",
@@ -283,7 +282,7 @@ public final class LongPollingActivateJobsHandler
 
   private void addTimeOut(
       final InFlightLongPollingActivateJobsRequestsState state,
-      final LongPollingActivateJobsRequest request) {
+      final InflightActivateJobsRequest request) {
     final Duration requestTimeout = request.getLongPollingTimeout(longPollingTimeout);
     final ScheduledTimer timeout =
         actor.runDelayed(
@@ -300,7 +299,7 @@ public final class LongPollingActivateJobsHandler
     jobTypeState.forEach(
         (type, state) -> {
           if (state.getLastUpdatedTime() < (now - probeTimeoutMillis)) {
-            final LongPollingActivateJobsRequest probeRequest = state.getNextPendingRequest();
+            final InflightActivateJobsRequest probeRequest = state.getNextPendingRequest();
             if (probeRequest != null) {
               activateJobsUnchecked(state, probeRequest);
             } else {

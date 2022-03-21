@@ -27,8 +27,8 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.job.InflightActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -93,7 +93,7 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldBlockRequestsWhenResponseHasNoJobs() {
     // given
-    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
 
     // when
     handler.activateJobs(request);
@@ -106,7 +106,7 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldUnblockRequestWhenJobsAvailable() {
     // given
-    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
     final StreamObserver<ActivateJobsResponse> responseSpy = request.getResponseObserver();
 
     handler.activateJobs(request);
@@ -139,7 +139,7 @@ public final class LongPollingActivateJobsTest {
     activateJobsAndWaitUntilBlocked(amount);
 
     // when
-    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
     waitUntil(request::hasScheduledTimer);
 
@@ -176,7 +176,7 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldCompleteAfterRequestTimeout() {
     // given
-    final LongPollingActivateJobsRequest longPollingRequest = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest longPollingRequest = getLongPollingActivateJobsRequest();
 
     // when
     handler.activateJobs(longPollingRequest);
@@ -191,13 +191,13 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldCompleteFollowingRequestsAfterTimeout() {
     // given
-    final List<LongPollingActivateJobsRequest> requests =
+    final List<InflightActivateJobsRequest> requests =
         activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
     requests.forEach(request -> waitUntil(request::isTimedOut));
 
     // when
-    final LongPollingActivateJobsRequest successRequest = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest successRequest = getLongPollingActivateJobsRequest();
     stub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
     handler.activateJobs(successRequest);
@@ -216,8 +216,7 @@ public final class LongPollingActivateJobsTest {
     activateJobsAndWaitUntilBlocked(threshold);
 
     // when
-    final LongPollingActivateJobsRequest otherRequest =
-        getLongPollingActivateJobsRequest(otherType);
+    final InflightActivateJobsRequest otherRequest = getLongPollingActivateJobsRequest(otherType);
     handler.activateJobs(otherRequest);
 
     // then
@@ -236,7 +235,7 @@ public final class LongPollingActivateJobsTest {
             .build();
     submitLongPollingActor(handler);
 
-    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
     waitUntil(request::hasScheduledTimer);
 
@@ -261,8 +260,7 @@ public final class LongPollingActivateJobsTest {
     submitLongPollingActor(handler);
 
     final int threshold = FAILED_RESPONSE_THRESHOLD;
-    final List<LongPollingActivateJobsRequest> requests =
-        activateJobsAndWaitUntilBlocked(threshold);
+    final List<InflightActivateJobsRequest> requests = activateJobsAndWaitUntilBlocked(threshold);
 
     actorClock.addTime(Duration.ofMillis(longPollingTimeout));
     requests.forEach(
@@ -289,8 +287,8 @@ public final class LongPollingActivateJobsTest {
             .build();
     final ServerStreamObserver<ActivateJobsResponse> responseSpy = spy(ServerStreamObserver.class);
 
-    final LongPollingActivateJobsRequest longPollingRequest =
-        new LongPollingActivateJobsRequest(getNextRequestId(), request, responseSpy);
+    final InflightActivateJobsRequest longPollingRequest =
+        new InflightActivateJobsRequest(getNextRequestId(), request, responseSpy);
 
     handler.activateJobs(longPollingRequest);
     waitUntil(longPollingRequest::hasScheduledTimer);
@@ -305,8 +303,8 @@ public final class LongPollingActivateJobsTest {
   public void shouldUseLargeRequestTimeout() {
     // given
     final long requestTimeout = 50000;
-    final LongPollingActivateJobsRequest shortRequest =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest shortRequest =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -316,8 +314,8 @@ public final class LongPollingActivateJobsTest {
             spy(ServerStreamObserver.class));
 
     final long longTimeout = 100000;
-    final LongPollingActivateJobsRequest longRequest =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest longRequest =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -346,8 +344,8 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldNotBlockWhenNegativeTimeout() {
     // given
-    final LongPollingActivateJobsRequest request =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest request =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -371,8 +369,8 @@ public final class LongPollingActivateJobsTest {
     // given
 
     // a request with timeout
-    final LongPollingActivateJobsRequest request =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest request =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -436,8 +434,8 @@ public final class LongPollingActivateJobsTest {
   public void
       shouldReturnResourceExhaustedErrorIfNoJobsAvailableAndSomeBrokersReturnResourceExhaustionResponse() {
     // given
-    final LongPollingActivateJobsRequest request =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest request =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -482,8 +480,8 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldReturnJobsIfSomeBrokersHaveJobsWhileOthersReturnResourceExhaustionResponse() {
     // given
-    final LongPollingActivateJobsRequest request =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest request =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -579,7 +577,7 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldCancelTimerOnResourceExhausted() {
     // given
-    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
 
     brokerClient.registerHandler(
         BrokerActivateJobsRequest.class,
@@ -619,7 +617,7 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldCancelTimerOnBrokerRejectionException() {
     // given
-    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
 
     brokerClient.registerHandler(
         BrokerActivateJobsRequest.class,
@@ -660,8 +658,8 @@ public final class LongPollingActivateJobsTest {
   @Test
   public void shouldCompleteRequestImmediatelyDespiteNotification() throws Exception {
     // given
-    final LongPollingActivateJobsRequest request =
-        new LongPollingActivateJobsRequest(
+    final InflightActivateJobsRequest request =
+        new InflightActivateJobsRequest(
             getNextRequestId(),
             ActivateJobsRequest.newBuilder()
                 .setType(TYPE)
@@ -709,12 +707,12 @@ public final class LongPollingActivateJobsTest {
     verify(stub, atLeast(partitionsCount)).handle(any());
   }
 
-  private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
+  private List<InflightActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
     return IntStream.range(0, amount)
         .boxed()
         .map(
             i -> {
-              final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+              final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
               handler.activateJobs(request);
               waitUntil(request::hasScheduledTimer);
               return request;
@@ -722,11 +720,11 @@ public final class LongPollingActivateJobsTest {
         .collect(Collectors.toList());
   }
 
-  private LongPollingActivateJobsRequest getLongPollingActivateJobsRequest() {
+  private InflightActivateJobsRequest getLongPollingActivateJobsRequest() {
     return getLongPollingActivateJobsRequest(TYPE);
   }
 
-  private LongPollingActivateJobsRequest getLongPollingActivateJobsRequest(final String jobType) {
+  private InflightActivateJobsRequest getLongPollingActivateJobsRequest(final String jobType) {
     final var requestId = getNextRequestId();
     final var request =
         ActivateJobsRequest.newBuilder()
@@ -735,7 +733,7 @@ public final class LongPollingActivateJobsTest {
             .build();
     final var responseSpy = spy(ServerStreamObserver.class);
 
-    return new LongPollingActivateJobsRequest(requestId, request, responseSpy);
+    return new InflightActivateJobsRequest(requestId, request, responseSpy);
   }
 
   private long getNextRequestId() {
