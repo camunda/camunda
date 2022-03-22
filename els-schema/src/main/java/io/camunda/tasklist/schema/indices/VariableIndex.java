@@ -31,6 +31,11 @@ public class VariableIndex extends AbstractIndexDescriptor implements ProcessIns
     return INDEX_NAME;
   }
 
+  @Override
+  public String getAllIndicesPattern() {
+    return getFullQualifiedName();
+  }
+
   private static Optional<String> getElsFieldByGraphqlField(String fieldName) {
     switch (fieldName) {
       case ("id"):

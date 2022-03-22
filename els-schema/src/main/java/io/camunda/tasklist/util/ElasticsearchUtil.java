@@ -31,7 +31,6 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -69,16 +68,12 @@ public abstract class ElasticsearchUtil {
 
   public static SearchRequest createSearchRequest(
       TemplateDescriptor template, QueryType queryType) {
-    final SearchRequest searchRequest =
-        new SearchRequest(whereToSearch(template, queryType))
-            .indicesOptions(IndicesOptions.lenientExpandOpen());
+    final SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType));
     return searchRequest;
   }
 
   public static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     switch (queryType) {
-      case ONLY_ARCHIVE:
-        return template.getIndexPattern() + ",-" + template.getFullQualifiedName();
       case ONLY_RUNTIME:
         return template.getFullQualifiedName();
       case ALL:
@@ -437,7 +432,6 @@ public abstract class ElasticsearchUtil {
   }
 
   public enum QueryType {
-    ONLY_ARCHIVE,
     ONLY_RUNTIME,
     ALL
   }

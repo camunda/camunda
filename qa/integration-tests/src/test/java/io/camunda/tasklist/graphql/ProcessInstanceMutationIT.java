@@ -118,7 +118,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
                 .allMatch(
                     processInstanceDependant ->
                         countByQuery(
-                                processInstanceDependant.getFullQualifiedName(),
+                                processInstanceDependant.getAllIndicesPattern(),
                                 processInstanceIdQuery)
                             == 0))
         .isTrue();

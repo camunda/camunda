@@ -34,4 +34,9 @@ public class TaskTemplate extends AbstractTemplateDescriptor implements ProcessI
   public String getVersion() {
     return "1.3.0";
   }
+
+  @Override
+  public String getAllIndicesPattern() {
+    return super.getIndexPattern();
+  }
 }

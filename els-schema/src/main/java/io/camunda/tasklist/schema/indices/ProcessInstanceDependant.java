@@ -9,5 +9,5 @@ public interface ProcessInstanceDependant {
 
   String PROCESS_INSTANCE_ID = "processInstanceId";
 
-  String getFullQualifiedName();
+  String getAllIndicesPattern();
 }

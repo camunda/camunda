@@ -22,4 +22,9 @@ public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
   public String getIndexName() {
     return INDEX_NAME;
   }
+
+  @Override
+  public String getAllIndicesPattern() {
+    return getFullQualifiedName();
+  }
 }
