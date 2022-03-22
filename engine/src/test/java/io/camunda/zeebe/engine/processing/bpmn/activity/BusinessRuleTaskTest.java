@@ -23,6 +23,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
+import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -42,8 +45,8 @@ public final class BusinessRuleTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
-  private static final String DMN_RESOURCE_WITH_NAMELESS_INPUTS =
-      "/dmn/drg-force-user-nameless-inputs.dmn";
+  private static final String DMN_RESOURCE_WITH_NAMELESS_OUTPUTS =
+      "/dmn/drg-force-user-nameless-input-outputs.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String RESULT_VARIABLE = "result";
@@ -467,17 +470,18 @@ public final class BusinessRuleTaskTest {
   }
 
   /**
-   * Names are not mandatory for the Inputs and Outputs of a decision table. In the case that they
-   * are missing from the decision model, the decision should still be evaluated and the evaluated
-   * decision result should be written with all information that is present. See
-   * https://github.com/camunda-cloud/zeebe/issues/8909
+   * Names are not mandatory for the Outputs of a decision table. In the case that they are missing
+   * from the decision model, the decision should still be evaluated and the evaluated decision
+   * result should be written with all information that is present. Note that this is not the case
+   * for Inputs, as these always have an expression which is used in case the label is undefined.
+   * See https://github.com/camunda-cloud/zeebe/issues/8909
    */
   @Test
   public void shouldWriteDecisionEvaluationEventIfInputOutputNamesAreNull() {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource(DMN_RESOURCE_WITH_NAMELESS_INPUTS)
+        .withXmlClasspathResource(DMN_RESOURCE_WITH_NAMELESS_OUTPUTS)
         .withXmlResource(
             processWithBusinessRuleTask(
                 t -> t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
@@ -499,21 +503,12 @@ public final class BusinessRuleTaskTest {
 
     assertThat(decisionEvaluationRecord.getValue().getEvaluatedDecisions())
         .isNotEmpty()
-        .allSatisfy(
-            evaluatedDecision -> {
-              assertThat(evaluatedDecision.getEvaluatedInputs())
-                  .isNotEmpty()
-                  .describedAs("Expect that evaluated input's name is empty string")
-                  .allSatisfy(input -> assertThat(input).hasInputName(""));
-
-              assertThat(evaluatedDecision.getMatchedRules())
-                  .isNotEmpty()
-                  .allSatisfy(
-                      matchedRule ->
-                          assertThat(matchedRule.getEvaluatedOutputs())
-                              .isNotEmpty()
-                              .describedAs("Expect that evaluated output's name is empty string")
-                              .allSatisfy(output -> assertThat(output).hasOutputName("")));
-            });
+        .flatMap(EvaluatedDecisionValue::getMatchedRules)
+        .isNotEmpty()
+        .flatMap(MatchedRuleValue::getEvaluatedOutputs)
+        .isNotEmpty()
+        .extracting(EvaluatedOutputValue::getOutputName)
+        .describedAs("Expect that evaluated output's name is empty string")
+        .containsOnly("");
   }
 }
