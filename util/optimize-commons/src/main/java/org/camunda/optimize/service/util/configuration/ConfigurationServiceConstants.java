@@ -127,6 +127,8 @@ public class ConfigurationServiceConstants {
 
   public static final String ANALYTICS_CONFIGURATION = "$.analytics";
 
+  public static final String ONBOARDING_CONFIGURATION = "$.onboarding";
+
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";

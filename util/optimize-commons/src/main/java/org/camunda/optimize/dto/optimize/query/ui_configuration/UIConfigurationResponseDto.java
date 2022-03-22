@@ -36,4 +36,6 @@ public class UIConfigurationResponseDto {
   private boolean settingsManuallyConfirmed;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
+
+  private OnboardingResponseDto onboarding = new OnboardingResponseDto();
 }

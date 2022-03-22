@@ -30,6 +30,7 @@ import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 import {Prompt} from 'prompt';
 import {Tracking} from 'tracking';
+import {Onboarding} from 'onboarding';
 
 import {Provider as Theme} from 'theme';
 import {withErrorHandling, UserProvider, DocsProvider} from 'HOC';
@@ -110,6 +111,7 @@ class App extends React.Component {
                     </Switch>
                   </DocsProvider>
                   <Tracking />
+                  <Onboarding />
                 </UserProvider>
               </ErrorBoundary>
             </div>

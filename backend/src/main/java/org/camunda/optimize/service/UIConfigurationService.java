@@ -11,12 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +78,10 @@ public class UIConfigurationService implements ConfigurationReloadable {
     mixpanel.setOsanoScriptUrl(configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
     mixpanel.setStage(configurationService.getAnalytics().getMixpanel().getProperties().getStage());
     mixpanel.setClusterId(configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
+
+    final OnboardingResponseDto onboarding = uiConfigurationDto.getOnboarding();
+    onboarding.setEnabled(configurationService.getOnboarding().isEnabled());
+    onboarding.setAppCuesScriptUrl(configurationService.getOnboarding().getAppCuesScriptUrl());
 
     return uiConfigurationDto;
   }

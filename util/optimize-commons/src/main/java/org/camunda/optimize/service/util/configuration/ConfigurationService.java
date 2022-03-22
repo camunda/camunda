@@ -50,6 +50,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
@@ -209,6 +210,8 @@ public class ConfigurationService {
   private AnalyticsConfiguration analytics;
 
   private OptimizeApiConfiguration optimizeApiConfiguration;
+
+  private OnboardingConfiguration onboarding;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -1178,6 +1181,13 @@ public class ConfigurationService {
       analytics = configJsonContext.read(ANALYTICS_CONFIGURATION, AnalyticsConfiguration.class);
     }
     return analytics;
+  }
+
+  public OnboardingConfiguration getOnboarding() {
+    if (onboarding == null) {
+      onboarding = configJsonContext.read(ONBOARDING_CONFIGURATION, OnboardingConfiguration.class);
+    }
+    return onboarding;
   }
 
 }

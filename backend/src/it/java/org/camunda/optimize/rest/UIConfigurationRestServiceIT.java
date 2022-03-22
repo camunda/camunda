@@ -271,6 +271,21 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(response.getMixpanel().getClusterId()).isEqualTo(clusterId);
   }
 
+  @Test
+  public void getOnboardingConfiguration() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnabled(true);
+    final String scriptUrl = "test";
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setAppCuesScriptUrl(scriptUrl);
+
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.getOnboarding().isEnabled()).isEqualTo(true);
+    assertThat(response.getOnboarding().getAppCuesScriptUrl()).isEqualTo(scriptUrl);
+  }
+
   private void setWebappsEndpoint(final String webappsEndpoint) {
     embeddedOptimizeExtension
       .getConfigurationService()

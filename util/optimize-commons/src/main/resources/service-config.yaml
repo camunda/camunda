@@ -597,6 +597,10 @@ analytics:
       organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
       clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
 
+onboarding:
+  enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
+  appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
+
 # Configuration of application internal in-memory caches
 caches:
   # This cache is used to hold the list of available tenants.

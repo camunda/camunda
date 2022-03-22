@@ -49,5 +49,6 @@ export const getOptimizeProfile = createAccessorFunction('optimizeProfile');
 export const isLogoutHidden = createAccessorFunction('logoutHidden');
 export const getExportCsvLimit = createAccessorFunction('exportCsvLimit');
 export const isEnterpriseMode = createAccessorFunction('enterpriseMode');
+export const getOnboardingConfig = createAccessorFunction('onboarding');
 
 export {default as newReport} from './newReport.json';
