@@ -7,11 +7,8 @@
 /* istanbul ignore file */
 
 import {useEffect} from 'react';
-import './fonts.scss';
 import {Style} from './styled';
 import {USING_KEYBOARD_CLASS_NAME} from './constants';
-
-const TAB_KEY_CODE = 9;
 
 const GlobalStyle: React.FC = () => {
   useEffect(() => {
@@ -20,7 +17,7 @@ const GlobalStyle: React.FC = () => {
     }
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.keyCode === TAB_KEY_CODE) {
+      if (event.key === 'Tab') {
         document.body.classList.add(USING_KEYBOARD_CLASS_NAME);
       }
     }

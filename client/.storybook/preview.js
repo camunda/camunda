@@ -1,10 +1,7 @@
 import React from 'react';
 import {addDecorator} from '@storybook/react';
-import {ThemeProvider} from 'styled-components';
-import {MemoryRouter} from 'react-router-dom';
-
-import {theme} from 'modules/theme';
-import {GlobalStyle} from 'GlobalStyle';
+import '../src/index.scss';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
 
 Object.defineProperty(window, 'clientConfig', {
@@ -14,9 +11,4 @@ Object.defineProperty(window, 'clientConfig', {
   },
 });
 
-addDecorator((storyFn) => (
-  <ThemeProvider theme={theme}>
-    <GlobalStyle />
-    {storyFn()}
-  </ThemeProvider>
-));
+addDecorator((storyFn) => <ThemeProvider>{storyFn()}</ThemeProvider>);

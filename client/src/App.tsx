@@ -7,7 +7,6 @@
 /* istanbul ignore file */
 
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
-import {ThemeProvider} from 'styled-components';
 import {ApolloProvider} from '@apollo/client';
 import {NotificationProvider} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
@@ -15,8 +14,7 @@ import {AuthenticationCheck} from './AuthenticationCheck';
 import {Layout} from './Layout';
 import {Login} from './Login';
 import {Pages} from 'modules/constants/pages';
-import {theme} from 'modules/theme';
-import {GlobalStyle} from './GlobalStyle';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
 import {EmptyDetails} from './EmptyDetails';
@@ -24,10 +22,9 @@ import {Task} from './Task';
 
 const App: React.FC = () => {
   return (
-    <ApolloProvider client={client}>
-      <ThemeProvider theme={theme}>
+    <ThemeProvider>
+      <ApolloProvider client={client}>
         <NotificationProvider>
-          <GlobalStyle />
           <NetworkStatusWatcher />
           <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
             <SessionWatcher />
@@ -54,8 +51,8 @@ const App: React.FC = () => {
             </Routes>
           </BrowserRouter>
         </NotificationProvider>
-      </ThemeProvider>
-    </ApolloProvider>
+      </ApolloProvider>
+    </ThemeProvider>
   );
 };
 

@@ -4,6 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-// @ts-ignore
-declare module '*.woff';
-declare module '*.woff2';
+declare module '@carbon/react' {
+  export const Theme: React.FunctionComponent<{
+    theme?: 'white' | 'g10' | 'g90' | 'g100';
+    className?: string;
+  }>;
+  export * from 'carbon-components-react';
+}
