@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -162,6 +163,36 @@ public final class MessageStartEventSubscriptionTest {
             tuple(MessageStartEventSubscriptionIntent.CREATED, subscriptionKey),
             tuple(MessageStartEventSubscriptionIntent.CORRELATED, subscriptionKey),
             tuple(MessageStartEventSubscriptionIntent.DELETED, subscriptionKey));
+  }
+
+  @Test // see #4099
+  public void
+      shouldResolveCorrelationKeyDefinedInMessageWhenOpeningSubscriptionForEventSubprocess() {
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "subprocess",
+                s ->
+                    s.startEvent()
+                        .message(
+                            m ->
+                                m.name("event_message")
+                                    .zeebeCorrelationKeyExpression("correlation_key"))
+                        .endEvent())
+            .startEvent()
+            .message("start_message")
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+    engine
+        .message()
+        .withName("start_message")
+        .withCorrelationKey("")
+        .withVariables(Map.of("correlation_key", "key"))
+        .publish();
+
+    assertThat(RecordingExporter.incidentRecords().collect(Collectors.toList())).hasSize(0);
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {
