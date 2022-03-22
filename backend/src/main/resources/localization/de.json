@@ -167,7 +167,7 @@
     "owner": "Eigentümer",
     "timeGoal": "Ziel: Zeit",
     "displayData": "Ziele zeigen Daten von Instanzen an",
-    "endedThisMonth": "die im aktuellen Monat beendet wurden",
+    "endedThisMonth": "die in den letzten 30 Tagen beendet wurden",
     "setGoal": "Ziel setzen",
     "editGoal": "Ziel bearbeiten",
     "goals": "Ziele",

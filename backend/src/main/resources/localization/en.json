@@ -167,7 +167,7 @@
     "owner": "Owner",
     "timeGoal": "Goal: Time",
     "displayData": "Goals display data from instances",
-    "endedThisMonth": "ended in the current month",
+    "endedThisMonth": "ended in the last 30 days",
     "setGoal": "Set Goal",
     "editGoal": "Edit Goal",
     "goals": "Goals",
