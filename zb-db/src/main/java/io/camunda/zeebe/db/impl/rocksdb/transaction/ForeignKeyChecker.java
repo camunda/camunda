@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.ExpandableArrayBuffer;
 
 /**
@@ -30,23 +31,6 @@ public final class ForeignKeyChecker {
     enabled = settings.enableForeignKeyChecks();
   }
 
-  private void assertExists(
-      final ZeebeTransaction transaction, final DbForeignKey<? extends DbKey> foreignKey)
-      throws Exception {
-    keyBuffer.putLong(0, foreignKey.columnFamily().ordinal(), ZeebeDbConstants.ZB_DB_BYTE_ORDER);
-    foreignKey.write(keyBuffer, Long.BYTES);
-    final var value =
-        transaction.get(
-            transactionDb.getDefaultNativeHandle(),
-            transactionDb.getReadOptionsNativeHandle(),
-            keyBuffer.byteArray(),
-            Long.BYTES + foreignKey.getLength());
-    if (value == null) {
-      throw new ZeebeDbInconsistentException(
-          "Foreign key " + foreignKey.inner() + " does not exist in " + foreignKey.columnFamily());
-    }
-  }
-
   public void assertExists(
       final ZeebeTransaction transaction, final ContainsForeignKeys containsForeignKey)
       throws Exception {
@@ -54,7 +38,55 @@ public final class ForeignKeyChecker {
       return;
     }
     for (final var fk : containsForeignKey.containedForeignKeys()) {
-      assertExists(transaction, fk);
+      assertForeignKeyExists(transaction, fk);
+    }
+  }
+
+  private void assertForeignKeyExists(
+      final ZeebeTransaction transaction, final DbForeignKey<DbKey> foreignKey) throws Exception {
+    if (foreignKey.skip().test(foreignKey.inner())) {
+      return;
+    }
+
+    keyBuffer.putLong(0, foreignKey.columnFamily().ordinal(), ZeebeDbConstants.ZB_DB_BYTE_ORDER);
+    foreignKey.write(keyBuffer, Long.BYTES);
+    final var exists =
+        switch (foreignKey.match()) {
+          case Full -> keyExists(transaction, foreignKey);
+          case Prefix -> prefixExists(transaction, foreignKey);
+        };
+    if (!exists) {
+      throw new ZeebeDbInconsistentException(
+          "Foreign key " + foreignKey.inner() + " does not exist in " + foreignKey.columnFamily());
+    }
+  }
+
+  private boolean keyExists(
+      final ZeebeTransaction transaction, final DbForeignKey<? extends DbKey> foreignKey)
+      throws Exception {
+    return transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            keyBuffer.byteArray(),
+            Long.BYTES + foreignKey.getLength())
+        != null;
+  }
+
+  private boolean prefixExists(
+      final ZeebeTransaction transaction, final DbForeignKey<? extends DbKey> foreignKey) {
+    try (final var iterator =
+        transaction.newIterator(
+            transactionDb.getPrefixReadOptions(), transactionDb.getDefaultHandle())) {
+      final var prefixKey = keyBuffer.byteArray();
+      final var prefixLength = Long.BYTES + foreignKey.getLength();
+
+      RocksDbInternal.seek(
+          iterator, ZeebeTransactionDb.getNativeHandle(iterator), prefixKey, prefixLength);
+      if (iterator.isValid()) {
+        final byte[] keyBytes = iterator.key();
+        return BufferUtil.startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length);
+      }
+      return false;
     }
   }
 }
