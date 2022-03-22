@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,22 +15,23 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerFactory;
 import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.util.ValueTypeMapping;
 import java.io.IOException;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.MethodSource;
 
-final class ValueTypeIdResolveTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class RecordValueTypeIdResolveTest {
   /**
    * This test checks that every known record value type is handled. It doesn't validate the
    * correctness of the result - its goal is to be a smoke test to make sure no value types are
    * forgotten. It does NOT check that the value type is mapped to the right value implementation.
    */
-  @EnumSource(
-      value = ValueType.class,
-      names = {"NULL_VAL", "SBE_UNKNOWN"},
-      mode = Mode.EXCLUDE)
   @ParameterizedTest
+  @MethodSource("provideValueTypes")
   void shouldHandleEveryKnownValueType(final ValueType type) throws IOException {
     // given
     final ObjectMapper mapper = new ObjectMapper();
@@ -41,9 +42,13 @@ final class ValueTypeIdResolveTest {
             mapper.getDeserializationConfig(),
             mapper.createParser("{}"),
             mapper.getInjectableValues());
-    final ValueTypeIdResolver resolver = new ValueTypeIdResolver();
+    final RecordValueTypeIdResolver resolver = new RecordValueTypeIdResolver();
     final JavaType resolvedType = resolver.typeFromId(context, resolver.idFromValue(type));
 
     assertThat(RecordValue.class).isAssignableFrom(resolvedType.getRawClass());
+  }
+
+  private static Stream<ValueType> provideValueTypes() {
+    return ValueTypeMapping.getAcceptedValueTypes().stream();
   }
 }
