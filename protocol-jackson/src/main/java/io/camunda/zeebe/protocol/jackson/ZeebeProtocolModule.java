@@ -21,7 +21,7 @@ import java.util.Objects;
  * io.camunda.zeebe.protocol.record.value.ErrorRecordValue}, etc., essentially anything annotated
  * with {@link io.camunda.zeebe.protocol.record.ImmutableProtocol}, out of the box.
  *
- * <p>To use, simply create an {@link ObjectMapper} as your normally would, and add this module.
+ * <p>To use, simply create an {@link ObjectMapper} as you normally would, and add this module.
  *
  * <h2>Usage
  *
