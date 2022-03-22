@@ -25,6 +25,8 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.grpc.BindableService;
 import io.grpc.Server;
@@ -38,7 +40,9 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
@@ -110,15 +114,8 @@ public final class Gateway {
     healthManager.setStatus(Status.STARTING);
     brokerClient = buildBrokerClient();
 
-    final ActivateJobsHandler activateJobsHandler;
-    if (gatewayCfg.getLongPolling().isEnabled()) {
-      final LongPollingActivateJobsHandler longPollingHandler =
-          buildLongPollingHandler(brokerClient);
-      actorSchedulingService.submitActor(longPollingHandler);
-      activateJobsHandler = longPollingHandler;
-    } else {
-      activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
-    }
+    final var activateJobsHandler = buildActivateJobsHandler(brokerClient);
+    submitActorToActivateJobs((Consumer<ActorControl>) activateJobsHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
@@ -187,6 +184,25 @@ public final class Gateway {
 
   private BrokerClient buildBrokerClient() {
     return brokerClientFactory.apply(gatewayCfg);
+  }
+
+  private void submitActorToActivateJobs(final Consumer<ActorControl> consumer) {
+    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var actor =
+        Actor.newActor()
+            .name("ActivateJobsHandler")
+            .actorStartedHandler(consumer.andThen(actorStartedFuture::complete))
+            .build();
+    actorSchedulingService.submitActor(actor);
+    actorStartedFuture.join();
+  }
+
+  private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
+    if (gatewayCfg.getLongPolling().isEnabled()) {
+      return buildLongPollingHandler(brokerClient);
+    } else {
+      return new RoundRobinActivateJobsHandler(brokerClient);
+    }
   }
 
   private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
