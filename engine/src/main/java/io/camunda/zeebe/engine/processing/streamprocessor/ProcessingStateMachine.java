@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
@@ -262,6 +263,8 @@ public final class ProcessingStateMachine {
           metadata,
           recoverableException);
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
+    } catch (final UnrecoverableException unrecoverableException) {
+      throw unrecoverableException;
     } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
       onError(e, this::writeRecords);
