@@ -60,12 +60,15 @@ test('Navigate to called and parent instances', async (t) => {
     .getAllByRole('cell')
     .nth(1).textContent;
 
+  // Navigate to call activity instance
+  await t.click(
+    withinInstancesList.getByRole('link', {
+      name: /view parent instance/i,
+    })
+  );
+
+  // Expect correct header
   await t
-    .click(
-      withinInstancesList.getByRole('link', {
-        name: /view parent instance/i,
-      })
-    )
     .expect(
       withinInstanceHeader.queryByText(
         callActivityProcessInstance.processInstanceKey
@@ -75,12 +78,31 @@ test('Navigate to called and parent instances', async (t) => {
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
     .ok();
 
+  const withinInstanceHistory = within(screen.getByTestId('instance-history'));
+
+  // Expect correct instance history
+  await t
+    .expect(withinInstanceHistory.getByText('Call Activity Process').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('StartEvent_1').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('Call Activity').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('Event_1p0nsc7').exists)
+    .ok();
+
+  // Expect correct diagram
+  await t
+    .expect(
+      within(screen.queryByTestId('diagram')).getByText('Call Activity').exists
+    )
+    .ok();
+
+  // Navigate to called instance
   await t.click(
-    within(screen.queryByTestId('diagram')).queryByText('Call Activity')
+    within(screen.queryByTestId('diagram')).getByText('Call Activity')
   );
-
   const withinPopover = within(screen.queryByTestId('popover'));
-
   await t
     .expect(withinPopover.queryByText(/Called Instance/).exists)
     .ok()
@@ -88,17 +110,38 @@ test('Navigate to called and parent instances', async (t) => {
       withinPopover.getByRole('link', {name: /view called process instance/i})
     );
 
+  // Expect correct header
   await t
     .expect(withinInstanceHeader.queryByText(calledProcessInstanceId).exists)
     .ok()
     .expect(withinInstanceHeader.getByText('Called Process').exists)
-    .ok()
-    .click(
-      withinInstanceHeader.getByRole('link', {
-        name: /view parent instance/i,
-      })
-    );
+    .ok();
 
+  // Expect correct instance history
+  await t
+    .expect(withinInstanceHistory.getByText('Called Process').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('Process started').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('Event_0y6k56d').exists)
+    .ok();
+
+  // Expect correct diagram
+  await t
+    .expect(
+      within(screen.queryByTestId('diagram')).getByText('Process started')
+        .exists
+    )
+    .ok();
+
+  // Navigate to parent instance
+  await t.click(
+    withinInstanceHeader.getByRole('link', {
+      name: /view parent instance/i,
+    })
+  );
+
+  // Expect correct header
   await t
     .expect(
       withinInstanceHeader.queryByText(
@@ -107,5 +150,22 @@ test('Navigate to called and parent instances', async (t) => {
     )
     .ok()
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
+    .ok();
+
+  // Expect correct instance history
+  await t
+    .expect(withinInstanceHistory.getByText('Call Activity Process').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('StartEvent_1').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('Call Activity').exists)
+    .ok()
+    .expect(withinInstanceHistory.getByText('Event_1p0nsc7').exists)
+    .ok();
+
+  await t
+    .expect(
+      within(screen.queryByTestId('diagram')).getByText('Call Activity').exists
+    )
     .ok();
 });

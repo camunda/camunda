@@ -66,7 +66,7 @@ const Instance = observer(() => {
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
     };
-  }, []);
+  }, [processInstanceId]);
 
   useEffect(() => {
     if (processTitle !== null) {
