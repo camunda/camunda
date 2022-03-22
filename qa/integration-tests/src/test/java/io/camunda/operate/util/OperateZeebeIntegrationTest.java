@@ -84,7 +84,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected ProcessCache processCache;
 
   @Autowired
-  private ObjectMapper objectMapper;
+  protected ObjectMapper objectMapper;
 
   private HttpClient httpClient = HttpClient.newHttpClient();
 
