@@ -10,7 +10,7 @@ import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {useEffect, useRef} from 'react';
 import {Skeleton} from './Skeleton';
 import Table from 'modules/components/Table';
-import {InstancesMessage} from 'modules/components/InstancesMessage';
+import {Message} from 'modules/components/SortableTable/Message';
 import {
   Container,
   DecisionColumnHeader,
@@ -50,6 +50,14 @@ const InstancesTable: React.FC = observer(() => {
   const isSortingDisabled =
     areDecisionInstancesEmpty ||
     ['initial', 'first-fetch', 'fetching', 'error'].includes(status);
+
+  const getEmptyListMessage = () => {
+    let message = 'There are no Instances matching this filter set';
+
+    //TODO: If filters are applied, append '\n To see some results, select at least one Instance state';
+
+    return message;
+  };
 
   useEffect(() => {
     let disposer = autorun(() => {
@@ -119,8 +127,10 @@ const InstancesTable: React.FC = observer(() => {
               </TRHeader>
             </THead>
             {shouldDisplaySkeleton && <Skeleton />}
-            {status === 'error' && <InstancesMessage type="error" />}
-            {areDecisionInstancesEmpty && <InstancesMessage type="empty" />}
+            {status === 'error' && <Message type="error" />}
+            {areDecisionInstancesEmpty && (
+              <Message type="empty">{getEmptyListMessage()}</Message>
+            )}
 
             <InfiniteScroller
               onVerticalScrollStartReach={async (scrollDown) => {

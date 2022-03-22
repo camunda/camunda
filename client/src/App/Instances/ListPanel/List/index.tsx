@@ -6,7 +6,7 @@
 
 import React, {useEffect, useRef} from 'react';
 import Table from 'modules/components/Table';
-import {InstancesMessage} from 'modules/components/InstancesMessage';
+import {Message} from 'modules/components/SortableTable/Message';
 import {Skeleton} from './Skeleton';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
@@ -34,6 +34,14 @@ const List: React.FC<ListProps> = observer((props) => {
     state: {status},
   } = instancesStore;
 
+  const getEmptyListMessage = () => {
+    return `There are no Instances matching this filter set${
+      filters.areProcessInstanceStatesApplied()
+        ? ''
+        : '\n To see some results, select at least one Instance state'
+    }`;
+  };
+
   useEffect(() => {
     let disposer = autorun(() => {
       if (instancesStore.state.status === 'fetching') {
@@ -60,12 +68,9 @@ const List: React.FC<ListProps> = observer((props) => {
           {['initial', 'first-fetch'].includes(status) && (
             <Skeleton {...props} rowsToDisplay={50} />
           )}
-          {status === 'error' && <InstancesMessage type="error" />}
+          {status === 'error' && <Message type="error" />}
           {status === 'fetched' && areProcessInstancesEmpty && (
-            <InstancesMessage
-              type="empty"
-              areInstanceStateFiltersApplied={filters.areProcessInstanceStatesApplied()}
-            />
+            <Message type="empty">{getEmptyListMessage()}</Message>
           )}
           {status === 'refetching' ? null : (
             <InfiniteScroller

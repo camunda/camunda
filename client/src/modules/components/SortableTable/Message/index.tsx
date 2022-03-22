@@ -13,23 +13,10 @@ const {TBody, TD} = Table;
 
 type Props = {
   type: 'error' | 'empty';
-  areInstanceStateFiltersApplied?: boolean;
+  children?: React.ReactNode;
 };
 
-const InstancesMessage: React.FC<Props> = ({
-  type,
-  areInstanceStateFiltersApplied,
-}) => {
-  const getEmptyListMessage = () => {
-    let msg = 'There are no Instances matching this filter set';
-
-    if (!areInstanceStateFiltersApplied) {
-      msg += '\n To see some results, select at least one Instance state';
-    }
-
-    return msg;
-  };
-
+const Message: React.FC<Props> = ({type, children}) => {
   return (
     <TBody>
       <Styled.EmptyTR>
@@ -46,7 +33,7 @@ const InstancesMessage: React.FC<Props> = ({
           )}
           {type === 'empty' && (
             <EmptyMessage
-              message={getEmptyListMessage()}
+              message={children}
               data-testid="empty-message-instances-list"
             />
           )}
@@ -56,4 +43,4 @@ const InstancesMessage: React.FC<Props> = ({
   );
 };
 
-export {InstancesMessage};
+export {Message};

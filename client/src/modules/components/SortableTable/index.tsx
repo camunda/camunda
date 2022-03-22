@@ -11,6 +11,7 @@ import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 import {ColumnHeader} from './ColumnHeader';
 import {Skeleton} from './Skeleton';
+import {Message} from './Message';
 import {Row} from './Row';
 
 import {
@@ -112,8 +113,10 @@ const SortableTable: React.FC<Props> = observer(
               </TRHeader>
             </THead>
             {state === 'skeleton' && <Skeleton columns={skeletonColumns} />}
-            {state === 'empty' && <div>empty message</div>}
-            {state === 'error' && <div>error message</div>}
+            {state === 'empty' && (
+              <Message type="empty">{emptyMessage}</Message>
+            )}
+            {state === 'error' && <Message type="error" />}
 
             <InfiniteScroller
               onVerticalScrollStartReach={onVerticalScrollStartReach}
