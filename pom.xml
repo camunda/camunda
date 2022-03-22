@@ -28,7 +28,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>1.4.0-SNAPSHOT</version.zeebe>
+    <version.zeebe>1.4.0-alpha2</version.zeebe>
     <version.iam>1.3.5</version.iam>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.1</version.log4j>
