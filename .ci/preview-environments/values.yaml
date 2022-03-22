@@ -31,6 +31,11 @@ ccsm-helm:
     image:
       repository: gcr.io/ci-30-162810/camunda-operate
       tag: latest
+    env:
+    - name: JAVA_OPTS
+      value: "-XX:MaxRAMFraction=1"
+    - name: SPRING_PROFILES_ACTIVE
+      value: dev-data
 
   tasklist:
     enabled: false

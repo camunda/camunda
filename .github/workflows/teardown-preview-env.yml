@@ -28,18 +28,10 @@ jobs:
         uses: actions/checkout@v2
       #########################################################################
       # Tear down preview environment
-      - name: Get deployment ID for branch
-        id: params
-        run: |-
-          echo "::set-output name=deployment_id::$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ github.ref_name }}").metadata.name')
-        env:
-          ARGOCD_AUTH_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-          ARGOCD_OPTS: "--grpc-web"
-          ARGOCD_SERVER: argocd.int.camunda.com
       - name: Tear down ${{ steps.params.outputs.deployment_id }} Preview Environment
         uses: ./.github/actions/deploy-preview
         with:
-          deployment_id: ${{ steps.params.outputs.deployment_id }}
+          deployment_id: ${{ github.ref_name }}
           revision: ${{ github.ref_name }}
           docker_tag: ci-${{ github.sha }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}

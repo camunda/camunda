@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci@INFRA-3091') _
+@Library('camunda-ci') _
 
 import org.camunda.helper.GitUtilities
 
