@@ -1,0 +1,34 @@
+[
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "differences": [
+        {
+          "code": "java.class.noLongerImplementsInterface",
+          "classSimpleName": "Record",
+          "interface": "java.lang.Cloneable",
+          "justification": "Cloneable was not properly implemented on the Record interface, as it was doing a deep copy instead of the expected shallow copy"
+        },
+        {
+          "code": "java.method.exception.checkedAdded",
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.Record",
+          "methodName": "clone",
+          "justification": "Revert implementing Cloneable, which means we now default back to the implementation in Object"
+        },
+        {
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.Record<T> io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>::clone()",
+          "new": "method java.lang.Object java.lang.Object::clone() throws java.lang.CloneNotSupportedException @ io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>",
+          "justification": "Revert implementing Cloneable, which means we now default back to the implementation in Object"
+        },
+        {
+          "code": "java.method.visibilityReduced",
+          "old": "method io.camunda.zeebe.protocol.record.Record<T> io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>::clone()",
+          "new": "method java.lang.Object java.lang.Object::clone() throws java.lang.CloneNotSupportedException @ io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>",
+          "justification": "Revert implementing Cloneable, which means we now default back to the implementation in Object"
+        }
+      ]
+    }
+  }
+]

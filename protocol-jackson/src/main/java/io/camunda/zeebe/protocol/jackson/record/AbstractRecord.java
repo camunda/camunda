@@ -51,9 +51,8 @@ public abstract class AbstractRecord<T extends RecordValue>
   public abstract T getValue();
 
   /** @return itself as the object is immutable and can be used as is */
-  @SuppressWarnings({"MethodDoesntCallSuperMethod", "squid:S2975", "squid:S1182"})
   @Override
-  public Record<T> clone() {
+  public Record<T> copyOf() {
     return this;
   }
 }

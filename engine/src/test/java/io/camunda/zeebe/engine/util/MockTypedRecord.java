@@ -119,12 +119,12 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
-  public String toJson() {
+  public Record<T> copyOf() {
     throw new UnsupportedOperationException("not yet implemented");
   }
 
   @Override
-  public Record<T> clone() {
+  public String toJson() {
     throw new UnsupportedOperationException("not yet implemented");
   }
 }
