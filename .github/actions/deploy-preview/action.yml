@@ -98,7 +98,8 @@ runs:
   - name: Deploy
     shell: bash
     if: ${{ inputs.step == 'start'}}
-    run: argocd app create
+    run: >-
+      argocd app create
       --dest-namespace operate-${APP_NAME}
       --file .ci/preview-environments/argo/application.yml
       --helm-set ccsm-helm.operate.image.tag=${{ inputs.docker_tag }}
@@ -108,7 +109,7 @@ runs:
       --revision ${{ inputs.revision }}
       --upsert
 
-      argocd app sync ${env.APP_NAME} --force
+      argocd app sync ${{ env.APP_NAME }} --force
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
       ARGOCD_OPTS: "--grpc-web"
