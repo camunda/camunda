@@ -86,7 +86,7 @@ class DmnEvaluatedDecisionsTest {
 
     final var evaluatedOutput = matchedRules.evaluatedOutputs().get(0);
     assertThat(evaluatedOutput.outputId()).isEqualTo("Output_1");
-    assertThat(evaluatedOutput.outputName()).isEqualTo("jedi_or_sith");
+    assertThat(evaluatedOutput.outputName()).isEqualTo("Jedi or Sith");
     assertEquality(evaluatedOutput.outputValue(), "'Jedi'");
   }
 

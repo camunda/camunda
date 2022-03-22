@@ -308,7 +308,7 @@ public final class BusinessRuleTaskTest {
                         assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
                         assertThat(matchedRule.getEvaluatedOutputs().get(0))
                             .hasOutputId("Output_1")
-                            .hasOutputName("jedi_or_sith")
+                            .hasOutputName("Jedi or Sith")
                             .hasOutputValue("\"Jedi\"");
                       });
             });
@@ -341,7 +341,7 @@ public final class BusinessRuleTaskTest {
                         assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
                         assertThat(matchedRule.getEvaluatedOutputs().get(0))
                             .hasOutputId("OutputClause_0hhe1yo")
-                            .hasOutputName("force_user")
+                            .hasOutputName("Force user")
                             .hasOutputValue("\"Obi-Wan Kenobi\"");
                       });
             });
