@@ -465,7 +465,15 @@ service Gateway {
   }
 
   /*
-    Deploys one or more resources (i.e. processes or decision models) to Zeebe.
+    Deploys one or more resources (e.g. processes or decision models) to Zeebe.
+    Note that this is an atomic call, i.e. either all resources are deployed, or none of them are.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - no resources given.
+        - if at least one resource is invalid. A resource is considered invalid if:
+          - the content is not deserializable (e.g. detected as BPMN, but it's broken XML)
+          - the content is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
   */
   rpc DeployResource (DeployResourceRequest) returns (DeployResourceResponse) {
   }
