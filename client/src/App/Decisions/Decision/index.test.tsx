@@ -29,9 +29,12 @@ function createWrapper(initialPath: string = '/') {
 describe('<Decision />', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockDmnXml))
-      ),
+      rest.get('/api/decisions/:decisionDefinitionId/xml', (req, res, ctx) => {
+        if (req.params.decisionDefinitionId === '2') {
+          return res.once(ctx.status(404), ctx.text(''));
+        }
+        return res.once(ctx.text(mockDmnXml));
+      }),
       rest.get('/api/decisions/grouped', (_, res, ctx) =>
         res.once(ctx.json(groupedDecisions))
       )
@@ -53,6 +56,50 @@ describe('<Decision />', () => {
 
     expect(
       await screen.findByText('DecisionTable view mock')
+    ).toBeInTheDocument();
+  });
+
+  it('should render text when no decision is selected', () => {
+    render(<Decision />, {
+      wrapper: createWrapper('/decisions'),
+    });
+
+    expect(
+      screen.getByText(/there is no decision selected/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /to see a decision table or a literal expression, select a decision in the filters panel/i
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('should render text when no version is selected', () => {
+    render(<Decision />, {
+      wrapper: createWrapper(
+        '/decisions?name=invoiceClassification&version=all'
+      ),
+    });
+
+    expect(
+      screen.getByText(
+        /there is more than one version selected for decision "invoiceClassification"/i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /to see a decision table or a literal expression, select a single version/i
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('should render text on error', async () => {
+    render(<Decision />, {
+      wrapper: createWrapper('/decisions?name=calc-key-figures&version=1'),
+    });
+
+    expect(
+      await screen.findByText(/data could not be fetched/i)
     ).toBeInTheDocument();
   });
 });

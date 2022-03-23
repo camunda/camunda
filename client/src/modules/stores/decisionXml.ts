@@ -19,7 +19,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   xml: string | null;
-  status: 'initial' | 'fetched' | 'error';
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
@@ -37,6 +37,7 @@ class DecisionXml extends NetworkReconnectionHandler {
       state: observable,
       handleFetchSuccess: action,
       handleFetchFailure: action,
+      startFetching: action,
       reset: override,
     });
   }
@@ -52,8 +53,10 @@ class DecisionXml extends NetworkReconnectionHandler {
     );
   };
 
-  fetchDiagramXml = this.retryOnConnectionLost(
-    async (decisionDefinitionId: string) => {
+  fetchDiagramXml: (decisionDefinitionId: string) => void =
+    this.retryOnConnectionLost(async (decisionDefinitionId: string) => {
+      this.startFetching();
+
       try {
         const response = await fetchDecisionXML(decisionDefinitionId);
 
@@ -65,8 +68,7 @@ class DecisionXml extends NetworkReconnectionHandler {
       } catch (error) {
         this.handleFetchFailure(error);
       }
-    }
-  );
+    });
 
   handleFetchSuccess = (xml: string) => {
     this.state.xml = xml;
@@ -80,6 +82,10 @@ class DecisionXml extends NetworkReconnectionHandler {
     if (error !== undefined) {
       logger.error(error);
     }
+  };
+
+  startFetching = () => {
+    this.state.status = 'fetching';
   };
 
   reset() {

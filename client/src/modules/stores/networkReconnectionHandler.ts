@@ -14,7 +14,7 @@ class NetworkReconnectionHandler {
   handleReconnection = () => {
     this.boundCallback?.();
   };
-  retryOnConnectionLost(callback: Function): Function {
+  retryOnConnectionLost(callback: (...params: any[]) => any) {
     this.boundCallback = callback;
     return (...params: any[]) => {
       window.removeEventListener('online', this.handleReconnection);

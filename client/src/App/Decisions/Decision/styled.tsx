@@ -12,6 +12,7 @@ const Container = styled.div`
       background: ${theme.colors.decisionViewer.background};
       overflow: auto;
       height: 100%;
+      position: relative;
     `;
   }}
 `;

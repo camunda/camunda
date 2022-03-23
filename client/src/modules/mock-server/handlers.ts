@@ -40,7 +40,7 @@ const handlers: RequestHandler[] = [
     }
   ),
   rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) => {
-    return res(ctx.body(mockDmnXml));
+    return res(ctx.delay(1000), ctx.body(mockDmnXml));
   }),
   rest.post('/api/decision-instances', (req, res, ctx) => {
     //@ts-ignore
