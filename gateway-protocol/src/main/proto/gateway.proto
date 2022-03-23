@@ -221,9 +221,6 @@ message DecisionMetadata {
   // the assigned key of the decision requirements graph that this decision is
   // part of
   int64 decisionRequirementsKey = 6;
-  // whether this decision was already deployed previously
-  // todo: debate this field
-  bool isDuplicate = 7;
 }
 
 message DecisionRequirementsMetadata {
@@ -237,15 +234,9 @@ message DecisionRequirementsMetadata {
   // the assigned decision requirements key, which acts as a unique identifier
   // for this decision requirements
   int64 decisionRequirementsKey = 4;
-  // the dmn namespace, as parsed during deployment
-  // todo: debate this field (e.g. http://camunda.org/schema/1.0/dmn)
-  string namespace = 5;
   // the resource name (see: Resource.name) from which this decision
   // requirements was parsed
-  string resourceName = 6;
-  // whether this decision requirements was already deployed previously
-  // todo: debate this field
-  bool isDuplicate = 7;
+  string resourceName = 5;
 }
 
 message FailJobRequest {
