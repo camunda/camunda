@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.date;
 
@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.*;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;

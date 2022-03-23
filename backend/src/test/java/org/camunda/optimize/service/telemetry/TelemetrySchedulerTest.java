@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.telemetry;
 
@@ -12,8 +12,6 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService;
-import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetrySendingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,8 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

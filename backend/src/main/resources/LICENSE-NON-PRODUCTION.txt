@@ -1,8 +1,0 @@
-/*
- * Camunda hereby grants to You a royalty-free, limited, personal, non-exclusive, non-transferable and non-sublicensable right to use Camunda Cloud Self-Managed for internal non-productive usage and development purposes and solely according to Camunda's “General Terms and Conditions for the Camunda Cloud Self-Managed Free Edition" available under the following link:
- * https://camunda.com/legal/terms/
- *
- * Camunda Cloud Self-Managed contains certain libraries, utilities or other software components licensed under “open source”, “free software”, “source-code-available” or similar “public software licenses”. Nothing in here is intended to change or restrict the terms of any open source, free software, source-code-available or public license, and Camunda does not seek to restrict, or receive compensation for, the act of copying or redistributing publicly licensed code which is otherwise freely redistributable to third parties (and not otherwise restricted by federal trademark or other laws). You shall be responsible for any open source, free software, source-code-available or public license being used solely in accordance with its respective license terms.
- *
- * Notwithstanding the foregoing, if you have concluded a commercial licensing agreement with Camunda, the terms and conditions for using Camunda Cloud Self-Managed are governed exclusively by this licensing agreement.
- */

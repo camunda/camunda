@@ -1,6 +1,6 @@
 <component name="CopyrightManager">
   <copyright>
-    <option name="notice" value="Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH&#10;under one or more contributor license agreements. Licensed under a commercial license.&#10;You may not use this file except in compliance with the commercial license." />
+    <option name="notice" value="Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.&#10;Licensed under a proprietary license. See the License.txt file for more information.&#10;You may not use this file except in compliance with the proprietary license." />
     <option name="myName" value="camunda" />
   </copyright>
 </component>

@@ -1,13 +1,12 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.jetty;
 
 import com.google.common.io.CharStreams;
 import lombok.SneakyThrows;
-import org.camunda.optimize.service.UIConfigurationService;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import javax.servlet.Filter;
@@ -25,17 +24,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 public class JavaScriptMainLicenseEnricherFilter implements Filter {
-  public static final String LICENSE_ENTERPRISE_PATH = "LICENSE-ENTERPRISE.txt";
-  private static final String LICENSE_NON_PRODUCTION_PATH = "LICENSE-NON-PRODUCTION.txt";
+  public static final String LICENSE_PATH = "LICENSE.txt";
   private static final Pattern MAIN_JS_PATTERN = Pattern.compile(".*/main\\..*\\.chunk\\.js");
 
-  private final SpringAwareServletConfiguration awareDelegate;
   // used as means to cache the main js content enriched with the license as its content is static anyway
   private String licensedContent;
-
-  public JavaScriptMainLicenseEnricherFilter(final SpringAwareServletConfiguration awareDelegate) {
-    this.awareDelegate = awareDelegate;
-  }
 
   @Override
   public void init(final FilterConfig filterConfig) throws ServletException {
@@ -76,25 +69,17 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
       // no synchronization needed as in worst case multiple threads may update the field
       // but following calls will make use of the preprocessed value
       final String originalContent = new String(cachingResponseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-      this.licensedContent = getLicenseContent() + originalContent;
+      this.licensedContent = readLicense() + originalContent;
     }
     cachingResponseWrapper.resetBuffer();
     cachingResponseWrapper.getWriter().write(this.licensedContent);
   }
 
-  private String getLicenseContent() {
-    if (isEnterpriseMode()) {
-      return readLicense(LICENSE_ENTERPRISE_PATH);
-    } else {
-      return readLicense(LICENSE_NON_PRODUCTION_PATH);
-    }
-  }
-
   @SneakyThrows
-  private String readLicense(final String licensePath) {
+  private String readLicense() {
     final InputStream inputStream = this.getClass()
       .getClassLoader()
-      .getResourceAsStream(licensePath);
+      .getResourceAsStream(JavaScriptMainLicenseEnricherFilter.LICENSE_PATH);
 
     if (inputStream == null) {
       return "";
@@ -102,7 +87,4 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
     return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
   }
 
-  private boolean isEnterpriseMode() {
-    return awareDelegate.getApplicationContext().getBean(UIConfigurationService.class).isEnterpriseMode();
-  }
 }
