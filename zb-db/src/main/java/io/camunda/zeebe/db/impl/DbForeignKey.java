@@ -56,6 +56,10 @@ public record DbForeignKey<K extends DbKey>(
     return Collections.singletonList((DbForeignKey<DbKey>) this);
   }
 
+  public boolean shouldSkipCheck() {
+    return skip.test(inner);
+  }
+
   public enum MatchType {
     Full,
     Prefix,

@@ -79,27 +79,17 @@ final class ForeignKeyCheckerTest {
 
     // then
     assertDoesNotThrow(
-        () -> {
-          key.wrapLong(-1);
-          check.assertExists(
-              tx,
-              new DbForeignKey<>(
-                  key,
-                  TestColumnFamilies.TEST_COLUMN_FAMILY,
-                  MatchType.Full,
-                  (k) -> k.getValue() == -1));
-        });
+        () ->
+            check.assertExists(
+                tx,
+                new DbForeignKey<>(
+                    key, TestColumnFamilies.TEST_COLUMN_FAMILY, MatchType.Full, (k) -> true)));
     assertThatThrownBy(
-            () -> {
-              key.wrapLong(5);
-              check.assertExists(
-                  tx,
-                  new DbForeignKey<>(
-                      key,
-                      TestColumnFamilies.TEST_COLUMN_FAMILY,
-                      MatchType.Full,
-                      (k) -> k.getValue() == -1));
-            })
+            () ->
+                check.assertExists(
+                    tx,
+                    new DbForeignKey<>(
+                        key, TestColumnFamilies.TEST_COLUMN_FAMILY, MatchType.Full, (k) -> false)))
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessageContaining("Foreign key");
   }
