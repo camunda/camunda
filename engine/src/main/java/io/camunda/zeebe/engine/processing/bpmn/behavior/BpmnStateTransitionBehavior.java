@@ -130,7 +130,7 @@ public final class BpmnStateTransitionBehavior {
    * reason why we throw an exception.
    *
    * <p>Should be removed as soon as possible, e.g. as part of
-   * https://github.com/camunda-cloud/zeebe/issues/8005
+   * https://github.com/camunda/zeebe/issues/8005
    *
    * @param context the element instance context
    * @param methodName the method which is called

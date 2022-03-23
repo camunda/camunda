@@ -182,7 +182,7 @@ public class FailOverReplicationTest {
   }
 
   @Test
-  // regression test https://github.com/camunda-cloud/zeebe/issues/8129
+  // regression test https://github.com/camunda/zeebe/issues/8129
   public void shouldNotProduceDuplicatedKeys() {
     // given
     // we produce some records on the old leader

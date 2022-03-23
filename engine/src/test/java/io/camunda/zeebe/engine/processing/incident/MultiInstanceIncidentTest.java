@@ -227,7 +227,7 @@ public final class MultiInstanceIncidentTest {
     // note, that this failed in a bug where the task was completed at the same time the incident
     // was created. If the problem was resolved and the other tasks completed, the multi instance
     // would still complete normally, but would not have collected the output of the first task.
-    // for more information see: https://github.com/camunda-cloud/zeebe/issues/6546
+    // for more information see: https://github.com/camunda/zeebe/issues/6546
     assertThat(
             RecordingExporter.variableRecords()
                 .withProcessInstanceKey(processInstanceKey)

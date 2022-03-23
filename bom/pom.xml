@@ -22,15 +22,15 @@
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:git@github.com:camunda-cloud/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-cloud/zeebe.git</developerConnection>
+    <connection>scm:git:git@github.com:camunda/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda-cloud/zeebe</url>
+    <url>https://github.com/camunda/zeebe</url>
   </scm>
 
   <issueManagement>
     <system>GitHub</system>
-    <url>https://github.com/camunda-cloud/zeebe/issues</url>
+    <url>https://github.com/camunda/zeebe/issues</url>
   </issueManagement>
 
   <properties>

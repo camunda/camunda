@@ -29,15 +29,15 @@ Here is a diagram illustrating the lifecycle of minor releases over a 13-month p
 
 ## Status
 
-To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda-cloud/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda-cloud/zeebe/commits/main).
+To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda/zeebe/commits/main).
 
 ## Helpful Links
 
-* [Releases](https://github.com/camunda-cloud/zeebe/releases)
+* [Releases](https://github.com/camunda/zeebe/releases)
 * [Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
 * [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
-* [Issue Tracker](https://github.com/camunda-cloud/zeebe/issues)
+* [Issue Tracker](https://github.com/camunda/zeebe/issues)
 * [User Forum](https://forum.camunda.io)
 * [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
 * [Contribution Guidelines](/CONTRIBUTING.md)

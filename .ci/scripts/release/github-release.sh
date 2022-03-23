@@ -56,6 +56,6 @@ shopt -u nocasematch # reset it
 
 # Perform release: create draft, upload assets, etc.
 # See https://cli.github.com/manual/gh_release_create for more
-gh release create --repo "camunda-cloud/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
+gh release create --repo "camunda/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
   --title "${RELEASE_VERSION}" "${GH_OPTIONS[@]}" \
   "${RELEASE_VERSION}" "${ASSETS[@]}"

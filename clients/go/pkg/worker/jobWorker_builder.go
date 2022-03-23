@@ -17,9 +17,9 @@ package worker
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
 	"log"
 	"math"
 	"sync"

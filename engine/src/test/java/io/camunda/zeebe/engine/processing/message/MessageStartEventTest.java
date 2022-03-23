@@ -850,7 +850,7 @@ public final class MessageStartEventTest {
         .containsExactly("1", "2", "3", "4");
   }
 
-  // https://github.com/camunda-cloud/zeebe/issues/8068
+  // https://github.com/camunda/zeebe/issues/8068
   @Test
   public void shouldCreateProcessInstancesAndPassVariables() {
     // given

@@ -17,8 +17,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/internal/utils"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
 )
 
 type DispatchCompleteJobCommand interface {

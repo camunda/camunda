@@ -15,7 +15,7 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/pkg/commands"
 	"github.com/spf13/cobra"
 	"strconv"
 	"strings"

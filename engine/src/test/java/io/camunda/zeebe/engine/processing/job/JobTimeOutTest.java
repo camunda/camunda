@@ -147,7 +147,7 @@ public final class JobTimeOutTest {
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }
 
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/5420
+  // regression test for https://github.com/camunda/zeebe/issues/5420
   @Test
   public void shouldHaveNoSourceRecordPositionOnTimeOut() {
     final long processInstanceKey = createInstance();

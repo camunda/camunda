@@ -15,10 +15,10 @@
 package worker
 
 import (
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/internal/utils"
+	"github.com/camunda/zeebe/clients/go/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
 	"github.com/stretchr/testify/suite"
 	"sync"
 	"testing"
