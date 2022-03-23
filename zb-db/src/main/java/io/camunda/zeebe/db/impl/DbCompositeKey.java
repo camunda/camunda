@@ -19,7 +19,7 @@ public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType exte
     implements DbKey, ContainsForeignKeys {
   final FirstKeyType first;
   final SecondKeyType second;
-  final Collection<DbForeignKey<?>> containedForeignKeys;
+  final Collection<DbForeignKey<DbKey>> containedForeignKeys;
 
   public DbCompositeKey(final FirstKeyType first, final SecondKeyType second) {
     this.first = first;
@@ -36,7 +36,7 @@ public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType exte
   }
 
   @Override
-  public Collection<DbForeignKey<?>> containedForeignKeys() {
+  public Collection<DbForeignKey<DbKey>> containedForeignKeys() {
     return containedForeignKeys;
   }
 
@@ -59,9 +59,9 @@ public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType exte
     second.write(mutableDirectBuffer, offset + firstKeyPartLength);
   }
 
-  private static Collection<DbForeignKey<?>> collectContainedForeignKeys(
+  private static Collection<DbForeignKey<DbKey>> collectContainedForeignKeys(
       final DbKey first, final DbKey second) {
-    final var result = new ArrayList<DbForeignKey<?>>();
+    final var result = new ArrayList<DbForeignKey<DbKey>>();
     if (first instanceof ContainsForeignKeys firstForeignKeyProvider) {
       result.addAll(firstForeignKeyProvider.containedForeignKeys());
     }

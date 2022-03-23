@@ -11,5 +11,5 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import java.util.Collection;
 
 public interface ContainsForeignKeys {
-  Collection<DbForeignKey<?>> containedForeignKeys();
+  Collection<DbForeignKey<DbKey>> containedForeignKeys();
 }
