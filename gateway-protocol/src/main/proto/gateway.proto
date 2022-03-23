@@ -160,7 +160,7 @@ message DeployProcessResponse {
   repeated ProcessMetadata processes = 2;
 }
 
-message DeployRequest {
+message DeployResourceRequest {
   // list of resources to deploy
   repeated Resource resources = 1;
 }
@@ -172,7 +172,7 @@ message Resource {
   bytes content = 2;
 }
 
-message DeployResponse {
+message DeployResourceResponse {
   // the unique key identifying the deployment
   int64 key = 1;
   // a list of deployed resources, e.g. processes
@@ -467,7 +467,7 @@ service Gateway {
   /*
     Deploys one or more resources (i.e. processes or decision models) to Zeebe.
   */
-  rpc DeployResource (DeployRequest) returns (DeployResponse) {
+  rpc DeployResource (DeployResourceRequest) returns (DeployResourceResponse) {
   }
 
 
