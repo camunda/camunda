@@ -96,6 +96,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setElementId(decisionEvaluation.getElementId())
           .setDecisionRequirementsKey(decisionEvaluation.getDecisionRequirementsKey())
           .setDecisionRequirementsId(decisionEvaluation.getDecisionRequirementsId())
+          .setRootDecisionId(decisionEvaluation.getDecisionId())
           .setRootDecisionName(decisionEvaluation.getDecisionName())
           .setRootDecisionDefinitionId(String.valueOf(decisionEvaluation.getDecisionKey()))
           .setDecisionId(decision.getDecisionId())

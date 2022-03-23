@@ -8,6 +8,15 @@ package io.camunda.operate.webapp.es.reader;
 import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
 import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
 import static io.camunda.operate.entities.FlowNodeState.TERMINATED;
+import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_NAME;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATION_DATE;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EXECUTION_INDEX;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_NAME;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.END_DATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.ID;
@@ -41,7 +50,9 @@ import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -56,6 +67,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.metadata.DecisionInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
@@ -117,6 +129,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
   private IncidentTemplate incidentTemplate;
@@ -399,13 +414,14 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     //find incidents information
     searchForIncidents(result, String.valueOf(flowNodeInstance.getProcessInstanceKey()),
-        flowNodeInstance.getFlowNodeId(), flowNodeInstance.getId());
+        flowNodeInstance.getFlowNodeId(), flowNodeInstance.getId(), flowNodeInstance.getType());
 
     return result;
   }
 
   private void searchForIncidents(FlowNodeMetadataDto flowNodeMetadata,
-      final String processInstanceId, final String flowNodeId, final String flowNodeInstanceId) {
+      final String processInstanceId, final String flowNodeId, final String flowNodeInstanceId,
+      final FlowNodeType flowNodeType) {
 
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
@@ -427,10 +443,15 @@ public class FlowNodeInstanceReader extends AbstractReader {
         final Map<String, IncidentDataHolder> incData = incidentReader
             .collectFlowNodeDataForPropagatedIncidents(List.of(incidentEntity), processInstanceId,
                 treePath);
+        DecisionInstanceReferenceDto rootCauseDecision = null;
+        if (flowNodeType.equals(FlowNodeType.BUSINESS_RULE_TASK)) {
+          rootCauseDecision = findRootCauseDecision(incidentEntity.getFlowNodeInstanceKey());
+        }
         final IncidentDto incidentDto = IncidentDto
             .createFrom(incidentEntity, Map.of(incidentEntity.getProcessDefinitionKey(),
                 processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
-                    FALLBACK_PROCESS_DEFINITION_NAME)), incData.get(incidentEntity.getId()));
+                    FALLBACK_PROCESS_DEFINITION_NAME)), incData.get(incidentEntity.getId()),
+                rootCauseDecision);
         flowNodeMetadata.setIncident(incidentDto);
       }
     } catch (IOException e) {
@@ -465,10 +486,15 @@ public class FlowNodeInstanceReader extends AbstractReader {
         final Map<String, IncidentDataHolder> incData = incidentReader
             .collectFlowNodeDataForPropagatedIncidents(List.of(incidentEntity), processInstanceId,
                 treePath);
+        DecisionInstanceReferenceDto rootCauseDecision = null;
+        if (flowNodeType.equals(FlowNodeType.BUSINESS_RULE_TASK)) {
+          rootCauseDecision = findRootCauseDecision(incidentEntity.getFlowNodeInstanceKey());
+        }
         final IncidentDto incidentDto = IncidentDto
             .createFrom(incidentEntity, Map.of(incidentEntity.getProcessDefinitionKey(),
                 processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
-                    FALLBACK_PROCESS_DEFINITION_NAME)), incData.get(incidentEntity.getId()));
+                    FALLBACK_PROCESS_DEFINITION_NAME)), incData.get(incidentEntity.getId()),
+                rootCauseDecision);
         flowNodeMetadata.setIncident(incidentDto);
       }
     } catch (IOException e) {
@@ -477,6 +503,39 @@ public class FlowNodeInstanceReader extends AbstractReader {
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private DecisionInstanceReferenceDto findRootCauseDecision(final Long flowNodeInstanceKey) {
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
+        .source(new SearchSourceBuilder()
+            .query(joinWithAnd(
+                termQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceKey),
+                termQuery(DecisionInstanceTemplate.STATE, DecisionInstanceState.FAILED)
+                ))
+            .sort(EVALUATION_DATE, SortOrder.DESC)
+            .size(1)
+            .fetchSource(new String[]{DECISION_NAME, DECISION_ID}, null)
+        );
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value > 0) {
+        final Map<String, Object> source = response.getHits().getHits()[0].getSourceAsMap();
+        String decisionName = (String)source.get(DECISION_NAME);
+        if (decisionName == null) {
+          decisionName = (String)source.get(DECISION_ID);
+        }
+        return new DecisionInstanceReferenceDto()
+            .setDecisionName(decisionName)
+            .setInstanceId(response.getHits().getHits()[0].getId());
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while searching for root cause decision. Flow node instance id: %s. Error message: %s.",
+          flowNodeInstanceKey,
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+    return null;
   }
 
   private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
@@ -566,7 +625,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
           result.setBreadcrumb(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
           //find incidents information
           searchForIncidents(result, String.valueOf(flowNodeInstance.getProcessInstanceKey()),
-              flowNodeInstance.getFlowNodeId(), flowNodeInstance.getId());
+              flowNodeInstance.getFlowNodeId(), flowNodeInstance.getId(), flowNodeInstance.getType());
         } else {
           result.setInstanceCount(bucketCurrentLevel.getDocCount());
           result.setFlowNodeId(flowNodeInstance.getFlowNodeId());
@@ -649,6 +708,8 @@ public class FlowNodeInstanceReader extends AbstractReader {
     final EventEntity eventEntity = getEventEntity(flowNodeInstance.getId());
     final String[] calledProcessInstanceId = {null};
     final String[] calledProcessDefinitionName = {null};
+    final String[] calledDecisionInstanceId = {null};
+    final String[] calledDecisionDefinitionName = {null};
     if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
       findCalledProcessInstance(flowNodeInstance.getId(),
           sh -> {
@@ -660,10 +721,36 @@ public class FlowNodeInstanceReader extends AbstractReader {
             }
             calledProcessDefinitionName[0] = processName;
           });
+    } else if (flowNodeInstance.getType().equals(FlowNodeType.BUSINESS_RULE_TASK)) {
+      findCalledDecisionInstance(flowNodeInstance.getId(),
+          sh -> {
+            final Map<String, Object> source = sh.getSourceAsMap();
+            final String rootDecisionDefId = (String) source.get(ROOT_DECISION_DEFINITION_ID);
+            final String decisionDefId = (String) source.get(DECISION_DEFINITION_ID);
+
+            if (rootDecisionDefId.equals(decisionDefId)) {
+              //this is our instance, we will show the link
+              calledDecisionInstanceId[0] = sh.getId();
+              String decisionName = (String)source.get(DECISION_NAME);
+              if (decisionName == null) {
+                decisionName = (String)source.get(DECISION_ID);
+              }
+              calledDecisionDefinitionName[0] = decisionName;
+            } else {
+              //we will show only name of the root decision without the link
+              String decisionName = (String)source.get(ROOT_DECISION_NAME);
+              if (decisionName == null) {
+                decisionName = (String)source.get(ROOT_DECISION_ID);
+              }
+              calledDecisionDefinitionName[0] = decisionName;
+            }
+
+          });
     }
     return FlowNodeInstanceMetadataDto
         .createFrom(flowNodeInstance, eventEntity, calledProcessInstanceId[0],
-            calledProcessDefinitionName[0]);
+            calledProcessDefinitionName[0], calledDecisionInstanceId[0],
+            calledDecisionDefinitionName[0]);
   }
 
   private void findCalledProcessInstance(final String flowNodeInstanceId,
@@ -683,6 +770,31 @@ public class FlowNodeInstanceReader extends AbstractReader {
     } catch (IOException e) {
       final String message = String.format(
           "Exception occurred, while obtaining parent process instance id for flow node instance: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private void findCalledDecisionInstance(final String flowNodeInstanceId,
+      Consumer<SearchHit> decisionInstanceConsumer) {
+    final TermQueryBuilder flowNodeInstanceQ = termQuery(ELEMENT_INSTANCE_KEY,
+        flowNodeInstanceId);
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
+        .source(new SearchSourceBuilder().query(flowNodeInstanceQ)
+            .fetchSource(
+                new String[]{ROOT_DECISION_DEFINITION_ID, ROOT_DECISION_NAME, ROOT_DECISION_ID,
+                DECISION_DEFINITION_ID, DECISION_NAME, DECISION_ID},
+                null)
+            .sort(EVALUATION_DATE, SortOrder.DESC)
+            .sort(EXECUTION_INDEX, SortOrder.DESC));
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value >= 1) {
+        decisionInstanceConsumer.accept(response.getHits().getAt(0));
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining calles decision instance id for flow node instance: %s",
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }

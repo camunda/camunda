@@ -31,6 +31,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String decisionName;
   private int decisionVersion;
   private String rootDecisionName;
+  private String rootDecisionId;
   private String rootDecisionDefinitionId;
   private DecisionType decisionType;
   private String result;
@@ -186,6 +187,15 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
+  public String getRootDecisionId() {
+    return rootDecisionId;
+  }
+
+  public DecisionInstanceEntity setRootDecisionId(final String rootDecisionId) {
+    this.rootDecisionId = rootDecisionId;
+    return this;
+  }
+
   public String getRootDecisionDefinitionId() {
     return rootDecisionDefinitionId;
   }
@@ -272,6 +282,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
         Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
         Objects.equals(decisionName, that.decisionName) &&
         Objects.equals(rootDecisionName, that.rootDecisionName) &&
+        Objects.equals(rootDecisionId, that.rootDecisionId) &&
         Objects.equals(rootDecisionDefinitionId, that.rootDecisionDefinitionId) &&
         decisionType == that.decisionType &&
         Objects.equals(result, that.result) &&
@@ -282,12 +293,15 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   @Override
   public int hashCode() {
-    return Objects
+    int result1 = Objects
         .hash(super.hashCode(), executionIndex, state, evaluationDate, evaluationFailure, position,
             decisionRequirementsKey, decisionRequirementsId, processDefinitionKey,
             processInstanceKey,
             elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName,
-            rootDecisionName, rootDecisionDefinitionId, decisionVersion, decisionType, result,
-            evaluatedInputs, evaluatedOutputs);
+            decisionVersion, rootDecisionName, rootDecisionId, rootDecisionDefinitionId,
+            decisionType,
+            result, evaluatedInputs, evaluatedOutputs);
+    result1 = 31 * result1 + Arrays.hashCode(sortValues);
+    return result1;
   }
 }

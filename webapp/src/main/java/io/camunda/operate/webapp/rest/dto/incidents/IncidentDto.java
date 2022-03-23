@@ -13,6 +13,7 @@ import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.rest.dto.metadata.DecisionInstanceReferenceDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +53,8 @@ public class IncidentDto {
   private OperationDto lastOperation;
 
   private ProcessInstanceReferenceDto rootCauseInstance;
+
+  private DecisionInstanceReferenceDto rootCauseDecision;
 
   public String getId() {
     return id;
@@ -145,14 +148,25 @@ public class IncidentDto {
     return this;
   }
 
+  public DecisionInstanceReferenceDto getRootCauseDecision() {
+    return rootCauseDecision;
+  }
+
+  public IncidentDto setRootCauseDecision(
+      final DecisionInstanceReferenceDto rootCauseDecision) {
+    this.rootCauseDecision = rootCauseDecision;
+    return this;
+  }
+
   public static <T> IncidentDto createFrom(final IncidentEntity incidentEntity,
-      final Map<Long, String> processNames, IncidentDataHolder incidentData) {
-    return createFrom(incidentEntity, Collections.emptyList(), processNames, incidentData);
+      final Map<Long, String> processNames, IncidentDataHolder incidentData,
+      DecisionInstanceReferenceDto rootCauseDecision) {
+    return createFrom(incidentEntity, Collections.emptyList(), processNames, incidentData, rootCauseDecision);
   }
 
   public static IncidentDto createFrom(IncidentEntity incidentEntity,
       List<OperationEntity> operations, Map<Long, String> processNames,
-      IncidentDataHolder incidentData) {
+      IncidentDataHolder incidentData, DecisionInstanceReferenceDto rootCauseDecision) {
     if (incidentEntity == null) {
       return null;
     }
@@ -194,6 +208,10 @@ public class IncidentDto {
       incident.setRootCauseInstance(rootCauseInstance);
     }
 
+    if (rootCauseDecision != null) {
+      incident.setRootCauseDecision(rootCauseDecision);
+    }
+
     return incident;
   }
 
@@ -206,7 +224,7 @@ public class IncidentDto {
           .filter(inc -> inc != null)
           .map(inc ->
               createFrom(inc, operations.get(inc.getKey()), processNames,
-                  incidentData.get(inc.getId())))
+                  incidentData.get(inc.getId()), null))
           .collect(Collectors.toList());
     }
     return new ArrayList<>();
@@ -235,14 +253,14 @@ public class IncidentDto {
         Objects.equals(jobId, that.jobId) &&
         Objects.equals(creationTime, that.creationTime) &&
         Objects.equals(lastOperation, that.lastOperation) &&
-        Objects.equals(rootCauseInstance, that.rootCauseInstance);
+        Objects.equals(rootCauseInstance, that.rootCauseInstance) &&
+        Objects.equals(rootCauseDecision, that.rootCauseDecision);
   }
 
   @Override
   public int hashCode() {
     return Objects
         .hash(id, errorType, errorMessage, flowNodeId, flowNodeInstanceId, jobId, creationTime,
-            hasActiveOperation, lastOperation, rootCauseInstance);
+            hasActiveOperation, lastOperation, rootCauseInstance, rootCauseDecision);
   }
-
 }

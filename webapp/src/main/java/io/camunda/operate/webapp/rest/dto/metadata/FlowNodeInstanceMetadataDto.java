@@ -11,6 +11,7 @@ import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 public class FlowNodeInstanceMetadataDto {
 
@@ -24,6 +25,8 @@ public class FlowNodeInstanceMetadataDto {
   private OffsetDateTime endDate;
   private String calledProcessInstanceId;
   private String calledProcessDefinitionName;
+  private String calledDecisionInstanceId;
+  private String calledDecisionDefinitionName;
 
   private String eventId;
   /**
@@ -101,6 +104,26 @@ public class FlowNodeInstanceMetadataDto {
     return this;
   }
 
+  public String getCalledDecisionInstanceId() {
+    return calledDecisionInstanceId;
+  }
+
+  public FlowNodeInstanceMetadataDto setCalledDecisionInstanceId(
+      final String calledDecisionInstanceId) {
+    this.calledDecisionInstanceId = calledDecisionInstanceId;
+    return this;
+  }
+
+  public String getCalledDecisionDefinitionName() {
+    return calledDecisionDefinitionName;
+  }
+
+  public FlowNodeInstanceMetadataDto setCalledDecisionDefinitionName(
+      final String calledDecisionDefinitionName) {
+    this.calledDecisionDefinitionName = calledDecisionDefinitionName;
+    return this;
+  }
+
   public String getEventId() {
     return eventId;
   }
@@ -151,7 +174,8 @@ public class FlowNodeInstanceMetadataDto {
   }
 
   public static FlowNodeInstanceMetadataDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
-      EventEntity eventEntity, String calledProcessInstanceId, String calledProcessDefinitionName) {
+      EventEntity eventEntity, String calledProcessInstanceId, String calledProcessDefinitionName,
+      String calledDecisionInstanceId, String calledDecisionDefinitionName) {
     FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto();
     //flow node instance data
     metadataDto.setFlowNodeInstanceId(flowNodeInstance.getId());
@@ -164,6 +188,12 @@ public class FlowNodeInstanceMetadataDto {
     }
     if (calledProcessDefinitionName != null) {
       metadataDto.setCalledProcessDefinitionName(calledProcessDefinitionName);
+    }
+    if (calledDecisionInstanceId != null) {
+      metadataDto.setCalledDecisionInstanceId(calledDecisionInstanceId);
+    }
+    if (calledDecisionDefinitionName != null) {
+      metadataDto.setCalledDecisionDefinitionName(calledDecisionDefinitionName);
     }
 
     //last event data
@@ -181,6 +211,40 @@ public class FlowNodeInstanceMetadataDto {
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeInstanceMetadataDto that = (FlowNodeInstanceMetadataDto) o;
+    return Objects.equals(flowNodeId, that.flowNodeId) &&
+        Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
+        flowNodeType == that.flowNodeType &&
+        Objects.equals(startDate, that.startDate) &&
+        Objects.equals(endDate, that.endDate) &&
+        Objects.equals(calledProcessInstanceId, that.calledProcessInstanceId) &&
+        Objects.equals(calledProcessDefinitionName, that.calledProcessDefinitionName) &&
+        Objects.equals(calledDecisionInstanceId, that.calledDecisionInstanceId) &&
+        Objects.equals(calledDecisionDefinitionName, that.calledDecisionDefinitionName) &&
+        Objects.equals(eventId, that.eventId) &&
+        Objects.equals(jobType, that.jobType) &&
+        Objects.equals(jobRetries, that.jobRetries) &&
+        Objects.equals(jobWorker, that.jobWorker) &&
+        Objects.equals(jobDeadline, that.jobDeadline) &&
+        Objects.equals(jobCustomHeaders, that.jobCustomHeaders);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate,
+        calledProcessInstanceId, calledProcessDefinitionName, calledDecisionInstanceId,
+        calledDecisionDefinitionName, eventId, jobType, jobRetries, jobWorker, jobDeadline,
+        jobCustomHeaders);
+  }
+
+  @Override
   public String toString() {
     return "FlowNodeInstanceMetadataDto{" +
         "flowNodeId='" + flowNodeId + '\'' +
@@ -190,6 +254,8 @@ public class FlowNodeInstanceMetadataDto {
         ", endDate=" + endDate +
         ", calledProcessInstanceId='" + calledProcessInstanceId + '\'' +
         ", calledProcessDefinitionName='" + calledProcessDefinitionName + '\'' +
+        ", calledDecisionInstanceId='" + calledDecisionInstanceId + '\'' +
+        ", calledDecisionDefinitionName='" + calledDecisionDefinitionName + '\'' +
         ", eventId='" + eventId + '\'' +
         ", jobType='" + jobType + '\'' +
         ", jobRetries=" + jobRetries +

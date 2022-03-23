@@ -54,6 +54,9 @@
       "decisionName": {
         "type": "keyword"
       },
+      "rootDecisionId": {
+        "type": "keyword"
+      },
       "rootDecisionName": {
         "type": "keyword"
       },
