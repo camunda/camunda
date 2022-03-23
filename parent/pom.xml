@@ -112,6 +112,7 @@
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.141</version.classgraph>
+    <version.plexus-util>3.4.1</version.plexus-util>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -1483,7 +1484,7 @@
                   <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                   <dep>org.junit.jupiter:junit-jupiter-engine</dep>
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>org.codehaus.plexus:plexus-utils:jar:1.1</dep>
+                  <dep>org.codehaus.plexus:plexus-utils</dep>
                   <dep>org.bouncycastle:bcpkix-jdk15on</dep>
                   <dep>org.bouncycastle:bcprov-jdk15on</dep>
                 </ignoredUnusedDeclaredDependencies>
@@ -1771,7 +1772,7 @@
         <dependency>
           <groupId>org.codehaus.plexus</groupId>
           <artifactId>plexus-utils</artifactId>
-          <version>3.4.1</version>
+          <version>${version.plexus-util}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
