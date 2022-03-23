@@ -122,6 +122,11 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
+  public Record<T> copyOf() {
+    throw new UnsupportedOperationException("copyOf is not supported");
+  }
+
+  @Override
   public Record<T> clone() {
     throw new UnsupportedOperationException("Clone not implemented");
   }
