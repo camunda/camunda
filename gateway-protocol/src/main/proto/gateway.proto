@@ -142,11 +142,15 @@ message CreateProcessInstanceWithResultResponse {
 }
 
 message DeployProcessRequest {
+  // since 8, replaced by DeployResourceRequest
+  option deprecated = true;
   // List of process resources to deploy
   repeated ProcessRequestObject processes = 1;
 }
 
 message ProcessRequestObject {
+  // since 8, replaced by Resource
+  option deprecated = true;
   // the resource basename, e.g. myProcess.bpmn
   string name = 1;
   // the process definition as a UTF8-encoded string
@@ -154,6 +158,8 @@ message ProcessRequestObject {
 }
 
 message DeployProcessResponse {
+  // since 8, replaced by DeployResourceResponse
+  option deprecated = true;
   // the unique key identifying the deployment
   int64 key = 1;
   // a list of deployed processes
@@ -462,6 +468,8 @@ service Gateway {
           - the process is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
    */
   rpc DeployProcess (DeployProcessRequest) returns (DeployProcessResponse) {
+    // since 8, replaced by DeployResource
+    option deprecated = true;
   }
 
   /*
