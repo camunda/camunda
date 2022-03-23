@@ -37,7 +37,7 @@ def seedJob = job('seed-job-zeebe') {
     }
   }
 
-  label 'main'
+  label 'master'
   jdk '(Default)'
 
   steps {
