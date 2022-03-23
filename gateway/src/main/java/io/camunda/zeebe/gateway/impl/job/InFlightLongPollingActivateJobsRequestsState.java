@@ -18,9 +18,9 @@ public final class InFlightLongPollingActivateJobsRequestsState {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
-  private final Queue<LongPollingActivateJobsRequest> activeRequests = new LinkedList<>();
-  private final Queue<LongPollingActivateJobsRequest> pendingRequests = new LinkedList<>();
-  private final Set<LongPollingActivateJobsRequest> activeRequestsToBeRepeated = new HashSet<>();
+  private final Queue<InflightActivateJobsRequest> activeRequests = new LinkedList<>();
+  private final Queue<InflightActivateJobsRequest> pendingRequests = new LinkedList<>();
+  private final Set<InflightActivateJobsRequest> activeRequestsToBeRepeated = new HashSet<>();
   private int failedAttempts;
   private long lastUpdatedTime;
 
@@ -60,14 +60,14 @@ public final class InFlightLongPollingActivateJobsRequestsState {
     return lastUpdatedTime;
   }
 
-  public void enqueueRequest(final LongPollingActivateJobsRequest request) {
+  public void enqueueRequest(final InflightActivateJobsRequest request) {
     if (!pendingRequests.contains(request)) {
       pendingRequests.offer(request);
     }
     removeObsoleteRequestsAndUpdateMetrics();
   }
 
-  public Queue<LongPollingActivateJobsRequest> getPendingRequests() {
+  public Queue<InflightActivateJobsRequest> getPendingRequests() {
     removeObsoleteRequestsAndUpdateMetrics();
     return pendingRequests;
   }
@@ -79,29 +79,32 @@ public final class InFlightLongPollingActivateJobsRequestsState {
     metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
   }
 
-  private boolean isObsolete(final LongPollingActivateJobsRequest request) {
-    return request.isTimedOut() || request.isCanceled() || request.isCompleted();
+  private boolean isObsolete(final InflightActivateJobsRequest request) {
+    return request.isTimedOut()
+        || request.isCanceled()
+        || request.isCompleted()
+        || request.isAborted();
   }
 
-  public void removeRequest(final LongPollingActivateJobsRequest request) {
+  public void removeRequest(final InflightActivateJobsRequest request) {
     pendingRequests.remove(request);
     removeObsoleteRequestsAndUpdateMetrics();
   }
 
-  public LongPollingActivateJobsRequest getNextPendingRequest() {
+  public InflightActivateJobsRequest getNextPendingRequest() {
     removeObsoleteRequestsAndUpdateMetrics();
-    final LongPollingActivateJobsRequest request = pendingRequests.poll();
+    final InflightActivateJobsRequest request = pendingRequests.poll();
     metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
     return request;
   }
 
-  public void addActiveRequest(final LongPollingActivateJobsRequest request) {
+  public void addActiveRequest(final InflightActivateJobsRequest request) {
     activeRequests.offer(request);
     pendingRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
   }
 
-  public void removeActiveRequest(final LongPollingActivateJobsRequest request) {
+  public void removeActiveRequest(final InflightActivateJobsRequest request) {
     activeRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
   }
@@ -116,7 +119,7 @@ public final class InFlightLongPollingActivateJobsRequestsState {
    * attempts were reset to 0 (because new jobs became available) whilst the request was running,
    * and if the request's long polling is enabled.
    */
-  public boolean shouldBeRepeated(final LongPollingActivateJobsRequest request) {
+  public boolean shouldBeRepeated(final InflightActivateJobsRequest request) {
     return activeRequestsToBeRepeated.contains(request) && !request.isLongPollingDisabled();
   }
 
