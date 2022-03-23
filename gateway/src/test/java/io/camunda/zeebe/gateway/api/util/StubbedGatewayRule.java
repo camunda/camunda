@@ -8,9 +8,6 @@
 package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
@@ -20,26 +17,18 @@ public final class StubbedGatewayRule extends ExternalResource {
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
   private final ActorSchedulerRule actorSchedulerRule;
+  private final GatewayCfg config;
   private final StubbedBrokerClient brokerClient;
-  private final ActivateJobsHandler activateJobsHandler;
 
   public StubbedGatewayRule(final ActorSchedulerRule actorSchedulerRule, final GatewayCfg config) {
     this.actorSchedulerRule = actorSchedulerRule;
     brokerClient = new StubbedBrokerClient();
-    activateJobsHandler = getActivateJobsHandler(config, brokerClient);
-  }
-
-  private static ActivateJobsHandler getActivateJobsHandler(
-      final GatewayCfg config, final StubbedBrokerClient brokerClient) {
-    if (config.getLongPolling().isEnabled()) {
-      return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
-    }
-    return new RoundRobinActivateJobsHandler(brokerClient);
+    this.config = config;
   }
 
   @Override
   protected void before() throws Throwable {
-    gateway = new StubbedGateway(actorSchedulerRule.get(), brokerClient, activateJobsHandler);
+    gateway = new StubbedGateway(actorSchedulerRule.get(), brokerClient, config);
     gateway.start();
     client = gateway.buildClient();
   }

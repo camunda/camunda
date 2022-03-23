@@ -13,7 +13,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 
-public final class FailJobStub extends JobRequestStub
+public class FailJobStub extends JobRequestStub
     implements RequestStub<BrokerFailJobRequest, BrokerResponse<JobRecord>> {
 
   @Override

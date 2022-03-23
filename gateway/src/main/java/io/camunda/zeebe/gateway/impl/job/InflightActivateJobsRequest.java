@@ -13,12 +13,13 @@ import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 import java.util.Objects;
 import org.slf4j.Logger;
 
-public final class LongPollingActivateJobsRequest {
+public class InflightActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final long requestId;
@@ -32,8 +33,9 @@ public final class LongPollingActivateJobsRequest {
   private ScheduledTimer scheduledTimer;
   private boolean isTimedOut;
   private boolean isCompleted;
+  private boolean isAborted;
 
-  public LongPollingActivateJobsRequest(
+  public InflightActivateJobsRequest(
       final long requestId,
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
@@ -47,7 +49,7 @@ public final class LongPollingActivateJobsRequest {
         request.getRequestTimeout());
   }
 
-  private LongPollingActivateJobsRequest(
+  private InflightActivateJobsRequest(
       final long requestId,
       final BrokerActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
@@ -66,7 +68,7 @@ public final class LongPollingActivateJobsRequest {
   }
 
   public void complete() {
-    if (isCompleted() || isCanceled()) {
+    if (!isOpen()) {
       return;
     }
     cancelTimerIfScheduled();
@@ -82,26 +84,44 @@ public final class LongPollingActivateJobsRequest {
     return isCompleted;
   }
 
-  public void onResponse(final ActivateJobsResponse grpcResponse) {
-    if (!(isCompleted() || isCanceled())) {
+  /**
+   * Sends activated jobs to the respective client.
+   *
+   * @param activatedJobs to send back to the client
+   * @return an instance of {@link Either} indicating the following:
+   *     <ul>
+   *       <li>{@link Either#get() == true}: if the activated jobs have been sent back to the client
+   *       <li>{@link Either#get() == false}: if the activated jobs couldn't be sent back to the
+   *           client
+   *       <li>{@link Either#getLeft() != null}: if sending back the activated jobs failed with an
+   *           exception (note: in this case {@link Either#isRight() == false})
+   *     </ul>
+   */
+  public Either<Exception, Boolean> tryToSendActivatedJobs(
+      final ActivateJobsResponse activatedJobs) {
+    if (isOpen()) {
       try {
-        responseObserver.onNext(grpcResponse);
+        responseObserver.onNext(activatedJobs);
+        return Either.right(true);
       } catch (final Exception e) {
         LOG.warn("Failed to send response to client.", e);
+        return Either.left(e);
       }
     }
+    return Either.right(false);
   }
 
   public void onError(final Throwable error) {
-    if (isCompleted() || isCanceled()) {
+    if (!isOpen()) {
       return;
     }
     cancelTimerIfScheduled();
     try {
       responseObserver.onError(error);
     } catch (final Exception e) {
-      LOG.warn("Failed to send response to client.", e);
+      LOG.warn("Failed to send terminating error to client.", e);
     }
+    isAborted = true;
   }
 
   public void timeout() {
@@ -163,6 +183,14 @@ public final class LongPollingActivateJobsRequest {
     }
   }
 
+  public boolean isAborted() {
+    return isAborted;
+  }
+
+  public boolean isOpen() {
+    return !(isCompleted() || isCanceled() || isAborted());
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(jobType, maxJobsToActivate, requestId, worker);
@@ -179,7 +207,7 @@ public final class LongPollingActivateJobsRequest {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    final var other = (LongPollingActivateJobsRequest) obj;
+    final var other = (InflightActivateJobsRequest) obj;
     return Objects.equals(jobType, other.jobType)
         && maxJobsToActivate == other.maxJobsToActivate
         && requestId == other.requestId
