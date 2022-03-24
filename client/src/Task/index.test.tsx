@@ -170,8 +170,20 @@ describe('<Task />', () => {
       graphql.mutation('CompleteTask', (_, res, ctx) => {
         return res.once(ctx.data(mockCompleteTask().result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      graphql.query('GetTasks', (req, res, ctx) => {
+        const {state, assigned} = req.variables;
+
+        if (state === 'CREATED' && assigned === undefined) {
+          return res(ctx.data(mockGetAllOpenTasks(true).result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid query',
+            },
+          ]),
+        );
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
@@ -234,8 +246,20 @@ describe('<Task />', () => {
       graphql.mutation('CompleteTask', (_, res, ctx) => {
         return res.once(ctx.data(mockCompleteTask().result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      graphql.query('GetTasks', (req, res, ctx) => {
+        const {state, assigned} = req.variables;
+
+        if (state === 'CREATED' && assigned === undefined) {
+          return res(ctx.data(mockGetAllOpenTasks(true).result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid query',
+            },
+          ]),
+        );
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
@@ -298,14 +322,23 @@ describe('<Task />', () => {
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      graphql.query('GetTasks', (req, res, ctx) => {
+        const {state, assigned} = req.variables;
+
+        if (state === 'CREATED' && assigned === undefined) {
+          return res(ctx.data(mockGetAllOpenTasks(true).result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid query',
+            },
+          ]),
+        );
       }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed('1').result.data));
@@ -320,9 +353,7 @@ describe('<Task />', () => {
     });
 
     userEvent.click(await screen.findByText(/Add Variable/));
-
     userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
-
     userEvent.type(
       screen.getByLabelText('New variable 0 value'),
       '"valid_value"',

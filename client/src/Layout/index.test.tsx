@@ -20,6 +20,7 @@ import {ApolloProvider} from '@apollo/client';
 import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import userEvent from '@testing-library/user-event';
 
 const mockApolloClient = createApolloClient({maxTasksDisplayed: 5});
 
@@ -36,17 +37,38 @@ const Wrapper: React.FC = ({children}) => {
 describe('<Layout />', () => {
   it('should load tasks', async () => {
     mockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res(ctx.data(mockGetAllOpenTasks().result.data));
+      graphql.query('GetTasks', (req, res, ctx) => {
+        const {state, assigned} = req.variables;
+
+        if (state === 'CREATED' && assigned === undefined) {
+          return res(ctx.data(mockGetAllOpenTasks().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid query',
+            },
+          ]),
+        );
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetUnclaimed.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetUnclaimed.result.data));
+      graphql.query('GetTasks', (req, res, ctx) => {
+        const {state, assigned} = req.variables;
+
+        if (state === 'CREATED' && assigned) {
+          return res(ctx.data(mockGetUnclaimed.result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid query',
+            },
+          ]),
+        );
       }),
     );
 
@@ -54,48 +76,28 @@ describe('<Layout />', () => {
       wrapper: Wrapper,
     });
 
-    expect(
-      screen.getByRole('combobox', {
-        name: /filter/i,
-      }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText(/filter/i)).toBeDisabled();
     expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
       screen.getByTestId('tasks-loading-overlay'),
     );
 
-    expect(
-      screen.getByRole('combobox', {
-        name: /filter/i,
-      }),
-    ).toBeEnabled();
+    expect(screen.getByLabelText(/filter/i)).toBeEnabled();
     expect(
       screen.queryByTestId('tasks-loading-overlay'),
     ).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('combobox', {name: /filter/i}), {
-      target: {
-        value: 'unclaimed',
-      },
-    });
+    userEvent.selectOptions(screen.getByLabelText(/filter/i), ['unclaimed']);
 
     expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
-    expect(
-      screen.getByRole('combobox', {
-        name: /filter/i,
-      }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText(/filter/i)).toBeDisabled();
 
     await waitForElementToBeRemoved(
       screen.getByTestId('tasks-loading-overlay'),
     );
 
-    expect(
-      screen.getByRole('combobox', {
-        name: /filter/i,
-      }),
-    ).toBeEnabled();
+    expect(screen.getByLabelText(/filter/i)).toBeEnabled();
     expect(
       screen.queryByTestId('tasks-loading-overlay'),
     ).not.toBeInTheDocument();
@@ -111,26 +113,8 @@ describe('<Layout />', () => {
         );
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
-    );
-
-    render(<Layout />, {
-      wrapper: Wrapper,
-    });
-
-    expect(
-      screen.getByRole('combobox', {
-        name: /filter/i,
-      }),
-    ).toBeDisabled();
-    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
-
-    mockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
@@ -138,6 +122,31 @@ describe('<Layout />', () => {
           }),
         );
       }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(
+          ctx.data({
+            tasks: [generateTask('5'), generateTask('6')],
+          }),
+        );
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(
+          ctx.data({
+            tasks: [generateTask('7'), generateTask('8')],
+          }),
+        );
+      }),
+    );
+
+    render(<Layout />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByLabelText(/filter/i)).toBeDisabled();
+    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('tasks-loading-overlay'),
     );
 
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
@@ -146,16 +155,6 @@ describe('<Layout />', () => {
 
     expect(await screen.findByText('TASK 3')).toBeInTheDocument();
     expect(screen.getByText('TASK 4')).toBeInTheDocument();
-
-    mockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data({
-            tasks: [generateTask('5'), generateTask('6')],
-          }),
-        );
-      }),
-    );
 
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},
@@ -167,16 +166,6 @@ describe('<Layout />', () => {
     expect(screen.getByText('TASK 3')).toBeInTheDocument();
     expect(screen.getByText('TASK 4')).toBeInTheDocument();
     expect(screen.getByText('TASK 6')).toBeInTheDocument();
-
-    mockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data({
-            tasks: [generateTask('7'), generateTask('8')],
-          }),
-        );
-      }),
-    );
 
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},

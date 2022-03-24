@@ -16,13 +16,7 @@ import {Textfield as MockTextfield} from 'modules/mocks/common-ui/Textfield';
 
 beforeAll(() => {
   mockServer.listen({
-    onUnhandledRequest(req) {
-      console.error(
-        'Found an unhandled %s request to %s',
-        req.method,
-        req.url.href,
-      );
-    },
+    onUnhandledRequest: 'error',
   });
 
   Object.defineProperty(window, 'clientConfig', {
