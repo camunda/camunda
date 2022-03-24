@@ -4,52 +4,57 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {useEffect} from 'react';
+import {useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react';
-import {autorun} from 'mobx';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
-import {useEffect, useRef} from 'react';
-import {Skeleton} from './Skeleton';
-import Table from 'modules/components/Table';
-import {Message} from 'modules/components/SortableTable/Message';
+
+import {Panel} from 'modules/components/Panel';
+import {PanelHeader} from 'modules/components/PanelHeader';
+import {SortableTable} from 'modules/components/SortableTable';
+import {Link} from 'modules/components/Link';
+import {Locations} from 'modules/routes';
+import {formatDate} from 'modules/utils/date';
+
 import {
   Container,
-  DecisionColumnHeader,
-  TH,
-  List,
-  ScrollableContent,
-  THead,
-  TRHeader,
-  Spinner,
+  DecisionContainer,
+  CircleBlock,
+  DecisionBlock,
   Copyright,
+  State,
 } from './styled';
-import {ColumnHeader} from 'modules/components/SortableTable/ColumnHeader';
-import {useLocation} from 'react-router-dom';
-import {PanelHeader} from 'modules/components/PanelHeader';
-import {InfiniteScroller} from 'modules/components/InfiniteScroller';
-import {DecisionInstances} from './DecisionInstances';
-import {Panel} from 'modules/components/Panel';
 
 const ROW_HEIGHT = 37;
 
 const InstancesTable: React.FC = observer(() => {
   const {
-    state: {status, filteredInstancesCount, latestFetch},
+    state: {status, filteredInstancesCount, latestFetch, decisionInstances},
     areDecisionInstancesEmpty,
     hasLatestDecisionInstances,
   } = decisionInstancesStore;
   const location = useLocation();
 
-  let scrollableContentRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     decisionInstancesStore.fetchInstancesFromFilters();
   }, [location.search]);
 
-  const shouldDisplaySkeleton = ['initial', 'first-fetch'].includes(status);
+  const getTableState = () => {
+    if (['initial', 'first-fetch'].includes(status)) {
+      return 'skeleton';
+    }
+    if (status === 'fetching') {
+      return 'loading';
+    }
+    if (status === 'error') {
+      return 'error';
+    }
+    if (areDecisionInstancesEmpty) {
+      return 'empty';
+    }
 
-  const isSortingDisabled =
-    areDecisionInstancesEmpty ||
-    ['initial', 'first-fetch', 'fetching', 'error'].includes(status);
+    return 'content';
+  };
 
   const getEmptyListMessage = () => {
     let message = 'There are no Instances matching this filter set';
@@ -59,112 +64,119 @@ const InstancesTable: React.FC = observer(() => {
     return message;
   };
 
-  useEffect(() => {
-    let disposer = autorun(() => {
-      if (decisionInstancesStore.state.status === 'fetching') {
-        scrollableContentRef?.current?.scrollTo?.(0, 0);
-      }
-    });
-
-    return () => {
-      if (disposer !== undefined) {
-        disposer();
-      }
-    };
-  }, []);
-
   return (
     <Container>
       <PanelHeader title="Instances" count={filteredInstancesCount} />
-      <List>
-        <ScrollableContent
-          overflow={shouldDisplaySkeleton ? 'hidden' : 'auto'}
-          ref={scrollableContentRef}
-        >
-          {status === 'fetching' && <Spinner data-testid="instances-loader" />}
+      <SortableTable
+        state={getTableState()}
+        headerColumns={[
+          {
+            content: 'Decision',
+            sortKey: 'decision',
+          },
+          {
+            content: 'Decision Instance Id',
+            sortKey: 'decisionInstanceId',
+          },
+          {
+            content: 'Version',
+            sortKey: 'version',
+          },
+          {
+            content: 'Evaluation Date',
+            sortKey: 'evaluationTime',
+            isDefault: true,
+          },
+          {
+            content: 'Process Instance Id',
+            sortKey: 'processInstanceId',
+          },
+        ]}
+        skeletonColumns={[
+          {
+            variant: 'custom',
+            customSkeleton: (
+              <DecisionContainer>
+                <CircleBlock />
+                <DecisionBlock />
+              </DecisionContainer>
+            ),
+          },
+          {variant: 'block', width: '162px'},
+          {variant: 'block', width: '17px'},
+          {variant: 'block', width: '151px'},
+          {variant: 'block', width: '162px'},
+        ]}
+        emptyMessage={getEmptyListMessage()}
+        onVerticalScrollStartReach={async (scrollDown) => {
+          if (decisionInstancesStore.shouldFetchPreviousInstances() === false) {
+            return;
+          }
 
-          <Table>
-            <THead>
-              <TRHeader>
-                <TH>
-                  <DecisionColumnHeader>
-                    <ColumnHeader
-                      disabled={isSortingDisabled}
-                      label="Decision"
-                      sortKey="decision"
-                    />
-                  </DecisionColumnHeader>
-                </TH>
-                <TH>
-                  <ColumnHeader
-                    disabled={isSortingDisabled}
-                    label="Decision Instance Id"
-                    sortKey="decisionInstanceId"
-                  />
-                </TH>
-                <TH>
-                  <ColumnHeader
-                    disabled={isSortingDisabled}
-                    label="Version"
-                    sortKey="version"
-                  />
-                </TH>
-                <TH>
-                  <ColumnHeader
-                    disabled={isSortingDisabled}
-                    label="Evaluation Time"
-                    sortKey="evaluationTime"
-                    isDefault
-                  />
-                </TH>
-                <TH>
-                  <ColumnHeader
-                    disabled={isSortingDisabled}
-                    label="Process Instance Id"
-                    sortKey="processInstanceId"
-                  />
-                </TH>
-              </TRHeader>
-            </THead>
-            {shouldDisplaySkeleton && <Skeleton />}
-            {status === 'error' && <Message type="error" />}
-            {areDecisionInstancesEmpty && (
-              <Message type="empty">{getEmptyListMessage()}</Message>
-            )}
+          await decisionInstancesStore.fetchPreviousInstances();
 
-            <InfiniteScroller
-              onVerticalScrollStartReach={async (scrollDown) => {
-                if (
-                  decisionInstancesStore.shouldFetchPreviousInstances() ===
-                  false
-                ) {
-                  return;
-                }
+          if (hasLatestDecisionInstances) {
+            scrollDown(latestFetch?.decisionInstancesCount ?? 0 * ROW_HEIGHT);
+          }
+        }}
+        onVerticalScrollEndReach={() => {
+          if (decisionInstancesStore.shouldFetchNextInstances() === false) {
+            return;
+          }
 
-                await decisionInstancesStore.fetchPreviousInstances();
-
-                if (hasLatestDecisionInstances) {
-                  scrollDown(
-                    latestFetch?.decisionInstancesCount ?? 0 * ROW_HEIGHT
-                  );
-                }
-              }}
-              onVerticalScrollEndReach={() => {
-                if (
-                  decisionInstancesStore.shouldFetchNextInstances() === false
-                ) {
-                  return;
-                }
-
-                decisionInstancesStore.fetchNextInstances();
-              }}
-              scrollableContainerRef={scrollableContentRef}
-            >
-              <DecisionInstances />
-            </InfiniteScroller>
-          </Table>
-        </ScrollableContent>
-      </List>
+          decisionInstancesStore.fetchNextInstances();
+        }}
+        rows={decisionInstances.map(
+          ({id, state, name, version, evaluationTime, processInstanceId}) => {
+            return {
+              id,
+              ariaLabel: `Instance ${id}`,
+              content: [
+                {
+                  cellContent: (
+                    <>
+                      <State
+                        state={state}
+                        data-testid={`${state}-icon-${id}`}
+                      />
+                      {name}
+                    </>
+                  ),
+                },
+                {
+                  cellContent: (
+                    <Link
+                      to={Locations.decisionInstance(location, id)}
+                      title={`View decision instance ${id}`}
+                    >
+                      {id}
+                    </Link>
+                  ),
+                },
+                {
+                  cellContent: version,
+                },
+                {
+                  cellContent: formatDate(evaluationTime),
+                },
+                {
+                  cellContent:
+                    processInstanceId !== null ? (
+                      <Link
+                        to={Locations.instance(location, processInstanceId)}
+                        title={`View process instance ${processInstanceId}`}
+                      >
+                        {processInstanceId}
+                      </Link>
+                    ) : (
+                      'None'
+                    ),
+                },
+              ],
+            };
+          }
+        )}
+      />
       <Panel.Footer>
         <Copyright />
       </Panel.Footer>

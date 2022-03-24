@@ -5,10 +5,9 @@
  */
 
 import styled, {css} from 'styled-components';
-import Table from 'modules/components/Table';
-import StateIcon from 'modules/components/StateIcon';
-import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {Copyright as BaseCopyright} from 'modules/components/Copyright';
+import {BaseBlock, BaseCircle} from 'modules/components/Skeleton';
+import StateIcon from 'modules/components/StateIcon';
 
 const Container = styled.section`
   ${({theme}) => {
@@ -18,106 +17,43 @@ const Container = styled.section`
       background-color: ${colors.backgroundColor};
       display: flex;
       flex-direction: column;
-      flex-grow: 1;
       height: 100%;
     `;
   }}
 `;
 
-const TD = styled(Table.TD)`
-  ${({theme}) => {
-    return css`
-      color: ${theme.colors.text01};
-    `;
-  }}
-`;
-
-const Name = styled(TD)`
+const DecisionContainer = styled.div`
   display: flex;
-  align-items: center;
 `;
 
-const State = styled(StateIcon)`
-  margin-right: 10px;
-  margin-left: 11px;
-  top: 0;
-  position: static;
-`;
-
-const DecisionColumnHeader = styled.div`
+const CircleBlock = styled(BaseCircle)`
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
   margin-left: 14px;
 `;
 
-const TH = styled(Table.TH)`
-  ${({theme}) => {
-    return css`
-      font-weight: 500;
-      white-space: nowrap;
-      color: ${theme.colors.text01};
-      box-shadow: inset 0 -1px 0 ${theme.colors.decisionsList.header.th.borderColor};
-    `;
-  }}
-`;
-
-const TR = styled(Table.TR)`
-  line-height: 36px;
-  &:first-child {
-    border-top-style: hidden;
-  }
-`;
-
-const TRHeader = styled(Table.TR)`
-  border-top: none;
-`;
-
-const List = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`;
-
-type ScrollableContentProps = {
-  overflow: 'auto' | 'hidden';
-};
-
-const ScrollableContent = styled.div<ScrollableContentProps>`
-  ${({overflow}) => {
-    return css`
-      width: 100%;
-      height: 100%;
-      overflow-y: ${overflow};
-      flex: 1 0 0;
-      position: relative;
-    `;
-  }}
-`;
-
-const THead = styled(Table.THead)`
-  position: sticky;
-  top: 0;
-`;
-
-const Spinner = styled(SpinnerSkeleton)`
-  margin-top: 36px;
+const DecisionBlock = styled(BaseBlock)`
+  height: 14px;
+  margin-left: 5px;
+  width: 201px;
 `;
 
 const Copyright = styled(BaseCopyright)`
   text-align: right;
 `;
 
+const State = styled(StateIcon)`
+  margin-right: 10px;
+  &:first-child {
+    margin-left: 0;
+  }
+`;
 export {
   Container,
-  Name,
+  DecisionContainer,
+  DecisionBlock,
+  CircleBlock,
   State,
-  DecisionColumnHeader,
-  TH,
-  TD,
-  TR,
-  List,
-  ScrollableContent,
-  THead,
-  TRHeader,
-  Spinner,
   Copyright,
 };

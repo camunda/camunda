@@ -122,7 +122,7 @@ describe('<InstancesTable />', () => {
 
     expect(
       screen.getByRole('columnheader', {
-        name: /Evaluation Time/,
+        name: /Evaluation Date/,
       })
     ).toBeInTheDocument();
 
