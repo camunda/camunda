@@ -14,7 +14,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.clock.ZeebeClock;
@@ -49,7 +50,7 @@ final class ControlledActorClockEndpointIT {
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;
   private final HttpClient httpClient = HttpClient.newHttpClient();
-  private final ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
   private ZeebeClock zeebeClock;
 
   @BeforeEach
@@ -111,7 +112,7 @@ final class ControlledActorClockEndpointIT {
             });
   }
 
-  private List<AbstractRecord<?>> searchExportedRecords() throws IOException, InterruptedException {
+  private List<Record<?>> searchExportedRecords() throws IOException, InterruptedException {
     final var uri =
         URI.create(
             String.format(
@@ -187,7 +188,7 @@ final class ControlledActorClockEndpointIT {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private static final class EsDocumentDto {
     @JsonProperty(value = "_source", required = true)
-    AbstractRecord<?> record;
+    Record<?> record;
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
