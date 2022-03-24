@@ -29,8 +29,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -71,7 +72,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
 
   public RecordingGatewayService() {
     addRequestHandler(TopologyRequest.class, r -> TopologyResponse.getDefaultInstance());
-    addRequestHandler(DeployProcessRequest.class, r -> DeployProcessResponse.getDefaultInstance());
+    addRequestHandler(
+        DeployResourceRequest.class, r -> DeployResourceResponse.getDefaultInstance());
     addRequestHandler(
         PublishMessageRequest.class, r -> PublishMessageResponse.getDefaultInstance());
     addRequestHandler(
@@ -131,6 +133,10 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
+  public static Deployment deployedResource(final ProcessMetadata process) {
+    return Deployment.newBuilder().setProcess(process).build();
+  }
+
   private static StatusRuntimeException convertThrowable(final Throwable cause) {
     final String description;
 
@@ -179,9 +185,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void deployProcess(
-      final DeployProcessRequest request,
-      final StreamObserver<DeployProcessResponse> responseObserver) {
+  public void deployResource(
+      final DeployResourceRequest request,
+      final StreamObserver<DeployResourceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -249,13 +255,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onDeployProcessRequest(final long key, final ProcessMetadata... deployedProcesses) {
+  public void onDeployResourceRequest(final long key, final Deployment... deployments) {
     addRequestHandler(
-        DeployProcessRequest.class,
+        DeployResourceRequest.class,
         request ->
-            DeployProcessResponse.newBuilder()
+            DeployResourceResponse.newBuilder()
                 .setKey(key)
-                .addAllProcesses(Arrays.asList(deployedProcesses))
+                .addAllDeployments(Arrays.asList(deployments))
                 .build());
   }
 

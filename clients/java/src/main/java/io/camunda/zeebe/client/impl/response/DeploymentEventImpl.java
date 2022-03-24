@@ -17,7 +17,8 @@ package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,10 +27,14 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private final long key;
   private final List<Process> processes;
 
-  public DeploymentEventImpl(final DeployProcessResponse response) {
+  public DeploymentEventImpl(final DeployResourceResponse response) {
     key = response.getKey();
     processes =
-        response.getProcessesList().stream().map(ProcessImpl::new).collect(Collectors.toList());
+        response.getDeploymentsList().stream()
+            .filter(Deployment::hasProcess)
+            .map(Deployment::getProcess)
+            .map(ProcessImpl::new)
+            .collect(Collectors.toList());
   }
 
   @Override

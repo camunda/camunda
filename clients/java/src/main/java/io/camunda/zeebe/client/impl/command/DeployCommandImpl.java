@@ -29,8 +29,8 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.response.DeploymentEventImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.grpc.stub.StreamObserver;
@@ -47,7 +47,7 @@ import java.util.function.Predicate;
 
 public final class DeployCommandImpl implements DeployCommandStep1, DeployCommandStep2 {
 
-  private final DeployProcessRequest.Builder requestBuilder = DeployProcessRequest.newBuilder();
+  private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
@@ -64,10 +64,11 @@ public final class DeployCommandImpl implements DeployCommandStep1, DeployComman
   @Override
   public DeployCommandStep2 addResourceBytes(final byte[] resource, final String resourceName) {
 
-    requestBuilder.addProcesses(
-        ProcessRequestObject.newBuilder()
+    requestBuilder.addResources(
+        Resource.newBuilder()
             .setName(resourceName)
-            .setDefinition(ByteString.copyFrom(resource)));
+            .setContent(ByteString.copyFrom(resource))
+            .build());
 
     return this;
   }
@@ -150,9 +151,9 @@ public final class DeployCommandImpl implements DeployCommandStep1, DeployComman
 
   @Override
   public ZeebeFuture<DeploymentEvent> send() {
-    final DeployProcessRequest request = requestBuilder.build();
+    final DeployResourceRequest request = requestBuilder.build();
 
-    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>
+    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployResourceResponse>
         future =
             new RetriableClientFutureImpl<>(
                 DeploymentEventImpl::new,
@@ -164,9 +165,9 @@ public final class DeployCommandImpl implements DeployCommandStep1, DeployComman
     return future;
   }
 
-  private void send(final DeployProcessRequest request, final StreamObserver streamObserver) {
+  private void send(final DeployResourceRequest request, final StreamObserver streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .deployProcess(request, streamObserver);
+        .deployResource(request, streamObserver);
   }
 }
