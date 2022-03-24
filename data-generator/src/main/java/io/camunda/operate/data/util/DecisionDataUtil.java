@@ -37,12 +37,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionDataUtil {
 
-  public static final String DECISION_INSTANCE_ID_1 = "12121212-1";
-  public static final String DECISION_INSTANCE_ID_2 = "13131313-2";
+  public static final String DECISION_INSTANCE_ID_1_1 = "12121212-1";
+  public static final String DECISION_INSTANCE_ID_1_2 = "12121212-2";
+  public static final String DECISION_INSTANCE_ID_1_3 = "12121212-3";
+  public static final String DECISION_INSTANCE_ID_2_1 = "13131313-1";
+  public static final String DECISION_INSTANCE_ID_2_2 = "13131313-2";
   public static final String DECISION_DEFINITION_ID_1 = "decisionDef1";
   public static final String DECISION_DEFINITION_ID_2 = "decisionDef2";
   public static final long PROCESS_INSTANCE_ID = 555555;
   public static final String DECISION_DEFINITION_NAME_1 = "Assign Approver Group";
+  public static final String DECISION_ID_1 = "invoice-assign-approver";
+  public static final String DECISION_ID_2 = "invoiceClassification";
 
   private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
   private Random random = new Random();
@@ -81,7 +86,7 @@ public class DecisionDataUtil {
     decisionEntities.add(new DecisionDefinitionEntity()
         .setId("1222")
         .setKey(1222L)
-        .setDecisionId("invoiceClassification")
+        .setDecisionId(DECISION_ID_2)
         .setName("Invoice Classification")
         .setVersion(1)
         .setDecisionRequirementsId("invoiceBusinessDecisions")
@@ -90,7 +95,7 @@ public class DecisionDataUtil {
     decisionEntities.add(new DecisionDefinitionEntity()
         .setId("1333")
         .setKey(1333L)
-        .setDecisionId("invoice-assign-approver")
+        .setDecisionId(DECISION_ID_1)
         .setName("Assign Approver Group")
         .setVersion(1)
         .setDecisionRequirementsId("invoiceBusinessDecisions")
@@ -110,7 +115,7 @@ public class DecisionDataUtil {
     decisionEntities.add(new DecisionDefinitionEntity()
         .setId("2222")
         .setKey(2222L)
-        .setDecisionId("invoiceClassification")
+        .setDecisionId(DECISION_ID_2)
         .setName("Invoice Classification")
         .setVersion(2)
         .setDecisionRequirementsId("invoiceBusinessDecisions")
@@ -119,7 +124,7 @@ public class DecisionDataUtil {
     decisionEntities.add(new DecisionDefinitionEntity()
         .setId("2333")
         .setKey(2333L)
-        .setDecisionId("invoice-assign-approver")
+        .setDecisionId(DECISION_ID_1)
         .setName("Assign Approver Group")
         .setVersion(2)
         .setDecisionRequirementsId("invoiceBusinessDecisions")
@@ -133,25 +138,25 @@ public class DecisionDataUtil {
     List<DecisionInstanceEntity> result = new ArrayList<>();
 
     //3 EVALUATED, 1 decision1 + 2 decision2, 2 version1 + 1 version2
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1, DecisionInstanceState.COMPLETED,
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_1, DecisionInstanceState.COMPLETED,
         DECISION_DEFINITION_NAME_1,
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, "invoice-assign-approver", 35467,
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467,
         PROCESS_INSTANCE_ID)
     );
-    result.add(createDecisionInstance(DecisionInstanceState.COMPLETED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 1, "invoiceClassification", 35467,
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_2, DecisionInstanceState.COMPLETED, "Invoice Classification",
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 1, DECISION_ID_2, 35467,
         random.nextInt(1000))
     );
-    result.add(createDecisionInstance(DecisionInstanceState.COMPLETED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, "invoiceClassification", 35467,
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_3, DecisionInstanceState.COMPLETED, "Invoice Classification",
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467,
         random.nextInt(1000))
     );
     //2 FAILED
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_2, DecisionInstanceState.FAILED, DECISION_DEFINITION_NAME_1,
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, "invoice-assign-approver", 35467, PROCESS_INSTANCE_ID)
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_2_1, DecisionInstanceState.FAILED, DECISION_DEFINITION_NAME_1,
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467, PROCESS_INSTANCE_ID)
     );
-    result.add(createDecisionInstance(DecisionInstanceState.FAILED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, "invoiceClassification", 35467, random.nextInt(1000))
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_2_2, DecisionInstanceState.FAILED, "Invoice Classification",
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467, random.nextInt(1000))
     );
 
     return result;
@@ -174,7 +179,7 @@ public class DecisionDataUtil {
       final OffsetDateTime evaluationDate, final String decisionDefinitionId,
       final int decisionVersion, final String decisionId, final long processDefinitionKey,
       final long processInstanceKey) {
-    return createDecisionInstance(String.valueOf(random.nextInt(1000)), state, decisionName,
+    return createDecisionInstance(String.valueOf(random.nextInt(1000)) + "-1", state, decisionName,
         evaluationDate, decisionDefinitionId,
         decisionVersion, decisionId, processDefinitionKey,
         processInstanceKey);
@@ -229,6 +234,7 @@ public class DecisionDataUtil {
     return new DecisionInstanceEntity()
         .setId(decisionInstanceId)
         .setKey(Long.valueOf(decisionInstanceId.split("-")[0]))
+        .setExecutionIndex(Integer.valueOf(decisionInstanceId.split("-")[1]))
         .setState(state)
         .setEvaluationFailure(evaluationFailure)
         .setDecisionName(decisionName)

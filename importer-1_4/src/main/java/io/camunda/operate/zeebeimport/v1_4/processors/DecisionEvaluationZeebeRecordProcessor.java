@@ -83,7 +83,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
       OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
       final DecisionInstanceEntity entity = new DecisionInstanceEntity()
-          .setId(getDecisionInstanceId(record.getKey(), i))
+          .setId(record.getKey(), i)
           .setKey(record.getKey())
           .setExecutionIndex(i)
           .setPosition(record.getPosition())
@@ -146,10 +146,6 @@ public class DecisionEvaluationZeebeRecordProcessor {
                 .setValue(output.getOutputValue()))
             .collect(Collectors.toList())));
     return outputs;
-  }
-
-  private String getDecisionInstanceId(long key, int index){
-    return String.format("%d-%d", key, index);
   }
 
 }

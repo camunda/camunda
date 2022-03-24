@@ -7,20 +7,18 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 
-import io.camunda.operate.Metrics;
-import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.es.reader.DecisionInstanceReader;
+import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.micrometer.core.annotation.Timed;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,6 +56,17 @@ public class DecisionInstanceRestService {
   @GetMapping("/{decisionInstanceId}")
   public DecisionInstanceDto queryProcessInstanceById(@PathVariable String decisionInstanceId) {
     return decisionInstanceReader.getDecisionInstance(decisionInstanceId);
+  }
+
+  @ApiOperation("Get DRD data for decision instance")
+  @GetMapping("/{decisionInstanceId}/drd-data")
+  public Map<String, DRDDataEntryDto> queryProcessInstanceDRDData(@PathVariable String decisionInstanceId) {
+    final Map<String, DRDDataEntryDto> result = decisionInstanceReader
+        .getDecisionInstanceDRDData(decisionInstanceId);
+    if (result.isEmpty()) {
+      throw new NotFoundException("Decision instance nor found: " + decisionInstanceId);
+    }
+    return result;
   }
 
 }

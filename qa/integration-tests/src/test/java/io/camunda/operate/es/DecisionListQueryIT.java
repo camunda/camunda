@@ -7,8 +7,8 @@ package io.camunda.operate.es;
 
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_DEFINITION_ID_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_DEFINITION_NAME_1;
-import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1;
-import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2;
+import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1_1;
+import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.PROCESS_INSTANCE_ID;
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_DECISION_NAME;
@@ -24,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchTestRule;
@@ -154,7 +153,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
   public void testQueryByIds() throws Exception {
     //query running instances
     DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createGetAllDecisionInstancesRequest(
-        q -> q.setIds(asList(DECISION_INSTANCE_ID_1, DECISION_INSTANCE_ID_2))
+        q -> q.setIds(asList(DECISION_INSTANCE_ID_1_1, DECISION_INSTANCE_ID_2_1))
     );
 
     MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
@@ -163,7 +162,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(2);
     assertThat(response.getDecisionInstances()).extracting(dec -> dec.getId()).containsOnly(
-        DECISION_INSTANCE_ID_1, DECISION_INSTANCE_ID_2);
+        DECISION_INSTANCE_ID_1_1, DECISION_INSTANCE_ID_2_1);
     assertThat(response.getTotalCount()).isEqualTo(2);
   }
 

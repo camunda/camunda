@@ -8,10 +8,13 @@ package io.camunda.operate.webapp.es.reader;
 import static io.camunda.operate.entities.dmn.DecisionInstanceState.COMPLETED;
 import static io.camunda.operate.entities.dmn.DecisionInstanceState.FAILED;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATED_INPUTS;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATED_OUTPUTS;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATION_DATE;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EXECUTION_INDEX;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.KEY;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.RESULT;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.STATE;
@@ -19,6 +22,9 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
+import static java.util.function.UnaryOperator.identity;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.reducing;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -27,14 +33,15 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
@@ -45,6 +52,7 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -173,18 +181,22 @@ public class DecisionInstanceReader extends AbstractReader {
     }
 
     SortBuilder sort2;
+    SortBuilder sort3;
     Object[] querySearchAfter;
     if (directSorting) { //this sorting is also the default one for 1st page
-      sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
+      sort2 = SortBuilders.fieldSort(KEY).order(SortOrder.ASC);
+      sort3 = SortBuilders.fieldSort(EXECUTION_INDEX).order(SortOrder.ASC);
       querySearchAfter = request.getSearchAfter(); //may be null
     } else { //searchBefore != null
       //reverse sorting
-      sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.DESC);
+      sort2 = SortBuilders.fieldSort(KEY).order(SortOrder.DESC);
+      sort3 = SortBuilders.fieldSort(EXECUTION_INDEX).order(SortOrder.DESC);
       querySearchAfter = request.getSearchBefore();
     }
 
     searchSourceBuilder
         .sort(sort2)
+        .sort(sort3)
         .size(request.getPageSize());
     if (querySearchAfter != null) {
       searchSourceBuilder.searchAfter(querySearchAfter);
@@ -196,7 +208,7 @@ public class DecisionInstanceReader extends AbstractReader {
       String sortBy = request.getSorting().getSortBy();
       if (sortBy.equals(DecisionInstanceTemplate.ID)) {
         //we sort by id as numbers, not as strings
-        sortBy = DecisionInstanceTemplate.KEY;
+        sortBy = KEY;
       } else if (sortBy.equals(SORT_BY_PROCESS_INSTANCE_ID)) {
         sortBy = PROCESS_INSTANCE_KEY;
       }
@@ -274,6 +286,33 @@ public class DecisionInstanceReader extends AbstractReader {
       return termQuery(STATE, COMPLETED);
     } else {
       return createMatchNoneQuery();
+    }
+  }
+
+  public Map<String, DRDDataEntryDto> getDecisionInstanceDRDData(String decisionInstanceId) {
+    //we need to find all decision instances with he same key, which we extract from decisionInstanceId
+    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
+        .source(
+            new SearchSourceBuilder()
+                .query(termQuery(KEY, decisionInstanceKey))
+                .fetchSource(new String[]{DECISION_ID, STATE}, null)
+            .sort(EVALUATION_DATE, SortOrder.ASC)     //we sort in order the latest is returned
+        );
+    try {
+      final List<DRDDataEntryDto> entries = ElasticsearchUtil
+          .scroll(request, DRDDataEntryDto.class, objectMapper, esClient,
+              sh -> {
+                final Map<String, Object> map = sh.getSourceAsMap();
+                return new DRDDataEntryDto(sh.getId(), (String) map.get(DECISION_ID),
+                    DecisionInstanceState.valueOf((String) map.get(STATE)));
+              }, null, null);
+      return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId,
+          reducing(null, identity(), (first, last) -> last)));
+    } catch (IOException e) {
+      throw new OperateRuntimeException(
+          "Exception occurred while quiering DRD data for decision instance id: "
+              + decisionInstanceId);
     }
   }
 }
