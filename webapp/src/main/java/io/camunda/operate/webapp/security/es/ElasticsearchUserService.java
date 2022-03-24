@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
       "!"     + OperateProfileService.LDAP_AUTH_PROFILE
     + " & ! " + OperateProfileService.SSO_AUTH_PROFILE
     + " & !"  + OperateProfileService.IAM_AUTH_PROFILE
+    + " & !"  + OperateProfileService.IDENTITY_AUTH_PROFILE
 )
 public class ElasticsearchUserService implements UserService<UsernamePasswordAuthenticationToken> {
 

@@ -34,12 +34,15 @@ public class ClientConfig {
 
   public String clusterId;
 
+  public boolean isLoginDelegated;
+
   public String asJson(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
     organizationId = operateProperties.getCloud().getOrganizationId();
     contextPath = context.getContextPath();
     canLogout = profileService.currentProfileCanLogout();
+    isLoginDelegated = profileService.isLoginDelegated();
     try {
       return String.format("window.clientConfig = %s;",
           new ObjectMapper().writeValueAsString(this));

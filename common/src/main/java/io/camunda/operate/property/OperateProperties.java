@@ -81,6 +81,9 @@ public class OperateProperties {
   private IamProperties iam = new IamProperties();
 
   @NestedConfigurationProperty
+  private IdentityProperties identity = new IdentityProperties();
+
+  @NestedConfigurationProperty
   private AlertingProperties alert = new AlertingProperties();
 
   @NestedConfigurationProperty
@@ -237,6 +240,14 @@ public class OperateProperties {
 
   public void setIam(final IamProperties iam) {
     this.iam = iam;
+  }
+
+  public IdentityProperties getIdentity() {
+    return identity;
+  }
+
+  public void setIdentity(final IdentityProperties identity) {
+    this.identity = identity;
   }
 
   public AlertingProperties getAlert() {

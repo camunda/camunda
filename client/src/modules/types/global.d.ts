@@ -12,6 +12,7 @@ export declare global {
       organizationId?: null | string;
       clusterId?: null | string;
       canLogout?: null | boolean;
+      isLoginDelegated?: null | boolean;
     };
     Osano?: {
       cm?: {

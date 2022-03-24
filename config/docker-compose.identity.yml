@@ -1,0 +1,29 @@
+version: "3.6"
+
+services:
+  keycloak:
+    container_name: keycloak
+    image: jboss/keycloak:16.1.1
+    ports:
+      - "18080:8080"
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+  identity:
+    depends_on:
+      - keycloak
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:SNAPSHOT
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
+      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8080
+      KEYCLOAK_USERS_0_USERNAME: "demo"
+      KEYCLOAK_USERS_0_PASSWORD: "demo"
+      KEYCLOAK_USERS_0_ROLES_0: "Full Access"
+      KEYCLOAK_USERS_0_ROLES_1: "Operate"

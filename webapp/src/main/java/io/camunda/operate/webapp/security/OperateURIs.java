@@ -23,6 +23,8 @@ public final class OperateURIs {
   public static final String SSO_CALLBACK_URI = "/sso-callback";
   public static final String NO_PERMISSION = "/noPermission";
 
+  public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
+
   public static final String IAM_CALLBACK_URI = "/iam-callback";
   public static final String IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback";
 

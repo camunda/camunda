@@ -60,7 +60,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"canLogout\":true,"
             + "\"contextPath\":\"\","
             + "\"organizationId\":null,"
-            + "\"clusterId\":\"clusterId\""
+            + "\"clusterId\":\"clusterId\","
+            + "\"isLoginDelegated\":false"
             + "};");
   }
 
@@ -82,7 +83,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"canLogout\":false,"
             + "\"contextPath\":\"\","
             + "\"organizationId\":null,"
-            + "\"clusterId\":\"clusterId\""
+            + "\"clusterId\":\"clusterId\","
+            + "\"isLoginDelegated\":false"
             + "};");
   }
 }

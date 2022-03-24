@@ -161,6 +161,11 @@
       <artifactId>camunda-cloud-iam-sdk</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+    </dependency>
+
     <!-- Micrometer Prometheus -->
     <dependency>
   	  <groupId>io.micrometer</groupId>

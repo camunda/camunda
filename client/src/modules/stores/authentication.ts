@@ -54,7 +54,10 @@ class Authentication {
   disableSession = () => {
     this.resetUser();
 
-    if (!window.clientConfig?.canLogout) {
+    if (
+      !window.clientConfig?.canLogout ||
+      window.clientConfig?.isLoginDelegated
+    ) {
       this.#handleThirdPartySessionExpiration();
 
       return;
@@ -66,7 +69,10 @@ class Authentication {
   expireSession = () => {
     this.resetUser();
 
-    if (!window.clientConfig?.canLogout) {
+    if (
+      !window.clientConfig?.canLogout ||
+      window.clientConfig?.isLoginDelegated
+    ) {
       this.#handleThirdPartySessionExpiration();
 
       return;

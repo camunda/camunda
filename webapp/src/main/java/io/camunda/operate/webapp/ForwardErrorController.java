@@ -39,7 +39,7 @@ public class ForwardErrorController implements ErrorController {
     if (requestedURI == null) {
       return forwardToRootPage();
     }
-    if (isLoginDelegated()  && !requestedURI.contains(LOGIN_RESOURCE) && isNotLoggedIn()) {
+    if (operateProfileService.isLoginDelegated()  && !requestedURI.contains(LOGIN_RESOURCE) && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
       if (requestedURI.contains("/api/")) {
@@ -53,10 +53,6 @@ public class ForwardErrorController implements ErrorController {
       }
       return forwardToRootPage();
     }
-  }
-
-  private boolean isLoginDelegated() {
-    return operateProfileService.isIAMProfile() || operateProfileService.isSSOProfile();
   }
 
   private ModelAndView forwardToRootPage() {

@@ -5,11 +5,6 @@
  */
 package io.camunda.operate.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateIntegrationTest;
@@ -19,9 +14,16 @@ import io.camunda.operate.webapp.rest.ClientConfigRestService;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ActiveProfiles({"identity-auth", "test"})
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
@@ -29,14 +31,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
         ClientConfig.class,
         ClientConfigRestService.class,
         JacksonConfig.class,
-        OperateProperties.class},
-    properties = {
-        OperateProperties.PREFIX + ".enterprise=true",
-        OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
-        //CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
-    }
+        OperateProperties.class}
 )
-public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTest {
+public class ClientConfigRestServiceIdentityTest extends OperateIntegrationTest {
 
   @Test
   public void testGetClientConfig() throws Exception {
@@ -50,12 +47,12 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
     // then
     assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo(
         "window.clientConfig = {"
-            + "\"isEnterprise\":true,"
+            + "\"isEnterprise\":false,"
             + "\"canLogout\":true,"
             + "\"contextPath\":\"\","
-            + "\"organizationId\":\"organizationId\","
+            + "\"organizationId\":null,"
             + "\"clusterId\":null,"
-            + "\"isLoginDelegated\":false"
+            + "\"isLoginDelegated\":true"
             + "};");
   }
 

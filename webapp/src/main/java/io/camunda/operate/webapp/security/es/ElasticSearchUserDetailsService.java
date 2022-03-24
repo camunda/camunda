@@ -26,7 +26,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE + " & ! " + OperateProfileService.SSO_AUTH_PROFILE + " & !" + OperateProfileService.IAM_AUTH_PROFILE)
+@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE
+    + " & !" + OperateProfileService.SSO_AUTH_PROFILE
+    + " & !" + OperateProfileService.IAM_AUTH_PROFILE
+    + " & !" + OperateProfileService.IDENTITY_AUTH_PROFILE
+)
 public class ElasticSearchUserDetailsService implements UserDetailsService {
 
   private static final Logger logger = LoggerFactory.getLogger(

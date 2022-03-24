@@ -31,7 +31,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 @Component
-@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE + " & ! " + OperateProfileService.SSO_AUTH_PROFILE + " & !" + OperateProfileService.IAM_AUTH_PROFILE)
+@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE
+    + " & !" + OperateProfileService.SSO_AUTH_PROFILE
+    + " & !" + OperateProfileService.IAM_AUTH_PROFILE
+    + " & !" + OperateProfileService.IDENTITY_AUTH_PROFILE
+)
 @DependsOn("schemaStartup")
 public class UserStorage extends AbstractReader {
 
