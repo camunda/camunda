@@ -25,7 +25,7 @@ import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -39,7 +39,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.ActivateJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
+import io.camunda.zeebe.client.impl.command.DeployCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
@@ -234,8 +234,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public DeployProcessCommandStep1 newDeployCommand() {
-    return new DeployProcessCommandImpl(
+  public DeployCommandStep1 newDeployCommand() {
+    return new DeployCommandImpl(
         asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 

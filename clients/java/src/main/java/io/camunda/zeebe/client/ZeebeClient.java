@@ -18,7 +18,7 @@ package io.camunda.zeebe.client;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
@@ -98,7 +98,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  DeployProcessCommandStep1 newDeployCommand();
+  DeployCommandStep1 newDeployCommand();
 
   /**
    * Command to create/start a new instance of a process.

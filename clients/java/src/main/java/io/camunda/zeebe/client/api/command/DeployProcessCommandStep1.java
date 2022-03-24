@@ -15,11 +15,14 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.zeebe.client.api.command.DeployCommandStep1.DeployCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+/** @deprecated for removal since 8, replaced by {@link DeployCommandStep1} */
+@Deprecated
 public interface DeployProcessCommandStep1 {
 
   /**
@@ -30,7 +33,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addResourceBytes(byte[] resourceBytes, String resourceName);
+  DeployCommandStep2 addResourceBytes(byte[] resourceBytes, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -41,8 +44,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addResourceString(
-      String resourceString, Charset charset, String resourceName);
+  DeployCommandStep2 addResourceString(String resourceString, Charset charset, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -52,8 +54,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addResourceStringUtf8(
-      String resourceString, String resourceName);
+  DeployCommandStep2 addResourceStringUtf8(String resourceString, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -63,8 +64,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addResourceStream(
-      InputStream resourceStream, String resourceName);
+  DeployCommandStep2 addResourceStream(InputStream resourceStream, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -74,7 +74,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addResourceFromClasspath(String classpathResource);
+  DeployCommandStep2 addResourceFromClasspath(String classpathResource);
 
   /**
    * Add the given resource to the deployment.
@@ -83,7 +83,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addResourceFile(String filename);
+  DeployCommandStep2 addResourceFile(String filename);
 
   /**
    * Add the given process to the deployment.
@@ -93,9 +93,10 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployProcessCommandBuilderStep2 addProcessModel(
-      BpmnModelInstance processDefinition, String resourceName);
+  DeployCommandStep2 addProcessModel(BpmnModelInstance processDefinition, String resourceName);
 
+  /** @deprecated for removal since 8, replaced by {@link DeployCommandStep2} */
+  @Deprecated
   interface DeployProcessCommandBuilderStep2
       extends DeployProcessCommandStep1, FinalCommandStep<DeploymentEvent> {
     // the place for new optional parameters

@@ -21,8 +21,8 @@ import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 import com.google.protobuf.ByteString;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
+import io.camunda.zeebe.client.api.command.DeployCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployCommandStep1.DeployCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
@@ -45,15 +45,14 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public final class DeployProcessCommandImpl
-    implements DeployProcessCommandStep1, DeployProcessCommandBuilderStep2 {
+public final class DeployCommandImpl implements DeployCommandStep1, DeployCommandStep2 {
 
   private final DeployProcessRequest.Builder requestBuilder = DeployProcessRequest.newBuilder();
   private final GatewayStub asyncStub;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public DeployProcessCommandImpl(
+  public DeployCommandImpl(
       final GatewayStub asyncStub,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
@@ -63,8 +62,7 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceBytes(
-      final byte[] resource, final String resourceName) {
+  public DeployCommandStep2 addResourceBytes(final byte[] resource, final String resourceName) {
 
     requestBuilder.addProcesses(
         ProcessRequestObject.newBuilder()
@@ -75,19 +73,19 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceString(
+  public DeployCommandStep2 addResourceString(
       final String resource, final Charset charset, final String resourceName) {
     return addResourceBytes(resource.getBytes(charset), resourceName);
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceStringUtf8(
+  public DeployCommandStep2 addResourceStringUtf8(
       final String resourceString, final String resourceName) {
     return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceStream(
+  public DeployCommandStep2 addResourceStream(
       final InputStream resourceStream, final String resourceName) {
     ensureNotNull("resource stream", resourceStream);
 
@@ -103,7 +101,7 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceFromClasspath(final String classpathResource) {
+  public DeployCommandStep2 addResourceFromClasspath(final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
     try (final InputStream resourceStream =
@@ -122,7 +120,7 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceFile(final String filename) {
+  public DeployCommandStep2 addResourceFile(final String filename) {
     ensureNotNull("filename", filename);
 
     try (final InputStream resourceStream = new FileInputStream(filename)) {
@@ -135,7 +133,7 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addProcessModel(
+  public DeployCommandStep2 addProcessModel(
       final BpmnModelInstance processDefinition, final String resourceName) {
     ensureNotNull("process model", processDefinition);
 
