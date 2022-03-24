@@ -9,6 +9,7 @@ import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -104,8 +105,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
   }
 
-  protected void processImportTypeAndWait(ImportValueType importValueType,Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType,waitTill, arguments);
+  protected void processImportTypeAndWait(ImportValueType importValueType,
+      Predicate<Object[]> waitTill, Object... arguments) {
+    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
   }
 
   @Test
@@ -169,6 +171,54 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  public void testIncidentRecreated() {
+    // having
+    final String processId = "process";
+    final String taskId = "task";
+    final String errorMessage = "Some error";
+    final String errorMessage2 = "Some error 2";
+    final Long processDefinitionKey = tester.deployProcess("single-task.bpmn")
+        .getProcessDefinitionKey();
+    final Long processInstanceKey = tester.startProcessInstance(processId, null)
+        .and()
+        .failTask(taskId, errorMessage)
+        .waitUntil()
+        .incidentIsActive()
+        .and()
+        .resolveIncident()
+        .waitUntil()
+        .flowNodeIsActive(taskId)
+        .failTask(taskId, errorMessage2)
+        .getProcessInstanceKey();
+
+
+    //when
+    //1st load process instance events
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, flowNodeIsInIncidentStateCheck, processInstanceKey, taskId);
+    //then load incidents
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentWithErrorMessageIsActiveCheck, processInstanceKey, errorMessage2);
+
+    //then
+    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    assertProcessInstanceListViewEntityWithIncident(processInstanceEntity,"process",processDefinitionKey,processInstanceKey);
+    //and
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    assertThat(allIncidents).hasSize(1);
+    assertIncidentEntity(allIncidents.get(0),taskId, processDefinitionKey,IncidentState.ACTIVE);
+
+    //and
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(INCIDENT);
+
+    //and
+    final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(
+        processInstanceKey);
+    assertThat(flowNodeInstances).hasSize(2);
+    assertThat(flowNodeInstances.get(1).getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(flowNodeInstances.get(1).isIncident()).isTrue();
+  }
+
+  @Test
   @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
   public void testEarlierEventsAreIgnored() throws Exception {
     // having
@@ -213,7 +263,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   private void assertListViewProcessInstanceDto(final ListViewProcessInstanceDto pi, final Long processDefinitionKey, final Long processInstanceKey) {
-    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
+    assertThat(pi.getState()).isEqualTo(INCIDENT);
     assertThat(pi.getProcessId()).isEqualTo(processDefinitionKey.toString());
     assertThat(pi.getProcessName()).isEqualTo("Demo process");
     assertThat(pi.getProcessVersion()).isEqualTo(1);

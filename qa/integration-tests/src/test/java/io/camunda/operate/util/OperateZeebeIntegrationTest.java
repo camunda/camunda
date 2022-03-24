@@ -110,6 +110,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> incidentsAreActiveCheck;
 
   @Autowired
+  @Qualifier("incidentWithErrorMessageIsActiveCheck")
+  protected Predicate<Object[]> incidentWithErrorMessageIsActiveCheck;
+
+  @Autowired
   @Qualifier("incidentIsActiveCheck")
   protected Predicate<Object[]> incidentIsActiveCheck;
 
@@ -144,6 +148,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("flowNodeIsCompletedCheck")
   protected Predicate<Object[]> flowNodeIsCompletedCheck;
+
+  @Autowired
+  @Qualifier("flowNodeIsInIncidentStateCheck")
+  protected Predicate<Object[]> flowNodeIsInIncidentStateCheck;
 
   @Autowired
   @Qualifier("flowNodesAreCompletedCheck")

@@ -176,4 +176,23 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
             flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey,
             treePath, pending);
   }
+
+  @Override
+  public String toString() {
+    return "IncidentEntity{" +
+        "key=" + getKey() +
+        ", errorType=" + errorType +
+        ", errorMessage='" + errorMessage + '\'' +
+        ", errorMessageHash=" + errorMessageHash +
+        ", state=" + state +
+        ", flowNodeId='" + flowNodeId + '\'' +
+        ", flowNodeInstanceKey=" + flowNodeInstanceKey +
+        ", jobKey=" + jobKey +
+        ", processInstanceKey=" + processInstanceKey +
+        ", creationTime=" + creationTime +
+        ", processDefinitionKey=" + processDefinitionKey +
+        ", treePath='" + treePath + '\'' +
+        ", pending=" + pending +
+        '}';
+  }
 }

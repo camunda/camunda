@@ -39,6 +39,7 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
 import java.time.Instant;
@@ -117,6 +118,9 @@ public class IncidentPostImportAction implements PostImportAction {
 
     Map<String, String> incidentIndices = new HashMap<>();
     List<IncidentEntity> incidents = getPendingIncidents(incidentIndices);
+    if (logger.isDebugEnabled() && !incidents.isEmpty()) {
+      logger.debug("Processing pending incidents: " + incidents);
+    }
     try {
       Set<Long> flowNodeInstanceIds = new HashSet<>();
       Map<String, List<String>> flowNodeInstanceIndices = new HashMap<>();
@@ -167,8 +171,11 @@ public class IncidentPostImportAction implements PostImportAction {
       if (!bulkProcessAndFlowNodeInstanceUpdate.requests().isEmpty()) {
         ElasticsearchUtil.processBulkRequest(esClient, bulkProcessAndFlowNodeInstanceUpdate);
         ElasticsearchUtil.processBulkRequest(esClient, bulkIncidentUpdate);
+        ThreadUtil.sleepFor(1000L);
       }
-
+      if (logger.isDebugEnabled() && !incidents.isEmpty()) {
+        logger.debug("Finished processing");
+      }
     } catch (IOException | PersistenceException e) {
       final String message = String.format(
           "Exception occurred, while processing pending incidents: %s",
@@ -198,13 +205,14 @@ public class IncidentPostImportAction implements PostImportAction {
     final SearchResponse response;
     try {
       response = esClient.search(request, RequestOptions.DEFAULT);
-      mapSearchHits(response.getHits().getHits(),
-          sh -> {
-            incidents
-                .add(fromSearchHit(sh.getSourceAsString(), objectMapper, IncidentEntity.class));
-            incidentIndices.put(sh.getId(), sh.getIndex());
-            return null;
-          });
+      incidents
+          .addAll(mapSearchHits(response.getHits().getHits(),
+              sh -> {
+                final IncidentEntity incident = fromSearchHit(sh.getSourceAsString(),
+                    objectMapper, IncidentEntity.class);
+                incidentIndices.put(sh.getId(), sh.getIndex());
+                return incident;
+              }));
     } catch (IOException e) {
       final String message = String.format(
           "Exception occurred, while processing pending incidents: %s",

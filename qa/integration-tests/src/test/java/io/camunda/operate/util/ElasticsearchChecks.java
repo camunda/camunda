@@ -189,6 +189,34 @@ public class ElasticsearchChecks {
   }
 
   /**
+   * Checks whether the flow node of given args[0] processInstanceKey (Long) and args[1] flowNodeId (String) is in incident state.
+   * @return
+   */
+  @Bean(name = "flowNodeIsInIncidentStateCheck")
+  public Predicate<Object[]> getFlowNodeIsInIncidentStateCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      Long processInstanceKey = (Long)objects[0];
+      String flowNodeId = (String)objects[1];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(processInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
+          .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE) &&
+              flowNodes.get(0).isIncident();
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
    * Checks whether the flow node of given args[0] processInstanceKey (Long) and args[1] flowNodeId (String) is in state TERMINATED
    * @return
    */
@@ -399,6 +427,34 @@ public class ElasticsearchChecks {
         if (found) {
           List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
           found = allIncidents.stream().filter(ie -> !ie.isPending()).count() > 0;
+        }
+        return found;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether an incident with given error message (String arg[1]) is active in processInstance of given processInstanceKey (Long arg[0])
+   * @return
+   */
+  @Bean(name = "incidentWithErrorMessageIsActiveCheck")
+  public Predicate<Object[]> getIncidentWithErrorMessageIsActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      Long processInstanceKey = (Long)objects[0];
+      String errorMessage = (String)objects[1];
+      try {
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
+        boolean found = allActivityInstances.stream().anyMatch(ai -> ai.isIncident());
+        if (found) {
+          List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+          found = allIncidents.stream()
+              .filter(ie -> !ie.isPending() && ie.getErrorMessage().equals(errorMessage)).count()
+              > 0;
         }
         return found;
       } catch (NotFoundException ex) {

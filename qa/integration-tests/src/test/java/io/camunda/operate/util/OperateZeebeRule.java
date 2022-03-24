@@ -56,6 +56,7 @@ public class OperateZeebeRule extends TestWatcher {
   @Override
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
+    logger.info("Starting Zeebe with ELS prefix: " + prefix);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
 
     startZeebe();
