@@ -28,8 +28,8 @@ public interface DeployProcessCommandStep1 {
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceBytes the process resource as byte array
-   * @param resourceName the name of the resource (e.g. "process.bpmn")
+   * @param resourceBytes the resource content as byte array
+   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
@@ -38,9 +38,9 @@ public interface DeployProcessCommandStep1 {
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceString the process resource as String
+   * @param resourceString the resource content as String
    * @param charset the charset of the String
-   * @param resourceName the name of the resource (e.g. "process.bpmn")
+   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
@@ -49,8 +49,8 @@ public interface DeployProcessCommandStep1 {
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceString the process resource as UTF-8-encoded String
-   * @param resourceName the name of the resource (e.g. "process.bpmn")
+   * @param resourceString the resource content as UTF-8-encoded String
+   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
@@ -59,8 +59,8 @@ public interface DeployProcessCommandStep1 {
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceStream the process resource as stream
-   * @param resourceName the name of the resource (e.g. "process.bpmn")
+   * @param resourceStream the resource content as stream
+   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
@@ -69,8 +69,8 @@ public interface DeployProcessCommandStep1 {
   /**
    * Add the given resource to the deployment.
    *
-   * @param classpathResource the path of the process resource in the classpath (e.g.
-   *     "wf/process.bpmn")
+   * @param classpathResource the path of the resource file in the classpath (e.g. "wf/process.bpmn"
+   *     or "dmn/decision.dmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
@@ -79,14 +79,15 @@ public interface DeployProcessCommandStep1 {
   /**
    * Add the given resource to the deployment.
    *
-   * @param filename the absolute path of the process resource (e.g. "~/wf/process.bpmn")
+   * @param filename the absolute path of the resource file (e.g. "~/wf/process.bpmn" or
+   *     "~/dmn/decision.dmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
   DeployCommandStep2 addResourceFile(String filename);
 
   /**
-   * Add the given process to the deployment.
+   * Add the given process as resource to the deployment.
    *
    * @param processDefinition the process as model
    * @param resourceName the name of the resource (e.g. "process.bpmn")

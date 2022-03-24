@@ -86,13 +86,14 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   void close();
 
   /**
-   * Command to deploy new processes.
+   * Command to deploy new resources, i.e. BPMN process models and DMN decision models.
    *
    * <pre>
    * zeebeClient
    *  .newDeployCommand()
    *  .addResourceFile("~/wf/process1.bpmn")
    *  .addResourceFile("~/wf/process2.bpmn")
+   *  .addResourceFile("~/dmn/decision.dmn")
    *  .send();
    * </pre>
    *
