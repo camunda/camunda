@@ -30,6 +30,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -206,6 +208,17 @@ public final class EndpointManager {
         request,
         RequestMapper::toDeployProcessRequest,
         ResponseMapper::toDeployProcessResponse,
+        responseObserver);
+  }
+
+  public void deployResource(
+      final DeployResourceRequest request,
+      final ServerStreamObserver<DeployResourceResponse> responseObserver) {
+
+    sendRequest(
+        request,
+        RequestMapper::toDeployResourceRequest,
+        ResponseMapper::toDeployResourceResponse,
         responseObserver);
   }
 

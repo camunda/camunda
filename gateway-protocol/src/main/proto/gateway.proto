@@ -142,11 +142,15 @@ message CreateProcessInstanceWithResultResponse {
 }
 
 message DeployProcessRequest {
+  // since 8, replaced by DeployResourceRequest
+  option deprecated = true;
   // List of process resources to deploy
   repeated ProcessRequestObject processes = 1;
 }
 
 message ProcessRequestObject {
+  // since 8, replaced by Resource
+  option deprecated = true;
   // the resource basename, e.g. myProcess.bpmn
   string name = 1;
   // the process definition as a UTF8-encoded string
@@ -154,10 +158,43 @@ message ProcessRequestObject {
 }
 
 message DeployProcessResponse {
+  // since 8, replaced by DeployResourceResponse
+  option deprecated = true;
   // the unique key identifying the deployment
   int64 key = 1;
   // a list of deployed processes
   repeated ProcessMetadata processes = 2;
+}
+
+message DeployResourceRequest {
+  // list of resources to deploy
+  repeated Resource resources = 1;
+}
+
+message Resource {
+  // the resource name, e.g. myProcess.bpmn or myDecision.dmn
+  string name = 1;
+  // the file content as a UTF8-encoded string
+  bytes content = 2;
+}
+
+message DeployResourceResponse {
+  // the unique key identifying the deployment
+  int64 key = 1;
+  // a list of deployed resources, e.g. processes
+  repeated Deployment deployments = 2;
+}
+
+message Deployment {
+  // each deployment has only one metadata
+  oneof Metadata {
+    // metadata of a deployed process
+    ProcessMetadata process = 1;
+    // metadata of a deployed decision
+    DecisionMetadata decision = 2;
+    // metadata of a deployed decision requirements
+    DecisionRequirementsMetadata decisionRequirements = 3;
+  }
 }
 
 message ProcessMetadata {
@@ -171,6 +208,41 @@ message ProcessMetadata {
   // the resource name (see: ProcessRequestObject.name) from which this process was
   // parsed
   string resourceName = 4;
+}
+
+message DecisionMetadata {
+  // the dmn decision ID, as parsed during deployment; together with the
+  // versions forms a unique identifier for a specific decision
+  string dmnDecisionId = 1;
+  // the dmn name of the decision, as parsed during deployment
+  string dmnDecisionName = 2;
+  // the assigned decision version
+  int32 version = 3;
+  // the assigned decision key, which acts as a unique identifier for this
+  // decision
+  int64 decisionKey = 4;
+  // the dmn ID of the decision requirements graph that this decision is part
+  // of, as parsed during deployment
+  string dmnDecisionRequirementsId = 5;
+  // the assigned key of the decision requirements graph that this decision is
+  // part of
+  int64 decisionRequirementsKey = 6;
+}
+
+message DecisionRequirementsMetadata {
+  // the dmn decision requirements ID, as parsed during deployment; together
+  // with the versions forms a unique identifier for a specific decision
+  string dmnDecisionRequirementsId = 1;
+  // the dmn name of the decision requirements, as parsed during deployment
+  string dmnDecisionRequirementsName = 2;
+  // the assigned decision requirements version
+  int32 version = 3;
+  // the assigned decision requirements key, which acts as a unique identifier
+  // for this decision requirements
+  int64 decisionRequirementsKey = 4;
+  // the resource name (see: Resource.name) from which this decision
+  // requirements was parsed
+  string resourceName = 5;
 }
 
 message FailJobRequest {
@@ -396,7 +468,24 @@ service Gateway {
           - the process is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
    */
   rpc DeployProcess (DeployProcessRequest) returns (DeployProcessResponse) {
+    // since 8, replaced by DeployResource
+    option deprecated = true;
   }
+
+  /*
+    Deploys one or more resources (e.g. processes or decision models) to Zeebe.
+    Note that this is an atomic call, i.e. either all resources are deployed, or none of them are.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - no resources given.
+        - if at least one resource is invalid. A resource is considered invalid if:
+          - the content is not deserializable (e.g. detected as BPMN, but it's broken XML)
+          - the content is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+  */
+  rpc DeployResource (DeployResourceRequest) returns (DeployResourceResponse) {
+  }
+
 
   /*
     Marks the job as failed; if the retries argument is positive, then the job will be immediately

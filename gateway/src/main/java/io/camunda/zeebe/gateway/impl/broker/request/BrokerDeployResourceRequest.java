@@ -13,16 +13,16 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import org.agrona.DirectBuffer;
 
-public final class BrokerDeployProcessRequest extends BrokerExecuteCommand<DeploymentRecord> {
+public final class BrokerDeployResourceRequest extends BrokerExecuteCommand<DeploymentRecord> {
 
   private final DeploymentRecord requestDto = new DeploymentRecord();
 
-  public BrokerDeployProcessRequest() {
+  public BrokerDeployResourceRequest() {
     super(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerDeployProcessRequest addResource(final byte[] resource, final String resourceName) {
+  public BrokerDeployResourceRequest addResource(final byte[] resource, final String resourceName) {
     requestDto.resources().add().setResource(resource).setResourceName(resourceName);
 
     return this;

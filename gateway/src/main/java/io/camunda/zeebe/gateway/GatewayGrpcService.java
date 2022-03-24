@@ -21,6 +21,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -89,6 +91,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final DeployProcessRequest request,
       final StreamObserver<DeployProcessResponse> responseObserver) {
     endpointManager.deployProcess(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void deployResource(
+      final DeployResourceRequest request,
+      final StreamObserver<DeployResourceResponse> responseObserver) {
+    endpointManager.deployResource(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
