@@ -6,7 +6,6 @@
 
 import React from 'react';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {EXPAND_STATE} from 'modules/constants';
 import {ViewHide, BannerButton} from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
@@ -15,35 +14,28 @@ import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 type Props = {
   onClick: () => void;
   isOpen: boolean;
-  expandState?: string;
 };
 
-const IncidentsBanner: React.FC<Props> = observer(
-  ({onClick, isOpen, expandState}) => {
-    const {processInstanceId} = useInstancePageParams();
-    const {incidentsCount} = incidentsStore;
+const IncidentsBanner: React.FC<Props> = observer(({onClick, isOpen}) => {
+  const {processInstanceId} = useInstancePageParams();
+  const {incidentsCount} = incidentsStore;
 
-    const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occured`;
-    const title = `View ${pluralSuffix(
-      incidentsCount,
-      'Incident'
-    )} in Instance ${processInstanceId}`;
+  const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occured`;
+  const title = `View ${pluralSuffix(
+    incidentsCount,
+    'Incident'
+  )} in Instance ${processInstanceId}`;
 
-    if (expandState === EXPAND_STATE.COLLAPSED) {
-      return null;
-    }
-
-    return (
-      <BannerButton
-        data-testid="incidents-banner"
-        onClick={onClick}
-        title={title}
-      >
-        {errorMessage}
-        <ViewHide>{isOpen ? 'Hide' : 'View'}</ViewHide>
-      </BannerButton>
-    );
-  }
-);
+  return (
+    <BannerButton
+      data-testid="incidents-banner"
+      onClick={onClick}
+      title={title}
+    >
+      {errorMessage}
+      <ViewHide>{isOpen ? 'Hide' : 'View'}</ViewHide>
+    </BannerButton>
+  );
+});
 
 export {IncidentsBanner};

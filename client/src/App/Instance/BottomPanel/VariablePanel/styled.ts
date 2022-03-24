@@ -12,7 +12,6 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 const VariablesPanel = styled(Panel)`
   ${({theme}) => {
     return css`
-      flex: 1;
       font-size: 14px;
       border-left: none;
       color: ${theme.colors.text01};

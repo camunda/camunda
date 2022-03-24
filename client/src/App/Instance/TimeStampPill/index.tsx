@@ -5,7 +5,7 @@
  */
 
 import {PILL_TYPE} from 'modules/constants';
-import * as Styled from './styled';
+import {Container, Pill} from './styled';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
@@ -22,16 +22,18 @@ const TimeStampPill = observer(function TimeStampPill() {
   const isDisabled =
     flowNodeInstanceStatus !== 'fetched' && diagramStatus !== 'fetched';
   return (
-    <Styled.Pill
-      isActive={isTimeStampVisible}
-      onClick={() => {
-        toggleTimeStampVisibility();
-      }}
-      type={PILL_TYPE.TIMESTAMP}
-      isDisabled={isDisabled}
-    >
-      {`${isTimeStampVisible ? 'Hide' : 'Show'} End Time`}
-    </Styled.Pill>
+    <Container>
+      <Pill
+        isActive={isTimeStampVisible}
+        onClick={() => {
+          toggleTimeStampVisibility();
+        }}
+        type={PILL_TYPE.TIMESTAMP}
+        isDisabled={isDisabled}
+      >
+        {`${isTimeStampVisible ? 'Hide' : 'Show'} End Time`}
+      </Pill>
+    </Container>
   );
 });
 

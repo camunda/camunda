@@ -5,7 +5,6 @@
  */
 
 import {createIncident} from 'modules/testUtils';
-import {EXPAND_STATE} from 'modules/constants';
 
 const mockIncidents = {
   count: 2,
@@ -46,10 +45,6 @@ const mockIncidents = {
   ],
 };
 
-const mockIncidentWrapperProps = {
-  expandState: EXPAND_STATE.DEFAULT,
-};
-
 const mockResolvedIncidents = {
   count: 1,
   incidents: [
@@ -74,4 +69,4 @@ const mockResolvedIncidents = {
   ],
 };
 
-export {mockIncidents, mockResolvedIncidents, mockIncidentWrapperProps};
+export {mockIncidents, mockResolvedIncidents};

@@ -87,12 +87,6 @@ export const PANE_ID = {
   RIGHT: 'RIGHT',
 };
 
-export const EXPAND_STATE = {
-  DEFAULT: 'DEFAULT',
-  EXPANDED: 'EXPANDED',
-  COLLAPSED: 'COLLAPSED',
-} as const;
-
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 

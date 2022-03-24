@@ -30,6 +30,10 @@ test('Instance with an incident - instance header', async (t) => {
   const instanceId = instanceWithIncident.processInstanceKey;
   await t.navigateTo(`/instances/${instanceId}`);
 
+  await t
+    .expect(screen.queryByTestId('instance-header-skeleton').exists)
+    .notOk();
+
   const withinInstanceHeader = within(screen.queryByTestId('instance-header'));
 
   await t

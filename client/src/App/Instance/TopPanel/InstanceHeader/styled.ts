@@ -5,36 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import StateIconDefault from 'modules/components/StateIcon';
-
-const SplitPane = styled(SplitPaneComponent.Pane)`
-  ${({theme}) => {
-    const colors = theme.colors.instanceHeader;
-
-    return css`
-      border-top: none;
-      background-color: ${colors.backgroundColor};
-      &:before {
-        position: absolute;
-        content: '';
-        height: 1px;
-        width: 100%;
-        z-index: 5;
-        top: 0px;
-        left: 0px;
-        border-top: solid 1px ${colors.borderColor};
-      }
-    `;
-  }}
-`;
-
-const SplitPaneHeader = styled(SplitPaneComponent.Pane.Header)`
-  display: flex;
-  align-items: center;
-  z-index: 4;
-  border-bottom: none;
-`;
 
 const Table = styled.table`
   width: 100%;
@@ -64,4 +35,19 @@ const StateIcon = styled(StateIconDefault)`
   height: 21px;
 `;
 
-export {SplitPane, SplitPaneHeader, Table, Td, Th, StateIcon, StateIconWrapper};
+const Container = styled.header`
+  ${({theme}) => {
+    const colors = theme.colors.topPanel.instanceHeader;
+
+    return css`
+      background-color: ${colors.backgroundColor};
+      color: ${theme.colors.text01};
+      border-bottom: solid 1px ${colors.borderColor};
+      display: flex;
+      align-items: center;
+      padding: 9px 10px 9px 20px;
+    `;
+  }}
+`;
+
+export {Table, Td, Th, StateIcon, StateIconWrapper, Container};

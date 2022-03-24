@@ -29,6 +29,10 @@ test('Navigate to called and parent instances', async (t) => {
     `/instances/${callActivityProcessInstance.processInstanceKey}`
   );
 
+  await t
+    .expect(screen.queryByTestId('instance-header-skeleton').exists)
+    .notOk();
+
   const withinInstanceHeader = within(screen.queryByTestId('instance-header'));
 
   await t

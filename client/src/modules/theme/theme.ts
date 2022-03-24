@@ -324,27 +324,16 @@ const theme = {
         borderColor: DARK_COLORS.ui04,
       },
       topPanel: {
-        pseudoBorder: {
-          borderColor: DARK_COLORS.ui04,
-        },
-        pane: {
-          backgroundColor: DARK_COLORS.ui02,
+        backgroundColor: DARK_COLORS.ui02,
+        borderColor: DARK_COLORS.ui04,
+        instanceHeader: {
+          backgroundColor: DARK_COLORS.ui03,
           borderColor: DARK_COLORS.ui04,
         },
       },
       instance: {
-        section: {
+        timeStampPill: {
           borderColor: DARK_COLORS.ui04,
-        },
-        flowNodeInstanceLog: {
-          borderColor: DARK_COLORS.ui04,
-          color: rgba(SEMANTIC_COLORS.white, 0.9),
-        },
-        pseudoBorder: {
-          borderColor: DARK_COLORS.ui04,
-        },
-        splitPaneTop: {
-          backgroundColor: DARK_COLORS.ui02,
         },
       },
       emptyMessage: {
@@ -1293,27 +1282,16 @@ const theme = {
         borderColor: LIGHT_COLORS.ui05,
       },
       topPanel: {
-        pseudoBorder: {
-          borderColor: LIGHT_COLORS.ui05,
-        },
-        pane: {
-          backgroundColor: LIGHT_COLORS.ui04,
+        backgroundColor: LIGHT_COLORS.ui04,
+        borderColor: LIGHT_COLORS.ui05,
+        instanceHeader: {
+          backgroundColor: LIGHT_COLORS.ui02,
           borderColor: LIGHT_COLORS.ui05,
         },
       },
       instance: {
-        section: {
+        timeStampPill: {
           borderColor: LIGHT_COLORS.ui05,
-        },
-        flowNodeInstanceLog: {
-          borderColor: LIGHT_COLORS.ui05,
-          color: rgba(LIGHT_COLORS.ui06, 0.9),
-        },
-        pseudoBorder: {
-          borderColor: LIGHT_COLORS.ui05,
-        },
-        splitPaneTop: {
-          backgroundColor: LIGHT_COLORS.ui04,
         },
       },
       emptyMessage: {

@@ -11,7 +11,7 @@ type Props = {
   count?: number;
 };
 
-const PanelHeader: React.FC<Props> = ({title, count = 0}) => {
+const PanelHeader: React.FC<Props> = ({title, count = 0, children}) => {
   return (
     <Container role="heading">
       {title}
@@ -20,6 +20,7 @@ const PanelHeader: React.FC<Props> = ({title, count = 0}) => {
           {count} results found
         </InstancesCount>
       )}
+      {children}
     </Container>
   );
 };

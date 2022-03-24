@@ -6,7 +6,6 @@
 
 import {IncidentsBanner} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {EXPAND_STATE} from 'modules/constants';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -16,7 +15,6 @@ import {mockServer} from 'modules/mock-server/node';
 const mockProps = {
   onClick: jest.fn(),
   isArrowFlipped: false,
-  expandState: 'DEFAULT',
   isOpen: false,
 };
 
@@ -55,27 +53,6 @@ describe('IncidentsBanner', () => {
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
     expect(screen.getByText('1 Incident occured')).toBeInTheDocument();
-  });
-
-  it('should not display incidents banner if panel is collapsed', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            count: 1,
-          })
-        )
-      )
-    );
-
-    await fetchIncidents('1');
-
-    render(
-      <IncidentsBanner {...mockProps} expandState={EXPAND_STATE.COLLAPSED} />,
-      {wrapper: Wrapper}
-    );
-
-    expect(screen.queryByText('1 Incident occured')).not.toBeInTheDocument();
   });
 
   it('should show the right text for more than 1 incident', async () => {

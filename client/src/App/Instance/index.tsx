@@ -4,32 +4,43 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect} from 'react';
-import SplitPane from 'modules/components/SplitPane';
+import {useEffect, useRef, useState} from 'react';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {TopPanel} from './TopPanel';
-import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {observer} from 'mobx-react';
+import {when} from 'mobx';
 import {useInstancePageParams} from './useInstancePageParams';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {Breadcrumb} from './Breadcrumb';
-import {Container} from './styled';
+import {Container, PanelContainer, Content, BottomPanel} from './styled';
 import {Locations} from 'modules/routes';
+import {
+  ResizablePanel,
+  SplitDirection,
+} from 'modules/components/ResizablePanel';
+import {InstanceHeader} from './TopPanel/InstanceHeader';
+import {PanelHeader} from 'modules/components/PanelHeader';
+import {Observer} from 'mobx-react';
+import {TimeStampPill} from './TimeStampPill';
 
-const Instance = observer(() => {
+const Instance = () => {
   const {processInstanceId = ''} = useInstancePageParams();
   const navigate = useNavigate();
   const notifications = useNotifications();
   const location = useLocation();
-  const {processTitle} = currentInstanceStore;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [clientHeight, setClientHeight] = useState(0);
+
+  useEffect(() => {
+    setClientHeight(containerRef?.current?.clientHeight ?? 0);
+  }, []);
 
   useEffect(() => {
     const {
@@ -69,31 +80,58 @@ const Instance = observer(() => {
   }, [processInstanceId]);
 
   useEffect(() => {
-    if (processTitle !== null) {
-      document.title = processTitle;
-    }
-  }, [processTitle]);
+    let processTitleDisposer = when(
+      () => currentInstanceStore.processTitle !== null,
+      () => {
+        document.title = currentInstanceStore.processTitle ?? '';
+      }
+    );
 
-  const {instance} = currentInstanceStore.state;
+    return () => {
+      processTitleDisposer();
+    };
+  }, []);
+
+  const panelMinHeight = clientHeight / 4;
 
   return (
     <Container>
-      {instance && (
-        <VisuallyHiddenH1>{`Operate Instance ${instance.id}`}</VisuallyHiddenH1>
-      )}
+      <Observer>
+        {() => {
+          const {instance} = currentInstanceStore.state;
+
+          return (
+            <>
+              {instance && (
+                <VisuallyHiddenH1>{`Operate Instance ${instance.id}`}</VisuallyHiddenH1>
+              )}
+            </>
+          );
+        }}
+      </Observer>
       <Breadcrumb />
-      <SplitPane
-        titles={{top: 'Process', bottom: 'Instance Details'}}
-        expandedPaneId="instanceExpandedPaneId"
-      >
-        <TopPanel />
-        <BottomPanel>
-          <FlowNodeInstanceLog />
-          <VariablePanel />
-        </BottomPanel>
-      </SplitPane>
+      <InstanceHeader />
+
+      <PanelContainer ref={containerRef}>
+        <ResizablePanel
+          panelId="process-instance-vertical-panel"
+          direction={SplitDirection.Vertical}
+          minHeights={[panelMinHeight, panelMinHeight]}
+        >
+          <TopPanel />
+          <BottomPanel>
+            <PanelHeader title="Instance History">
+              <TimeStampPill />
+            </PanelHeader>
+            <Content>
+              <FlowNodeInstanceLog />
+              <VariablePanel />
+            </Content>
+          </BottomPanel>
+        </ResizablePanel>
+      </PanelContainer>
     </Container>
   );
-});
+};
 
 export {Instance};

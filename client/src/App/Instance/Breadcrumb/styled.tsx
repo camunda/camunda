@@ -18,6 +18,7 @@ const Container = styled.div`
       font-size: 13px;
       align-items: center;
       border-bottom: 1px solid ${colors.borderColor};
+      min-height: 30px;
     `;
   }}
 `;
@@ -41,7 +42,7 @@ const Link = styled(LinkComponent)`
 `;
 
 const Separator = styled.div`
-  margin: 0 10px 1px 11px;
+  margin: 0 10px 2px 11px;
   font-size: 15px;
   font-weight: 500;
 `;

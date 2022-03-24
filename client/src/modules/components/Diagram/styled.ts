@@ -7,7 +7,7 @@
 import styled, {css} from 'styled-components';
 
 const Diagram = styled.div`
-  flex-grow: 1;
+  height: 100%;
   position: relative;
 `;
 

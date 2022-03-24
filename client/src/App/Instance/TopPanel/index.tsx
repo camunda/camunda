@@ -18,11 +18,9 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
 import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
-import {StatusMessage} from 'modules/components/StatusMessage';
 import {OverlayPosition} from 'modules/types/modeler';
 import {IncidentsWrapper} from '../IncidentsWrapper';
-import {InstanceHeader} from './InstanceHeader';
-import * as Styled from './styled';
+import {Container, DiagramPanel, StatusMessage} from './styled';
 import {IncidentsBanner} from './IncidentsBanner';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {StateOverlay} from './StateOverlay';
@@ -32,10 +30,9 @@ const OVERLAY_TYPE = 'flowNodeState';
 type Props = {
   incidents?: unknown;
   children?: React.ReactNode;
-  expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
 };
 
-const TopPanel: React.FC<Props> = observer(({expandState}) => {
+const TopPanel: React.FC<Props> = observer(() => {
   const {
     selectableFlowNodes,
     state: {flowNodes},
@@ -113,10 +110,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
   } = incidentsStore;
 
   return (
-    <Styled.Pane expandState={expandState}>
-      <Styled.SplitPaneHeader data-testid="instance-header">
-        <InstanceHeader />
-      </Styled.SplitPaneHeader>
+    <Container>
       {incidentsCount > 0 && (
         <IncidentsBanner
           onClick={() => {
@@ -127,11 +121,10 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
             setIncidentBarOpen(!isIncidentBarOpen);
           }}
           isOpen={incidentsStore.state.isIncidentBarOpen}
-          expandState={expandState}
         />
       )}
 
-      <Styled.SplitPaneBody data-testid="diagram-panel-body">
+      <DiagramPanel data-testid="diagram-panel-body">
         {['initial', 'first-fetch', 'fetching'].includes(status) && (
           <SpinnerSkeleton data-testid="diagram-spinner" />
         )}
@@ -178,7 +171,6 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
               : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
                 diagramModel?.definitions && (
                   <DiagramLegacy
-                    expandState={expandState}
                     onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                       flowNodeSelectionStore.selectFlowNode({
                         flowNodeId,
@@ -196,8 +188,8 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
                 )}
           </>
         )}
-      </Styled.SplitPaneBody>
-    </Styled.Pane>
+      </DiagramPanel>
+    </Container>
   );
 });
 

@@ -10,8 +10,6 @@ import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import {flatMap, isEqual} from 'lodash';
 import {withTheme, DefaultTheme} from 'styled-components';
 
-import {EXPAND_STATE} from 'modules/constants';
-
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import {StateOverlay} from './StateOverlay';
@@ -49,7 +47,6 @@ type Props = {
     completed?: number;
     canceled?: number;
   }[];
-  expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
   hidePopover?: boolean;
 };
 
@@ -76,7 +73,6 @@ class Diagram extends React.PureComponent<Props, State> {
     definitions: prevDefinitions,
     selectedFlowNodeId,
     processedSequenceFlows: prevSequenceFlows,
-    expandState: prevExpandState,
     selectableFlowNodes: prevSelectableFlowNodes,
   }: Props) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
@@ -86,15 +82,7 @@ class Diagram extends React.PureComponent<Props, State> {
       prevSelectableFlowNodes
     );
 
-    const {expandState, processedSequenceFlows: currentSequenceFlows} =
-      this.props;
-
-    if (
-      expandState !== prevExpandState &&
-      expandState !== EXPAND_STATE.COLLAPSED
-    ) {
-      return this.resetViewer();
-    }
+    const {processedSequenceFlows: currentSequenceFlows} = this.props;
 
     if (hasNewTheme || hasNewDefinitions) {
       return this.resetViewer();
@@ -139,9 +127,7 @@ class Diagram extends React.PureComponent<Props, State> {
       isViewerLoaded: true,
     });
 
-    if (this.props.expandState !== EXPAND_STATE.COLLAPSED) {
-      this.handleZoomReset();
-    }
+    this.handleZoomReset();
 
     this.addViewboxListeners();
 
@@ -416,7 +402,6 @@ class Diagram extends React.PureComponent<Props, State> {
           this.state.isViewerLoaded &&
           this.Viewer &&
           !this.state.isViewboxChanging &&
-          this.props.expandState !== 'COLLAPSED' &&
           !this.props.hidePopover && (
             <PopoverOverlay
               selectedFlowNodeRef={

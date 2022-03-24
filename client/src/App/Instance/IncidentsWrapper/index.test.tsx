@@ -8,11 +8,7 @@ import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {IncidentsWrapper} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {
-  mockIncidentWrapperProps,
-  mockIncidents,
-  mockResolvedIncidents,
-} from './index.setup';
+import {mockIncidents, mockResolvedIncidents} from './index.setup';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
@@ -69,15 +65,9 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render the table', async () => {
-    render(
-      <IncidentsWrapper
-        {...mockIncidentWrapperProps}
-        setIsInTransition={jest.fn()}
-      />,
-      {
-        wrapper: Wrapper,
-      }
-    );
+    render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+      wrapper: Wrapper,
+    });
 
     incidentsStore.setIncidentBarOpen(true);
     const table = within(screen.getByTestId('incidents-table'));
@@ -91,15 +81,9 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render the filters', () => {
-    render(
-      <IncidentsWrapper
-        {...mockIncidentWrapperProps}
-        setIsInTransition={jest.fn()}
-      />,
-      {
-        wrapper: Wrapper,
-      }
-    );
+    render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+      wrapper: Wrapper,
+    });
     incidentsStore.setIncidentBarOpen(true);
 
     const errorFilters = within(screen.getByTestId(/incidents-by-errortype/i));
@@ -122,10 +106,7 @@ describe('IncidentsFilter', () => {
     let rerender: any;
     beforeEach(() => {
       const wrapper = render(
-        <IncidentsWrapper
-          {...mockIncidentWrapperProps}
-          setIsInTransition={jest.fn()}
-        />,
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
         {
           wrapper: Wrapper,
         }
@@ -232,12 +213,7 @@ describe('IncidentsFilter', () => {
 
       await incidentsStore.fetchIncidents('1');
 
-      rerender(
-        <IncidentsWrapper
-          {...mockIncidentWrapperProps}
-          setIsInTransition={jest.fn()}
-        />
-      );
+      rerender(<IncidentsWrapper setIsInTransition={jest.fn()} />);
 
       expect(
         flowNodeFilters.queryByText(/^flowNodeId_exclusiveGateway/)

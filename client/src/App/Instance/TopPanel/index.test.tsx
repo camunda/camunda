@@ -12,7 +12,6 @@ import {
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockSequenceFlows, mockIncidents} from './index.setup';
-import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
@@ -56,15 +55,7 @@ const Wrapper = ({children}: Props) => {
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
         <Routes>
-          <Route
-            path="/instances/:processInstanceId"
-            element={
-              <SplitPane>
-                {children}
-                <SplitPane.Pane />
-              </SplitPane>
-            }
-          />
+          <Route path="/instances/:processInstanceId" element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

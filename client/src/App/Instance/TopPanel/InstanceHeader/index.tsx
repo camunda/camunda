@@ -30,14 +30,18 @@ const InstanceHeader = observer(() => {
     instance === null ||
     !singleInstanceDiagramStore.areDiagramDefinitionsAvailable
   ) {
-    return <Skeleton />;
+    return (
+      <Styled.Container>
+        <Skeleton />
+      </Styled.Container>
+    );
   }
 
   const {id, processVersion, startDate, endDate, parentInstanceId, state} =
     instance;
 
   return (
-    <>
+    <Styled.Container data-testid="instance-header">
       <Styled.StateIconWrapper>
         <Styled.StateIcon state={state} />
       </Styled.StateIconWrapper>
@@ -126,7 +130,7 @@ const InstanceHeader = observer(() => {
           }
         />
       </Restricted>
-    </>
+    </Styled.Container>
   );
 });
 
