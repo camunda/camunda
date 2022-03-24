@@ -101,7 +101,7 @@ var tests = []testCase{
 		useHostAndPort: true,
 	},
 	{
-		name:       "deploy process",
+		name:       "deploy resource",
 		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn"),
 		goldenFile: "testdata/deploy.golden",
 		jsonOutput: true,
