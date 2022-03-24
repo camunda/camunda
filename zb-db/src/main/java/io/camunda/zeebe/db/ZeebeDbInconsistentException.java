@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.db;
 
-public class ZeebeDbInconsistentException extends IllegalStateException {
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+
+public class ZeebeDbInconsistentException extends UnrecoverableException {
   public ZeebeDbInconsistentException(final String message) {
     super(message);
   }
