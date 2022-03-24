@@ -180,6 +180,7 @@
       "targetDuration": "Ziel",
       "slaDuration": "SLA",
       "instancesTake": "der Prozessinstanzen benötigen",
+      "instancesTook": "der Instanzen benötigten weniger als",
       "lessThan": "weniger als",
       "displayGoal": "Ziel anzeigen",
       "durationDistribution": "Laufzeitverteilung",

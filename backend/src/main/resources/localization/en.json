@@ -180,6 +180,7 @@
       "targetDuration": "Target",
       "slaDuration": "SLA",
       "instancesTake": "of process instances take",
+      "instancesTook": "of instances took less than",
       "lessThan": "less than",
       "displayGoal": "Display goal",
       "durationDistribution": "Duration distribution",

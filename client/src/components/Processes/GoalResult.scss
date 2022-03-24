@@ -1,0 +1,23 @@
+.GoalResult {
+  min-width: max-content;
+  padding: 0 20px 20px 20px;
+
+  .goal {
+    p {
+      margin-bottom: 5px;
+    }
+
+    .duration {
+      color: var(--red-darken-38);
+
+      &.success {
+        color: var(--green-base-44);
+      }
+    }
+  }
+
+  .subText {
+    color: var(--grey-lighten-56);
+    font-size: 12px;
+  }
+}

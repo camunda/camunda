@@ -36,20 +36,22 @@ const props = {
 
 const processWithGoals = {
   ...props.process,
-  durationGoals: [
-    {
-      type: 'targetDuration',
-      percentile: '25',
-      value: '1',
-      unit: 'weeks',
-    },
-    {
-      type: 'slaDuration',
-      percentile: '95',
-      value: '5',
-      unit: 'days',
-    },
-  ],
+  durationGoals: {
+    goals: [
+      {
+        type: 'targetDuration',
+        percentile: '25',
+        value: '1',
+        unit: 'weeks',
+      },
+      {
+        type: 'slaDuration',
+        percentile: '95',
+        value: '5',
+        unit: 'days',
+      },
+    ],
+  },
 };
 
 it('should load initialGoals', async () => {
@@ -67,7 +69,10 @@ it('should use default goals if one of the initial goals is not present', async 
   const node = shallow(
     <TimeGoalsModal
       {...props}
-      process={{...processWithGoals, durationGoals: [processWithGoals.durationGoals[1]]}}
+      process={{
+        ...processWithGoals,
+        durationGoals: {goals: [processWithGoals.durationGoals.goals[1]]},
+      }}
     />
   );
 
@@ -161,13 +166,12 @@ it('should invoke removeGoals when confirming the delete modal', async () => {
   expect(node.find(Deleter).prop('entity')).toEqual(processWithGoals);
 
   await node.find(Deleter).prop('deleteEntity')();
-
   expect(updateGoals).toHaveBeenCalledWith('defKey', []);
-  expect(spy).toHaveBeenCalled();
 
   node.find(Deleter).simulate('close');
   expect(node.find(Deleter).prop('entity')).toEqual();
   expect(removeSpy).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalled();
 });
 
 it('should filter out hidden goals when saving', async () => {
@@ -182,7 +186,7 @@ it('should filter out hidden goals when saving', async () => {
     .simulate('change', {target: {checked: false}});
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([processWithGoals.durationGoals[1]]);
+  expect(spy).toHaveBeenCalledWith([processWithGoals.durationGoals.goals[1]]);
 });
 
 it('should disable save button and show an error message if duration input is invalid', async () => {
@@ -191,7 +195,7 @@ it('should disable save button and show an error message if duration input is in
       {...props}
       process={{
         ...processWithGoals,
-        durationGoals: [{...processWithGoals.durationGoals[0], value: '-1'}],
+        durationGoals: {goals: [{...processWithGoals.durationGoals.goals[0], value: '-1'}]},
       }}
     />
   );

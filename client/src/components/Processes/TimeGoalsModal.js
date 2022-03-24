@@ -46,15 +46,17 @@ const defaultGoals = [
 ];
 
 export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process}) {
-  const isEditing = process.durationGoals?.length > 0;
+  const isEditing = process.durationGoals?.goals?.length > 0;
   const [data, setData] = useState();
   const [visibleGoals, setVisibleGoals] = useState(
     defaultGoals.map((goal) =>
-      isEditing ? process.durationGoals.some(({type}) => goal.type === type) : true
+      isEditing ? process.durationGoals?.goals?.some(({type}) => goal.type === type) : true
     )
   );
   const [goals, setGoals] = useState(
-    defaultGoals.map((goal) => process.durationGoals?.find(({type}) => goal.type === type) || goal)
+    defaultGoals.map(
+      (goal) => process.durationGoals?.goals?.find(({type}) => goal.type === type) || goal
+    )
   );
   const [deleting, setDeleting] = useState();
 
@@ -114,7 +116,7 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
                 <div className="singleGoal" key={type}>
                   <b>{t('processes.timeGoals.' + type)}</b>
                   <Select
-                    value={percentile}
+                    value={percentile.toString()}
                     onChange={(selectValue) => updateGoalValue(idx, 'percentile', selectValue)}
                   >
                     <Select.Option value="99">99%</Select.Option>
@@ -200,6 +202,7 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
           onClose={() => {
             setDeleting();
             onRemove();
+            onClose();
           }}
           getName={({processName}) => processName}
           deleteEntity={async () => {
@@ -208,7 +211,6 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
               type: 'success',
               text: t('processes.goalRemoved', {processName: deleting.processName}),
             });
-            onClose();
           }}
         />
       </Modal.Content>
@@ -258,13 +260,30 @@ function getReportPayload(processDefinitionKey, tenantData) {
       },
       groupBy: {$set: {type: 'duration', value: null}},
       visualization: {$set: 'bar'},
+      filter: {
+        $set: [
+          {
+            type: 'instanceEndDate',
+            data: {
+              type: 'rolling',
+              start: {
+                value: '30',
+                unit: 'days',
+              },
+              end: null,
+            },
+            appliedTo: ['all'],
+            filterLevel: 'instance',
+          },
+        ],
+      },
     },
   });
 }
 
 function findPercentageDuration(data, percentage) {
   // find the duration bucket that contains nth percentile instance
-  // and return the next duration bucket to ensure that goals succeed
+  // and return the duration of the next bucket to ensure that goals succeed
   // if the nth percentile instance is in the last bucket, return its duration even if goals fail
   const targetDurationPosition = percentage * data.instanceCount - 1;
   const durationData = data?.measures[0].data;

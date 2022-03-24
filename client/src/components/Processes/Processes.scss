@@ -8,6 +8,10 @@
       margin: 4px;
     }
 
+    .summaryContainer {
+      display: inline-block;
+    }
+
     .ListItem:not(:hover) .setGoalBtn {
       opacity: 0;
 

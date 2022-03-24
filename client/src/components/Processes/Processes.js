@@ -6,12 +6,14 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {Button, EntityList} from 'components';
+import {Button, EntityList, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import TimeGoalsModal from './TimeGoalsModal';
+import GoalResult from './GoalResult';
+import GoalSummary from './GoalSummary';
 import {loadProcesses, updateGoals} from './service';
 
 import './Processes.scss';
@@ -59,14 +61,27 @@ export function Processes({mightFail}) {
           name: processName || processDefinitionKey,
           meta: [
             owner,
-            <Button
-              className="setGoalBtn"
-              onClick={() => {
-                setOpenProcess({processDefinitionKey, processName, durationGoals});
-              }}
-            >
-              {durationGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
-            </Button>,
+            <>
+              <Tooltip
+                position="bottom"
+                content={<GoalResult durationGoals={durationGoals} />}
+                delay={300}
+              >
+                <div className="summaryContainer">
+                  <GoalSummary goals={durationGoals.results} />
+                </div>
+              </Tooltip>
+              <Button
+                className="setGoalBtn"
+                onClick={() => {
+                  setOpenProcess({processDefinitionKey, processName, durationGoals});
+                }}
+              >
+                {durationGoals?.goals?.length > 0
+                  ? t('processes.editGoal')
+                  : t('processes.setGoal')}
+              </Button>
+            </>,
           ],
         }))}
       />
@@ -77,7 +92,10 @@ export function Processes({mightFail}) {
           onConfirm={(goals) => {
             mightFail(
               updateGoals(openProcess.processDefinitionKey, goals),
-              () => setOpenProcess(),
+              () => {
+                setOpenProcess();
+                loadProcessesList();
+              },
               showError
             );
           }}

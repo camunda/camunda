@@ -28,7 +28,7 @@ const props = {
 
 it('should load processes', () => {
   loadProcesses.mockReturnValue([
-    {processDefinitionKey: 'defKey', processName: 'defName', timeGoals: [], owner: 'test'},
+    {processDefinitionKey: 'defKey', processName: 'defName', durationGoals: {}, owner: 'test'},
   ]);
   const node = shallow(<Processes {...props} />);
 
@@ -61,11 +61,14 @@ it('should invoke updateGoals when confirming the TimeGoalsModal', () => {
   const node = shallow(<Processes {...props} />);
 
   runLastEffect();
+  loadProcesses.mockClear();
 
-  node.find(EntityList).prop('data')[0].meta[1].props.onClick();
+  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
+  addGoalBtn.props.onClick();
   node.find(TimeGoalsModal).simulate('confirm', [{type: 'targetDuration'}]);
 
   expect(updateGoals).toHaveBeenCalledWith('defKey', [{type: 'targetDuration'}]);
+  expect(loadProcesses).toHaveBeenCalled();
   expect(node.find(TimeGoalsModal)).not.toExist();
 });
 
@@ -74,7 +77,8 @@ it('should close the TimeGoalsModal when onClose prop is called', () => {
 
   runLastEffect();
 
-  node.find(EntityList).prop('data')[0].meta[1].props.onClick();
+  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
+  addGoalBtn.props.onClick();
   node.find(TimeGoalsModal).simulate('close');
 
   expect(node.find(TimeGoalsModal)).not.toExist();
@@ -85,7 +89,8 @@ it('should reload processes when onRemove is called on the timeGoalsModal', asyn
 
   runLastEffect();
 
-  node.find(EntityList).prop('data')[0].meta[1].props.onClick();
+  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
+  addGoalBtn.props.onClick();
   node.find(TimeGoalsModal).simulate('remove');
 
   expect(loadProcesses).toHaveBeenCalled();
