@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -30,11 +31,14 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.providers.ElasticsearchStatusExceptionMapper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockserver.integration.ClientAndServer;
@@ -42,6 +46,7 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
+import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -69,6 +74,10 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 
 public class SingleProcessReportHandlingIT extends AbstractIT {
+
+  @RegisterExtension
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().forLevel(Level.ERROR).captureForType(ElasticsearchStatusExceptionMapper.class);
 
   @Test
   public void reportIsWrittenToElasticsearch() throws IOException {
@@ -469,6 +478,11 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     // then the response has the correct error code
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("elasticsearchError");
+
+    // and the original exception was logged
+    final Throwable elasticsearchStatusException = logCapturer
+      .assertContains("Mapping ElasticsearchStatusException").getThrowable();
+    assertThat(elasticsearchStatusException).isInstanceOf(ElasticsearchStatusException.class);
   }
 
   private void assertEmptyResult(final ProcessReportDataType reportType,

@@ -29,7 +29,7 @@ public class ElasticsearchStatusExceptionMapper implements ExceptionMapper<Elast
 
   @Override
   public Response toResponse(final ElasticsearchStatusException esStatusException) {
-    log.warn("Mapping ElasticsearchStatusException");
+    log.error("Mapping ElasticsearchStatusException", esStatusException);
 
     return Response
       .status(Response.Status.INTERNAL_SERVER_ERROR)
