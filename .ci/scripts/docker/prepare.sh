@@ -1,7 +1,7 @@
 #!/bin/sh -eux
 
 mvn dependency:get -B \
-    -DremoteRepositories="camunda-nexus::::https://app.camunda.com/nexus/content/repositories/public" \
+    -DremoteRepositories="camunda-nexus::::https://artifacts.camunda.com/artifactory/public" \
     -DgroupId="io.camunda" -DartifactId="camunda-zeebe" \
     -Dversion="${VERSION}" -Dpackaging="tar.gz" -Dtransitive=false
 
