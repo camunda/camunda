@@ -113,6 +113,9 @@
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.141</version.classgraph>
     <version.plexus-util>3.4.1</version.plexus-util>
+    <version.servlet-api>2.5</version.servlet-api>
+    <version.osgi>6.0.0</version.osgi>
+    <version.findbugs-annotations>3.0.1</version.findbugs-annotations>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -122,7 +125,7 @@
     <plugin.version.compiler>3.10.1</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.12.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.3.0</plugin.version.dependency>
-    <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
+    <plugin.version.enforcer>3.0.0</plugin.version.enforcer>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
@@ -792,6 +795,12 @@
         <version>${version.conscrypt}</version>
       </dependency>
       <dependency>
+        <!-- specified for dependency convergence -->
+        <groupId>javax.servlet</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>${version.servlet-api}</version>
+      </dependency>
+      <dependency>
         <!-- NOTE: required because of https://github.com/tomakehurst/wiremock/issues/1083-->
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
@@ -934,6 +943,13 @@
         <version>${version.json-smart}</version>
       </dependency>
 
+      <!-- primarily for dependency convergence between log4j2 and other libraries -->
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>${version.osgi}</version>
+      </dependency>
+
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
@@ -944,6 +960,12 @@
         <groupId>com.google.code.findbugs</groupId>
         <artifactId>jsr305</artifactId>
         <version>${version.jsr305}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${version.findbugs-annotations}</version>
       </dependency>
 
       <dependency>
@@ -1789,8 +1811,13 @@
           <exclusions>
             <exclusion>
               <groupId>org.apache.maven.surefire</groupId>
-              <artifactId>surefire-shared-utils</artifactId>
+	      <artifactId>surefire-shared-utils</artifactId>
             </exclusion>
+            <!-- excluded for dependency convergence -->
+	    <exclusion>
+              <groupId>org.fusesource.jansi</groupId>
+	      <artifactId>jansi</artifactId>
+	    </exclusion>
           </exclusions>
         </dependency>
       </dependencies>
