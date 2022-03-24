@@ -3205,7 +3205,7 @@
     "@types/node" "*"
     "@types/responselike" "*"
 
-"@types/carbon-components-react@^7.49.0":
+"@types/carbon-components-react@7.49.0":
   version "7.49.0"
   resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.49.0.tgz#8019a5e80a256264d7f052f9519c09f8ce15e026"
   integrity sha512-aPFjU4SzM8kPN42Ylg76/VDk8VFpTMzNiEQNQpKh+wxm2YEWSdiaVzWKUvaeHFPgdIi8sX8jYuoTL6nk/2CxHQ==
