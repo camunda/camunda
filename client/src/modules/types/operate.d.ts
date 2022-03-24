@@ -71,9 +71,9 @@ interface ProcessInstanceEntity {
 
 interface DecisionInstanceEntity {
   id: string;
-  name: string;
-  version: number;
-  evaluationTime: string;
+  decisionName: string;
+  decisionVersion: number;
+  evaluationDate: string;
   processInstanceId: string | null;
   state: DecisionInstanceEntityState;
   sortValues: [string, string];

@@ -19,6 +19,8 @@ import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {Routes, Route, MemoryRouter} from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
 
 const createWrapper = (initialPath: string = '/decisions') => {
   const Wrapper: React.FC = ({children}) => {
@@ -40,8 +42,18 @@ const createWrapper = (initialPath: string = '/decisions') => {
 };
 
 describe('<InstancesTable />', () => {
+  beforeEach(() => {
+    mockServer.use(
+      rest.get('/api/decisions/grouped', (_, res, ctx) =>
+        res.once(ctx.json(mockGroupedDecisions))
+      )
+    );
+
+    groupedDecisionsStore.fetchDecisions();
+  });
   afterEach(() => {
     decisionInstancesStore.reset();
+    groupedDecisionsStore.reset();
   });
 
   it('should initially render skeleton', async () => {
@@ -73,7 +85,7 @@ describe('<InstancesTable />', () => {
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 
-  it('should render empty message', async () => {
+  it('should render empty message when no filter is selected', async () => {
     mockServer.use(
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json({decisionInstances: []}))
@@ -87,6 +99,37 @@ describe('<InstancesTable />', () => {
     expect(
       screen.getByText('There are no Instances matching this filter set')
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'To see some results, select at least one Instance state'
+      )
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
+  });
+
+  it('should render empty message when at least one filter is selected', async () => {
+    mockServer.use(
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(ctx.json({decisionInstances: []}))
+      )
+    );
+
+    render(<InstancesTable />, {
+      wrapper: createWrapper('/decisions?evaluated=true&failed=true'),
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    expect(
+      screen.getByText('There are no Instances matching this filter set')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'To see some results, select at least one Instance state'
+      )
+    ).not.toBeInTheDocument();
+
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 
@@ -190,7 +233,7 @@ describe('<InstancesTable />', () => {
                 id: '2251799813689541',
                 name: 'test decision instance 1',
                 version: 1,
-                evaluationTime: '2022-02-07T10:01:51.293+0000',
+                evaluationDate: '2022-02-07T10:01:51.293+0000',
                 processInstanceId: '2251799813689544',
                 state: 'COMPLETED',
               },

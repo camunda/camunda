@@ -8,6 +8,7 @@ import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 import {Panel} from 'modules/components/Panel';
 import {PanelHeader} from 'modules/components/PanelHeader';
@@ -15,6 +16,7 @@ import {SortableTable} from 'modules/components/SortableTable';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 import {formatDate} from 'modules/utils/date';
+import {useFilters} from 'modules/hooks/useFilters';
 
 import {
   Container,
@@ -33,11 +35,18 @@ const InstancesTable: React.FC = observer(() => {
     areDecisionInstancesEmpty,
     hasLatestDecisionInstances,
   } = decisionInstancesStore;
+  const {
+    state: {status: groupedDecisionsStatus},
+  } = groupedDecisionsStore;
+
   const location = useLocation();
+  const filters = useFilters();
 
   useEffect(() => {
-    decisionInstancesStore.fetchInstancesFromFilters();
-  }, [location.search]);
+    if (groupedDecisionsStatus === 'fetched') {
+      decisionInstancesStore.fetchInstancesFromFilters();
+    }
+  }, [location.search, groupedDecisionsStatus]);
 
   const getTableState = () => {
     if (['initial', 'first-fetch'].includes(status)) {
@@ -57,11 +66,11 @@ const InstancesTable: React.FC = observer(() => {
   };
 
   const getEmptyListMessage = () => {
-    let message = 'There are no Instances matching this filter set';
-
-    //TODO: If filters are applied, append '\n To see some results, select at least one Instance state';
-
-    return message;
+    return `There are no Instances matching this filter set${
+      filters.areDecisionInstanceStatesApplied()
+        ? ''
+        : '\n To see some results, select at least one Instance state'
+    }`;
   };
 
   return (
@@ -127,7 +136,14 @@ const InstancesTable: React.FC = observer(() => {
           decisionInstancesStore.fetchNextInstances();
         }}
         rows={decisionInstances.map(
-          ({id, state, name, version, evaluationTime, processInstanceId}) => {
+          ({
+            id,
+            state,
+            decisionName,
+            decisionVersion,
+            evaluationDate,
+            processInstanceId,
+          }) => {
             return {
               id,
               ariaLabel: `Instance ${id}`,
@@ -139,7 +155,7 @@ const InstancesTable: React.FC = observer(() => {
                         state={state}
                         data-testid={`${state}-icon-${id}`}
                       />
-                      {name}
+                      {decisionName}
                     </>
                   ),
                 },
@@ -154,10 +170,10 @@ const InstancesTable: React.FC = observer(() => {
                   ),
                 },
                 {
-                  cellContent: version,
+                  cellContent: decisionVersion,
                 },
                 {
-                  cellContent: formatDate(evaluationTime),
+                  cellContent: formatDate(evaluationDate),
                 },
                 {
                   cellContent:

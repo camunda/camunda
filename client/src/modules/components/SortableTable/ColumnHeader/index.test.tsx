@@ -8,11 +8,15 @@ import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {ColumnHeader} from './index';
+import {LocationLog} from 'modules/utils/LocationLog';
+import userEvent from '@testing-library/user-event';
 
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter>
+        {children} <LocationLog />
+      </MemoryRouter>
     </ThemeProvider>
   );
 };
@@ -36,5 +40,33 @@ describe('ColumnHeader', () => {
     expect(
       screen.queryByRole('button', {name: 'Sort by Start Time'})
     ).not.toBeInTheDocument();
+  });
+
+  it('should toggle sorting', async () => {
+    render(<ColumnHeader label="Version" sortKey="version" />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.click(screen.getByRole('button', {name: 'Sort by Version'}));
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?sort=version%2Bdesc'
+    );
+  });
+
+  it('should toggle sorting correctly when field is sorted by default', () => {
+    render(<ColumnHeader label="Version" sortKey="version" isDefault />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.click(screen.getByRole('button', {name: 'Sort by Version'}));
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?sort=version%2Basc'
+    );
   });
 });

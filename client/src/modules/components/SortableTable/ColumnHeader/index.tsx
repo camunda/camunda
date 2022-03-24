@@ -8,32 +8,24 @@ import {SortableHeader, Header, Label, SortIcon} from './styled';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {getSortParams} from 'modules/utils/filter';
 
+const INITIAL_SORT_ORDER = 'desc';
+
 function toggleSorting(
   search: string,
-  column: string,
-  sortParams: {
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-  } | null
+  sortKey: string,
+  currentSortOrder?: 'asc' | 'desc'
 ) {
   const params = new URLSearchParams(search);
 
-  if (sortParams === null) {
-    params.set('sort', `${column}+desc`);
+  if (currentSortOrder === undefined) {
+    params.set('sort', `${sortKey}+${INITIAL_SORT_ORDER}`);
     return params.toString();
   }
 
-  const {sortBy, sortOrder} = sortParams;
-
-  if (sortBy === column) {
-    if (sortOrder === 'asc') {
-      params.set('sort', `${column}+desc`);
-    } else {
-      params.set('sort', `${column}+asc`);
-    }
-  } else {
-    params.set('sort', `${column}+desc`);
-  }
+  params.set(
+    'sort',
+    `${sortKey}+${currentSortOrder === 'asc' ? 'desc' : 'asc'}`
+  );
 
   return params.toString();
 }
@@ -49,24 +41,31 @@ const ColumnHeader: React.FC<Props> = ({
   sortKey,
   disabled,
   label,
-  isDefault,
+  isDefault = false,
 }) => {
   const isSortable = sortKey !== undefined;
   const navigate = useNavigate();
   const location = useLocation();
-  const sortParams = getSortParams();
+  const existingSortParams = getSortParams();
 
   if (isSortable) {
     const isActive =
-      sortParams !== null ? sortParams.sortBy === sortKey : isDefault;
+      existingSortParams !== null
+        ? existingSortParams.sortBy === sortKey
+        : isDefault;
 
     const displaySortIcon = isActive && !disabled;
+    const currentSortOrder =
+      existingSortParams?.sortOrder === undefined && isDefault
+        ? INITIAL_SORT_ORDER
+        : existingSortParams?.sortOrder;
+
     return (
       <SortableHeader
         disabled={disabled}
         onClick={() => {
           navigate({
-            search: toggleSorting(location.search, sortKey, sortParams),
+            search: toggleSorting(location.search, sortKey, currentSortOrder),
           });
         }}
         title={`Sort by ${label}`}
@@ -76,9 +75,7 @@ const ColumnHeader: React.FC<Props> = ({
         <Label active={isActive} disabled={disabled}>
           {label}
         </Label>
-        {displaySortIcon && (
-          <SortIcon sortOrder={sortParams?.sortOrder ?? 'desc'} />
-        )}
+        {displaySortIcon && <SortIcon sortOrder={currentSortOrder ?? 'desc'} />}
       </SortableHeader>
     );
   }

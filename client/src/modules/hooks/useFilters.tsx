@@ -9,6 +9,7 @@ import {
   updateProcessFiltersSearchString,
   getProcessInstanceFilters,
   ProcessInstanceFilters,
+  getDecisionInstanceFilters,
 } from 'modules/utils/filter';
 
 const useFilters = () => {
@@ -34,7 +35,18 @@ const useFilters = () => {
     );
   };
 
-  return {setFiltersToURL, getFiltersFromUrl, areProcessInstanceStatesApplied};
+  const areDecisionInstanceStatesApplied = () => {
+    const filters = getDecisionInstanceFilters(location.search);
+
+    return filters.evaluated || filters.failed;
+  };
+
+  return {
+    setFiltersToURL,
+    getFiltersFromUrl,
+    areProcessInstanceStatesApplied,
+    areDecisionInstanceStatesApplied,
+  };
 };
 
 export {useFilters};

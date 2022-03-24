@@ -73,7 +73,7 @@ describe('<Header />', () => {
       screen.getByRole('columnheader', {name: /version/i})
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /evaluation time/i})
+      screen.getByRole('columnheader', {name: /evaluation date/i})
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /process instance id/i})

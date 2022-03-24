@@ -8,6 +8,7 @@ import {addDays, startOfDay, addMinutes, format, parse} from 'date-fns';
 import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'history';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 type ProcessInstanceFilterField =
   | 'process'
@@ -87,13 +88,13 @@ type RequestFilters = {
 };
 
 type DecisionRequestFilters = {
-  completed?: boolean;
+  evaluated?: boolean;
   failed?: boolean;
   ids?: string[];
   processInstanceId?: string;
   evaluationDateAfter?: string;
   evaluationDateBefore?: string;
-  decisionIds?: string[];
+  decisionDefinitionIds?: string[];
 };
 
 const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
@@ -203,11 +204,15 @@ type GetRequestDatePairReturn =
   | {
       endDateBefore: string;
       endDateAfter: string;
+    }
+  | {
+      evaluationDateBefore: string;
+      evaluationDateAfter: string;
     };
 
 function getRequestDatePair(
   date: Date,
-  type: 'startDate' | 'endDate'
+  type: 'startDate' | 'endDate' | 'evaluationDate'
 ): GetRequestDatePairReturn {
   const DATE_REQUEST_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSxx";
   const hasTime = date.getHours() + date.getMinutes() + date.getSeconds() !== 0;
@@ -220,17 +225,10 @@ function getRequestDatePair(
     DATE_REQUEST_FORMAT
   );
 
-  if (type === 'startDate') {
-    return {
-      startDateBefore: dateBefore,
-      startDateAfter: dateAfter,
-    };
-  }
-
   return {
-    endDateBefore: dateBefore,
-    endDateAfter: dateAfter,
-  };
+    [`${type}Before`]: dateBefore,
+    [`${type}After`]: dateAfter,
+  } as GetRequestDatePairReturn;
 }
 
 function parseIds(value: string) {
@@ -276,6 +274,20 @@ function getProcessIds(process: string, processVersion: string) {
   return (
     processesStore.versionsByProcess?.[process]
       ?.filter(({version}) => version === parseInt(processVersion))
+      ?.map(({id}) => id) ?? []
+  );
+}
+
+function getDecisionIds(name: string, decisionVersion: string) {
+  if (decisionVersion === 'all') {
+    return (
+      groupedDecisionsStore.decisionVersionsById[name]?.map(({id}) => id) ?? []
+    );
+  }
+
+  return (
+    groupedDecisionsStore.decisionVersionsById?.[name]
+      ?.filter(({version}) => version === parseInt(decisionVersion))
       ?.map(({id}) => id) ?? []
   );
 }
@@ -385,6 +397,76 @@ function getProcessInstancesRequestFilters(): RequestFilters {
   );
 }
 
+function getDecisionInstancesRequestFilters() {
+  const filters = getDecisionInstanceFilters(getSearchString());
+
+  return Object.entries(filters).reduce<DecisionRequestFilters>(
+    (accumulator, [key, value]) => {
+      if (value === undefined) {
+        return accumulator;
+      }
+
+      if (typeof value === 'boolean') {
+        // TODO: use this instead when implementing #2417
+        // if (['evaluated', 'failed'].includes(key)) {
+        //   return {
+        //     ...accumulator,
+        //     [key]: value,
+        //   };
+        // }
+
+        if (key === 'evaluated') {
+          return {
+            ...accumulator,
+            //@ts-ignore
+            completed: value,
+          };
+        }
+        if (key === 'failed') {
+          return {
+            ...accumulator,
+            [key]: value,
+          };
+        }
+      } else {
+        if (key === 'decisionInstanceIds') {
+          return {
+            ...accumulator,
+            ids: parseIds(value),
+          };
+        }
+        if (key === 'processInstanceId') {
+          return {...accumulator, processInstanceId: value};
+        }
+        if (
+          key === 'version' &&
+          filters.name !== undefined &&
+          value !== undefined
+        ) {
+          const decisionDefinitionIds = getDecisionIds(filters.name, value);
+
+          if (decisionDefinitionIds.length > 0) {
+            return {
+              ...accumulator,
+              decisionDefinitionIds,
+            };
+          }
+        }
+        const parsedDate = parseFilterDate(value);
+        if (key === 'evaluationDate' && parsedDate !== undefined) {
+          return {
+            ...accumulator,
+            ...getRequestDatePair(parsedDate, key),
+          };
+        }
+      }
+
+      return accumulator;
+    },
+    {}
+  );
+}
+
 function updateFiltersSearchString<Filters extends object>(
   currentSearch: string,
   newFilters: Filters,
@@ -466,6 +548,7 @@ export {
   parseIds,
   parseFilterDate,
   getProcessInstancesRequestFilters,
+  getDecisionInstancesRequestFilters,
   updateProcessFiltersSearchString,
   updateDecisionsFiltersSearchString,
   deleteSearchParams,

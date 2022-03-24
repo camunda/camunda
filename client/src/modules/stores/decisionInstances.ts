@@ -9,7 +9,10 @@ import {makeObservable, observable, action, override, computed} from 'mobx';
 import {fetchDecisionInstances} from 'modules/api/decisions';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {getSortParams} from 'modules/utils/filter';
+import {
+  getDecisionInstancesRequestFilters,
+  getSortParams,
+} from 'modules/utils/filter';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -29,8 +32,8 @@ type State = {
     | 'error';
 };
 
-const MAX_INSTANCES_STORED = 30; //TODO #2312: 200 when working with real data
-const MAX_INSTANCES_PER_REQUEST = 20; //TODO #2312: 50 when working with real data
+const MAX_INSTANCES_STORED = 200;
+const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
   decisionInstances: [],
@@ -66,11 +69,12 @@ class DecisionInstances extends NetworkReconnectionHandler {
     this.fetchInstances({
       fetchType: 'initial',
       payload: {
-        query: {},
+        query: getDecisionInstancesRequestFilters(),
         sorting: getSortParams() || {
-          sortBy: 'evaluationTime',
+          sortBy: 'evaluationDate',
           sortOrder: 'desc',
         },
+        pageSize: MAX_INSTANCES_PER_REQUEST,
       },
     });
   });
@@ -84,7 +88,6 @@ class DecisionInstances extends NetworkReconnectionHandler {
   }) => {
     try {
       const response = await fetchDecisionInstances(payload);
-
       if (response.ok) {
         const {decisionInstances, totalCount} = await response.json();
 
@@ -142,9 +145,9 @@ class DecisionInstances extends NetworkReconnectionHandler {
     return this.fetchInstances({
       fetchType: 'prev',
       payload: {
-        query: {},
+        query: getDecisionInstancesRequestFilters(),
         sorting: getSortParams() || {
-          sortBy: 'evaluationTime',
+          sortBy: 'evaluationDate',
           sortOrder: 'desc',
         },
         searchBefore: this.state.decisionInstances[0]?.sortValues,
@@ -159,9 +162,9 @@ class DecisionInstances extends NetworkReconnectionHandler {
     return this.fetchInstances({
       fetchType: 'next',
       payload: {
-        query: {},
+        query: getDecisionInstancesRequestFilters(),
         sorting: getSortParams() || {
-          sortBy: 'evaluationTime',
+          sortBy: 'evaluationDate',
           sortOrder: 'desc',
         },
         searchAfter:

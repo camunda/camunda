@@ -27,7 +27,7 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
           <TH>Decision</TH>
           <TH>Decision Instance ID</TH>
           <TH>Version</TH>
-          <TH>Evaluation Time</TH>
+          <TH>Evaluation Date</TH>
           <TH>Process Instance ID</TH>
         </tr>
       </thead>
