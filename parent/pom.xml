@@ -115,7 +115,7 @@
     <version.plexus-util>3.4.1</version.plexus-util>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
-    <version.findbugs-annotations>3.0.1</version.findbugs-annotations>
+    <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
