@@ -99,4 +99,18 @@ public class SnapshotReplicationListenerTest {
     verify(snapshotReplicationListener, times(0))
         .onSnapshotReplicationCompleted(follower.getTerm());
   }
+
+  @Test
+  public void shouldNotCallListenerOnRegisterIfLeader() {
+    // given
+    final var snapshotReplicationListener = mock(SnapshotReplicationListener.class);
+    final var leader = raftRule.getLeader().orElseThrow();
+    // when
+    leader.getContext().notifySnapshotReplicationStarted();
+    leader.getContext().notifySnapshotReplicationCompleted();
+    leader.getContext().addSnapshotReplicationListener(snapshotReplicationListener);
+    // then
+    verify(snapshotReplicationListener, times(0)).onSnapshotReplicationStarted();
+    verify(snapshotReplicationListener, times(0)).onSnapshotReplicationCompleted(leader.getTerm());
+  }
 }
