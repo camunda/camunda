@@ -35,21 +35,21 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 	anotherName := "../../../java/src/test/resources/processes/another-demo-process.bpmn"
 	anotherBytes := readBytes(t, anotherName)
 
-	request := &pb.DeployProcessRequest{
-		Processes: []*pb.ProcessRequestObject{
+	request := &pb.DeployResourceRequest{
+		Resources: []*pb.Resource{
 			{
-				Name:       demoName,
-				Definition: demoBytes,
+				Name:    demoName,
+				Content: demoBytes,
 			},
 			{
-				Name:       anotherName,
-				Definition: anotherBytes,
+				Name:    anotherName,
+				Content: anotherBytes,
 			},
 		},
 	}
-	stub := &pb.DeployProcessResponse{}
+	stub := &pb.DeployResourceResponse{}
 
-	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployResource(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
 
@@ -76,17 +76,17 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
-	request := &pb.DeployProcessRequest{
-		Processes: []*pb.ProcessRequestObject{
+	request := &pb.DeployResourceRequest{
+		Resources: []*pb.Resource{
 			{
-				Name:       demoName,
-				Definition: demoBytes,
+				Name:    demoName,
+				Content: demoBytes,
 			},
 		},
 	}
-	stub := &pb.DeployProcessResponse{}
+	stub := &pb.DeployResourceResponse{}
 
-	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployResource(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
 

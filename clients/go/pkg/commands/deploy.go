@@ -23,7 +23,7 @@ import (
 
 type DeployCommand struct {
 	Command
-	request pb.DeployProcessRequest
+	request pb.DeployResourceRequest
 }
 
 func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
@@ -35,12 +35,12 @@ func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
 }
 
 func (cmd *DeployCommand) AddResource(definition []byte, name string) *DeployCommand {
-	cmd.request.Processes = append(cmd.request.Processes, &pb.ProcessRequestObject{Definition: definition, Name: name})
+	cmd.request.Resources = append(cmd.request.Resources, &pb.Resource{Content: definition, Name: name})
 	return cmd
 }
 
-func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, error) {
-	response, err := cmd.gateway.DeployProcess(ctx, &cmd.request)
+func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployResourceResponse, error) {
+	response, err := cmd.gateway.DeployResource(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}

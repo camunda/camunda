@@ -101,8 +101,8 @@ var tests = []testCase{
 		useHostAndPort: true,
 	},
 	{
-		name:       "deploy process",
-		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn"),
+		name:       "deploy resources",
+		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/drg-force-user.dmn --resourceNames=model.bpmn,drg-force-user.dmn"),
 		goldenFile: "testdata/deploy.golden",
 		jsonOutput: true,
 	},
@@ -116,7 +116,7 @@ var tests = []testCase{
 	{
 		name:       "create instance with process key",
 		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/model.bpmn")},
-		cmd:        strings.Fields("--insecure create instance 2251799813685252"),
+		cmd:        strings.Fields("--insecure create instance 2251799813685254"),
 		goldenFile: "testdata/create_instance.golden",
 		jsonOutput: true,
 	},

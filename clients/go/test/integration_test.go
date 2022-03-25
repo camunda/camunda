@@ -83,7 +83,7 @@ func (s *integrationTestSuite) TestDeployProcess() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -91,7 +91,10 @@ func (s *integrationTestSuite) TestDeployProcess() {
 	// then
 	s.Greater(deployment.GetKey(), int64(0))
 
-	process := deployment.GetProcesses()[0]
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
 	s.NotNil(process)
 	s.EqualValues("deploy_process", process.GetBpmnProcessId())
 	s.EqualValues(int32(1), process.GetVersion())
@@ -103,7 +106,7 @@ func (s *integrationTestSuite) TestCreateInstance() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -112,7 +115,11 @@ func (s *integrationTestSuite) TestCreateInstance() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	process := deployment.GetProcesses()[0]
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
 	processInstance, err := s.client.NewCreateInstanceCommand().BPMNProcessId("deploy_process").Version(process.GetVersion()).Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
@@ -130,7 +137,7 @@ func (s *integrationTestSuite) TestActivateJobs() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -138,7 +145,11 @@ func (s *integrationTestSuite) TestActivateJobs() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	process := deployment.GetProcesses()[0]
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
 	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
@@ -179,7 +190,7 @@ func (s *integrationTestSuite) TestFailJob() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -187,7 +198,11 @@ func (s *integrationTestSuite) TestFailJob() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	process := deployment.GetProcesses()[0]
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
 	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)

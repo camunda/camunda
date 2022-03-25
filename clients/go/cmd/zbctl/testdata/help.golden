@@ -15,7 +15,7 @@ Available Commands:
   complete    Complete a resource
   completion  Generate the autocompletion script for the specified shell
   create      Create resources
-  deploy      Creates a new process for each BPMN or YAML resource provided
+  deploy      Creates a new resource (e.g. process, decision) for each BPMN/DMN resource provided
   fail        Fail a resource
   generate    Generate documentation
   help        Help about any command

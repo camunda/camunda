@@ -81,7 +81,7 @@ func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
+func (c *ClientImpl) NewDeployCommand() *commands.DeployCommand {
 	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 

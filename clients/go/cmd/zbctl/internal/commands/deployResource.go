@@ -22,17 +22,17 @@ import (
 
 var resourceNamesFlag []string
 
-var deployProcessCmd = &cobra.Command{
-	Use:     "deploy <processPath>...",
-	Short:   "Creates a new process for each BPMN or YAML resource provided",
+var deployResourceCmd = &cobra.Command{
+	Use:     "deploy <resourcePath>...",
+	Short:   "Creates a new resource (e.g. process, decision) for each BPMN/DMN resource provided",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(resourceNamesFlag) > len(args) {
-			return fmt.Errorf("there are more resource names (%d) than process paths (%d)", len(resourceNamesFlag), len(args))
+			return fmt.Errorf("there are more resource names (%d) than resource paths (%d)", len(resourceNamesFlag), len(args))
 		}
 
-		zbCmd := client.NewDeployProcessCommand()
+		zbCmd := client.NewDeployCommand()
 		for i := 0; i < len(resourceNamesFlag); i++ {
 			bytes, err := ioutil.ReadFile(args[i])
 			if err != nil {
@@ -59,9 +59,9 @@ var deployProcessCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(deployProcessCmd)
+	rootCmd.AddCommand(deployResourceCmd)
 
-	deployProcessCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
-		" for the processes paths passed as arguments. The resource names are matched to processes by position. If a"+
-		" process does not have a matching resource name, the process path is used instead")
+	deployResourceCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
+		" for the resource paths passed as arguments. The resource names are matched to resources by position. If a"+
+		" resource does not have a matching resource name, the resource path is used instead")
 }
