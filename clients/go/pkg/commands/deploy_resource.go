@@ -21,12 +21,12 @@ import (
 	"log"
 )
 
-type DeployCommand struct {
+type DeployResourceCommand struct {
 	Command
-	request pb.DeployProcessRequest //nolint
+	request pb.DeployResourceRequest
 }
 
-func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
+func (cmd *DeployResourceCommand) AddResourceFile(path string) *DeployResourceCommand {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -34,14 +34,13 @@ func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
 	return cmd.AddResource(b, path)
 }
 
-func (cmd *DeployCommand) AddResource(definition []byte, name string) *DeployCommand {
-	process := &pb.ProcessRequestObject{Definition: definition, Name: name} //nolint
-	cmd.request.Processes = append(cmd.request.Processes, process)
+func (cmd *DeployResourceCommand) AddResource(definition []byte, name string) *DeployResourceCommand {
+	cmd.request.Resources = append(cmd.request.Resources, &pb.Resource{Content: definition, Name: name})
 	return cmd
 }
 
-func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, error) { //nolint
-	response, err := cmd.gateway.DeployProcess(ctx, &cmd.request) //nolint
+func (cmd *DeployResourceCommand) Send(ctx context.Context) (*pb.DeployResourceResponse, error) {
+	response, err := cmd.gateway.DeployResource(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
@@ -49,8 +48,8 @@ func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, 
 	return response, err
 }
 
-func NewDeployCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployCommand {
-	return &DeployCommand{
+func NewDeployResourceCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployResourceCommand {
+	return &DeployResourceCommand{
 		Command: Command{
 			gateway:     gateway,
 			shouldRetry: pred,

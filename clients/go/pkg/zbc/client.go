@@ -81,8 +81,12 @@ func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (c *ClientImpl) NewDeployCommand() *commands.DeployCommand {
+func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
 	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
+func (c *ClientImpl) NewDeployResourceCommand() *commands.DeployResourceCommand {
+	return commands.NewDeployResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {

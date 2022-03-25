@@ -22,7 +22,8 @@ import (
 
 type Client interface {
 	NewTopologyCommand() *commands.TopologyCommand
-	NewDeployCommand() *commands.DeployCommand
+	NewDeployProcessCommand() *commands.DeployCommand
+	NewDeployResourceCommand() *commands.DeployResourceCommand
 
 	NewCreateInstanceCommand() commands.CreateInstanceCommandStep1
 	NewCancelInstanceCommand() commands.CancelInstanceStep1

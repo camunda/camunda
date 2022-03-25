@@ -15,8 +15,19 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import org.immutables.value.Value;
+
 public interface JsonSerializable {
 
-  /** @return a JSON marshaled representation */
-  String toJson();
+  /**
+   * @return a JSON marshaled representation
+   * @throws UnsupportedOperationException if the implementation does not support it; in that case,
+   *     you may try using a library like Jackson with our {@code protocol-jackson} module.
+   */
+  @Value.NonAttribute
+  default String toJson() {
+    throw new UnsupportedOperationException(
+        "Failed to serialize value to JSON; this implementation does not support it out of the box. "
+            + " You may want to try with the protocol-jackson module.");
+  }
 }

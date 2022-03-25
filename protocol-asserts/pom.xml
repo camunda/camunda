@@ -46,12 +46,23 @@
           <packages>
             <param>io.camunda.zeebe.protocol.record</param>
           </packages>
+          <excludes>
+            <!--
+              exclude immutable values from the assertions, I don't see much value since we already
+              generated asserts for their interface types
+              -->
+            <exclude>^.*\.Immutable.*$</exclude>
+          </excludes>
           <generatedSourcesScope>compile</generatedSourcesScope>
-          <targetDir>${project.build.directory}/generated-sources/assertj-assertions</targetDir>
           <generateAssertions>true</generateAssertions>
           <generateBddAssertions>false</generateBddAssertions>
-          <generateSoftAssertions>false</generateSoftAssertions>
+          <generateSoftAssertions>true</generateSoftAssertions>
           <generateJUnitSoftAssertions>false</generateJUnitSoftAssertions>
+          <!-- do not generate hierarchical assertions, as otherwise for things like
+              RecordValueWithVariables, your JobRecordValue has no variables assertion and must be
+              converted first to a RecordValueWithVariables, which is unnecessarily tedious -->
+          <hierarchical>false</hierarchical>
+          <targetDir>${project.build.directory}/generated-sources/assertj-assertions</targetDir>
         </configuration>
         <executions>
           <execution>
@@ -69,7 +80,7 @@
         <groupId>com.google.code.maven-replacer-plugin</groupId>
         <artifactId>replacer</artifactId>
         <configuration>
-          <file>${project.build.directory}/generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/AbstractRecordAssert.java</file>
+          <file>${project.build.directory}/generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/RecordAssert.java</file>
           <replacements>
             <replacement>
               <token>T value</token>

@@ -20,21 +20,19 @@ import (
 	"io/ioutil"
 )
 
-var resourceNamesFlag []string
-
-// Remove the nolint directive when this command is the only remaining one for deploy
+// Remove the nolint directive once deploy resource is the only command left
 //nolint
-var deployResourceCmd = &cobra.Command{
-	Use:     "resource <resourcePath>...",
-	Short:   "Deploys a new resource (e.g. process, decision) for each BPMN/DMN resource provided",
+var deployCmd = &cobra.Command{
+	Use:     "deploy <processPath>...",
+	Short:   "Deploys new resources for each file provided",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(resourceNamesFlag) > len(args) {
-			return fmt.Errorf("there are more resource names (%d) than resource paths (%d)", len(resourceNamesFlag), len(args))
+			return fmt.Errorf("there are more resource names (%d) than process paths (%d)", len(resourceNamesFlag), len(args))
 		}
 
-		zbCmd := client.NewDeployResourceCommand()
+		zbCmd := client.NewDeployProcessCommand()
 		for i := 0; i < len(resourceNamesFlag); i++ {
 			bytes, err := ioutil.ReadFile(args[i])
 			if err != nil {
@@ -48,7 +46,7 @@ var deployResourceCmd = &cobra.Command{
 			zbCmd = zbCmd.AddResourceFile(args[i])
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
 		response, err := zbCmd.Send(ctx)
@@ -61,9 +59,9 @@ var deployResourceCmd = &cobra.Command{
 }
 
 func init() {
-	deployCmd.AddCommand(deployResourceCmd)
+	rootCmd.AddCommand(deployCmd)
 
-	deployResourceCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
-		" for the resource paths passed as arguments. The resource names are matched to resources by position. If a"+
-		" resource does not have a matching resource name, the resource path is used instead")
+	deployCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
+		" for the processes paths passed as arguments. The resource names are matched to processes by position. If a"+
+		" process does not have a matching resource name, the process path is used instead")
 }

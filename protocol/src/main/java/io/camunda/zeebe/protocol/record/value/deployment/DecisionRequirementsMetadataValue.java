@@ -15,11 +15,16 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import org.immutables.value.Value;
+
 /**
  * The metadata of a deployed decision requirements graph (DRG/DRD). A DRG represents the DMN
  * resource and all decisions of the DMN belongs to it. The metadata contains relevant properties of
  * the DMN resource, except the binary DMN resource itself.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface DecisionRequirementsMetadataValue {
 
   /** @return the ID of the DRG in the DMN */

@@ -15,12 +15,16 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import org.immutables.value.Value;
 
 /**
  * An evaluated input of a decision table. It contains details of the input and the value of the
  * evaluated input expression.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface EvaluatedInputValue extends RecordValue {
 
   /** @return the id of the evaluated input */
