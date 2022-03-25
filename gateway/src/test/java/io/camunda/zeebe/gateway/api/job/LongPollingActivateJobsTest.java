@@ -41,7 +41,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.grpc.Status.Code;
@@ -991,13 +990,13 @@ public final class LongPollingActivateJobsTest {
   }
 
   private void submitActorToActivateJobs(final LongPollingActivateJobsHandler handler) {
-    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var future = new CompletableFuture<>();
     final var actor =
         Actor.newActor()
             .name("LongPollingHandler-Test")
-            .actorStartedHandler(handler.andThen(actorStartedFuture::complete))
+            .actorStartedHandler(handler.andThen(future::complete))
             .build();
     actorSchedulerRule.submitActor(actor);
-    actorStartedFuture.join();
+    future.join();
   }
 }

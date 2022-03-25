@@ -230,7 +230,7 @@ public final class ClusteringRule extends ExternalResource {
 
     // create gateway
     gateway = createGateway();
-    gateway.start();
+    gateway.start().join();
 
     // create client
     client = createClient();
