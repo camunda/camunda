@@ -23,11 +23,11 @@ pipelineJob('import-zeebe-data-performance') {
   parameters {
     stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for performance tests.')
 
-    stringParam('ZEEBE_PARTITION_COUNT', '3', 'Number of configured Zeebe partitions (must match data generation)')
-    stringParam('DATA_INSTANCE_COUNT', '1000000', 'The overall number of instances in the data source (must match data generation)')
-    stringParam('DATA_PROCESS_DEFINITION_COUNT', '100', 'The number of process definitions in the data source (must match data generation)')
+    stringParam('ZEEBE_PARTITION_COUNT', '6', 'Number of configured Zeebe partitions (must match data generation)')
+    stringParam('DATA_INSTANCE_COUNT', '10000000', 'The overall number of instances in the data source (must match data generation)')
+    stringParam('DATA_PROCESS_DEFINITION_COUNT', '1000', 'The number of process definitions in the data source (must match data generation)')
     stringParam('ZEEBE_MAX_IMPORT_PAGE_SIZE', '10000', 'The max page size for importing Zeebe data')
-    stringParam('IMPORT_TIMEOUT_IN_MINUTES', '240', 'The max. time in minutes the import performance tests are allowed to run')
+    stringParam('IMPORT_TIMEOUT_IN_MINUTES', '4320', 'The max. time in minutes the import performance tests are allowed to run')
     stringParam('ES_VERSION', '7.16.2', 'Elasticsearch version to use.')
     stringParam('ES_REFRESH_INTERVAL', '2s', 'Elasticsearch index refresh interval')
     choiceParam('SNAPSHOT_FOLDER_NAME', ['zeebe-data-import-performance', 'zeebe-data-test'])
