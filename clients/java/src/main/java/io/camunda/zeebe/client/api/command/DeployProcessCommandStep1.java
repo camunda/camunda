@@ -21,7 +21,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-/** @deprecated for removal since 8, replaced by {@link DeployCommandStep1} */
+/** @deprecated since 8 for removal with 8.1, replaced by {@link DeployCommandStep1} */
 @Deprecated
 public interface DeployProcessCommandStep1 {
 
@@ -96,7 +96,7 @@ public interface DeployProcessCommandStep1 {
    */
   DeployCommandStep2 addProcessModel(BpmnModelInstance processDefinition, String resourceName);
 
-  /** @deprecated for removal since 8, replaced by {@link DeployCommandStep2} */
+  /** @deprecated since 8 for removal with 8.1, replaced by {@link DeployCommandStep2} */
   @Deprecated
   interface DeployProcessCommandBuilderStep2
       extends DeployProcessCommandStep1, FinalCommandStep<DeploymentEvent> {
