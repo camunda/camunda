@@ -7,6 +7,7 @@
 import {
   frequency as frequencyFormatter,
   duration as durationFormatter,
+  percentage as percentageFormatter,
   convertDurationToObject,
   convertDurationToSingleNumber,
   convertToMilliseconds,
@@ -113,6 +114,22 @@ describe('durationFormatter', () => {
     expect(durationFormatter()).toBe('--');
     expect(durationFormatter('')).toBe('--');
     expect(durationFormatter(null)).toBe('--');
+  });
+});
+
+describe('percentageFormatter', () => {
+  it('should format percentage input', () => {
+    expect(percentageFormatter(100)).toBe('100%');
+  });
+
+  it('show only display two significant figures', () => {
+    expect(percentageFormatter(8.456454343434)).toBe('8.46%');
+  });
+
+  it('should return -- for nondefined values', () => {
+    expect(percentageFormatter()).toBe('--');
+    expect(percentageFormatter('')).toBe('--');
+    expect(percentageFormatter(null)).toBe('--');
   });
 });
 

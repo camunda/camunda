@@ -327,7 +327,9 @@ export default withErrorHandling(
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
 
-      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
+      const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
+        data.view?.properties[0]
+      );
 
       return (
         <div className="ReportControlPanel">

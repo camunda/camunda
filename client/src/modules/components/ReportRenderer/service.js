@@ -21,6 +21,8 @@ export function getFormatter(viewProperty) {
       return formatters.frequency;
     case 'duration':
       return formatters.duration;
+    case 'percentage':
+      return formatters.percentage;
     default:
       return (v) => v;
   }

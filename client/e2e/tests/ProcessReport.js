@@ -466,6 +466,7 @@ test('bar chart and line chart configuration', async (t) => {
   await t.click(e.configurationButton);
 
   await t.click(e.addMeasureButton);
+  await t.click(e.dropdownOption('Duration'));
   await u.selectVisualization(t, 'Bar/Line Chart');
 
   await t.click(e.configurationButton);
@@ -907,6 +908,7 @@ test('multi-measure reports', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.addMeasureButton);
+  await t.click(e.dropdownOption('Duration'));
 
   await t.expect(e.reportNumber.visible).ok();
   await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
@@ -988,6 +990,7 @@ test('distributed multi-measure reports', async (t) => {
   await t.click(e.submenuOption('invoiceCategory'));
 
   await t.click(e.addMeasureButton);
+  await t.click(e.dropdownOption('Count'));
 
   await t.expect(e.reportChart.visible).ok();
 

@@ -19,7 +19,7 @@ import {
   MessageBox,
   Form,
 } from 'components';
-import {formatters, isDurationReport, evaluateReport, getReportResult} from 'services';
+import {formatters, evaluateReport, getReportResult} from 'services';
 import {isEmailEnabled} from 'config';
 import {t} from 'translation';
 import {withDocs, withErrorHandling} from 'HOC';
@@ -196,9 +196,6 @@ export class AlertModal extends React.Component {
     const report = this.props.reports.find(({id}) => id === reportId);
 
     if (report) {
-      if (isDurationReport(report)) {
-        return 'duration';
-      }
       return report.data.view.properties[0];
     }
   };
@@ -466,7 +463,7 @@ export class AlertModal extends React.Component {
 }
 
 function getReportValue(report) {
-  const reportType = isDurationReport(report) ? 'duration' : 'frequency';
+  const reportType = report?.data?.view?.properties?.[0];
   return formatters[reportType](getReportResult(report).data);
 }
 

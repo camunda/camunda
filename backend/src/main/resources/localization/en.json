@@ -341,6 +341,7 @@
       "userTask": "User Task",
       "count": "Count",
       "duration": "Duration",
+      "percentage": "Percentage",
       "multi": "Count and Duration",
       "evaluationCount": "Evaluation Count",
       "variable": "Variable",
@@ -595,7 +596,8 @@
     "runningEndedFlowNodeWarning": "Only completed flow nodes are considered when grouping by End Date. Therefore, adding 'running' flow node status filter will show no results",
     "missingVariable": "Missing variable",
     "nonExistingVariable": "Variable does not exist",
-    "nonExistingFlowNode": "Flow Node(s) does not exist"
+    "nonExistingFlowNode": "Flow Node(s) does not exist",
+    "percentageOfInstances": "% of total instances"
   },
   "dashboard": {
     "label": "Dashboard",

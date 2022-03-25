@@ -24,7 +24,9 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    evaluateReport: jest.fn().mockReturnValue({id: '6', result: {data: 123}}),
+    evaluateReport: jest
+      .fn()
+      .mockReturnValue({id: '6', data: {view: {properties: ['duration']}}, result: {data: 123}}),
     formatters: {
       ...rest.formatters,
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),

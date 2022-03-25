@@ -341,6 +341,7 @@
       "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
       "duration": "Dauer",
+      "percentage": "Prozentsatz",
       "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
@@ -595,7 +596,8 @@
     "runningEndedFlowNodeWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Prozessknoten berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status Filters auf 'laufende Prozessknoten' keine Ergebnisse",
     "missingVariable": "Fehlende Variable",
     "nonExistingVariable": "Variable existiert nicht",
-    "nonExistingFlowNode": "Prozessknoten existiert nicht"
+    "nonExistingFlowNode": "Prozessknoten existiert nicht",
+    "percentageOfInstances": "% der gesamten Instanzen"
   },
   "dashboard": {
     "label": "Dashboard",

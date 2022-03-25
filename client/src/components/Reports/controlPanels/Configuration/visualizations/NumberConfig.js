@@ -17,35 +17,41 @@ export default function NumberConfig({report, onChange}) {
   const targetValue = configuration.targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
-  const countOperation = view.properties.includes('frequency') || view.entity === 'variable';
+  const countOperation =
+    view.properties.includes('frequency') ||
+    view.properties.includes('percentage') ||
+    view.entity === 'variable';
   const goalSet = targetValue.active;
 
   const isMultiMeasure = view.properties.length > 1 || configuration.aggregationTypes.length > 1;
 
   return (
     <div className="NumberConfig">
-      <fieldset>
-        <legend>
-          <Switch
-            checked={precisionSet}
-            onChange={(evt) => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
-            label={t('report.config.limitPrecision.legend')}
+      {!view.properties.includes('percentage') && (
+        <fieldset>
+          <legend>
+            <Switch
+              checked={precisionSet}
+              onChange={(evt) => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
+              label={t('report.config.limitPrecision.legend')}
+            />
+          </legend>
+          <LabeledInput
+            className="precision"
+            label={t(
+              `report.config.limitPrecision.numberOf.${countOperation ? 'digits' : 'units'}`
+            )}
+            disabled={typeof configuration.precision !== 'number'}
+            onKeyDown={(evt) => {
+              const number = parseInt(evt.key, 10);
+              if (number) {
+                onChange({precision: {$set: number}});
+              }
+            }}
+            value={precisionSet ? configuration.precision : 1}
           />
-        </legend>
-        <LabeledInput
-          className="precision"
-          label={t(`report.config.limitPrecision.numberOf.${countOperation ? 'digits' : 'units'}`)}
-          disabled={typeof configuration.precision !== 'number'}
-          onChange={() => {}}
-          onKeyDown={(evt) => {
-            const number = parseInt(evt.key, 10);
-            if (number) {
-              onChange({precision: {$set: number}});
-            }
-          }}
-          value={precisionSet ? configuration.precision : 1}
-        />
-      </fieldset>
+        </fieldset>
+      )}
       {!isMultiMeasure && (
         <fieldset>
           <legend>

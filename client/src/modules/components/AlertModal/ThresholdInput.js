@@ -9,6 +9,8 @@ import React from 'react';
 import {Input, Select} from 'components';
 import {t} from 'translation';
 
+import './ThresholdInput.scss';
+
 export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
   if (type === 'duration') {
     return (
@@ -33,12 +35,15 @@ export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
     );
   } else {
     return (
-      <Input
-        id={id}
-        value={value}
-        isInvalid={isInvalid}
-        onChange={({target: {value}}) => onChange(value)}
-      />
+      <div className="ThresholdInput">
+        <Input
+          id={id}
+          value={value}
+          isInvalid={isInvalid}
+          onChange={({target: {value}}) => onChange(value)}
+        />
+        {type === 'percentage' && <span className="percentageIndicator">%</span>}
+      </div>
     );
   }
 }

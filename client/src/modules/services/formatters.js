@@ -65,6 +65,14 @@ export function frequency(number, precision) {
   return intl.format(number);
 }
 
+export function percentage(number) {
+  if (!number && number !== 0) {
+    return '--';
+  }
+
+  return Number(Number(number).toFixed(2)) + '%';
+}
+
 export function duration(timeObject, precision) {
   if (!timeObject && timeObject !== 0) {
     return '--';

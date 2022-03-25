@@ -133,6 +133,19 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
       }
     }
 
+    // remove percentage measure if it is not supported
+    if (
+      newReport.view.properties.includes('percentage') &&
+      newReport.view.entity !== 'processInstance'
+    ) {
+      newReport.view.properties = newReport.view.properties.filter(
+        (measure) => measure !== 'percentage'
+      );
+      if (newReport.view.properties.length === 0) {
+        newReport.view.properties = ['frequency'];
+      }
+    }
+
     // remove process part if its not allowed
     if (!isProcessInstanceDuration(newReport) || newReport.definitions.length > 1) {
       newReport.configuration.processPart = null;

@@ -235,6 +235,36 @@ describe('process exclusive updates', () => {
     ).toEqual([{type: 'avg', value: null}]);
   });
 
+  it('should remove percentage measure for non process instance reports', () => {
+    const processReport = {
+      ...report,
+      view: {entity: 'processInstance', properties: ['percentage', 'duration']},
+      configuration: {
+        ...report.configuration,
+        aggregationTypes: [{type: 'avg', value: null}],
+      },
+    };
+
+    expect(
+      createReportUpdate('process', processReport, 'view', 'incident').view.$set.properties
+    ).toEqual(['duration']);
+  });
+
+  it('should use frequency measure by default for non process instance reports', () => {
+    const processReport = {
+      ...report,
+      view: {entity: 'processInstance', properties: ['percentage']},
+      configuration: {
+        ...report.configuration,
+        aggregationTypes: [{type: 'avg', value: null}],
+      },
+    };
+
+    expect(
+      createReportUpdate('process', processReport, 'view', 'incident').view.$set.properties
+    ).toEqual(['frequency']);
+  });
+
   it('should remove process parts if report setup does not support it', () => {
     const processPartReport = {
       ...report,

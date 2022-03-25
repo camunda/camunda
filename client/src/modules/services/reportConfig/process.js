@@ -127,7 +127,9 @@ export const group = [
     key: 'startDate',
     label: () => t('report.groupBy.startDate'),
     visible: () => true,
-    enabled: ({view}) => ['processInstance', 'flowNode', 'userTask'].includes(view.entity),
+    enabled: ({view}) =>
+      ['processInstance', 'flowNode', 'userTask'].includes(view.entity) &&
+      !view.properties.includes('percentage'),
     matcher: ({groupBy}) => groupBy?.type === 'startDate',
     payload: () => ({groupBy: {type: 'startDate', value: null}}),
     priority: 4,
@@ -148,7 +150,9 @@ export const group = [
     key: 'endDate',
     label: () => t('report.groupBy.endDate'),
     visible: () => true,
-    enabled: ({view}) => ['processInstance', 'flowNode', 'userTask'].includes(view.entity),
+    enabled: ({view}) =>
+      ['processInstance', 'flowNode', 'userTask'].includes(view.entity) &&
+      !view.properties.includes('percentage'),
     matcher: ({groupBy}) => groupBy?.type === 'endDate',
     payload: () => ({groupBy: {type: 'endDate', value: null}}),
     priority: 5,
@@ -157,7 +161,9 @@ export const group = [
     key: 'variable',
     label: () => t('report.groupBy.variable'),
     visible: () => true,
-    enabled: ({view}) => ['processInstance', 'flowNode'].includes(view.entity),
+    enabled: ({view}) =>
+      ['processInstance', 'flowNode'].includes(view.entity) &&
+      !view.properties.includes('percentage'),
     matcher: ({groupBy}) => groupBy?.type === 'variable',
     payload: () => ({groupBy: {type: 'variable', value: null}}),
     priority: 11,
@@ -183,7 +189,10 @@ export const group = [
   {
     key: 'process',
     label: () => t('common.process.label'),
-    visible: ({definitions, view}) => definitions.length > 1 && view.entity === 'processInstance',
+    visible: ({definitions, view}) =>
+      definitions.length > 1 &&
+      view.entity === 'processInstance' &&
+      !view.properties.includes('percentage'),
     enabled: () => true,
     matcher: ({groupBy, distributedBy}) =>
       groupBy?.type === 'none' && distributedBy?.type === 'process',
@@ -285,7 +294,8 @@ export const distribution = [
     visible: ({definitions, view, groupBy}) =>
       definitions.length > 1 &&
       !['incident', 'variable', null].includes(view.entity) &&
-      groupBy.type !== 'none',
+      groupBy.type !== 'none' &&
+      !view.properties.includes('percentage'),
     enabled: () => true,
     matcher: ({groupBy, distributedBy}) =>
       groupBy?.type !== 'none' && distributedBy.type === 'process',
