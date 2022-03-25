@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.util;
 
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.test.util.grpc.CloseAwareListener;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -32,7 +32,7 @@ public final class TestInterceptor implements ServerInterceptor {
     return new CloseAwareListener<>(listener) {
       @Override
       public void onMessage(final ReqT message) {
-        if (message instanceof DeployProcessRequest) {
+        if (message instanceof DeployResourceRequest) {
           call.close(Status.PERMISSION_DENIED.augmentDescription(ERROR_MESSAGE), new Metadata());
           isClosed = true;
           return;
