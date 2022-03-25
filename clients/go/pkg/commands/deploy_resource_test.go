@@ -20,11 +20,10 @@ import (
 	"github.com/camunda/zeebe/clients/go/internal/utils"
 	"github.com/camunda/zeebe/clients/go/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"io/ioutil"
 	"testing"
 )
 
-func TestDeployCommand_AddResourceFile(t *testing.T) {
+func TestDeployResourceCommand_AddResourceFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -32,26 +31,26 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 
 	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
-	anotherName := "../../../java/src/test/resources/processes/another-demo-process.bpmn"
+	anotherName := "../../cmd/zbctl/testdata/drg-force-user.dmn"
 	anotherBytes := readBytes(t, anotherName)
 
-	request := &pb.DeployProcessRequest{
-		Processes: []*pb.ProcessRequestObject{
+	request := &pb.DeployResourceRequest{
+		Resources: []*pb.Resource{
 			{
-				Name:       demoName,
-				Definition: demoBytes,
+				Name:    demoName,
+				Content: demoBytes,
 			},
 			{
-				Name:       anotherName,
-				Definition: anotherBytes,
+				Name:    anotherName,
+				Content: anotherBytes,
 			},
 		},
 	}
-	stub := &pb.DeployProcessResponse{}
+	stub := &pb.DeployResourceResponse{}
 
-	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployResource(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
+	command := NewDeployResourceCommand(client, func(context.Context, error) bool { return false })
 
 	response, err := command.
 		AddResourceFile(demoName).
@@ -67,7 +66,7 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 	}
 }
 
-func TestDeployCommand_AddResource(t *testing.T) {
+func TestDeployResourceCommand_AddResource(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -76,19 +75,19 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
-	request := &pb.DeployProcessRequest{
-		Processes: []*pb.ProcessRequestObject{
+	request := &pb.DeployResourceRequest{
+		Resources: []*pb.Resource{
 			{
-				Name:       demoName,
-				Definition: demoBytes,
+				Name:    demoName,
+				Content: demoBytes,
 			},
 		},
 	}
-	stub := &pb.DeployProcessResponse{}
+	stub := &pb.DeployResourceResponse{}
 
-	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployResource(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
+	command := NewDeployResourceCommand(client, func(context.Context, error) bool { return false })
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -104,13 +103,4 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	if response != stub {
 		t.Errorf("Failed to receive response")
 	}
-}
-
-func readBytes(t *testing.T, filename string) []byte {
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Error("Failed to read file ", err)
-	}
-
-	return bytes
 }
