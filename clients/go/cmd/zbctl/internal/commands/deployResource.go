@@ -20,9 +20,11 @@ import (
 	"io/ioutil"
 )
 
+var resourceNamesFlag []string
+
 var deployResourceCmd = &cobra.Command{
-	Use:     "deploy resource <resourcePath>...",
-	Short:   "Creates a new resource (e.g. process, decision) for each BPMN/DMN resource provided",
+	Use:     "resource <resourcePath>...",
+	Short:   "Deploys a new resource (e.g. process, decision) for each BPMN/DMN resource provided",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,7 +32,7 @@ var deployResourceCmd = &cobra.Command{
 			return fmt.Errorf("there are more resource names (%d) than resource paths (%d)", len(resourceNamesFlag), len(args))
 		}
 
-		zbCmd := client.NewDeployProcessCommand()
+		zbCmd := client.NewDeployResourceCommand()
 		for i := 0; i < len(resourceNamesFlag); i++ {
 			bytes, err := ioutil.ReadFile(args[i])
 			if err != nil {
