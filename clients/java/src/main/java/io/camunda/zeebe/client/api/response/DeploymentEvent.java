@@ -23,4 +23,10 @@ public interface DeploymentEvent {
 
   /** @return the processes which are deployed */
   List<Process> getProcesses();
+
+  /** @return the decisions which are deployed */
+  List<Decision> getDecisions();
+
+  /** @return the decision requirements which are deployed */
+  List<DecisionRequirements> getDecisionRequirements();
 }

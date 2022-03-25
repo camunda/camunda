@@ -50,7 +50,7 @@ public final class CreateDeploymentTest {
     final DeploymentEvent result =
         CLIENT_RULE
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addProcessModel(process, resourceName)
             .send()
             .join();
@@ -67,6 +67,49 @@ public final class CreateDeploymentTest {
   }
 
   @Test
+  public void shouldDeployDecisionModel() {
+    // given
+    final String resourceName = "dmn/drg-force-user.dmn";
+
+    // when
+    final DeploymentEvent result =
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(resourceName)
+            .send()
+            .join();
+
+    // then
+    assertThat(result.getKey()).isPositive();
+    assertThat(result.getDecisionRequirements()).hasSize(1);
+    assertThat(result.getDecisions()).hasSize(2);
+
+    final var decisionRequirements = result.getDecisionRequirements().get(0);
+    assertThat(decisionRequirements.getDmnDecisionRequirementsId()).isEqualTo("force_users");
+    assertThat(decisionRequirements.getDmnDecisionRequirementsName()).isEqualTo("Force Users");
+    assertThat(decisionRequirements.getVersion()).isEqualTo(1);
+    assertThat(decisionRequirements.getDecisionRequirementsKey()).isPositive();
+    assertThat(decisionRequirements.getResourceName()).isEqualTo(resourceName);
+
+    final var decision1 = result.getDecisions().get(0);
+    assertThat(decision1.getDmnDecisionId()).isEqualTo("jedi_or_sith");
+    assertThat(decision1.getDmnDecisionName()).isEqualTo("Jedi or Sith");
+    assertThat(decision1.getVersion()).isEqualTo(1);
+    assertThat(decision1.getDecisionKey()).isPositive();
+    assertThat(decision1.getDmnDecisionRequirementsId()).isEqualTo("force_users");
+    assertThat(decision1.getDecisionRequirementsKey()).isPositive();
+
+    final var decision2 = result.getDecisions().get(1);
+    assertThat(decision2.getDmnDecisionId()).isEqualTo("force_user");
+    assertThat(decision2.getDmnDecisionName()).isEqualTo("Which force user?");
+    assertThat(decision2.getVersion()).isEqualTo(1);
+    assertThat(decision2.getDecisionKey()).isPositive();
+    assertThat(decision2.getDmnDecisionRequirementsId()).isEqualTo("force_users");
+    assertThat(decision2.getDecisionRequirementsKey()).isPositive();
+  }
+
+  @Test
   public void shouldRejectDeployIfProcessIsInvalid() {
     // given
     final BpmnModelInstance process =
@@ -74,7 +117,11 @@ public final class CreateDeploymentTest {
 
     // when
     final var command =
-        CLIENT_RULE.getClient().newDeployCommand().addProcessModel(process, "process.bpmn").send();
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process.bpmn")
+            .send();
 
     // when
     assertThatThrownBy(() -> command.join())

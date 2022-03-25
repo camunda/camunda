@@ -79,7 +79,7 @@ final class QueryApiIT {
   static void beforeAll() {
     try (final var client = createZeebeClient("beforeAll")) {
       final var deployment =
-          client.newDeployCommand().addProcessModel(PROCESS, "process.bpmn").send().join();
+          client.newDeployResourceCommand().addProcessModel(PROCESS, "process.bpmn").send().join();
       processDefinitionKey = deployment.getProcesses().get(0).getProcessDefinitionKey();
     }
   }

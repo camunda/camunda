@@ -29,7 +29,7 @@ final class DeploymentDistributionTestCase implements AsymmetricNetworkPartition
   @Override
   public CompletableFuture<?> when(final ZeebeClient client) {
     final var process = Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
-    client.newDeployCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
     return null;
   }
 

@@ -71,7 +71,7 @@ final class ControlledActorClockEndpointIT {
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
 
     // when - producing records
-    zeebeClient.newDeployCommand().addProcessModel(process, "process.bpmn").send().join();
+    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // then - records are exported with a timestamp matching the pinned time
     waitForExportedRecords();
@@ -90,7 +90,7 @@ final class ControlledActorClockEndpointIT {
     zeebeClock.addTime(offset);
 
     // when - producing records
-    zeebeClient.newDeployCommand().addProcessModel(process, "process.bpmn").send().join();
+    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // then - records are exported with a timestamp matching the offset time
     waitForExportedRecords();

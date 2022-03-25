@@ -15,21 +15,56 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.response.Decision;
+import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
 
 public final class DeploymentEventImpl implements DeploymentEvent {
 
+  private static final Logger LOG = Loggers.LOGGER;
+  private static final String UNKNOWN_METADATA_WARN_MSG =
+      "Expected metadata in deployment response, but encountered an unknown type of metadata."
+          + " This might happen when you've updated your Zeebe cluster, but not your Zeebe client."
+          + " You may have to update the version of your zeebe-client-java dependency to resolve the issue.";
+
   private final long key;
-  private final List<Process> processes;
+  private final List<Process> processes = new ArrayList<>();
+  private final List<Decision> decisions = new ArrayList<>();
+  private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
 
   public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
-    processes =
-        response.getProcessesList().stream().map(ProcessImpl::new).collect(Collectors.toList());
+    response.getProcessesList().stream().map(ProcessImpl::new).forEach(processes::add);
+  }
+
+  public DeploymentEventImpl(final DeployResourceResponse response) {
+    key = response.getKey();
+    for (final Deployment deployment : response.getDeploymentsList()) {
+      switch (deployment.getMetadataCase()) {
+        case PROCESS:
+          processes.add(new ProcessImpl(deployment.getProcess()));
+          break;
+        case DECISION:
+          decisions.add(new DecisionImpl(deployment.getDecision()));
+          break;
+        case DECISIONREQUIREMENTS:
+          decisionRequirements.add(
+              new DecisionRequirementsImpl(deployment.getDecisionRequirements()));
+          break;
+        case METADATA_NOT_SET:
+        default:
+          LOG.warn(UNKNOWN_METADATA_WARN_MSG);
+          break;
+      }
+    }
   }
 
   @Override
@@ -43,7 +78,26 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   @Override
+  public List<Decision> getDecisions() {
+    return decisions;
+  }
+
+  @Override
+  public List<DecisionRequirements> getDecisionRequirements() {
+    return decisionRequirements;
+  }
+
+  @Override
   public String toString() {
-    return "DeploymentEventImpl{" + "key=" + key + ", processes=" + processes + '}';
+    return "DeploymentEventImpl{"
+        + "key="
+        + key
+        + ", processes="
+        + processes
+        + ", decisions="
+        + decisions
+        + ", decisionRequirements="
+        + decisionRequirements
+        + '}';
   }
 }

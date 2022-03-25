@@ -146,7 +146,7 @@ public class DiskSpaceRecoveryClusteredTest {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addProcessModel(modelInstance, "process.bpmn")
             .send()
             .join();
