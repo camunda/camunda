@@ -61,7 +61,7 @@ class UnavailableBrokersTest {
             cluster.getMembershipService(),
             cluster.getEventService(),
             actorScheduler);
-    gateway.start();
+    gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
     client = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress).usePlaintext().build();
