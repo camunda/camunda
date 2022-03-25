@@ -135,7 +135,7 @@ public class FailOverReplicationTest {
     // given
     final var previousLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var previousLeader = clusteringRule.getBroker(previousLeaderId);
-    client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
+    client.newDeployResourceCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
 
     // disconnect leader - becomes follower
     clusteringRule.disconnect(previousLeader);
@@ -188,7 +188,7 @@ public class FailOverReplicationTest {
     // we produce some records on the old leader
     final var previousLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var previousLeader = clusteringRule.getBroker(previousLeaderId);
-    client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
+    client.newDeployResourceCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
     client
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
@@ -290,7 +290,7 @@ public class FailOverReplicationTest {
   }
 
   private void triggerSnapshotCreation() {
-    client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
+    client.newDeployResourceCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 

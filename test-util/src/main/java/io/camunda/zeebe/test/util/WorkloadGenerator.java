@@ -47,7 +47,11 @@ public final class WorkloadGenerator {
    * incidents and finish the instance.
    */
   public static void performSampleWorkload(final ZeebeClient client) {
-    client.newDeployCommand().addProcessModel(SAMPLE_PROCESS, "sample_process.bpmn").send().join();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(SAMPLE_PROCESS, "sample_process.bpmn")
+        .send()
+        .join();
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("orderId", "foo-bar-123");

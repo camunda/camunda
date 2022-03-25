@@ -50,7 +50,7 @@ public final class CreateDeploymentTest {
     final DeploymentEvent result =
         CLIENT_RULE
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addProcessModel(process, resourceName)
             .send()
             .join();
@@ -75,7 +75,7 @@ public final class CreateDeploymentTest {
     final DeploymentEvent result =
         CLIENT_RULE
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addResourceFromClasspath(resourceName)
             .send()
             .join();
@@ -117,7 +117,11 @@ public final class CreateDeploymentTest {
 
     // when
     final var command =
-        CLIENT_RULE.getClient().newDeployCommand().addProcessModel(process, "process.bpmn").send();
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process.bpmn")
+            .send();
 
     // when
     assertThatThrownBy(() -> command.join())

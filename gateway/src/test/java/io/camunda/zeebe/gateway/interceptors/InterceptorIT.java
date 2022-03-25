@@ -87,7 +87,7 @@ final class InterceptorIT {
     try (final var client = createZeebeClient()) {
       final Future<DeploymentEvent> result =
           client
-              .newDeployCommand()
+              .newDeployResourceCommand()
               .addResourceFromClasspath("processes/one-task-process.bpmn")
               .send();
 

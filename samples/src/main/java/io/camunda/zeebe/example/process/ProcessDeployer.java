@@ -50,7 +50,11 @@ public final class ProcessDeployer {
     try (final ZeebeClient client = clientBuilder.build()) {
 
       final DeploymentEvent deploymentEvent =
-          client.newDeployCommand().addResourceFromClasspath("demoProcess.bpmn").send().join();
+          client
+              .newDeployResourceCommand()
+              .addResourceFromClasspath("demoProcess.bpmn")
+              .send()
+              .join();
 
       System.out.println("Deployment created with key: " + deploymentEvent.getKey());
     }

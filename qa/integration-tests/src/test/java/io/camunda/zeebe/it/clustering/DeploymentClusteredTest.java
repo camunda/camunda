@@ -68,7 +68,7 @@ public final class DeploymentClusteredTest {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addProcessModel(PROCESS, "process.bpmn")
             .send()
             .join();
