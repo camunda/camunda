@@ -676,6 +676,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private void completeTransition() {
+    missedSnapshotReplicationEvents = MissedSnapshotReplicationEvents.NONE;
     ongoingTransition = false;
   }
 
