@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-public interface DeployCommandStep1 extends DeployProcessCommandStep1 {
+public interface DeployResourceCommandStep1 extends DeployProcessCommandStep1 {
 
-  interface DeployCommandStep2 extends DeployProcessCommandBuilderStep2 {
+  interface DeployResourceCommandStep2 extends DeployProcessCommandBuilderStep2 {
     // the place for new optional parameters
   }
 }

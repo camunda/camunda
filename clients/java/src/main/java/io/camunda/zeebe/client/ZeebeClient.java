@@ -18,7 +18,8 @@ package io.camunda.zeebe.client;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
@@ -86,6 +87,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   void close();
 
   /**
+   * Command to deploy new processes.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newDeployCommand()
+   *  .addResourceFile("~/wf/process1.bpmn")
+   *  .addResourceFile("~/wf/process2.bpmn")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   * @deprecated since 8 for removal with 8.1, replaced by {@link
+   *     ZeebeClient#newDeployResourceCommand()}
+   */
+  DeployProcessCommandStep1 newDeployCommand();
+
+  /**
    * Command to deploy new resources, i.e. BPMN process models and DMN decision models.
    *
    * <pre>
@@ -99,7 +117,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  DeployCommandStep1 newDeployCommand();
+  DeployResourceCommandStep1 newDeployResourceCommand();
 
   /**
    * Command to create/start a new instance of a process.

@@ -15,88 +15,89 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.command.DeployCommandStep1.DeployCommandStep2;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-/** @deprecated since 8 for removal with 8.1, replaced by {@link DeployCommandStep1} */
+/** @deprecated since 8 for removal with 8.1, replaced by {@link DeployResourceCommandStep1} */
 @Deprecated
 public interface DeployProcessCommandStep1 {
 
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceBytes the resource content as byte array
-   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
+   * @param resourceBytes the process resource as byte array
+   * @param resourceName the name of the resource (e.g. "process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addResourceBytes(byte[] resourceBytes, String resourceName);
+  DeployResourceCommandStep2 addResourceBytes(byte[] resourceBytes, String resourceName);
 
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceString the resource content as String
+   * @param resourceString the process resource as String
    * @param charset the charset of the String
-   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
+   * @param resourceName the name of the resource (e.g. "process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addResourceString(String resourceString, Charset charset, String resourceName);
+  DeployResourceCommandStep2 addResourceString(
+      String resourceString, Charset charset, String resourceName);
 
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceString the resource content as UTF-8-encoded String
-   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
+   * @param resourceString the process resource as UTF-8-encoded String
+   * @param resourceName the name of the resource (e.g. "process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addResourceStringUtf8(String resourceString, String resourceName);
+  DeployResourceCommandStep2 addResourceStringUtf8(String resourceString, String resourceName);
 
   /**
    * Add the given resource to the deployment.
    *
-   * @param resourceStream the resource content as stream
-   * @param resourceName the name of the resource (e.g. "process.bpmn" or "decision.dmn")
+   * @param resourceStream the process resource as stream
+   * @param resourceName the name of the resource (e.g. "process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addResourceStream(InputStream resourceStream, String resourceName);
+  DeployResourceCommandStep2 addResourceStream(InputStream resourceStream, String resourceName);
 
   /**
    * Add the given resource to the deployment.
    *
-   * @param classpathResource the path of the resource file in the classpath (e.g. "wf/process.bpmn"
-   *     or "dmn/decision.dmn")
+   * @param classpathResource the path of the process resource in the classpath (e.g.
+   *     "wf/process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addResourceFromClasspath(String classpathResource);
+  DeployResourceCommandStep2 addResourceFromClasspath(String classpathResource);
 
   /**
    * Add the given resource to the deployment.
    *
-   * @param filename the absolute path of the resource file (e.g. "~/wf/process.bpmn" or
-   *     "~/dmn/decision.dmn")
+   * @param filename the absolute path of the process resource (e.g. "~/wf/process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addResourceFile(String filename);
+  DeployResourceCommandStep2 addResourceFile(String filename);
 
   /**
-   * Add the given process as resource to the deployment.
+   * Add the given process to the deployment.
    *
    * @param processDefinition the process as model
    * @param resourceName the name of the resource (e.g. "process.bpmn")
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployCommandStep2 addProcessModel(BpmnModelInstance processDefinition, String resourceName);
+  DeployResourceCommandStep2 addProcessModel(
+      BpmnModelInstance processDefinition, String resourceName);
 
-  /** @deprecated since 8 for removal with 8.1, replaced by {@link DeployCommandStep2} */
+  /** @deprecated since 8 for removal with 8.1, replaced by {@link DeployResourceCommandStep2} */
   @Deprecated
   interface DeployProcessCommandBuilderStep2
       extends DeployProcessCommandStep1, FinalCommandStep<DeploymentEvent> {
