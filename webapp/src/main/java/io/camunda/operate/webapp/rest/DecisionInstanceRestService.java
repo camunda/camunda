@@ -18,6 +18,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -60,8 +61,8 @@ public class DecisionInstanceRestService {
 
   @ApiOperation("Get DRD data for decision instance")
   @GetMapping("/{decisionInstanceId}/drd-data")
-  public Map<String, DRDDataEntryDto> queryProcessInstanceDRDData(@PathVariable String decisionInstanceId) {
-    final Map<String, DRDDataEntryDto> result = decisionInstanceReader
+  public Map<String, List<DRDDataEntryDto>> queryProcessInstanceDRDData(@PathVariable String decisionInstanceId) {
+    final Map<String, List<DRDDataEntryDto>> result = decisionInstanceReader
         .getDecisionInstanceDRDData(decisionInstanceId);
     if (result.isEmpty()) {
       throw new NotFoundException("Decision instance nor found: " + decisionInstanceId);

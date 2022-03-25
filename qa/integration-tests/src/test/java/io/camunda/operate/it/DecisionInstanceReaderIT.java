@@ -8,12 +8,14 @@ package io.camunda.operate.it;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_ID_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_ID_2;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1_1;
+import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1_2;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1_3;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2_2;
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto.DECISION_INSTANCE_INPUT_DTO_COMPARATOR;
 import static io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto.DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR;
+import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -78,18 +80,22 @@ public class DecisionInstanceReaderIT extends OperateIntegrationTest {
 
     //query completed instances
     MvcResult mvcResult = getRequest(getDrdDataQuery(DECISION_INSTANCE_ID_1_1));
-    Map<String, DRDDataEntryDto> response = mockMvcTestRule
+    Map<String, List<DRDDataEntryDto>> response = mockMvcTestRule
         .fromResponse(mvcResult, new TypeReference<>() {
         });
 
     assertThat(response).hasSize(2);
     assertThat(response.get(DECISION_ID_1)).isNotNull();
-    assertThat(response.get(DECISION_ID_1).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_1);
-    assertThat(response.get(DECISION_ID_1).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+    assertThat(response.get(DECISION_ID_1)).hasSize(1);
+    assertThat(response.get(DECISION_ID_1).get(0).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_1);
+    assertThat(response.get(DECISION_ID_1).get(0).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
 
     assertThat(response.get(DECISION_ID_2)).isNotNull();
-    assertThat(response.get(DECISION_ID_2).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_3);
-    assertThat(response.get(DECISION_ID_2).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+    assertThat(response.get(DECISION_ID_2)).hasSize(2);
+    assertThat(response.get(DECISION_ID_2).get(0).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_2);
+    assertThat(response.get(DECISION_ID_2).get(0).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+    assertThat(response.get(DECISION_ID_2).get(1).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_3);
+    assertThat(response.get(DECISION_ID_2).get(1).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
 
     //query completed and failed
     mvcResult = getRequest(getDrdDataQuery(DECISION_INSTANCE_ID_2_1));
@@ -99,12 +105,13 @@ public class DecisionInstanceReaderIT extends OperateIntegrationTest {
 
     assertThat(response).hasSize(2);
     assertThat(response.get(DECISION_ID_1)).isNotNull();
-    assertThat(response.get(DECISION_ID_1).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_2_1);
-    assertThat(response.get(DECISION_ID_1).getState()).isEqualTo(DecisionInstanceState.FAILED);
+    assertThat(response.get(DECISION_ID_1)).hasSize(1);
+    assertThat(response.get(DECISION_ID_1).get(0).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_2_1);
+    assertThat(response.get(DECISION_ID_1).get(0).getState()).isEqualTo(DecisionInstanceState.FAILED);
 
     assertThat(response.get(DECISION_ID_2)).isNotNull();
-    assertThat(response.get(DECISION_ID_2).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_2_2);
-    assertThat(response.get(DECISION_ID_2).getState()).isEqualTo(DecisionInstanceState.FAILED);
+    assertThat(response.get(DECISION_ID_2).get(0).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_2_2);
+    assertThat(response.get(DECISION_ID_2).get(0).getState()).isEqualTo(DecisionInstanceState.FAILED);
   }
 
 

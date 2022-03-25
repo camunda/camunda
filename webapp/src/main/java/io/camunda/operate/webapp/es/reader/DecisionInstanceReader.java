@@ -289,7 +289,7 @@ public class DecisionInstanceReader extends AbstractReader {
     }
   }
 
-  public Map<String, DRDDataEntryDto> getDecisionInstanceDRDData(String decisionInstanceId) {
+  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
     //we need to find all decision instances with he same key, which we extract from decisionInstanceId
     final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
     final SearchRequest request = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
@@ -297,7 +297,7 @@ public class DecisionInstanceReader extends AbstractReader {
             new SearchSourceBuilder()
                 .query(termQuery(KEY, decisionInstanceKey))
                 .fetchSource(new String[]{DECISION_ID, STATE}, null)
-            .sort(EVALUATION_DATE, SortOrder.ASC)     //we sort in order the latest is returned
+            .sort(EVALUATION_DATE, SortOrder.ASC)
         );
     try {
       final List<DRDDataEntryDto> entries = ElasticsearchUtil
@@ -307,8 +307,7 @@ public class DecisionInstanceReader extends AbstractReader {
                 return new DRDDataEntryDto(sh.getId(), (String) map.get(DECISION_ID),
                     DecisionInstanceState.valueOf((String) map.get(STATE)));
               }, null, null);
-      return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId,
-          reducing(null, identity(), (first, last) -> last)));
+      return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
     } catch (IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred while quiering DRD data for decision instance id: "
