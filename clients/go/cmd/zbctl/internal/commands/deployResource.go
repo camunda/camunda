@@ -22,6 +22,8 @@ import (
 
 var resourceNamesFlag []string
 
+// Remove the nolint directive when this command is the only remaining one for deploy
+//nolint
 var deployResourceCmd = &cobra.Command{
 	Use:     "resource <resourcePath>...",
 	Short:   "Deploys a new resource (e.g. process, decision) for each BPMN/DMN resource provided",

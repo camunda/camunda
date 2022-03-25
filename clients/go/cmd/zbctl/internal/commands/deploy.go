@@ -20,6 +20,8 @@ import (
 	"io/ioutil"
 )
 
+// Remove the nolint directive once deploy resource is the only command left
+//nolint
 var deployCmd = &cobra.Command{
 	Use:     "deploy <processPath>...",
 	Short:   "Deploys new resources for each file provided",
