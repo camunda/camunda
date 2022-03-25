@@ -72,7 +72,7 @@ final class UpdateTestCase implements Arguments {
             deployProcess.andThen(
                 client ->
                     client
-                        .newDeployResourceCommand()
+                        .newDeployCommand()
                         .addProcessModel(model.getLeft(), model.getRight() + ".bpmn")
                         .send()
                         .join());

@@ -277,7 +277,7 @@ final class RollingUpdateTest {
 
   private void deployProcess(final ZeebeClient client) {
     client
-        .newDeployResourceCommand()
+        .newDeployCommand()
         .addProcessModel(PROCESS, "process.bpmn")
         .send()
         .join(10, TimeUnit.SECONDS);
