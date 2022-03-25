@@ -35,8 +35,6 @@ public interface DecisionRequirements {
    */
   long getDecisionRequirementsKey();
 
-  /**
-   * @return the resource name (see: Resource.name) from which this decision requirements was parsed
-   */
+  /** @return the resource name (i.e. filename) from which this decision requirements was parsed */
   String getResourceName();
 }
