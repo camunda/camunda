@@ -22,7 +22,8 @@ interface BpmnJSModule {
 type BpmnJSElement = {
   id: string;
   type: string;
-  businessObject: {loopCharacteristics?: {$type: string}; di: {set: Function}};
+  businessObject: {loopCharacteristics?: {$type: string}};
+  di: {set: Function};
 };
 
 type BpmnJSOverlay = {

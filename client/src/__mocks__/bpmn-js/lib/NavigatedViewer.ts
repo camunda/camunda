@@ -26,7 +26,7 @@ const mockedModules: {[module: string]: any} = {
       })),
       getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0})),
     })),
-    get: jest.fn((id) => ({businessObject: {name: id, di: diObject}})),
+    get: jest.fn((id) => ({di: diObject, businessObject: {name: id}})),
     forEach: jest.fn(() => {}),
   },
   graphicsFactory: {update: jest.fn(() => {})},
