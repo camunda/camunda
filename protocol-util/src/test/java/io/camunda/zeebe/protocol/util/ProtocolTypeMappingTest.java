@@ -90,6 +90,7 @@ final class ProtocolTypeMappingTest {
             "a builder class should have been assigned to the type mapping for '%s'",
             mapping.getAbstractClass())
         .isNotNull();
+    assertThat(ProtocolTypeMapping.getForBuilderType(mapping.getBuilderClass())).isSameAs(mapping);
 
     final Method buildMethod = mapping.getBuilderClass().getMethod("build");
     assertThat(buildMethod)
