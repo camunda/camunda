@@ -69,8 +69,6 @@ public final class DeployResourceTest extends ClientTest {
     final Resource resource = request.getResources(0);
     assertThat(resource.getName()).isEqualTo(filename);
     assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
-
-    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -236,6 +234,15 @@ public final class DeployResourceTest extends ClientTest {
             () -> client.newDeployCommand().addResourceStringUtf8("", "test.bpmn").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldUseDefaultRequestTimeout() {
+    // when
+    client.newDeployCommand().addResourceStringUtf8("", "test.bpmn").send().join();
+
+    // then
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
