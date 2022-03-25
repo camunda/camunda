@@ -13,7 +13,6 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
-import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -25,9 +24,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -112,27 +108,6 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     }
     throw new ResourceNotFoundException(
         String.format("Process definition for key %s not found.", key));
-  }
-
-  @Override
-  public ChangeStatus delete(final Long key) {
-    logger.debug("delete by key {}", key);
-    final DeleteByQueryRequest request = new DeleteByQueryRequest(processIndex.getAlias())
-        .setQuery(QueryBuilders.termQuery(ProcessIndex.KEY, key));
-    try {
-      final BulkByScrollResponse response = elasticsearch.deleteByQuery(request, RequestOptions.DEFAULT);
-      final long deleted = response.getDeleted();
-      if ( deleted == 0) {
-        throw new ResourceNotFoundException(
-            String.format("Process definition with key '%s' does not exist", key));
-      }
-      return new ChangeStatus()
-          .setDeleted(deleted)
-          .setMessage(String.format("Process definition with key '%s' deleted", key));
-    } catch (IOException e) {
-      throw new ServerException(
-          String.format("Error in deleting Process definition with key '%s'", key), e);
-    }
   }
 
   protected void buildFiltering(final Query<ProcessDefinition> query, final SearchSourceBuilder searchSourceBuilder) {
