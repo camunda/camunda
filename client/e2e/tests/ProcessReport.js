@@ -547,8 +547,14 @@ test('aggregators', async (t) => {
 
   const max = await e.reportNumber.textContent;
 
+  await t.click(e.aggregationOption('P99'));
+  await t.click(e.aggregationOption('Maximum'));
+
+  const percentile = await e.reportNumber.textContent;
+
   await t.expect(min).notEql(avg);
   await t.expect(avg).notEql(max);
+  await t.expect(percentile).notEql(max);
 });
 
 test('progress bar and reset to default', async (t) => {
