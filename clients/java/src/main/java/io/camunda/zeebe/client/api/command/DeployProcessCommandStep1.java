@@ -33,7 +33,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addResourceBytes(byte[] resourceBytes, String resourceName);
+  DeployProcessCommandBuilderStep2 addResourceBytes(byte[] resourceBytes, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -44,7 +44,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addResourceString(
+  DeployProcessCommandBuilderStep2 addResourceString(
       String resourceString, Charset charset, String resourceName);
 
   /**
@@ -55,7 +55,8 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addResourceStringUtf8(String resourceString, String resourceName);
+  DeployProcessCommandBuilderStep2 addResourceStringUtf8(
+      String resourceString, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -65,7 +66,8 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addResourceStream(InputStream resourceStream, String resourceName);
+  DeployProcessCommandBuilderStep2 addResourceStream(
+      InputStream resourceStream, String resourceName);
 
   /**
    * Add the given resource to the deployment.
@@ -75,7 +77,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addResourceFromClasspath(String classpathResource);
+  DeployProcessCommandBuilderStep2 addResourceFromClasspath(String classpathResource);
 
   /**
    * Add the given resource to the deployment.
@@ -84,7 +86,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addResourceFile(String filename);
+  DeployProcessCommandBuilderStep2 addResourceFile(String filename);
 
   /**
    * Add the given process to the deployment.
@@ -94,7 +96,7 @@ public interface DeployProcessCommandStep1 {
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  DeployResourceCommandStep2 addProcessModel(
+  DeployProcessCommandBuilderStep2 addProcessModel(
       BpmnModelInstance processDefinition, String resourceName);
 
   /** @deprecated since 8 for removal with 8.1, replaced by {@link DeployResourceCommandStep2} */

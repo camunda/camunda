@@ -40,6 +40,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.ActivateJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
@@ -236,7 +237,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public DeployProcessCommandStep1 newDeployCommand() {
-    return new DeployResourceCommandImpl(
+    return new DeployProcessCommandImpl(
         asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 

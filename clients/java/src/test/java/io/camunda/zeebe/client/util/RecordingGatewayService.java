@@ -31,6 +31,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -74,6 +76,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
 
   public RecordingGatewayService() {
     addRequestHandler(TopologyRequest.class, r -> TopologyResponse.getDefaultInstance());
+    addRequestHandler(DeployProcessRequest.class, r -> DeployProcessResponse.getDefaultInstance());
     addRequestHandler(
         DeployResourceRequest.class, r -> DeployResourceResponse.getDefaultInstance());
     addRequestHandler(
@@ -227,6 +230,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
+  public void deployProcess(
+      final DeployProcessRequest request,
+      final StreamObserver<DeployProcessResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
   public void deployResource(
       final DeployResourceRequest request,
       final StreamObserver<DeployResourceResponse> responseObserver) {
@@ -294,6 +304,16 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setReplicationFactor(replicationFactor)
                 .setGatewayVersion(gatewayVersion)
                 .addAllBrokers(Arrays.asList(brokers))
+                .build());
+  }
+
+  public void onDeployProcessRequest(final long key, final ProcessMetadata... processes) {
+    addRequestHandler(
+        DeployProcessRequest.class,
+        request ->
+            DeployProcessResponse.newBuilder()
+                .setKey(key)
+                .addAllProcesses(Arrays.asList(processes))
                 .build());
   }
 
