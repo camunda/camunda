@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.response.Decision;
+import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
@@ -26,6 +28,8 @@ public final class DeploymentEventImpl implements DeploymentEvent {
 
   private final long key;
   private final List<Process> processes;
+  private final List<Decision> decisions;
+  private final List<DecisionRequirements> decisionRequirements;
 
   public DeploymentEventImpl(final DeployResourceResponse response) {
     key = response.getKey();
@@ -34,6 +38,18 @@ public final class DeploymentEventImpl implements DeploymentEvent {
             .filter(Deployment::hasProcess)
             .map(Deployment::getProcess)
             .map(ProcessImpl::new)
+            .collect(Collectors.toList());
+    decisions =
+        response.getDeploymentsList().stream()
+            .filter(Deployment::hasDecision)
+            .map(Deployment::getDecision)
+            .map(DecisionImpl::new)
+            .collect(Collectors.toList());
+    decisionRequirements =
+        response.getDeploymentsList().stream()
+            .filter(Deployment::hasDecisionRequirements)
+            .map(Deployment::getDecisionRequirements)
+            .map(DecisionRequirementsImpl::new)
             .collect(Collectors.toList());
   }
 
@@ -48,7 +64,26 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   @Override
+  public List<Decision> getDecisions() {
+    return decisions;
+  }
+
+  @Override
+  public List<DecisionRequirements> getDecisionRequirements() {
+    return decisionRequirements;
+  }
+
+  @Override
   public String toString() {
-    return "DeploymentEventImpl{" + "key=" + key + ", processes=" + processes + '}';
+    return "DeploymentEventImpl{"
+        + "key="
+        + key
+        + ", processes="
+        + processes
+        + ", decisions="
+        + decisions
+        + ", decisionRequirements="
+        + decisionRequirements
+        + '}';
   }
 }

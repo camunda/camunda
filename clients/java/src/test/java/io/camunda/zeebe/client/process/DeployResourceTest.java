@@ -15,14 +15,18 @@
  */
 package io.camunda.zeebe.client.process;
 
+import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecision;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecisionRequirements;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedProcess;
-import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedResource;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.deployment;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
+import io.camunda.zeebe.client.impl.response.DecisionImpl;
+import io.camunda.zeebe.client.impl.response.DecisionRequirementsImpl;
 import io.camunda.zeebe.client.impl.response.ProcessImpl;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -40,9 +44,16 @@ public final class DeployResourceTest extends ClientTest {
 
   public static final String BPMN_1_FILENAME = "/processes/demo-process.bpmn";
   public static final String BPMN_2_FILENAME = "/processes/another-demo-process.bpmn";
-
   public static final String BPMN_1_PROCESS_ID = "demoProcess";
   public static final String BPMN_2_PROCESS_ID = "anotherDemoProcess";
+
+  private static final String DMN_FILENAME = "/dmn/drg-force-user.dmn";
+  private static final String DMN_DECISION_ID_1 = "force_user";
+  private static final String DMN_DECISION_NAME_1 = "Which force user?";
+  private static final String DMN_DECISION_ID_2 = "jedi_or_sith";
+  private static final String DMN_DECISION_NAME_2 = "Jedi or Sith?";
+  private static final String DMN_DECISION_REQUIREMENTS_ID = "force_users";
+  private static final String DMN_DECISION_REQUIREMENTS_NAME = "Force Users";
 
   @Test
   public void shouldDeployResourceFromFile() {
@@ -171,8 +182,8 @@ public final class DeployResourceTest extends ClientTest {
     final String filename2 = BPMN_2_FILENAME.substring(1);
     gatewayService.onDeployResourceRequest(
         key,
-        deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
-        deployedResource(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
+        deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
+        deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
 
     // when
     client
@@ -201,7 +212,7 @@ public final class DeployResourceTest extends ClientTest {
     final long key = 123L;
     final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
     gatewayService.onDeployResourceRequest(
-        key, deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename)));
+        key, deployment(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename)));
 
     // when
     final DeploymentEvent response =
@@ -221,8 +232,8 @@ public final class DeployResourceTest extends ClientTest {
     final String filename2 = BPMN_2_FILENAME.substring(1);
     gatewayService.onDeployResourceRequest(
         key,
-        deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
-        deployedResource(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
+        deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
+        deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
 
     // when
     final DeploymentEvent response =
@@ -239,6 +250,73 @@ public final class DeployResourceTest extends ClientTest {
         .containsExactly(
             new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1),
             new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2));
+  }
+
+  @Test
+  public void shouldDeployDecisionModelAsResource() {
+    // given
+    final String filename = DeployResourceTest.class.getResource(DMN_FILENAME).getPath();
+    final long deploymentKey = 123L;
+    final int version = 1;
+    final long decisionRequirementsKey = 234L;
+    final long decisionKey1 = 345L;
+    final long decisionKey2 = 456L;
+    gatewayService.onDeployResourceRequest(
+        deploymentKey,
+        deployment(
+            deployedDecisionRequirements(
+                DMN_DECISION_REQUIREMENTS_ID,
+                DMN_DECISION_REQUIREMENTS_NAME,
+                version,
+                decisionRequirementsKey,
+                filename)),
+        deployment(
+            deployedDecision(
+                DMN_DECISION_ID_1,
+                DMN_DECISION_NAME_1,
+                version,
+                decisionKey1,
+                DMN_DECISION_REQUIREMENTS_ID,
+                decisionRequirementsKey)),
+        deployment(
+            deployedDecision(
+                DMN_DECISION_ID_2,
+                DMN_DECISION_NAME_2,
+                version,
+                decisionKey2,
+                DMN_DECISION_REQUIREMENTS_ID,
+                decisionRequirementsKey)));
+
+    // when
+    final DeploymentEvent response =
+        client.newDeployCommand().addResourceFile(filename).send().join();
+
+    // then
+    assertThat(response.getKey()).isEqualTo(deploymentKey);
+    assertThat(response.getDecisionRequirements())
+        .containsExactly(
+            new DecisionRequirementsImpl(
+                DMN_DECISION_REQUIREMENTS_ID,
+                DMN_DECISION_REQUIREMENTS_NAME,
+                version,
+                decisionRequirementsKey,
+                filename));
+    assertThat(response.getDecisions())
+        .containsExactly(
+            new DecisionImpl(
+                DMN_DECISION_ID_1,
+                DMN_DECISION_NAME_1,
+                version,
+                decisionKey1,
+                DMN_DECISION_REQUIREMENTS_ID,
+                decisionRequirementsKey),
+            new DecisionImpl(
+                DMN_DECISION_ID_2,
+                DMN_DECISION_NAME_2,
+                version,
+                decisionKey2,
+                DMN_DECISION_REQUIREMENTS_ID,
+                decisionRequirementsKey));
   }
 
   @Test

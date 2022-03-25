@@ -29,6 +29,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -120,6 +122,18 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
+  public static Deployment deployment(final ProcessMetadata metadata) {
+    return Deployment.newBuilder().setProcess(metadata).build();
+  }
+
+  public static Deployment deployment(final DecisionMetadata metadata) {
+    return Deployment.newBuilder().setDecision(metadata).build();
+  }
+
+  public static Deployment deployment(final DecisionRequirementsMetadata metadata) {
+    return Deployment.newBuilder().setDecisionRequirements(metadata).build();
+  }
+
   public static ProcessMetadata deployedProcess(
       final String bpmnProcessId,
       final int version,
@@ -133,8 +147,36 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
-  public static Deployment deployedResource(final ProcessMetadata process) {
-    return Deployment.newBuilder().setProcess(process).build();
+  public static DecisionMetadata deployedDecision(
+      final String dmnDecisionId,
+      final String dmnDecisionName,
+      final int version,
+      final long decisionKey,
+      final String dmnDecisionRequirementsId,
+      final long decisionRequirementsKey) {
+    return DecisionMetadata.newBuilder()
+        .setDmnDecisionId(dmnDecisionId)
+        .setDmnDecisionName(dmnDecisionName)
+        .setVersion(version)
+        .setDecisionKey(decisionKey)
+        .setDmnDecisionRequirementsId(dmnDecisionRequirementsId)
+        .setDecisionRequirementsKey(decisionRequirementsKey)
+        .build();
+  }
+
+  public static DecisionRequirementsMetadata deployedDecisionRequirements(
+      final String dmnDecisionRequirementsId,
+      final String dmnDecisionRequirementsName,
+      final int version,
+      final long decisionRequirementsKey,
+      final String resourceName) {
+    return DecisionRequirementsMetadata.newBuilder()
+        .setDmnDecisionRequirementsId(dmnDecisionRequirementsId)
+        .setDmnDecisionRequirementsName(dmnDecisionRequirementsName)
+        .setVersion(version)
+        .setDecisionRequirementsKey(decisionRequirementsKey)
+        .setResourceName(resourceName)
+        .build();
   }
 
   private static StatusRuntimeException convertThrowable(final Throwable cause) {
