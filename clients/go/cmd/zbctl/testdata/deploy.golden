@@ -5,16 +5,37 @@
       "process": {
         "bpmnProcessId": "process",
         "version": 1,
-        "processDefinitionKey": "2251799813685345",
+        "processDefinitionKey": "2251799813685249",
         "resourceName": "model.bpmn"
       }
     },
     {
-      "process": {
-        "bpmnProcessId": "jobProcess",
+      "decision": {
+        "dmnDecisionId": "jedi_or_sith",
+        "dmnDecisionName": "Jedi or Sith",
         "version": 1,
-        "processDefinitionKey": "2251799813685346",
-        "resourceName": "job.bpmn"
+        "decisionKey": "2251799813685251",
+        "dmnDecisionRequirementsId": "force_users",
+        "decisionRequirementsKey": "2251799813685250"
+      }
+    },
+    {
+      "decision": {
+        "dmnDecisionId": "force_user",
+        "dmnDecisionName": "Which force user?",
+        "version": 1,
+        "decisionKey": "2251799813685252",
+        "dmnDecisionRequirementsId": "force_users",
+        "decisionRequirementsKey": "2251799813685250"
+      }
+    },
+    {
+      "decisionRequirements": {
+        "dmnDecisionRequirementsId": "force_users",
+        "dmnDecisionRequirementsName": "force_users",
+        "version": 1,
+        "decisionRequirementsKey": "2251799813685250",
+        "resourceName": "drg-force-user.dmn"
       }
     }
   ]
