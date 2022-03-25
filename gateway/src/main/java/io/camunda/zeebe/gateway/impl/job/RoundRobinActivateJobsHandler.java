@@ -41,8 +41,7 @@ import java.util.function.Consumer;
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
  * partition-IDs to determine the next partition to use.
  */
-public final class RoundRobinActivateJobsHandler
-    implements ActivateJobsHandler, Consumer<ActorControl> {
+public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler {
 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
