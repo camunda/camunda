@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
 import io.camunda.zeebe.client.impl.response.ProcessImpl;
 import io.camunda.zeebe.client.util.ClientTest;
@@ -35,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 import org.junit.Test;
 
 public final class DeployResourceTest extends ClientTest {
@@ -49,25 +47,15 @@ public final class DeployResourceTest extends ClientTest {
   @Test
   public void shouldDeployResourceFromFile() {
     // given
-    final long key = 123L;
-    final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
-    gatewayService.onDeployResourceRequest(
-        key, deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename)));
-    final Process expected = new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename);
+    final String path = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
 
     // when
-    final DeploymentEvent response =
-        client.newDeployCommand().addResourceFile(filename).send().join();
+    client.newDeployCommand().addResourceFile(path).send().join();
 
     // then
-    assertThat(response.getKey()).isEqualTo(key);
-
-    final List<Process> processes = response.getProcesses();
-    assertThat(processes).containsOnly(expected);
-
     final DeployResourceRequest request = gatewayService.getLastRequest();
     final Resource resource = request.getResources(0);
-    assertThat(resource.getName()).isEqualTo(filename);
+    assertThat(resource.getName()).isEqualTo(path);
     assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 
@@ -114,7 +102,6 @@ public final class DeployResourceTest extends ClientTest {
     // then
     final DeployResourceRequest request = gatewayService.getLastRequest();
     final Resource resource = request.getResources(0);
-
     assertThat(resource.getName()).isEqualTo(filename);
     assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -135,7 +122,6 @@ public final class DeployResourceTest extends ClientTest {
     // then
     final DeployResourceRequest request = gatewayService.getLastRequest();
     final Resource resource = request.getResources(0);
-
     assertThat(resource.getName()).isEqualTo(filename);
     assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -152,7 +138,6 @@ public final class DeployResourceTest extends ClientTest {
     // then
     final DeployResourceRequest request = gatewayService.getLastRequest();
     final Resource resource = request.getResources(0);
-
     assertThat(resource.getName()).isEqualTo(filename);
     assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
@@ -174,7 +159,6 @@ public final class DeployResourceTest extends ClientTest {
     // then
     final DeployResourceRequest request = gatewayService.getLastRequest();
     final Resource resource = request.getResources(0);
-
     assertThat(resource.getName()).isEqualTo(filename);
     assertThat(resource.getContent().toByteArray()).isEqualTo(expectedBytes);
   }
@@ -183,13 +167,58 @@ public final class DeployResourceTest extends ClientTest {
   public void shouldDeployMultipleResources() {
     // given
     final long key = 345L;
-
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
+    gatewayService.onDeployResourceRequest(
+        key,
+        deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
+        deployedResource(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
 
-    final Process expected1 = new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1);
-    final Process expected2 = new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2);
+    // when
+    client
+        .newDeployCommand()
+        .addResourceFromClasspath(filename1)
+        .addResourceFromClasspath(filename2)
+        .send()
+        .join();
 
+    // then
+    final DeployResourceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResourcesList()).hasSize(2);
+
+    final Resource resource1 = request.getResources(0);
+    assertThat(resource1.getName()).isEqualTo(filename1);
+    assertThat(resource1.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+
+    final Resource resource2 = request.getResources(1);
+    assertThat(resource2.getName()).isEqualTo(filename2);
+    assertThat(resource2.getContent().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
+  }
+
+  @Test
+  public void shouldDeployProcessAsResource() {
+    // given
+    final long key = 123L;
+    final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
+    gatewayService.onDeployResourceRequest(
+        key, deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename)));
+
+    // when
+    final DeploymentEvent response =
+        client.newDeployCommand().addResourceFile(filename).send().join();
+
+    // then
+    assertThat(response.getKey()).isEqualTo(key);
+    assertThat(response.getProcesses())
+        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename));
+  }
+
+  @Test
+  public void shouldDeployMultipleProcessesAsResources() {
+    // given
+    final long key = 345L;
+    final String filename1 = BPMN_1_FILENAME.substring(1);
+    final String filename2 = BPMN_2_FILENAME.substring(1);
     gatewayService.onDeployResourceRequest(
         key,
         deployedResource(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
@@ -206,21 +235,10 @@ public final class DeployResourceTest extends ClientTest {
 
     // then
     assertThat(response.getKey()).isEqualTo(key);
-
-    final List<Process> processes = response.getProcesses();
-    assertThat(processes).containsOnly(expected1, expected2);
-
-    final DeployResourceRequest request = gatewayService.getLastRequest();
-    assertThat(request.getResourcesList()).hasSize(2);
-
-    Resource resource = request.getResources(0);
-
-    assertThat(resource.getName()).isEqualTo(filename1);
-    assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
-
-    resource = request.getResources(1);
-    assertThat(resource.getName()).isEqualTo(filename2);
-    assertThat(resource.getContent().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
+    assertThat(response.getProcesses())
+        .containsExactly(
+            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1),
+            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2));
   }
 
   @Test
