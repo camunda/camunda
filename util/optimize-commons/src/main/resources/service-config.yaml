@@ -513,7 +513,7 @@ historyCleanup:
 # Configuration relating to the automatic archiving of data within Optimize
 dataArchive:
   # Determines whether Optimize should try to archive data to cold indices
-  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:true}
+  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:false}
   # The interval in minutes between attempts to archive data made by Optimize
   archiveIntervalInMins: 480
 

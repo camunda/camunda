@@ -23,8 +23,8 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 public class ProcessInstanceArchivingServiceIT extends AbstractIT {
 
   @Test
-  public void processInstanceArchiverIsStartedByDefault() {
-    assertThat(getProcessInstanceArchivingService().isScheduledToRun()).isTrue();
+  public void processInstanceArchiverIsNotStartedByDefault() {
+    assertThat(getProcessInstanceArchivingService().isScheduledToRun()).isFalse();
   }
 
   @Test
