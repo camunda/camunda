@@ -22,6 +22,7 @@ import (
 
 type Client interface {
 	NewTopologyCommand() *commands.TopologyCommand
+	// Deprecated: Use NewDeployResourceCommand instead. To be removed in 8.1.0.
 	NewDeployProcessCommand() *commands.DeployCommand
 	NewDeployResourceCommand() *commands.DeployResourceCommand
 
