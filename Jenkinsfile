@@ -606,36 +606,34 @@ pipeline {
             DOCKER_LATEST_TAG = getLatestTag()
             DOCKER_TAG = getImageTag()
             PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
-            SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
-            VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
+            VERSION = readMavenPom().getVersion()
             IS_MAIN = "${isMainBranch() ? "TRUE" : "FALSE"}"
           }
           steps {
             container('docker') {
-              sh("""
+              sh("""#!/bin/bash -eux
               echo '${CRED_GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
               echo '${CRED_REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
-              docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
-                --build-arg SKIP_DOWNLOAD=true \
-                --build-arg VERSION=${VERSION} \
-                --build-arg SNAPSHOT=${SNAPSHOT} \
-                .
-
-              docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-              docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}
-              docker push ${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}
+              tags=('${DOCKER_IMAGE}:${DOCKER_TAG}' '${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}')
 
               if [ "${PUSH_LATEST_TAG}" = "TRUE" ]; then
-                docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
-                docker push ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
+                tags+=('${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}')
               fi
 
               if [ "${IS_MAIN}" = "TRUE" ]; then
                 docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
-                docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT
-                docker push ${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT
+                tags+=('${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT')
               fi
+
+              printf -v tag_arguments -- "-t %s " "\${tags[@]}"
+              docker buildx create --use
+              docker buildx build \
+                \${tag_arguments} \
+                --build-arg VERSION=${VERSION} \
+                --platform linux/amd64,linux/arm64 \
+                --push \
+                .
               """)
             }
           }
