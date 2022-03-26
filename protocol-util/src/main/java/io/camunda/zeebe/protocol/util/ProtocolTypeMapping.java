@@ -35,10 +35,12 @@ public final class ProtocolTypeMapping {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolTypeMapping.class);
   private final Map<Class<?>, Mapping<?>> concreteMappings;
   private final Map<Class<?>, Mapping<?>> abstractMappings;
+  private final Map<Class<?>, Mapping<?>> builderMappings;
 
   private ProtocolTypeMapping() {
     concreteMappings = new HashMap<>();
     abstractMappings = new HashMap<>();
+    builderMappings = new HashMap<>();
 
     loadTypeMappings();
   }
@@ -72,6 +74,17 @@ public final class ProtocolTypeMapping {
   @SuppressWarnings("java:S1452") // the expected usage is to pass it as is with the wildcard type
   public static Mapping<?> getForAbstractType(final Class<?> abstractType) {
     return Singleton.INSTANCE.abstractMappings.get(abstractType);
+  }
+
+  /**
+   * Returns a type mapping for the given abstract type, or null if none found.
+   *
+   * @param builderType the builder type to look for
+   * @return a mapping of this abstract type to an abstract type and a concrete type
+   */
+  @SuppressWarnings("java:S1452") // the expected usage is to pass it as is with the wildcard type
+  public static Mapping<?> getForBuilderType(final Class<?> builderType) {
+    return Singleton.INSTANCE.builderMappings.get(builderType);
   }
 
   private void loadTypeMappings() {
@@ -124,9 +137,11 @@ public final class ProtocolTypeMapping {
     final ClassInfoList builderTypes =
         concreteType.getInnerClasses().filter(info -> "Builder".equals(info.getSimpleName()));
     for (final ClassInfo builder : builderTypes) {
-      final Mapping<T> mapping = new Mapping<>(abstractClass, concreteClass, builder.loadClass());
+      final Class<?> builderClass = builder.loadClass();
+      final Mapping<T> mapping = new Mapping<>(abstractClass, concreteClass, builderClass);
       concreteMappings.put(concreteClass, mapping);
       abstractMappings.put(abstractClass, mapping);
+      builderMappings.put(builderClass, mapping);
     }
 
     if (builderTypes.isEmpty()) {

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.protocol.jackson.record;
+package io.camunda.zeebe.protocol.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.DatabindContext;
@@ -13,14 +13,13 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.lang.reflect.Type;
 
 /**
- * A {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} that maps a serialized {@link
- * Intent} value to a concrete implementation enum, e.g. {@link
- * io.camunda.zeebe.protocol.record.intent.VariableIntent}, based on the value type of the record.
+ * Abstract {@link com.fasterxml.jackson.databind.jsontype.TypeIdResolver} which can resolve types
+ * from the given {@link ValueType}.
  */
-final class IntentTypeIdResolver extends TypeIdResolverBase {
+abstract class AbstractValueTypeIdResolver extends TypeIdResolverBase {
   @Override
   public String idFromValue(final Object value) {
     return ((ValueType) value).name();
@@ -40,15 +39,8 @@ final class IntentTypeIdResolver extends TypeIdResolverBase {
   public JavaType typeFromId(final DatabindContext context, final String id) {
     final ValueType valueType = ValueType.valueOf(id);
     final TypeFactory typeFactory = context.getTypeFactory();
-    return typeFactory.constructType(mapValueTypeToIntentClass(valueType));
+    return typeFactory.constructType(mapFromValueType(valueType));
   }
 
-  private Class<? extends Intent> mapValueTypeToIntentClass(final ValueType valueType) {
-    final ValueTypeInfo<?> typeInfo = ValueTypes.getTypeInfoOrNull(valueType);
-    if (typeInfo == null) {
-      return Intent.UNKNOWN.getClass();
-    }
-
-    return typeInfo.getIntentClass();
-  }
+  protected abstract Type mapFromValueType(final ValueType valueType);
 }
