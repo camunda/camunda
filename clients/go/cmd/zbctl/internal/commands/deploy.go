@@ -25,6 +25,7 @@ import (
 var deployCmd = &cobra.Command{
 	Use:     "deploy <processPath>...",
 	Short:   "Deploys new resources for each file provided",
+	Long:    "Deploys new resources for each file provided. The `deploy <processPath>...` usage is deprecated. Please use the `deploy resource` subcommand.",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
