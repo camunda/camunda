@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.broker.protocol.record;
+package io.camunda.zeebe.test.broker.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,7 +13,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.util.ValueTypeMapping;
-import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -64,6 +63,31 @@ final class ProtocolFactoryTest {
 
     // then
     assertThat(recordsA).containsExactlyElementsOf(recordsB);
+  }
+
+  @Test
+  void shouldRandomizeRecordsWithDifferentSeeds() {
+    // given
+    final var factoryA = new ProtocolFactory();
+    final var factoryB = new ProtocolFactory();
+
+    // when
+    final var recordA = factoryA.generateRecord();
+    final var recordB = factoryB.generateRecord();
+
+    // then
+    assertThat(recordA).isNotEqualTo(recordB);
+  }
+
+  @Test
+  void shouldRandomizeRecords() {
+    // given
+    final var factory = new ProtocolFactory();
+
+    // then
+    assertThat(factory.generateRecord())
+        .isNotEqualTo(factory.generateRecord())
+        .isNotEqualTo(factory.generateRecord());
   }
 
   @ParameterizedTest
