@@ -5,11 +5,11 @@ description: A Helm chart to deploy a Operate preview environment to the Camunda
 icon: https://console.cloud.camunda.io/favicon.ico
 type: application
 # Chart version; expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.0
+version: 0.1.1
 
 
 dependencies:
 - name: ccsm-helm
   # @camunda-cloud references https://helm.camunda.io repository configured as camunda-cloud in Argo CD
   repository: "@helm-camunda-io"
-  version: 0.0.22
+  version: 0.0.25

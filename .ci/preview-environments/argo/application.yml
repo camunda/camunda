@@ -16,10 +16,16 @@ spec:
       parameters: []
     path: .ci/preview-environments
     repoURL: https://github.com/camunda-cloud/operate.git
-
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=true
+      - Replace=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m0s
