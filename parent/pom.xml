@@ -117,7 +117,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.5.3</version.spotbugs>
-    <version.archunit>0.23.0</version.archunit>
+    <version.archunit>0.23.1</version.archunit>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
