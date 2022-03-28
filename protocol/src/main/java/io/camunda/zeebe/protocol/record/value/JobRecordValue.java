@@ -15,15 +15,19 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.Map;
+import org.immutables.value.Value;
 
 /**
  * Represents a job related event or command.
  *
  * <p>See {@link JobIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
 
   /** @return the type of the job */

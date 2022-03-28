@@ -15,13 +15,17 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
+import org.immutables.value.Value;
 
 /**
  * A matched rule of a decision table. It contains details of the rule and its {@link
  * EvaluatedOutputValue outputs}.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface MatchedRuleValue extends RecordValue {
 
   /** @return the id of the matched rule */

@@ -1,9 +1,10 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself",
         "include": [
           "io\\.camunda:zeebe-exporter-api:.*"
         ]

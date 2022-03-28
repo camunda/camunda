@@ -67,7 +67,10 @@ public final class DecisionStateTest {
   @Test
   void shouldPutDecision() {
     // given
-    final var decisionRecord = sampleDecisionRecord();
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord =
+        sampleDecisionRecord().setDecisionRequirementsKey(drg.getDecisionRequirementsKey());
+    decisionState.storeDecisionRequirements(drg);
     decisionState.storeDecisionRecord(decisionRecord);
 
     // when
@@ -96,6 +99,8 @@ public final class DecisionStateTest {
         sampleDecisionRecord().setDecisionId("decision-1").setDecisionKey(1L);
     final var decisionRecord2 =
         sampleDecisionRecord().setDecisionId("decision-2").setDecisionKey(2L);
+    final var drg = sampleDecisionRequirementsRecord();
+    decisionState.storeDecisionRequirements(drg);
 
     decisionState.storeDecisionRecord(decisionRecord1);
     decisionState.storeDecisionRecord(decisionRecord2);
@@ -120,10 +125,28 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnLatestVersionOfDeployedDecisionById() {
     // given
-    final var decisionRecordV1 = sampleDecisionRecord().setDecisionKey(1L).setVersion(1);
-    final var decisionRecordV2 = sampleDecisionRecord().setDecisionKey(2L).setVersion(2);
-    final var decisionRecordV3 = sampleDecisionRecord().setDecisionKey(3L).setVersion(3);
+    final var drgV1 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(1L);
+    final var drgV2 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(2L);
+    final var drgV3 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(3L);
+    final var decisionRecordV1 =
+        sampleDecisionRecord()
+            .setDecisionKey(1L)
+            .setDecisionRequirementsKey(drgV1.getDecisionRequirementsKey())
+            .setVersion(1);
+    final var decisionRecordV2 =
+        sampleDecisionRecord()
+            .setDecisionKey(2L)
+            .setDecisionRequirementsKey(drgV2.getDecisionRequirementsKey())
+            .setVersion(2);
+    final var decisionRecordV3 =
+        sampleDecisionRecord()
+            .setDecisionKey(3L)
+            .setDecisionRequirementsKey(drgV3.getDecisionRequirementsKey())
+            .setVersion(3);
 
+    decisionState.storeDecisionRequirements(drgV1);
+    decisionState.storeDecisionRequirements(drgV2);
+    decisionState.storeDecisionRequirements(drgV3);
     decisionState.storeDecisionRecord(decisionRecordV1);
     decisionState.storeDecisionRecord(decisionRecordV3);
     decisionState.storeDecisionRecord(decisionRecordV2);
@@ -290,6 +313,9 @@ public final class DecisionStateTest {
         sampleDecisionRecord()
             .setDecisionKey(3L)
             .setDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
+
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
 
     decisionState.storeDecisionRecord(decision1);
     decisionState.storeDecisionRecord(decision2);

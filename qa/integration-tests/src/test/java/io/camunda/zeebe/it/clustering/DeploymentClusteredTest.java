@@ -68,7 +68,7 @@ public final class DeploymentClusteredTest {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addProcessModel(PROCESS, "process.bpmn")
             .send()
             .join();
@@ -77,7 +77,7 @@ public final class DeploymentClusteredTest {
     // wait for long before restart.
     // Add time in small increments to simulate gradual progression of the time.
     // For each increment, we expect the broker to retry sending the deployment.
-    // https://github.com/camunda-cloud/zeebe/issues/8525
+    // https://github.com/camunda/zeebe/issues/8525
     clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);
     clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);
     clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);

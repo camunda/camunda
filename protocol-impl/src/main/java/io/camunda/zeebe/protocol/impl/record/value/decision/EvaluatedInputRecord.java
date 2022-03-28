@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 public final class EvaluatedInputRecord extends UnifiedRecordValue implements EvaluatedInputValue {
 
   private final StringProperty inputIdProp = new StringProperty("inputId");
-  private final StringProperty inputNameProp = new StringProperty("inputName");
+  private final StringProperty inputNameProp = new StringProperty("inputName", "");
   private final BinaryProperty inputValueProp = new BinaryProperty("inputValue");
 
   public EvaluatedInputRecord() {

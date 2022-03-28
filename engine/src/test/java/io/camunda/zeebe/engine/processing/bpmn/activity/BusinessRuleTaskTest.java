@@ -23,6 +23,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
+import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -42,6 +45,8 @@ public final class BusinessRuleTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DMN_RESOURCE_WITH_NAMELESS_OUTPUTS =
+      "/dmn/drg-force-user-nameless-input-outputs.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String RESULT_VARIABLE = "result";
@@ -306,7 +311,7 @@ public final class BusinessRuleTaskTest {
                         assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
                         assertThat(matchedRule.getEvaluatedOutputs().get(0))
                             .hasOutputId("Output_1")
-                            .hasOutputName("jedi_or_sith")
+                            .hasOutputName("Jedi or Sith")
                             .hasOutputValue("\"Jedi\"");
                       });
             });
@@ -339,7 +344,7 @@ public final class BusinessRuleTaskTest {
                         assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
                         assertThat(matchedRule.getEvaluatedOutputs().get(0))
                             .hasOutputId("OutputClause_0hhe1yo")
-                            .hasOutputName("force_user")
+                            .hasOutputName("Force user")
                             .hasOutputValue("\"Obi-Wan Kenobi\"");
                       });
             });
@@ -459,8 +464,51 @@ public final class BusinessRuleTaskTest {
         .hasDecisionOutput("null")
         .satisfies(
             evaluatedDecision -> {
-              assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(0);
-              assertThat(evaluatedDecision.getMatchedRules()).hasSize(0);
+              assertThat(evaluatedDecision.getEvaluatedInputs()).isEmpty();
+              assertThat(evaluatedDecision.getMatchedRules()).isEmpty();
             });
+  }
+
+  /**
+   * Names are not mandatory for the Outputs of a decision table. In the case that they are missing
+   * from the decision model, the decision should still be evaluated and the evaluated decision
+   * result should be written with all information that is present. Note that this is not the case
+   * for Inputs, as these always have an expression which is used in case the label is undefined.
+   * See https://github.com/camunda-cloud/zeebe/issues/8909
+   */
+  @Test
+  public void shouldWriteDecisionEvaluationEventIfInputOutputNamesAreNull() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE_WITH_NAMELESS_OUTPUTS)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t -> t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.ofEntries(entry("lightsaberColor", "blue"), entry("height", 182)))
+            .create();
+
+    // then
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(decisionEvaluationRecord.getValue().getEvaluatedDecisions())
+        .isNotEmpty()
+        .flatMap(EvaluatedDecisionValue::getMatchedRules)
+        .isNotEmpty()
+        .flatMap(MatchedRuleValue::getEvaluatedOutputs)
+        .isNotEmpty()
+        .extracting(EvaluatedOutputValue::getOutputName)
+        .describedAs("Expect that evaluated output's name is empty string")
+        .containsOnly("");
   }
 }

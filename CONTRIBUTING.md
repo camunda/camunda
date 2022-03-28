@@ -106,7 +106,7 @@ follow the following steps:
    ```
 6. If you think you finished the issue please prepare the branch for reviewing.
    Please consider our [pull requests and code
-   reviews](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews)
+   reviews](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews)
    guide, before requesting a review. In general the commits should be squashed
    into meaningful commits with a helpful message. This means cleanup/fix etc
    commits should be squashed into the related commit. If you made refactorings
@@ -121,7 +121,7 @@ follow the following steps:
 
 ## Creating a pull request
 
-Before opening your first pull request, please have a look at this [guide](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
+Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
 
 1. To start the review process create a new pull request on GitHub from your
    branch to the `main` branch. Give it a meaningful name and describe
@@ -152,7 +152,7 @@ Before opening your first pull request, please have a look at this [guide](https
 
 ## Reviewing a pull request
 
-Before doing your first review, please have a look at this [guide](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
+Before doing your first review, please have a look at this [guide](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
 
 As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
 

@@ -16,13 +16,15 @@
 package zbc
 
 import (
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
+	"github.com/camunda/zeebe/clients/go/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/pkg/worker"
 )
 
 type Client interface {
 	NewTopologyCommand() *commands.TopologyCommand
+	// Deprecated: Use NewDeployResourceCommand instead. To be removed in 8.1.0.
 	NewDeployProcessCommand() *commands.DeployCommand
+	NewDeployResourceCommand() *commands.DeployResourceCommand
 
 	NewCreateInstanceCommand() commands.CreateInstanceCommandStep1
 	NewCancelInstanceCommand() commands.CancelInstanceStep1

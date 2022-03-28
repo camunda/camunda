@@ -164,7 +164,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/7873
+  // regression test for https://github.com/camunda/zeebe/issues/7873
   void shouldNotStartMultipleTransitions() {
     // given
     final var firstStepFirstTransitionFuture = TEST_CONCURRENCY_CONTROL.<Void>createFuture();
@@ -217,7 +217,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/7873
+  // regression test for https://github.com/camunda/zeebe/issues/7873
   void shouldExecuteTransitionsInOrder() {
     // given
     final var firstStepFirstTransitionFuture = TEST_CONCURRENCY_CONTROL.<Void>createFuture();

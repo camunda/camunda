@@ -83,11 +83,11 @@ final class InterceptorIT {
     config.getInterceptors().add(interceptorCfg);
 
     // when
-    gateway.start();
+    gateway.start().join();
     try (final var client = createZeebeClient()) {
       final Future<DeploymentEvent> result =
           client
-              .newDeployCommand()
+              .newDeployResourceCommand()
               .addResourceFromClasspath("processes/one-task-process.bpmn")
               .send();
 
@@ -110,7 +110,7 @@ final class InterceptorIT {
     config.getInterceptors().add(interceptorCfg);
 
     // when
-    gateway.start();
+    gateway.start().join();
     try (final var client = createZeebeClient()) {
       try {
         client.newTopologyRequest().send().join();

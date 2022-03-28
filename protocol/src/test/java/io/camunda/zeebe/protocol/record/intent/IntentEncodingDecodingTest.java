@@ -18,22 +18,17 @@ package io.camunda.zeebe.protocol.record.intent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class IntentEncodingDecodingTest {
+final class IntentEncodingDecodingTest {
 
-  @Parameter public ParameterSet parameterSet;
-
-  @Test
-  public void shouldEncodeAndDecodeTimerIntent() {
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void shouldEncodeAndDecodeTimerIntent(final ParameterSet parameterSet) {
     final short value = parameterSet.intent.value();
 
     final Intent decoded = parameterSet.decoder.apply(value);
@@ -41,8 +36,7 @@ public class IntentEncodingDecodingTest {
     assertThat(decoded).isSameAs(parameterSet.intent);
   }
 
-  @Parameters(name = "{0}")
-  public static Collection<ParameterSet> parameters() {
+  private static Stream<ParameterSet> parameters() {
     final List<ParameterSet> result = new ArrayList<>();
     result.addAll(
         buildParameterSets(DecisionEvaluationIntent.class, DecisionEvaluationIntent::from));
@@ -77,7 +71,7 @@ public class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(VariableDocumentIntent.class, VariableDocumentIntent::from));
     result.addAll(buildParameterSets(VariableIntent.class, VariableIntent::from));
 
-    return result;
+    return result.stream();
   }
 
   private static List<ParameterSet> buildParameterSets(

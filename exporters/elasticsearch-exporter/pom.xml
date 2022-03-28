@@ -149,7 +149,7 @@
       <artifactId>mockito-junit-jupiter</artifactId>
     </dependency>
 
-    <!-- Dependencies needed for the integration tests only. See https://github.com/camunda-cloud/zeebe/issues/8609 -->
+    <!-- Dependencies needed for the integration tests only. See https://github.com/camunda/zeebe/issues/8609 -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>

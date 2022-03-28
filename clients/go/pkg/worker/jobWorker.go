@@ -16,8 +16,8 @@
 package worker
 
 import (
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/pkg/entities"
 	"sync"
 )
 

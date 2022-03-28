@@ -22,21 +22,21 @@
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:git@github.com:camunda-cloud/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-cloud/zeebe.git</developerConnection>
+    <connection>scm:git:git@github.com:camunda/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda-cloud/zeebe</url>
+    <url>https://github.com/camunda/zeebe</url>
   </scm>
 
   <issueManagement>
     <system>GitHub</system>
-    <url>https://github.com/camunda-cloud/zeebe/issues</url>
+    <url>https://github.com/camunda/zeebe/issues</url>
   </issueManagement>
 
   <properties>
     <!-- release parent settings -->
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
     <plugin.version.flatten>1.2.7</plugin.version.flatten>
@@ -87,7 +87,7 @@
       </snapshots>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io</url>
     </repository>
 
     <repository>
@@ -99,7 +99,7 @@
       </snapshots>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots</url>
     </repository>
   </repositories>
 

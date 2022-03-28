@@ -11,6 +11,8 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
@@ -29,9 +31,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
 
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> parentChildColumnFamily;
-  private final DbCompositeKey<DbLong, DbLong> parentChildKey;
-  private final DbLong parentKey;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+      parentChildColumnFamily;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
+  private final DbForeignKey<DbLong> parentKey;
 
   private final DbLong elementInstanceKey;
   private final ElementInstance elementInstance;
@@ -64,8 +67,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.variableState = variableState;
 
     elementInstanceKey = new DbLong();
-    parentKey = new DbLong();
-    parentChildKey = new DbCompositeKey<>(parentKey, elementInstanceKey);
+    parentKey =
+        new DbForeignKey<>(
+            new DbLong(),
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+            MatchType.Full,
+            (k) -> k.getValue() == -1);
+    parentChildKey =
+        new DbCompositeKey<>(
+            parentKey,
+            new DbForeignKey<>(elementInstanceKey, ZbColumnFamilies.ELEMENT_INSTANCE_KEY));
     parentChildColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
@@ -131,7 +142,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     if (instance != null) {
       elementInstanceKey.wrapLong(key);
-      parentKey.wrapLong(instance.getParentKey());
+      parentKey.inner().wrapLong(instance.getParentKey());
 
       parentChildColumnFamily.deleteIfExists(parentChildKey);
       elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
@@ -158,17 +169,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void createInstance(final ElementInstance instance) {
     elementInstanceKey.wrapLong(instance.getKey());
-    parentKey.wrapLong(instance.getParentKey());
+    parentKey.inner().wrapLong(instance.getParentKey());
 
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
-    variableState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
+    variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
   }
 
   @Override
   public void updateInstance(final ElementInstance scopeInstance) {
     elementInstanceKey.wrapLong(scopeInstance.getKey());
-    parentKey.wrapLong(scopeInstance.getParentKey());
+    parentKey.inner().wrapLong(scopeInstance.getParentKey());
     elementInstanceColumnFamily.update(elementInstanceKey, scopeInstance);
   }
 
@@ -238,12 +249,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
     if (parentInstance != null) {
-      this.parentKey.wrapLong(parentKey);
+      this.parentKey.inner().wrapLong(parentKey);
 
       parentChildColumnFamily.whileEqualPrefix(
           this.parentKey,
           (key, value) -> {
-            final DbLong childKey = key.second();
+            final DbLong childKey = key.second().inner();
             final ElementInstance childInstance = getInstance(childKey.getValue());
 
             final ElementInstance copiedElementInstance = copyElementInstance(childInstance);
@@ -297,11 +308,5 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         (key, number) -> {
           numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
         });
-  }
-
-  @FunctionalInterface
-  public interface RecordVisitor {
-
-    void visitRecord(IndexedRecord indexedRecord);
   }
 }

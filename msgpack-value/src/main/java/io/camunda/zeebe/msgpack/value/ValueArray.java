@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.msgpack.value;
 
+import java.util.stream.Stream;
+
 public interface ValueArray<T> extends Iterable<T> {
   T add();
+
+  Stream<T> stream();
 }

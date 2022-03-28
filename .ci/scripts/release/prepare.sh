@@ -10,7 +10,7 @@ apt install -y gpg gh
 
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
-git remote add origin "https://${GITHUB_TOKEN_USR}:${GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git"
+git remote add origin "https://${GITHUB_TOKEN_USR}:${GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git"
 
 # configure Jenkins GitHub user for Maven container
 git config --global user.email "ci@camunda.com"

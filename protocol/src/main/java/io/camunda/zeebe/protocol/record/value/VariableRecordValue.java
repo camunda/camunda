@@ -15,14 +15,18 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a variable related event.
  *
  * <p>See {@link VariableIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated {
 
   /** @return the name of the variable. */
@@ -35,6 +39,7 @@ public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated
   long getScopeKey();
 
   /** @return the key of the process instance the variable belongs to */
+  @Override
   long getProcessInstanceKey();
 
   /** @return the key of the process the variable belongs to */

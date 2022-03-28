@@ -15,13 +15,17 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import org.immutables.value.Value;
 
 /**
  * Represents a deployed decision. A decision belongs to a decision requirements graph (DRG/DRD)
  * that represents the DMN resource. The DMN resource itself is stored as part of the DRG (see
  * {@link DecisionRequirementsRecordValue}).
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface DecisionRecordValue extends RecordValue {
 
   /** @return the ID of the decision in the DMN */

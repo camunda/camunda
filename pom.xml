@@ -43,6 +43,7 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
+    <module>protocol-util</module>
     <module>zb-db</module>
     <module>expression-language</module>
     <module>feel</module>
@@ -54,10 +55,10 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda-cloud/zeebe</url>
+    <url>https://github.com/camunda/zeebe</url>
   </scm>
 
   <build>

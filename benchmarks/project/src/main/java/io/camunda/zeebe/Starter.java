@@ -172,7 +172,7 @@ public class Starter extends App {
   private void deployProcess(final ZeebeClient client, final String bpmnXmlPath) {
     while (true) {
       try {
-        client.newDeployCommand().addResourceFromClasspath(bpmnXmlPath).send().join();
+        client.newDeployResourceCommand().addResourceFromClasspath(bpmnXmlPath).send().join();
         break;
       } catch (final Exception e) {
         LOG.warn("Failed to deploy process, retrying", e);

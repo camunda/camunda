@@ -17,7 +17,7 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
 )
 

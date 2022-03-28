@@ -76,7 +76,7 @@ public final class MultiPartitionRecoveryTest {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addProcessModel(PROCESS, "process.bpmn")
             .send()
             .join();
@@ -127,7 +127,7 @@ public final class MultiPartitionRecoveryTest {
 
   private void deploy(final BpmnModelInstance process, final String s) {
     final DeploymentEvent deploymentEvent =
-        clientRule.getClient().newDeployCommand().addProcessModel(process, s).send().join();
+        clientRule.getClient().newDeployResourceCommand().addProcessModel(process, s).send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }

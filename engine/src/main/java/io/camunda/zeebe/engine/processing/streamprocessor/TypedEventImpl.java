@@ -87,6 +87,11 @@ public final class TypedEventImpl implements TypedRecord {
   }
 
   @Override
+  public Record copyOf() {
+    return CopiedRecords.createCopiedRecord(getPartitionId(), rawEvent);
+  }
+
+  @Override
   public long getKey() {
     return rawEvent.getKey();
   }
@@ -117,11 +122,6 @@ public final class TypedEventImpl implements TypedRecord {
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
-  }
-
-  @Override
-  public Record clone() {
-    return CopiedRecords.createCopiedRecord(getPartitionId(), rawEvent);
   }
 
   @Override

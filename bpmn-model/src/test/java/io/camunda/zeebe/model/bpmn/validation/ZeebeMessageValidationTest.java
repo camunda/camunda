@@ -174,7 +174,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
       },
-      { // motivated by https://github.com/camunda-cloud/zeebe/issues/7131
+      { // motivated by https://github.com/camunda/zeebe/issues/7131
         getEventSubProcessWithEmbeddedSubProcessWithBoundaryEventWithoutCorrelationKey(),
         singletonList(
             expect(Message.class, "Must have exactly one zeebe:subscription extension element"))

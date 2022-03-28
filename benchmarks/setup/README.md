@@ -34,7 +34,7 @@ to configure your benchmark.
 ### How to configure a Benchmark
 
 The benchmark configuration is completely done via the `zeebe-values.yaml` file.
-If there is a property missing which you want to change please open an issue in https://github.com/camunda-community-hub/camunda-cloud-helm
+If there is a property missing which you want to change please open an issue in https://github.com/camunda/camunda-cloud-helm
 
 #### Use different Zeebe Snapshot
 
@@ -97,7 +97,7 @@ Possible future extension point: Use https://docs.camunda.io/docs/apis-clients/c
 ### Setup Cloud Benchmark
 
 * Create a new cloud benchmark in our benchmark folder, via `./newCloudBenchmark`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
-* Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda-cloud/zeebe/blob/main/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
+* Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda/zeebe/blob/main/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
 * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter. **Alternatively**, you can also manually provision the resources:
 * `kubectl apply -f cloudcredentials.yaml`
 * `kubectl apply -f worker.yaml`

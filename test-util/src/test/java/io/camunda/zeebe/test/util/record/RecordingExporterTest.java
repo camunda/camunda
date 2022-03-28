@@ -115,13 +115,13 @@ public final class RecordingExporterTest {
     }
 
     @Override
-    public String toJson() {
-      return null;
+    public Record<TestValue> copyOf() {
+      return this;
     }
 
     @Override
-    public Record<TestValue> clone() {
-      return this;
+    public String toJson() {
+      return null;
     }
   }
 

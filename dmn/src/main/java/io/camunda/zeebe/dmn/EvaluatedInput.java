@@ -22,6 +22,8 @@ public interface EvaluatedInput {
    * Returns the name of the evaluated input. Note that it uses the label of the input in absence of
    * the name. The label is usually the one that is displayed in the decision table.
    *
+   * <p>If a label is defined, it is favored as the output name. Otherwise, the expression is used.
+   *
    * @return the name of the evaluated input
    */
   String inputName();

@@ -242,7 +242,12 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param filename resource name, e.g. "process.bpmn"
    */
   public void deployProcess(final BpmnModelInstance process, final String filename) {
-    clientRule.getClient().newDeployCommand().addProcessModel(process, filename).send().join();
+    clientRule
+        .getClient()
+        .newDeployResourceCommand()
+        .addProcessModel(process, filename)
+        .send()
+        .join();
   }
 
   /**
@@ -253,7 +258,7 @@ public class ExporterIntegrationRule extends ExternalResource {
   public void deployResourceFromClasspath(final String classpathResource) {
     clientRule
         .getClient()
-        .newDeployCommand()
+        .newDeployResourceCommand()
         .addResourceFromClasspath(classpathResource)
         .send()
         .join();

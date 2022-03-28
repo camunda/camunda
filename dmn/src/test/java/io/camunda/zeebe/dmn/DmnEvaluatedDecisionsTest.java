@@ -86,7 +86,7 @@ class DmnEvaluatedDecisionsTest {
 
     final var evaluatedOutput = matchedRules.evaluatedOutputs().get(0);
     assertThat(evaluatedOutput.outputId()).isEqualTo("Output_1");
-    assertThat(evaluatedOutput.outputName()).isEqualTo("jedi_or_sith");
+    assertThat(evaluatedOutput.outputName()).isEqualTo("Jedi or Sith");
     assertEquality(evaluatedOutput.outputValue(), "'Jedi'");
   }
 
@@ -187,6 +187,23 @@ class DmnEvaluatedDecisionsTest {
     assertThat(evaluatedDecision.matchedRules()).hasSize(0);
   }
 
+  private DecisionEvaluationResult evaluateDecision(
+      final String resource, final String decisionId) {
+    final var inputStream = getClass().getResourceAsStream(resource);
+    final var parsedDrg = decisionEngine.parse(inputStream);
+
+    // when
+    final var result = decisionEngine.evaluateDecisionById(parsedDrg, decisionId, null);
+
+    // then
+    assertThat(result.isFailure())
+        .describedAs(
+            "Expect that the decision is evaluated successfully: %s", result.getFailureMessage())
+        .isFalse();
+
+    return result;
+  }
+
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   @DisplayName("If successfully evaluated, the decision")
@@ -204,28 +221,12 @@ class DmnEvaluatedDecisionsTest {
           new DecisionTest("relation", DecisionType.RELATION, "[{'is':'okay'}]"));
     }
 
-    private DecisionEvaluationResult evaluateDecision(final String decisionId) {
-      final var inputStream = getClass().getResourceAsStream(DECISION_TYPES_DRG);
-      final var parsedDrg = decisionEngine.parse(inputStream);
-
-      // when
-      final var result = decisionEngine.evaluateDecisionById(parsedDrg, decisionId, null);
-
-      // then
-      assertThat(result.isFailure())
-          .describedAs(
-              "Expect that the decision is evaluated successfully", result.getFailureMessage())
-          .isFalse();
-
-      return result;
-    }
-
     @ParameterizedTest
     @MethodSource("decisions")
     @DisplayName("Should return the type of the decision")
     void shouldReturnTheDecisionType(final DecisionTest test) {
       // when
-      final var result = evaluateDecision(test.decisionId);
+      final var result = evaluateDecision(DECISION_TYPES_DRG, test.decisionId);
 
       // then
       assertThat(result.getEvaluatedDecisions())
@@ -238,7 +239,7 @@ class DmnEvaluatedDecisionsTest {
     @DisplayName("Should return the output of the decision")
     void shouldReturnDecisionResult(final DecisionTest test) {
       // when
-      final var result = evaluateDecision(test.decisionId);
+      final var result = evaluateDecision(DECISION_TYPES_DRG, test.decisionId);
 
       // then
       assertThat(result.getEvaluatedDecisions())
@@ -247,5 +248,69 @@ class DmnEvaluatedDecisionsTest {
     }
 
     record DecisionTest(String decisionId, DecisionType expectedType, String expectedResult) {}
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @DisplayName("If successfully evaluated, the decision table")
+  class DecisionTableTest {
+
+    // This drg contains different decision tables, each with a special case
+    private static final String DRG_DECISION_TABLE = "/drg-decision-table-io-names.dmn";
+
+    @Test
+    @DisplayName("Should use input label as input name, if label defined")
+    void shouldUseInputLabelAsInputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "labeled_input");
+
+      // then
+      assertThat(result.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::evaluatedInputs)
+          .extracting(EvaluatedInput::inputName)
+          .containsExactly("input_label_is_used_as_input_name");
+    }
+
+    @Test
+    @DisplayName("Should use input expression as input name, if no label defined")
+    void shouldUseInputExpressionAsInputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_input");
+
+      // then
+      assertThat(result.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::evaluatedInputs)
+          .extracting(EvaluatedInput::inputName)
+          // the expression is truncated at 30 chars when used as name
+          .containsExactly("\"expression is used as input n");
+    }
+
+    @Test
+    @DisplayName("Should use output label as output name, if label defined")
+    void shouldUseOutputLabelAsOutputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "labeled_output");
+
+      // then
+      assertThat(result.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::matchedRules)
+          .flatMap(MatchedRule::evaluatedOutputs)
+          .extracting(EvaluatedOutput::outputName)
+          .containsExactly("output_label_is_used_as_output_name");
+    }
+
+    @Test
+    @DisplayName("Should use output name as output name, if no label defined")
+    void shouldUseOutputNameAsOutputName() {
+      // when
+      final var result = evaluateDecision(DRG_DECISION_TABLE, "unlabeled_output");
+
+      // then
+      assertThat(result.getEvaluatedDecisions())
+          .flatMap(EvaluatedDecision::matchedRules)
+          .flatMap(MatchedRule::evaluatedOutputs)
+          .extracting(EvaluatedOutput::outputName)
+          .containsExactly("output_name_is_used_as_output_name");
+    }
   }
 }

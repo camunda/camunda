@@ -79,7 +79,7 @@ final class StandaloneBrokerIT {
     try (final var client = createClient()) {
       await("until topology is complete").untilAsserted(() -> assertTopologyIsComplete(client));
 
-      client.newDeployCommand().addProcessModel(process, processId + ".bpmn").send().join();
+      client.newDeployResourceCommand().addProcessModel(process, processId + ".bpmn").send().join();
       return client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)

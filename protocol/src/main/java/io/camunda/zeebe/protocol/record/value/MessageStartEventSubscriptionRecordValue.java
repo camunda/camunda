@@ -15,14 +15,18 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents message start event subscription commands and events
  *
  * <p>See {@link MessageStartEventSubscriptionIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol
 public interface MessageStartEventSubscriptionRecordValue extends RecordValueWithVariables {
 
   /** @return the process key tied to the subscription */

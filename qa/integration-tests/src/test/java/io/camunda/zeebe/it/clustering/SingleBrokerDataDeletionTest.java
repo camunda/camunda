@@ -227,7 +227,7 @@ public class SingleBrokerDataDeletionTest {
   private void deployDummyProcess() {
     clusteringRule
         .getClient()
-        .newDeployCommand()
+        .newDeployResourceCommand()
         .addProcessModel(
             Bpmn.createExecutableProcess("process").startEvent().done(), "process.bpmn")
         .send()

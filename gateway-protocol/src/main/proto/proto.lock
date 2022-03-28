@@ -296,6 +296,12 @@
                 "type": "ProcessRequestObject",
                 "is_repeated": true
               }
+            ],
+            "options": [
+              {
+                "name": "deprecated",
+                "value": "true"
+              }
             ]
           },
           {
@@ -310,6 +316,12 @@
                 "id": 2,
                 "name": "definition",
                 "type": "bytes"
+              }
+            ],
+            "options": [
+              {
+                "name": "deprecated",
+                "value": "true"
               }
             ]
           },
@@ -326,6 +338,74 @@
                 "name": "processes",
                 "type": "ProcessMetadata",
                 "is_repeated": true
+              }
+            ],
+            "options": [
+              {
+                "name": "deprecated",
+                "value": "true"
+              }
+            ]
+          },
+          {
+            "name": "DeployResourceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "resources",
+                "type": "Resource",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "Resource",
+            "fields": [
+              {
+                "id": 1,
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "content",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "DeployResourceResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "deployments",
+                "type": "Deployment",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "Deployment",
+            "fields": [
+              {
+                "id": 1,
+                "name": "process",
+                "type": "ProcessMetadata"
+              },
+              {
+                "id": 2,
+                "name": "decision",
+                "type": "DecisionMetadata"
+              },
+              {
+                "id": 3,
+                "name": "decisionRequirements",
+                "type": "DecisionRequirementsMetadata"
               }
             ]
           },
@@ -349,6 +429,71 @@
               },
               {
                 "id": 4,
+                "name": "resourceName",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "DecisionMetadata",
+            "fields": [
+              {
+                "id": 1,
+                "name": "dmnDecisionId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "dmnDecisionName",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "decisionKey",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "dmnDecisionRequirementsId",
+                "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "decisionRequirementsKey",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "DecisionRequirementsMetadata",
+            "fields": [
+              {
+                "id": 1,
+                "name": "dmnDecisionRequirementsId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "dmnDecisionRequirementsName",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "decisionRequirementsKey",
+                "type": "int64"
+              },
+              {
+                "id": 5,
                 "name": "resourceName",
                 "type": "string"
               }
@@ -625,7 +770,18 @@
               {
                 "name": "DeployProcess",
                 "in_type": "DeployProcessRequest",
-                "out_type": "DeployProcessResponse"
+                "out_type": "DeployProcessResponse",
+                "options": [
+                  {
+                    "name": "deprecated",
+                    "value": "true"
+                  }
+                ]
+              },
+              {
+                "name": "DeployResource",
+                "in_type": "DeployResourceRequest",
+                "out_type": "DeployResourceResponse"
               },
               {
                 "name": "FailJob",

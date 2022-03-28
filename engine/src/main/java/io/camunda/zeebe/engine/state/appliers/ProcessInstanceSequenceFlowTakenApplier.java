@@ -39,7 +39,7 @@ final class ProcessInstanceSequenceFlowTakenApplier
     // This is necessary for concurrent flows, where for example the end event is reached on one
     // path and on the other path the sequence flow is currently active.
     //
-    // See discussion in https://github.com/camunda-cloud/zeebe/pull/6562
+    // See discussion in https://github.com/camunda/zeebe/pull/6562
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
     flowScopeInstance.incrementActiveSequenceFlows();
     elementInstanceState.updateInstance(flowScopeInstance);
