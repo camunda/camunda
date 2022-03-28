@@ -1843,13 +1843,13 @@
           <exclusions>
             <exclusion>
               <groupId>org.apache.maven.surefire</groupId>
-	      <artifactId>surefire-shared-utils</artifactId>
+              <artifactId>surefire-shared-utils</artifactId>
             </exclusion>
             <!-- excluded for dependency convergence -->
-	    <exclusion>
+            <exclusion>
               <groupId>org.fusesource.jansi</groupId>
-	      <artifactId>jansi</artifactId>
-	    </exclusion>
+              <artifactId>jansi</artifactId>
+            </exclusion>
           </exclusions>
         </dependency>
       </dependencies>
