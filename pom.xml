@@ -323,7 +323,7 @@
           <configuration>
             <detectBuildFailures>true</detectBuildFailures>
             <serverId>camunda-nexus</serverId>
-            <nexusUrl>https://app.camunda.com/nexus</nexusUrl>
+            <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
             <skipStaging>true</skipStaging>
           </configuration>
         </plugin>
@@ -436,11 +436,11 @@
   <distributionManagement>
     <snapshotRepository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-operate-snapshots</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</url>
     </snapshotRepository>
     <repository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-operate</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-operate/</url>
     </repository>
   </distributionManagement>
 
@@ -465,7 +465,7 @@
     <repository>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -477,7 +477,7 @@
     <repository>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -489,7 +489,7 @@
     <repository>
       <id>camunda-shared-services-snapshot</id>
       <name>IAM Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-shared-services-snapshots/</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-shared-services-snapshots/</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -501,7 +501,7 @@
     <repository>
       <id>camunda-shared-services</id>
       <name>IAM Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-shared-services/</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-shared-services/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
