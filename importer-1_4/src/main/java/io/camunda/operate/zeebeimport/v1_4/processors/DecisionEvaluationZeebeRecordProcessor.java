@@ -15,12 +15,12 @@ import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.zeebeimport.v1_4.record.value.DecisionEvaluationRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.EvaluatedDecisionValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.EvaluatedInputValueImpl;
-import io.camunda.operate.zeebeimport.v1_4.record.value.MatchedRuleValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
+import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -48,12 +48,12 @@ public class DecisionEvaluationZeebeRecordProcessor {
 
   public void processDecisionEvaluationRecord(Record record, BulkRequest bulkRequest)
       throws PersistenceException {
-    final DecisionEvaluationRecordValueImpl decision = (DecisionEvaluationRecordValueImpl)record.getValue();
+    final DecisionEvaluationRecordValue decision = (DecisionEvaluationRecordValue)record.getValue();
     persistDecisionInstance(record, decision, bulkRequest);
   }
 
   private void persistDecisionInstance(final Record record,
-      final DecisionEvaluationRecordValueImpl decisionEvaluation, final BulkRequest bulkRequest)
+      final DecisionEvaluationRecordValue decisionEvaluation, final BulkRequest bulkRequest)
       throws PersistenceException {
     final List<DecisionInstanceEntity> decisionEntities = createEntities(record,
         decisionEvaluation);
@@ -75,10 +75,10 @@ public class DecisionEvaluationZeebeRecordProcessor {
   }
 
   private List<DecisionInstanceEntity> createEntities(final Record record,
-      final DecisionEvaluationRecordValueImpl decisionEvaluation) {
+      final DecisionEvaluationRecordValue decisionEvaluation) {
     List<DecisionInstanceEntity> entities = new ArrayList<>();
     for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      final EvaluatedDecisionValueImpl decision = decisionEvaluation
+      final EvaluatedDecisionValue decision = decisionEvaluation
           .getEvaluatedDecisions().get(i - 1);
       OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
@@ -116,7 +116,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
   }
 
   private DecisionInstanceState getState(final Record record,
-      final DecisionEvaluationRecordValueImpl decisionEvaluation, final int i) {
+      final DecisionEvaluationRecordValue decisionEvaluation, final int i) {
     if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name()) && i == decisionEvaluation
         .getEvaluatedDecisions().size()) {
       return DecisionInstanceState.FAILED;
@@ -126,7 +126,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
   }
 
   private List<DecisionInstanceInputEntity> createEvaluationInputs(
-      final List<EvaluatedInputValueImpl> evaluatedInputs) {
+      final List<EvaluatedInputValue> evaluatedInputs) {
     return evaluatedInputs.stream().map(input -> new DecisionInstanceInputEntity()
         .setId(input.getInputId())
         .setName(input.getInputName())
@@ -134,7 +134,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
   }
 
   private List<DecisionInstanceOutputEntity> createEvaluationOutputs(
-      final List<MatchedRuleValueImpl> matchedRules) {
+      final List<MatchedRuleValue> matchedRules) {
     List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
     matchedRules.stream().forEach(rule ->
         outputs.addAll(rule.getEvaluatedOutputs().stream().map(output ->

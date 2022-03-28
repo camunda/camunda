@@ -22,7 +22,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
-      <scope>compile</scope>
+      <version>${version.zeebe}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-util</artifactId>
       <version>${version.zeebe}</version>
     </dependency>
 
@@ -56,8 +61,9 @@
         <configuration>
           <artifactSet>
             <includes>
-              <include>io.camunda:zeebe-protocol-jackson</include>
               <include>io.camunda:zeebe-protocol</include>
+              <include>io.camunda:zeebe-protocol-jackson</include>
+              <include>io.camunda:zeebe-protocol-util</include>
             </includes>
           </artifactSet>
           <relocations>
