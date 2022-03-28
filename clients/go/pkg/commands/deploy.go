@@ -49,6 +49,7 @@ func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, 
 	return response, err
 }
 
+// Deprecated: Use NewDeployResourceCommand instead. To be removed in 8.1.0.
 func NewDeployCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployCommand {
 	return &DeployCommand{
 		Command: Command{
