@@ -15,11 +15,6 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import org.immutables.value.Value;
-
-@Value.Immutable
-@ImmutableProtocol
 public interface ProcessInstanceRelated {
 
   /** @return the key of the corresponding process instance */
