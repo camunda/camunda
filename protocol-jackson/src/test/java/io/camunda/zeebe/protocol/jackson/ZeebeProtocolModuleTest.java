@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.util.ValueTypeMapping;
 import io.camunda.zeebe.protocol.util.ValueTypeMapping.Mapping;
-import io.camunda.zeebe.test.broker.protocol.record.ProtocolFactory;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.parallel.Execution;

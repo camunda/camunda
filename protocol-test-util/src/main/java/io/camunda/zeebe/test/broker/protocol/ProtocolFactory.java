@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.broker.protocol.record;
+package io.camunda.zeebe.test.broker.protocol;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -71,6 +71,47 @@ public final class ProtocolFactory {
     registerRandomizers();
   }
 
+  /** @return a stream of random records */
+  public Stream<Record<RecordValue>> generateRecords() {
+    return generateRecords(UnaryOperator.identity());
+  }
+
+  /**
+   * Generates a modifiable stream of records.
+   *
+   * @param modifier applied to the builder after all the properties have been filled as the last
+   *     step; cannot be null
+   * @return a stream of random records
+   * @throws NullPointerException if modifier is null
+   */
+  public Stream<Record<RecordValue>> generateRecords(
+      final UnaryOperator<Builder<RecordValue>> modifier) {
+    return Stream.generate(() -> generateRecord(modifier));
+  }
+
+  /**
+   * Generates a stream of records, one record for each known {@link ValueType} (except the values
+   * created by SBE, i.e. NULL_VAL and SBE_UNKNOWN).
+   *
+   * @return a stream of records, one for each value type
+   */
+  public Stream<Record<RecordValue>> generateForAllValueTypes() {
+    return generateForAllValueTypes(UnaryOperator.identity());
+  }
+
+  /**
+   * Generates a stream of records, one record for each known {@link ValueType} (except the values
+   * created by SBE, i.e. NULL_VAL and SBE_UNKNOWN).
+   *
+   * @return a stream of records, one for each value type
+   * @throws NullPointerException if {@code modifier} is null
+   */
+  public Stream<Record<RecordValue>> generateForAllValueTypes(
+      final UnaryOperator<Builder<RecordValue>> modifier) {
+    return ValueTypeMapping.getAcceptedValueTypes().stream()
+        .map(valueType -> generateRecord(valueType, modifier));
+  }
+
   /** @return a random record with a random value type */
   public Record<RecordValue> generateRecord() {
     return generateRecord(UnaryOperator.identity());
@@ -88,24 +129,6 @@ public final class ProtocolFactory {
   public Record<RecordValue> generateRecord(final UnaryOperator<Builder<RecordValue>> modifier) {
     final var valueType = random.nextObject(ValueType.class);
     return generateRecord(valueType, modifier);
-  }
-
-  /** @return a stream of random records */
-  public Stream<Record<RecordValue>> generateRecords() {
-    return generateRecords(UnaryOperator.identity());
-  }
-
-  /**
-   * Generates a modifiable stream of records.
-   *
-   * @param modifier applied to the builder after all the properties have been filled as the last
-   *     step; cannot be null
-   * @return a stream of random records
-   * @throws NullPointerException if modifier is null
-   */
-  public Stream<Record<RecordValue>> generateRecords(
-      final UnaryOperator<Builder<RecordValue>> modifier) {
-    return Stream.generate(() -> generateRecord(modifier));
   }
 
   /**
@@ -159,29 +182,6 @@ public final class ProtocolFactory {
    */
   public <T> T generateObject(final Class<T> objectClass) {
     return random.nextObject(objectClass);
-  }
-
-  /**
-   * Generates a stream of records, one record for each known {@link ValueType} (except the values
-   * created by SBE, i.e. NULL_VAL and SBE_UNKNOWN).
-   *
-   * @return a stream of records, one for each value type
-   */
-  public Stream<Record<RecordValue>> generateForAllValueTypes() {
-    return generateForAllValueTypes(UnaryOperator.identity());
-  }
-
-  /**
-   * Generates a stream of records, one record for each known {@link ValueType} (except the values
-   * created by SBE, i.e. NULL_VAL and SBE_UNKNOWN).
-   *
-   * @return a stream of records, one for each value type
-   * @throws NullPointerException if {@code modifier} is null
-   */
-  public Stream<Record<RecordValue>> generateForAllValueTypes(
-      final UnaryOperator<Builder<RecordValue>> modifier) {
-    return ValueTypeMapping.getAcceptedValueTypes().stream()
-        .map(valueType -> generateRecord(valueType, modifier));
   }
 
   /** @return the seed used when creating this factory */

@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.util.ValueTypeMapping;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
