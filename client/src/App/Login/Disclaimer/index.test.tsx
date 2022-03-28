@@ -30,7 +30,7 @@ describe('<Disclaimer />', () => {
       screen.getByRole('link', {name: 'terms & conditions page'})
     ).toHaveAttribute(
       'href',
-      'https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/'
+      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/'
     );
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
@@ -51,7 +51,7 @@ describe('<Disclaimer />', () => {
       screen.getByRole('link', {name: 'terms & conditions page'})
     ).toHaveAttribute(
       'href',
-      'https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/'
+      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/'
     );
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
