@@ -476,18 +476,20 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           snapshotReplicationListeners.add(snapshotReplicationListener);
           // Notify listener immediately if it registered during an ongoing replication.
           // This is to prevent missing necessary state transitions.
-          switch (missedSnapshotReplicationEvents) {
-            case STARTED:
-              snapshotReplicationListener.onSnapshotReplicationStarted();
-              break;
-            case COMPLETED:
-              {
+          if (role.role() == Role.FOLLOWER) {
+            switch (missedSnapshotReplicationEvents) {
+              case STARTED:
                 snapshotReplicationListener.onSnapshotReplicationStarted();
-                snapshotReplicationListener.onSnapshotReplicationCompleted(term);
                 break;
-              }
-            default:
-              break;
+              case COMPLETED:
+                {
+                  snapshotReplicationListener.onSnapshotReplicationStarted();
+                  snapshotReplicationListener.onSnapshotReplicationCompleted(term);
+                  break;
+                }
+              default:
+                break;
+            }
           }
         });
   }
@@ -681,6 +683,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private void completeTransition() {
+    missedSnapshotReplicationEvents = MissedSnapshotReplicationEvents.NONE;
     ongoingTransition = false;
   }
 
