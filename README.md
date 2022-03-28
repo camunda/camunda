@@ -65,14 +65,15 @@ You can also run Optimize in CCSM mode by running the following command
 docker-compose -f docker-compose.ccsm.yml up -d
 ```
 
-This will start all the components of IAM, Elasticsearch, Zeebe, and Optimize. Optimize will be available at localhost:8090. 
+This will start all the components of Identity, Elasticsearch, Zeebe, and Optimize. Optimize will be available at localhost:8090. 
 
 Optimize then needs to be started in CCSM mode, and with the following environment variables:
 ```
 SPRING_PROFILES_ACTIVE=ccsm;
-CAMUNDA_OPTIMIZE_IAM_ISSUER_URL=[IAM host]
-CAMUNDA_OPTIMIZE_IAM_CLIENTID=optimize;
-CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET=[must match the one in docker-compose.iam.yml]
+CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=[Identity host]
+CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize;
+CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=[must match the one in docker-compose.ccsm.yml]
+CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=[audience]
 ```
 
 ## F.A.Q

@@ -5,8 +5,7 @@
  */
 package org.camunda.optimize.service.security.authentication;
 
-import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.dto.LogoutRequestDto;
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -40,12 +39,6 @@ public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
   @Override
   public Response loginCallback(final ContainerRequestContext requestContext,
                                 final AuthCodeDto authCode) {
-    throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
-  }
-
-  @Override
-  public Response logoutCallback(final ContainerRequestContext requestContext,
-                                 final LogoutRequestDto logoutRequestDto) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 

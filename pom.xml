@@ -29,7 +29,7 @@
     <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
 
     <zeebe.version>1.3.5</zeebe.version>
-    <iam.version>1.3.5</iam.version>
+    <identity.version>1.4.0-SNAPSHOT</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 

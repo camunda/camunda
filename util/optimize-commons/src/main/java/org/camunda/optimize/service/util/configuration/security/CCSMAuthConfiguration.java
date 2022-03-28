@@ -9,10 +9,14 @@ import lombok.Data;
 
 @Data
 public class CCSMAuthConfiguration {
-  // the url to IAM
+  // the url to Identity
   private String issuerUrl;
-  // IAM client id to use by Optimize
+  // the url to Identity (back channel for container to container communication)
+  private String issuerBackendUrl;
+  // Identity client id to use by Optimize
   private String clientId;
-  // IAM client secret to use by Optimize
+  // Identity client secret to use by Optimize
   private String clientSecret;
+  // Identity audience
+  private String audience;
 }

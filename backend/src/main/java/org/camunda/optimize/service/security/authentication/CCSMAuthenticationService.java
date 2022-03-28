@@ -5,13 +5,10 @@
  */
 package org.camunda.optimize.service.security.authentication;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.Claim;
-import io.camunda.iam.sdk.IamApi;
-import io.camunda.iam.sdk.authentication.Tokens;
-import io.camunda.iam.sdk.authentication.UserInfo;
-import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.dto.LogoutRequestDto;
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.authentication.AccessToken;
+import io.camunda.identity.sdk.authentication.Tokens;
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -25,8 +22,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Optional;
 
 @Component
 @Conditional(CCSMCondition.class)
@@ -34,14 +29,13 @@ import java.util.Optional;
 public class CCSMAuthenticationService extends AbstractAuthenticationService {
 
   private static final String OPTIMIZE_PERMISSION = "write:*";
-  private static final String IAM_PERMISSIONS_CLAIM = "permissions";
 
-  private final IamApi iamApi;
+  private final Identity identity;
 
-  public CCSMAuthenticationService(final IamApi iamApi, final SessionService sessionService,
+  public CCSMAuthenticationService(final Identity identity, final SessionService sessionService,
                                    final AuthCookieService authCookieService) {
     super(sessionService, authCookieService);
-    this.iamApi = iamApi;
+    this.identity = identity;
   }
 
   @Override
@@ -53,15 +47,17 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   @Override
   public Response loginCallback(final ContainerRequestContext requestContext,
                                 final AuthCodeDto authCode) {
-    final Tokens tokens = iamApi.authentication()
+    final Tokens tokens = identity.authentication()
       .exchangeAuthCode(authCode, requestContext.getUriInfo().getAbsolutePath().toString());
-    if (!userHasOptimizeAuthorization(tokens)) {
+
+    final AccessToken accessToken = identity.authentication().verifyToken(tokens.getAccessToken());
+    if (!userHasOptimizeAuthorization(accessToken)) {
       return Response.status(Response.Status.FORBIDDEN)
-        .entity("User has no authorization to access Optimize. Please check your IAM configuration")
+        .entity("User has no authorization to access Optimize. Please check your Identity configuration")
         .build();
     }
-    final UserInfo userInfo = iamApi.authentication().userInfo(tokens);
-    final String securityToken = sessionService.createAuthToken(userInfo.getFullName());
+    final String securityToken =
+      sessionService.createAuthToken(accessToken.getUserDetails().getName().orElse(""));
     return Response.seeOther(URI.create(buildRootRedirect(requestContext)))
       .entity(securityToken)
       .header(
@@ -71,18 +67,6 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
           requestContext.getUriInfo().getRequestUri().getScheme()
         )
       )
-      .build();
-  }
-
-  @Override
-  public Response logoutCallback(final ContainerRequestContext requestContext,
-                                 final LogoutRequestDto logoutRequestDto) {
-    final Optional<String> redirectUri = iamApi
-      .authentication()
-      .getLogoutRequestRedirectUri(logoutRequestDto);
-    sessionService.invalidateSession(requestContext);
-    return Response.seeOther(URI.create(redirectUri.orElse(buildRootRedirect(requestContext))))
-      .cookie(authCookieService.createDeleteOptimizeAuthCookie(requestContext.getUriInfo().getRequestUri().getScheme()))
       .build();
   }
 
@@ -101,10 +85,8 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     return redirectUri;
   }
 
-  private boolean userHasOptimizeAuthorization(final Tokens tokens) {
-    final Claim permissions = JWT.decode(iamApi.authentication().verifyToken(tokens.getAccessToken()).getToken())
-      .getClaims().get(IAM_PERMISSIONS_CLAIM);
-    return permissions != null && Arrays.asList(permissions.asArray(String.class)).contains(OPTIMIZE_PERMISSION);
+  private boolean userHasOptimizeAuthorization(final AccessToken accessToken) {
+    return accessToken.getPermissions().contains(OPTIMIZE_PERMISSION);
   }
 
 }

@@ -77,11 +77,11 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- IAM-->
+    <!-- IDENTITY-->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-cloud-iam-sdk</artifactId>
-      <version>${iam.version}</version>
+      <artifactId>identity-sdk</artifactId>
+      <version>${identity.version}</version>
     </dependency>
 
     <!-- Javax XML -->
