@@ -25,7 +25,7 @@ const LicenseNote: React.FC = () => {
           Non-Production License. If you would like information on production
           usage, please refer to our{' '}
           <Anchor
-            href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
+            href="https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/"
             target="_blank"
           >
             terms & conditions page
