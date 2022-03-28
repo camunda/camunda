@@ -82,7 +82,7 @@ func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 }
 
 func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
-	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest) // nolint
 }
 
 func (c *ClientImpl) NewDeployResourceCommand() *commands.DeployResourceCommand {
