@@ -6,7 +6,7 @@
 
 const mockDmnXml = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.8.1">
-  <decision id="invoiceClassification" name="Invoice Classification">
+  <decision id="invoiceClassification" name="invoiceClassification">
     <decisionTable id="decisionTable">
       <input id="clause1" label="Invoice Amount" camunda:inputVariable="">
         <inputExpression id="inputExpression1" typeRef="double">

@@ -20,10 +20,9 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type Decision = ReadonlyDeep<{
   decisionId: string;
-  name: string;
+  name: string | null;
   decisions: {
     id: string;
-    name: string;
     version: number;
     decisionId: string;
   }[];
@@ -106,6 +105,14 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       };
     }, {});
   }
+
+  getDecisionName = (decisionId: string | null) => {
+    const decision = this.state.decisions.find(
+      (decision) => decision.decisionId === decisionId
+    );
+
+    return decision?.name ?? decision?.decisionId;
+  };
 
   getDecisionDefinitionId = ({
     decisionId,

@@ -14,19 +14,24 @@ import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
+import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
-  const {status} = groupedDecisionsStore.state;
+  const {
+    state: {status},
+    getDecisionName,
+  } = groupedDecisionsStore;
   const params = new URLSearchParams(location.search);
   const version = params.get('version');
   const decisionId = params.get('name');
   const [currentDecisionId, setCurrentDecisionId] = useState<string | null>(
-    decisionId
+    null
   );
   const isDecisionSelected = decisionId !== null;
   const isVersionSelected = version !== null && version !== 'all';
+  const decisionName = getDecisionName(decisionId);
 
   useEffect(() => {
     if (status === 'fetched' && isDecisionSelected && isVersionSelected) {
@@ -67,6 +72,7 @@ const Decision: React.FC = observer(() => {
 
   return (
     <Container>
+      <PanelHeader title={decisionName || 'Decision'} />
       {(() => {
         if (decisionXmlStore.state.status === 'error') {
           return (
@@ -89,10 +95,12 @@ const Decision: React.FC = observer(() => {
           );
         }
 
-        if (!isVersionSelected) {
+        if (!isVersionSelected && decisionName !== undefined) {
           return (
             <EmptyMessage
-              message={`There is more than one Version selected for Decision "${decisionId}"
+              message={`There is more than one Version selected for Decision "${getDecisionName(
+                decisionId
+              )}"
                 To see a Decision Table or a Literal Expression, select a single Version`}
             />
           );
@@ -100,9 +108,8 @@ const Decision: React.FC = observer(() => {
 
         return (
           <>
-            {decisionXmlStore.state.status === 'fetching' && (
-              <SpinnerSkeleton />
-            )}
+            {(decisionXmlStore.state.status === 'fetching' ||
+              decisionName === undefined) && <SpinnerSkeleton />}
 
             {isDecisionSelected && isVersionSelected && (
               <DecisionViewer

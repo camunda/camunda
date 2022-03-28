@@ -32,12 +32,12 @@ describe('groupedDecisionsStore', () => {
       });
     });
 
-    it('should fetch grouped decisions', async () => {
+    it('should fetch grouped decisions', () => {
       expect(groupedDecisionsStore.state.decisions).toEqual(groupedDecisions);
       expect(groupedDecisionsStore.areDecisionsEmpty).toBe(false);
     });
 
-    it('should get decision definition id', async () => {
+    it('should get decision definition id', () => {
       expect(
         groupedDecisionsStore.getDecisionDefinitionId({
           decisionId: 'invoice-assign-approver',
@@ -46,7 +46,24 @@ describe('groupedDecisionsStore', () => {
       ).toEqual('0');
     });
 
-    it('should return null for invalid decision ids', async () => {
+    it('should get decision name', () => {
+      const [firstDecision, secondDecision, thirdDecision] = groupedDecisions;
+      const {getDecisionName} = groupedDecisionsStore;
+
+      expect(getDecisionName(firstDecision.decisionId)).toBe(
+        firstDecision.name
+      );
+      expect(getDecisionName(secondDecision.decisionId)).toBe(
+        secondDecision.decisionId
+      );
+      expect(getDecisionName(thirdDecision.decisionId)).toBe(
+        thirdDecision.name
+      );
+      expect(getDecisionName('invalidId')).toBeUndefined();
+      expect(getDecisionName(null)).toBeUndefined();
+    });
+
+    it('should return null for invalid decision ids', () => {
       expect(
         groupedDecisionsStore.getDecisionDefinitionId({
           decisionId: 'invalidDecisionId',
@@ -68,7 +85,7 @@ describe('groupedDecisionsStore', () => {
           value: thirdDecision.decisionId,
         },
         {
-          label: secondDecision.name,
+          label: secondDecision.decisionId,
           value: secondDecision.decisionId,
         },
       ]);

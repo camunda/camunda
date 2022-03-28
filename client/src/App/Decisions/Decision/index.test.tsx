@@ -5,7 +5,7 @@
  */
 
 import {rest} from 'msw';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
@@ -27,7 +27,7 @@ function createWrapper(initialPath: string = '/') {
   return Wrapper;
 }
 describe('<Decision />', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockServer.use(
       rest.get('/api/decisions/:decisionDefinitionId/xml', (req, res, ctx) => {
         if (req.params.decisionDefinitionId === '2') {
@@ -42,6 +42,10 @@ describe('<Decision />', () => {
 
     decisionXmlStore.init();
     groupedDecisionsStore.fetchDecisions();
+
+    await waitFor(() =>
+      expect(groupedDecisionsStore.state.status).toBe('fetched')
+    );
   });
 
   afterEach(() => {
@@ -49,7 +53,7 @@ describe('<Decision />', () => {
     groupedDecisionsStore.reset();
   });
 
-  it('should render decision table', async () => {
+  it('should render decision table and panel header', async () => {
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
     });
@@ -57,6 +61,7 @@ describe('<Decision />', () => {
     expect(
       await screen.findByText('DecisionTable view mock')
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
   });
 
   it('should render text when no decision is selected', () => {
@@ -72,6 +77,7 @@ describe('<Decision />', () => {
         /to see a decision table or a literal expression, select a decision in the filters panel/i
       )
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'Decision'}));
   });
 
   it('should render text when no version is selected', () => {
@@ -91,6 +97,7 @@ describe('<Decision />', () => {
         /to see a decision table or a literal expression, select a single version/i
       )
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
   });
 
   it('should render text on error', async () => {
@@ -101,5 +108,10 @@ describe('<Decision />', () => {
     expect(
       await screen.findByText(/data could not be fetched/i)
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        name: 'Calculate Credit History Key Figures',
+      })
+    );
   });
 });

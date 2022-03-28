@@ -11,13 +11,11 @@ const groupedDecisions = [
     decisions: [
       {
         id: '0',
-        name: 'Assign Approver Group',
         version: 2,
         decisionId: 'invoice-assign-approver',
       },
       {
         id: '0',
-        name: 'Assign Approver Group',
         version: 1,
         decisionId: 'invoice-assign-approver',
       },
@@ -25,11 +23,10 @@ const groupedDecisions = [
   },
   {
     decisionId: 'invoiceClassification',
-    name: 'Invoice Classification',
+    name: null,
     decisions: [
       {
         id: '1',
-        name: 'Invoice Classification',
         version: 1,
         decisionId: 'invoiceClassification',
       },
@@ -41,7 +38,6 @@ const groupedDecisions = [
     decisions: [
       {
         id: '2',
-        name: 'Calculate Credit History Key Figures',
         version: 1,
         decisionId: 'calc-key-figures',
       },
