@@ -137,6 +137,9 @@ operate:
 tasklist:
   enabled: false
 
+identity:
+  enabled: false
+
 # ELASTIC
 elasticsearch:
   enabled: true
