@@ -11944,10 +11944,10 @@ mobx-react-lite@3.3.0:
   resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-3.3.0.tgz#7174e807201943beff6f9d3701492314c9fc0db3"
   integrity sha512-U/kMSFtV/bNVgY01FuiGWpRkaQVHozBq5CEBZltFvPt4FcV111hEWkgwqVg9GPPZSEuEdV438PEz8mk8mKpYlA==
 
-mobx@6.4.2:
-  version "6.4.2"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.4.2.tgz#d25cd358a46b7a8fe2d8299259bc71008a2aa5b3"
-  integrity sha512-b4xQJYiH8sb0sEbfq/Ws3N77DEJtSihUFD1moeiz2jNoJ5B+mqJutt54ouO9iEfkp7Wk4jQDsVUOh7DPEW3wEw==
+mobx@6.5.0:
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.5.0.tgz#dc2d028b1882737f6e813fc92454381e438b7ad3"
+  integrity sha512-pHZ/cySF00FVENDWIDzJyoObFahK6Eg4d0papqm6d7yMkxWTZ/S/csqJX1A3PsYy4t5k3z2QnlwuCfMW5lSEwA==
 
 moment-duration-format-commonjs@^1.0.0:
   version "1.0.1"
