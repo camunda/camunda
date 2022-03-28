@@ -12,7 +12,7 @@ const isPromise = (value: any) => {
 
 const mergeValidators = (
   ...validators: Array<FieldValidator<string | undefined>>
-) => {
+): FieldValidator<string | undefined> => {
   return (
     ...validateParams: Parameters<FieldValidator<string | undefined>>
   ) => {

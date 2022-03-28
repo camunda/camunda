@@ -9,7 +9,7 @@ import {
   validateParentInstanceIdComplete,
   validateParentInstanceIdNotTooLong,
   validateParentInstanceIdCharacters,
-} from '../validators';
+} from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Field} from 'react-final-form';
 import {OptionalFilter} from './OptionalFilter';

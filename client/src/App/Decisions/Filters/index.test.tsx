@@ -4,7 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
@@ -36,9 +41,9 @@ const MOCK_FILTERS_PARAMS = {
   version: '2',
   evaluated: 'true',
   failed: 'true',
-  decisionInstanceIds: '123',
-  processInstanceId: '456',
-  evaluationDate: '789',
+  decisionInstanceIds: '2251799813689540-1',
+  processInstanceId: '2251799813689549',
+  evaluationDate: '1111-11-11',
 } as const;
 
 describe('<Filters />', () => {
@@ -100,15 +105,21 @@ describe('<Filters />', () => {
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/decision instance id\(s\)/i));
-    userEvent.paste(screen.getByLabelText(/decision instance id\(s\)/i), '123');
+    userEvent.paste(
+      screen.getByLabelText(/decision instance id\(s\)/i),
+      '2251799813689540-1'
+    );
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/process instance id/i));
-    userEvent.paste(screen.getByLabelText(/process instance id/i), '456');
+    userEvent.paste(
+      screen.getByLabelText(/process instance id/i),
+      '2251799813689549'
+    );
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/evaluation date/i));
-    userEvent.paste(screen.getByLabelText(/evaluation date/i), '789');
+    userEvent.paste(screen.getByLabelText(/evaluation date/i), '1111-11-11');
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     await waitFor(() =>
@@ -140,9 +151,9 @@ describe('<Filters />', () => {
     expect(screen.getByDisplayValue(/version 2/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
-    expect(screen.getByDisplayValue(/123/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/456/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/789/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
   });
 
   it('should persist enabled filters on session', () => {
@@ -266,5 +277,145 @@ describe('<Filters />', () => {
     expect(screen.queryByDisplayValue(/version 2/i)).not.toBeInTheDocument();
     expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
     expect(screen.getByLabelText(/version/i)).toBeDisabled();
+  });
+
+  it('should validate decision instance ids', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
+    userEvent.type(screen.getByLabelText(/decision instance id\(s\)/i), 'a');
+
+    expect(
+      await screen.findByText(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      )
+    );
+
+    userEvent.type(screen.getByLabelText(/decision instance id\(s\)/i), '1');
+
+    expect(
+      await screen.findByText(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      )
+    ).toBeInTheDocument();
+
+    userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      )
+    );
+
+    userEvent.type(
+      screen.getByLabelText(/decision instance id/i),
+      '2251799813689549'
+    );
+
+    expect(
+      await screen.findByText(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      )
+    ).toBeInTheDocument();
+
+    userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      )
+    );
+  });
+
+  it('should validate process instance id', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/process instance id/i));
+    userEvent.type(screen.getByLabelText(/process instance id/i), 'a');
+
+    expect(
+      await screen.findByText('Id has to be a 16 to 19 digit number')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.clear(screen.getByLabelText(/process instance id/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Id has to be a 16 to 19 digit number')
+    );
+
+    userEvent.type(screen.getByLabelText(/process instance id/i), '1');
+
+    expect(
+      await screen.findByText('Id has to be a 16 to 19 digit number')
+    ).toBeInTheDocument();
+
+    userEvent.clear(screen.getByLabelText(/process instance id/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Id has to be a 16 to 19 digit number')
+    );
+
+    userEvent.type(
+      screen.getByLabelText(/process instance id/i),
+      '1111111111111111, 2222222222222222'
+    );
+
+    expect(
+      await screen.findByText('Id has to be a 16 to 19 digit number')
+    ).toBeInTheDocument();
+
+    userEvent.clear(screen.getByLabelText(/process instance id/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Id has to be a 16 to 19 digit number')
+    );
+  });
+
+  it('should validate evaluation date', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/evaluation date/i));
+    userEvent.type(screen.getByLabelText(/evaluation date/i), 'a');
+
+    expect(
+      await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+    ).toBeInTheDocument();
+
+    expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.clear(screen.getByLabelText(/evaluation date/i));
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+    );
+
+    userEvent.type(screen.getByLabelText(/evaluation date/i), '2021-05');
+
+    expect(
+      await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+    ).toBeInTheDocument();
   });
 });

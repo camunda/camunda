@@ -6,9 +6,9 @@
 
 import {
   validateIdsCharacters,
-  validateIdsNotTooLong,
+  validateIdsLength,
   validatesIdsComplete,
-} from '../validators';
+} from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Field} from 'react-final-form';
 import {OptionalFilter} from './OptionalFilter';
@@ -21,7 +21,7 @@ const Ids: React.FC = () => {
         name="ids"
         validate={mergeValidators(
           validateIdsCharacters,
-          validateIdsNotTooLong,
+          validateIdsLength,
           validatesIdsComplete
         )}
       >

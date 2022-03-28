@@ -10,13 +10,16 @@ import {
   parseIds,
   parseFilterDate,
   ProcessInstanceFilters,
+  DecisionInstanceFilters,
 } from 'modules/utils/filter';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 
 const ERRORS = {
-  ids: 'Id has to be 16 to 19 digit numbers, separated by space or comma',
-  parentInstanceId: 'Id has to be 16 to 19 digit numbers',
+  decisionsIds:
+    'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+  ids: 'Id has to be a 16 to 19 digit number, separated by space or comma',
+  parentInstanceId: 'Id has to be a 16 to 19 digit number',
   date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
   operationId: 'Id has to be a UUID',
   variables: {
@@ -32,9 +35,19 @@ const areIdsTooLong = (value: string) => {
   return parseIds(value).some((id) => id.length > 19);
 };
 
+const areDecisionIdsTooLong = (value: string) => {
+  return parseIds(value).some((id) => id.length > 21);
+};
+
 const areIdsComplete = (value: string) => {
   return (
     value === '' || parseIds(value).every((id) => /^[0-9]{16,19}$/.test(id))
+  );
+};
+
+const areDecisionIdsComplete = (value: string) => {
+  return (
+    value === '' || parseIds(value).every((id) => /^[0-9]{16,19}-\d$/.test(id))
   );
 };
 
@@ -49,11 +62,30 @@ const validateIdsCharacters: FieldValidator<ProcessInstanceFilters['ids']> = (
   }
 };
 
-const validateIdsNotTooLong: FieldValidator<ProcessInstanceFilters['ids']> = (
+const validateDecisionIdsCharacters: FieldValidator<
+  DecisionInstanceFilters['decisionInstanceIds']
+> = (value = '') => {
+  if (
+    value !== '' &&
+    !/^[0-9-]+$/g.test(value.replace(/,/g, '').replace(/\s/g, ''))
+  ) {
+    return ERRORS.decisionsIds;
+  }
+};
+
+const validateIdsLength: FieldValidator<ProcessInstanceFilters['ids']> = (
   value = ''
 ) => {
   if (areIdsTooLong(value)) {
     return ERRORS.ids;
+  }
+};
+
+const validateDecisionIdsLength: FieldValidator<
+  DecisionInstanceFilters['decisionInstanceIds']
+> = (value = '') => {
+  if (areDecisionIdsTooLong(value)) {
+    return ERRORS.decisionsIds;
   }
 };
 
@@ -63,6 +95,14 @@ const validatesIdsComplete: FieldValidator<ProcessInstanceFilters['ids']> =
       return ERRORS.ids;
     }
   }, VALIDATION_TIMEOUT);
+
+const validatesDecisionIdsComplete: FieldValidator<
+  DecisionInstanceFilters['decisionInstanceIds']
+> = promisifyValidator((value = '') => {
+  if (!areDecisionIdsComplete(value)) {
+    return ERRORS.decisionsIds;
+  }
+}, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdCharacters: FieldValidator<
   ProcessInstanceFilters['parentInstanceId']
@@ -173,7 +213,7 @@ const validateOperationIdComplete: FieldValidator<
 
 export {
   validateIdsCharacters,
-  validateIdsNotTooLong,
+  validateIdsLength,
   validatesIdsComplete,
   validateParentInstanceIdCharacters,
   validateParentInstanceIdComplete,
@@ -185,4 +225,7 @@ export {
   validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValueComplete,
+  validateDecisionIdsCharacters,
+  validateDecisionIdsLength,
+  validatesDecisionIdsComplete,
 };

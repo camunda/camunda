@@ -35,6 +35,18 @@ import {Button} from 'modules/components/Button';
 import {isEqual} from 'lodash';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {DecisionsFormGroup} from './DecisionsFormGroup';
+import {
+  validateDateCharacters,
+  validateDateComplete,
+  validateDecisionIdsCharacters,
+  validateDecisionIdsLength,
+  validateParentInstanceIdCharacters,
+  validateParentInstanceIdComplete,
+  validateParentInstanceIdNotTooLong,
+  validatesDecisionIdsComplete,
+} from 'modules/validators';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
+import {FieldValidator} from 'final-form';
 
 const OPTIONAL_FILTER_FIELDS: Record<
   OptionalFilter,
@@ -43,6 +55,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     placeholder?: string;
     type: 'multiline' | 'text';
     rows?: number;
+    validate?: FieldValidator<string | undefined>;
   }
 > = {
   decisionInstanceIds: {
@@ -50,15 +63,26 @@ const OPTIONAL_FILTER_FIELDS: Record<
     type: 'multiline',
     placeholder: 'separated by space or comma',
     rows: 1,
+    validate: mergeValidators(
+      validateDecisionIdsCharacters,
+      validateDecisionIdsLength,
+      validatesDecisionIdsComplete
+    ),
   },
   processInstanceId: {
     label: 'Process Instance Id',
     type: 'text',
+    validate: mergeValidators(
+      validateParentInstanceIdComplete,
+      validateParentInstanceIdNotTooLong,
+      validateParentInstanceIdCharacters
+    ),
   },
   evaluationDate: {
     label: 'Evaluation Date',
     placeholder: 'YYYY-MM-DD hh:mm:ss',
     type: 'text',
+    validate: mergeValidators(validateDateCharacters, validateDateComplete),
   },
 };
 
@@ -164,7 +188,10 @@ const Filters: React.FC = observer(() => {
                         form.submit();
                       }}
                     />
-                    <Field name={filter}>
+                    <Field
+                      name={filter}
+                      validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                    >
                       {({input}) => (
                         <TextField
                           {...input}

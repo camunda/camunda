@@ -11,7 +11,7 @@ import {
   validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValueComplete,
-} from '../validators';
+} from 'modules/validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {OptionalFilter} from './OptionalFilter';
