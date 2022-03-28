@@ -49,7 +49,7 @@
     <version.netty>4.1.75.Final</version.netty>
     <version.guava>31.0.1-jre</version.guava>
 
-    <version.node>v14.19.0</version.node>
+    <version.node>v14.19.1</version.node>
     <version.yarn>v1.22.17</version.yarn>
 
     <zeebe-test-container.version>3.2.0</zeebe-test-container.version>
