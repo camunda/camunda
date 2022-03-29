@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
-import static io.camunda.operate.entities.dmn.DecisionInstanceState.COMPLETED;
+import static io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED;
 import static io.camunda.operate.entities.dmn.DecisionInstanceState.FAILED;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_ID;
@@ -277,13 +277,13 @@ public class DecisionInstanceReader extends AbstractReader {
   }
 
   private QueryBuilder createEvaluatedFailedQuery(final DecisionInstanceListQueryDto query) {
-    if (query.isCompleted() && query.isFailed()) {
+    if (query.isEvaluated() && query.isFailed()) {
       //cover all instances
       return null;
     } else if (query.isFailed()) {
       return termQuery(STATE, FAILED);
-    } else if (query.isCompleted()) {
-      return termQuery(STATE, COMPLETED);
+    } else if (query.isEvaluated()) {
+      return termQuery(STATE, EVALUATED);
     } else {
       return createMatchNoneQuery();
     }

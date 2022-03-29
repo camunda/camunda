@@ -14,7 +14,7 @@ public class DecisionInstanceListQueryDto {
 
   private List<String> decisionDefinitionIds;
 
-  private boolean completed;
+  private boolean evaluated;
   private boolean failed;
 
   private List<String> ids;
@@ -36,12 +36,12 @@ public class DecisionInstanceListQueryDto {
     return this;
   }
 
-  public boolean isCompleted() {
-    return completed;
+  public boolean isEvaluated() {
+    return evaluated;
   }
 
-  public DecisionInstanceListQueryDto setCompleted(final boolean completed) {
-    this.completed = completed;
+  public DecisionInstanceListQueryDto setEvaluated(final boolean evaluated) {
+    this.evaluated = evaluated;
     return this;
   }
 
@@ -101,7 +101,7 @@ public class DecisionInstanceListQueryDto {
       return false;
     }
     final DecisionInstanceListQueryDto that = (DecisionInstanceListQueryDto) o;
-    return completed == that.completed &&
+    return evaluated == that.evaluated &&
         failed == that.failed &&
         Objects.equals(decisionDefinitionIds, that.decisionDefinitionIds) &&
         Objects.equals(ids, that.ids) &&
@@ -113,7 +113,7 @@ public class DecisionInstanceListQueryDto {
   @Override
   public int hashCode() {
     return Objects
-        .hash(decisionDefinitionIds, completed, failed, ids, processInstanceId, evaluationDateAfter,
+        .hash(decisionDefinitionIds, evaluated, failed, ids, processInstanceId, evaluationDateAfter,
             evaluationDateBefore);
   }
 
@@ -121,7 +121,7 @@ public class DecisionInstanceListQueryDto {
   public String toString() {
     return "DecisionInstanceListQueryDto{" +
         "decisionDefinitionIds=" + decisionDefinitionIds +
-        ", completed=" + completed +
+        ", evaluated=" + evaluated +
         ", failed=" + failed +
         ", ids=" + ids +
         ", processInstanceId='" + processInstanceId + '\'' +

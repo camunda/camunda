@@ -7,7 +7,7 @@
 import {observer} from 'mobx-react';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {drdStore} from 'modules/stores/drd';
-import {Container, CompletedIcon, FailedIcon, SkeletonCircle} from './styled';
+import {Container, EvaluatedIcon, FailedIcon, SkeletonCircle} from './styled';
 import {Button} from 'modules/components/Button';
 import {Details} from './Details';
 
@@ -29,8 +29,8 @@ const Header: React.FC = observer(() => {
           {decisionInstance.state === 'FAILED' && (
             <FailedIcon data-testid="failed-icon" />
           )}
-          {decisionInstance.state === 'COMPLETED' && (
-            <CompletedIcon data-testid="completed-icon" />
+          {decisionInstance.state === 'EVALUATED' && (
+            <EvaluatedIcon data-testid="evaluated-icon" />
           )}
           <Details decisionInstance={decisionInstance} />
         </>

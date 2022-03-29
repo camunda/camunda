@@ -88,14 +88,14 @@ public class DecisionInstanceReaderIT extends OperateIntegrationTest {
     assertThat(response.get(DECISION_ID_1)).isNotNull();
     assertThat(response.get(DECISION_ID_1)).hasSize(1);
     assertThat(response.get(DECISION_ID_1).get(0).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_1);
-    assertThat(response.get(DECISION_ID_1).get(0).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+    assertThat(response.get(DECISION_ID_1).get(0).getState()).isEqualTo(DecisionInstanceState.EVALUATED);
 
     assertThat(response.get(DECISION_ID_2)).isNotNull();
     assertThat(response.get(DECISION_ID_2)).hasSize(2);
     assertThat(response.get(DECISION_ID_2).get(0).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_2);
-    assertThat(response.get(DECISION_ID_2).get(0).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+    assertThat(response.get(DECISION_ID_2).get(0).getState()).isEqualTo(DecisionInstanceState.EVALUATED);
     assertThat(response.get(DECISION_ID_2).get(1).getDecisionInstanceId()).isEqualTo(DECISION_INSTANCE_ID_1_3);
-    assertThat(response.get(DECISION_ID_2).get(1).getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+    assertThat(response.get(DECISION_ID_2).get(1).getState()).isEqualTo(DecisionInstanceState.EVALUATED);
 
     //query completed and failed
     mvcResult = getRequest(getDrdDataQuery(DECISION_INSTANCE_ID_2_1));

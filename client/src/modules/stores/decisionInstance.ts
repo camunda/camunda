@@ -13,7 +13,7 @@ import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 type DecisionInstanceType = ReadonlyDeep<{
   decisionId: string;
   decisionDefinitionId: string;
-  state: 'FAILED' | 'COMPLETED';
+  state: DecisionInstanceEntityState;
   decisionName: string;
   decisionVersion: string;
   evaluationDate: string;

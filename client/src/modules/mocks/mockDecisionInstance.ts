@@ -9,7 +9,7 @@ import {DecisionInstanceType} from 'modules/stores/decisionInstance';
 const invoiceClassification: DecisionInstanceType = {
   decisionDefinitionId: '111',
   decisionId: 'invoiceClassification',
-  state: 'COMPLETED',
+  state: 'EVALUATED',
   decisionName: 'Invoice Classification',
   decisionVersion: '1',
   evaluationDate: '2022-01-20T13:26:52.531+0000',

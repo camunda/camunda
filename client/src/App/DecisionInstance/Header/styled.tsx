@@ -54,7 +54,7 @@ const TD = styled.td`
   height: 20px;
 `;
 
-const CompletedIcon = styled(BaseStateCompleted)`
+const EvaluatedIcon = styled(BaseStateCompleted)`
   ${({theme}) => {
     const colors = theme.colors.modules.stateIcon.completedIcon;
 
@@ -99,7 +99,7 @@ export {
   Table,
   TH,
   TD,
-  CompletedIcon,
+  EvaluatedIcon,
   FailedIcon,
   SkeletonBlock,
   SkeletonCircle,

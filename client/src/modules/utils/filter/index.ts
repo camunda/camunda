@@ -407,19 +407,10 @@ function getDecisionInstancesRequestFilters() {
       }
 
       if (typeof value === 'boolean') {
-        // TODO: use this instead when implementing #2417
-        // if (['evaluated', 'failed'].includes(key)) {
-        //   return {
-        //     ...accumulator,
-        //     [key]: value,
-        //   };
-        // }
-
-        if (key === 'evaluated') {
+        if (['evaluated', 'failed'].includes(key)) {
           return {
             ...accumulator,
-            //@ts-ignore
-            completed: value,
+            [key]: value,
           };
         }
         if (key === 'failed') {

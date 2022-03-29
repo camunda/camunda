@@ -59,7 +59,7 @@ describe('<Header />', () => {
 
     render(<Header />, {wrapper: Wrapper});
 
-    expect(screen.getByTestId('completed-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('evaluated-icon')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /open decision requirements diagram/i})
     ).toBeInTheDocument();

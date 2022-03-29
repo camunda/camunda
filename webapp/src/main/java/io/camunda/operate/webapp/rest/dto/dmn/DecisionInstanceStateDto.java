@@ -10,7 +10,7 @@ import io.camunda.operate.entities.dmn.DecisionInstanceState;
 public enum DecisionInstanceStateDto {
 
   FAILED,
-  COMPLETED,
+  EVALUATED,
   UNKNOWN,
   UNSPECIFIED;
 

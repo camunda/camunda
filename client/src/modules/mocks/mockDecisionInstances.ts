@@ -12,7 +12,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689542',
@@ -28,7 +28,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: null,
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689544',
@@ -44,7 +44,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689546',
@@ -60,7 +60,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689548',
@@ -76,7 +76,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689550',
@@ -92,7 +92,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689552',
@@ -108,7 +108,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689554',
@@ -124,7 +124,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689556',
@@ -140,7 +140,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689558',
@@ -156,7 +156,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689560',
@@ -172,7 +172,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689562',
@@ -188,7 +188,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689564',
@@ -204,7 +204,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689566',
@@ -220,7 +220,7 @@ const mockDecisionInstances = {
       decisionVersion: 1,
       evaluationDate: '2022-02-07T10:01:51.293+0000',
       processInstanceId: '2251799813689544',
-      state: 'COMPLETED',
+      state: 'EVALUATED',
     },
     {
       id: '2251799813689568',

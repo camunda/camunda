@@ -146,11 +146,11 @@ MultiInstance.parameters = {
   ],
 };
 
-const CalledCompletedDecision: Story = () => (
+const CalledEvaluatedDecision: Story = () => (
   <Diagram flowNodeId="BusinessRuleTask" />
 );
-CalledCompletedDecision.storyName = 'Metadata - Called Completed Decision';
-CalledCompletedDecision.parameters = {
+CalledEvaluatedDecision.storyName = 'Metadata - Called Evaluated Decision';
+CalledEvaluatedDecision.parameters = {
   msw: {
     handlers: [
       rest.get('/api/processes/:processInstanceId/xml', (_, res, ctx) => {
@@ -207,7 +207,7 @@ export {
   MultipleInstances,
   MultiInstance,
   CalledInstance,
-  CalledCompletedDecision,
+  CalledEvaluatedDecision,
   CalledUnevaluatedDecision,
   CalledFailedDecision,
 };

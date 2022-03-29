@@ -384,7 +384,7 @@ public abstract class TestUtil {
   }
 
   public static DecisionInstanceListQueryDto createGetAllDecisionInstancesQuery() {
-    return createDecisionInstanceQuery(q -> q.setFailed(true).setCompleted(true));
+    return createDecisionInstanceQuery(q -> q.setFailed(true).setEvaluated(true));
   }
 
   public static DecisionInstanceListRequestDto createGetAllDecisionInstancesRequest() {
@@ -523,7 +523,7 @@ public abstract class TestUtil {
         .setProcessDefinitionKey(Math.abs(random.nextLong()))
         .setProcessInstanceKey(Math.abs(random.nextLong()))
         .setResult("someJSON")
-        .setState(DecisionInstanceState.COMPLETED)
+        .setState(DecisionInstanceState.EVALUATED)
         .setEvaluatedInputs(createDecisionInstanceInputs())
         .setEvaluatedOutputs(createDecisionOutputs());
     return decisionInstance;

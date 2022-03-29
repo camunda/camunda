@@ -138,16 +138,16 @@ public class DecisionDataUtil {
     List<DecisionInstanceEntity> result = new ArrayList<>();
 
     //3 EVALUATED, 1 decision1 + 2 decision2, 2 version1 + 1 version2
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_1, DecisionInstanceState.COMPLETED,
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_1, DecisionInstanceState.EVALUATED,
         DECISION_DEFINITION_NAME_1,
         OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467,
         PROCESS_INSTANCE_ID)
     );
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_2, DecisionInstanceState.COMPLETED, "Invoice Classification",
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_2, DecisionInstanceState.EVALUATED, "Invoice Classification",
         OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 1, DECISION_ID_2, 35467,
         random.nextInt(1000))
     );
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_3, DecisionInstanceState.COMPLETED, "Invoice Classification",
+    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_3, DecisionInstanceState.EVALUATED, "Invoice Classification",
         OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467,
         random.nextInt(1000))
     );
@@ -164,7 +164,7 @@ public class DecisionDataUtil {
 
   public DecisionInstanceEntity createDecisionInstance(final OffsetDateTime evaluationDate) {
     return createDecisionInstance(
-        random.nextInt(1) == 0 ? DecisionInstanceState.COMPLETED : DecisionInstanceState.FAILED,
+        random.nextInt(1) == 0 ? DecisionInstanceState.EVALUATED : DecisionInstanceState.FAILED,
         UUID.randomUUID().toString(),
         evaluationDate,
         random.nextInt(1) == 0 ? DECISION_DEFINITION_ID_1 : DECISION_DEFINITION_ID_2,

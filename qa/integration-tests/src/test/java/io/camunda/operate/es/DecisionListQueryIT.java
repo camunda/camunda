@@ -91,7 +91,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
   public void testQueryEvaluated() throws Exception {
     //query running instances
     DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createDecisionInstanceRequest(
-        q -> q.setCompleted(true)
+        q -> q.setEvaluated(true)
     );
 
     MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
@@ -100,7 +100,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(3);
     assertThat(response.getDecisionInstances()).extracting(dec -> dec.getState()).containsOnly(
-        DecisionInstanceStateDto.COMPLETED);
+        DecisionInstanceStateDto.EVALUATED);
     assertThat(response.getTotalCount()).isEqualTo(3);
   }
 

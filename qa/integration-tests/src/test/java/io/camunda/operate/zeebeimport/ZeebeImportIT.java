@@ -631,7 +631,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         assertThat(entity.getDecisionName()).isEqualTo(decision2Name);
       }
       assertThat(entity.getDecisionVersion()).isEqualTo(1);
-      assertThat(entity.getState()).isEqualTo(DecisionInstanceState.COMPLETED);
+      assertThat(entity.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
       assertThat(entity.getDecisionDefinitionId()).isNotNull();
       assertThat(entity.getDecisionRequirementsId()).isNotNull();
       assertThat(entity.getDecisionRequirementsKey()).isNotNull();

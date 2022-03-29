@@ -184,7 +184,7 @@ describe('<InstancesTable />', () => {
     ).toBeInTheDocument();
     expect(
       within(firstDecisionInstance!).getByTestId(
-        'COMPLETED-icon-2251799813689541'
+        'EVALUATED-icon-2251799813689541'
       )
     ).toBeInTheDocument();
 
@@ -235,7 +235,7 @@ describe('<InstancesTable />', () => {
                 version: 1,
                 evaluationDate: '2022-02-07T10:01:51.293+0000',
                 processInstanceId: '2251799813689544',
-                state: 'COMPLETED',
+                state: 'EVALUATED',
               },
             ],
           })

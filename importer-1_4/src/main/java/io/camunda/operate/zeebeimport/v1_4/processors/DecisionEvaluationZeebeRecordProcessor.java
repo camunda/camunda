@@ -121,7 +121,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
         .getEvaluatedDecisions().size()) {
       return DecisionInstanceState.FAILED;
     } else {
-      return DecisionInstanceState.COMPLETED;
+      return DecisionInstanceState.EVALUATED;
     }
   }
 

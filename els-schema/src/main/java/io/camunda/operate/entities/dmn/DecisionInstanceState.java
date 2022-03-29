@@ -7,7 +7,7 @@ package io.camunda.operate.entities.dmn;
 
 public enum DecisionInstanceState {
 
-  COMPLETED,
+  EVALUATED,
   FAILED
 
 }
