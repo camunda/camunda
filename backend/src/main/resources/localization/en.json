@@ -186,7 +186,11 @@
       "durationDistribution": "Duration distribution",
       "durationDistributionInfo": "This chart shows durations for process instances ending in the current month.",
       "saveGoals": "Save Goals",
-      "updateGoals": "Update Goals"
+      "updateGoals": "Update Goals",
+      "resultPreview": "Result Preview:",
+      "instancesThisMonth": "Instances ended in the last 30 days",
+      "noInstances": "No instances occured in the time range. Set goals for expected durations.",
+      "resultInfo": "This preview displays each goal's status based on its current configuration."
     }
   },
   "events": {

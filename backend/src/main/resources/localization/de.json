@@ -186,7 +186,11 @@
       "durationDistribution": "Laufzeitverteilung",
       "durationDistributionInfo": "Diese Grafik zeigt die Laufzeiten für Prozessinstanzen, die im aktuellen Monat enden",
       "saveGoals": "Ziele speichern",
-      "updateGoals": "Ziele aktualisieren"
+      "updateGoals": "Ziele aktualisieren",
+      "resultPreview": "Ergebnisvorschau:",
+      "instancesThisMonth": "Instanzen die in den letzten 30 Tagen beendet wurden",
+      "noInstances": "Im Zeitbereich sind keine Instanzen aufgetreten. Setze Ziele für erwartete Laufzeit.",
+      "resultInfo": "Diese Vorschau zeigt den Status jedes Ziels anhand seiner aktuellen Konfiguration an."
     }
   },
   "events": {

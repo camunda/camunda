@@ -9,10 +9,19 @@ import classNames from 'classnames';
 
 import {t} from 'translation';
 import {formatters} from 'services';
+import {NoDataNotice} from 'components';
 
 import './GoalResult.scss';
 
 export default function GoalResult({durationGoals: {goals, results}}) {
+  if (!results || results.every((goal) => !goal.value)) {
+    return (
+      <div className="GoalResult">
+        <NoDataNotice type="info">{t('processes.timeGoals.noInstances')}</NoDataNotice>
+      </div>
+    );
+  }
+
   return (
     <div className="GoalResult">
       {goals?.map((goal, idx) => {
@@ -20,9 +29,9 @@ export default function GoalResult({durationGoals: {goals, results}}) {
           <div key={idx} className="goal">
             <p>
               <b>{goal.percentile}%</b> {t('processes.timeGoals.instancesTook')}{' '}
-              <b className={classNames('duration', {success: results[idx].successful})}>
+              <b className={classNames('duration', {success: results[idx]?.successful})}>
                 {' '}
-                {formatters.duration(results[idx].value, 1)}
+                {formatters.duration(results[idx]?.value, 1)}
               </b>
             </p>
             <span className="subText">

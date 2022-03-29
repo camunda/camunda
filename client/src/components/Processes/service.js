@@ -29,3 +29,9 @@ export async function loadTenants(key) {
 export function updateGoals(processDefinitionKey, goals) {
   return put(`api/process/${processDefinitionKey}/goals`, goals);
 }
+
+export async function evaluateGoals(processDefinitionKey, goals) {
+  const response = await post(`api/process/${processDefinitionKey}/goals/evaluate`, goals);
+
+  return await response.json();
+}

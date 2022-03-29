@@ -50,7 +50,7 @@ export function Processes({mightFail}) {
         columns={[
           {name: t('common.name'), key: 'processName', defaultOrder: 'asc'},
           t('processes.owner'),
-          t('processes.timeGoal'),
+          {name: t('processes.timeGoal'), key: 'durationGoals', defaultOrder: 'asc'},
         ]}
         sorting={sorting}
         onChange={loadProcessesList}
