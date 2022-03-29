@@ -20,6 +20,14 @@ inputs:
       Example: deployment_id="foo" --> namespace "operate-foo"
     required: false
     default: ${{ github.branch }}
+  
+  deployment_ref:
+    description: >-
+      When step='stop', this is supposed to contain the branch name that will be used to lookup the actual Argo CD deployment name.
+      Typically it's populated using `github.event.ref`.
+      Example: `deployment_ref="foo" --> deployment_id "foo"` (currently)
+    required: false
+    default: ${{ github.event.ref }}
 
   revision:
     description: Revision or branch of the Operate Helm chart. Typically the branch to be deployed, or `master`.
@@ -75,7 +83,7 @@ runs:
     shell: bash
     run: |-
       if [[ "${{ inputs.step}}" = "stop" ]]; then
-        APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ github.ref_name }}").metadata.name')"
+        APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
       else
         APP_NAME="${{ inputs.deployment_id }}"
       fi

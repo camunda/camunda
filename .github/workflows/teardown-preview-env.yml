@@ -31,7 +31,7 @@ jobs:
       - name: Tear down ${{ steps.params.outputs.deployment_id }} Preview Environment
         uses: ./.github/actions/deploy-preview
         with:
-          deployment_id: ${{ github.ref_name }}
+          deployment_ref: ${{ github.event.ref }}
           revision: ${{ github.ref_name }}
           docker_tag: ci-${{ github.sha }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
