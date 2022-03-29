@@ -111,7 +111,7 @@
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.141</version.classgraph>
+    <version.classgraph>4.8.143</version.classgraph>
     <version.plexus-util>3.4.1</version.plexus-util>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
