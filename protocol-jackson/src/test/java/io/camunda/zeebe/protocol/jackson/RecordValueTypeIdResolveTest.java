@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerFactory;
 import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.util.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.parallel.Execution;

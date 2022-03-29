@@ -8,9 +8,9 @@
 package io.camunda.zeebe.protocol.jackson;
 
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.util.ValueTypeMapping;
-import io.camunda.zeebe.protocol.util.ValueTypeMapping.Mapping;
 import java.util.Objects;
 
 /**

@@ -11,9 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.util.ProtocolTypeMapping;
-import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.Mapping;
-import java.util.Objects;
 
 /**
  * A Jackson module which enables your {@link ObjectMapper} to serialize and deserialize Zeebe
@@ -36,7 +33,6 @@ import java.util.Objects;
  */
 public final class ZeebeProtocolModule extends SimpleModule {
   public ZeebeProtocolModule() {
-    ProtocolTypeMapping.forEach(this::addProtocolTypeMapping);
     setMixInAnnotation(ImmutableRecord.Builder.class, RecordMixin.class);
   }
 
@@ -44,10 +40,5 @@ public final class ZeebeProtocolModule extends SimpleModule {
   public void setupModule(final SetupContext context) {
     super.setupModule(context);
     context.insertAnnotationIntrospector(new AnnotationIntrospector());
-  }
-
-  private <T> void addProtocolTypeMapping(final Mapping<T> mapping) {
-    Objects.requireNonNull(mapping, "must specify a type mapping");
-    addAbstractTypeMapping(mapping.getAbstractClass(), mapping.getConcreteClass());
   }
 }
