@@ -78,6 +78,7 @@ const Copyright = styled(BasicCopyright)`
   margin-top: auto;
   padding-bottom: 8px;
   padding-top: 70px;
+  text-align: center;
 `;
 
 export {
