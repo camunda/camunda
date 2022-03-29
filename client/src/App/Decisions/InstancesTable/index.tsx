@@ -81,19 +81,19 @@ const InstancesTable: React.FC = observer(() => {
         headerColumns={[
           {
             content: 'Decision',
-            sortKey: 'decision',
+            sortKey: 'decisionName',
           },
           {
             content: 'Decision Instance Id',
-            sortKey: 'decisionInstanceId',
+            sortKey: 'id',
           },
           {
             content: 'Version',
-            sortKey: 'version',
+            sortKey: 'decisionVersion',
           },
           {
             content: 'Evaluation Date',
-            sortKey: 'evaluationTime',
+            sortKey: 'evaluationDate',
             isDefault: true,
           },
           {
