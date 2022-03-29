@@ -96,6 +96,9 @@ export const PAGE_TITLE = {
   INSTANCES: 'Operate: Instances',
   INSTANCE: (instanceId: string, processName: string) =>
     `Operate: Instance ${instanceId} of Process ${processName}`,
+  DECISION_INSTANCES: 'Operate: Decision Instances',
+  DECISION_INSTANCE: (id: string, name: string) =>
+    `Operate: Decision Instance ${id} of ${name}`,
 };
 
 export const PILL_TYPE = {

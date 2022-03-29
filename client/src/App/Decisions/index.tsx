@@ -14,12 +14,14 @@ import {
   SplitDirection,
 } from 'modules/components/ResizablePanel';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {PAGE_TITLE} from 'modules/constants';
 
 const Decisions: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);
 
   useEffect(() => {
+    document.title = PAGE_TITLE.DECISION_INSTANCES;
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
     groupedDecisionsStore.fetchDecisions();
 

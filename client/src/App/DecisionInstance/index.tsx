@@ -21,10 +21,13 @@ import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
+import {PAGE_TITLE} from 'modules/constants';
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);
+  const decisionName =
+    decisionInstanceStore.state.decisionInstance?.decisionName;
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
@@ -44,6 +47,14 @@ const DecisionInstance: React.FC = observer(() => {
   useEffect(() => {
     decisionInstanceStore.fetchDecisionInstance(decisionInstanceId);
   }, [decisionInstanceId]);
+
+  useEffect(() => {
+    if (decisionInstanceId !== '' && decisionName !== undefined)
+      document.title = PAGE_TITLE.DECISION_INSTANCE(
+        decisionInstanceId,
+        decisionName
+      );
+  }, [decisionInstanceId, decisionName]);
 
   const panelMinHeight = clientHeight / 4;
 

@@ -17,10 +17,12 @@ import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 
+const DECISION_INSTANCE_ID = '4294980768';
+
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/decisions/4294980768']}>
+      <MemoryRouter initialEntries={[`/decisions/${DECISION_INSTANCE_ID}`]}>
         <Routes>
           <Route path="/decisions/:decisionInstanceId" element={children} />
         </Routes>
@@ -45,6 +47,24 @@ describe('<DecisionInstance />', () => {
   afterEach(() => {
     decisionInstanceStore.reset();
     drdStore.reset();
+  });
+
+  it('should set page title', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
+        res(ctx.json(invoiceClassification))
+      )
+    );
+
+    render(<DecisionInstance />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Definitions Name Mock')
+    ).toBeInTheDocument();
+
+    expect(document.title).toBe(
+      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionName}`
+    );
   });
 
   it('should close DRD panel', () => {
