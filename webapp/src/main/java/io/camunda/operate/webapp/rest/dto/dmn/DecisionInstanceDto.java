@@ -35,7 +35,7 @@ public class DecisionInstanceDto implements
   private int decisionVersion;
   private OffsetDateTime evaluationDate;
   private String errorMessage;
-  private long processInstanceId;
+  private String processInstanceId;
   private String result;
   private List<DecisionInstanceInputDto> evaluatedInputs;
   private List<DecisionInstanceOutputDto> evaluatedOutputs;
@@ -123,11 +123,11 @@ public class DecisionInstanceDto implements
     return this;
   }
 
-  public long getProcessInstanceId() {
+  public String getProcessInstanceId() {
     return processInstanceId;
   }
 
-  public DecisionInstanceDto setProcessInstanceId(final long processInstanceId) {
+  public DecisionInstanceDto setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -181,7 +181,7 @@ public class DecisionInstanceDto implements
         .setEvaluationDate(entity.getEvaluationDate())
         .setEvaluatedInputs(inputs)
         .setEvaluatedOutputs(outputs)
-        .setProcessInstanceId(entity.getProcessInstanceKey())
+        .setProcessInstanceId(String.valueOf(entity.getProcessInstanceKey()))
         .setResult(entity.getResult())
         .setState(DecisionInstanceStateDto.getState(entity.getState()));
     return this;
