@@ -1,4 +1,76 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "bargauge",
+      "name": "Bar gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "7.4.5"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "heatmap",
+      "name": "Heatmap",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table-old",
+      "name": "Table (old)",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -15,7 +87,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "iteration": 1646378344539,
+  "id": null,
+  "iteration": 1648451849669,
   "links": [],
   "panels": [
     {
@@ -5336,7 +5409,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 8
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5401,7 +5474,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 8
           },
           "hiddenSeries": false,
           "id": 222,
@@ -5512,7 +5585,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 15
+            "y": 16
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5582,7 +5655,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 15
+            "y": 16
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5652,7 +5725,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 23
+            "y": 24
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5722,7 +5795,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 31
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5792,7 +5865,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 31
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5838,6 +5911,250 @@
           "yBucketSize": null
         },
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the quantiles of: time taken to commit a record to the log (includes write latency)",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 38
+          },
+          "hiddenSeries": false,
+          "id": 310,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.90, rate(zeebe_log_appender_commit_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m]))",
+              "format": "time_series",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "p90 partition {{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.99, rate(zeebe_log_appender_commit_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "p99 partition {{partition}}",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.50, rate(zeebe_log_appender_commit_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "MEDIAN partition {{partition}} ",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(zeebe_log_appender_commit_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) / sum(rate(zeebe_log_appender_commit_latency_count{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) ",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "AVG partition {{partition}}",
+              "refId": "D"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Commit Latency Quantiles",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:172",
+              "format": "s",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:173",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the quantiles of: time taken to append a record to the log",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 38
+          },
+          "hiddenSeries": false,
+          "id": 311,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.90, rate(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m]))",
+              "format": "time_series",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "p90 partition {{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.99, rate(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "p99 partition {{partition}}",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.50, rate(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "MEDIAN partition {{partition}} ",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(zeebe_log_appender_append_latency_sum{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) / sum(rate(zeebe_log_appender_append_latency_count{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) ",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "AVG partition {{partition}}",
+              "refId": "D"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Record Write Quantiles",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:172",
+              "format": "s",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:173",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "cards": {
             "cardPadding": null,
             "cardRound": null
@@ -5862,7 +6179,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 45
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5932,7 +6249,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 45
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7305,7 +7622,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -7480,7 +7797,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -11087,11 +11404,7 @@
       },
       {
         "allValue": ".*",
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
+        "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role, namespace)",
         "description": null,
@@ -11118,15 +11431,7 @@
       },
       {
         "allValue": ".*",
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
+        "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
         "description": null,
@@ -11153,15 +11458,7 @@
       },
       {
         "allValue": ".*",
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
+        "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
         "description": null,
@@ -11219,5 +11516,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 28
+  "version": 29
 }
