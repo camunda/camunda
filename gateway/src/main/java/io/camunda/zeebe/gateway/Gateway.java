@@ -25,9 +25,11 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -35,14 +37,12 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
@@ -110,31 +110,65 @@ public final class Gateway {
     return brokerClient;
   }
 
-  public void start() throws IOException {
+  public ActorFuture<Gateway> start() {
+    final var resultFuture = new CompletableActorFuture<Gateway>();
+
     healthManager.setStatus(Status.STARTING);
     brokerClient = buildBrokerClient();
 
-    final var activateJobsHandler = buildActivateJobsHandler(brokerClient);
-    submitActorToActivateJobs((Consumer<ActorControl>) activateJobsHandler);
+    createAndStartActivateJobsHandler(brokerClient)
+        .whenComplete(
+            (activateJobsHandler, error) -> {
+              if (error != null) {
+                resultFuture.completeExceptionally(error);
+                return;
+              }
 
+              final var serverResult = createAndStartServer(activateJobsHandler);
+              if (serverResult.isLeft()) {
+                final var exception = serverResult.getLeft();
+                resultFuture.completeExceptionally(exception);
+              } else {
+                server = serverResult.get();
+                healthManager.setStatus(Status.RUNNING);
+                resultFuture.complete(this);
+              }
+            });
+
+    return resultFuture;
+  }
+
+  private Either<Exception, Server> createAndStartServer(
+      final ActivateJobsHandler activateJobsHandler) {
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
-    final ServerBuilder<?> serverBuilder = serverBuilderFactory.apply(gatewayCfg);
 
+    try {
+      final var serverBuilder = serverBuilderFactory.apply(gatewayCfg);
+      applySecurityConfigurationIfEnabled(serverBuilder);
+      final var server = buildServer(serverBuilder, gatewayGrpcService);
+      server.start();
+      return Either.right(server);
+    } catch (Exception e) {
+      return Either.left(e);
+    }
+  }
+
+  private void applySecurityConfigurationIfEnabled(final ServerBuilder<?> serverBuilder) {
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
     if (securityCfg.isEnabled()) {
       setSecurityConfig(serverBuilder, securityCfg);
     }
+  }
 
-    server =
-        serverBuilder
-            .addService(applyInterceptors(gatewayGrpcService))
-            .addService(
-                ServerInterceptors.intercept(
-                    healthManager.getHealthService(), MONITORING_SERVER_INTERCEPTOR))
-            .build();
-    server.start();
-    healthManager.setStatus(Status.RUNNING);
+  private Server buildServer(
+      final ServerBuilder<?> serverBuilder, final BindableService interceptorService) {
+    return serverBuilder
+        .addService(applyInterceptors(interceptorService))
+        .addService(
+            ServerInterceptors.intercept(
+                healthManager.getHealthService(), MONITORING_SERVER_INTERCEPTOR))
+        .build();
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
@@ -186,15 +220,22 @@ public final class Gateway {
     return brokerClientFactory.apply(gatewayCfg);
   }
 
-  private void submitActorToActivateJobs(final Consumer<ActorControl> consumer) {
-    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+  private CompletableFuture<ActivateJobsHandler> createAndStartActivateJobsHandler(
+      final BrokerClient brokerClient) {
+    final var handler = buildActivateJobsHandler(brokerClient);
+    return submitActorToActivateJobs(handler);
+  }
+
+  private CompletableFuture<ActivateJobsHandler> submitActorToActivateJobs(
+      final ActivateJobsHandler handler) {
+    final var future = new CompletableFuture<ActivateJobsHandler>();
     final var actor =
         Actor.newActor()
             .name("ActivateJobsHandler")
-            .actorStartedHandler(consumer.andThen(actorStartedFuture::complete))
+            .actorStartedHandler(handler.andThen(t -> future.complete(handler)))
             .build();
     actorSchedulingService.submitActor(actor);
-    actorStartedFuture.join();
+    return future;
   }
 
   private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
