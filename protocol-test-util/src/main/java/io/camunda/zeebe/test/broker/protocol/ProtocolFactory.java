@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.util.ProtocolTypeMapping;
-import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.Mapping;
-import io.camunda.zeebe.protocol.util.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,6 +28,8 @@ import org.jeasy.random.EasyRandomParameters;
 import org.jeasy.random.FieldPredicates;
 import org.jeasy.random.api.Randomizer;
 import org.jeasy.random.randomizers.registry.CustomRandomizerRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Record} factory which produces randomized records deterministically. A seed can be given
@@ -42,6 +46,9 @@ import org.jeasy.random.randomizers.registry.CustomRandomizerRegistry;
  */
 @SuppressWarnings("java:S1452")
 public final class ProtocolFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolFactory.class);
+  private static final String PROTOCOL_PACKAGE_NAME = Record.class.getPackage().getName() + "*";
+
   private final CustomRandomizerRegistry randomizerRegistry;
   private final EasyRandomParameters parameters;
   private final EasyRandom random;
@@ -196,7 +203,7 @@ public final class ProtocolFactory {
   }
 
   private void registerRandomizers() {
-    ProtocolTypeMapping.forEach(this::registerProtocolTypeRandomizer);
+    findProtocolTypes().forEach(this::registerProtocolType);
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
     randomizerRegistry.registerRandomizer(
         ValueType.class,
@@ -205,9 +212,32 @@ public final class ProtocolFactory {
             ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
   }
 
-  private void registerProtocolTypeRandomizer(final Mapping<?> typeMapping) {
+  private void registerProtocolType(final ClassInfo abstractType) {
+    final var implementations =
+        abstractType
+            .getClassesImplementing()
+            // grab only the immutable implementations
+            .filter(info -> info.hasAnnotation(ImmutableProtocol.Type.class))
+            .directOnly()
+            .loadClasses();
+
+    if (implementations.isEmpty()) {
+      LOGGER.warn(
+          "No implementations found for abstract protocol type {}; random generation will not be possible for this type",
+          abstractType.getName());
+      return;
+    }
+
+    final var implementation = implementations.get(0);
+    if (implementations.size() > 1) {
+      LOGGER.warn(
+          "More than one implementation found for abstract protocol type {}; random generation will use the first one: {}",
+          abstractType.getName(),
+          implementation.getName());
+    }
+
     randomizerRegistry.registerRandomizer(
-        typeMapping.getAbstractClass(), () -> random.nextObject(typeMapping.getConcreteClass()));
+        abstractType.loadClass(), () -> random.nextObject(implementation));
   }
 
   private EasyRandomParameters getDefaultParameters() {
@@ -252,6 +282,17 @@ public final class ProtocolFactory {
 
     return Objects.requireNonNull(modifier.apply(builder), "must return a non null builder")
         .build();
+  }
+
+  // visible for testing
+  static ClassInfoList findProtocolTypes() {
+    return new ClassGraph()
+        .acceptPackages(PROTOCOL_PACKAGE_NAME)
+        .enableAnnotationInfo()
+        .scan()
+        .getAllInterfaces()
+        .filter(info -> info.hasAnnotation(ImmutableProtocol.class))
+        .directOnly();
   }
 
   /**

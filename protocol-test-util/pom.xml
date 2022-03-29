@@ -85,15 +85,15 @@
       <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-util</artifactId>
-    </dependency>
-
     <!-- required for the protocol factory -->
     <dependency>
       <groupId>org.jeasy</groupId>
       <artifactId>easy-random-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
     </dependency>
 
     <!-- test dependencies -->
