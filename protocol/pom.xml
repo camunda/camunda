@@ -45,6 +45,13 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>annotate</artifactId>
+      <version>${version.immutables}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <!--
       adding SpotBugs annotations to the classpath will cause Immutables to generate the proper
       annotations and suppress false positives

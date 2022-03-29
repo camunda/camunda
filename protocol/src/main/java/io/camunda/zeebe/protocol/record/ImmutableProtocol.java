@@ -15,10 +15,14 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol.Builder;
+import io.camunda.zeebe.protocol.record.ImmutableProtocol.Type;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.immutables.annotate.InjectAnnotation;
+import org.immutables.annotate.InjectAnnotation.Where;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ValidationMethod;
 
@@ -32,7 +36,7 @@ import org.immutables.value.Value.Style.ValidationMethod;
  * its properties - should be annotated with this.
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.RUNTIME)
 @Value.Style(
     // standardize to mimic Java beans
     get = {"is*", "get*"},
@@ -60,4 +64,27 @@ import org.immutables.value.Value.Style.ValidationMethod;
     // present in the builder; this will be useful to integrate with Jackson in protocol-jackson,
     // for example
     init = "with*")
-public @interface ImmutableProtocol {}
+@InjectAnnotation(
+    target = Where.BUILDER_TYPE,
+    type = Builder.class) // mark inner builder as part of immutable protocol
+@InjectAnnotation(
+    target = Where.IMMUTABLE_TYPE,
+    type = Type.class,
+    code = "(builder=[[builder]])") // mark generated class as part of immutable protocol
+public @interface ImmutableProtocol {
+
+  /** Returns the builder class for this abstract protocol type */
+  Class<?> builder();
+
+  /** Marker annotation to indicate that a class is an immutable protocol type */
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Type {
+    Class<?> builder();
+  }
+
+  /** Marker annotation to indicate that a class is an immutable protocol type builder */
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Builder {}
+}

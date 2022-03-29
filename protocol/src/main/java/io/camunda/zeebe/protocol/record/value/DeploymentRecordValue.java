@@ -31,7 +31,7 @@ import org.immutables.value.Value;
  * <p>See {@link DeploymentIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableDeploymentRecordValue.Builder.class)
 public interface DeploymentRecordValue extends RecordValue {
   /**
    * @return the resources to deploy
