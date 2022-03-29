@@ -64,7 +64,7 @@
     <version.httpcomponents>4.4.15</version.httpcomponents>
     <version.jackson>2.13.2.20220324</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
-    <version.jna>5.10.0</version.jna>
+    <version.jna>5.11.0</version.jna>
     <version.junit>5.8.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.opentest4j>1.2.0</version.opentest4j>
