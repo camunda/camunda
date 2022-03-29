@@ -136,6 +136,7 @@ public class ConfigurationService {
   private Boolean importDmnDataEnabled;
   private Boolean importUserTaskWorkerDataEnabled;
   private Boolean skipDataAfterNestedDocLimitReached;
+  private Boolean customerOnboarding;
 
   // plugin base packages
   private List<String> variableImportPluginBasePackages;
@@ -540,6 +541,17 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportDecisionDefinitionMaxPageSize);
     return engineImportDecisionDefinitionMaxPageSize;
+  }
+
+  public boolean getCustomerOnboardingImport() {
+    if(customerOnboarding == null) {
+      customerOnboarding = configJsonContext.read(ConfigurationServiceConstants.CUSTOMER_ONBOARDING_DATA, Boolean.class);
+    }
+    return customerOnboarding;
+  }
+
+  public void setCustomerOnboardingImport(boolean isActive) {
+    this.customerOnboarding = isActive;
   }
 
   public int getEngineImportDecisionInstanceMaxPageSize() {

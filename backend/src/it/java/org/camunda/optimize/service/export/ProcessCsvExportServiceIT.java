@@ -23,6 +23,7 @@ import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -104,7 +105,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(actualContent).isEqualTo(stringExpected);
   }
 
-
+  @Disabled("Disabled until we fix the time shift issue.")
   @Test
   public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
     // given
@@ -171,6 +172,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(getResponseContentAsString(response)).isNotEmpty();
   }
 
+  @Disabled("Disabled until we fix the time shift issue.")
   @MethodSource("getSortingParamsAndExpectedResults")
   @ParameterizedTest
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {

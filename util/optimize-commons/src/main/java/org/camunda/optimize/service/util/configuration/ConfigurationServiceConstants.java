@@ -51,6 +51,7 @@ public class ConfigurationServiceConstants {
   public static final String IMPORT_DMN_DATA = "$.import.data.dmn.enabled";
   public static final String IMPORT_USER_TASK_WORKER_DATA = "$.import.data.user-task-worker.enabled";
   public static final String IMPORT_USER_TASK_IDENTITY_META_DATA = "$.import.data.user-task-worker.metadata";
+  public static final String CUSTOMER_ONBOARDING_DATA = "$.import.customer-onboarding";
 
   public static final String PLUGIN_BASE_DIRECTORY = "$.plugin.directory";
   public static final String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
