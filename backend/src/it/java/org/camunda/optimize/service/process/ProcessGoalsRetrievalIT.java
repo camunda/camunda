@@ -7,36 +7,52 @@ package org.camunda.optimize.service.process;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.util.Collections;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.SLA_DURATION;
+import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.TARGET_DURATION;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MILLIS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.SECONDS;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
+public class ProcessGoalsRetrievalIT extends AbstractIT {
+
+  private static final String FIRST_PROCESS_DEFINITION_KEY = "firstProcessDefinition";
+  private static final String SECOND_PROCESS_DEFINITION_KEY = "secondProcessDefinition";
 
   @Test
   public void getProcessGoals_notPossibleForUnauthenticatedUser() {
@@ -78,13 +94,13 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
           null,
-          Collections.emptyList()
+          new ProcessDurationGoalsAndResultsDto()
         ),
         new ProcessGoalsResponseDto(
           SECOND_PROCESS_DEFINITION_KEY,
           SECOND_PROCESS_DEFINITION_KEY,
           null,
-          Collections.emptyList()
+          new ProcessDurationGoalsAndResultsDto()
         )
       );
   }
@@ -111,8 +127,9 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
   public void getProcessGoals_processesIncludeAnEventBasedProcess() {
     // given
     deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
-    final EventProcessDefinitionDto eventProcessDefinitionDto = deployEventBasedProcessDefinition();
-
+    final EventProcessDefinitionDto eventProcessDefinitionDto =
+      elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+        SECOND_PROCESS_DEFINITION_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -123,18 +140,37 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       .isSortedAccordingTo(Comparator.comparing(ProcessGoalsResponseDto::getProcessName))
       .containsExactly(
         new ProcessGoalsResponseDto(
-          FIRST_PROCESS_DEFINITION_KEY,
-          FIRST_PROCESS_DEFINITION_KEY,
-          null,
-          Collections.emptyList()
-        ),
-        new ProcessGoalsResponseDto(
           eventProcessDefinitionDto.getName(),
           eventProcessDefinitionDto.getKey(),
           null,
-          Collections.emptyList()
+          new ProcessDurationGoalsAndResultsDto()
+        ),
+        new ProcessGoalsResponseDto(
+          FIRST_PROCESS_DEFINITION_KEY,
+          FIRST_PROCESS_DEFINITION_KEY,
+          null,
+          new ProcessDurationGoalsAndResultsDto()
         )
       );
+  }
+
+  @Test
+  public void getProcessGoals_processesIncludeAnEventBasedProcess_noAuthorizationForEventProcess() {
+    // given
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      FIRST_PROCESS_DEFINITION_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<ProcessGoalsResponseDto> processGoalsDtos = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessGoalsRequest()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .executeAndReturnList(ProcessGoalsResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(processGoalsDtos).isEmpty();
   }
 
   @ParameterizedTest
@@ -199,7 +235,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
         null,
-        Collections.emptyList()
+        new ProcessDurationGoalsAndResultsDto()
       )
     );
   }
@@ -238,7 +274,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
         processDefinitionVersion1.getName(),
         processDefinitionVersion1.getKey(),
         null,
-        Collections.emptyList()
+        new ProcessDurationGoalsAndResultsDto()
       ));
   }
 
@@ -274,6 +310,166 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void getProcessGoals_goalsExistForProcess() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstance.getId(), now.minusSeconds(10), now);
+    importAllEngineEntitiesFromScratch();
+
+    final List<ProcessDurationGoalDto> goals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, goals);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalsDtos).hasSize(1).containsExactly(
+      new ProcessGoalsResponseDto(
+        FIRST_PROCESS_DEFINITION_KEY,
+        FIRST_PROCESS_DEFINITION_KEY,
+        null,
+        new ProcessDurationGoalsAndResultsDto(
+          goals,
+          List.of(
+            new ProcessDurationGoalResultDto(SLA_DURATION, 10000L, false),
+            new ProcessDurationGoalResultDto(TARGET_DURATION, 10000L, true)
+          )
+        )
+      ));
+  }
+
+  @Test
+  public void getProcessGoals_goalEvaluationResultOnBoundaryOfGoalDurations() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstance.getId(), now.minusSeconds(10), now);
+    importAllEngineEntitiesFromScratch();
+
+    final List<ProcessDurationGoalDto> goals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 99., 9999, MILLIS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 10000, MILLIS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, goals);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalsDtos).hasSize(1).containsExactly(
+      new ProcessGoalsResponseDto(
+        FIRST_PROCESS_DEFINITION_KEY,
+        FIRST_PROCESS_DEFINITION_KEY,
+        null,
+        new ProcessDurationGoalsAndResultsDto(
+          goals,
+          List.of(
+            new ProcessDurationGoalResultDto(SLA_DURATION, 10000L, false),
+            new ProcessDurationGoalResultDto(TARGET_DURATION, 10000L, true)
+          )
+        )
+      ));
+  }
+
+  @Test
+  public void getProcessGoals_goalsExistForNotAllProcesses() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstance.getId(), now.minusSeconds(10), now);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(SECOND_PROCESS_DEFINITION_KEY));
+    importAllEngineEntitiesFromScratch();
+
+    final List<ProcessDurationGoalDto> goals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, goals);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalsDtos).hasSize(2).containsExactly(
+      new ProcessGoalsResponseDto(
+        FIRST_PROCESS_DEFINITION_KEY,
+        FIRST_PROCESS_DEFINITION_KEY,
+        null,
+        new ProcessDurationGoalsAndResultsDto(
+          goals,
+          List.of(
+            new ProcessDurationGoalResultDto(SLA_DURATION, 10000L, false),
+            new ProcessDurationGoalResultDto(TARGET_DURATION, 10000L, true)
+          )
+        )
+      ),
+      new ProcessGoalsResponseDto(
+        SECOND_PROCESS_DEFINITION_KEY,
+        SECOND_PROCESS_DEFINITION_KEY,
+        null,
+        new ProcessDurationGoalsAndResultsDto()
+      )
+    );
+  }
+
+  @Test
+  public void getProcessGoals_noCompletedInstancesInLast30Days() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    // an instance completed more than 30 days ago
+    final ProcessInstanceEngineDto completedInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSingleUserTaskDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      completedInstance.getId(),
+      now.minusDays(45),
+      now.minusDays(40)
+    );
+    // a running instance
+    engineIntegrationExtension.startProcessInstance(completedInstance.getDefinitionId());
+    importAllEngineEntitiesFromScratch();
+
+    final List<ProcessDurationGoalDto> goals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, goals);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalsDtos).hasSize(1).containsExactly(
+      new ProcessGoalsResponseDto(
+        FIRST_PROCESS_DEFINITION_KEY,
+        FIRST_PROCESS_DEFINITION_KEY,
+        null,
+        new ProcessDurationGoalsAndResultsDto(
+          goals,
+          List.of(
+            // These values are null because the goals only consider completed instances in the last 30 days, and
+            // in this case both process instances don't match this filter
+            new ProcessDurationGoalResultDto(SLA_DURATION, null, null),
+            new ProcessDurationGoalResultDto(TARGET_DURATION, null, null)
+          )
+        )
+      ));
+  }
+
+  private void setGoalsForProcess(final String processDefKey, final List<ProcessDurationGoalDto> goals) {
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateProcessGoalsRequest(processDefKey, goals)
+      .execute();
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
@@ -316,7 +512,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
   }
 
   private void addProcessDefinitionWithGivenNameAndKeyToElasticSearch(String name, String key) {
-    final DefinitionOptimizeResponseDto definition = createProcessDefinition("1", name, key);
+    final DefinitionOptimizeResponseDto definition = createProcessDefinition("1", key, name);
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
       new ProcessDefinitionIndex().getIndexName(),
       Map.of(definition.getId(), definition)

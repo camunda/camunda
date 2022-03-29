@@ -28,7 +28,7 @@ public class ProcessGoalsWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void createProcessGoals(ProcessGoalsDto processGoalsDto) {
+  public void updateProcessGoals(ProcessGoalsDto processGoalsDto) {
     try {
       IndexRequest request = new IndexRequest(PROCESS_GOALS_INDEX_NAME)
         .id(processGoalsDto.getProcessDefinitionKey())

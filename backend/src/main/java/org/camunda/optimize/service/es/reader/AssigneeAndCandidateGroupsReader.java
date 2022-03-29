@@ -50,7 +50,6 @@ public class AssigneeAndCandidateGroupsReader {
   private static final String COMPOSITE_AGG = "composite";
   private static final String TERMS_AGG = "userTaskFieldTerms";
 
-  private final ProcessDefinitionReader processDefinitionReader;
   private final OptimizeElasticsearchClient esClient;
 
   public void consumeAssigneesInBatches(@NonNull final String engineAlias,

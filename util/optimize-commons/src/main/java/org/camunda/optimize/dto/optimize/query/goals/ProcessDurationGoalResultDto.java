@@ -8,17 +8,14 @@ package org.camunda.optimize.dto.optimize.query.goals;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
-@AllArgsConstructor
 @NoArgsConstructor
-public class ProcessGoalsResponseDto {
+@AllArgsConstructor
+public class ProcessDurationGoalResultDto {
 
-  private String processName;
-  private String processDefinitionKey;
-  private String owner;
-  private ProcessDurationGoalsAndResultsDto durationGoals;
+  private DurationGoalType type;
+  private Long value;
+  private Boolean successful;
 
 }

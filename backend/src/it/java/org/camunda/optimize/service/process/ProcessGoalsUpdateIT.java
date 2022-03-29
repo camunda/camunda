@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.process;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -35,9 +36,9 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
+public class ProcessGoalsUpdateIT extends AbstractIT {
 
-  private static final String DEF_KEY = FIRST_PROCESS_DEFINITION_KEY;
+  private static final String DEF_KEY = "defKey";
 
   @Test
   public void createProcessGoals_notPossibleForUnauthenticatedUser() {
@@ -119,7 +120,6 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
       DEF_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
-    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -226,6 +226,12 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
       unauthorizedDef.getId(),
       unauthorizedDef
     );
+  }
+
+  private void setGoalsForProcess(final String defKey, final List<ProcessDurationGoalDto> goals) {
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateProcessGoalsRequest(defKey, goals)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
 }

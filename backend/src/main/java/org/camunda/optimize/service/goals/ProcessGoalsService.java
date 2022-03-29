@@ -3,23 +3,27 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.goals;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.es.reader.ProcessGoalsReader;
 import org.camunda.optimize.service.es.writer.ProcessGoalsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -30,24 +34,39 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 @Slf4j
 public class ProcessGoalsService {
 
-  private final ProcessDefinitionReader processDefinitionReader;
   private final DefinitionService definitionService;
-  private final DataSourceDefinitionAuthorizationService dataSourceDefinitionAuthorizationService;
   private final ProcessGoalsWriter processGoalsWriter;
+  private final ProcessGoalsReader processGoalsReader;
+  private final ProcessGoalsEvaluator processGoalsEvaluator;
 
   public List<ProcessGoalsResponseDto> getProcessDefinitionGoals(final String userId) {
-    return processDefinitionReader.getAllProcessDefinitions().stream()
-      .filter(processDefinition -> dataSourceDefinitionAuthorizationService
-        .isAuthorizedToAccessDefinition(userId, processDefinition))
-      .map(processDefinition -> ProcessGoalsResponseDto.from(
-             new ProcessGoalsDto(
-               processDefinition.getKey(),
-               null,
-               Collections.emptyList()
-             ),
-             StringUtils.isEmpty(processDefinition.getName()) ? processDefinition.getKey() : processDefinition.getName()
-           )
-      ).distinct().collect(Collectors.toList());
+    final Map<String, String> procDefKeysAndName = new HashMap<>();
+    definitionService.getFullyImportedDefinitions(PROCESS, userId, false)
+      .forEach(definition -> procDefKeysAndName.put(definition.getKey(), definition.getName()));
+    final Map<String, ProcessGoalsDto> goalsForProcessesByKey =
+      processGoalsReader.getGoalsForProcessesByKey(procDefKeysAndName.keySet());
+    final Map<String, List<ProcessDurationGoalResultDto>> goalResultsByKey =
+      processGoalsEvaluator.evaluateGoals(goalsForProcessesByKey);
+    return procDefKeysAndName.entrySet()
+      .stream()
+      .map(entry -> {
+        final String procDefKey = entry.getKey();
+        final Optional<ProcessGoalsDto> goalsForKey = Optional.ofNullable(goalsForProcessesByKey.get(procDefKey));
+        return new ProcessGoalsResponseDto(
+          StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
+          procDefKey,
+          null,
+          goalsForKey.map(
+            goals -> {
+              ProcessDurationGoalsAndResultsDto goalsAndResults = new ProcessDurationGoalsAndResultsDto();
+              goalsAndResults.setGoals(goals.getDurationGoals());
+              goalsAndResults.setResults(
+                Optional.ofNullable(goalResultsByKey.get(procDefKey)).orElse(Collections.emptyList()));
+              return goalsAndResults;
+            }
+          ).orElseGet(ProcessDurationGoalsAndResultsDto::new)
+        );
+      }).collect(Collectors.toList());
   }
 
   public void updateProcessGoals(final String userId,
@@ -71,7 +90,7 @@ public class ProcessGoalsService {
     processGoalsDto.setProcessDefinitionKey(processDefKey);
     processGoalsDto.setOwner(null);
     processGoalsDto.setDurationGoals(durationGoals);
-    processGoalsWriter.createProcessGoals(processGoalsDto);
+    processGoalsWriter.updateProcessGoals(processGoalsDto);
   }
 
 }

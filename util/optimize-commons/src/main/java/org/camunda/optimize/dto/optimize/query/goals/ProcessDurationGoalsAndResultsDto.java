@@ -7,18 +7,20 @@ package org.camunda.optimize.dto.optimize.query.goals;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
-@FieldNameConstants
 @AllArgsConstructor
-@NoArgsConstructor
-public class ProcessGoalsResponseDto {
+public class ProcessDurationGoalsAndResultsDto {
 
-  private String processName;
-  private String processDefinitionKey;
-  private String owner;
-  private ProcessDurationGoalsAndResultsDto durationGoals;
+  List<ProcessDurationGoalDto> goals;
+  List<ProcessDurationGoalResultDto> results;
+
+  public ProcessDurationGoalsAndResultsDto() {
+    this.goals = new ArrayList<>();
+    this.results = new ArrayList<>();
+  }
 
 }

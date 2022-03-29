@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
-import org.camunda.optimize.service.ProcessGoalsService;
+import org.camunda.optimize.service.goals.ProcessGoalsService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
