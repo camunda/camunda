@@ -1960,7 +1960,7 @@
           <plugin>
             <groupId>com.diffplug.spotless</groupId>
             <artifactId>spotless-maven-plugin</artifactId>
-            <configuration>
+            <configuration combine.children="append">
               <ratchetFrom>origin/main</ratchetFrom>
             </configuration>
             <executions>
