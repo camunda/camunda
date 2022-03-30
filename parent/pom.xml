@@ -118,6 +118,7 @@
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.5.3</version.spotbugs>
     <version.archunit>0.23.1</version.archunit>
+    <version.easy-random>5.0.0</version.easy-random>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -942,6 +943,12 @@
         <groupId>com.typesafe</groupId>
         <artifactId>config</artifactId>
         <version>${version.config}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jeasy</groupId>
+        <artifactId>easy-random-core</artifactId>
+        <version>${version.easy-random}</version>
       </dependency>
 
       <dependency>
