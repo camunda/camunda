@@ -54,7 +54,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.11.0</version.error-prone>
-    <version.grpc>1.45.0</version.grpc>
+    <version.grpc>1.45.1</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
