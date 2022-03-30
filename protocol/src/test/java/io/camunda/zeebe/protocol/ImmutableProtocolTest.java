@@ -45,9 +45,6 @@ final class ImmutableProtocolTest {
   @ArchTest
   void shouldAnnotateImmutableProtocolValues(final JavaClasses importedClasses) {
     // given
-    // exclude certain interfaces for which we won't be generating any immutable variants
-    final DescribedPredicate<JavaClass> excludedClasses =
-        Predicates.equivalentTo(ProcessInstanceRelated.class);
     final ArchRule rule =
         ArchRuleDefinition.classes()
             .that()
@@ -59,7 +56,7 @@ final class ImmutableProtocolTest {
             // also check the Record interface itself
             .or(Predicates.equivalentTo(Record.class))
             // exclude certain interfaces
-            .and(DescribedPredicate.not(excludedClasses))
+            .and(DescribedPredicate.not(getExcludedClasses()))
             .should()
             .beAnnotatedWith(ImmutableProtocol.class)
             .andShould()
@@ -67,5 +64,25 @@ final class ImmutableProtocolTest {
 
     // then
     rule.check(importedClasses);
+  }
+
+  @ArchTest
+  void shouldNotAnnotateExcludedClasses(final JavaClasses importedClasses) {
+    // given
+    final ArchRule rule =
+        ArchRuleDefinition.classes()
+            .that(getExcludedClasses())
+            .should()
+            .notBeAnnotatedWith(ImmutableProtocol.class)
+            .orShould()
+            .notBeAnnotatedWith(Value.Immutable.class);
+
+    // then
+    rule.check(importedClasses);
+  }
+
+  // exclude certain interfaces for which we won't be generating any immutable variants
+  private DescribedPredicate<JavaClass> getExcludedClasses() {
+    return Predicates.equivalentTo(ProcessInstanceRelated.class);
   }
 }
