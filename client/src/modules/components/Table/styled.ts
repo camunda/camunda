@@ -53,17 +53,19 @@ const TR = styled.tr<TRProps>`
       border-style: solid;
       border-color: ${colors.borderColor};
 
-      &:nth-child(odd) {
-        background-color: ${selected
-          ? theme.colors.selectedOdd
-          : colors.odd.backgroundColor};
-      }
+      ${selected
+        ? css`
+            background-color: ${colors.selected.backgroundColor};
+          `
+        : css`
+            &:nth-child(odd) {
+              background-color: ${theme.colors.itemOdd};
+            }
 
-      &:nth-child(even) {
-        background-color: ${selected
-          ? theme.colors.selectedEven
-          : theme.colors.itemEven};
-      }
+            &:nth-child(even) {
+              background-color: ${theme.colors.itemEven};
+            }
+          `}
     `;
   }}
 `;

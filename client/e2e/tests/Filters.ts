@@ -73,9 +73,9 @@ test('Navigating in header should affect filters and url correctly', async (t) =
 });
 
 test('Instance IDs filter', async (t) => {
-  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+  await t.expect(screen.queryByTestId('data-list').exists).ok();
 
-  const instanceId = await within(screen.queryByTestId('instances-list'))
+  const instanceId = await within(screen.queryByTestId('data-list'))
     .queryAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
@@ -92,7 +92,7 @@ test('Instance IDs filter', async (t) => {
   // wait for filter to be applied, see there is only 1 result
   await t
     .expect(
-      within(screen.queryByTestId('instances-list')).queryAllByRole('row').count
+      within(screen.queryByTestId('data-list')).queryAllByRole('row').count
     )
     .eql(1);
 
@@ -112,7 +112,7 @@ test('Instance IDs filter', async (t) => {
   // result is the one we filtered
   await t
     .expect(
-      await within(screen.queryByTestId('instances-list'))
+      await within(screen.queryByTestId('data-list'))
         .getAllByRole('link', {name: /View instance/i})
         .nth(0).innerText
     )
@@ -122,9 +122,7 @@ test('Instance IDs filter', async (t) => {
 
   // wait for reset filter to be applied, see there is more than one result again
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .gt(1);
 
   // instance ids filter is hidden
@@ -161,14 +159,14 @@ test('Parent Instance Id filter', async (t) => {
   // wait for filter to be applied, see there is only 1 result
   await t
     .expect(
-      within(screen.queryByTestId('instances-list')).queryAllByRole('row').count
+      within(screen.queryByTestId('data-list')).queryAllByRole('row').count
     )
     .eql(1);
 
   // result is the one we filtered
   await t
     .expect(
-      await within(screen.queryByTestId('instances-list'))
+      await within(screen.queryByTestId('data-list'))
         .getAllByRole('link', {name: /View parent instance/i})
         .nth(0).innerText
     )
@@ -178,9 +176,7 @@ test('Parent Instance Id filter', async (t) => {
 
   // wait for reset filter to be applied, see there is more than one result again
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .gt(1);
 
   // parent id filter is hidden
@@ -188,10 +184,10 @@ test('Parent Instance Id filter', async (t) => {
 });
 
 test('Error Message filter', async (t) => {
-  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+  await t.expect(screen.queryByTestId('data-list').exists).ok();
 
   const instanceCount = await within(
-    screen.queryByTestId('instances-list')
+    screen.queryByTestId('data-list')
   ).getAllByRole('row').count;
 
   const errorMessage =
@@ -209,9 +205,7 @@ test('Error Message filter', async (t) => {
 
   // wait for filter to be applied, see results are narrowed down.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .lt(instanceCount);
 
   // changes reflected in the url
@@ -231,9 +225,7 @@ test('Error Message filter', async (t) => {
 
   // wait for reset filter to be applied, see there is more than one result again.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(instanceCount);
 
   // error message filter is hidden
@@ -269,9 +261,7 @@ test('End Date filter', async (t) => {
 
   // wait for filter to be applied
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1);
   await t
     .click(screen.queryByRole('button', {name: /cancel instance/i}))
@@ -290,20 +280,20 @@ test('End Date filter', async (t) => {
   // wait for filter to be applied
   await t
     .expect(
-      within(screen.queryByTestId('instances-list')).queryAllByRole('row').count
+      within(screen.queryByTestId('data-list')).queryAllByRole('row').count
     )
     .eql(1);
 
   // get end date from recently canceled instance
-  const endDate = await within(
-    screen.queryByTestId('instances-list')
-  ).queryByTestId('end-time').innerText;
+  const endDate = await within(screen.queryByTestId('data-list')).queryByTestId(
+    'end-time'
+  ).innerText;
 
   // reset the filters to start over
   await t.click(InstancesPage.resetFiltersButton);
 
   const instanceCount = await within(
-    screen.queryByTestId('instances-list')
+    screen.queryByTestId('data-list')
   ).getAllByRole('row').count;
 
   await displayOptionalFilter('End Date');
@@ -316,9 +306,7 @@ test('End Date filter', async (t) => {
 
   // wait for filter to be applied, see results are narrowed down.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .lt(instanceCount);
 
   await t
@@ -339,9 +327,7 @@ test('End Date filter', async (t) => {
 
   // wait for filter to be applied, see there are more results again.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(instanceCount);
 
   // end date filter is hidden
@@ -363,10 +349,10 @@ test('End Date filter', async (t) => {
 test('Variable filter', async (t) => {
   await displayOptionalFilter('Variable');
 
-  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+  await t.expect(screen.queryByTestId('data-list').exists).ok();
 
   const instanceCount = await within(
-    screen.queryByTestId('instances-list')
+    screen.queryByTestId('data-list')
   ).getAllByRole('row').count;
 
   await InstancesPage.typeText(
@@ -387,9 +373,7 @@ test('Variable filter', async (t) => {
 
   // wait for filter to be applied, see results are narrowed down.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .lt(instanceCount);
 
   await t
@@ -409,9 +393,7 @@ test('Variable filter', async (t) => {
 
   // wait for filter to be applied, see there is more than one result again.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(instanceCount);
 
   // variable name and value filters are hidden
@@ -447,9 +429,7 @@ test('Operation ID filter', async (t) => {
 
   // wait for filter to be applied
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1);
   await t
     .click(screen.queryByRole('button', {name: /cancel instance/i}))
@@ -472,7 +452,7 @@ test('Operation ID filter', async (t) => {
   await t.click(InstancesPage.resetFiltersButton);
 
   const instanceCount = await within(
-    screen.queryByTestId('instances-list')
+    screen.queryByTestId('data-list')
   ).getAllByRole('row').count;
 
   await displayOptionalFilter('Operation Id');
@@ -488,9 +468,7 @@ test('Operation ID filter', async (t) => {
 
   // wait for filter to be applied
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1);
 
   await t
@@ -511,9 +489,7 @@ test('Operation ID filter', async (t) => {
 
   // wait for filter to be applied, see there are more results again.
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(instanceCount);
 
   // operation id filter is hidden

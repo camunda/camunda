@@ -56,9 +56,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
 
   // wait for filter to be applied
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1);
 
   // retry single instance using operation button
@@ -110,9 +108,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
 
   // wait for filter to be applied
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1);
 
   // expect operation id filter to be set
@@ -121,7 +117,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
     .eql(operationId);
 
   const instanceRow = within(
-    within(screen.queryByTestId('instances-list')).getAllByRole('row').nth(0)
+    within(screen.queryByTestId('data-list')).getAllByRole('row').nth(0)
   );
   await t
     .expect(
@@ -157,7 +153,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     {paste: true}
   );
 
-  const instancesList = screen.queryByTestId('instances-list');
+  const instancesList = screen.queryByTestId('data-list');
 
   // wait for the filter to be applied
   await t

@@ -50,7 +50,7 @@ test('Selection of instances are removed on filter selection', async (t) => {
     .ok();
 
   // instances are not selected after applying instance id filter
-  const instanceId = await within(screen.queryByTestId('instances-list'))
+  const instanceId = await within(screen.queryByTestId('data-list'))
     .getAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
@@ -94,7 +94,7 @@ test('Selection of instances are not removed on sort', async (t) => {
     .ok();
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by processName'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Process'}))
     .expect(InstancesPage.selectAllInstancesCheckbox.checked)
     .ok();
 });

@@ -58,7 +58,9 @@ const ColumnHeader: React.FC<Props> = ({
     const currentSortOrder =
       existingSortParams?.sortOrder === undefined && isDefault
         ? INITIAL_SORT_ORDER
-        : existingSortParams?.sortOrder;
+        : existingSortParams?.sortBy === sortKey
+        ? existingSortParams?.sortOrder
+        : undefined;
 
     return (
       <SortableHeader

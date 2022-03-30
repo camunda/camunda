@@ -50,7 +50,7 @@ test('Navigate to called and parent instances', async (t) => {
       })
     );
 
-  const withinInstancesList = within(screen.queryByTestId('instances-list'));
+  const withinInstancesList = within(screen.queryByTestId('data-list'));
 
   await t
     .expect(withinInstancesList.queryAllByRole('row').count)

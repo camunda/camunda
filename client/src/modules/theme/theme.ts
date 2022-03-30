@@ -353,9 +353,6 @@ const theme = {
       list: {
         backgroundColor: DARK_COLORS.ui02,
         borderColor: DARK_COLORS.ui04,
-        selectionStatusIndicator: {
-          borderColor: DARK_COLORS.ui04,
-        },
         header: {
           title: {
             borderColor: DARK_COLORS.ui04,
@@ -844,8 +841,8 @@ const theme = {
           },
           tr: {
             borderColor: DARK_COLORS.ui04,
-            odd: {
-              backgroundColor: DARK_COLORS.ui02,
+            selected: {
+              backgroundColor: DARK_COLORS.selectedOdd,
             },
           },
           thead: {
@@ -1312,9 +1309,6 @@ const theme = {
       list: {
         backgroundColor: LIGHT_COLORS.ui04,
         borderColor: LIGHT_COLORS.ui05,
-        selectionStatusIndicator: {
-          borderColor: LIGHT_COLORS.ui05,
-        },
         header: {
           title: {
             borderColor: LIGHT_COLORS.ui05,
@@ -1796,8 +1790,8 @@ const theme = {
           },
           tr: {
             borderColor: LIGHT_COLORS.ui05,
-            odd: {
-              backgroundColor: LIGHT_COLORS.ui04,
+            selected: {
+              backgroundColor: LIGHT_COLORS.focusInner,
             },
           },
           thead: {

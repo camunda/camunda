@@ -74,9 +74,9 @@ test('Instances Page Initial Load', async (t) => {
     `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
-  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+  await t.expect(screen.queryByTestId('data-list').exists).ok();
 
-  const withinInstancesList = within(screen.queryByTestId('instances-list'));
+  const withinInstancesList = within(screen.queryByTestId('data-list'));
   await t.expect(withinInstancesList.getAllByRole('row').count).eql(2);
 
   await t
@@ -165,9 +165,7 @@ test('Select flow node in diagram', async (t) => {
   );
 
   await t
-    .expect(
-      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
-    )
+    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1)
     .expect(await getPathname())
     .eql('/instances')
@@ -189,7 +187,7 @@ test('Wait for process creation', async (t) => {
     '/instances?active=true&incidents=true&process=testProcess&version=1'
   );
 
-  await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();
+  await t.expect(screen.queryByTestId('table-skeleton').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
 
   await t
@@ -201,7 +199,7 @@ test('Wait for process creation', async (t) => {
   await t.expect(screen.queryByTestId('diagram').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).notOk();
 
-  await t.expect(screen.queryByTestId('listpanel-skeleton').exists).notOk();
+  await t.expect(screen.queryByTestId('table-skeleton').exists).notOk();
   await t
     .expect(
       screen.getByText('There are no Instances matching this filter set').exists

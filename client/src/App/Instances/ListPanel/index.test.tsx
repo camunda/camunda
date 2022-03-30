@@ -65,7 +65,7 @@ describe('ListPanel', () => {
         wrapper: createWrapper(),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
       expect(
         screen.getByText('There are no Instances matching this filter set')
@@ -90,7 +90,7 @@ describe('ListPanel', () => {
         wrapper: createWrapper('/instances?incidents=true&active=true'),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
       expect(
         screen.getByText('There are no Instances matching this filter set')
@@ -120,8 +120,8 @@ describe('ListPanel', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
     });
 
     it('should render table body and footer', async () => {
@@ -139,7 +139,7 @@ describe('ListPanel', () => {
       instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {wrapper: createWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
       expect(screen.getByLabelText('Select all instances')).toBeInTheDocument();
       expect(
@@ -165,7 +165,7 @@ describe('ListPanel', () => {
         wrapper: createWrapper(),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
@@ -194,7 +194,7 @@ describe('ListPanel', () => {
       instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {wrapper: createWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
       expect(
         screen.queryByTitle('Select all instances')
@@ -448,7 +448,7 @@ describe('ListPanel', () => {
       instancesStore.init(true);
       await instancesStore.fetchInstancesFromFilters();
 
-      expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
+      expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
 
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
@@ -466,9 +466,7 @@ describe('ListPanel', () => {
       jest.runOnlyPendingTimers();
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
-      expect(
-        screen.queryByTestId('listpanel-skeleton')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('table-skeleton')).not.toBeInTheDocument();
       expect(screen.getByText('2251799813685594')).toBeInTheDocument();
 
       jest.clearAllTimers();
@@ -494,7 +492,7 @@ describe('ListPanel', () => {
       instancesStore.init(true);
       await instancesStore.fetchInstancesFromFilters();
 
-      expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
+      expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
 
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
@@ -520,9 +518,7 @@ describe('ListPanel', () => {
       jest.runOnlyPendingTimers();
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
-      expect(
-        screen.queryByTestId('listpanel-skeleton')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('table-skeleton')).not.toBeInTheDocument();
       expect(
         screen.getByText('There are no Instances matching this filter set')
       ).toBeInTheDocument();
@@ -550,7 +546,7 @@ describe('ListPanel', () => {
         wrapper: createWrapper('/instances?incidents=true&active=true'),
       });
 
-      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
       expect(screen.getByText('2251799813685594')).toBeInTheDocument();
 
       mockServer.use(
@@ -565,9 +561,7 @@ describe('ListPanel', () => {
       await waitFor(() =>
         expect(instancesStore.state.status).toBe('refetching')
       );
-      expect(
-        screen.queryByTestId('listpanel-skeleton')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('table-skeleton')).not.toBeInTheDocument();
       expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
       expect(
         screen.queryByText('There are no Instances matching this filter set')

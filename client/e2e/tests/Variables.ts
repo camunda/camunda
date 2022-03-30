@@ -455,7 +455,7 @@ test('Add variables', async (t) => {
 
   await t
     .expect(
-      within(screen.queryByTestId('instances-list')).queryByRole('cell', {
+      within(screen.queryByTestId('data-list')).queryByRole('cell', {
         name: `View instance ${instance.processInstanceKey}`,
       }).exists
     )

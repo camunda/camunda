@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import List from './List';
+import {List} from './List';
 import {instancesStore} from 'modules/stores/instances';
 import {Observer} from 'mobx-react';
 import {PanelHeader} from 'modules/components/PanelHeader';

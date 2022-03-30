@@ -13,6 +13,7 @@ import {ColumnHeader} from './ColumnHeader';
 import {Skeleton} from './Skeleton';
 import {Message} from './Message';
 import {Row} from './Row';
+import {Checkbox} from './Checkbox';
 
 import {
   List,
@@ -22,7 +23,6 @@ import {
   TRHeader,
   Spinner,
   SkeletonCheckboxBlock,
-  Checkbox,
 } from './styled';
 
 type HeaderColumn = {

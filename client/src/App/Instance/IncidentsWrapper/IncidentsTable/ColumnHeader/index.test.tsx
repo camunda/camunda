@@ -7,7 +7,7 @@
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
-import ColumnHeader from './index';
+import {ColumnHeader} from './index';
 
 const Wrapper: React.FC = ({children}) => {
   return (

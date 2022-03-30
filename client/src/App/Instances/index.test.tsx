@@ -144,7 +144,7 @@ describe('Instances', () => {
       selectionMode: 'INCLUDE',
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     userEvent.click(
       await screen.findByRole('checkbox', {

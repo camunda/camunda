@@ -9,6 +9,7 @@ import React, {useState} from 'react';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {observer} from 'mobx-react';
 
 import {hasIncident, isRunning} from 'modules/utils/instance';
@@ -22,14 +23,13 @@ import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal
 
 type Props = {
   instance: ProcessInstanceEntity;
-  isSelected?: boolean;
   onOperation?: (operationType: OperationEntityType) => void;
   onError?: (operationType: OperationEntityType) => void;
   forceSpinner?: boolean;
 };
 
 const Operations: React.FC<Props> = observer(
-  ({instance, isSelected, onOperation, onError, forceSpinner}) => {
+  ({instance, onOperation, onError, forceSpinner}) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
       useState(false);
@@ -55,6 +55,8 @@ const Operations: React.FC<Props> = observer(
           ACTIVE_OPERATION_STATES.includes(operation.state)
       );
     };
+
+    const isSelected = instanceSelectionStore.isInstanceChecked(instance.id);
 
     return (
       <OperationsContainer>

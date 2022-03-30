@@ -123,7 +123,7 @@ class Instances extends NetworkReconnectionHandler {
   getSorting = () => {
     return (
       getSortParams() || {
-        sortBy: 'processName',
+        sortBy: 'startDate',
         sortOrder: 'desc',
       }
     );

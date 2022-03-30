@@ -8,7 +8,6 @@ import styled, {css} from 'styled-components';
 import Table from 'modules/components/Table';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {SkeletonCheckboxBlock as BaseSkeletonCheckboxBlock} from './Skeleton';
-import {Checkbox as BaseCheckbox} from './Checkbox';
 
 const Container = styled.section`
   ${({theme}) => {
@@ -80,10 +79,6 @@ const SkeletonCheckboxBlock = styled(BaseSkeletonCheckboxBlock)`
   margin-right: 15px;
 `;
 
-const Checkbox = styled(BaseCheckbox)`
-  margin-right: 3px;
-`;
-
 export {
   Container,
   List,
@@ -94,5 +89,4 @@ export {
   TRHeader,
   THead,
   SkeletonCheckboxBlock,
-  Checkbox,
 };

@@ -5,25 +5,38 @@
  */
 
 import styled from 'styled-components';
-import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
+import {BaseBlock, BaseCircle} from 'modules/components/Skeleton';
+import StateIcon from 'modules/components/StateIcon';
 
-const List = styled.div`
-  flex-grow: 1;
-  position: relative;
-  overflow: auto;
+const Block = styled(BaseBlock)`
+  height: 14px;
 `;
 
-const TableContainer = styled.div`
-  position: absolute;
-  opacity: 0.9;
-  height: 100%;
-  width: 100%;
-  left: 0;
-  top: 0;
+const ProcessContainer = styled.div`
+  padding-left: 14px;
+  display: flex;
 `;
 
-const Spinner = styled(SpinnerSkeleton)`
-  margin-top: 37px;
+const CircleBlock = styled(BaseCircle)`
+  width: 14px;
+  height: 14px;
+  margin-right: 10px;
+  flex-shrink: 0;
 `;
 
-export {List, TableContainer, Spinner};
+const ProcessBlock = styled(Block)`
+  margin-left: 1px;
+  flex-shrink: 0;
+  width: 201px;
+`;
+
+const State = styled(StateIcon)`
+  margin-right: 10px;
+  margin-top: auto;
+  margin-bottom: auto;
+  &:first-child {
+    margin-left: 0;
+  }
+`;
+
+export {ProcessContainer, CircleBlock, ProcessBlock, State};

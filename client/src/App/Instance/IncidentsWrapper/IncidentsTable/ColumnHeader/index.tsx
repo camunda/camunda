@@ -15,7 +15,7 @@ function toggleSorting(
 ) {
   const params = new URLSearchParams(search);
   const {sortBy, sortOrder} = getSortParams() || {
-    sortBy: table === 'instances' ? 'processName' : 'errorType',
+    sortBy: table === 'instances' ? 'startDate' : 'errorType',
     sortOrder: 'desc',
   };
 
@@ -69,7 +69,7 @@ const ColumnHeader: React.FC<Props> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const {sortBy, sortOrder} = getSortParams() || {
-    sortBy: table === 'instances' ? 'processName' : 'errorType',
+    sortBy: table === 'instances' ? 'startDate' : 'errorType',
     sortOrder: 'desc',
   };
   const isActive = isSortable && sortKey === sortBy;
@@ -114,4 +114,4 @@ const ColumnHeader: React.FC<Props> = ({
   );
 };
 
-export default ColumnHeader;
+export {ColumnHeader};
