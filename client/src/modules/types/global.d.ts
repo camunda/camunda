@@ -12,6 +12,8 @@ export declare global {
       canLogout?: boolean;
       organizationId?: null | string;
       clusterId?: null | string;
+      mixpanelToken?: null | string;
+      mixpanelAPIHost?: null | string;
     };
     Osano?: {
       cm?: {

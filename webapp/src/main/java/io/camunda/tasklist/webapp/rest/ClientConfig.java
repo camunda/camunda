@@ -29,6 +29,12 @@ public class ClientConfig {
   @Value("${CAMUNDA_TASKLIST_CLOUD_STAGE:#{null}}")
   public String stage;
 
+  @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN:#{null}}")
+  public String mixpanelToken;
+
+  @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST:#{null}}")
+  public String mixpanelAPIHost;
+
   @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private ServletContext context;
