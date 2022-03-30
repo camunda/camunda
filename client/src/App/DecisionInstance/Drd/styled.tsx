@@ -6,6 +6,7 @@
 
 import styled, {css} from 'styled-components';
 import BasePanelHeader from 'modules/components/Panel/PanelHeader';
+import IconButton from 'modules/components/IconButton';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -61,9 +62,28 @@ const Container = styled.div`
 const PanelHeader = styled(BasePanelHeader)`
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: center;
   padding: 18px 20px;
   height: auto;
 `;
 
-export {Container, PanelHeader};
+const ButtonContainer = styled.div`
+  display: flex;
+`;
+
+const Button = styled(IconButton)`
+  ${({theme}) => {
+    const colors = theme.colors.drdPanel;
+
+    return css`
+      svg {
+        margin-top: 4px;
+      }
+
+      margin: 0 0 0 6px;
+      color: ${colors.buttonColor};
+    `;
+  }}
+`;
+
+export {Container, PanelHeader, ButtonContainer, Button};

@@ -13,8 +13,11 @@ import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
 import {drdDataStore} from 'modules/stores/drdData';
+import {ReactComponent as Maximize} from 'modules/components/Icon/maximize.svg';
+import {ReactComponent as Minimize} from 'modules/components/Icon/minimize.svg';
+import {ReactComponent as Close} from 'modules/components/Icon/close.svg';
 import {DecisionState} from './DecisionState';
-import {Container, PanelHeader} from './styled';
+import {Container, PanelHeader, ButtonContainer, Button} from './styled';
 
 const Drd: React.FC = observer(() => {
   const {
@@ -73,30 +76,33 @@ const Drd: React.FC = observer(() => {
     <Container data-testid="drd">
       <PanelHeader>
         <div>{definitionsName}</div>
-        <div>
+        <ButtonContainer>
           {panelState === 'minimized' && (
-            <button
+            <Button
               title="Maximize DRD Panel"
+              size="large"
+              iconButtonTheme="default"
+              icon={<Maximize />}
               onClick={() => setPanelState('maximized')}
-            >
-              Maximize
-            </button>
+            />
           )}
           {panelState === 'maximized' && (
-            <button
+            <Button
               title="Minimize DRD Panel"
+              size="large"
+              iconButtonTheme="default"
+              icon={<Minimize />}
               onClick={() => setPanelState('minimized')}
-            >
-              Minimize
-            </button>
+            />
           )}
-          <button
+          <Button
             title="Close DRD Panel"
+            size="large"
+            iconButtonTheme="default"
+            icon={<Close />}
             onClick={() => setPanelState('closed')}
-          >
-            X
-          </button>
-        </div>
+          />
+        </ButtonContainer>
       </PanelHeader>
       <div data-testid="drd-viewer" ref={drdViewerRef} />
 

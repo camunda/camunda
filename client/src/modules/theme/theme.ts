@@ -449,6 +449,7 @@ const theme = {
         background: DARK_COLORS.ui02,
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.5),
         borderColor: DARK_COLORS.ui04,
+        buttonColor: SEMANTIC_COLORS.white,
       },
       modules: {
         badge: {
@@ -1401,6 +1402,7 @@ const theme = {
         background: LIGHT_COLORS.ui04,
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
         borderColor: LIGHT_COLORS.ui05,
+        buttonColor: DARK_COLORS.ui04,
       },
       modules: {
         badge: {
