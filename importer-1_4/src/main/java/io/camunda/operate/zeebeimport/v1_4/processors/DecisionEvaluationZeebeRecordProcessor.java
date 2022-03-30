@@ -89,7 +89,6 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setPosition(record.getPosition())
           .setPartitionId(record.getPartitionId())
           .setEvaluationDate(timestamp)
-          .setResult(decisionEvaluation.getDecisionOutput())
           .setProcessInstanceKey(decisionEvaluation.getProcessInstanceKey())
           .setProcessDefinitionKey(decisionEvaluation.getProcessDefinitionKey())
           .setElementInstanceKey(decisionEvaluation.getElementInstanceKey())
@@ -105,6 +104,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setDecisionName(decision.getDecisionName())
           .setDecisionVersion((int)decision.getDecisionVersion())
           .setState(state)
+          .setResult(decision.getDecisionOutput())
           .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
           .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()));
       if (state.equals(DecisionInstanceState.FAILED)) {
