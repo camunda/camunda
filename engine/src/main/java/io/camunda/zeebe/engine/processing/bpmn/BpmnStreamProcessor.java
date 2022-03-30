@@ -71,7 +71,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             jobMetrics);
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    processors = new BpmnElementProcessors(bpmnBehaviors);
+    processors = new BpmnElementProcessors(bpmnBehaviors, zeebeState);
 
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();

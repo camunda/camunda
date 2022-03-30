@@ -20,10 +20,16 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.variable.DocumentEntry;
+import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
 
 public final class ProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -36,14 +42,16 @@ public final class ProcessProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
+  private final ZeebeState zeebeState;
 
-  public ProcessProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public ProcessProcessor(final BpmnBehaviors bpmnBehaviors, final ZeebeState zeebeState) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processResultSenderBehavior = bpmnBehaviors.processResultSenderBehavior();
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
+    this.zeebeState = zeebeState;
   }
 
   @Override
@@ -55,8 +63,16 @@ public final class ProcessProcessor
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
-    // TODO implement
-    final VariablesLookup secondaryLookup = (key, name) -> null;
+    final var eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    final var eventTrigger =
+        eventScopeInstanceState.peekEventTrigger(context.getProcessDefinitionKey());
+
+    final VariablesLookup secondaryLookup;
+    if (eventTrigger != null && eventTrigger.getVariables().capacity() > 0) {
+      secondaryLookup = createVariableLookup(eventTrigger.getVariables());
+    } else {
+      secondaryLookup = (key, name) -> null;
+    }
 
     eventSubscriptionBehavior
         .subscribeToEvents(element, context, secondaryLookup)
@@ -97,6 +113,27 @@ public final class ProcessProcessor
           context,
           terminating -> Either.right(stateTransitionBehavior.transitionToTerminated(terminating)));
     }
+  }
+
+  private VariablesLookup createVariableLookup(final DirectBuffer variablesBuffer) {
+    final var indexedDocument = new IndexedDocument();
+    indexedDocument.index(variablesBuffer);
+
+    if (indexedDocument.isEmpty()) {
+      return (key, name) -> null;
+    }
+
+    final var variables = new HashMap<String, DirectBuffer>();
+    for (final DocumentEntry entry : indexedDocument) {
+      final var nameBuffer = entry.getName();
+      final var valueBufferShared = entry.getValue();
+
+      final String name = BufferUtil.bufferAsString(nameBuffer);
+      final DirectBuffer valueBuffer = BufferUtil.cloneBuffer(valueBufferShared);
+      variables.put(name, valueBuffer);
+    }
+
+    return (key, nameBuffer) -> variables.get(BufferUtil.bufferAsString(nameBuffer));
   }
 
   private void activateStartEvent(

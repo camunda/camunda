@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.bpmn.task.JobWorkerTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ManualTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.EnumMap;
 import java.util.Map;
@@ -35,7 +36,7 @@ public final class BpmnElementProcessors {
   private final Map<BpmnElementType, BpmnElementProcessor<?>> processors =
       new EnumMap<>(BpmnElementType.class);
 
-  public BpmnElementProcessors(final BpmnBehaviors bpmnBehaviors) {
+  public BpmnElementProcessors(final BpmnBehaviors bpmnBehaviors, final ZeebeState zeebeState) {
     // tasks
     processors.put(BpmnElementType.SERVICE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(
@@ -53,7 +54,7 @@ public final class BpmnElementProcessors {
         BpmnElementType.EVENT_BASED_GATEWAY, new EventBasedGatewayProcessor(bpmnBehaviors));
 
     // containers
-    processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors, zeebeState));
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.EVENT_SUB_PROCESS, new EventSubProcessProcessor(bpmnBehaviors));
     processors.put(
