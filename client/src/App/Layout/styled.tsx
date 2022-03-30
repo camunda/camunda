@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {HEADER_HEIGHT} from 'modules/constants';
 import styled, {css} from 'styled-components';
 
 type GridProps = {
@@ -18,8 +19,12 @@ const Grid = styled.div<GridProps>`
       display: grid;
       grid-template-columns: 100%;
       grid-template-rows: ${numberOfRows === 2
-        ? css`57px calc(100vh - 57px)`
-        : css`57px calc(100vh - 95px) 38px`};
+        ? css`
+            ${HEADER_HEIGHT}px calc(100vh - ${HEADER_HEIGHT}px)
+          `
+        : css`
+            ${HEADER_HEIGHT}px calc(100vh - ${HEADER_HEIGHT + 38}px) 38px
+          `};
     `;
   }}
 `;

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const TYPE = {
+const TYPE = {
   GATEWAY_EXCLUSIVE: 'GATEWAY_EXCLUSIVE',
   GATEWAY_EVENT_BASED: 'GATEWAY_EVENT_BASED',
   GATEWAY_PARALLEL: 'GATEWAY_PARALLEL',
@@ -35,25 +35,25 @@ export const TYPE = {
   MULTI_INSTANCE_BODY: 'MULTI_INSTANCE_BODY',
 } as const;
 
-export const MULTI_INSTANCE_TYPE = {
+const MULTI_INSTANCE_TYPE = {
   PARALLEL: 'MULTI_PARALLEL',
   SEQUENTIAL: 'MULTI_SEQUENTIAL',
 };
 
-export const OPERATION_STATE = {
+const OPERATION_STATE = {
   SCHEDULED: 'SCHEDULED',
   LOCKED: 'LOCKED',
   SENT: 'SENT',
   COMPLETED: 'COMPLETED',
 };
 
-export const ACTIVE_OPERATION_STATES = [
+const ACTIVE_OPERATION_STATES = [
   OPERATION_STATE.SCHEDULED,
   OPERATION_STATE.LOCKED,
   OPERATION_STATE.SENT,
 ];
 
-export const FLOWNODE_TYPE_HANDLE = {
+const FLOWNODE_TYPE_HANDLE = {
   'bpmn:StartEvent': TYPE.EVENT_START,
   'bpmn:EndEvent': TYPE.EVENT_END,
   'bpmn:IntermediateCatchEvent': TYPE.EVENT_INTERMEDIATE_CATCH,
@@ -75,22 +75,15 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,
 } as const;
 
-export const SORT_ORDER = {
+const SORT_ORDER = {
   ASC: 'asc',
   DESC: 'desc',
 } as const;
 
-export const PANE_ID = {
-  TOP: 'TOP',
-  BOTTOM: 'BOTTOM',
-  LEFT: 'LEFT',
-  RIGHT: 'RIGHT',
-};
+const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
+const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 
-export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
-export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
-
-export const PAGE_TITLE = {
+const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',
   DASHBOARD: 'Operate: Dashboard',
   INSTANCES: 'Operate: Instances',
@@ -101,15 +94,32 @@ export const PAGE_TITLE = {
     `Operate: Decision Instance ${id} of ${name}`,
 };
 
-export const PILL_TYPE = {
+const PILL_TYPE = {
   TIMESTAMP: 'TIMESTAMP',
   FILTER: 'FILTER',
 } as const;
 
-export const INCIDENTS_BAR_HEIGHT = 42;
+const INCIDENTS_BAR_HEIGHT = 42;
 
-export const INSTANCE_SELECTION_MODE = {
+const HEADER_HEIGHT = 57;
+
+const INSTANCE_SELECTION_MODE = {
   INCLUDE: 'INCLUDE',
   EXCLUDE: 'EXCLUDE',
   ALL: 'ALL',
 } as const;
+
+export {
+  TYPE,
+  MULTI_INSTANCE_TYPE,
+  ACTIVE_OPERATION_STATES,
+  FLOWNODE_TYPE_HANDLE,
+  SORT_ORDER,
+  FLOW_NODE_STATE_OVERLAY_ID,
+  STATISTICS_OVERLAY_ID,
+  PAGE_TITLE,
+  PILL_TYPE,
+  INCIDENTS_BAR_HEIGHT,
+  INSTANCE_SELECTION_MODE,
+  HEADER_HEIGHT,
+};

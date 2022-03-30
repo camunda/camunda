@@ -4,12 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {HEADER_HEIGHT} from 'modules/constants';
 import styled, {css} from 'styled-components';
 
 const Container = styled.div`
   display: flex;
   position: absolute;
-  height: 100%;
+  height: calc(100vh - ${HEADER_HEIGHT}px);
   right: 0;
 `;
 
