@@ -27,15 +27,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
  * Adds long polling to the handling of activate job requests. When there are no jobs available to
  * activate, the response will be kept open.
  */
-public final class LongPollingActivateJobsHandler
-    implements ActivateJobsHandler, Consumer<ActorControl> {
+public final class LongPollingActivateJobsHandler implements ActivateJobsHandler {
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;

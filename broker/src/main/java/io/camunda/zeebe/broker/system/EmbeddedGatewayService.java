@@ -16,8 +16,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.util.sched.ActorScheduler;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Function;
 
 public final class EmbeddedGatewayService implements AutoCloseable {
@@ -34,7 +33,6 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             new BrokerClientImpl(
                 cfg, messagingService, membershipService, eventService, actorScheduler, false);
     gateway = new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);
-    startGateway();
   }
 
   @Override
@@ -48,11 +46,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
     return gateway;
   }
 
-  private void startGateway() {
-    try {
-      gateway.start();
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Gateway was not able to start", e);
-    }
+  public ActorFuture<Gateway> start() {
+    return gateway.start();
   }
 }

@@ -77,14 +77,14 @@ public final class StubbedGateway {
   }
 
   private void submitActorToActivateJobs(final Consumer<ActorControl> consumer) {
-    final var actorStartedFuture = new CompletableFuture<ActorControl>();
+    final var future = new CompletableFuture<>();
     final var actor =
         Actor.newActor()
             .name("ActivateJobsHandler")
-            .actorStartedHandler(consumer.andThen(actorStartedFuture::complete))
+            .actorStartedHandler(consumer.andThen(future::complete))
             .build();
     actorScheduler.submitActor(actor);
-    actorStartedFuture.join();
+    future.join();
   }
 
   private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
