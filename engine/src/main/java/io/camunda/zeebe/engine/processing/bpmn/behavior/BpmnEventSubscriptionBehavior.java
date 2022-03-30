@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -63,6 +64,12 @@ public final class BpmnEventSubscriptionBehavior {
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
       final T element, final BpmnElementContext context) {
     return catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
+  }
+
+  public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
+      final T element, final BpmnElementContext context, final VariablesLookup secondaryLookup) {
+    return catchEventBehavior.subscribeToEvents(
+        context, element, sideEffects, commandWriter, secondaryLookup);
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {

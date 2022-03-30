@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -54,8 +55,11 @@ public final class ProcessProcessor
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
+    // TODO implement
+    final VariablesLookup secondaryLookup = (key, name) -> null;
+
     eventSubscriptionBehavior
-        .subscribeToEvents(element, context)
+        .subscribeToEvents(element, context, secondaryLookup)
         .map(o -> stateTransitionBehavior.transitionToActivated(context))
         .ifRightOrLeft(
             activated -> activateStartEvent(element, activated),

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
@@ -89,10 +90,24 @@ public final class CatchEventBehavior {
       final ExecutableCatchEventSupplier supplier,
       final SideEffects sideEffects,
       final TypedCommandWriter commandWriter) {
+    return subscribeToEvents(context, supplier, sideEffects, commandWriter, null);
+  }
+
+  /** @return either a failure or nothing */
+  public Either<Failure, Void> subscribeToEvents(
+      final BpmnElementContext context,
+      final ExecutableCatchEventSupplier supplier,
+      final SideEffects sideEffects,
+      final TypedCommandWriter commandWriter,
+      final VariablesLookup secondaryLookup) {
+
+    final var expressionProcessorToUse =
+        secondaryLookup == null ? expressionProcessor : expressionProcessor.chain(secondaryLookup);
+
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
-            .map(event -> evalExpressions(expressionProcessor, event, context))
+            .map(event -> evalExpressions(expressionProcessorToUse, event, context))
             .collect(Either.collectorFoldingLeft());
 
     evaluationResults.ifRight(
