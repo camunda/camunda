@@ -169,9 +169,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then
-    assertInstancesInCorrectIndex(count1, ids1, endDate1);
-    assertInstancesInCorrectIndex(count2, ids2, endDate2);
-    assertInstancesInCorrectIndex(count3, ids3, null);
+    assertInstancesInCorrectIndex(count1, ids1, endDate1, true);
+    assertInstancesInCorrectIndex(count2, ids2, endDate2, true);
+    assertInstancesInCorrectIndex(count3, ids3, null, true);
 
     assertAllInstancesInAlias(count1 + count2 + count3);
 
@@ -222,6 +222,47 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertBatchOperationsInCorrectIndex(1, Arrays.asList(bo1.getId()), null);
   }
 
+  @Test
+  public void testArchivingDecisionInstances() throws Exception {
+
+    final Instant currentTime = pinZeebeTime();
+
+    //having
+    final Instant endDate = currentTime.minus(4, ChronoUnit.DAYS);
+    pinZeebeTime(endDate);
+
+    final String bpmnProcessId = "process";
+    final String demoDecisionId2 = "invoiceAssignApprover";
+
+    final String elementId = "task";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .businessRuleTask(elementId, task -> task.zeebeCalledDecisionId(demoDecisionId2)
+                .zeebeResultVariable("approverGroups"))
+            .done();
+
+    final Long processInstanceKey = tester.deployProcess(instance, "test.bpmn")
+        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .decisionsAreDeployed(2)
+        //when
+        .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
+        .waitUntil()
+        .processInstanceIsStarted()
+        .decisionInstancesAreCreated(2)
+        .getProcessInstanceKey();
+
+    resetZeebeTime();
+
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
+
+    assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
+
+  }
+
   private BatchOperationEntity createBatchOperationEntity(OffsetDateTime endDate) {
     BatchOperationEntity batchOperationEntity1 = new BatchOperationEntity();
     batchOperationEntity1.generateId();
@@ -269,7 +310,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then
-    assertInstancesInCorrectIndex(count1, ids1, endDate1);
+    assertInstancesInCorrectIndex(count1, ids1, endDate1,true);
     assertInstancesInCorrectIndex(count2, ids2, null);
   }
 

@@ -8,7 +8,7 @@ package io.camunda.operate.schema.templates;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DecisionInstanceTemplate extends AbstractTemplateDescriptor {
+public class DecisionInstanceTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "decision-instance";
 
