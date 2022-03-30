@@ -25,5 +25,5 @@ services:
       KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8080
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
-      KEYCLOAK_USERS_0_ROLES_0: "Full Access"
+      KEYCLOAK_USERS_0_ROLES_0: "Identity"
       KEYCLOAK_USERS_0_ROLES_1: "Operate"
