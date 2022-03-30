@@ -92,7 +92,7 @@ public final class CatchEventBehavior {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
-            .map(event -> evalExpressions(event, context))
+            .map(event -> evalExpressions(expressionProcessor, event, context))
             .collect(Either.collectorFoldingLeft());
 
     evaluationResults.ifRight(
@@ -105,15 +105,24 @@ public final class CatchEventBehavior {
   }
 
   private Either<Failure, EvalResult> evalExpressions(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
+      final ExpressionProcessor expressionProcessor,
+      final ExecutableCatchEvent event,
+      final BpmnElementContext context) {
     return Either.<Failure, EvalResult>right(new EvalResult(event))
-        .flatMap(result -> evaluateMessageName(event, context).map(result::messageName))
-        .flatMap(result -> evaluateCorrelationKey(event, context).map(result::correlationKey))
-        .flatMap(result -> evaluateTimer(event, context).map(result::timer));
+        .flatMap(
+            result ->
+                evaluateMessageName(expressionProcessor, event, context).map(result::messageName))
+        .flatMap(
+            result ->
+                evaluateCorrelationKey(expressionProcessor, event, context)
+                    .map(result::correlationKey))
+        .flatMap(result -> evaluateTimer(expressionProcessor, event, context).map(result::timer));
   }
 
   private Either<Failure, DirectBuffer> evaluateMessageName(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
+      final ExpressionProcessor expressionProcessor,
+      final ExecutableCatchEvent event,
+      final BpmnElementContext context) {
     if (!event.isMessage()) {
       return Either.right(null);
     }
@@ -126,7 +135,9 @@ public final class CatchEventBehavior {
   }
 
   private Either<Failure, DirectBuffer> evaluateCorrelationKey(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
+      final ExpressionProcessor expressionProcessor,
+      final ExecutableCatchEvent event,
+      final BpmnElementContext context) {
     if (!event.isMessage()) {
       return Either.right(null);
     }
@@ -142,7 +153,9 @@ public final class CatchEventBehavior {
   }
 
   private Either<Failure, Timer> evaluateTimer(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
+      final ExpressionProcessor expressionProcessor,
+      final ExecutableCatchEvent event,
+      final BpmnElementContext context) {
     if (!event.isTimer()) {
       return Either.right(null);
     }
