@@ -5,7 +5,7 @@
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 
 String gCloudAndMavenAgent() {
   """
@@ -58,6 +58,20 @@ spec:
       - mountPath: /usr/share/elasticsearch/svc/
         name: ci-service-account
         readOnly: true
+    - name: data-cleanup
+      image: busybox
+      imagePullPolicy: Always
+      command: ["/bin/sh","-c"]
+      args: ["rm -fr /usr/share/elasticsearch/data/* && rm -fr /usr/share/elasticsearch/logs/*"]
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: ssd-storage
+          mountPath: /usr/share/elasticsearch/data
+          subPath: data
+        - name: ssd-storage
+          mountPath: /usr/share/elasticsearch/logs
+          subPath: logs
   containers:
     - name: maven
       image:  ${MAVEN_DOCKER_IMAGE()}
@@ -69,17 +83,19 @@ spec:
             resourceFieldRef:
               resource: limits.cpu
       resources:
+      # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
+      # this is 30 - (cpu of elasticsearch container)
         limits:
-          cpu: 8
+          cpu: 14
           memory: 8Gi
         requests:
-          cpu: 8
+          cpu: 14
           memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:${params.ES_VERSION}
       env:
         - name: ES_JAVA_OPTS
-          value: '-Xms4g -Xmx4g'
+          value: '-Xms8g -Xmx8g'
         - name: cluster.name
           value: docker-cluster
         - name: discovery.type
@@ -108,6 +124,12 @@ spec:
         name: configdir
       - mountPath: /usr/share/elasticsearch/plugins/
         name: plugindir
+      - name: ssd-storage
+        mountPath: /usr/share/elasticsearch/data
+        subPath: data
+      - name: ssd-storage
+        mountPath: /usr/share/elasticsearch/logs
+        subPath: logs
       ports:
         - containerPort: 9200
           name: es-http
@@ -117,11 +139,11 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 16
+          memory: 16Gi
         requests:
-          cpu: 4
-          memory: 8Gi
+          cpu: 16
+          memory: 16Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -130,6 +152,10 @@ spec:
   - name: ci-service-account
     secret: 
       secretName: ci-service-account
+  - name: ssd-storage
+    hostPath:
+      path: /mnt/disks/array0
+      type: Directory
 """ as String
 }
 
