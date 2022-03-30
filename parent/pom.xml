@@ -1427,6 +1427,13 @@
               </googleJavaFormat>
             </java>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.google.googlejavaformat</groupId>
+              <artifactId>google-java-format</artifactId>
+              <version>${plugin.version.google-java-format}</version>
+            </dependency>
+          </dependencies>
         </plugin>
 
         <!-- protobuf generation -->
