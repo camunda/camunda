@@ -62,7 +62,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
     <version.httpcomponents>4.4.15</version.httpcomponents>
-    <version.jackson>2.13.2.20220324</version.jackson>
+    <version.jackson>2.13.2.20220328</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
     <version.jna>5.10.0</version.jna>
     <version.junit>5.8.2</version.junit>
@@ -145,7 +145,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.21.0</plugin.version.spotless>
+    <plugin.version.spotless>2.22.0</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
