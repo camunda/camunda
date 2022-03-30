@@ -13,6 +13,8 @@ export declare global {
       clusterId?: null | string;
       canLogout?: null | boolean;
       isLoginDelegated?: null | boolean;
+      mixpanelToken?: null | string;
+      mixpanelAPIHost?: null | string;
     };
     Osano?: {
       cm?: {

@@ -12,6 +12,10 @@ public class CloudProperties {
 
   private String clusterId;
 
+  private String mixpanelToken;
+
+  private String mixpanelAPIHost;
+
   public String getOrganizationId() {
     return organizationId;
   }
@@ -27,6 +31,24 @@ public class CloudProperties {
 
   public CloudProperties setClusterId(final String clusterId) {
     this.clusterId = clusterId;
+    return this;
+  }
+
+  public String getMixpanelToken() {
+    return mixpanelToken;
+  }
+
+  public CloudProperties setMixpanelToken(final String mixpanelToken) {
+    this.mixpanelToken = mixpanelToken;
+    return this;
+  }
+
+  public String getMixpanelAPIHost() {
+    return mixpanelAPIHost;
+  }
+
+  public CloudProperties setMixpanelAPIHost(final String mixpanelAPIHost) {
+    this.mixpanelAPIHost = mixpanelAPIHost;
     return this;
   }
 }

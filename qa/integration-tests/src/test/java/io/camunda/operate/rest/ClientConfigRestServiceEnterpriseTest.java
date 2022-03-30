@@ -33,6 +33,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     properties = {
         OperateProperties.PREFIX + ".enterprise=true",
         OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
+        OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
+        OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
         //CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
     }
 )
@@ -55,6 +57,8 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
             + "\"contextPath\":\"\","
             + "\"organizationId\":\"organizationId\","
             + "\"clusterId\":null,"
+            + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
+            + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false"
             + "};");
   }

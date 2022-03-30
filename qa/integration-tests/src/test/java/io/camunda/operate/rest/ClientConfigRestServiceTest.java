@@ -34,7 +34,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     },
     properties = {
         //OperateProperties.PREFIX + ".cloud.organizationId=organizationId",//  -- leave out to test for null values
-        OperateProperties.PREFIX + ".cloud.clusterId=clusterId"
+        OperateProperties.PREFIX + ".cloud.clusterId=clusterId",
+        OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
+        OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
     }
 )
 public class ClientConfigRestServiceTest extends OperateIntegrationTest {
@@ -61,6 +63,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"contextPath\":\"\","
             + "\"organizationId\":null,"
             + "\"clusterId\":\"clusterId\","
+            + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
+            + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false"
             + "};");
   }
@@ -84,6 +88,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"contextPath\":\"\","
             + "\"organizationId\":null,"
             + "\"clusterId\":\"clusterId\","
+            + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
+            + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false"
             + "};");
   }

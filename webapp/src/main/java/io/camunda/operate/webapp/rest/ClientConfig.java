@@ -34,12 +34,18 @@ public class ClientConfig {
 
   public String clusterId;
 
+  public String mixpanelAPIHost;
+
+  public String mixpanelToken;
+
   public boolean isLoginDelegated;
 
   public String asJson(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
     organizationId = operateProperties.getCloud().getOrganizationId();
+    mixpanelAPIHost = operateProperties.getCloud().getMixpanelAPIHost();
+    mixpanelToken = operateProperties.getCloud().getMixpanelToken();
     contextPath = context.getContextPath();
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
