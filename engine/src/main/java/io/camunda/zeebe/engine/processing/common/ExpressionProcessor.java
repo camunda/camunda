@@ -21,6 +21,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,6 +40,18 @@ public final class ExpressionProcessor {
     this.expressionLanguage = expressionLanguage;
 
     evaluationContext = new VariableStateEvaluationContext(lookup);
+  }
+
+  /**
+   * Returns a new expression processor that will use {@code secondaryLookup} when the first lookup
+   * failed
+   *
+   * @param secondaryLookup additional lookup that comes into play when the first lookup failed
+   * @return expression processor that will use {@code secondaryLookup} when the first lookup failed
+   */
+  public ExpressionProcessor chain(final VariablesLookup secondaryLookup) {
+    return new ExpressionProcessor(
+        expressionLanguage, evaluationContext.lookup.chain(secondaryLookup));
   }
 
   /**
@@ -404,5 +417,20 @@ public final class ExpressionProcessor {
   public interface VariablesLookup {
 
     DirectBuffer getVariable(final long scopeKey, final DirectBuffer name);
+
+    /**
+     * Returns a new chained variable lookup. Variables will first be lookup up in {@code
+     * this.getVariable(...)}. If this lookup fails, then they will be lookup up in {@code
+     * secondaryLookup}
+     *
+     * @param secondaryLookup additional lookup that will be used when the first lookup failed
+     * @return chained variable lookup of {@code this.getVariable(...)} and {@code
+     *     secondaryLookup.getVariable(...)}
+     */
+    default VariablesLookup chain(final VariablesLookup secondaryLookup) {
+      return (scopeKey, name) ->
+          Optional.ofNullable(getVariable(scopeKey, name))
+              .orElse(secondaryLookup.getVariable(scopeKey, name));
+    }
   }
 }
