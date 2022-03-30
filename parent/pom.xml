@@ -132,6 +132,7 @@
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
+    <plugin.version.google-java-format>1.12.0</plugin.version.google-java-format>
     <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.maven-jar>3.2.2</plugin.version.maven-jar>
@@ -1428,11 +1429,18 @@
           <configuration>
             <java>
               <googleJavaFormat>
-                <version>1.12.0</version>
+                <version>${plugin.version.google-java-format}</version>
                 <style>GOOGLE</style>
               </googleJavaFormat>
             </java>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.google.googlejavaformat</groupId>
+              <artifactId>google-java-format</artifactId>
+              <version>${plugin.version.google-java-format}</version>
+            </dependency>
+          </dependencies>
         </plugin>
 
         <!-- protobuf generation -->
