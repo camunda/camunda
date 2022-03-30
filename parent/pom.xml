@@ -141,7 +141,7 @@
     <plugin.version.resources>3.2.0</plugin.version.resources>
     <plugin.version.revapi>0.14.6</plugin.version.revapi>
     <plugin.version.scala>4.6.1</plugin.version.scala>
-    <plugin.version.shade>3.2.4</plugin.version.shade>
+    <plugin.version.shade>3.3.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
