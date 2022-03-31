@@ -16,6 +16,26 @@ public class CloudProperties {
 
   private String mixpanelAPIHost;
 
+  private String permissionUrl;
+
+  private String permissionAudience;
+
+  public String getPermissionUrl() {
+    return permissionUrl;
+  }
+
+  public void setPermissionUrl(String permissionUrl) {
+    this.permissionUrl = permissionUrl;
+  }
+
+  public String getPermissionAudience() {
+    return permissionAudience;
+  }
+
+  public void setPermissionAudience(String permissionAudience) {
+    this.permissionAudience = permissionAudience;
+  }
+
   public String getOrganizationId() {
     return organizationId;
   }
