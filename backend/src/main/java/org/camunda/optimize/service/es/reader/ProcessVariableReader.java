@@ -89,11 +89,6 @@ public class ProcessVariableReader {
   private final VariableLabelReader variableLabelReader;
 
   public List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto) {
-    if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
-      log.debug("Cannot fetch variable names for process definition with missing versions.");
-      return Collections.emptyList();
-    }
-
     log.debug(
       "Fetching variable names for process definition with key [{}] and versions [{}]",
       requestDto.getProcessDefinitionKey(),
@@ -104,12 +99,19 @@ public class ProcessVariableReader {
   }
 
   public List<ProcessVariableNameResponseDto> getVariableNames(final List<ProcessVariableNameRequestDto> variableNameRequests) {
-    if (variableNameRequests.isEmpty()) {
-      log.debug("Cannot fetch variable names as no variable requests are provided.");
+    final List<ProcessVariableNameRequestDto> validNameRequests = variableNameRequests
+      .stream()
+      .filter(request -> request.getProcessDefinitionKey() != null)
+      .filter(request -> !CollectionUtils.isEmpty(request.getProcessDefinitionVersions()))
+      .collect(Collectors.toList());
+    if (validNameRequests.isEmpty()) {
+      log.debug(
+        "Cannot fetch variable names as no valid variable requests are provided. " +
+          "Variable requests must include definition key and version.");
       return Collections.emptyList();
     }
 
-    List<String> processDefinitionKeys = variableNameRequests.stream()
+    List<String> processDefinitionKeys = validNameRequests.stream()
       .map(ProcessVariableNameRequestDto::getProcessDefinitionKey)
       .distinct()
       .collect(Collectors.toList());
@@ -117,16 +119,14 @@ public class ProcessVariableReader {
       variableLabelReader.getVariableLabelsByKey(processDefinitionKeys);
 
     BoolQueryBuilder query = boolQuery();
-    variableNameRequests.stream()
-      .filter(request -> request.getProcessDefinitionKey() != null)
-      .filter(request -> !CollectionUtils.isEmpty(request.getProcessDefinitionVersions()))
-      .forEach(request -> query.should(DefinitionQueryUtil.createDefinitionQuery(
-        request.getProcessDefinitionKey(),
-        request.getProcessDefinitionVersions(),
-        request.getTenantIds(),
-        new ProcessInstanceIndex(request.getProcessDefinitionKey()),
-        processDefinitionReader::getLatestVersionToKey
-      )));
+    validNameRequests.forEach(request ->
+                                query.should(DefinitionQueryUtil.createDefinitionQuery(
+                                  request.getProcessDefinitionKey(),
+                                  request.getProcessDefinitionVersions(),
+                                  request.getTenantIds(),
+                                  new ProcessInstanceIndex(request.getProcessDefinitionKey()),
+                                  processDefinitionReader::getLatestVersionToKey
+                                )));
     return getVariableNamesForInstancesMatchingQuery(query, definitionLabelsDtos);
   }
 
