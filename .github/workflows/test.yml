@@ -132,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-latest, windows-2022, ubuntu-latest ]
+        os: [ macos-latest, windows-latest, ubuntu-latest ]
     env:
       JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
     steps:
