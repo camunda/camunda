@@ -2,16 +2,14 @@ name: Tests
 
 on:
   push:
-    tags:
-      - v*
     branches:
       - main
       - stable/*
       - release/*
       - trying
       - staging
-  pull_request:
-  workflow_dispatch:
+  pull_request: {}
+  workflow_dispatch: {}
 
 jobs:
   integration-tests:

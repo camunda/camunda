@@ -1,12 +1,13 @@
 name: Code quality
 on:
   push:
-    tags:
-      - v*
     branches:
       - main
       - stable/*
-  pull_request:
+      - release/*
+      - trying
+      - staging
+  pull_request: {}
 jobs:
   codeql:
     name: CodeQL
