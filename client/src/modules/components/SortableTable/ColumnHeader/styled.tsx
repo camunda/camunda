@@ -34,7 +34,7 @@ const SortableHeader = styled.button<Props & SortableHeaderProps>`
       padding: 0;
       ${$showExtraPadding
         ? css`
-            padding-right: 21px;
+            padding-right: 22px;
           `
         : ''}
       background: transparent;
