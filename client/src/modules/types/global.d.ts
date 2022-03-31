@@ -4,6 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+type Appcues = {
+  debug: () => void;
+  page: () => void;
+  identify: (userId: string, properties?: {[property: string]: any}) => void;
+  track: (
+    eventName: string,
+    properties?: {[eventProperty: string]: any}
+  ) => void;
+};
+
 export declare global {
   interface Window {
     clientConfig?: {
@@ -21,6 +31,7 @@ export declare global {
         analytics: boolean;
       };
     };
+    Appcues?: Appcues;
   }
 
   type SortOrder = 'asc' | 'desc';
@@ -33,6 +44,7 @@ export declare global {
       REACT_APP_OSANO_INT_ENV_URL: string;
       REACT_APP_OSANO_PROD_ENV_URL: string;
       REACT_APP_MIXPANEL_TOKEN: string;
+      REACT_APP_CUES_HOST: string;
     }
   }
 }

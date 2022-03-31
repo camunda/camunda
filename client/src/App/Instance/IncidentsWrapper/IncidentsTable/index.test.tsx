@@ -90,6 +90,7 @@ describe('IncidentsTable', () => {
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -165,6 +166,7 @@ describe('IncidentsTable', () => {
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});

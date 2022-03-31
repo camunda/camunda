@@ -1108,6 +1108,7 @@ describe('Variables', () => {
         displayName: 'demo',
         permissions: ['read'],
         canLogout: true,
+        userId: 'demo',
       });
     });
 

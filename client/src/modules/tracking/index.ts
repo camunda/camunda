@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import mixpanel, {Mixpanel} from 'mixpanel-browser';
+import {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
 
 const EVENT_PREFIX = 'operate:';
@@ -66,73 +66,129 @@ type Events =
     };
 const STAGE_ENV = getStage(window.location.host);
 
-mixpanel.init(
-  window.clientConfig?.mixpanelToken ?? process.env.REACT_APP_MIXPANEL_TOKEN,
-  {
-    opt_out_tracking_by_default: true,
-    api_host:
-      window.clientConfig?.mixpanelToken ?? process.env.REACT_MIXPANEL_HOST,
-  }
-);
+function injectScript(src: string): Promise<void> {
+  return new Promise((resolve) => {
+    const scriptElement = document.createElement('script');
+
+    scriptElement.src = src;
+
+    document.head.appendChild(scriptElement);
+
+    setTimeout(resolve, 1000);
+
+    scriptElement.onload = () => {
+      resolve();
+    };
+    scriptElement.onerror = () => {
+      resolve();
+    };
+  });
+}
 
 class Tracking {
-  #mixpanel: null | Mixpanel = window.clientConfig?.organizationId
-    ? mixpanel
-    : null;
-
-  constructor() {
-    this.#mixpanel?.register({
-      organizationId: window.clientConfig?.organizationId,
-      clusterId: window.clientConfig?.clusterId,
-      stage: STAGE_ENV,
-      version: process.env.REACT_APP_VERSION,
-    });
-  }
+  #mixpanel: null | Mixpanel = null;
+  #appCues: null | NonNullable<typeof window.Appcues> = null;
+  #baseProperties = {
+    organizationId: window.clientConfig?.organizationId,
+    clusterId: window.clientConfig?.clusterId,
+    stage: STAGE_ENV,
+    version: process.env.REACT_APP_VERSION,
+  } as const;
 
   track(events: Events) {
     const {eventName, ...properties} = events;
+    const prefixedEventName = `${EVENT_PREFIX}${eventName}`;
 
     try {
-      this.#mixpanel?.track(`${EVENT_PREFIX}${eventName}`, properties);
+      this.#mixpanel?.track(prefixedEventName, properties);
+      this.#appCues?.track(prefixedEventName, {
+        ...this.#baseProperties,
+        ...properties,
+      });
     } catch (error) {
       console.error(`Can't track event: ${eventName}`, error);
     }
   }
 
-  loadPermissions(): Promise<void> {
-    if (
-      process.env.NODE_ENV === 'development' ||
-      !['prod', 'int'].includes(STAGE_ENV) ||
-      this.#mixpanel === null
-    ) {
+  identifyUser = (userId: string) => {
+    this.#mixpanel?.identify(userId);
+    this.#appCues?.identify(userId);
+  };
+
+  trackPagination = () => {
+    this.#appCues?.page();
+  };
+
+  #isTrackingAllowed = () => {
+    return Boolean(window.Osano?.cm?.analytics);
+  };
+
+  #loadMixpanel = (): Promise<void> => {
+    if (!this.#isTrackingAllowed()) {
+      return Promise.resolve();
+    }
+
+    return import('mixpanel-browser').then(({default: mixpanel}) => {
+      mixpanel.init(
+        window.clientConfig?.mixpanelToken ??
+          process.env.REACT_APP_MIXPANEL_TOKEN,
+        {
+          api_host:
+            window.clientConfig?.mixpanelAPIHost ??
+            process.env.REACT_MIXPANEL_HOST,
+        }
+      );
+      this.#mixpanel?.register(this.#baseProperties);
+      this.#mixpanel = mixpanel;
+    });
+  };
+
+  #loadOsano = (): Promise<void> => {
+    return new Promise((resolve) => {
+      if (STAGE_ENV === 'int') {
+        return injectScript(process.env.REACT_APP_OSANO_INT_ENV_URL).then(
+          resolve
+        );
+      }
+
+      if (STAGE_ENV === 'prod') {
+        return injectScript(process.env.REACT_APP_OSANO_PROD_ENV_URL).then(
+          resolve
+        );
+      }
+
+      return resolve();
+    });
+  };
+
+  #loadAppCues = (): Promise<void> => {
+    if (!this.#isTrackingAllowed()) {
       return Promise.resolve();
     }
 
     return new Promise((resolve) => {
-      const osanoScriptElement = document.createElement('script');
-
-      if (STAGE_ENV === 'int') {
-        osanoScriptElement.src = process.env.REACT_APP_OSANO_INT_ENV_URL;
-      }
-
-      if (STAGE_ENV === 'prod') {
-        osanoScriptElement.src = process.env.REACT_APP_OSANO_PROD_ENV_URL;
-      }
-
-      document.head.appendChild(osanoScriptElement);
-
-      setTimeout(resolve, 1000);
-
-      osanoScriptElement.onload = () => {
-        if (window.Osano?.cm?.analytics) {
-          this.#mixpanel?.opt_in_tracking();
+      return injectScript(process.env.REACT_APP_CUES_HOST).then(() => {
+        if (window.Appcues) {
+          this.#appCues = window.Appcues;
         }
+
         resolve();
-      };
-      osanoScriptElement.onerror = () => {
-        resolve();
-      };
+      });
     });
+  };
+
+  loadAnalyticsToWillingUsers(): Promise<void[] | void> {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      !['prod', 'int'].includes(STAGE_ENV) ||
+      !window.clientConfig?.organizationId
+    ) {
+      return Promise.resolve();
+    }
+
+    return this.#loadOsano().then(() =>
+      Promise.all([this.#loadMixpanel(), this.#loadAppCues()])
+    );
   }
 }
 

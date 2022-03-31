@@ -18,6 +18,7 @@ describe('Restricted', () => {
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(
@@ -34,6 +35,7 @@ describe('Restricted', () => {
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(
@@ -50,6 +52,7 @@ describe('Restricted', () => {
       displayName: 'demo',
       permissions: ['read', 'write'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(
@@ -66,6 +69,7 @@ describe('Restricted', () => {
       displayName: 'demo',
       permissions: undefined,
       canLogout: true,
+      userId: 'demo',
     });
 
     render(

@@ -49,6 +49,7 @@ describe('<SessionWatcher />', () => {
       displayName: 'Jon',
       canLogout: true,
       permissions: ['read', 'write'],
+      userId: 'jon',
     });
     authenticationStore.expireSession();
 
@@ -62,6 +63,7 @@ describe('<SessionWatcher />', () => {
       displayName: 'Jon Doe',
       permissions: ['read', 'write'],
       canLogout: true,
+      userId: 'jon',
     });
 
     await waitFor(() => expect(mockRemoveNotification).toHaveBeenCalled());
@@ -76,6 +78,7 @@ describe('<SessionWatcher />', () => {
       displayName: 'Jon',
       canLogout: true,
       permissions: [],
+      userId: 'jon',
     });
     authenticationStore.expireSession();
 
@@ -95,6 +98,7 @@ describe('<SessionWatcher />', () => {
       displayName: 'Jon',
       canLogout: true,
       permissions: [],
+      userId: 'jon',
     });
     authenticationStore.expireSession();
 

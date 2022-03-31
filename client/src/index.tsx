@@ -23,6 +23,6 @@ if (
   startMocking();
 }
 
-tracking.loadPermissions().then(() => {
+tracking.loadAnalyticsToWillingUsers().then(() => {
   ReactDOM.render(<App />, document.getElementById('root'));
 });

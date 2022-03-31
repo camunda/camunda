@@ -373,6 +373,7 @@ describe('InstanceHeader', () => {
       displayName: 'demo',
       permissions: ['read', 'write'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(<InstanceHeader />, {wrapper: Wrapper});
@@ -407,6 +408,7 @@ describe('InstanceHeader', () => {
       displayName: 'demo',
       permissions: ['read'],
       canLogout: true,
+      userId: 'demo',
     });
 
     render(<InstanceHeader />, {wrapper: Wrapper});

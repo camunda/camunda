@@ -9,9 +9,17 @@ import {ProfileDropdown, Dropdown, SkeletonBlock} from './styled';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
+import {useEffect} from 'react';
+import {tracking} from 'modules/tracking';
 
 const User: React.FC = observer(() => {
-  const {displayName, canLogout} = authenticationStore.state;
+  const {displayName, canLogout, userId} = authenticationStore.state;
+
+  useEffect(() => {
+    if (userId) {
+      tracking.identifyUser(userId);
+    }
+  }, [userId]);
 
   return (
     <ProfileDropdown data-testid="profile-dropdown">

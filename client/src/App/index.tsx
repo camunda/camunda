@@ -22,6 +22,7 @@ import {HashRouterMigrator} from './HashRouterMigrator';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
 import {Layout} from './Layout';
+import {TrackPagination} from 'modules/tracking/TrackPagination';
 
 const App: React.FC = () => {
   return (
@@ -34,6 +35,7 @@ const App: React.FC = () => {
           <GettingStartedExperience />
           <HashRouterMigrator />
           <SessionWatcher />
+          <TrackPagination />
           <Routes>
             <Route path={Paths.login()} element={<Login />} />
             <Route

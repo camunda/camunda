@@ -178,6 +178,7 @@ describe('ListPanel', () => {
         displayName: 'demo',
         permissions: ['read'],
         canLogout: true,
+        userId: 'demo',
       });
 
       mockServer.use(

@@ -26,6 +26,7 @@ type State = {
   permissions: Permissions;
   displayName: string | undefined;
   canLogout: boolean;
+  userId: string | undefined;
 };
 
 const DEFAULT_STATE: State = {
@@ -33,6 +34,7 @@ const DEFAULT_STATE: State = {
   permissions: ['read', 'write'],
   displayName: undefined,
   canLogout: false,
+  userId: undefined,
 };
 
 class Authentication {
@@ -155,8 +157,9 @@ class Authentication {
     displayName,
     permissions,
     canLogout,
+    userId,
   }: Undefinable<
-    Pick<State, 'displayName' | 'permissions' | 'canLogout'>,
+    Pick<State, 'displayName' | 'permissions' | 'canLogout' | 'userId'>,
     'permissions'
   >) => {
     storeStateLocally({
@@ -166,6 +169,7 @@ class Authentication {
     this.state.status = 'user-information-fetched';
     this.state.displayName = displayName;
     this.state.canLogout = canLogout;
+    this.state.userId = userId;
     this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
   };
 
