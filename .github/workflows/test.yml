@@ -59,6 +59,7 @@ jobs:
           path: "**/target/failsafe-reports/"
           retention-days: 7
   project-list:
+    # Builds a list of projects where unit tests can be run on hosted runners
     name: List projects
     runs-on: ubuntu-latest
     steps:
@@ -71,10 +72,11 @@ jobs:
           cache: 'maven'
       - name: Get Project List
         id: list-projects
+        # Build a json array of module names that can be used for the matrix in `unit-tests`
         run: >
-          echo "::set-output name=fast::$(mvn -pl !:zeebe-workflow-engine,!:zeebe-logstreams -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q |  jq -cnR [inputs])"
+          echo "::set-output name=projects::$(mvn -pl !:zeebe-workflow-engine,!:zeebe-logstreams -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q |  jq -cnR [inputs])"
     outputs:
-      fast: ${{ steps.list-projects.outputs.fast }}
+      projects: ${{ steps.list-projects.outputs.projects }}
   unit-tests:
     name: Unit tests
     needs: project-list
