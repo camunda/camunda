@@ -18,9 +18,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +35,7 @@ public class SSOController {
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
 
   @Autowired private Auth0Service auth0Service;
+  @Autowired private BeanFactory beanFactory;
 
   /**
    * login the user - the user authentication will be delegated to auth0
@@ -50,10 +51,6 @@ public class SSOController {
     return "redirect:" + authorizeUrl;
   }
 
-  /**
-   * Logged in callback - Is called by auth0 with results of user authentication (GET) <br>
-   * Redirects to root url if successful, otherwise it will be redirected to an error url.
-   */
   @GetMapping(value = SSO_CALLBACK)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)
       throws IOException {
@@ -65,9 +62,8 @@ public class SSOController {
     try {
       auth0Service.authenticate(req, res);
       redirectToPage(req, res);
-    } catch (InsufficientAuthenticationException iae) {
-      logoutAndRedirectToNoPermissionPage(req, res);
-    } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
+    } catch (Exception t) {
+      // removed logout, if no permission, user shouldn't be logged out from cloud
       clearContextAndRedirectToNoPermission(req, res, t);
     }
   }

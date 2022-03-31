@@ -15,10 +15,12 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.auth0.AuthenticationController;
@@ -30,6 +32,7 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
+import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,6 +49,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -58,6 +62,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import org.springframework.web.client.RestTemplate;
 
 @RunWith(Parameterized.class)
 @SpringBootTest(
@@ -71,6 +76,8 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
       "camunda.tasklist.auth0.domain=domain",
       "camunda.tasklist.auth0.backendDomain=backendDomain",
       "camunda.tasklist.auth0.claimName=claimName",
+      "camunda.tasklist.cloud.permissionaudience=audience",
+      "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.persistentSessionsEnabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -91,6 +98,10 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Autowired TasklistProperties tasklistProperties;
 
   @MockBean AuthenticationController authenticationController;
+
+  @MockBean
+  @Qualifier("auth0_restTemplate")
+  private RestTemplate restTemplate;
 
   @Autowired private ObjectMapper objectMapper;
   private final BiFunction<String, String, Tokens> orgExtractor;
@@ -133,6 +144,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
+    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
@@ -146,12 +158,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
             orgExtractor.apply(tasklistProperties.getAuth0().getClaimName(), "wrong-organization"));
 
     response = get(SSO_CALLBACK, cookies);
-    assertThat(redirectLocationIn(response))
-        .contains(
-            tasklistProperties.getAuth0().getDomain(),
-            "logout",
-            tasklistProperties.getAuth0().getClientId(),
-            NO_PERMISSION);
+    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
 
     response = get(ROOT, cookies);
     // Check that access to url is not possible
@@ -212,6 +219,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2: Get Login provider url
+    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
@@ -303,6 +311,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
+    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
@@ -352,5 +361,19 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     }
 
     return new HttpEntity<>(body, headers);
+  }
+
+  private void mockPermissionAllowed() {
+    final ClusterInfo.OrgPermissions tasklist =
+        new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
+
+    final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(tasklist, null);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
+        new ResponseEntity<>(clusterInfo, HttpStatus.OK);
+
+    when(restTemplate.exchange(
+            eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
+        .thenReturn(clusterInfoResponseEntity);
   }
 }
