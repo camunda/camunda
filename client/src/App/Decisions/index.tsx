@@ -8,13 +8,14 @@ import {useEffect, useRef, useState} from 'react';
 import {Filters} from './Filters';
 import {Decision} from './Decision';
 import {InstancesTable} from './InstancesTable';
-import {Container, RightContainer} from './styled';
+import {Container, RightContainer, Copyright} from './styled';
 import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {PAGE_TITLE} from 'modules/constants';
+import {Panel} from 'modules/components/Panel';
 
 const Decisions: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -42,6 +43,9 @@ const Decisions: React.FC = () => {
           <Decision />
           <InstancesTable />
         </ResizablePanel>
+        <Panel.Footer>
+          <Copyright />
+        </Panel.Footer>
       </RightContainer>
     </Container>
   );

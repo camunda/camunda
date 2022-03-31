@@ -10,7 +10,6 @@ import {observer} from 'mobx-react';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
-import {Panel} from 'modules/components/Panel';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {SortableTable} from 'modules/components/SortableTable';
 import {Link} from 'modules/components/Link';
@@ -23,7 +22,6 @@ import {
   DecisionContainer,
   CircleBlock,
   DecisionBlock,
-  Copyright,
   State,
 } from './styled';
 import {tracking} from 'modules/tracking';
@@ -206,9 +204,6 @@ const InstancesTable: React.FC = observer(() => {
           }
         )}
       />
-      <Panel.Footer>
-        <Copyright />
-      </Panel.Footer>
     </Container>
   );
 });

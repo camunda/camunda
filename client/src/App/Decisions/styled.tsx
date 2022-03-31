@@ -5,6 +5,7 @@
  */
 
 import styled from 'styled-components';
+import {Copyright as BaseCopyright} from 'modules/components/Copyright';
 
 const Container = styled.main`
   display: flex;
@@ -16,6 +17,12 @@ const RightContainer = styled.div`
   width: 100%;
   height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 `;
 
-export {Container, RightContainer};
+const Copyright = styled(BaseCopyright)`
+  text-align: right;
+`;
+
+export {Container, RightContainer, Copyright};

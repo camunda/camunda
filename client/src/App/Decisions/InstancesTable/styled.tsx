@@ -5,7 +5,6 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Copyright as BaseCopyright} from 'modules/components/Copyright';
 import {BaseBlock, BaseCircle} from 'modules/components/Skeleton';
 import StateIcon from 'modules/components/StateIcon';
 
@@ -39,21 +38,10 @@ const DecisionBlock = styled(BaseBlock)`
   width: 201px;
 `;
 
-const Copyright = styled(BaseCopyright)`
-  text-align: right;
-`;
-
 const State = styled(StateIcon)`
   margin-right: 10px;
   &:first-child {
     margin-left: 0;
   }
 `;
-export {
-  Container,
-  DecisionContainer,
-  DecisionBlock,
-  CircleBlock,
-  State,
-  Copyright,
-};
+export {Container, DecisionContainer, DecisionBlock, CircleBlock, State};
