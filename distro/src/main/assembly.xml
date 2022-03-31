@@ -9,7 +9,7 @@
     <format>zip</format>
   </formats>
 
-  <baseDirectory>camunda-cloud-tasklist-${project.version}</baseDirectory>
+  <baseDirectory>camunda-tasklist-${project.version}</baseDirectory>
   <includeBaseDirectory>true</includeBaseDirectory>
 
   <dependencySets>
@@ -33,7 +33,7 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/camunda-cloud-tasklist</directory>
+      <directory>${project.build.directory}/camunda-tasklist</directory>
       <outputDirectory></outputDirectory>
     </fileSet>
   </fileSets>

@@ -9,7 +9,7 @@
   </parent>
 
   <name>Tasklist Distro</name>
-  <artifactId>camunda-cloud-tasklist</artifactId>
+  <artifactId>camunda-tasklist</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
@@ -24,7 +24,7 @@
   </dependencies>
 
   <build>
-    <finalName>camunda-cloud-tasklist-${project.version}</finalName>
+    <finalName>camunda-tasklist-${project.version}</finalName>
     <plugins>
 
       <plugin>
@@ -38,7 +38,7 @@
           <repositoryName>lib</repositoryName>
           <generateRepository>false</generateRepository>
           <useWildcardClassPath>true</useWildcardClassPath>
-          <assembleDirectory>${project.build.directory}/camunda-cloud-tasklist</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/camunda-tasklist</assembleDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError</extraJvmArguments>
 
           <platforms>

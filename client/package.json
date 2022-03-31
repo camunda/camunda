@@ -1,5 +1,5 @@
 {
-  "name": "camunda-cloud-tasklist",
+  "name": "camunda-tasklist",
   "version": "1.4.0-SNAPSHOT",
   "private": true,
   "dependencies": {
