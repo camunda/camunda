@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractExclusiveGatewayBuilder<B extends AbstractExclusiveGatewayBuilder<B>>
     extends AbstractGatewayBuilder<B, ExclusiveGateway> {
 

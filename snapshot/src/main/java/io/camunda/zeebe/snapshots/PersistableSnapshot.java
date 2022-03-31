@@ -27,7 +27,9 @@ public interface PersistableSnapshot {
    */
   ActorFuture<PersistedSnapshot> persist();
 
-  /** @return the snapshotId of the snapshot */
+  /**
+   * @return the snapshotId of the snapshot
+   */
   SnapshotId snapshotId();
 
   /**

@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractIntermediateCatchEventBuilder<
         B extends AbstractIntermediateCatchEventBuilder<B>>
     extends AbstractCatchEventBuilder<B, IntermediateCatchEvent> {

@@ -13,7 +13,9 @@ import org.agrona.DirectBuffer;
 
 /** Represents an event on the log stream. */
 public interface LoggedEvent extends BufferWriter {
-  /** @return the event's position in the log. */
+  /**
+   * @return the event's position in the log.
+   */
   long getPosition();
 
   /**
@@ -22,10 +24,14 @@ public interface LoggedEvent extends BufferWriter {
    */
   long getSourceEventPosition();
 
-  /** @return the key of the event */
+  /**
+   * @return the key of the event
+   */
   long getKey();
 
-  /** @return the timestamp of the event, the ActorClock current time when the event was written */
+  /**
+   * @return the timestamp of the event, the ActorClock current time when the event was written
+   */
   long getTimestamp();
 
   /**
@@ -34,10 +40,14 @@ public interface LoggedEvent extends BufferWriter {
    */
   DirectBuffer getMetadata();
 
-  /** @return the offset of the event's metadata */
+  /**
+   * @return the offset of the event's metadata
+   */
   int getMetadataOffset();
 
-  /** @return the length of the event's metadata */
+  /**
+   * @return the length of the event's metadata
+   */
   short getMetadataLength();
 
   /**
@@ -53,10 +63,14 @@ public interface LoggedEvent extends BufferWriter {
    */
   DirectBuffer getValueBuffer();
 
-  /** @return the buffer offset where the event's value can read from */
+  /**
+   * @return the buffer offset where the event's value can read from
+   */
   int getValueOffset();
 
-  /** @return the length of the event's value */
+  /**
+   * @return the length of the event's value
+   */
   int getValueLength();
 
   /**

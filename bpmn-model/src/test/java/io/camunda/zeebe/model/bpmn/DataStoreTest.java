@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.DataStoreReference;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** @author Falko Menge */
+/**
+ * @author Falko Menge
+ */
 public class DataStoreTest {
 
   private static BpmnModelInstance modelInstance;

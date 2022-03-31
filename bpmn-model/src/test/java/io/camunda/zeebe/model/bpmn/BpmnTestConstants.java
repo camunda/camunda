@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn;
 import java.util.Arrays;
 import java.util.List;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public final class BpmnTestConstants {
 
   public static final String COLLABORATION_ID = "collaboration";

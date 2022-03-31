@@ -23,13 +23,19 @@ public interface Decision {
    */
   String getDmnDecisionId();
 
-  /** @return the dmn name of the decision, as parsed during deployment */
+  /**
+   * @return the dmn name of the decision, as parsed during deployment
+   */
   String getDmnDecisionName();
 
-  /** @return the assigned decision version */
+  /**
+   * @return the assigned decision version
+   */
   int getVersion();
 
-  /** @return the assigned decision key, which acts as a unique identifier for this decision */
+  /**
+   * @return the assigned decision key, which acts as a unique identifier for this decision
+   */
   long getDecisionKey();
 
   /**
@@ -38,6 +44,8 @@ public interface Decision {
    */
   String getDmnDecisionRequirementsId();
 
-  /** @return the assigned key of the decision requirements graph that this decision is part of */
+  /**
+   * @return the assigned key of the decision requirements graph that this decision is part of
+   */
   long getDecisionRequirementsKey();
 }

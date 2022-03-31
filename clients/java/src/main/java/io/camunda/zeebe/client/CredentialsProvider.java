@@ -38,7 +38,9 @@ public interface CredentialsProvider {
    */
   boolean shouldRetryRequest(Throwable throwable);
 
-  /** @return a builder to configure and create a new {@link OAuthCredentialsProvider}. */
+  /**
+   * @return a builder to configure and create a new {@link OAuthCredentialsProvider}.
+   */
   static OAuthCredentialsProviderBuilder newCredentialsProviderBuilder() {
     return new OAuthCredentialsProviderBuilder();
   }

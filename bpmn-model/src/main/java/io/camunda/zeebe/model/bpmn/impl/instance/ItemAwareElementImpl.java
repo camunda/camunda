@@ -31,7 +31,9 @@ import org.camunda.bpm.model.xml.type.child.ChildElement;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class ItemAwareElementImpl extends BaseElementImpl implements ItemAwareElement {
 
   protected static AttributeReference<ItemDefinition> itemSubjectRefAttribute;

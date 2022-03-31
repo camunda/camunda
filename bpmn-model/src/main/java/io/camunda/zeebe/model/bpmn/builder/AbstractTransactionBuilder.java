@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.TransactionMethod;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 
-/** @author Thorben Lindhauer */
+/**
+ * @author Thorben Lindhauer
+ */
 public class AbstractTransactionBuilder<B extends AbstractTransactionBuilder<B>>
     extends AbstractSubProcessBuilder<B> {
 

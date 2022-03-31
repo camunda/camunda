@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.impl.instance.DataPath;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class CorrelationPropertyBindingTest extends BpmnModelElementInstanceTest {
 
   @Override

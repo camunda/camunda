@@ -28,20 +28,30 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol
 public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstanceRelated {
-  /** @return the BPMN process id this process instance belongs to. */
+  /**
+   * @return the BPMN process id this process instance belongs to.
+   */
   String getBpmnProcessId();
 
-  /** @return the version of the deployed process this instance belongs to. */
+  /**
+   * @return the version of the deployed process this instance belongs to.
+   */
   int getVersion();
 
-  /** @return the key of the deployed process this instance belongs to. */
+  /**
+   * @return the key of the deployed process this instance belongs to.
+   */
   long getProcessDefinitionKey();
 
-  /** @return the key of the process instance */
+  /**
+   * @return the key of the process instance
+   */
   @Override
   long getProcessInstanceKey();
 
-  /** @return the id of the current process element, or empty if the id is not specified. */
+  /**
+   * @return the id of the current process element, or empty if the id is not specified.
+   */
   String getElementId();
 
   /**
@@ -50,7 +60,9 @@ public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstance
    */
   long getFlowScopeKey();
 
-  /** @return the BPMN type of the current process element. */
+  /**
+   * @return the BPMN type of the current process element.
+   */
   BpmnElementType getBpmnElementType();
 
   /**

@@ -19,7 +19,9 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 
-/** @deprecated to be removed >= 1.4. There will be no replacement for this exporter */
+/**
+ * @deprecated to be removed >= 1.4. There will be no replacement for this exporter
+ */
 @Deprecated(since = "1.3", forRemoval = true)
 public final class DebugHttpServer {
 

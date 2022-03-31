@@ -71,7 +71,9 @@ public final class ProtocolFactory {
     registerRandomizers();
   }
 
-  /** @return a stream of random records */
+  /**
+   * @return a stream of random records
+   */
   public Stream<Record<RecordValue>> generateRecords() {
     return generateRecords(UnaryOperator.identity());
   }
@@ -112,7 +114,9 @@ public final class ProtocolFactory {
         .map(valueType -> generateRecord(valueType, modifier));
   }
 
-  /** @return a random record with a random value type */
+  /**
+   * @return a random record with a random value type
+   */
   public Record<RecordValue> generateRecord() {
     return generateRecord(UnaryOperator.identity());
   }
@@ -184,7 +188,9 @@ public final class ProtocolFactory {
     return random.nextObject(objectClass);
   }
 
-  /** @return the seed used when creating this factory */
+  /**
+   * @return the seed used when creating this factory
+   */
   public long getSeed() {
     return parameters.getSeed();
   }

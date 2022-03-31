@@ -94,7 +94,9 @@ public final class ValueTypeMapping {
     return typeInfo;
   }
 
-  /** @return the set of mappable value types */
+  /**
+   * @return the set of mappable value types
+   */
   public static Set<ValueType> getAcceptedValueTypes() {
     return Singleton.INSTANCE.acceptedValueTypes;
   }

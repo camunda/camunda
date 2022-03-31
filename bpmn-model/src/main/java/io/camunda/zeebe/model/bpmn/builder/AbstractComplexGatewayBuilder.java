@@ -21,7 +21,9 @@ import io.camunda.zeebe.model.bpmn.instance.ActivationCondition;
 import io.camunda.zeebe.model.bpmn.instance.ComplexGateway;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class AbstractComplexGatewayBuilder<B extends AbstractComplexGatewayBuilder<B>>
     extends AbstractGatewayBuilder<B, ComplexGateway> {
 

@@ -29,7 +29,9 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class EdgeImpl extends DiagramElementImpl implements Edge {
 
   protected static ChildElementCollection<Waypoint> waypointCollection;

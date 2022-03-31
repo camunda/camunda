@@ -23,7 +23,9 @@ import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ModelAssertions extends Assertions {
 
   public static AttributeAssert assertThat(final Attribute<?> actual) {

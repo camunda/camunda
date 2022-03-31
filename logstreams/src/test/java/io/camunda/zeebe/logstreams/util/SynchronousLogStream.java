@@ -25,7 +25,9 @@ public interface SynchronousLogStream extends AutoCloseable {
 
   LogStream getAsyncLogStream();
 
-  /** @return the partition id of the log stream */
+  /**
+   * @return the partition id of the log stream
+   */
   int getPartitionId();
 
   /**
@@ -39,7 +41,9 @@ public interface SynchronousLogStream extends AutoCloseable {
   @Override
   void close();
 
-  /** @return the current commit position, or a negative value if no entry is committed. */
+  /**
+   * @return the current commit position, or a negative value if no entry is committed.
+   */
   long getLastWrittenPosition();
 
   /** sets the new commit position * */
@@ -47,9 +51,13 @@ public interface SynchronousLogStream extends AutoCloseable {
 
   LogStreamReader newLogStreamReader();
 
-  /** @return a new created log stream record writer */
+  /**
+   * @return a new created log stream record writer
+   */
   LogStreamRecordWriter newLogStreamRecordWriter();
 
-  /** @return a new created log stream batch writer */
+  /**
+   * @return a new created log stream batch writer
+   */
   LogStreamBatchWriter newLogStreamBatchWriter();
 }

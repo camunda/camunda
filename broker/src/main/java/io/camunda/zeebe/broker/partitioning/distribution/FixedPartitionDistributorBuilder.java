@@ -74,7 +74,9 @@ public final class FixedPartitionDistributorBuilder {
     return this;
   }
 
-  /** @return a distributor configured for a map of partitions to members */
+  /**
+   * @return a distributor configured for a map of partitions to members
+   */
   public FixedPartitionDistributor build() {
     return new FixedPartitionDistributor(partitions);
   }

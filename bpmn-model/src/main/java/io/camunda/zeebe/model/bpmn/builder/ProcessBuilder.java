@@ -25,7 +25,9 @@ import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.Collection;
 import java.util.function.Consumer;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
 
   public ProcessBuilder(final BpmnModelInstance modelInstance, final Process process) {

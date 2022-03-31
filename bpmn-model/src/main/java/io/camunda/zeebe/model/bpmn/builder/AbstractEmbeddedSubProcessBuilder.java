@@ -16,7 +16,9 @@
 
 package io.camunda.zeebe.model.bpmn.builder;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 @SuppressWarnings("rawtypes")
 public class AbstractEmbeddedSubProcessBuilder<
     B extends AbstractEmbeddedSubProcessBuilder<B, E>, E extends AbstractSubProcessBuilder> {

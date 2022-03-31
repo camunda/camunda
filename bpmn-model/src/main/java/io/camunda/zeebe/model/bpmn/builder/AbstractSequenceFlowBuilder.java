@@ -21,7 +21,9 @@ import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlowBuilder<B>>
     extends AbstractFlowElementBuilder<B, SequenceFlow> {
 

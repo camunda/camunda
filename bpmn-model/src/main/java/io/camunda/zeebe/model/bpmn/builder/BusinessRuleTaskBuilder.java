@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class BusinessRuleTaskBuilder
     extends AbstractBusinessRuleTaskBuilder<BusinessRuleTaskBuilder> {
 

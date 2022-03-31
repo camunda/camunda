@@ -18,10 +18,14 @@ import java.util.Optional;
 @FunctionalInterface
 public interface ActorClockService {
 
-  /** @return the current instant of the clock */
+  /**
+   * @return the current instant of the clock
+   */
   long epochMilli();
 
-  /** @return a mutable variant of the underlying clock, or nothing if the clock is immutable */
+  /**
+   * @return a mutable variant of the underlying clock, or nothing if the clock is immutable
+   */
   default Optional<MutableClock> mutable() {
     return Optional.empty();
   }

@@ -19,37 +19,59 @@ import java.util.Map;
 
 public interface ActivatedJob {
 
-  /** @return the unique key of the job */
+  /**
+   * @return the unique key of the job
+   */
   long getKey();
 
-  /** @return the type of the job */
+  /**
+   * @return the type of the job
+   */
   String getType();
 
-  /** @return key of the process instance */
+  /**
+   * @return key of the process instance
+   */
   long getProcessInstanceKey();
 
-  /** @return BPMN process id of the process */
+  /**
+   * @return BPMN process id of the process
+   */
   String getBpmnProcessId();
 
-  /** @return version of the process */
+  /**
+   * @return version of the process
+   */
   int getProcessDefinitionVersion();
 
-  /** @return key of the process */
+  /**
+   * @return key of the process
+   */
   long getProcessDefinitionKey();
 
-  /** @return id of the process element */
+  /**
+   * @return id of the process element
+   */
   String getElementId();
 
-  /** @return key of the element instance */
+  /**
+   * @return key of the element instance
+   */
   long getElementInstanceKey();
 
-  /** @return user-defined headers associated with this job */
+  /**
+   * @return user-defined headers associated with this job
+   */
   Map<String, String> getCustomHeaders();
 
-  /** @return the assigned worker to complete the job */
+  /**
+   * @return the assigned worker to complete the job
+   */
   String getWorker();
 
-  /** @return remaining retries */
+  /**
+   * @return remaining retries
+   */
   int getRetries();
 
   /**
@@ -59,15 +81,23 @@ public interface ActivatedJob {
    */
   long getDeadline();
 
-  /** @return JSON-formatted variables */
+  /**
+   * @return JSON-formatted variables
+   */
   String getVariables();
 
-  /** @return de-serialized variables as map */
+  /**
+   * @return de-serialized variables as map
+   */
   Map<String, Object> getVariablesAsMap();
 
-  /** @return de-serialized variables as the given type */
+  /**
+   * @return de-serialized variables as the given type
+   */
   <T> T getVariablesAsType(Class<T> variableType);
 
-  /** @return the record encoded as JSON */
+  /**
+   * @return the record encoded as JSON
+   */
   String toJson();
 }

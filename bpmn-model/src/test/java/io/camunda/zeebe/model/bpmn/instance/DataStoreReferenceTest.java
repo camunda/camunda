@@ -20,7 +20,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-/** @author Giulio Piccinin */
+/**
+ * @author Giulio Piccinin
+ */
 public class DataStoreReferenceTest extends BpmnModelElementInstanceTest {
 
   @Override

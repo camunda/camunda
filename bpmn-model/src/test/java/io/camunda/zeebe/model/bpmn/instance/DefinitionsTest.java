@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class DefinitionsTest extends BpmnModelElementInstanceTest {
 
   @Override

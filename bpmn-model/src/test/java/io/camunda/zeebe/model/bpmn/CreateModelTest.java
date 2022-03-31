@@ -30,7 +30,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class CreateModelTest {
 
   public BpmnModelInstance modelInstance;

@@ -22,6 +22,8 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol
 public interface Process extends ProcessMetadataValue {
-  /** @return returns the corresponding binary resource */
+  /**
+   * @return returns the corresponding binary resource
+   */
   byte[] getResource();
 }

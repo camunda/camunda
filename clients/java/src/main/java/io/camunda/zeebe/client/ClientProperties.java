@@ -19,43 +19,69 @@ import java.time.Duration;
 
 public final class ClientProperties {
 
-  /** @see ZeebeClientBuilder#gatewayAddress(String) */
+  /**
+   * @see ZeebeClientBuilder#gatewayAddress(String)
+   */
   public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
-  /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
+  /**
+   * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
+   */
   public static final String JOB_WORKER_EXECUTION_THREADS = "zeebe.client.worker.threads";
 
-  /** @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int)
+   */
   public static final String JOB_WORKER_MAX_JOBS_ACTIVE = "zeebe.client.worker.maxJobsActive";
 
-  /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobWorkerName(String)
+   */
   public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.worker.name";
 
-  /** @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration)
+   */
   public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";
 
-  /** @see ZeebeClientBuilder#defaultJobPollInterval(Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobPollInterval(Duration)
+   */
   public static final String DEFAULT_JOB_POLL_INTERVAL = "zeebe.client.job.pollinterval";
 
-  /** @see ZeebeClientBuilder#defaultMessageTimeToLive(java.time.Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultMessageTimeToLive(java.time.Duration)
+   */
   public static final String DEFAULT_MESSAGE_TIME_TO_LIVE = "zeebe.client.message.timeToLive";
 
-  /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultRequestTimeout(Duration)
+   */
   public static final String DEFAULT_REQUEST_TIMEOUT = "zeebe.client.requestTimeout";
 
-  /** @see ZeebeClientBuilder#usePlaintext() */
+  /**
+   * @see ZeebeClientBuilder#usePlaintext()
+   */
   public static final String USE_PLAINTEXT_CONNECTION = "zeebe.client.security.plaintext";
 
-  /** @see ZeebeClientBuilder#caCertificatePath(String) */
+  /**
+   * @see ZeebeClientBuilder#caCertificatePath(String)
+   */
   public static final String CA_CERTIFICATE_PATH = "zeebe.client.security.certpath";
 
-  /** @see ZeebeClientBuilder#keepAlive(Duration) */
+  /**
+   * @see ZeebeClientBuilder#keepAlive(Duration)
+   */
   public static final String KEEP_ALIVE = "zeebe.client.keepalive";
 
-  /** @see ZeebeClientBuilder#overrideAuthority(String) */
+  /**
+   * @see ZeebeClientBuilder#overrideAuthority(String)
+   */
   public static final String OVERRIDE_AUTHORITY = "zeebe.client.overrideauthority";
 
-  /** @see ZeebeClientCloudBuilderStep1#withClusterId(java.lang.String) */
+  /**
+   * @see ZeebeClientCloudBuilderStep1#withClusterId(java.lang.String)
+   */
   public static final String CLOUD_CLUSTER_ID = "zeebe.client.cloud.clusterId";
 
   /**

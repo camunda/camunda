@@ -83,7 +83,9 @@ public final class CatchEventBehavior {
     unsubscribeFromMessageEvents(context, sideEffects);
   }
 
-  /** @return either a failure or nothing */
+  /**
+   * @return either a failure or nothing
+   */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,

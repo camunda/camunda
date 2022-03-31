@@ -18,15 +18,23 @@ package io.camunda.zeebe.client.api.response;
 import java.util.List;
 
 public interface DeploymentEvent {
-  /** @return the unique key of the deployment */
+  /**
+   * @return the unique key of the deployment
+   */
   long getKey();
 
-  /** @return the processes which are deployed */
+  /**
+   * @return the processes which are deployed
+   */
   List<Process> getProcesses();
 
-  /** @return the decisions which are deployed */
+  /**
+   * @return the decisions which are deployed
+   */
   List<Decision> getDecisions();
 
-  /** @return the decision requirements which are deployed */
+  /**
+   * @return the decision requirements which are deployed
+   */
   List<DecisionRequirements> getDecisionRequirements();
 }

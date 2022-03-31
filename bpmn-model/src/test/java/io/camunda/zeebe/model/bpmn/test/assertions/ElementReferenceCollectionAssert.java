@@ -18,7 +18,9 @@ package io.camunda.zeebe.model.bpmn.test.assertions;
 
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ElementReferenceCollectionAssert
     extends AbstractReferenceAssert<
         ElementReferenceCollectionAssert, ElementReferenceCollection<?, ?>> {

@@ -19,6 +19,8 @@ public interface TypedCommandWriter {
 
   void reset();
 
-  /** @return position of new record, negative value on failure */
+  /**
+   * @return position of new record, negative value on failure
+   */
   long flush();
 }

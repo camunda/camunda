@@ -23,10 +23,14 @@ public interface DecisionRequirements {
    */
   String getDmnDecisionRequirementsId();
 
-  /** @return the dmn name of the decision requirements, as parsed during deployment */
+  /**
+   * @return the dmn name of the decision requirements, as parsed during deployment
+   */
   String getDmnDecisionRequirementsName();
 
-  /** @return the assigned decision requirements version */
+  /**
+   * @return the assigned decision requirements version
+   */
   int getVersion();
 
   /**
@@ -35,6 +39,8 @@ public interface DecisionRequirements {
    */
   long getDecisionRequirementsKey();
 
-  /** @return the resource name (i.e. filename) from which this decision requirements was parsed */
+  /**
+   * @return the resource name (i.e. filename) from which this decision requirements was parsed
+   */
   String getResourceName();
 }

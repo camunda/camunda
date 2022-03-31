@@ -23,6 +23,8 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface DeploymentDistributionRecordValue extends RecordValue {
 
-  /** @return the partition where the deployment should be distributed */
+  /**
+   * @return the partition where the deployment should be distributed
+   */
   int getPartitionId();
 }

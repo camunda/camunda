@@ -21,7 +21,9 @@ import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class NodeTest extends BpmnModelElementInstanceTest {
 
   @Override

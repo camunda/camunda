@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuilder<B>>
     extends AbstractCatchEventBuilder<B, StartEvent> {
 

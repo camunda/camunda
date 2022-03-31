@@ -29,22 +29,34 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated {
 
-  /** @return the name of the variable. */
+  /**
+   * @return the name of the variable.
+   */
   String getName();
 
-  /** @return the value of the variable as JSON string. */
+  /**
+   * @return the value of the variable as JSON string.
+   */
   String getValue();
 
-  /** @return the key of the scope the variable belongs to. */
+  /**
+   * @return the key of the scope the variable belongs to.
+   */
   long getScopeKey();
 
-  /** @return the key of the process instance the variable belongs to */
+  /**
+   * @return the key of the process instance the variable belongs to
+   */
   @Override
   long getProcessInstanceKey();
 
-  /** @return the key of the process the variable belongs to */
+  /**
+   * @return the key of the process the variable belongs to
+   */
   long getProcessDefinitionKey();
 
-  /** @return the BPMN process id this process instance belongs to. */
+  /**
+   * @return the BPMN process id this process instance belongs to.
+   */
   String getBpmnProcessId();
 }

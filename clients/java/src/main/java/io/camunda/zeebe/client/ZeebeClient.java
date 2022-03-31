@@ -45,17 +45,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
     return newClientBuilder().build();
   }
 
-  /** @return a new {@link ZeebeClient} using the provided configuration. */
+  /**
+   * @return a new {@link ZeebeClient} using the provided configuration.
+   */
   static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
     return new ZeebeClientImpl(configuration);
   }
 
-  /** @return a builder to configure and create a new {@link ZeebeClient}. */
+  /**
+   * @return a builder to configure and create a new {@link ZeebeClient}.
+   */
   static ZeebeClientBuilder newClientBuilder() {
     return new ZeebeClientBuilderImpl();
   }
 
-  /** @return a builder with convenient methods to connect to the Camunda Cloud cluster. */
+  /**
+   * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
+   */
   static ZeebeClientCloudBuilderStep1 newCloudClientBuilder() {
     return new ZeebeClientCloudBuilderImpl();
   }
@@ -80,7 +86,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   TopologyRequestStep1 newTopologyRequest();
 
-  /** @return the client's configuration */
+  /**
+   * @return the client's configuration
+   */
   ZeebeClientConfiguration getConfiguration();
 
   @Override

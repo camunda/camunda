@@ -224,7 +224,9 @@ public class ConfigureRequest extends AbstractRaftRequest {
       return this;
     }
 
-    /** @throws IllegalStateException if member is null */
+    /**
+     * @throws IllegalStateException if member is null
+     */
     @Override
     public ConfigureRequest build() {
       validate();

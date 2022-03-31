@@ -21,47 +21,75 @@ import java.time.Duration;
 import java.util.List;
 
 public interface ZeebeClientConfiguration {
-  /** @see ZeebeClientBuilder#gatewayAddress(String) */
+  /**
+   * @see ZeebeClientBuilder#gatewayAddress(String)
+   */
   String getGatewayAddress();
 
-  /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
+  /**
+   * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
+   */
   int getNumJobWorkerExecutionThreads();
 
-  /** @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int)
+   */
   int getDefaultJobWorkerMaxJobsActive();
 
-  /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobWorkerName(String)
+   */
   String getDefaultJobWorkerName();
 
-  /** @see ZeebeClientBuilder#defaultJobTimeout(Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobTimeout(Duration)
+   */
   Duration getDefaultJobTimeout();
 
-  /** @see ZeebeClientBuilder#defaultJobPollInterval(Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultJobPollInterval(Duration)
+   */
   Duration getDefaultJobPollInterval();
 
-  /** @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration)
+   */
   Duration getDefaultMessageTimeToLive();
 
-  /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
+  /**
+   * @see ZeebeClientBuilder#defaultRequestTimeout(Duration)
+   */
   Duration getDefaultRequestTimeout();
 
-  /** @see ZeebeClientBuilder#usePlaintext() */
+  /**
+   * @see ZeebeClientBuilder#usePlaintext()
+   */
   boolean isPlaintextConnectionEnabled();
 
-  /** @see ZeebeClientBuilder#caCertificatePath(String) */
+  /**
+   * @see ZeebeClientBuilder#caCertificatePath(String)
+   */
   String getCaCertificatePath();
 
-  /** @see ZeebeClientBuilder#credentialsProvider(CredentialsProvider) */
+  /**
+   * @see ZeebeClientBuilder#credentialsProvider(CredentialsProvider)
+   */
   CredentialsProvider getCredentialsProvider();
 
-  /** @see ZeebeClientBuilder#keepAlive(Duration) */
+  /**
+   * @see ZeebeClientBuilder#keepAlive(Duration)
+   */
   Duration getKeepAlive();
 
   List<ClientInterceptor> getInterceptors();
 
-  /** @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper) */
+  /**
+   * @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)
+   */
   JsonMapper getJsonMapper();
 
-  /** @see ZeebeClientBuilder#overrideAuthority(String) */
+  /**
+   * @see ZeebeClientBuilder#overrideAuthority(String)
+   */
   String getOverrideAuthority();
 }

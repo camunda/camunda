@@ -28,7 +28,9 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface MatchedRuleValue extends RecordValue {
 
-  /** @return the id of the matched rule */
+  /**
+   * @return the id of the matched rule
+   */
   String getRuleId();
 
   /**
@@ -38,6 +40,8 @@ public interface MatchedRuleValue extends RecordValue {
    */
   int getRuleIndex();
 
-  /** @return the evaluated outputs of the rule */
+  /**
+   * @return the evaluated outputs of the rule
+   */
   List<EvaluatedOutputValue> getEvaluatedOutputs();
 }

@@ -34,7 +34,9 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class AssociationImpl extends ArtifactImpl implements Association {
 
   protected static AttributeReference<BaseElement> sourceRefAttribute;

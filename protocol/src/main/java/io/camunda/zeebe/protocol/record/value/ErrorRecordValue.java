@@ -24,13 +24,19 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface ErrorRecordValue extends RecordValue {
 
-  /** @return the exception message, which causes this error record. */
+  /**
+   * @return the exception message, which causes this error record.
+   */
   String getExceptionMessage();
 
-  /** @return the stacktrace, which belongs to the exception */
+  /**
+   * @return the stacktrace, which belongs to the exception
+   */
   String getStacktrace();
 
-  /** @return the position of the event, which causes this error */
+  /**
+   * @return the position of the event, which causes this error
+   */
   long getErrorEventPosition();
 
   /**

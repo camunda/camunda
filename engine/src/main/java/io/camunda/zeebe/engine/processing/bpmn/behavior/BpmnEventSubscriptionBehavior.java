@@ -59,7 +59,9 @@ public final class BpmnEventSubscriptionBehavior {
     this.keyGenerator = keyGenerator;
   }
 
-  /** @return either a failure or nothing */
+  /**
+   * @return either a failure or nothing
+   */
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
       final T element, final BpmnElementContext context) {
     return catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);

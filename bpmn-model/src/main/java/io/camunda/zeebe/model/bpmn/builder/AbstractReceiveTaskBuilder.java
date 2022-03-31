@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.Operation;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import java.util.function.Consumer;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBuilder<B>>
     extends AbstractTaskBuilder<B, ReceiveTask> {
 

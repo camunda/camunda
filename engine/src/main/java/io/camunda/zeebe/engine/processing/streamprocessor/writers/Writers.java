@@ -21,17 +21,23 @@ public final class Writers {
     this.response = response;
   }
 
-  /** @return the writer, which is used by the processors to write (follow-up) commands */
+  /**
+   * @return the writer, which is used by the processors to write (follow-up) commands
+   */
   public TypedCommandWriter command() {
     return stream;
   }
 
-  /** @return the writer, which is used by the processors to write command rejections */
+  /**
+   * @return the writer, which is used by the processors to write command rejections
+   */
   public TypedRejectionWriter rejection() {
     return stream;
   }
 
-  /** @return the writer of events that also changes state for each event it writes */
+  /**
+   * @return the writer of events that also changes state for each event it writes
+   */
   public StateWriter state() {
     return state;
   }

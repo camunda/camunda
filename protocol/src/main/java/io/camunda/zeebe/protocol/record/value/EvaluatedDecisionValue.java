@@ -27,22 +27,34 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface EvaluatedDecisionValue extends RecordValue {
 
-  /** @return the id of the evaluated decision */
+  /**
+   * @return the id of the evaluated decision
+   */
   String getDecisionId();
 
-  /** @return the name of the evaluated decision */
+  /**
+   * @return the name of the evaluated decision
+   */
   String getDecisionName();
 
-  /** @return the key of the evaluated decision */
+  /**
+   * @return the key of the evaluated decision
+   */
   long getDecisionKey();
 
-  /** @return the version of the evaluated decision */
+  /**
+   * @return the version of the evaluated decision
+   */
   long getDecisionVersion();
 
-  /** @return the type of the evaluated decision */
+  /**
+   * @return the type of the evaluated decision
+   */
   String getDecisionType();
 
-  /** @return the output of the evaluated decision as JSON string */
+  /**
+   * @return the output of the evaluated decision as JSON string
+   */
   String getDecisionOutput();
 
   /**

@@ -50,7 +50,9 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
     return true;
   }
 
-  /** @return null to avoid writing any serialized value */
+  /**
+   * @return null to avoid writing any serialized value
+   */
   @Override
   public BufferWriter getRequestWriter() {
     return null;

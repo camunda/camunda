@@ -54,7 +54,9 @@ public final class BrokerExecuteQuery extends BrokerRequest<String> {
     return true;
   }
 
-  /** @return null to avoid writing any serialized value */
+  /**
+   * @return null to avoid writing any serialized value
+   */
   @Override
   public BufferWriter getRequestWriter() {
     return null;

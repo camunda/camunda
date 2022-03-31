@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class EndEventBuilder extends AbstractEndEventBuilder<EndEventBuilder> {
 
   public EndEventBuilder(final BpmnModelInstance modelInstance, final EndEvent element) {

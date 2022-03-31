@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import io.camunda.zeebe.model.bpmn.instance.Expression;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ToTest extends BpmnModelElementInstanceTest {
 
   @Override

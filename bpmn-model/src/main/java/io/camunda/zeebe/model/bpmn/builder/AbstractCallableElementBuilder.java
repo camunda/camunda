@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallableElement;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractCallableElementBuilder<
         B extends AbstractCallableElementBuilder<B, E>, E extends CallableElement>
     extends AbstractRootElementBuilder<B, E> {

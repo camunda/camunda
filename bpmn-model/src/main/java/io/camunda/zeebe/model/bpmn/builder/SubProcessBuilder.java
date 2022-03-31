@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class SubProcessBuilder extends AbstractSubProcessBuilder<SubProcessBuilder> {
 
   public SubProcessBuilder(final BpmnModelInstance modelInstance, final SubProcess element) {
