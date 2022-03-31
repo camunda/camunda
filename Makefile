@@ -56,6 +56,7 @@ env-identity-up:
 .PHONY: env-down
 env-down:
 	@docker-compose down -v \
+	&& docker-compose -f ./config/docker-compose.identity.yml down -v \
 	&& docker-compose -f ./config/docker-compose.iam-backend.yml down -v \
 	&& mvn clean
 
