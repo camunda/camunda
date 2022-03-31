@@ -11,23 +11,24 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 
 type DecisionInstanceType = ReadonlyDeep<{
+  id: string;
   decisionId: string;
   decisionDefinitionId: string;
   state: DecisionInstanceEntityState;
   decisionName: string;
-  decisionVersion: string;
+  decisionVersion: number;
   evaluationDate: string;
   processInstanceId: string | null;
   errorMessage: string | null;
-  inputs: Array<{
+  evaluatedInputs: Array<{
     id: string;
     name: string;
     value: string | null;
   }>;
-  outputs: Array<{
+  evaluatedOutputs: Array<{
     id: string;
     ruleIndex: number;
-    rule: number;
+    ruleId: string;
     name: string;
     value: string | null;
   }>;

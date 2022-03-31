@@ -14,7 +14,7 @@ const DecisionPanel: React.FC = observer(() => {
   const {decisionInstance} = decisionInstanceStore.state;
   const highlightableRules = Array.from(
     new Set(
-      decisionInstanceStore.state.decisionInstance?.outputs.map(
+      decisionInstanceStore.state.decisionInstance?.evaluatedOutputs.map(
         (output) => output.ruleIndex
       )
     )

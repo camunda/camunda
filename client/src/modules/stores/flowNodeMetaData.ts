@@ -37,7 +37,7 @@ type InstanceMetaData = {
   calledProcessInstanceId: string | null;
   calledProcessDefinitionName: string | null;
   calledDecisionInstanceId: string | null;
-  calledDecisionName: string | null;
+  calledDecisionDefinitionName: string | null;
 };
 
 type Breadcrumb = {flowNodeId: string; flowNodeType: string};

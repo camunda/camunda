@@ -7,15 +7,16 @@
 import {DecisionInstanceType} from 'modules/stores/decisionInstance';
 
 const invoiceClassification: DecisionInstanceType = {
+  id: '3ß945876576324-1',
   decisionDefinitionId: '111',
   decisionId: 'invoiceClassification',
   state: 'EVALUATED',
   decisionName: 'Invoice Classification',
-  decisionVersion: '1',
+  decisionVersion: 1,
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '666',
   errorMessage: null,
-  inputs: [
+  evaluatedInputs: [
     {id: '0', name: 'Age', value: '16'},
     {id: '1', name: 'Stateless Person', value: 'false'},
     {id: '2', name: 'Parent is Norwegian', value: '"missing data"'},
@@ -76,17 +77,17 @@ const invoiceClassification: DecisionInstanceType = {
     {id: '4503599627370696-du', name: 'du', value: '"value_du"'},
     {id: '4503599627370696-dv', name: 'dv', value: '"value_dv"'},
   ],
-  outputs: [
+  evaluatedOutputs: [
     {
       id: '0',
-      rule: 5,
+      ruleId: 'row-49839158-1',
       name: 'Age requirements satisfied',
       value: '"missing data"',
       ruleIndex: 1,
     },
     {
       id: '1',
-      rule: 6,
+      ruleId: 'row-49839158-2',
       name: 'paragraph',
       value: '"sbl §17"',
       ruleIndex: 4,
@@ -99,25 +100,26 @@ const invoiceClassification: DecisionInstanceType = {
 } as const;
 
 const assignApproverGroup: DecisionInstanceType = {
+  id: '29283472932831-1',
   decisionDefinitionId: '111',
   decisionId: 'invoice-assign-approver',
   state: 'FAILED',
   decisionName: 'Assign Approver Group',
-  decisionVersion: '1',
+  decisionVersion: 1,
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '777',
   errorMessage: 'An error occured',
-  inputs: [
+  evaluatedInputs: [
     {
       id: '0',
       name: 'Age',
       value: '21',
     },
   ],
-  outputs: [
+  evaluatedOutputs: [
     {
       id: '0',
-      rule: 1,
+      ruleId: 'row-49839158-1',
       name: 'paragraph',
       value: '"sbl §382"',
       ruleIndex: 1,

@@ -5,6 +5,5 @@
  */
 
 const IS_NEXT_DIAGRAM = false;
-const IS_DMN = false;
 
-export {IS_NEXT_DIAGRAM, IS_DMN};
+export {IS_NEXT_DIAGRAM};

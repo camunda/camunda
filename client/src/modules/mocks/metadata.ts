@@ -23,7 +23,7 @@ const baseInstanceMetadata: InstanceMetaDataEntity = {
   calledProcessInstanceId: null,
   calledProcessDefinitionName: null,
   calledDecisionInstanceId: null,
-  calledDecisionName: null,
+  calledDecisionDefinitionName: null,
   eventId: '2251799813695565_2251799813695582',
   jobType: null,
   jobRetries: null,
@@ -143,7 +143,7 @@ const calledDecisionMetadata = {
     ...baseInstanceMetadata,
     flowNodeType: 'TASK_BUSINESS_RULE',
     calledDecisionInstanceId: '750893257230984',
-    calledDecisionName: 'Take decision',
+    calledDecisionDefinitionName: 'Take decision',
   },
 };
 
@@ -154,7 +154,7 @@ const calledUnevaluatedDecisionMetadata = {
     endDate: null,
     flowNodeType: 'TASK_BUSINESS_RULE',
     calledDecisionInstanceId: null,
-    calledDecisionName: 'Take decision',
+    calledDecisionDefinitionName: 'Take decision',
   },
 };
 
@@ -180,7 +180,11 @@ const calledFailedDecisionMetadata = {
     creationTime: '2022-02-03T16:44:06.981+0000',
     hasActiveOperation: false,
     lastOperation: null,
-    rootCauseInstance: null,
+    rootCauseInstance: {
+      instanceId: '00000000000000',
+      processDefinitionId: '111111111111111',
+      processDefinitionName: 'Called Process',
+    },
     errorType: {
       id: 'DECISION_EVALUALTION_ERROR',
       name: 'Decision Evaluation Error',

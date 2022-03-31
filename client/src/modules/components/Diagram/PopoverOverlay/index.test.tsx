@@ -39,10 +39,6 @@ import {
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
 
-jest.mock('modules/feature-flags.ts', () => ({
-  IS_DMN: true,
-}));
-
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
@@ -381,7 +377,7 @@ describe('PopoverOverlay', () => {
 
     userEvent.click(
       screen.getByText(
-        `${instanceMetadata!.calledDecisionName} - ${
+        `${instanceMetadata!.calledDecisionDefinitionName} - ${
           instanceMetadata!.calledDecisionInstanceId
         }`
       )
@@ -420,7 +416,7 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/incident/i)).toBeInTheDocument();
     expect(
       screen.getByText(
-        `${instanceMetadata!.calledDecisionName} - ${
+        `${instanceMetadata!.calledDecisionDefinitionName} - ${
           instanceMetadata!.calledDecisionInstanceId
         }`
       )
@@ -464,8 +460,8 @@ describe('PopoverOverlay', () => {
 
     expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
     expect(
-      screen.queryByText(instanceMetadata.calledDecisionName!)
-    ).not.toBeInTheDocument();
+      screen.getByText(instanceMetadata.calledDecisionDefinitionName)
+    ).toBeInTheDocument();
     expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
   });

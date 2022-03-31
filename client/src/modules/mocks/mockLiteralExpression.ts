@@ -7,25 +7,26 @@
 import {DecisionInstanceType} from 'modules/stores/decisionInstance';
 
 const mockLiteralExpression: DecisionInstanceType = {
+  id: '247986278462738-1',
   decisionDefinitionId: '111',
   decisionId: 'calc-key-figures',
   state: 'EVALUATED',
   decisionName: 'Calculate Credit History Key Figures',
-  decisionVersion: '1',
+  decisionVersion: 1,
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '42',
   errorMessage: null,
-  inputs: [
+  evaluatedInputs: [
     {
       id: '0',
       name: 'Age',
       value: '21',
     },
   ],
-  outputs: [
+  evaluatedOutputs: [
     {
       id: '0',
-      rule: 3,
+      ruleId: 'row-49839158-2',
       ruleIndex: 1,
       name: 'paragraph',
       value: '"sbl §201"',

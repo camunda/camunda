@@ -86,7 +86,7 @@ describe('<Header />', () => {
     expect(await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID}));
     expect(
       await screen.findByRole('cell', {
-        name: invoiceClassification.decisionVersion,
+        name: invoiceClassification.decisionVersion.toString(),
       })
     );
     expect(

@@ -86,7 +86,7 @@ const InputsAndOutputs: React.FC = observer(() => {
                 </TR>
               </thead>
               <tbody>
-                {decisionInstance?.inputs.map(({id, name, value}) => {
+                {decisionInstance?.evaluatedInputs.map(({id, name, value}) => {
                   return (
                     <TR key={id}>
                       <TD>{name}</TD>
@@ -123,15 +123,17 @@ const InputsAndOutputs: React.FC = observer(() => {
                 </TR>
               </thead>
               <tbody>
-                {decisionInstance?.outputs.map(({id, rule, name, value}) => {
-                  return (
-                    <TR key={id}>
-                      <TD>{rule}</TD>
-                      <TD>{name}</TD>
-                      <TD>{value}</TD>
-                    </TR>
-                  );
-                })}
+                {decisionInstance?.evaluatedOutputs.map(
+                  ({ruleIndex, name, value}) => {
+                    return (
+                      <TR key={ruleIndex}>
+                        <TD>{ruleIndex}</TD>
+                        <TD>{name}</TD>
+                        <TD>{value}</TD>
+                      </TR>
+                    );
+                  }
+                )}
               </tbody>
             </Table>
           )}
