@@ -18,6 +18,9 @@ import {
   validateParentInstanceIdNotTooLong,
   validateParentInstanceIdComplete,
   validateVariableNameCharacters,
+  validateDecisionIdsCharacters,
+  validateDecisionIdsLength,
+  validatesDecisionIdsComplete,
 } from './validators';
 
 describe('validators', () => {
@@ -404,5 +407,69 @@ describe('validators', () => {
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('should validate decision ids without delay ', () => {
+    [
+      '2251799813685543-1',
+      '2251799813685543',
+      '-',
+      '2251799813685543-1 2251799813685543-2',
+    ].forEach((decisionId) => {
+      expect(validateDecisionIdsCharacters(decisionId, {})).toBeUndefined();
+    });
+
+    ['2251799813685543a', 'a', '!', ' '].forEach((decisionId) => {
+      expect(validateDecisionIdsCharacters(decisionId, {})).toBe(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      );
+    });
+
+    [
+      '2251799813685543-1',
+      '2251799813685543',
+      '2251799813685543-999',
+      '22517998136855433213-1',
+      '22517998136855433213-999',
+      '2251799813685543-1 22517998136855433213-999',
+    ].forEach((decisionId) => {
+      expect(validateDecisionIdsLength(decisionId, {})).toBeUndefined();
+    });
+
+    ['225179981368554332130-1', '225179981368554332130-999'].forEach(
+      (decisionId) => {
+        expect(validateDecisionIdsLength(decisionId, {})).toBe(
+          'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        );
+      }
+    );
+  });
+
+  it('should validate decision ids with delay ', () => {
+    [
+      '2251799813685543-1',
+      '2251799813685543-999',
+      '22517998136855433213-1',
+      '22517998136855433213-999',
+      '2251799813685543-1 22517998136855433213-999',
+    ].forEach((decisionId) => {
+      expect(validatesDecisionIdsComplete(decisionId, {})).toBeUndefined();
+    });
+
+    [
+      '123',
+      '123-1',
+      '225179981368554332133-999',
+      '225179981368554',
+      '22517998136855433213',
+      '2251799813685542-1   000',
+      '2251799813685542-1 225179981368554212',
+    ].forEach((decisionId) => {
+      expect(validatesDecisionIdsComplete(decisionId, {})).resolves.toBe(
+        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+      );
+    });
+
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(7);
   });
 });

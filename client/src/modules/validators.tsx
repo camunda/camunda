@@ -36,7 +36,10 @@ const areIdsTooLong = (value: string) => {
 };
 
 const areDecisionIdsTooLong = (value: string) => {
-  return parseIds(value).some((id) => id.length > 21);
+  return parseIds(value).some((id) => {
+    const [firstPart] = id.split('-');
+    return firstPart !== undefined && firstPart.length > 20;
+  });
 };
 
 const areIdsComplete = (value: string) => {
@@ -47,7 +50,7 @@ const areIdsComplete = (value: string) => {
 
 const areDecisionIdsComplete = (value: string) => {
   return (
-    value === '' || parseIds(value).every((id) => /^[0-9]{16,19}-\d$/.test(id))
+    value === '' || parseIds(value).every((id) => /^[0-9]{16,20}-\d+$/.test(id))
   );
 };
 
