@@ -54,7 +54,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setHeader(getHeaderCustomization());
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
-    uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
+    uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     final String optimizeProfile = determineOptimizeProfile();
@@ -65,8 +65,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
 
     final SettingsResponseDto settings = settingService.getSettings();
-    uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
-    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
+    uiConfigurationDto.setMetadataTelemetryEnabled(settings.getMetadataTelemetryEnabled().orElse(true));
+    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isTelemetryManuallyConfirmed());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());

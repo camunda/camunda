@@ -31,6 +31,7 @@ public class SettingsRestServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getConfigurationService().getTelemetryConfiguration();
     final SettingsResponseDto expectedSettings = SettingsResponseDto.builder()
       .metadataTelemetryEnabled(defaultTelemetryConfig.isInitializeTelemetry())
+      .sharingEnabled(true)
       .build();
 
     // when
@@ -53,10 +54,10 @@ public class SettingsRestServiceIT extends AbstractIT {
     final SettingsResponseDto settings = getSettings();
 
     // then
-    assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
+    assertThat(settings.getMetadataTelemetryEnabled()).isEqualTo(newSettings.getMetadataTelemetryEnabled());
     assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
     assertThat(settings.getLastModified()).isEqualTo(now);
-    assertThat(settings.isManuallyConfirmed()).isTrue();
+    assertThat(settings.isTelemetryManuallyConfirmed()).isTrue();
   }
 
   @ParameterizedTest
@@ -72,10 +73,10 @@ public class SettingsRestServiceIT extends AbstractIT {
     final SettingsResponseDto settings = getSettings();
 
     // then
-    assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
+    assertThat(settings.getMetadataTelemetryEnabled()).isEqualTo(newSettings.getMetadataTelemetryEnabled());
     assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
     assertThat(settings.getLastModified()).isEqualTo(now);
-    assertThat(settings.isManuallyConfirmed()).isTrue();
+    assertThat(settings.isTelemetryManuallyConfirmed()).isTrue();
   }
 
   private void addSuperUserAndPermissions(final SuperUserType superUserType) {

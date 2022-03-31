@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,7 @@ public class SettingsReader {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
 
   public Optional<SettingsResponseDto> getSettings() {
     log.debug("Fetching Optimize Settings");
@@ -39,6 +41,12 @@ public class SettingsReader {
       final GetResponse getResponse = esClient.get(getRequest);
       if (getResponse.isExists()) {
         result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsResponseDto.class);
+        if(result.getSharingEnabled().isEmpty()) {
+          result.setSharingEnabled(configurationService.getSharingEnabled());
+        }
+        if(result.getMetadataTelemetryEnabled().isEmpty()) {
+          result.setMetadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry());
+        }
       }
     } catch (IOException e) {
       final String errorMessage = "There was an error while reading settings.";

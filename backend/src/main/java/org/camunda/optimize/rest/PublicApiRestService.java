@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -16,12 +17,13 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
+import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.export.JsonReportResultExportService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.stereotype.Component;
@@ -47,6 +49,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
+
 @AllArgsConstructor
 @Slf4j
 @Path(PublicApiRestService.PUBLIC_PATH)
@@ -67,15 +71,15 @@ public class PublicApiRestService {
   public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
   public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH +
     "/definition/json";
-  public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
-  private final ConfigurationService configurationService;
+  private final SharingService sharingService;
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
   private final EntityImportService entityImportService;
   private final ReportService reportService;
   private final DashboardService dashboardService;
   private final ProcessVariableLabelService processVariableLabelService;
+  private final SettingsService settingsService;
 
   @GET
   @Path(REPORT_SUB_PATH)
@@ -181,5 +185,19 @@ public class PublicApiRestService {
     if (collectionId == null) {
       throw new BadRequestException("Must specify a collection ID for this request.");
     }
+  }
+
+  @POST
+  @Path(SHARE_PATH + "/enable")
+  public void enableShare() {
+    SettingsResponseDto settings = SettingsResponseDto.builder().sharingEnabled(true).build();
+    settingsService.setSettings(settings);
+  }
+
+  @POST
+  @Path(SHARE_PATH + "/disable")
+  public void disableShare() {
+    SettingsResponseDto settings = SettingsResponseDto.builder().sharingEnabled(false).build();
+    settingsService.setSettings(settings);
   }
 }

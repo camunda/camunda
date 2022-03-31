@@ -15,6 +15,7 @@ import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor
@@ -22,13 +23,22 @@ import java.time.OffsetDateTime;
 @Data
 @FieldNameConstants(asEnum = true)
 public class SettingsResponseDto {
-  private boolean metadataTelemetryEnabled;
+  private Boolean metadataTelemetryEnabled;
+  private Boolean sharingEnabled;
 
   private String lastModifier;
   private OffsetDateTime lastModified;
 
   @JsonIgnore
-  public boolean isManuallyConfirmed() {
-    return !StringUtils.isEmpty(lastModifier);
+  public boolean isTelemetryManuallyConfirmed() {
+    return getMetadataTelemetryEnabled().isPresent() && !StringUtils.isEmpty(lastModifier);
+  }
+
+  public Optional<Boolean> getMetadataTelemetryEnabled() {
+    return Optional.ofNullable(metadataTelemetryEnabled);
+  }
+
+  public Optional<Boolean> getSharingEnabled() {
+    return Optional.ofNullable(sharingEnabled);
   }
 }

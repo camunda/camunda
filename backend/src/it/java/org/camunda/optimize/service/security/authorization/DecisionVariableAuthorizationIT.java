@@ -88,7 +88,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
           decisionDefinition.getKey(),
           decisionDefinition.getVersionAsString(),
           Collections.emptyList()
-        )
+        ), false
       ).execute();
     Response outputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -98,7 +98,8 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
           decisionDefinition.getKey(),
           decisionDefinition.getVersionAsString(),
           Collections.emptyList()
-        )
+        ),
+        false
       ).execute();
 
     // then
@@ -271,14 +272,14 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDecisionInputVariableNamesRequest(createInputVariableNameRequest(
         decisionDefinition.getKey(), String.valueOf(decisionDefinition.getVersion()), tenantIds
-      ))
+      ), true)
       .execute();
     Response outputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDecisionOutputVariableNamesRequest(createInputVariableNameRequest(
         decisionDefinition.getKey(), String.valueOf(decisionDefinition.getVersion()), tenantIds
-      ))
+      ), true)
       .execute();
     return Arrays.asList(inputVariableNameResponse, outputVariableNameResponse);
   }

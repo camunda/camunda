@@ -90,20 +90,20 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
       .withoutAuthentication()
       .buildProcessVariableNamesRequest(Collections.singletonList(
         createVariableNameRequest("someKey", "1", Collections.emptyList())
-      ))
+      ), false)
       .execute();
 
     Response variableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildProcessVariableValuesRequest(
+      .buildProcessVariableValuesRequestExternal(
         createVariableValueRequest("", "", Collections.emptyList())
       )
       .execute();
 
     // then
     assertThat(variableNameResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(variableValueResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    assertThat(variableValueResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test

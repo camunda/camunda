@@ -18,10 +18,10 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
+import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.validation.Valid;
@@ -52,7 +52,7 @@ public class SharingRestService {
   public static final String EVALUATE_SUB_PATH = "/evaluate";
 
   private final SharingService sharingService;
-  private final ConfigurationService configurationService;
+  private final SettingsService settingsService;
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
   private final DashboardRestMapper dashboardRestMapper;
@@ -63,7 +63,7 @@ public class SharingRestService {
   @Path(REPORT_SUB_PATH)
   public IdResponseDto createNewReportShare(@Context ContainerRequestContext requestContext,
                                             ReportShareRestDto createSharingDto) {
-    if (configurationService.getSharingEnabled()) {
+    if (settingsService.getSettings().getSharingEnabled().orElse(false)) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
       return sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
     } else {
@@ -77,7 +77,7 @@ public class SharingRestService {
   @Path(DASHBOARD_SUB_PATH)
   public IdResponseDto createNewDashboardShare(@Context ContainerRequestContext requestContext,
                                                DashboardShareRestDto createSharingDto) {
-    if (configurationService.getSharingEnabled()) {
+    if (settingsService.getSettings().getSharingEnabled().orElse(false)) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
       return sharingService.createNewDashboardShare(createSharingDto, userId);
     } else {
@@ -184,5 +184,4 @@ public class SharingRestService {
   public ShareSearchResultResponseDto checkShareStatus(ShareSearchRequestDto searchRequest) {
     return sharingService.checkShareStatus(searchRequest);
   }
-
 }

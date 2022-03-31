@@ -96,6 +96,10 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     final HandlerCollection handlerCollection = new HandlerCollection();
     handlerCollection.addHandler(createSecurityHeaderHandlers(configurationService));
 
+    handlerCollection.addHandler(replacePathSectionRewriteHandler(
+      appServletContextHandler, EXTERNAL_SUB_PATH + "/api", "/api" + EXTERNAL_SUB_PATH
+    ));
+
     // If running in cloud environment an additional rewrite handler is added to handle requests containing the
     // clusterId as sub-path and effectively stripping of this path element to handle the request as if
     // it was received without that sub-path.
@@ -105,9 +109,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
         appServletContextHandler, "/" + clusterId
       ));
     }
-    handlerCollection.addHandler(createAlternativeApplicationRootPathRewriteHandler(
-      appServletContextHandler, EXTERNAL_SUB_PATH
-    ));
+
+    handlerCollection.addHandler(
+      appServletContextHandler
+    );
+
     newJettyServer.setHandler(handlerCollection);
 
     initWebSockets(appServletContextHandler);
@@ -117,6 +123,19 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     ));
 
     return newJettyServer;
+  }
+
+  private Handler replacePathSectionRewriteHandler(final ServletContextHandler handler,
+                                                   final String originalPath, final String replacementPath) {
+    final RewriteHandler rewriteHandler = new RewriteHandler();
+    rewriteHandler.setRewriteRequestURI(true);
+    rewriteHandler.setRewritePathInfo(true);
+    final RewriteRegexRule alternativeRootPathEraserRegexRule = new RewriteRegexRule(
+      String.format(SUB_PATH_PATTERN_TEMPLATE, originalPath), replacementPath + "/$2"
+    );
+    rewriteHandler.addRule(alternativeRootPathEraserRegexRule);
+    rewriteHandler.setHandler(handler);
+    return rewriteHandler;
   }
 
   private RewriteHandler createAlternativeApplicationRootPathRewriteHandler(final Handler handler,

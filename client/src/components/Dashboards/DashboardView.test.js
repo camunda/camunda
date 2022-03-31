@@ -61,13 +61,13 @@ it('should render a sharing popover', async () => {
   expect(node.find('Popover.share-button')).toExist();
 });
 
-it('should hide sharing popover in cloud environment', async () => {
+it('should show sharing popover in cloud environment', async () => {
   getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<DashboardView />);
 
   await runAllEffects();
 
-  expect(node.find('Popover.share-button')).not.toExist();
+  expect(node.find('Popover.share-button')).toExist();
 });
 
 it('should hide alert dropdown in ccsm environment', async () => {

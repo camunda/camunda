@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -37,22 +36,10 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
-import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
-import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_RESOURCE_PATH;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_INPUTS_NAMES_PATH;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_OUTPUTS_NAMES_PATH;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_VARIABLES_PATH;
-import static org.camunda.optimize.rest.FlowNodeRestService.FLOW_NODE_NAMES_SUB_PATH;
-import static org.camunda.optimize.rest.FlowNodeRestService.FLOW_NODE_PATH;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
-import static org.camunda.optimize.rest.ProcessVariableRestService.PROCESS_VARIABLES_PATH;
-import static org.camunda.optimize.rest.SharingRestService.DASHBOARD_SUB_PATH;
-import static org.camunda.optimize.rest.SharingRestService.EVALUATE_SUB_PATH;
-import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
-import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 import static org.camunda.optimize.rest.StatusRestService.STATUS_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.springframework.http.HttpStatus.TEMPORARY_REDIRECT;
@@ -66,8 +53,8 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
   private static final String CSV_SUFFIX = ".csv";
-  private static final String SUB_PATH_ANY = "/*";
-  private static final String DEEP_SUB_PATH_ANY = "/**";
+  public static final String SUB_PATH_ANY = "/*";
+  public static final String DEEP_SUB_PATH_ANY = "/**";
 
   private final AuthCookieService authCookieService;
   private final SessionService sessionService;
@@ -107,6 +94,12 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
         .antMatchers("/", "/index*", STATIC_RESOURCE_PATH + "/**", "/*.js", "/*.ico").permitAll()
         // websocket
         .antMatchers(STATUS_WEBSOCKET_PATH).permitAll()
+        // public resources
+        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
+                     EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
+                     EXTERNAL_SUB_PATH + "/*.ico").permitAll()
+        // public share related resources (API)
+        .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
         // common public api resources
         .antMatchers(
           createApiPath(READYZ_PATH),
@@ -116,23 +109,7 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
           createApiPath(LICENSE_PATH, SUB_PATH_ANY),
           createApiPath(AUTHENTICATION_PATH)
         ).permitAll()
-      // public share related resources
-        .antMatchers(EXTERNAL_SUB_PATH).permitAll()
-        .antMatchers(
-          HttpMethod.GET,
-          createApiPath(CANDIDATE_GROUP_RESOURCE_PATH),
-          createApiPath(ASSIGNEE_RESOURCE_PATH),
-          createApiPath(SHARE_PATH, DASHBOARD_SUB_PATH, SUB_PATH_ANY, EVALUATE_SUB_PATH)
-        ).permitAll()
-        .antMatchers(
-          HttpMethod.POST,
-          createApiPath(SHARE_PATH, REPORT_SUB_PATH, SUB_PATH_ANY, EVALUATE_SUB_PATH),
-          createApiPath(SHARE_PATH, DASHBOARD_SUB_PATH, SUB_PATH_ANY, REPORT_SUB_PATH, SUB_PATH_ANY, EVALUATE_SUB_PATH),
-          createApiPath(FLOW_NODE_PATH, FLOW_NODE_NAMES_SUB_PATH),
-          createApiPath(PROCESS_VARIABLES_PATH),
-          createApiPath(DECISION_VARIABLES_PATH, DECISION_INPUTS_NAMES_PATH),
-          createApiPath(DECISION_VARIABLES_PATH, DECISION_OUTPUTS_NAMES_PATH)
-        ).permitAll()
+
         // everything else requires authentication
         .anyRequest().authenticated()
       .and()

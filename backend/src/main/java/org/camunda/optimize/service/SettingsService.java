@@ -31,6 +31,7 @@ public class SettingsService {
       .orElse(
         SettingsResponseDto.builder()
           .metadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry())
+          .sharingEnabled(configurationService.getSharingEnabled())
           .build()
       );
   }
@@ -39,6 +40,13 @@ public class SettingsService {
     validateUserAuthorizedToConfigureSettingsOrFail(userId);
     settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     settingsDto.setLastModifier(userId);
+    settingsWriter.upsertSettings(settingsDto);
+  }
+
+  public void setSettings(final SettingsResponseDto settingsDto) {
+    settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    // Make sure that the configuration service is in sync with the settings service
+    settingsDto.getSharingEnabled().ifPresent(configurationService::setSharingEnabled);
     settingsWriter.upsertSettings(settingsDto);
   }
 

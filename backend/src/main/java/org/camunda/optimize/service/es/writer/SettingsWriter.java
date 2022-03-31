@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
@@ -19,12 +18,15 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.SettingsIndex.LAST_MODIFIED;
 import static org.camunda.optimize.service.es.schema.index.SettingsIndex.LAST_MODIFIER;
 import static org.camunda.optimize.service.es.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
+import static org.camunda.optimize.service.es.schema.index.SettingsIndex.SHARING_ENABLED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -33,9 +35,6 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Slf4j
 @Component
 public class SettingsWriter {
-  private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    METADATA_TELEMETRY_ENABLED, LAST_MODIFIED, LAST_MODIFIER
-  );
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -55,8 +54,23 @@ public class SettingsWriter {
 
   private UpdateRequest createSettingsUpsert(final SettingsResponseDto settingsDto)
     throws JsonProcessingException {
+    Set<String> fieldsToUpdate = new HashSet<>();
+
+    if(settingsDto.getMetadataTelemetryEnabled().isPresent()) {
+      fieldsToUpdate.addAll(Set.of(LAST_MODIFIER, METADATA_TELEMETRY_ENABLED));
+    }
+    if(settingsDto.getSharingEnabled().isPresent()) {
+      fieldsToUpdate.add(SHARING_ENABLED);
+    }
+    if (!fieldsToUpdate.isEmpty()) {
+      // This always gets updated
+      fieldsToUpdate.add(LAST_MODIFIED);
+    } else {
+      throw new BadRequestException("No settings can be updated, as no values are present!");
+    }
+
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-      FIELDS_TO_UPDATE,
+      fieldsToUpdate,
       settingsDto,
       objectMapper
     );

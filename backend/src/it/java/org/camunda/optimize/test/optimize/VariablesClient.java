@@ -311,7 +311,7 @@ public class VariablesClient {
 
   public List<DecisionVariableNameResponseDto> getDecisionInputVariableNames(final List<DecisionVariableNameRequestDto> variableRequestDtos) {
     return getRequestExecutor()
-      .buildDecisionInputVariableNamesRequest(variableRequestDtos)
+      .buildDecisionInputVariableNamesRequest(variableRequestDtos, true)
       .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 

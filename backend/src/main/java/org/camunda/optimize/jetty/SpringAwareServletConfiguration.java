@@ -127,6 +127,15 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     }
     final ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
     holderPwd.setInitParameter("dirAllowed", "false");
+    ServletHolder externalHome = new ServletHolder("external-home", DefaultServlet.class);
+    if (webappURL != null) {
+      externalHome.setInitParameter("resourceBase", webappURL.toExternalForm());
+    }
+    externalHome.setInitParameter("dirAllowed","true");
+    // Use request pathInfo, don't calculate from contextPath
+    externalHome.setInitParameter("pathInfoOnly","true");
+    context.addServlet(externalHome,"/external/*"); // must end in "/*" for pathInfo to work
+    // Root path needs to be added last, otherwise it won't work
     context.addServlet(holderPwd, "/");
   }
 

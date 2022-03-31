@@ -92,24 +92,22 @@ export default class ReportView extends React.Component {
                   </Button>
                 </>
               )}
-              {optimizeProfile === 'platform' && (
-                <Popover
-                  main
-                  className="tool-button share-button"
-                  icon="share"
-                  title={t('common.sharing.buttonTitle')}
-                  tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
-                  disabled={!sharingEnabled}
-                >
-                  <ShareEntity
-                    type="report"
-                    resourceId={id}
-                    shareEntity={shareReport}
-                    revokeEntitySharing={revokeReportSharing}
-                    getSharedEntity={getSharedReport}
-                  />
-                </Popover>
-              )}
+              <Popover
+                main
+                className="tool-button share-button"
+                icon="share"
+                title={t('common.sharing.buttonTitle')}
+                tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
+                disabled={!sharingEnabled}
+              >
+                <ShareEntity
+                  type="report"
+                  resourceId={id}
+                  shareEntity={shareReport}
+                  revokeEntitySharing={revokeReportSharing}
+                  getSharedEntity={getSharedReport}
+                />
+              </Popover>
               {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
                 report?.data?.visualization === 'number' && (
                   <AlertsDropdown numberReport={report} />

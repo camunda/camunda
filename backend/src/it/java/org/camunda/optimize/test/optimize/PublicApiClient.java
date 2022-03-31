@@ -102,6 +102,12 @@ public class PublicApiClient {
       .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public Response toggleSharing(boolean enableSharing, final String accessToken) {
+    return getRequestExecutor()
+      .buildToggleShareRequest(enableSharing, accessToken)
+      .execute();
+  }
+
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }

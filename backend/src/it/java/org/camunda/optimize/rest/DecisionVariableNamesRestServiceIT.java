@@ -35,7 +35,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request)
+    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request, false)
       .withoutAuthentication()
       .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
@@ -51,7 +51,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request)
+    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request, true)
       .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
@@ -156,15 +156,20 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
   }
 
   private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto) {
+    return getExecutor(inputsOrOutputs, requestDto, true);
+  }
+
+  private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto,
+                                              boolean authenticationEnabled) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
         return embeddedOptimizeExtension
           .getRequestExecutor()
-          .buildDecisionInputVariableNamesRequest(requestDto);
+          .buildDecisionInputVariableNamesRequest(requestDto, authenticationEnabled);
       case TEST_VARIANT_OUTPUTS:
         return embeddedOptimizeExtension
           .getRequestExecutor()
-          .buildDecisionOutputVariableNamesRequest(requestDto);
+          .buildDecisionOutputVariableNamesRequest(requestDto, authenticationEnabled);
       default:
         throw new RuntimeException("unsupported type " + inputsOrOutputs);
     }

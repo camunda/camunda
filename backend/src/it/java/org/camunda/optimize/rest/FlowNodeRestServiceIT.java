@@ -39,7 +39,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
 
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+      .buildGetFlowNodeNamesExternal(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
       .execute();
 
@@ -97,7 +97,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
   private FlowNodeNamesResponseDto getFlowNodeNamesWithoutAuth(FlowNodeIdsToNamesRequestDto requestDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildGetFlowNodeNames(requestDto)
+      .buildGetFlowNodeNamesExternal(requestDto)
       .withoutAuthentication()
       .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
   }

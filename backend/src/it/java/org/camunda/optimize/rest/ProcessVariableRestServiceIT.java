@@ -30,7 +30,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto))
+      .buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto), false)
       .withoutAuthentication()
       .execute();
 

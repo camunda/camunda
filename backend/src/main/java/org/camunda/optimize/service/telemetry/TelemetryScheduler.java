@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -41,7 +42,8 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
   @Override
   protected void run() {
     log.info("Checking whether telemetry data can be sent.");
-    if (settingsService.getSettings().isMetadataTelemetryEnabled()) {
+    Optional<Boolean> telemetryMetadata = settingsService.getSettings().getMetadataTelemetryEnabled();
+    if (telemetryMetadata.isPresent() && Boolean.TRUE.equals(telemetryMetadata.get())) {
       try {
         telemetryService.sendTelemetryData();
         log.info("Telemetry data was sent.");

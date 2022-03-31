@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -35,7 +36,16 @@ public class Upgrade37To380PlanFactory implements UpgradePlanFactory {
       .addUpgradeStep(addLastEntityTimestampToPositionBasedImportIndices())
       .addUpgradeStep(addLastEntityTimestampAndRenameDatasourceFieldInPositionBasedImportIndices())
       .addUpgradeSteps(migrateAggregationTypeFields())
+      .addUpgradeStep(updateSettingsIndexWithNewField())
       .build();
+  }
+
+  private UpdateIndexStep updateSettingsIndexWithNewField() {
+    // @formatter:off
+    final String updateScript =
+      "ctx._source.sharingEnabled = null;";
+    // @formatter:on
+    return new UpdateIndexStep(new SettingsIndex(), updateScript);
   }
 
   private static UpdateIndexStep addLastEntityTimestampAndRenameDatasourceFieldInPositionBasedImportIndices() {

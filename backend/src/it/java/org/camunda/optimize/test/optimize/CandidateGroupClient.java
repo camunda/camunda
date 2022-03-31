@@ -22,7 +22,7 @@ public class CandidateGroupClient {
 
   public List<GroupDto> getCandidateGroupsByIdsWithoutAuthentication(final List<String> ids) {
     return getRequestExecutor()
-      .buildGetCandidateGroupsByIdRequest(ids)
+      .buildGetCandidateGroupsByIdRequest(ids, false)
       .withoutAuthentication()
       .executeAndReturnList(GroupDto.class, Response.Status.OK.getStatusCode());
   }
