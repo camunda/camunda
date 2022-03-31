@@ -9,7 +9,7 @@
   </parent>
 
   <name>Operate Distro</name>
-  <artifactId>camunda-cloud-operate</artifactId>
+  <artifactId>camunda-operate</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
@@ -24,7 +24,7 @@
   </dependencies>
 
   <build>
-    <finalName>camunda-cloud-operate-${project.version}</finalName>
+    <finalName>camunda-operate-${project.version}</finalName>
     <plugins>
 
       <plugin>
@@ -38,7 +38,7 @@
           <repositoryName>lib</repositoryName>
           <generateRepository>false</generateRepository>
           <useWildcardClassPath>true</useWildcardClassPath>
-          <assembleDirectory>${project.build.directory}/camunda-cloud-operate</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/camunda-operate</assembleDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError</extraJvmArguments>
 
           <platforms>

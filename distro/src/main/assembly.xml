@@ -9,7 +9,7 @@
     <format>zip</format>
   </formats>
 
-  <baseDirectory>camunda-cloud-operate-${project.version}</baseDirectory>
+  <baseDirectory>camunda-operate-${project.version}</baseDirectory>
   <includeBaseDirectory>true</includeBaseDirectory>
 
   <dependencySets>
@@ -25,7 +25,7 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/camunda-cloud-operate</directory>
+      <directory>${project.build.directory}/camunda-operate</directory>
       <outputDirectory></outputDirectory>
     </fileSet>
   </fileSets>

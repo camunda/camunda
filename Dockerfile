@@ -4,7 +4,7 @@ FROM alpine:3.13.2 as prepare
 WORKDIR /tmp/operate
 
 # download operate
-COPY distro/target/camunda-cloud-operate-*.tar.gz operate.tar.gz
+COPY distro/target/camunda-operate-*.tar.gz operate.tar.gz
 RUN tar xzvf operate.tar.gz --strip 1
 RUN rm operate.tar.gz
 COPY docker-notice.txt notice.txt
