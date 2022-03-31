@@ -15,6 +15,7 @@ import {
   GET_CURRENT_USER,
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
+import {tracking} from 'modules/tracking';
 
 interface Props {
   isInitiallyOpen?: boolean;
@@ -35,6 +36,12 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
     document.body.addEventListener('click', onClose, true);
     return () => document.body.removeEventListener('click', onClose, true);
   }, [dropdownRef]);
+
+  useEffect(() => {
+    if (data?.currentUser.userId) {
+      tracking.identifyUser(data?.currentUser.userId);
+    }
+  }, [data]);
 
   const handleKeyPress = (event: React.KeyboardEvent<Element>) => {
     if (event.key === 'Escape') {

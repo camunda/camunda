@@ -42,7 +42,8 @@
     "storybook": "start-storybook -p 9009 -s public",
     "build-storybook": "build-storybook -s public",
     "chromatic": "npx chromatic --skip 'dependabot/**' --auto-accept-changes master --exit-once-uploaded",
-    "postinstall": "cd .. && husky install"
+    "postinstall": "cd .. && husky install",
+    "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'"
   },
   "jest-junit": {
     "suiteName": "client",
@@ -93,6 +94,7 @@
     "msw": "0.39.2",
     "prettier": "2.6.1",
     "react-scripts": "4.0.3",
+    "source-map-explorer": "^2.5.2",
     "testcafe": "1.18.4",
     "typescript": "4.6.3",
     "zeebe-node": "1.4.0"

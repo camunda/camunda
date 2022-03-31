@@ -13,7 +13,7 @@ import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
 import {tracking} from 'modules/tracking';
 import './index.scss';
 
-tracking.loadPermissions().then(() => {
+tracking.loadAnalyticsToWillingUsers().then(() => {
   render(
     <React.StrictMode>
       <App />

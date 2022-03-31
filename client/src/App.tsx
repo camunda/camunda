@@ -19,6 +19,7 @@ import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
 import {EmptyDetails} from './EmptyDetails';
 import {Task} from './Task';
+import {TrackPagination} from 'modules/tracking/TrackPagination';
 
 const App: React.FC = () => {
   return (
@@ -28,6 +29,7 @@ const App: React.FC = () => {
           <NetworkStatusWatcher />
           <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
             <SessionWatcher />
+            <TrackPagination />
             <Routes>
               <Route path={Pages.Login} element={<Login />} />
               <Route
