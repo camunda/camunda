@@ -15,7 +15,7 @@
     <module>data-generator</module>
     <module>importer-common</module>
     <module>importer-130</module>
-    <module>importer-140</module>
+    <module>importer-800</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
@@ -29,7 +29,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>1.4.0-alpha2</version.zeebe>
+    <version.zeebe>8.0.0-rc1</version.zeebe>
     <version.iam>1.3.5</version.iam>
 
     <version.elasticsearch>7.16.3</version.elasticsearch>

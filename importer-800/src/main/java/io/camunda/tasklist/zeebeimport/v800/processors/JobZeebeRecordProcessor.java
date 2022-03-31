@@ -3,12 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v140.processors;
+package io.camunda.tasklist.zeebeimport.v800.processors;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.tasklist.zeebeimport.v140.record.Intent.CANCELED;
-import static io.camunda.tasklist.zeebeimport.v140.record.Intent.COMPLETED;
-import static io.camunda.tasklist.zeebeimport.v140.record.Intent.CREATED;
+import static io.camunda.tasklist.zeebeimport.v800.record.Intent.CANCELED;
+import static io.camunda.tasklist.zeebeimport.v800.record.Intent.COMPLETED;
+import static io.camunda.tasklist.zeebeimport.v800.record.Intent.CREATED;
 import static io.camunda.zeebe.protocol.Protocol.USER_TASK_ASSIGNEE_HEADER_NAME;
 import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME;
 
@@ -20,7 +20,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.DateUtil;
-import io.camunda.tasklist.zeebeimport.v140.record.value.JobRecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v800.record.value.JobRecordValueImpl;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;

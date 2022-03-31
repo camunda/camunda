@@ -13,6 +13,7 @@ services:
       - discovery.type=single-node
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
     ulimits:
       memlock:
@@ -38,7 +39,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:1.4.0-alpha2
+    image: camunda/zeebe:8.0.0-rc1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe
@@ -96,7 +97,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:1.4.0-alpha2
+    image: camunda/zeebe:8.0.0-rc1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e

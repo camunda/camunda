@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v140.processors;
+package io.camunda.tasklist.zeebeimport.v800.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +14,7 @@ import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
-import io.camunda.tasklist.zeebeimport.v140.record.value.deployment.DeployedProcessImpl;
+import io.camunda.tasklist.zeebeimport.v800.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;

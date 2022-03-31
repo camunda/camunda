@@ -37,7 +37,7 @@ ccsm-helm:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
-      tag: 1.4.0-alpha2
+      tag: 8.0.0-rc1
     persistence:
       # Defines whether persistence should be enabled for the `zeebe` StatefulSet.
       # Depends on https://github.com/camunda/camunda-cloud-helm/issues/232
@@ -48,7 +48,7 @@ ccsm-helm:
     fullnameOverride: zeebe-gateway
     # Defines the version of Zeebe to use
     image:
-      tag: 1.4.0-alpha2
+      tag: 8.0.0-rc1
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
   # in order to avoid being too wasteful.

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v140.record.value.deployment;
+package io.camunda.tasklist.zeebeimport.v800.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Arrays;

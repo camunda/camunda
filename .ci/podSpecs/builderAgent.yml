@@ -62,6 +62,8 @@ spec:
           value: true
         - name: processors
           value: 4
+        - name: xpack.security.enabled
+          value: false
       securityContext:
         privileged: true
         capabilities:
@@ -96,7 +98,7 @@ spec:
           cpu: 8
           memory: 16Gi
     - name: zeebe
-      image: camunda/zeebe:1.4.0-alpha2
+      image: camunda/zeebe:8.0.0-rc1
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME

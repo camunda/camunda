@@ -124,12 +124,12 @@ pipeline {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                 sh ('mvn -B -s $MAVEN_SETTINGS_XML -DZEEBE_TASKLIST_CSRF_PREVENTION_ENABLED=false spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
-                  sh ('sleep 30')
-                  sh '''
+                sh ('sleep 30')
+                sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
                   mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test
                   '''
-                  sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
               }
             }
           }
