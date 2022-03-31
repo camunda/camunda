@@ -92,7 +92,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-      - run: mvn -T1C -B -D skipTests -D skipChecks install
+      - run: mvn -T1C -B -D skipTests -D skipChecks -am -pl :${{ matrix.project }} package
       - run: mvn -B -D skipITs -D skipChecks verify -pl :${{ matrix.project }}
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
@@ -114,7 +114,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
-      - run: mvn -T1C -B -D skipTests -D skipChecks package
+      - run: mvn -T1C -B -D skipTests -D skipChecks -am -pl :zeebe-workflow-engine,:zeebe-logstreams package
       - run: mvn -B -D skipITs -D skipChecks -pl :zeebe-workflow-engine,:zeebe-logstreams verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
