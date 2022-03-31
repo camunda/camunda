@@ -7,6 +7,7 @@
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 import {DecisionInstanceType} from 'modules/stores/decisionInstance';
+import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date/formatDate';
 import {useLocation, useParams} from 'react-router-dom';
 import {Table, TD, TH, SkeletonBlock} from './styled';
@@ -64,6 +65,12 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
                     decisionInstance.processInstanceId
                   )}
                   title={`View process instance ${decisionInstance.processInstanceId}`}
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'decision-instance-parent-process-details',
+                    });
+                  }}
                 >
                   {decisionInstance.processInstanceId}
                 </Link>

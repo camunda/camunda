@@ -18,6 +18,7 @@ import {ReactComponent as Minimize} from 'modules/components/Icon/minimize.svg';
 import {ReactComponent as Close} from 'modules/components/Icon/close.svg';
 import {DecisionState} from './DecisionState';
 import {Container, PanelHeader, ButtonContainer, Button} from './styled';
+import {tracking} from 'modules/tracking';
 
 const Drd: React.FC = observer(() => {
   const {
@@ -83,7 +84,13 @@ const Drd: React.FC = observer(() => {
               size="large"
               iconButtonTheme="default"
               icon={<Maximize />}
-              onClick={() => setPanelState('maximized')}
+              onClick={() => {
+                setPanelState('maximized');
+                tracking.track({
+                  eventName: 'drd-panel-interaction',
+                  action: 'maximize',
+                });
+              }}
             />
           )}
           {panelState === 'maximized' && (
@@ -92,7 +99,13 @@ const Drd: React.FC = observer(() => {
               size="large"
               iconButtonTheme="default"
               icon={<Minimize />}
-              onClick={() => setPanelState('minimized')}
+              onClick={() => {
+                setPanelState('minimized');
+                tracking.track({
+                  eventName: 'drd-panel-interaction',
+                  action: 'minimize',
+                });
+              }}
             />
           )}
           <Button
@@ -100,7 +113,13 @@ const Drd: React.FC = observer(() => {
             size="large"
             iconButtonTheme="default"
             icon={<Close />}
-            onClick={() => setPanelState('closed')}
+            onClick={() => {
+              setPanelState('closed');
+              tracking.track({
+                eventName: 'drd-panel-interaction',
+                action: 'close',
+              });
+            }}
           />
         </ButtonContainer>
       </PanelHeader>

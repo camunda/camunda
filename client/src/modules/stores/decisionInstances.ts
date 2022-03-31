@@ -13,6 +13,7 @@ import {
   getDecisionInstancesRequestFilters,
   getSortParams,
 } from 'modules/utils/filter';
+import {tracking} from 'modules/tracking';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -90,6 +91,12 @@ class DecisionInstances extends NetworkReconnectionHandler {
       const response = await fetchDecisionInstances(payload);
       if (response.ok) {
         const {decisionInstances, totalCount} = await response.json();
+
+        tracking.track({
+          eventName: 'decisions-loaded',
+          filters: Object.keys(payload.query),
+          ...payload.sorting,
+        });
 
         this.setDecisionInstances({
           decisionInstances: this.getDecisionInstances(

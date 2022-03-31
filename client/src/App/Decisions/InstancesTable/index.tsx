@@ -26,6 +26,7 @@ import {
   Copyright,
   State,
 } from './styled';
+import {tracking} from 'modules/tracking';
 
 const ROW_HEIGHT = 37;
 
@@ -164,6 +165,12 @@ const InstancesTable: React.FC = observer(() => {
                     <Link
                       to={Locations.decisionInstance(location, id)}
                       title={`View decision instance ${id}`}
+                      onClick={() => {
+                        tracking.track({
+                          eventName: 'navigation',
+                          link: 'decision-instances-instance-details',
+                        });
+                      }}
                     >
                       {id}
                     </Link>
@@ -181,6 +188,12 @@ const InstancesTable: React.FC = observer(() => {
                       <Link
                         to={Locations.instance(location, processInstanceId)}
                         title={`View process instance ${processInstanceId}`}
+                        onClick={() => {
+                          tracking.track({
+                            eventName: 'navigation',
+                            link: 'decision-instances-parent-process-details',
+                          });
+                        }}
                       >
                         {processInstanceId}
                       </Link>

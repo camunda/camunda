@@ -15,6 +15,7 @@ type Events =
         | 'header-logo'
         | 'header-dashboard'
         | 'header-instances'
+        | 'header-decisions'
         | 'dashboard-running-instances'
         | 'dashboard-instances-with-incidents'
         | 'dashboard-active-instances'
@@ -26,7 +27,10 @@ type Events =
         | 'instances-instance-details'
         | 'instances-parent-instance-details'
         | 'instance-parent-details'
-        | 'instance-breadcrumb';
+        | 'instance-breadcrumb'
+        | 'decision-instances-instance-details'
+        | 'decision-instances-parent-process-details'
+        | 'decision-instance-parent-process-details';
     }
   | {
       eventName: 'theme-toggle';
@@ -45,6 +49,20 @@ type Events =
       filters: string[];
       sortBy?: string;
       sortOrder?: 'desc' | 'asc';
+    }
+  | {
+      eventName: 'decisions-loaded';
+      filters: string[];
+      sortBy?: string;
+      sortOrder?: 'desc' | 'asc';
+    }
+  | {
+      eventName: 'variables-panel-used';
+      toTab: 'inputs-and-outputs' | 'result';
+    }
+  | {
+      eventName: 'drd-panel-interaction';
+      action: 'open' | 'close' | 'maximize' | 'minimize';
     };
 const STAGE_ENV = getStage(window.location.host);
 

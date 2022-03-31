@@ -5,6 +5,7 @@
  */
 
 import {observer} from 'mobx-react';
+import {tracking} from 'modules/tracking';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';
 import {InputsAndOutputs} from './InputsAndOutputs';
@@ -19,11 +20,21 @@ const VariablesPanel: React.FC = observer(() => {
   >(getStateLocally()?.[LOCAL_STORAGE_KEY] ?? 'inputs-and-outputs');
 
   function selectTab(tab: typeof selectedTab) {
-    storeStateLocally({
-      [LOCAL_STORAGE_KEY]: tab,
-    });
+    setSelectedTab((selectedTab) => {
+      if (selectedTab !== tab) {
+        storeStateLocally({
+          [LOCAL_STORAGE_KEY]: tab,
+        });
 
-    setSelectedTab(tab);
+        tracking.track({
+          eventName: 'variables-panel-used',
+          toTab: selectedTab,
+        });
+
+        return tab;
+      }
+      return selectedTab;
+    });
   }
 
   return (

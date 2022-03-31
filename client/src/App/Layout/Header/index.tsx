@@ -60,6 +60,12 @@ const Header: React.FC = observer(() => {
             to={Locations.decisions(location)}
             title="View Decisions"
             label="Decisions"
+            onClick={() => {
+              tracking.track({
+                eventName: 'navigation',
+                link: 'header-decisions',
+              });
+            }}
           />
         </Menu>
       </nav>

@@ -10,6 +10,7 @@ import {drdStore} from 'modules/stores/drd';
 import {Container, EvaluatedIcon, FailedIcon, SkeletonCircle} from './styled';
 import {Button} from 'modules/components/Button';
 import {Details} from './Details';
+import {tracking} from 'modules/tracking';
 
 const Header: React.FC = observer(() => {
   const {
@@ -39,7 +40,13 @@ const Header: React.FC = observer(() => {
         size="small"
         color="primary"
         title="Open Decision Requirements Diagram"
-        onClick={() => drdStore.setPanelState('minimized')}
+        onClick={() => {
+          drdStore.setPanelState('minimized');
+          tracking.track({
+            eventName: 'drd-panel-interaction',
+            action: 'open',
+          });
+        }}
         disabled={status === 'initial'}
       >
         Open DRD
