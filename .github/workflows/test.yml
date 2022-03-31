@@ -83,7 +83,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: ${{ fromJson(needs.project-list.outputs.fast) }}
+        project: ${{ fromJson(needs.project-list.outputs.projects) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
