@@ -18,6 +18,7 @@ public final class TasklistURIs {
   public static final String LOGOUT_RESOURCE = "/api/logout";
   public static final String SSO_CALLBACK = "/sso-callback";
   public static final String NO_PERMISSION = "/noPermission";
+  public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
 
   public static final String REQUESTED_URL = "requestedUrl";
 

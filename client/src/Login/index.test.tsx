@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {rest} from 'msw';
 import {Login} from './index';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockServer} from 'modules/mockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -45,7 +45,7 @@ function createWrapper(
 describe('<Login />', () => {
   afterEach(() => {
     getFullYearMock.mockClear();
-    login.reset();
+    authenticationStore.reset();
   });
 
   afterAll(() => {
@@ -53,7 +53,7 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the initial page on success', async () => {
-    login.disableSession();
+    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
@@ -75,7 +75,7 @@ describe('<Login />', () => {
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
-    login.disableSession();
+    authenticationStore.disableSession();
     render(<Login />, {
       wrapper: createWrapper(),
     });
@@ -93,7 +93,7 @@ describe('<Login />', () => {
   });
 
   it('should show an error for wrong credentials', async () => {
-    login.disableSession();
+    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(401), ctx.text('')),
@@ -113,7 +113,7 @@ describe('<Login />', () => {
   });
 
   it('should show a generic error message', async () => {
-    login.disableSession();
+    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(404), ctx.text('')),
@@ -145,7 +145,7 @@ describe('<Login />', () => {
   });
 
   it('should show a loading overlay while the login form is submitting', async () => {
-    login.disableSession();
+    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
@@ -166,7 +166,7 @@ describe('<Login />', () => {
   it('should have the correct copyright notice', () => {
     const mockYear = 1984;
     getFullYearMock.mockReturnValue(mockYear);
-    login.disableSession();
+    authenticationStore.disableSession();
     render(<Login />, {
       wrapper: createWrapper(),
     });
@@ -179,7 +179,7 @@ describe('<Login />', () => {
   });
 
   it('should not allow the form to be submitted with empty fields', async () => {
-    login.disableSession();
+    authenticationStore.disableSession();
 
     render(<Login />, {
       wrapper: createWrapper(),

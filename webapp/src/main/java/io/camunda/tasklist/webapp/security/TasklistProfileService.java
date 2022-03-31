@@ -17,11 +17,17 @@ public class TasklistProfileService {
 
   public static final String SSO_AUTH_PROFILE = "sso-auth";
   public static final String IAM_AUTH_PROFILE = "iam-auth";
+  public static final String IDENTITY_AUTH_PROFILE = "identity-auth";
   public static final String AUTH_PROFILE = "auth";
   public static final String DEFAULT_AUTH = AUTH_PROFILE;
   public static final String LDAP_AUTH_PROFILE = "ldap-auth";
   public static final Set<String> AUTH_PROFILES =
-      Set.of(AUTH_PROFILE, LDAP_AUTH_PROFILE, SSO_AUTH_PROFILE, IAM_AUTH_PROFILE);
+      Set.of(
+          AUTH_PROFILE,
+          LDAP_AUTH_PROFILE,
+          SSO_AUTH_PROFILE,
+          IAM_AUTH_PROFILE,
+          IDENTITY_AUTH_PROFILE);
 
   private static final Set<String> CANT_LOGOUT_AUTH_PROFILES =
       Set.of(SSO_AUTH_PROFILE, IAM_AUTH_PROFILE);
@@ -50,5 +56,13 @@ public class TasklistProfileService {
 
   public boolean isIAMProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(IAM_AUTH_PROFILE);
+  }
+
+  public boolean isIdentityProfile() {
+    return Arrays.asList(environment.getActiveProfiles()).contains(IDENTITY_AUTH_PROFILE);
+  }
+
+  public boolean isLoginDelegated() {
+    return isIAMProfile() || isIdentityProfile() || isSSOProfile();
   }
 }

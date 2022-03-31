@@ -8,7 +8,7 @@
 
 import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
 
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from 'modules/utils/mergePathname';
 import {MAX_TASKS_DISPLAYED} from 'modules/constants/tasks';
 
@@ -77,12 +77,12 @@ function createApolloClient({
       async fetch(uri: RequestInfo, options: RequestInit) {
         const response = await fetch(uri, options);
         if (response.ok) {
-          login.activateSession();
+          authenticationStore.activateSession();
         }
 
         if ([401, 403].includes(response.status)) {
           await resetApolloStore();
-          login.disableSession();
+          authenticationStore.disableSession();
         }
 
         return response;

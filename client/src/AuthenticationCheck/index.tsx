@@ -6,7 +6,7 @@
 
 import {Navigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 interface Props {
@@ -17,9 +17,11 @@ interface Props {
 const AuthenticationCheck: React.FC<Props> = observer(
   ({redirectPath, children}) => {
     const location = useLocation();
-    const {status} = login;
+    const {status} = authenticationStore;
 
-    if (['logged-in', 'initial'].includes(status)) {
+    if (
+      ['logged-in', 'initial', 'invalid-third-party-session'].includes(status)
+    ) {
       return <>{children}</>;
     }
 

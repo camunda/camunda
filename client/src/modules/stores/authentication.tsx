@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {makeObservable, observable, action} from 'mobx';
 
 import {resetApolloStore} from 'modules/apollo-client';
 import {mergePathname} from 'modules/utils/mergePathname';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 const BASENAME = window.clientConfig?.contextPath ?? '/';
 
@@ -16,16 +17,25 @@ const Endpoints = {
   Logout: '/api/logout',
 } as const;
 
-class Login {
-  status:
-    | 'initial'
-    | 'logged-in'
-    | 'logged-out'
-    | 'session-expired'
-    | 'session-invalid' = 'initial';
+type Status =
+  | 'initial'
+  | 'logged-in'
+  | 'logged-out'
+  | 'session-expired'
+  | 'session-invalid'
+  | 'invalid-third-party-session';
+
+const DEFAULT_STATUS: Status = 'initial';
+
+class Authentication {
+  status: Status = DEFAULT_STATUS;
 
   constructor() {
-    makeAutoObservable(this);
+    makeObservable(this, {
+      status: observable,
+      setStatus: action,
+      reset: action,
+    });
   }
 
   handleLogin = async (username: string, password: string) => {
@@ -44,12 +54,22 @@ class Login {
     return response;
   };
 
-  logout = () => {
-    this.status = 'logged-out';
+  setStatus = (status: Status) => {
+    this.status = status;
   };
 
-  activateSession = () => {
-    this.status = 'logged-in';
+  #handleThirdPartySessionExpiration = () => {
+    const wasReloaded = getStateLocally('wasReloaded');
+
+    this.setStatus('invalid-third-party-session');
+
+    if (wasReloaded) {
+      return;
+    }
+
+    storeStateLocally('wasReloaded', true);
+
+    window.location.reload();
   };
 
   handleLogout = async () => {
@@ -66,23 +86,45 @@ class Login {
 
     resetApolloStore();
 
-    this.logout();
+    if (
+      !window.clientConfig?.canLogout ||
+      window.clientConfig?.isLoginDelegated
+    ) {
+      this.#handleThirdPartySessionExpiration();
+      return;
+    }
+
+    this.setStatus('logged-out');
+  };
+
+  activateSession = () => {
+    this.setStatus('logged-in');
+    storeStateLocally('wasReloaded', false);
   };
 
   disableSession = () => {
+    if (
+      !window.clientConfig?.canLogout ||
+      window.clientConfig?.isLoginDelegated
+    ) {
+      this.#handleThirdPartySessionExpiration();
+
+      return;
+    }
+
     if (['session-invalid', 'session-expired'].includes(this.status)) {
       return;
     }
 
     if (this.status === 'initial') {
-      this.status = 'session-invalid';
+      this.setStatus('session-invalid');
     } else {
-      this.status = 'session-expired';
+      this.setStatus('session-expired');
     }
   };
 
   reset = () => {
-    this.status = 'initial';
+    this.status = DEFAULT_STATUS;
   };
 }
 
@@ -95,6 +137,6 @@ function request(input: string, init?: RequestInit) {
   });
 }
 
-const login = new Login();
+const authenticationStore = new Authentication();
 
-export {login};
+export {authenticationStore};

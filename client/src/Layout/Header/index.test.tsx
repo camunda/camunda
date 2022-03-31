@@ -8,7 +8,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Header} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {rest, graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
@@ -38,7 +38,7 @@ function createWrapper(
 
 describe('<Header />', () => {
   afterEach(() => {
-    login.reset();
+    authenticationStore.reset();
   });
 
   beforeEach(() => {
@@ -90,18 +90,18 @@ describe('<Header />', () => {
       rest.post('/api/login', (_, res) => res.once()),
       rest.post('/api/logout', (_, res) => res.once()),
     );
-    await login.handleLogin('demo', 'demo');
+    await authenticationStore.handleLogin('demo', 'demo');
 
     render(<Header />, {
       wrapper: createWrapper(),
     });
 
-    expect(login.status).toBe('logged-in');
+    expect(authenticationStore.status).toBe('logged-in');
 
     fireEvent.click(await screen.findByText('Demo User'));
     fireEvent.click(screen.getByText('Logout'));
 
-    await waitFor(() => expect(login.status).toBe('logged-out'));
+    await waitFor(() => expect(authenticationStore.status).toBe('logged-out'));
     expect(screen.queryByText('logout')).not.toBeInTheDocument();
   });
 

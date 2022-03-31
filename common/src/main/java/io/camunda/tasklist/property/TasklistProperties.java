@@ -59,6 +59,8 @@ public class TasklistProperties {
 
   @NestedConfigurationProperty private IamProperties iam = new IamProperties();
 
+  @NestedConfigurationProperty private IdentityProperties identity = new IdentityProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -213,6 +215,14 @@ public class TasklistProperties {
 
   public void setIam(final IamProperties iam) {
     this.iam = iam;
+  }
+
+  public IdentityProperties getIdentity() {
+    return identity;
+  }
+
+  public void setIdentity(final IdentityProperties identity) {
+    this.identity = identity;
   }
 
   public List<String> getRoles() {

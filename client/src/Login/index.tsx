@@ -7,7 +7,7 @@
 import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {Pages} from 'modules/constants/pages';
 import {
   Container,
@@ -39,7 +39,7 @@ interface FormValues {
 const Login: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const {handleLogin} = login;
+  const {handleLogin} = authenticationStore;
 
   return (
     <Container>

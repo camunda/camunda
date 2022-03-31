@@ -5,7 +5,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react-lite';
 import {useNotifications, Notification} from 'modules/notifications';
 import {useLocation} from 'react-router-dom';
@@ -15,7 +15,7 @@ const SessionWatcher: React.FC = observer(() => {
   const [notification, setNotification] = useState<Notification | undefined>();
 
   const {displayNotification} = useNotifications();
-  const status = login.status;
+  const status = authenticationStore.status;
   const location = useLocation();
 
   useEffect(() => {

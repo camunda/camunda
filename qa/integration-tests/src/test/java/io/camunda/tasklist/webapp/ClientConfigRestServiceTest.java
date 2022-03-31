@@ -73,6 +73,7 @@ public class ClientConfigRestServiceTest {
             "window.clientConfig = {"
                 + "\"isEnterprise\":true,"
                 + "\"canLogout\":true,"
+                + "\"isLoginDelegated\":false,"
                 + "\"contextPath\":\"\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"

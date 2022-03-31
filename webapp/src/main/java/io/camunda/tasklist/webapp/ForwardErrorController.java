@@ -5,10 +5,11 @@
  */
 package io.camunda.tasklist.webapp;
 
+import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 
+import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,9 +39,23 @@ public class ForwardErrorController implements ErrorController {
     if (requestedURI == null) {
       return forwardToRootPage();
     }
-    if (shouldSaveRequestedURI(requestedURI)) {
+    if (profileService.isLoginDelegated()
+        && !requestedURI.contains(LOGIN_RESOURCE)
+        && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
+      if (requestedURI.contains("/graphql")) {
+        final ModelAndView modelAndView = new ModelAndView();
+        final Integer statusCode =
+            (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        final Exception exception =
+            (Exception)
+                request.getAttribute(
+                    "org.springframework.boot.web.servlet.error.DefaultErrorAttributes.ERROR");
+        modelAndView.addObject("message", profileService.getMessageByProfileFor(exception));
+        modelAndView.setStatus(HttpStatus.valueOf(statusCode));
+        return modelAndView;
+      }
       return forwardToRootPage();
     }
   }
@@ -54,11 +69,15 @@ public class ForwardErrorController implements ErrorController {
   private ModelAndView saveRequestAndRedirectToLogin(
       final HttpServletRequest request, final String requestedURI) {
     LOGGER.warn(
-        "Requested path {}, but not authenticated. Redirect to  {} ",
-        requestedURI,
-        TasklistURIs.LOGIN_RESOURCE);
-    request.getSession(true).setAttribute(REQUESTED_URL, requestedURI);
-    final ModelAndView modelAndView = new ModelAndView("redirect:" + TasklistURIs.LOGIN_RESOURCE);
+        "Requested path {}, but not authenticated. Redirect to  {} ", requestedURI, LOGIN_RESOURCE);
+    final String queryString = request.getQueryString();
+    if (ConversionUtils.stringIsEmpty(queryString)) {
+      request.getSession(true).setAttribute(REQUESTED_URL, requestedURI);
+    } else {
+      request.getSession(true).setAttribute(REQUESTED_URL, requestedURI + "?" + queryString);
+    }
+
+    final ModelAndView modelAndView = new ModelAndView("redirect:" + LOGIN_RESOURCE);
     modelAndView.setStatus(HttpStatus.FOUND);
     return modelAndView;
   }
@@ -67,11 +86,5 @@ public class ForwardErrorController implements ErrorController {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
-  }
-
-  private boolean shouldSaveRequestedURI(String requestedURI) {
-    return (profileService.isSSOProfile() || profileService.isIAMProfile())
-        && !requestedURI.equals(TasklistURIs.LOGIN_RESOURCE)
-        && isNotLoggedIn();
   }
 }

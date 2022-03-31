@@ -9,7 +9,7 @@ import {useQuery} from '@apollo/client';
 
 import {ReactComponent as Icon} from 'modules/icons/down.svg';
 import {Option} from './Option';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 import {Button, LabelWrapper, Menu, Container} from './styled';
 import {
   GET_CURRENT_USER,
@@ -63,7 +63,7 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
           <Menu>
             <Option
               onClick={() => {
-                login.handleLogout();
+                authenticationStore.handleLogout();
                 setIsOpen(false);
               }}
               onKeyDown={handleKeyPress}

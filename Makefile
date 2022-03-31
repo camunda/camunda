@@ -27,9 +27,22 @@ env-iam-up:
        CAMUNDA_TASKLIST_IAM_CLIENT_SECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7 \
 	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,iam-auth
 
+.PHONY: env-identity-up
+env-identity-up:
+	@docker-compose -f ./config/docker-compose.identity.yml up -d \
+	&& docker-compose up -d elasticsearch zeebe \
+	&& mvn install -DskipTests=true -Dskip.fe.build=false \
+	&& CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform \
+	   CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
+       CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist \
+       CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
+       CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api \
+	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
+
 .PHONY: env-down
 env-down:
-	docker-compose down -v \
+	@docker-compose -f ./config/docker-compose.identity.yml down \
+	&& docker-compose down -v \
 	&& mvn clean
 
 .PHONY: env-status

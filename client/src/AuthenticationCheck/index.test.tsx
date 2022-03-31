@@ -7,7 +7,7 @@
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {AuthenticationCheck} from './index';
-import {login} from 'modules/stores/login';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const LOGIN_CONTENT = 'Login content';
 const fetchMock = jest.spyOn(window, 'fetch');
@@ -27,7 +27,7 @@ const Wrapper: React.FC = ({children}) => {
 describe('<AuthenticationCheck />', () => {
   afterEach(() => {
     fetchMock.mockClear();
-    login.reset();
+    authenticationStore.reset();
   });
 
   afterAll(() => {
@@ -39,7 +39,7 @@ describe('<AuthenticationCheck />', () => {
 
     const CONTENT = 'Secret route';
 
-    await login.handleLogin('demo', 'demo');
+    await authenticationStore.handleLogin('demo', 'demo');
 
     render(
       <AuthenticationCheck redirectPath={LOGIN_PATH}>
@@ -52,7 +52,7 @@ describe('<AuthenticationCheck />', () => {
   });
 
   it('should redirect when not authenticated', async () => {
-    login.disableSession();
+    authenticationStore.disableSession();
 
     render(
       <AuthenticationCheck redirectPath={LOGIN_PATH}>

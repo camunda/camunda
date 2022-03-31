@@ -10,6 +10,7 @@ export declare global {
       isEnterprise?: boolean;
       contextPath?: string;
       canLogout?: boolean;
+      isLoginDelegated?: boolean;
       organizationId?: null | string;
       clusterId?: null | string;
       mixpanelToken?: null | string;
