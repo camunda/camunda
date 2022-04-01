@@ -15,9 +15,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.net.TokenRequest;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +53,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   private String idToken;
   private String refreshToken;
-  private List<Permission> permissions = new ArrayList<>();
 
   public TokenAuthentication() {
     super(null);
@@ -71,10 +68,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       logger = LoggerFactory.getLogger(this.getClass());
     }
     return logger;
-  }
-
-  public List<Permission> getPermissions() {
-    return permissions;
   }
 
   @Override
