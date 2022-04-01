@@ -381,6 +381,240 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
   }
 
   @Test
+  public void getProcessGoals_defaultSortOrderByEvaluationResultsDescending() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto firstProcessInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      firstProcessInstance.getId(),
+      now.minusSeconds(10),
+      now
+    );
+
+    final ProcessInstanceEngineDto secondProcessInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(SECOND_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      secondProcessInstance.getId(),
+      now.minusSeconds(10),
+      now
+    );
+
+    final String noDataDefinitionWithOneGoal = "noDataDefinitionOneGoal";
+    deploySimpleProcessDefinition(noDataDefinitionWithOneGoal);
+    final String noDataDefinitionWithTwoGoals = "noDataDefinitionTwoGoals";
+    deploySimpleProcessDefinition(noDataDefinitionWithTwoGoals);
+    final String noGoalDefinition = "noGoalDefinition";
+    deploySimpleProcessDefinition(noGoalDefinition);
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
+
+    // both of these are expected to fail
+    final List<ProcessDurationGoalDto> firstProcessGoals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 5, SECONDS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, firstProcessGoals);
+
+    // one of these are expected to pass
+    final List<ProcessDurationGoalDto> secondProcessGoals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(SECOND_PROCESS_DEFINITION_KEY, secondProcessGoals);
+
+    // this process has no instance data so will not pass or fail
+    final List<ProcessDurationGoalDto> noDataDefinitionTwoGoal = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(noDataDefinitionWithTwoGoals, noDataDefinitionTwoGoal);
+
+    // this process has no instance data so will not pass or fail
+    final List<ProcessDurationGoalDto> noDataDefinitionOneGoal = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS)
+    );
+    setGoalsForProcess(noDataDefinitionWithOneGoal, noDataDefinitionOneGoal);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
+
+    assertThat(processGoalsDtos)
+      .hasSize(5)
+      .extracting(ProcessGoalsResponseDto::getProcessDefinitionKey)
+      .containsExactly(
+        // then the first result is the process with the highest failure rate
+        FIRST_PROCESS_DEFINITION_KEY,
+        // the second result is the process with the next highest failure rate
+        SECOND_PROCESS_DEFINITION_KEY,
+        // the third result is the process with two goals set but no data to make an evaluation
+        noDataDefinitionWithTwoGoals,
+        // the fourth result is the process with one goal set but no data to make an evaluation
+        noDataDefinitionWithOneGoal,
+        // the fifth result is the process with no goals set
+        noGoalDefinition
+      );
+  }
+
+  @Test
+  public void getProcessGoals_sortOrderByEvaluationResultsDescending() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto firstProcessInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      firstProcessInstance.getId(),
+      now.minusSeconds(10),
+      now
+    );
+
+    final ProcessInstanceEngineDto secondProcessInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(SECOND_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      secondProcessInstance.getId(),
+      now.minusSeconds(10),
+      now
+    );
+
+    final String noDataDefinitionWithOneGoal = "noDataDefinitionOneGoal";
+    deploySimpleProcessDefinition(noDataDefinitionWithOneGoal);
+    final String noDataDefinitionWithTwoGoals = "noDataDefinitionTwoGoals";
+    deploySimpleProcessDefinition(noDataDefinitionWithTwoGoals);
+    final String noGoalDefinition = "noGoalDefinition";
+    deploySimpleProcessDefinition(noGoalDefinition);
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
+
+    // both of these are expected to fail
+    final List<ProcessDurationGoalDto> firstProcessGoals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 5, SECONDS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, firstProcessGoals);
+
+    // one of these are expected to pass
+    final List<ProcessDurationGoalDto> secondProcessGoals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(SECOND_PROCESS_DEFINITION_KEY, secondProcessGoals);
+
+    // this process has no instance data so will not pass or fail
+    final List<ProcessDurationGoalDto> noDataDefinitionTwoGoal = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(noDataDefinitionWithTwoGoals, noDataDefinitionTwoGoal);
+
+    // this process has no instance data so will not pass or fail
+    final List<ProcessDurationGoalDto> noDataDefinitionOneGoal = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS)
+    );
+    setGoalsForProcess(noDataDefinitionWithOneGoal, noDataDefinitionOneGoal);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(new ProcessGoalSorter(
+      ProcessGoalsResponseDto.Fields.durationGoals,
+      SortOrder.DESC
+    ));
+
+    assertThat(processGoalsDtos)
+      .hasSize(5)
+      .extracting(ProcessGoalsResponseDto::getProcessDefinitionKey)
+      .containsExactly(
+        // then the first result is the process with the highest failure rate
+        FIRST_PROCESS_DEFINITION_KEY,
+        // the second result is the process with the next highest failure rate
+        SECOND_PROCESS_DEFINITION_KEY,
+        // the third result is the process with two goals set but no data to make an evaluation
+        noDataDefinitionWithTwoGoals,
+        // the fourth result is the process with one goal set but no data to make an evaluation
+        noDataDefinitionWithOneGoal,
+        // the fifth result is the process with no goals set
+        noGoalDefinition
+      );
+  }
+
+  @Test
+  public void getProcessGoals_sortOrderByEvaluationResultsAscending() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto firstProcessInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      firstProcessInstance.getId(),
+      now.minusSeconds(10),
+      now
+    );
+
+    final ProcessInstanceEngineDto secondProcessInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(SECOND_PROCESS_DEFINITION_KEY));
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      secondProcessInstance.getId(),
+      now.minusSeconds(10),
+      now
+    );
+
+    final String noDataDefinitionWithOneGoal = "noDataDefinitionOneGoal";
+    deploySimpleProcessDefinition(noDataDefinitionWithOneGoal);
+    final String noDataDefinitionWithTwoGoals = "noDataDefinitionTwoGoals";
+    deploySimpleProcessDefinition(noDataDefinitionWithTwoGoals);
+    final String noGoalDefinition = "noGoalDefinition";
+    deploySimpleProcessDefinition(noGoalDefinition);
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
+
+    // both of these are expected to fail
+    final List<ProcessDurationGoalDto> firstProcessGoals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 5, SECONDS)
+    );
+    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, firstProcessGoals);
+
+    // one of these are expected to pass
+    final List<ProcessDurationGoalDto> secondProcessGoals = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(SECOND_PROCESS_DEFINITION_KEY, secondProcessGoals);
+
+    // this process has no instance data so will not pass or fail
+    final List<ProcessDurationGoalDto> noDataDefinitionTwoGoal = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
+      new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
+    );
+    setGoalsForProcess(noDataDefinitionWithTwoGoals, noDataDefinitionTwoGoal);
+
+    // this process has no instance data so will not pass or fail
+    final List<ProcessDurationGoalDto> noDataDefinitionOneGoal = List.of(
+      new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS)
+    );
+    setGoalsForProcess(noDataDefinitionWithOneGoal, noDataDefinitionOneGoal);
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(new ProcessGoalSorter(
+      ProcessGoalsResponseDto.Fields.durationGoals,
+      SortOrder.ASC
+    ));
+
+    assertThat(processGoalsDtos)
+      .hasSize(5)
+      .extracting(ProcessGoalsResponseDto::getProcessDefinitionKey)
+      .containsExactly(
+        // the first result is the process with the lowest failure rate
+        SECOND_PROCESS_DEFINITION_KEY,
+        // the second result is the process with the next lowest failure rate
+        FIRST_PROCESS_DEFINITION_KEY,
+        // the third result is the process with two goals set but no data to make an evaluation
+        noDataDefinitionWithTwoGoals,
+        // the fourth result is the process with one goal set but no data to make an evaluation
+        noDataDefinitionWithOneGoal,
+        // the fifth result is the process with no goals set
+        noGoalDefinition
+      );
+  }
+
+  @Test
   public void getProcessGoals_goalsExistForNotAllProcesses() {
     // given
     final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -529,7 +763,7 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
   }
 
   private static Stream<String> getInvalidSortByFields() {
-    return Stream.of("invalid", null);
+    return Stream.of("invalid");
   }
 
   private static Stream<Arguments> getSortOrderAndExpectedDefinitionKeyComparator() {
