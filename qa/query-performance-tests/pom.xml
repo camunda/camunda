@@ -15,7 +15,7 @@
     <version.camunda>${camunda.engine.version}</version.camunda>
     <failOnMissingWebXml>false</failOnMissingWebXml>
     <allure.version>2.13.2</allure.version>
-    <aspectj.version>1.9.9</aspectj.version>
+    <aspectj.version>1.9.9.1</aspectj.version>
     <argLine>-Xmx1024m -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"</argLine>
   </properties>
 
