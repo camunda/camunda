@@ -42,7 +42,7 @@ const SummaryLabel = styled.div<SummaryLabelProps>`
       text-align: left;
       ${showFullBorder && !isSelected
         ? css`
-            border-bottom: 1px solid ${colors.borderColor};
+            border-bottom: 1px solid ${theme.colors.borderColor};
           `
         : ''};
       ${showPartialBorder

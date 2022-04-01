@@ -14,7 +14,7 @@ const Container = styled.section`
     const colors = theme.colors.sortableTable;
 
     return css`
-      border: 1px solid ${colors.borderColor};
+      border: 1px solid ${theme.colors.borderColor};
       background-color: ${colors.backgroundColor};
       display: flex;
       flex-direction: column;
@@ -57,7 +57,7 @@ const TH = styled(Table.TH)`
       font-weight: 500;
       white-space: nowrap;
       color: ${theme.colors.text01};
-      box-shadow: inset 0 -1px 0 ${theme.colors.sortableTable.header.th.borderColor};
+      box-shadow: inset 0 -1px 0 ${theme.colors.borderColor};
       &:first-child {
         padding-left: 19px;
       }

@@ -39,7 +39,7 @@ const Tile = styled.div`
       &:first-of-type {
         padding: 16px 104px 40px;
       }
-      border: solid 1px ${colors.borderColor};
+      border: solid 1px ${theme.colors.borderColor};
       background-color: ${colors.backgroundColor};
       box-shadow: ${shadow};
       display: flex;

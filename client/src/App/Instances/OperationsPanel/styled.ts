@@ -5,7 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import CollapsablePanelBase from 'modules/components/CollapsablePanel';
+import {CollapsablePanel as CollapsablePanelBase} from 'modules/components/CollapsablePanel';
 
 type OperationsListProps = {
   isInitialLoadComplete?: boolean;
@@ -13,15 +13,15 @@ type OperationsListProps = {
 
 const OperationsList = styled.ul<OperationsListProps>`
   ${({theme, isInitialLoadComplete}) => {
-    const colors = theme.colors.operationsPanel.operationsList;
-
     return css`
       li:first-child {
         border-top: none;
       }
 
       li:last-child {
-        border-bottom: ${!isInitialLoadComplete ? colors.borderColor : 'none'};
+        border-bottom: ${isInitialLoadComplete
+          ? 'none'
+          : theme.colors.borderColor};
       }
     `;
   }}
@@ -32,7 +32,7 @@ const EmptyMessage = styled.div`
     const colors = theme.colors.operationsPanel.emptyMessage;
 
     return css`
-      border: 1px solid ${colors.borderColor};
+      border: 1px solid ${theme.colors.borderColor};
       border-radius: 3px;
       margin: 30px 17px 0 18px;
       padding: 29px 44px 29px 32px;
@@ -47,10 +47,8 @@ const EmptyMessage = styled.div`
 
 const CollapsablePanel = styled(CollapsablePanelBase)`
   ${({theme}) => {
-    const colors = theme.colors.operationsPanel;
-
     return css`
-      border-left: 1px solid ${colors.borderColor};
+      border-left: 1px solid ${theme.colors.borderColor};
     `;
   }}
 `;

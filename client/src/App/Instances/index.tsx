@@ -21,7 +21,7 @@ import {
   deleteSearchParams,
 } from 'modules/utils/filter';
 import {observer} from 'mobx-react';
-import {Content, Container, Separator, RightContainer} from './styled';
+import {Content, Container, RightContainer} from './styled';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {
@@ -117,7 +117,6 @@ const Instances: React.FC = observer(() => {
       <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
       <Content>
         <Filters />
-        <Separator />
         <RightContainer ref={containerRef}>
           <ResizablePanel
             panelId="process-instances-vertical-panel"

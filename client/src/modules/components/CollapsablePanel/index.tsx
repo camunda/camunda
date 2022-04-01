@@ -4,11 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useEffect} from 'react';
+import {useRef, forwardRef, useLayoutEffect} from 'react';
 
 import usePrevious from 'modules/hooks/usePrevious';
 import {Panel} from 'modules/components/Panel';
-import * as Styled from './styled';
+import {
+  Collapsable,
+  CollapsedPanel,
+  ExpandButton,
+  Vertical,
+  ExpandedPanel,
+  Header,
+  CollapseButton,
+} from './styled';
 
 const TRANSITION_TIMEOUT = 200;
 
@@ -17,7 +25,7 @@ type Props = {
   panelPosition: 'RIGHT' | 'LEFT';
   header?: React.ReactNode;
   isOverlay?: boolean;
-  toggle: (...args: any[]) => any;
+  toggle: () => void;
   isCollapsed: boolean;
   children?: React.ReactNode;
   verticalLabelOffset?: number;
@@ -26,7 +34,7 @@ type Props = {
   maxWidth?: number;
 };
 
-const CollapsablePanel = React.forwardRef<HTMLDivElement, Props>(
+const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
   (
     {
       label,
@@ -45,10 +53,9 @@ const CollapsablePanel = React.forwardRef<HTMLDivElement, Props>(
   ) => {
     const expandButtonRef = useRef<HTMLButtonElement>(null);
     const collapseButtonRef = useRef<HTMLButtonElement>(null);
-
     const prevIsCollapsed = usePrevious(isCollapsed);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (prevIsCollapsed !== isCollapsed) {
         if (isCollapsed) {
           setTimeout(
@@ -63,56 +70,54 @@ const CollapsablePanel = React.forwardRef<HTMLDivElement, Props>(
         }
       }
     }, [isCollapsed, prevIsCollapsed]);
+
     return (
-      <Styled.Collapsable
+      <Collapsable
         {...props}
         isCollapsed={isCollapsed}
         panelPosition={panelPosition}
         isOverlay={isOverlay}
+        transitionTimeout={TRANSITION_TIMEOUT}
       >
-        <Styled.CollapsedPanel
-          isCollapsed={isCollapsed}
-          transitionTimeout={TRANSITION_TIMEOUT}
-          data-testid="collapsed-panel"
-        >
-          <Styled.ExpandButton
-            ref={expandButtonRef}
-            title={`Expand ${label}`}
-            onClick={toggle}
-            data-testid="expand-button"
-          >
-            <Styled.Vertical offset={verticalLabelOffset}>
-              <span>{label}</span>
-              {header}
-            </Styled.Vertical>
-          </Styled.ExpandButton>
-        </Styled.CollapsedPanel>
-
-        <Styled.ExpandedPanel
-          isCollapsed={isCollapsed}
-          panelPosition={panelPosition}
-          hasBackgroundColor={hasBackgroundColor}
-          transitionTimeout={TRANSITION_TIMEOUT}
-          data-testid="expanded-panel"
-        >
-          <Styled.Header panelPosition={panelPosition}>
-            <Styled.CollapseButton
-              ref={collapseButtonRef}
-              direction={panelPosition}
-              title={`Collapse ${label}`}
+        {isCollapsed ? (
+          <CollapsedPanel data-testid="collapsed-panel">
+            <ExpandButton
+              ref={expandButtonRef}
+              title={`Expand ${label}`}
               onClick={toggle}
-              data-testid="collapse-button"
-            />
-            {label}
-            {header}
-          </Styled.Header>
-          <Panel.Body scrollable={scrollable} ref={ref}>
-            {children}
-          </Panel.Body>
-        </Styled.ExpandedPanel>
-      </Styled.Collapsable>
+              data-testid="expand-button"
+            >
+              <Vertical offset={verticalLabelOffset}>
+                <span>{label}</span>
+                {header}
+              </Vertical>
+            </ExpandButton>
+          </CollapsedPanel>
+        ) : (
+          <ExpandedPanel
+            panelPosition={panelPosition}
+            hasBackgroundColor={hasBackgroundColor}
+            data-testid="expanded-panel"
+          >
+            <Header panelPosition={panelPosition}>
+              <CollapseButton
+                ref={collapseButtonRef}
+                direction={panelPosition}
+                title={`Collapse ${label}`}
+                onClick={toggle}
+                data-testid="collapse-button"
+              />
+              {label}
+              {header}
+            </Header>
+            <Panel.Body scrollable={scrollable} ref={ref}>
+              {children}
+            </Panel.Body>
+          </ExpandedPanel>
+        )}
+      </Collapsable>
     );
   }
 );
 
-export default CollapsablePanel;
+export {CollapsablePanel};

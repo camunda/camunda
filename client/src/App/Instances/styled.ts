@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
 const Container = styled.main`
@@ -23,21 +23,10 @@ const Content = styled.div`
   width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
-const Separator = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.modules.panel;
-
-    return css`
-      width: 1px;
-      background-color: ${colors.borderColor};
-    `;
-  }}
-`;
-
 const RightContainer = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
 `;
 
-export {Container, Content, Separator, RightContainer};
+export {Container, Content, RightContainer};

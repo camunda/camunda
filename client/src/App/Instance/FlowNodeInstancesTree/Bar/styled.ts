@@ -25,8 +25,6 @@ type ContainerProps = {
 
 const Container = styled.div<ContainerProps>`
   ${({theme, showSelectionStyle}) => {
-    const colors = theme.colors.flowNodeInstancesTree.bar.container;
-
     return css`
       display: flex;
       height: 27px;
@@ -35,13 +33,13 @@ const Container = styled.div<ContainerProps>`
       align-items: center;
       flex-grow: 1;
       background: ${theme.colors.itemEven};
-      border-color: ${colors.borderColor};
+      border-color: ${theme.colors.borderColor};
       border-width: 1px 0px 0px 1px;
       border-style: solid;
 
       ${showSelectionStyle
         ? css`
-            border-color: ${colors.borderColor};
+            border-color: ${theme.colors.borderColor};
             border-width: 1px 0px 0px 1px;
             background: ${theme.colors.selectedOdd};
             color: ${theme.colors.white};
@@ -76,7 +74,7 @@ const NodeName = styled.span<NodeNameProps>`
       margin-left: 5px;
       padding-left: 5px;
       border-left: 1px solid
-        ${isSelected ? colors.selected.borderColor : colors.borderColor};
+        ${isSelected ? colors.selected.borderColor : theme.colors.borderColor};
       color: ${theme.colors.text02};
       opacity: ${isSelected ? opacity.selected : opacity.default};
 

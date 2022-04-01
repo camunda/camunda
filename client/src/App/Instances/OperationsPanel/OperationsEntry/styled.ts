@@ -21,7 +21,7 @@ const Entry = styled.li<EntryProps>`
 
     return css`
       color: ${colors.color};
-      border-top: 1px solid ${colors.borderColor};
+      border-top: 1px solid ${theme.colors.borderColor};
       display: flex;
       flex-direction: column;
       justify-content: space-between;

@@ -14,7 +14,7 @@ const Entry = styled.li`
     return css`
       background-color: ${colors.backgroundColor};
       color: ${colors.color};
-      border-top: ${colors.borderColor};
+      border-top: ${theme.colors.borderColor};
       display: flex;
       flex-direction: column;
       justify-content: space-between;

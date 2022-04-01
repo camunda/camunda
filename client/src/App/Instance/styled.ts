@@ -24,9 +24,8 @@ const Content = styled.div`
 
 const BottomPanel = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.bottomPanel;
     return css`
-      border-top: 1px solid ${colors.borderColor};
+      border-top: 1px solid ${theme.colors.borderColor};
       display: flex;
       flex-direction: column;
       height: 100%;

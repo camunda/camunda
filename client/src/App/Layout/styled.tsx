@@ -50,7 +50,7 @@ const Footer = styled.div<Props>`
         : ''}
       ${variant === 'default'
         ? css`
-            border-top: solid 1px ${colors.default.borderColor};
+            border-top: solid 1px ${theme.colors.borderColor};
             background-color: ${colors.default.backgroundColor};
           `
         : ''}

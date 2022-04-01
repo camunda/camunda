@@ -18,7 +18,7 @@ const Footer = styled.div`
       align-items: center;
       justify-content: flex-end;
       padding-right: 20px;
-      border-top: solid 1px ${colors.borderColor};
+      border-top: solid 1px ${theme.colors.borderColor};
       background-color: ${colors.backgroundColor};
       color: ${theme.colors.text02};
     `;

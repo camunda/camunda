@@ -7,7 +7,7 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import CollapsablePanel from './index';
+import {CollapsablePanel} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('CollapsablePanel', () => {
@@ -24,14 +24,7 @@ describe('CollapsablePanel', () => {
       {wrapper: ThemeProvider}
     );
 
-    expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
-      'visibility',
-      'visible'
-    );
-    expect(screen.getByTestId('collapsed-panel')).toHaveStyleRule(
-      'visibility',
-      'hidden'
-    );
+    expect(screen.getByText('Cool Panel Content')).toBeInTheDocument();
   });
 
   it('should hide children when collapsed', () => {
@@ -47,20 +40,13 @@ describe('CollapsablePanel', () => {
       {wrapper: ThemeProvider}
     );
 
-    expect(screen.getByTestId('collapsed-panel')).toHaveStyleRule(
-      'visibility',
-      'visible'
-    );
-    expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
-      'visibility',
-      'hidden'
-    );
+    expect(screen.queryByText('Cool Panel Content')).not.toBeInTheDocument();
   });
 
   it('should trigger toggle on button clicks', () => {
     const toggleMock = jest.fn();
 
-    render(
+    const {rerender} = render(
       <CollapsablePanel
         label="Cool Panel"
         panelPosition="RIGHT"
@@ -73,6 +59,18 @@ describe('CollapsablePanel', () => {
     );
 
     userEvent.click(screen.getByTestId('collapse-button'));
+
+    rerender(
+      <CollapsablePanel
+        label="Cool Panel"
+        panelPosition="RIGHT"
+        isCollapsed={true}
+        toggle={toggleMock}
+      >
+        <div data-testid="cool-panel-content">Cool Panel Content</div>
+      </CollapsablePanel>
+    );
+
     userEvent.click(screen.getByTestId('expand-button'));
 
     expect(toggleMock).toHaveBeenCalledTimes(2);

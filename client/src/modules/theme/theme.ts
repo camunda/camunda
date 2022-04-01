@@ -97,25 +97,22 @@ const theme = {
       ...DARK_COLORS,
       text01: SEMANTIC_COLORS.white,
       text02: SEMANTIC_COLORS.white,
+      borderColor: DARK_COLORS.ui04,
       layout: {
         dashboard: {
           backgroundColor: DARK_COLORS.ui01,
         },
         default: {
-          borderColor: DARK_COLORS.ui04,
           backgroundColor: DARK_COLORS.ui03,
         },
       },
       decisionInstance: {
         header: {
           backgroundColor: DARK_COLORS.ui03,
-          borderColor: DARK_COLORS.ui04,
         },
         panelHeader: {
           backgroundColor: DARK_COLORS.ui03,
-          borderColor: DARK_COLORS.ui04,
         },
-        borderColor: DARK_COLORS.ui04,
         backgroundColor: DARK_COLORS.ui02,
       },
       metricPanel: {
@@ -135,7 +132,6 @@ const theme = {
       dashboard: {
         backgroundColor: DARK_COLORS.button06,
         panelStyles: {
-          borderColor: DARK_COLORS.ui04,
           backgroundColor: DARK_COLORS.ui03,
         },
         metricPanelWrapper: {
@@ -160,9 +156,6 @@ const theme = {
       },
       header: {
         separator: rgba(SEMANTIC_COLORS.white, 0.5),
-        breadcrumb: {
-          borderColor: DARK_COLORS.ui04,
-        },
         user: {
           backgroundColor: rgba(SEMANTIC_COLORS.badge02, 0.2),
         },
@@ -192,17 +185,12 @@ const theme = {
       },
       variables: {
         skeleton: {
-          row: {
-            borderColor: DARK_COLORS.ui04,
-          },
-          borderColor: DARK_COLORS.ui04,
           backgroundColor: DARK_COLORS.ui02,
         },
         placeholder: {
           color: SEMANTIC_COLORS.grey,
         },
         tHead: {
-          borderColor: DARK_COLORS.ui04,
           backgroundColor: DARK_COLORS.ui02,
         },
         editButton: {
@@ -215,7 +203,6 @@ const theme = {
         },
         variablesTable: {
           tr: {
-            borderColor: DARK_COLORS.ui04,
             backgroundColor: DARK_COLORS.ui05,
           },
         },
@@ -227,23 +214,12 @@ const theme = {
         },
         color: rgba(SEMANTIC_COLORS.white, 0.8),
       },
-      bottomPanel: {
-        borderColor: DARK_COLORS.ui04,
-      },
       flowNodeInstanceLog: {
-        borderColor: DARK_COLORS.ui04,
         color: rgba(SEMANTIC_COLORS.white, 0.9),
       },
       flowNodeInstancesTree: {
         bar: {
-          container: {
-            borderColor: DARK_COLORS.ui04,
-            selected: {
-              borderColor: DARK_COLORS.ui04,
-            },
-          },
           nodeName: {
-            borderColor: DARK_COLORS.ui04,
             selected: {
               borderColor: rgba(SEMANTIC_COLORS.white, 0.25),
             },
@@ -251,7 +227,6 @@ const theme = {
         },
         foldable: {
           summaryLabel: {
-            borderColor: DARK_COLORS.ui04,
             backgroundColor: DARK_COLORS.ui04,
           },
         },
@@ -308,7 +283,6 @@ const theme = {
         fake: {
           backgroundColor: 'yellow',
           before: {
-            borderColor: DARK_COLORS.ui04,
             backgroundColor: DARK_COLORS.ui03,
           },
         },
@@ -316,24 +290,13 @@ const theme = {
       incidentsOverlay: {
         backgroundColor: DARK_COLORS.ui02,
       },
-      incidentsWrapper: {
-        borderColor: DARK_COLORS.ui04,
-      },
       instanceHeader: {
         backgroundColor: DARK_COLORS.ui02,
-        borderColor: DARK_COLORS.ui04,
       },
       topPanel: {
         backgroundColor: DARK_COLORS.ui02,
-        borderColor: DARK_COLORS.ui04,
         instanceHeader: {
           backgroundColor: DARK_COLORS.ui03,
-          borderColor: DARK_COLORS.ui04,
-        },
-      },
-      instance: {
-        timeStampPill: {
-          borderColor: DARK_COLORS.ui04,
         },
       },
       emptyMessage: {
@@ -341,26 +304,12 @@ const theme = {
       },
       decisionsList: {
         backgroundColor: DARK_COLORS.ui02,
-        borderColor: DARK_COLORS.ui04,
         header: {
           backgroundColor: DARK_COLORS.ui03,
-          borderColor: DARK_COLORS.ui04,
-          th: {
-            borderColor: DARK_COLORS.ui04,
-          },
         },
       },
       list: {
         backgroundColor: DARK_COLORS.ui02,
-        borderColor: DARK_COLORS.ui04,
-        header: {
-          title: {
-            borderColor: DARK_COLORS.ui04,
-          },
-          th: {
-            borderColor: DARK_COLORS.ui04,
-          },
-        },
       },
       createOperationDropdown: {
         dropdownButtonStyles: {
@@ -370,7 +319,6 @@ const theme = {
       operationsEntry: {
         entry: {
           color: rgba(SEMANTIC_COLORS.white, 0.9),
-          borderColor: DARK_COLORS.ui04,
           isRunning: {
             backgroundColor: DARK_COLORS.ui03,
           },
@@ -380,19 +328,13 @@ const theme = {
         },
       },
       operationsPanel: {
-        borderColor: DARK_COLORS.ui04,
         skeleton: {
           entry: {
             backgroundColor: DARK_COLORS.ui03,
             color: rgba(SEMANTIC_COLORS.white, 0.9),
-            borderColor: DARK_COLORS.ui04,
           },
         },
-        operationsList: {
-          borderColor: DARK_COLORS.ui04,
-        },
         emptyMessage: {
-          borderColor: DARK_COLORS.ui04,
           color: rgba(SEMANTIC_COLORS.white, 0.9),
           backgroundColor: DARK_COLORS.ui03,
         },
@@ -402,12 +344,6 @@ const theme = {
       },
       sortableTable: {
         backgroundColor: DARK_COLORS.ui02,
-        borderColor: DARK_COLORS.ui04,
-        header: {
-          th: {
-            borderColor: DARK_COLORS.ui04,
-          },
-        },
       },
       filtersPanel: {
         modalIcon: {
@@ -445,7 +381,6 @@ const theme = {
       drdPanel: {
         background: DARK_COLORS.ui02,
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.5),
-        borderColor: DARK_COLORS.ui04,
         buttonColor: SEMANTIC_COLORS.white,
       },
       modules: {
@@ -540,9 +475,6 @@ const theme = {
           expandButton: {
             backgroundColor: DARK_COLORS.ui03,
           },
-        },
-        collapseButton: {
-          borderColor: DARK_COLORS.ui04,
         },
         diagram: {
           popoverOverlay: {
@@ -760,14 +692,11 @@ const theme = {
         },
         panel: {
           panelFooter: {
-            borderColor: DARK_COLORS.ui04,
             backgroundColor: DARK_COLORS.ui03,
           },
           panelHeader: {
             backgroundColor: DARK_COLORS.ui03,
-            borderColor: DARK_COLORS.ui04,
           },
-          borderColor: DARK_COLORS.ui04,
           backgroundColor: DARK_COLORS.ui02,
         },
         pill: {
@@ -840,7 +769,6 @@ const theme = {
             color: rgba(SEMANTIC_COLORS.white, 0.9),
           },
           tr: {
-            borderColor: DARK_COLORS.ui04,
             selected: {
               backgroundColor: DARK_COLORS.selectedOdd,
             },
@@ -1053,25 +981,22 @@ const theme = {
       ...LIGHT_COLORS,
       text01: DARK_COLORS.ui04,
       text02: DARK_COLORS.ui06,
+      borderColor: LIGHT_COLORS.ui05,
       layout: {
         dashboard: {
           backgroundColor: LIGHT_COLORS.ui01,
         },
         default: {
-          borderColor: LIGHT_COLORS.ui05,
           backgroundColor: LIGHT_COLORS.ui02,
         },
       },
       decisionInstance: {
         header: {
           backgroundColor: LIGHT_COLORS.ui02,
-          borderColor: LIGHT_COLORS.ui05,
         },
         panelHeader: {
           backgroundColor: LIGHT_COLORS.ui02,
-          borderColor: LIGHT_COLORS.ui05,
         },
-        borderColor: LIGHT_COLORS.ui05,
         backgroundColor: LIGHT_COLORS.ui04,
       },
       metricPanel: {
@@ -1091,7 +1016,6 @@ const theme = {
       dashboard: {
         backgroundColor: LIGHT_COLORS.ui02,
         panelStyles: {
-          borderColor: LIGHT_COLORS.ui05,
           backgroundColor: LIGHT_COLORS.ui04,
         },
         metricPanelWrapper: {
@@ -1116,9 +1040,6 @@ const theme = {
       },
       header: {
         separator: LIGHT_COLORS.ui05,
-        breadcrumb: {
-          borderColor: LIGHT_COLORS.ui05,
-        },
         user: {
           backgroundColor: rgba(LIGHT_COLORS.ui06, 0.09),
         },
@@ -1148,17 +1069,12 @@ const theme = {
       },
       variables: {
         skeleton: {
-          row: {
-            borderColor: LIGHT_COLORS.ui05,
-          },
-          borderColor: LIGHT_COLORS.ui05,
           backgroundColor: LIGHT_COLORS.ui04,
         },
         placeholder: {
           color: LIGHT_COLORS.ui06,
         },
         tHead: {
-          borderColor: LIGHT_COLORS.ui05,
           backgroundColor: LIGHT_COLORS.ui04,
         },
         editButton: {
@@ -1171,7 +1087,6 @@ const theme = {
         },
         variablesTable: {
           tr: {
-            borderColor: LIGHT_COLORS.ui05,
             backgroundColor: LIGHT_COLORS.button05,
           },
         },
@@ -1183,23 +1098,12 @@ const theme = {
         },
         color: rgba(LIGHT_COLORS.ui06, 0.8),
       },
-      bottomPanel: {
-        borderColor: LIGHT_COLORS.ui05,
-      },
       flowNodeInstanceLog: {
-        borderColor: LIGHT_COLORS.ui05,
         color: rgba(LIGHT_COLORS.ui06, 0.9),
       },
       flowNodeInstancesTree: {
         bar: {
-          container: {
-            borderColor: LIGHT_COLORS.ui05,
-            selected: {
-              borderColor: LIGHT_COLORS.ui05,
-            },
-          },
           nodeName: {
-            borderColor: LIGHT_COLORS.ui05,
             selected: {
               borderColor: rgba(LIGHT_COLORS.ui06, 0.25),
             },
@@ -1207,7 +1111,6 @@ const theme = {
         },
         foldable: {
           summaryLabel: {
-            borderColor: LIGHT_COLORS.ui05,
             backgroundColor: LIGHT_COLORS.ui05,
           },
         },
@@ -1264,7 +1167,6 @@ const theme = {
         fake: {
           backgroundColor: 'yellow',
           before: {
-            borderColor: LIGHT_COLORS.ui05,
             backgroundColor: LIGHT_COLORS.ui02,
           },
         },
@@ -1272,24 +1174,13 @@ const theme = {
       incidentsOverlay: {
         backgroundColor: LIGHT_COLORS.ui04,
       },
-      incidentsWrapper: {
-        borderColor: LIGHT_COLORS.ui05,
-      },
       instanceHeader: {
         backgroundColor: LIGHT_COLORS.ui04,
-        borderColor: LIGHT_COLORS.ui05,
       },
       topPanel: {
         backgroundColor: LIGHT_COLORS.ui04,
-        borderColor: LIGHT_COLORS.ui05,
         instanceHeader: {
           backgroundColor: LIGHT_COLORS.ui02,
-          borderColor: LIGHT_COLORS.ui05,
-        },
-      },
-      instance: {
-        timeStampPill: {
-          borderColor: LIGHT_COLORS.ui05,
         },
       },
       emptyMessage: {
@@ -1297,26 +1188,12 @@ const theme = {
       },
       decisionsList: {
         backgroundColor: LIGHT_COLORS.ui04,
-        borderColor: LIGHT_COLORS.ui05,
         header: {
           backgroundColor: LIGHT_COLORS.ui02,
-          borderColor: LIGHT_COLORS.ui05,
-          th: {
-            borderColor: LIGHT_COLORS.ui05,
-          },
         },
       },
       list: {
         backgroundColor: LIGHT_COLORS.ui04,
-        borderColor: LIGHT_COLORS.ui05,
-        header: {
-          title: {
-            borderColor: LIGHT_COLORS.ui05,
-          },
-          th: {
-            borderColor: LIGHT_COLORS.ui05,
-          },
-        },
       },
       createOperationDropdown: {
         dropdownButtonStyles: {
@@ -1326,7 +1203,6 @@ const theme = {
       operationsEntry: {
         entry: {
           color: rgba(LIGHT_COLORS.ui06, 0.9),
-          borderColor: LIGHT_COLORS.ui05,
           isRunning: {
             backgroundColor: LIGHT_COLORS.ui04,
           },
@@ -1336,19 +1212,13 @@ const theme = {
         },
       },
       operationsPanel: {
-        borderColor: LIGHT_COLORS.ui05,
         skeleton: {
           entry: {
             backgroundColor: LIGHT_COLORS.ui04,
             color: rgba(LIGHT_COLORS.ui06, 0.9),
-            borderColor: LIGHT_COLORS.ui05,
           },
         },
-        operationsList: {
-          borderColor: LIGHT_COLORS.ui05,
-        },
         emptyMessage: {
-          borderColor: LIGHT_COLORS.ui05,
           color: LIGHT_COLORS.ui06,
           backgroundColor: LIGHT_COLORS.ui04,
         },
@@ -1358,12 +1228,6 @@ const theme = {
       },
       sortableTable: {
         backgroundColor: LIGHT_COLORS.ui04,
-        borderColor: LIGHT_COLORS.ui05,
-        header: {
-          th: {
-            borderColor: LIGHT_COLORS.ui05,
-          },
-        },
       },
       filtersPanel: {
         modalIcon: {
@@ -1395,7 +1259,6 @@ const theme = {
       drdPanel: {
         background: LIGHT_COLORS.ui04,
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
-        borderColor: LIGHT_COLORS.ui05,
         buttonColor: DARK_COLORS.ui04,
       },
       modules: {
@@ -1490,9 +1353,6 @@ const theme = {
           expandButton: {
             backgroundColor: LIGHT_COLORS.ui02,
           },
-        },
-        collapseButton: {
-          borderColor: LIGHT_COLORS.ui05,
         },
         diagram: {
           popoverOverlay: {
@@ -1709,14 +1569,11 @@ const theme = {
         },
         panel: {
           panelFooter: {
-            borderColor: LIGHT_COLORS.ui05,
             backgroundColor: LIGHT_COLORS.ui02,
           },
           panelHeader: {
             backgroundColor: LIGHT_COLORS.ui02,
-            borderColor: LIGHT_COLORS.ui05,
           },
-          borderColor: LIGHT_COLORS.ui05,
           backgroundColor: LIGHT_COLORS.ui04,
         },
         pill: {
@@ -1789,7 +1646,6 @@ const theme = {
             color: rgba(LIGHT_COLORS.ui06, 0.9),
           },
           tr: {
-            borderColor: LIGHT_COLORS.ui05,
             selected: {
               backgroundColor: LIGHT_COLORS.focusInner,
             },

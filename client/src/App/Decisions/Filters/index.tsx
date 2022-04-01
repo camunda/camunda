@@ -114,7 +114,7 @@ const Filters: React.FC = observer(() => {
   }, [location.search]);
 
   return (
-    <CollapsablePanel header="Filters">
+    <CollapsablePanel label="Filters">
       <Form<DecisionInstanceFilters>
         onSubmit={(values) => {
           navigate({

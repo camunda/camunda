@@ -9,15 +9,13 @@ import {Link as LinkComponent} from 'modules/components/Link';
 
 const Container = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.header.breadcrumb;
-
     return css`
       color: ${theme.colors.text02};
       padding: 4px 20px;
       display: flex;
       font-size: 13px;
       align-items: center;
-      border-bottom: 1px solid ${colors.borderColor};
+      border-bottom: 1px solid ${theme.colors.borderColor};
       min-height: 30px;
     `;
   }}

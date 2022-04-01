@@ -20,7 +20,7 @@ const Container = styled.header`
       grid-column-gap: 10px;
       align-items: center;
       background-color: ${colors.backgroundColor};
-      border-bottom: solid 1px ${colors.borderColor};
+      border-bottom: solid 1px ${theme.colors.borderColor};
     `;
   }}
 `;

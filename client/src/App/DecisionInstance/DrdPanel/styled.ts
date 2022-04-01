@@ -29,7 +29,7 @@ const Panel = styled.div`
     return css`
       box-shadow: 0 2px 4px 0 ${colors.boxShadow};
       width: 540px;
-      border-left: solid 1px ${colors.borderColor};
+      border-left: solid 1px ${theme.colors.borderColor};
 
       &.resizing {
         border-left-color: ${theme.colors.selections};

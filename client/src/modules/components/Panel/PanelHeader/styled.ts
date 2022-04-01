@@ -13,7 +13,7 @@ const Header = styled.div`
     return css`
       background-color: ${colors.backgroundColor};
       color: ${theme.colors.text01};
-      border-bottom: solid 1px ${colors.borderColor};
+      border-bottom: solid 1px ${theme.colors.borderColor};
       font-size: 16px;
       font-weight: 600;
       padding: 8px 10px;

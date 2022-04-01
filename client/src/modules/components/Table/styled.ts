@@ -51,7 +51,7 @@ const TR = styled.tr<TRProps>`
 
       border-width: 1px 0;
       border-style: solid;
-      border-color: ${colors.borderColor};
+      border-color: ${theme.colors.borderColor};
 
       ${selected
         ? css`

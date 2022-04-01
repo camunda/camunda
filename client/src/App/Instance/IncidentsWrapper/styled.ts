@@ -14,15 +14,13 @@ type TransitionProps = {
 // @ts-expect-error ts-migrate(2769) FIXME: Type 'undefined' is not assignable to type 'ReactE... Remove this comment to see the full error message
 const Transition = styled(TransitionComponent)<TransitionProps>`
   ${({theme, timeout}) => {
-    const colors = theme.colors.incidentsWrapper;
-
     return css`
       &.transition-enter {
-        border-bottom: 1px solid ${colors.borderColor};
+        border-bottom: 1px solid ${theme.colors.borderColor};
         top: -100%;
       }
       &.transition-enter-active {
-        border-bottom: 1px solid ${colors.borderColor};
+        border-bottom: 1px solid ${theme.colors.borderColor};
         top: 0%;
         transition: top ${timeout}ms;
       }
@@ -32,7 +30,7 @@ const Transition = styled(TransitionComponent)<TransitionProps>`
       }
       &.transition-exit-active {
         top: -100%;
-        border-bottom: 1px solid ${colors.borderColor};
+        border-bottom: 1px solid ${theme.colors.borderColor};
         transition: top ${timeout}ms;
       }
     `;

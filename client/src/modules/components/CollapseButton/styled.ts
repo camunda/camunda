@@ -21,7 +21,6 @@ const Right = styled(RightBar)``;
 
 const CollapseButton = styled.button`
   ${({theme}) => {
-    const colors = theme.colors.modules.collapseButton;
     const opacity = theme.opacity.modules.collapseButton;
 
     return css`
@@ -32,7 +31,7 @@ const CollapseButton = styled.button`
       width: 39px;
       height: 32px;
       background: transparent;
-      border: solid 1px ${colors.borderColor};
+      border: solid 1px ${theme.colors.borderColor};
 
       ${Up}, ${Down}, ${Left}, ${Right} {
         width: 16px;

@@ -24,7 +24,7 @@ const Panel = styled.div<PanelProps>`
 
       ${$hasBorder &&
       css`
-        border-right: 1px solid ${colors.borderColor};
+        border-right: 1px solid ${theme.colors.borderColor};
       `}
 
       & ${StatusMessage} {

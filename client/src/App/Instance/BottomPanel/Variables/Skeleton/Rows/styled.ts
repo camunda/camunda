@@ -15,11 +15,9 @@ const MultiRow = styled(BasicMultiRow)`
 
 const Row = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.variables.skeleton.row;
-
     return css`
       display: flex;
-      border-top: 1px solid ${colors.borderColor};
+      border-top: 1px solid ${theme.colors.borderColor};
       padding: 13px 10px;
     `;
   }}

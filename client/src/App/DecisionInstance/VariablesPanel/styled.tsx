@@ -61,7 +61,7 @@ const Header = styled.header`
 
     return css`
       padding: 0 20px;
-      border: 1px solid ${colors.borderColor};
+      border: 1px solid ${theme.colors.borderColor};
       background-color: ${colors.backgroundColor};
     `;
   }}

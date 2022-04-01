@@ -37,10 +37,8 @@ const InnerScrollableTableWrapper = styled.div<InnerScrollableTableWrapperProps>
 
 const TR = styled.tr`
   ${({theme}) => {
-    const colors = theme.colors.decisionInstance;
-
     return css`
-      border-bottom: 1px solid ${colors.borderColor};
+      border-bottom: 1px solid ${theme.colors.borderColor};
 
       &:first-child {
         border-top: none;

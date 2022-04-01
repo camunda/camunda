@@ -146,8 +146,8 @@ const Fake = styled.span`
         left: -52px;
         width: 52px;
         height: 100%;
-        border-bottom: 1px solid ${colors.before.borderColor};
-        border-top: 1px solid ${colors.before.borderColor};
+        border-bottom: 1px solid ${theme.colors.borderColor};
+        border-top: 1px solid ${theme.colors.borderColor};
         background-color: ${colors.before.backgroundColor};
       }
     `;

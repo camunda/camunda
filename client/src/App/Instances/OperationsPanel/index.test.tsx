@@ -17,6 +17,12 @@ import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {MemoryRouter} from 'react-router-dom';
+jest.mock('modules/utils/localStorage', () => ({
+  getStateLocally: () => ({
+    isFiltersCollapsed: false,
+    isOperationsCollapsed: false,
+  }),
+}));
 
 const Wrapper: React.FC = ({children}) => {
   return (

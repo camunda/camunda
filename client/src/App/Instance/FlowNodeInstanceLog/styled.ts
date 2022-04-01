@@ -38,7 +38,7 @@ const InstanceHistory = styled.div`
       display: flex;
       flex: 1;
       overflow: auto;
-      border: solid 1px ${colors.borderColor};
+      border: solid 1px ${theme.colors.borderColor};
       border-top: none;
       border-left: none;
       border-bottom: none;

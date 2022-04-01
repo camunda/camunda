@@ -12,7 +12,9 @@ const Container = styled.section`
   ${({theme}) => {
     const colors = theme.colors.decisionsList;
     return css`
-      border: 1px solid ${colors.borderColor};
+      border: 1px solid ${theme.colors.borderColor};
+      border-left: none;
+      border-bottom: none;
       background-color: ${colors.backgroundColor};
       display: flex;
       flex-direction: column;

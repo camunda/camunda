@@ -4,47 +4,50 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useState} from 'react';
-import {CollapsedPanel, Content, ExpandedPanel, Header} from './styled';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {useEffect, useState} from 'react';
+import {CollapsablePanel as CollapsablePanelBase} from './styled';
 
 type Props = {
-  header: React.ReactNode;
+  label: string;
   children: React.ReactNode;
 };
 
-const CollapsablePanel: React.FC<Props> = ({header, children}) => {
+const CollapsablePanel: React.FC<Props> = ({label, children}) => {
+  const {isDecisionsFiltersCollapsed = false} = getStateLocally('panelStates');
   const [panelState, setPanelState] = useState<'expanded' | 'collapsed'>(
-    'expanded'
+    isDecisionsFiltersCollapsed ? 'collapsed' : 'expanded'
   );
 
+  useEffect(() => {
+    storeStateLocally(
+      {
+        isDecisionsFiltersCollapsed: panelState === 'collapsed',
+      },
+      'panelStates'
+    );
+  }, [panelState]);
+
   return (
-    <>
-      {panelState === 'collapsed' && (
-        <CollapsedPanel
-          onClick={() => {
-            setPanelState('expanded');
-          }}
-        >
-          {header}
-        </CollapsedPanel>
-      )}
-      {panelState === 'expanded' && (
-        <ExpandedPanel>
-          <Header>
-            {header}
-            <button
-              type="button"
-              onClick={() => {
-                setPanelState('collapsed');
-              }}
-            >
-              Collapse
-            </button>
-          </Header>
-          <Content>{children}</Content>
-        </ExpandedPanel>
-      )}
-    </>
+    <CollapsablePanelBase
+      maxWidth={328}
+      label={label}
+      panelPosition="LEFT"
+      verticalLabelOffset={27}
+      isCollapsed={panelState === 'collapsed'}
+      toggle={() => {
+        setPanelState((panelState) => {
+          if (panelState === 'collapsed') {
+            return 'expanded';
+          }
+
+          return 'collapsed';
+        });
+      }}
+      scrollable
+    >
+      {children}
+    </CollapsablePanelBase>
   );
 };
 

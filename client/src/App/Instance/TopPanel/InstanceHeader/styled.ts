@@ -42,7 +42,7 @@ const Container = styled.header`
     return css`
       background-color: ${colors.backgroundColor};
       color: ${theme.colors.text01};
-      border-bottom: solid 1px ${colors.borderColor};
+      border-bottom: solid 1px ${theme.colors.borderColor};
       display: flex;
       align-items: center;
       padding: 9px 10px 9px 20px;

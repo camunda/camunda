@@ -10,7 +10,7 @@ const Container = styled.section`
   ${({theme}) => {
     const colors = theme.colors.list;
     return css`
-      border-top: 1px solid ${colors.borderColor};
+      border-top: 1px solid ${theme.colors.borderColor};
       background-color: ${colors.backgroundColor};
       display: flex;
       flex-direction: column;

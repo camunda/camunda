@@ -24,19 +24,25 @@ const Checkbox = styled(CmCheckbox)``;
 const TextField = styled(BaseTextField)``;
 
 const Fields = styled.div`
-  width: 100%;
-  height: calc(100% - 38px);
-  padding: 24px 20px 0 20px;
-  display: flex;
-  flex-direction: column;
+  ${({theme}) => {
+    return css`
+      width: 100%;
+      height: calc(100% - 37px);
+      padding: 23px 20px 0 20px;
+      display: flex;
+      flex-direction: column;
+      background-color: ${theme.colors.itemEven};
+      overflow-y: auto;
 
-  ${Select}:not(:last-child), ${SectionTitle}:not(:last-child),  ${TextField}:not(:last-child) {
-    padding-bottom: 8px;
-  }
+      ${Select}:not(:last-child), ${SectionTitle}:not(:last-child),  ${TextField}:not(:last-child) {
+        padding-bottom: 8px;
+      }
 
-  ${Checkbox}:not(:last-child) {
-    padding-bottom: 12px;
-  }
+      ${Checkbox}:not(:last-child) {
+        padding-bottom: 12px;
+      }
+    `;
+  }}
 `;
 
 const DeleteIcon = styled(CmIcon)`

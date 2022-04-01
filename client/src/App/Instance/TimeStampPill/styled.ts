@@ -10,8 +10,6 @@ import defaultPill from 'modules/components/Pill';
 
 const Container = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.instance.timeStampPill;
-
     return css`
       display: flex;
       align-items: center;
@@ -26,7 +24,7 @@ const Container = styled.div`
         left: 0;
         height: 32px;
         width: 1px;
-        background: ${colors.borderColor};
+        background: ${theme.colors.borderColor};
       }
     `;
   }}

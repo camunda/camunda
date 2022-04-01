@@ -23,7 +23,7 @@ const TR = styled.tr<TRProps>`
     return css`
       border-width: 1px 0;
       border-style: solid;
-      border-color: ${colors.borderColor};
+      border-color: ${theme.colors.borderColor};
 
       &:first-child {
         border-top: none;

@@ -30,7 +30,7 @@ const THead = styled.thead`
         position: absolute;
         width: 100%;
         top: 0;
-        border-bottom: 1px solid ${colors.borderColor};
+        border-bottom: 1px solid ${theme.colors.borderColor};
         background: ${colors.backgroundColor};
         z-index: 2;
         border-top: none;

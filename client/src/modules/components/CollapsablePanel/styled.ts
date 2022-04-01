@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css, ThemedInterpolationFunction} from 'styled-components';
+import styled, {css} from 'styled-components';
 import {rgba} from 'polished';
-
 import BasicCollapseButton from 'modules/components/CollapseButton';
-import {Panel as BasePanel} from '../Panel';
+import {Panel as BasePanel} from 'modules/components/Panel';
 
 const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 type PanelPosition = 'RIGHT' | 'LEFT';
@@ -18,10 +17,18 @@ type CollapsableProps = {
   isOverlay?: boolean;
   maxWidth?: number;
   isCollapsed?: boolean;
+  transitionTimeout?: number;
 };
 
 const Collapsable = styled.div<CollapsableProps>`
-  ${({theme, panelPosition, isOverlay, maxWidth, isCollapsed}) => {
+  ${({
+    theme,
+    panelPosition,
+    isOverlay,
+    maxWidth,
+    isCollapsed,
+    transitionTimeout,
+  }) => {
     const colors = theme.colors.modules.collapsablePanel.collapsable;
     const isLeft = panelPosition === 'LEFT';
     const isRight = panelPosition === 'RIGHT';
@@ -38,7 +45,6 @@ const Collapsable = styled.div<CollapsableProps>`
           `};
       height: 100%;
       background-color: ${colors.backgroundColor};
-      transition: width 0.2s ease-out;
 
       ${isOverlay
         ? css`
@@ -57,43 +63,29 @@ const Collapsable = styled.div<CollapsableProps>`
               : ''}
           `
         : ''};
+
+      transition: min-width ${transitionTimeout}ms ease-out;
+
+      & ${CollapsedPanel}, & ${ExpandedPanel} {
+        border-radius: inherit;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+      }
     `;
   }}
 `;
 
-type PanelStyleProps = {
-  transitionTimeout?: number;
-};
-
-const panelStyle: ThemedInterpolationFunction<PanelStyleProps> = ({
-  transitionTimeout,
-}) => {
-  return css`
-    border-radius: inherit;
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    transition: visibility ${transitionTimeout}ms ease-out,
-      opacity ${transitionTimeout}ms ease-out;
-  `;
-};
-
 type ExpandedPanelProps = {
-  isCollapsed?: boolean;
   panelPosition?: PanelPosition;
   hasBackgroundColor?: boolean;
-  transitionTimeout?: number;
 };
 
 const ExpandedPanel = styled(BasePanel)<ExpandedPanelProps>`
-  ${({theme, isCollapsed, panelPosition, hasBackgroundColor}) => {
+  ${({theme, panelPosition, hasBackgroundColor}) => {
     return css`
-      opacity: ${isCollapsed ? 0 : 1};
-      visibility: ${isCollapsed ? 'hidden' : 'visible'};
-      z-index: ${isCollapsed ? 0 : 1};
-      ${panelStyle}
       ${panelPosition === 'RIGHT'
         ? css`
             border-right: none;
@@ -108,21 +100,7 @@ const ExpandedPanel = styled(BasePanel)<ExpandedPanelProps>`
   }}
 `;
 
-type CollapsedPanelProps = {
-  isCollapsed?: boolean;
-  transitionTimeout?: number;
-};
-
-const CollapsedPanel = styled(BasePanel)<CollapsedPanelProps>`
-  ${({isCollapsed}) => {
-    return css`
-      opacity: ${isCollapsed ? 1 : 0};
-      visibility: ${isCollapsed ? 'visible' : 'hidden'};
-      z-index: ${isCollapsed ? 1 : 0};
-      ${panelStyle}
-    `;
-  }}
-`;
+const CollapsedPanel = styled(BasePanel)``;
 
 type HeaderProps = {
   panelPosition?: PanelPosition;
