@@ -66,6 +66,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
   public static final String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
   public static final String ELASTIC_SEARCH_PROXY = "$.es.connection.proxy";
+  public static final String ELASTIC_SEARCH_PATH_PREFIX = "$.es.connection.pathPrefix";
 
   public static final String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
   public static final String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";

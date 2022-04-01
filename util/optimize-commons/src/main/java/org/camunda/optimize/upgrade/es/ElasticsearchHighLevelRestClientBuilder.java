@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -114,6 +115,9 @@ public class ElasticsearchHighLevelRestClientBuilder {
           .setConnectTimeout(configurationService.getElasticsearchConnectionTimeout())
           .setSocketTimeout(0)
       );
+    if (!StringUtils.isEmpty(configurationService.getElasticsearchPathPrefix())) {
+      restClientBuilder.setPathPrefix(configurationService.getElasticsearchPathPrefix());
+    }
 
     restClientBuilder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService));
 

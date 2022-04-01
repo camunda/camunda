@@ -89,6 +89,7 @@ public class ConfigurationService {
   private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
   private Integer elasticsearchResponseConsumerBufferLimitInMb;
+  private String elasticsearchPathPrefix;
   private ProxyConfiguration elasticSearchProxyConfig;
 
   // elasticsearch connection security
@@ -393,6 +394,15 @@ public class ConfigurationService {
       elasticSearchProxyConfig.validate();
     }
     return elasticSearchProxyConfig;
+  }
+
+  public String getElasticsearchPathPrefix() {
+    if (elasticsearchPathPrefix == null) {
+      elasticsearchPathPrefix = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_PATH_PREFIX, String.class
+      );
+    }
+    return elasticsearchPathPrefix;
   }
 
   public int getEngineConnectTimeout() {

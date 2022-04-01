@@ -313,6 +313,8 @@ es:
     timeout: 10000
     # Maximum size of the Elasticsearch response consumer heap buffer.
     responseConsumerBufferLimitInMb: 100
+    # The path prefix under which Elasticsearch is available
+    pathPrefix: ''
     # a list of Elasticsearch nodes Optimize can connect to. If you  have built
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.

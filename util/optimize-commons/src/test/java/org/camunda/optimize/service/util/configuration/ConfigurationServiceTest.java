@@ -399,7 +399,7 @@ public class ConfigurationServiceTest {
       boolean isGetter = method.getName().startsWith("get") || method.getName().startsWith("is");
       if (isGetter && method.getParameterCount() == 0) {
         Object invoke = method.invoke(underTest);
-        assertThat(invoke).isNotNull();
+        assertThat(invoke).withFailMessage("Method " + method.getName() + " returned null").isNotNull();
       }
     }
   }
