@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.service.goals.ProcessGoalsService;
@@ -18,6 +19,7 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -52,6 +54,17 @@ public class ProcessGoalsRestService {
                                  @NotNull @Valid List<ProcessDurationGoalDto> goals) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     processGoalsService.updateProcessGoals(userId, processDefKey, goals);
+  }
+
+  @POST
+  @Path("/{processDefinitionKey}/goals/evaluate")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<ProcessDurationGoalResultDto> evaluateProcessGoals(@Context final ContainerRequestContext requestContext,
+                                                                 @PathParam("processDefinitionKey") final String processDefKey,
+                                                                 @NotNull @Valid List<ProcessDurationGoalDto> goals) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return processGoalsService.evaluateGoalsForProcess(userId, processDefKey, goals);
   }
 
 }

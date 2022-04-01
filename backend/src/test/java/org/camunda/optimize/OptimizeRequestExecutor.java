@@ -511,6 +511,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildEvaluateProcessGoalsRequest(final String processDefinitionKey,
+                                                                final List<ProcessDurationGoalDto> goals) {
+    this.path = "process/" + processDefinitionKey + "/goals/evaluate";
+    this.method = POST;
+    this.body = getBody(goals);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
     return buildGetProcessGoalsRequest(null);
   }

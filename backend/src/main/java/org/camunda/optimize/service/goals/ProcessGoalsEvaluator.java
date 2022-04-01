@@ -21,6 +21,8 @@ import org.camunda.optimize.service.es.report.command.util.DurationScriptUtil;
 import org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -39,6 +41,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
@@ -61,19 +64,31 @@ public class ProcessGoalsEvaluator {
 
   private final OptimizeElasticsearchClient esClient;
 
+  public List<ProcessDurationGoalResultDto> evaluateGoalsForProcess(final ProcessGoalsDto processGoals) {
+    return evaluateGoals(Map.of(
+      processGoals.getProcessDefinitionKey(),
+      processGoals
+    )).get(processGoals.getProcessDefinitionKey());
+  }
+
   public Map<String, List<ProcessDurationGoalResultDto>> evaluateGoals(final Map<String, ProcessGoalsDto> goalsByDefKey) {
     Map<String, PercentileToResultMap> percentilesByDefKey = new HashMap<>();
     final Iterable<List<String>> partitions = Iterables.partition(goalsByDefKey.keySet(), 1000);
     // We partition the requests as the number of processes is boundless and percentiles cannot be part of a
     // composite aggregation
     for (List<String> defKeysInPartition : partitions) {
-      addPercentileResultsForProcessesInPartition(goalsByDefKey, percentilesByDefKey, defKeysInPartition);
+      addPercentileResultsForProcessesInPartition(
+        goalsByDefKey,
+        percentilesByDefKey,
+        defKeysInPartition
+      );
     }
     return extractPercentileResults(goalsByDefKey, percentilesByDefKey);
   }
 
   @NotNull
-  private Map<String, List<ProcessDurationGoalResultDto>> extractPercentileResults(final Map<String, ProcessGoalsDto> goalsByDefKey, final Map<String, PercentileToResultMap> percentilesByDefKey) {
+  private Map<String, List<ProcessDurationGoalResultDto>> extractPercentileResults(final Map<String, ProcessGoalsDto> goalsByDefKey,
+                                                                                   final Map<String, PercentileToResultMap> percentilesByDefKey) {
     Map<String, List<ProcessDurationGoalResultDto>> results = new HashMap<>();
     goalsByDefKey.forEach((defKey, goals) -> {
       final List<ProcessDurationGoalDto> goalsForKey = goals.getDurationGoals();
@@ -112,29 +127,30 @@ public class ProcessGoalsEvaluator {
     if (percentilesToAggregate.length == 0) {
       defKeysInPartition.forEach(defKey -> percentilesByDefKey.put(defKey, new PercentileToResultMap()));
     } else {
-      SearchResponse searchResponse = executeSearchQuery(defKeysInPartition, percentilesToAggregate);
-
-      final Terms procDefKeyTerms = searchResponse.getAggregations().get(PROC_DEF_KEY_AGG);
-      procDefKeyTerms.getBuckets()
-        .forEach(bucket -> {
-          ParsedTDigestPercentiles percentiles = bucket.getAggregations().get(PERCENTILES_AGG);
-          final PercentileToResultMap resultMap = new PercentileToResultMap();
-          Arrays.stream(percentilesToAggregate).forEach(
-            percentile -> {
-              final Double percentileValue = ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(
-                percentiles,
-                percentile
+      executeSearchQuery(defKeysInPartition, percentilesToAggregate)
+        .ifPresent(searchResponse -> {
+          final Terms procDefKeyTerms = searchResponse.getAggregations().get(PROC_DEF_KEY_AGG);
+          procDefKeyTerms.getBuckets()
+            .forEach(bucket -> {
+              ParsedTDigestPercentiles percentiles = bucket.getAggregations().get(PERCENTILES_AGG);
+              final PercentileToResultMap resultMap = new PercentileToResultMap();
+              Arrays.stream(percentilesToAggregate).forEach(
+                percentile -> {
+                  final Double percentileValue = ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(
+                    percentiles,
+                    percentile
+                  );
+                  resultMap.percentileKeyAndValue.put(percentile, percentileValue);
+                }
               );
-              resultMap.percentileKeyAndValue.put(percentile, percentileValue);
-            }
-          );
-          percentilesByDefKey.put(bucket.getKeyAsString(), resultMap);
+              percentilesByDefKey.put(bucket.getKeyAsString(), resultMap);
+            });
         });
     }
   }
 
-  private SearchResponse executeSearchQuery(final List<String> defKeysInPartition,
-                                            final double[] percentilesToAggregate) {
+  private Optional<SearchResponse> executeSearchQuery(final List<String> defKeysInPartition,
+                                                      final double[] percentilesToAggregate) {
     final BoolQueryBuilder query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, defKeysInPartition));
     // This filter applies to the end date field, ensuring that only completed instances are considered for goal
     // evaluation
@@ -152,10 +168,13 @@ public class ProcessGoalsEvaluator {
       .aggregation(terms(PROC_DEF_KEY_AGG).field(PROCESS_DEFINITION_KEY).subAggregation(percentilesAgg))
       .size(0);
 
-    SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder));
-    } catch (IOException e) {
+      return Optional.of(esClient.search(new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder)));
+    } catch (IOException | ElasticsearchStatusException e) {
+      if (e instanceof ElasticsearchStatusException && InstanceIndexUtil.isInstanceIndexNotFoundException((ElasticsearchStatusException) e)) {
+        log.info("No process instances for processes with keys {}, so cannot evaluate process", defKeysInPartition);
+        return Optional.empty();
+      }
       String reason = String.format(
         "Was not able to evaluate process goals for batch with keys [%s]",
         defKeysInPartition
@@ -163,7 +182,6 @@ public class ProcessGoalsEvaluator {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return searchResponse;
   }
 
   private double[] determinePercentilesToAggregate(final Map<String, ProcessGoalsDto> goalsByDefKey,

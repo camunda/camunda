@@ -7,7 +7,6 @@ package org.camunda.optimize.service.process;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -49,10 +48,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class ProcessGoalsRetrievalIT extends AbstractIT {
-
-  private static final String FIRST_PROCESS_DEFINITION_KEY = "firstProcessDefinition";
-  private static final String SECOND_PROCESS_DEFINITION_KEY = "secondProcessDefinition";
+public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
 
   @Test
   public void getProcessGoals_notPossibleForUnauthenticatedUser() {
@@ -164,10 +160,10 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessGoalsResponseDto> processGoalsDtos = embeddedOptimizeExtension.getRequestExecutor()
+    final List<ProcessDurationGoalResultDto> processGoalsDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetProcessGoalsRequest()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .executeAndReturnList(ProcessGoalsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(ProcessDurationGoalResultDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(processGoalsDtos).isEmpty();
@@ -195,8 +191,9 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
   public void getProcessGoals_useDefinitionKeyForSortOrderForProcessWithNoName(final SortOrder sortOrder,
                                                                                final Comparator<ProcessGoalsResponseDto> comparator) {
     // given
-    ProcessDefinitionEngineDto processDefinitionWithName = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
-    String processDefinitionKeyForProcessWithNoName = addProcessDefinitionWithNoNameToElasticSearch();
+    ProcessDefinitionEngineDto processDefinitionWithName = deploySimpleProcessDefinition(DEF_KEY);
+    final String noNameDefKey = "noNameDefKey";
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch(null, noNameDefKey);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -208,22 +205,17 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
       .extracting(ProcessGoalsResponseDto::getProcessName, ProcessGoalsResponseDto::getProcessDefinitionKey)
       .containsExactlyInAnyOrder(
         Tuple.tuple(processDefinitionWithName.getName(), processDefinitionWithName.getKey()),
-        Tuple.tuple(processDefinitionKeyForProcessWithNoName, processDefinitionKeyForProcessWithNoName)
+        Tuple.tuple(noNameDefKey, noNameDefKey)
       );
   }
 
   @Test
   public void getProcessGoals_processGoalsGetReturnedOnceForMultipleTenants() {
     // given
-    BpmnModelInstance bpmnModelInstance = getSingleUserTaskDiagram(FIRST_PROCESS_DEFINITION_KEY);
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      bpmnModelInstance,
-      "firstTenant"
-    );
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      bpmnModelInstance,
-      "secondTenant"
-    );
+    BpmnModelInstance bpmnModelInstance = getSingleUserTaskDiagram(DEF_KEY);
+    engineIntegrationExtension.createTenant(OTHER_TENANT);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(bpmnModelInstance, null);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(bpmnModelInstance, OTHER_TENANT);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -231,37 +223,30 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
 
     // then
     assertThat(processGoalsDtos).hasSize(1).containsExactly(
-      new ProcessGoalsResponseDto(
-        FIRST_PROCESS_DEFINITION_KEY,
-        FIRST_PROCESS_DEFINITION_KEY,
-        null,
-        new ProcessDurationGoalsAndResultsDto()
-      )
+      new ProcessGoalsResponseDto(DEF_KEY, DEF_KEY, null, new ProcessDurationGoalsAndResultsDto())
     );
+  }
+
+  @Test
+  public void getProcessGoals_processGoalsNotReturnedForDefinitionIfUserHasNoAccessToAllTenants() {
+    // given
+    BpmnModelInstance bpmnModelInstance = getSingleUserTaskDiagram(DEF_KEY);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(bpmnModelInstance, null);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(bpmnModelInstance, OTHER_TENANT);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
+
+    // then
+    assertThat(processGoalsDtos).isEmpty();
   }
 
   @Test
   public void getProcessGoals_processGoalsGetReturnedOnceForMultipleProcessVersions() {
     // given
-    final DefinitionOptimizeResponseDto processDefinitionVersion1 = createProcessDefinition(
-      "1",
-      FIRST_PROCESS_DEFINITION_KEY,
-      "someName"
-    );
-    final DefinitionOptimizeResponseDto processDefinitionVersion2 = createProcessDefinition(
-      "2",
-      FIRST_PROCESS_DEFINITION_KEY,
-      "someName"
-    );
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
-      new ProcessDefinitionIndex().getIndexName(),
-      Map.of(
-        processDefinitionVersion1.getId(),
-        processDefinitionVersion1,
-        processDefinitionVersion2.getId(),
-        processDefinitionVersion2
-      )
-    );
+    deploySimpleProcessDefinition(DEF_KEY);
+    deploySimpleProcessDefinition(DEF_KEY);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     importAllEngineEntitiesFromScratch();
 
@@ -271,8 +256,8 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
     // then
     assertThat(processGoalsDtos).hasSize(1).containsExactly(
       new ProcessGoalsResponseDto(
-        processDefinitionVersion1.getName(),
-        processDefinitionVersion1.getKey(),
+        DEF_KEY,
+        DEF_KEY,
         null,
         new ProcessDurationGoalsAndResultsDto()
       ));
@@ -317,7 +302,7 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
     // given
     final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(
-      getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+      getSimpleBpmnDiagram(DEF_KEY));
     engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstance.getId(), now.minusSeconds(10), now);
     importAllEngineEntitiesFromScratch();
 
@@ -325,7 +310,7 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
       new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
       new ProcessDurationGoalDto(TARGET_DURATION, 99., 20, SECONDS)
     );
-    setGoalsForProcess(FIRST_PROCESS_DEFINITION_KEY, goals);
+    setGoalsForProcess(DEF_KEY, goals);
 
     // when
     List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals();
@@ -700,53 +685,19 @@ public class ProcessGoalsRetrievalIT extends AbstractIT {
       ));
   }
 
-  private void setGoalsForProcess(final String processDefKey, final List<ProcessDurationGoalDto> goals) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateProcessGoalsRequest(processDefKey, goals)
-      .execute();
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(processDefinitionKey));
-  }
-
-  private List<ProcessGoalsResponseDto> getProcessGoals() {
-    return getProcessGoals(null);
-  }
-
-  private List<ProcessGoalsResponseDto> getProcessGoals(ProcessGoalSorter sorter) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessGoalsRequest(sorter)
-      .executeAndReturnList(ProcessGoalsResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private ProcessDefinitionOptimizeDto createProcessDefinition() {
-    return createProcessDefinition("1", "hasNoName", null);
-  }
-
-  private ProcessDefinitionOptimizeDto createProcessDefinition(String version, String definitionKey, String name) {
+  private ProcessDefinitionOptimizeDto createProcessDefinition(String definitionKey, String name) {
     return ProcessDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
       .key(definitionKey)
       .name(name)
-      .version(version)
+      .version("1")
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml("xml")
       .build();
   }
 
-  private String addProcessDefinitionWithNoNameToElasticSearch() {
-    final DefinitionOptimizeResponseDto def = createProcessDefinition();
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
-      new ProcessDefinitionIndex().getIndexName(),
-      Map.of(def.getId(), def)
-    );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    return def.getKey();
-  }
-
   private void addProcessDefinitionWithGivenNameAndKeyToElasticSearch(String name, String key) {
-    final DefinitionOptimizeResponseDto definition = createProcessDefinition("1", key, name);
+    final DefinitionOptimizeResponseDto definition = createProcessDefinition(key, name);
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
       new ProcessDefinitionIndex().getIndexName(),
       Map.of(definition.getId(), definition)

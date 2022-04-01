@@ -113,6 +113,15 @@ public class DefinitionService implements ConfigurationReloadable {
       });
   }
 
+  public List<DefinitionWithTenantIdsDto> getAllDefinitionsWithTenants(final DefinitionType type) {
+    return definitionReader.getFullyImportedDefinitionsWithTenantIds(
+      type, Collections.emptySet(), Collections.emptySet());
+  }
+
+  public Optional<DefinitionWithTenantIdsDto> getProcessDefinitionWithTenants(final String processDefinitionKey) {
+    return definitionReader.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, processDefinitionKey);
+  }
+
   public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
                                                                   final String key,
                                                                   final String userId) {

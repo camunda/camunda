@@ -8,7 +8,7 @@ package org.camunda.optimize.service.goals;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
@@ -18,8 +18,11 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.ProcessGoalsReader;
 import org.camunda.optimize.service.es.writer.ProcessGoalsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,14 +38,25 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 public class ProcessGoalsService {
 
   private final DefinitionService definitionService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final ProcessGoalsWriter processGoalsWriter;
   private final ProcessGoalsReader processGoalsReader;
   private final ProcessGoalsEvaluator processGoalsEvaluator;
 
   public List<ProcessGoalsResponseDto> getProcessDefinitionGoals(final String userId) {
     final Map<String, String> procDefKeysAndName = new HashMap<>();
-    definitionService.getFullyImportedDefinitions(PROCESS, userId, false)
+    definitionService.getAllDefinitionsWithTenants(PROCESS)
+      .stream()
+      .filter(def ->
+                definitionAuthorizationService.isAuthorizedToAccessDefinition(
+                  userId,
+                  PROCESS,
+                  def.getKey(),
+                  def.getTenantIds()
+                )
+      )
       .forEach(definition -> procDefKeysAndName.put(definition.getKey(), definition.getName()));
+
     final Map<String, ProcessGoalsDto> goalsForProcessesByKey =
       processGoalsReader.getGoalsForProcessesByKey(procDefKeysAndName.keySet());
     final Map<String, List<ProcessDurationGoalResultDto>> goalResultsByKey =
@@ -72,20 +86,8 @@ public class ProcessGoalsService {
   public void updateProcessGoals(final String userId,
                                  final String processDefKey,
                                  final List<ProcessDurationGoalDto> durationGoals) {
-    final Optional<DefinitionResponseDto> definitionForKey =
-      definitionService.getDefinitionWithAvailableTenants(PROCESS, processDefKey, userId);
-    if (definitionForKey.isEmpty()) {
-      throw new OptimizeValidationException(
-        "User is not authorized to create goals for process definition with key " + processDefKey
-          + ", or it does not exist");
-    }
-    final boolean containsDuplicateTypes = durationGoals.stream()
-      .collect(Collectors.groupingBy(ProcessDurationGoalDto::getType, Collectors.counting()))
-      .values().stream()
-      .anyMatch(count -> count > 1);
-    if (containsDuplicateTypes) {
-      throw new OptimizeValidationException("Goal types must be unique for each process definition key");
-    }
+    validateGoals(durationGoals);
+    checkAuthorizationToProcessDefinitionGoals(userId, processDefKey);
     final ProcessGoalsDto processGoalsDto = new ProcessGoalsDto();
     processGoalsDto.setProcessDefinitionKey(processDefKey);
     processGoalsDto.setOwner(null);
@@ -93,4 +95,33 @@ public class ProcessGoalsService {
     processGoalsWriter.updateProcessGoals(processGoalsDto);
   }
 
+  public List<ProcessDurationGoalResultDto> evaluateGoalsForProcess(final String userId,
+                                                                    final String processDefKey,
+                                                                    final List<ProcessDurationGoalDto> goals) {
+    validateGoals(goals);
+    checkAuthorizationToProcessDefinitionGoals(userId, processDefKey);
+    return processGoalsEvaluator.evaluateGoalsForProcess(new ProcessGoalsDto(processDefKey, null, goals));
+  }
+
+  private void validateGoals(final List<ProcessDurationGoalDto> durationGoals) {
+    final boolean containsDuplicateTypes = durationGoals.stream()
+      .collect(Collectors.groupingBy(ProcessDurationGoalDto::getType, Collectors.counting()))
+      .values().stream()
+      .anyMatch(count -> count > 1);
+    if (containsDuplicateTypes) {
+      throw new OptimizeValidationException("Goal types must be unique for each process definition key");
+    }
+  }
+
+  private void checkAuthorizationToProcessDefinitionGoals(final String userId, final String processDefKey) {
+    final Optional<DefinitionWithTenantIdsDto> definitionForKey =
+      definitionService.getProcessDefinitionWithTenants(processDefKey);
+    if (definitionForKey.isEmpty()) {
+      throw new NotFoundException("Process definition with key " + processDefKey + "does not exist");
+    }
+    if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
+      userId, PROCESS, definitionForKey.get().getKey(), definitionForKey.get().getTenantIds())) {
+      throw new ForbiddenException("User is not authorized to goals for process definition with key " + processDefKey);
+    }
+  }
 }

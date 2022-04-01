@@ -5,13 +5,9 @@
  */
 package org.camunda.optimize.service.process;
 
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,14 +27,10 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.SECONDS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.YEARS;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessGoalsUpdateIT extends AbstractIT {
-
-  private static final String DEF_KEY = "defKey";
+public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
 
   @Test
   public void createProcessGoals_notPossibleForUnauthenticatedUser() {
@@ -60,34 +52,14 @@ public class ProcessGoalsUpdateIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  @Test
-  public void createProcessGoals_notAuthorizedForDefinition() {
-    // given
-    final String notAuthorizedDefinitionKey = "noAccess";
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
-      notAuthorizedDefinitionKey, "name");
-    addDefinitionToOptimize(notAuthorizedDefinitionKey);
-
-    // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateProcessGoalsRequest(notAuthorizedDefinitionKey, Collections.emptyList())
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest
   @MethodSource("validGoalsLists")
   public void createProcessGoals(final List<ProcessDurationGoalDto> goals) {
     // given
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
+    deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -97,13 +69,14 @@ public class ProcessGoalsUpdateIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getProcessGoals()).extracting(process -> process.getDurationGoals().getGoals()).containsExactly(goals);
   }
 
   @ParameterizedTest
   @MethodSource("invalidGoalsLists")
   public void createProcessGoals_invalidGoalsList(final List<ProcessDurationGoalDto> goals) {
     // given
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
+    deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -120,17 +93,19 @@ public class ProcessGoalsUpdateIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
       DEF_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
+    final List<ProcessDurationGoalDto> goals = List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS));
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateProcessGoalsRequest(
         DEF_KEY,
-        List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS))
+        goals
       )
       .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getProcessGoals()).extracting(process -> process.getDurationGoals().getGoals()).containsExactly(goals);
   }
 
   @Test
@@ -157,7 +132,7 @@ public class ProcessGoalsUpdateIT extends AbstractIT {
   @MethodSource("validGoalsLists")
   public void updateExistingProcessGoals(final List<ProcessDurationGoalDto> goals) {
     // given
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
+    deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
     setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS)));
 
@@ -168,13 +143,14 @@ public class ProcessGoalsUpdateIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getProcessGoals()).extracting(process -> process.getDurationGoals().getGoals()).containsExactly(goals);
   }
 
   @ParameterizedTest
   @MethodSource("invalidGoalsLists")
   public void updateExistingProcessGoals_invalidGoals(final List<ProcessDurationGoalDto> goals) {
     // given
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
+    deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
     setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS)));
 
@@ -197,41 +173,6 @@ public class ProcessGoalsUpdateIT extends AbstractIT {
         new ProcessDurationGoalDto(TARGET_DURATION, 99., 1, MONTHS)
       )
     );
-  }
-
-  private static Stream<List<ProcessDurationGoalDto>> invalidGoalsLists() {
-    return Stream.of(
-      List.of(new ProcessDurationGoalDto(SLA_DURATION, -5., 5, DAYS)),
-      List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., -5, MILLIS)),
-      List.of(new ProcessDurationGoalDto(TARGET_DURATION, 105., 1, MONTHS)),
-      List.of(
-        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, SECONDS),
-        new ProcessDurationGoalDto(SLA_DURATION, 50., 5, YEARS)
-      ),
-      List.of(new ProcessDurationGoalDto(TARGET_DURATION, 50., 1, null)),
-      List.of(new ProcessDurationGoalDto(null, 50., 1, HOURS))
-    );
-  }
-
-  private void addDefinitionToOptimize(final String defKey) {
-    final ProcessDefinitionOptimizeDto unauthorizedDef = ProcessDefinitionOptimizeDto.builder()
-      .id(IdGenerator.getNextId())
-      .key(defKey)
-      .version("1")
-      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
-      .bpmn20Xml("xml")
-      .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_DEFINITION_INDEX_NAME,
-      unauthorizedDef.getId(),
-      unauthorizedDef
-    );
-  }
-
-  private void setGoalsForProcess(final String defKey, final List<ProcessDurationGoalDto> goals) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateProcessGoalsRequest(defKey, goals)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
 }

@@ -78,10 +78,9 @@ public class ReportAuthorizationService {
 
   private boolean isAuthorizedToAccessDecisionReportDefinition(@NonNull final String userId,
                                                                @NonNull final DecisionReportDataDto reportData) {
-    final boolean authorizedToAccessDefinition = definitionAuthorizationService.isAuthorizedToAccessDefinition(
+    return definitionAuthorizationService.isAuthorizedToAccessDefinition(
       userId, DefinitionType.DECISION, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
     );
-    return authorizedToAccessDefinition;
   }
 
   private boolean isAuthorizedToAccessProcessReportDefinition(@NonNull final String userId,
