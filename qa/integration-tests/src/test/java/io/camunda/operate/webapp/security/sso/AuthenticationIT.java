@@ -14,25 +14,21 @@ import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.RolePermissionService;
-import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,9 +45,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -65,7 +59,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
-import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest(
     classes = {
@@ -91,9 +84,7 @@ import org.springframework.web.client.RestTemplate;
         "camunda.operate.cloud.organizationId=3",
         "camunda.operate.auth0.domain=domain",
         "camunda.operate.auth0.backendDomain=backendDomain",
-        "camunda.operate.auth0.claimName=claimName",
-        "camunda.operate.cloud.permissionaudience=audience",
-        "camunda.operate.cloud.permissionurl=https://permissionurl"
+        "camunda.operate.auth0.claimName=claimName"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
@@ -120,13 +111,6 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @SpyBean
   private Auth0Service auth0Service;
-
-  @Autowired
-  private BeanFactory beanFactory;
-
-  @MockBean
-  @Qualifier("auth0_restTemplate")
-  private RestTemplate restTemplate;
 
   @MockBean
   private ElsIndicesCheck probes;
@@ -180,7 +164,6 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @Test
   public void testLoginSuccess() throws Exception {
-    mockPermissionAllowed();
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
@@ -210,73 +193,6 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   @Test
-  public void testLoginFailedWithNoReadPermissions() throws Exception {
-    mockNoReadPermission();
-    // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
-    final HttpEntity<?> cookies = httpEntityWithCookie(response);
-
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-
-    // Step 2 Get Login provider url
-    response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response))
-        .contains(
-            operateProperties.getAuth0().getDomain(),
-            SSO_CALLBACK_URI,
-            operateProperties.getAuth0().getClientId(),
-            operateProperties.getAuth0().getBackendDomain());
-    // Step 3 Call back uri with valid userdata
-    given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(
-            orgExtractor.apply(
-                operateProperties.getAuth0().getClaimName(),
-                operateProperties.getCloud().getOrganizationId()));
-
-    response = get(SSO_CALLBACK_URI, cookies);
-    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
-
-    response = get(ROOT, cookies);
-    // Check that access to url is not possible
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-  }
-
-  @Test
-  public void testLoginSucceedWithNoWritePermissions() throws Exception {
-    // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
-    final HttpEntity<?> cookies = httpEntityWithCookie(response);
-
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-
-    // Step 2 Get Login provider url
-    mockNoWritePermission();
-    response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response))
-        .contains(
-            operateProperties.getAuth0().getDomain(),
-            SSO_CALLBACK_URI,
-            operateProperties.getAuth0().getClientId(),
-            operateProperties.getAuth0().getBackendDomain());
-    // Step 3 Call back uri with valid userdata
-    given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(
-            orgExtractor.apply(
-                operateProperties.getAuth0().getClaimName(),
-                operateProperties.getCloud().getOrganizationId()));
-
-    get(SSO_CALLBACK_URI, cookies);
-
-    final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
-    assertThat(authentication.getPermissions().contains(Permission.WRITE)).isEqualTo(false);
-
-    // successfully redirect to root even without write permission
-    response = get(ROOT, cookies);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
-
-  @Test
   public void testLoginFailedWithNoPermissions() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
@@ -285,7 +201,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
-    mockNoReadPermission();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
@@ -299,7 +214,12 @@ public class AuthenticationIT implements AuthenticationTestable {
             orgExtractor.apply(operateProperties.getAuth0().getClaimName(), "wrong-organization"));
 
     response = get(SSO_CALLBACK_URI, cookies);
-    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
+    assertThat(redirectLocationIn(response)).contains(
+        operateProperties.getAuth0().getDomain(),
+        "logout",
+        operateProperties.getAuth0().getClientId(),
+        NO_PERMISSION
+    );
 
     response = get(ROOT, cookies);
     // Check that access to url is not possible
@@ -315,7 +235,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
-    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
@@ -334,7 +253,6 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Test
   public void testLogout() throws Throwable {
     // Step 1 Login
-    mockPermissionAllowed();
     ResponseEntity<String> response = get(ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     response = get(LOGIN_RESOURCE, cookies);
@@ -368,7 +286,6 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), response.getHeaders());
     // Step 2 Get Login provider url
-    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, httpEntity);
 
     assertThat(redirectLocationIn(response)).contains(
@@ -442,53 +359,5 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Override
   public TestRestTemplate getTestRestTemplate() {
     return testRestTemplate;
-  }
-
-  private void mockPermissionAllowed() {
-    final ClusterInfo.OrgPermissions operate =
-        new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
-
-    final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
-    final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
-        new ResponseEntity<>(clusterInfo, HttpStatus.OK);
-
-    when(restTemplate.exchange(
-        eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
-        .thenReturn(clusterInfoResponseEntity);
-  }
-
-  private void mockNoReadPermission() {
-    final ClusterInfo.OrgPermissions operate =
-        new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(false, true, true, true));
-
-    final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
-    final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
-        new ResponseEntity<>(clusterInfo, HttpStatus.OK);
-
-    when(restTemplate.exchange(
-        eq("https://permissionurl/3"),
-        eq(HttpMethod.GET),
-        (HttpEntity) any(),
-        (Class) any()))
-        .thenReturn(clusterInfoResponseEntity);
-  }
-
-  private void mockNoWritePermission() {
-    final ClusterInfo.OrgPermissions operate =
-        new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, false, false, false));
-
-    final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
-    final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
-        new ResponseEntity<>(clusterInfo, HttpStatus.OK);
-
-    when(restTemplate.exchange(
-        eq("https://permissionurl/3"),
-        eq(HttpMethod.GET),
-        (HttpEntity) any(),
-        (Class) any()))
-        .thenReturn(clusterInfoResponseEntity);
   }
 }

@@ -17,8 +17,6 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.net.TokenRequest;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateProfileService;
-import io.camunda.operate.webapp.security.Permission;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +53,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private String clientSecret;
   private String idToken;
   private String refreshToken;
-  private List<Permission> permissions = new ArrayList<>();
 
   public TokenAuthentication() {
     super(null);
@@ -86,10 +83,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       }
     }
     return super.isAuthenticated();
-  }
-
-  public List<Permission> getPermissions() {
-    return permissions;
   }
 
   private void getNewTokenByRefreshToken() {

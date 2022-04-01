@@ -15,7 +15,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import com.auth0.jwt.interfaces.Claim;
 
@@ -38,6 +37,8 @@ public class SSOUserService implements UserService<TokenAuthentication> {
         .setUserId(authentication.getName())
         .setDisplayName(name)
         .setCanLogout(false)
-        .setPermissions(authentication.getPermissions());
+        // For now every user will have read and write permission using auth0
+        // TODO implement permissions coming from console
+        .setPermissions(List.of(Permission.WRITE, Permission.READ));
   }
 }
