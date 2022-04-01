@@ -4,12 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, DatePicker} from 'components';
 
 import DateFilter from './DateFilter';
+import RollingFilter from './RollingFilter';
 
 const props = {
   filter: null,
@@ -47,13 +48,34 @@ it('should show a datepicker when switching to fixed state', () => {
   expect(node.find(DatePicker)).toExist();
 });
 
+it('should invoke setFilter when updating the rolling filter', () => {
+  const spy = jest.fn();
+  const filter = {
+    type: 'rolling',
+    start: {value: '2', unit: 'days'},
+    end: null,
+    excludeUndefined: false,
+    includeUndefined: false,
+  };
+  const node = shallow(<DateFilter {...props} setFilter={spy} />);
+
+  node.setProps({filter});
+
+  const options = node.find(Dropdown.Option);
+  options.at(options.length - 2).simulate('click');
+  expect(spy).toHaveBeenCalledWith(filter);
+
+  node.find(RollingFilter).simulate('change', {value: '5', unit: 'months'});
+  expect(spy).toHaveBeenCalledWith({...filter, start: {value: '5', unit: 'months'}});
+});
+
 it('should show the dropdown again after an external reset', () => {
   const node = shallow(<DateFilter {...props} />);
 
   node.find(Dropdown.Option).at(0).simulate('click');
   node.setProps({resetTrigger: true});
 
-  runLastEffect();
+  runAllEffects();
 
   expect(node.find(DatePicker)).not.toExist();
   expect(node.find(Dropdown)).toExist();
