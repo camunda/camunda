@@ -27,7 +27,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-1_4</artifactId>
+      <artifactId>operate-importer-8_0</artifactId>
       <version>${project.version}</version>
     </dependency>
 

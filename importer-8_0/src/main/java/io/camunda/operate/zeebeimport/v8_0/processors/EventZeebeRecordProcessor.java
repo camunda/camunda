@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.operate.zeebeimport.v1_4.processors;
+package io.camunda.operate.zeebeimport.v8_0.processors;
 
 import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
 import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;

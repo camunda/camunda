@@ -125,8 +125,8 @@ spec:
               cpu: 0.5
               memory: 512Mi
         - name: zeebe
-          image: camunda/zeebe:SNAPSHOT
-          imagePullPolicy: Always   #this must be uncommented when snapshot is used
+          image: camunda/zeebe:8.0.0-rc1
+          #imagePullPolicy: Always   #this must be uncommented when snapshot is used
           command: ["/bin/sh"]
           args: ["-c", "sleep 20 && tini -s /usr/local/bin/startup.sh"]
           env:

@@ -7,8 +7,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Operate Importer 1.4</name>
-  <artifactId>operate-importer-1_4</artifactId>
+  <name>Operate Importer 8.0</name>
+  <artifactId>operate-importer-8_0</artifactId>
 
   <dependencies>
 

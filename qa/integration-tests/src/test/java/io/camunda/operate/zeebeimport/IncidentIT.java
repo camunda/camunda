@@ -23,7 +23,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
-import io.camunda.operate.zeebeimport.v1_4.processors.IncidentZeebeRecordProcessor;
+import io.camunda.operate.zeebeimport.v8_0.processors.IncidentZeebeRecordProcessor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
@@ -59,7 +59,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   @InjectMocks
-  private io.camunda.operate.zeebeimport.v1_4.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
+  private io.camunda.operate.zeebeimport.v8_0.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
 
   @Before
   public void before() {
@@ -137,7 +137,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, 4L);
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

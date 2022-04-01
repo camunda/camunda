@@ -15,7 +15,7 @@
     <module>data-generator</module>
     <module>importer-common</module>
     <module>importer-1_3</module>
-    <module>importer-1_4</module>
+    <module>importer-8_0</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
@@ -28,9 +28,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>1.4.0-SNAPSHOT</version.zeebe>
+    <version.zeebe>8.0.0-rc1</version.zeebe>
     <version.iam>1.3.5</version.iam>
-    <version.identity>1.4.0-SNAPSHOT</version.identity>
+    <version.identity>8.0.0-rc1</version.identity>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.16.3</version.elasticsearch>

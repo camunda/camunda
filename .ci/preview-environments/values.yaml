@@ -46,7 +46,7 @@ ccsm-helm:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
-      tag: SNAPSHOT
+      tag: 8.0.0-rc1
     partitionCount: 1
     persistence:
       # Defines whether persistence should be enabled for the `zeebe` StatefulSet.
@@ -65,7 +65,7 @@ ccsm-helm:
   zeebe-gateway:
     # Defines the version of Zeebe to use
     image:
-      tag: SNAPSHOT
+      tag: 8.0.0-rc1
     fullnameOverride: zeebe-gateway
 
   # Configuration for ElasticSearch. Persistence is disabled by default,
