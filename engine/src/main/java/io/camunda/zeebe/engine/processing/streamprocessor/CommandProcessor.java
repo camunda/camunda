@@ -43,7 +43,9 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
 
   interface CommandControl<T> {
 
-    /** @return the key of the entity */
+    /**
+     * @return the key of the entity
+     */
     long accept(Intent newState, T updatedValue);
 
     void reject(RejectionType type, String reason);

@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B>>
     extends AbstractActivityBuilder<B, CallActivity> {
 

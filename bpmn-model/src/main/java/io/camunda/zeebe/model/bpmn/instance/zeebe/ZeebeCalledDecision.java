@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 /** Zeebe extension element for a called decision. It can be used for business rule tasks. */
 public interface ZeebeCalledDecision extends BpmnModelElementInstance {
 
-  /** @return the id of the decision that is called */
+  /**
+   * @return the id of the decision that is called
+   */
   String getDecisionId();
 
   /**
@@ -30,7 +32,9 @@ public interface ZeebeCalledDecision extends BpmnModelElementInstance {
    */
   void setDecisionId(String decisionId);
 
-  /** @return the name of the result variable */
+  /**
+   * @return the name of the result variable
+   */
   String getResultVariable();
 
   /**

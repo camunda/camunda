@@ -19,13 +19,17 @@ import java.util.function.Consumer;
 public interface TypedRecordProcessor<T extends UnifiedRecordValue>
     extends StreamProcessorLifecycleAware {
 
-  /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */
+  /**
+   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
+   */
   default void processRecord(
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {}
 
-  /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */
+  /**
+   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
+   */
   default void processRecord(
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,

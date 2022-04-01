@@ -25,40 +25,64 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface DecisionEvaluationRecordValue extends RecordValue {
 
-  /** @return the key of the evaluated decision */
+  /**
+   * @return the key of the evaluated decision
+   */
   long getDecisionKey();
 
-  /** @return the id of the evaluated decision in the DMN */
+  /**
+   * @return the id of the evaluated decision in the DMN
+   */
   String getDecisionId();
 
-  /** @return the name of the evaluated decision in the DMN */
+  /**
+   * @return the name of the evaluated decision in the DMN
+   */
   String getDecisionName();
 
-  /** @return the version of the evaluated decision */
+  /**
+   * @return the version of the evaluated decision
+   */
   int getDecisionVersion();
 
-  /** @return the id of the DRG in the DMN the evaluated decision belongs to */
+  /**
+   * @return the id of the DRG in the DMN the evaluated decision belongs to
+   */
   String getDecisionRequirementsId();
 
-  /** @return the key of the deployed DRG the evaluated decision belongs to */
+  /**
+   * @return the key of the deployed DRG the evaluated decision belongs to
+   */
   long getDecisionRequirementsKey();
 
-  /** @return the output of the evaluated decision as JSON string */
+  /**
+   * @return the output of the evaluated decision as JSON string
+   */
   String getDecisionOutput();
 
-  /** @return the BPMN process id in which context the decision was evaluated */
+  /**
+   * @return the BPMN process id in which context the decision was evaluated
+   */
   String getBpmnProcessId();
 
-  /** @return the key of the process in which context the decision was evaluated */
+  /**
+   * @return the key of the process in which context the decision was evaluated
+   */
   long getProcessDefinitionKey();
 
-  /** @return the key of the process instance in which context the decision was evaluated */
+  /**
+   * @return the key of the process instance in which context the decision was evaluated
+   */
   long getProcessInstanceKey();
 
-  /** @return the id of the element in the BPMN in which context the decision was evaluated */
+  /**
+   * @return the id of the element in the BPMN in which context the decision was evaluated
+   */
   String getElementId();
 
-  /** @return the key of the element instance in which context the decision was evaluated */
+  /**
+   * @return the key of the element instance in which context the decision was evaluated
+   */
   long getElementInstanceKey();
 
   /**

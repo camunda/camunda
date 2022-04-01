@@ -144,7 +144,9 @@ public class InstallRequest extends AbstractRaftRequest {
     return nextChunkId;
   }
 
-  /** @return true if this is the first chunk of a snapshot */
+  /**
+   * @return true if this is the first chunk of a snapshot
+   */
   public boolean isInitial() {
     return initial;
   }
@@ -336,7 +338,9 @@ public class InstallRequest extends AbstractRaftRequest {
       return this;
     }
 
-    /** @throws IllegalStateException if member is null */
+    /**
+     * @throws IllegalStateException if member is null
+     */
     @Override
     public InstallRequest build() {
       validate();

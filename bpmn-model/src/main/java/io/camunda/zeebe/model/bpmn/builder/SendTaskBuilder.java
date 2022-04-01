@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class SendTaskBuilder extends AbstractSendTaskBuilder<SendTaskBuilder> {
 
   public SendTaskBuilder(final BpmnModelInstance modelInstance, final SendTask element) {

@@ -12,7 +12,9 @@ import java.util.List;
 /** A matched rule of a decision table. It contains details of the rule and its outputs. */
 public interface MatchedRule {
 
-  /** @return the id of the matched rule */
+  /**
+   * @return the id of the matched rule
+   */
   String ruleId();
 
   /**
@@ -22,6 +24,8 @@ public interface MatchedRule {
    */
   int ruleIndex();
 
-  /** @return the evaluated outputs of the rule */
+  /**
+   * @return the evaluated outputs of the rule
+   */
   List<EvaluatedOutput> evaluatedOutputs();
 }

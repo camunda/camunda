@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.RootElement;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractRootElementBuilder<
         B extends AbstractRootElementBuilder<B, E>, E extends RootElement>
     extends AbstractBaseElementBuilder<B, E> {

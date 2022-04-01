@@ -17,7 +17,9 @@ import org.agrona.MutableDirectBuffer;
  * value changes happening between setter and <em>#write</em> invocations affect the writer.
  */
 public interface BufferWriter {
-  /** @return the number of bytes that this writer is going to write */
+  /**
+   * @return the number of bytes that this writer is going to write
+   */
   int getLength();
 
   /**

@@ -23,7 +23,9 @@ public final class InterceptorCfg {
   private String jarPath;
   private String className;
 
-  /** @return true if the class must be loaded from an external JAR, false otherwise */
+  /**
+   * @return true if the class must be loaded from an external JAR, false otherwise
+   */
   public boolean isExternal() {
     return !isEmpty(jarPath);
   }
@@ -38,7 +40,9 @@ public final class InterceptorCfg {
     return id == null ? className : id;
   }
 
-  /** @param id the interceptor's new debug identifier */
+  /**
+   * @param id the interceptor's new debug identifier
+   */
   public void setId(final String id) {
     this.id = id;
   }
@@ -66,7 +70,9 @@ public final class InterceptorCfg {
     this.jarPath = jarPath;
   }
 
-  /** @return the fully qualified class name of the interceptor implementation */
+  /**
+   * @return the fully qualified class name of the interceptor implementation
+   */
   public String getClassName() {
     return className;
   }

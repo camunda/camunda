@@ -126,7 +126,9 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     return dbOptions;
   }
 
-  /** @return Options which are used on all column families */
+  /**
+   * @return Options which are used on all column families
+   */
   ColumnFamilyOptions createColumnFamilyOptions(final List<AutoCloseable> closeables) {
     final var userProvidedColumnFamilyOptions = rocksDbConfiguration.getColumnFamilyOptions();
     final var hasUserOptions = !userProvidedColumnFamilyOptions.isEmpty();

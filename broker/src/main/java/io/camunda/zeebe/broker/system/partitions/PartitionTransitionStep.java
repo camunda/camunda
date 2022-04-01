@@ -70,6 +70,8 @@ public interface PartitionTransitionStep {
   ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole);
 
-  /** @return A log-friendly identification of the PartitionTransitionStep. */
+  /**
+   * @return A log-friendly identification of the PartitionTransitionStep.
+   */
   String getName();
 }

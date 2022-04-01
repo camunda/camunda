@@ -18,21 +18,33 @@ package io.camunda.zeebe.client.api.response;
 import java.util.List;
 
 public interface BrokerInfo {
-  /** @return the node if of the broker */
+  /**
+   * @return the node if of the broker
+   */
   int getNodeId();
 
-  /** @return the address host of the broker */
+  /**
+   * @return the address host of the broker
+   */
   String getHost();
 
-  /** @return the address port of the broker */
+  /**
+   * @return the address port of the broker
+   */
   int getPort();
 
-  /** @return the address (host+port) of the broker */
+  /**
+   * @return the address (host+port) of the broker
+   */
   String getAddress();
 
-  /** @return the version of the broker */
+  /**
+   * @return the version of the broker
+   */
   String getVersion();
 
-  /** @return all partitions of the broker */
+  /**
+   * @return all partitions of the broker
+   */
   List<PartitionInfo> getPartitions();
 }

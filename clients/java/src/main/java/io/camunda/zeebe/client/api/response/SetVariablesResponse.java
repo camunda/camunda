@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.api.response;
 
 public interface SetVariablesResponse {
 
-  /** @return key of the set variables command */
+  /**
+   * @return key of the set variables command
+   */
   long getKey();
 }

@@ -28,10 +28,14 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol
 public interface MessageRecordValue extends RecordValueWithVariables {
-  /** @return the name of the message */
+  /**
+   * @return the name of the message
+   */
   String getName();
 
-  /** @return the correlation key of the message */
+  /**
+   * @return the correlation key of the message
+   */
   String getCorrelationKey();
 
   /**
@@ -42,7 +46,9 @@ public interface MessageRecordValue extends RecordValueWithVariables {
    */
   String getMessageId();
 
-  /** @return the time to live of the message */
+  /**
+   * @return the time to live of the message
+   */
   long getTimeToLive();
 
   /**

@@ -51,7 +51,9 @@ public interface PersistedSnapshot extends CloseableSilently {
   /** Deletes the snapshot. */
   void delete();
 
-  /** @return a path to the snapshot location */
+  /**
+   * @return a path to the snapshot location
+   */
   Path getPath();
 
   /**
@@ -62,7 +64,9 @@ public interface PersistedSnapshot extends CloseableSilently {
    */
   long getCompactionBound();
 
-  /** @return the identifier of the snapshot */
+  /**
+   * @return the identifier of the snapshot
+   */
   String getId();
 
   /**

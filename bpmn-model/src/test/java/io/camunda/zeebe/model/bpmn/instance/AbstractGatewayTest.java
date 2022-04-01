@@ -26,7 +26,9 @@ import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.Before;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractGatewayTest<G extends Gateway> extends BpmnModelElementInstanceTest {
 
   protected G gateway;

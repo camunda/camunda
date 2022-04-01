@@ -40,12 +40,18 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface ProcessEventRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
 
-  /** @return the key identifying the event's scope */
+  /**
+   * @return the key identifying the event's scope
+   */
   long getScopeKey();
 
-  /** @return the ID of the element which should react to the event */
+  /**
+   * @return the ID of the element which should react to the event
+   */
   String getTargetElementId();
 
-  /** @return the key of the deployed process this instance belongs to. */
+  /**
+   * @return the key of the deployed process this instance belongs to.
+   */
   long getProcessDefinitionKey();
 }

@@ -21,7 +21,9 @@ import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_NS;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ConditionExpressionTest extends BpmnModelElementInstanceTest {
 
   @Override

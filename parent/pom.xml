@@ -150,7 +150,7 @@
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.12.0</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.15.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
@@ -1860,13 +1860,13 @@
           <exclusions>
             <exclusion>
               <groupId>org.apache.maven.surefire</groupId>
-	      <artifactId>surefire-shared-utils</artifactId>
+              <artifactId>surefire-shared-utils</artifactId>
             </exclusion>
             <!-- excluded for dependency convergence -->
-	    <exclusion>
+            <exclusion>
               <groupId>org.fusesource.jansi</groupId>
-	      <artifactId>jansi</artifactId>
-	    </exclusion>
+              <artifactId>jansi</artifactId>
+            </exclusion>
           </exclusions>
         </dependency>
       </dependencies>

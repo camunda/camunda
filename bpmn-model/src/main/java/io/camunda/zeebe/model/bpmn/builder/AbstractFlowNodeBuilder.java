@@ -49,7 +49,9 @@ import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractFlowNodeBuilder<
         B extends AbstractFlowNodeBuilder<B, E>, E extends FlowNode>
     extends AbstractFlowElementBuilder<B, E> {

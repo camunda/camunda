@@ -83,7 +83,9 @@ public class MessagingConfig implements Config {
     return connectionPoolSize;
   }
 
-  /** @return the configured shutdown quiet period */
+  /**
+   * @return the configured shutdown quiet period
+   */
   public Duration getShutdownQuietPeriod() {
     return shutdownQuietPeriod;
   }
@@ -100,7 +102,9 @@ public class MessagingConfig implements Config {
     return this;
   }
 
-  /** @return the configured shutdown timeout */
+  /**
+   * @return the configured shutdown timeout
+   */
   public Duration getShutdownTimeout() {
     return shutdownTimeout;
   }
@@ -116,7 +120,9 @@ public class MessagingConfig implements Config {
     return this;
   }
 
-  /** @return true if TLS is enabled for inter-cluster communication */
+  /**
+   * @return true if TLS is enabled for inter-cluster communication
+   */
   public boolean isTlsEnabled() {
     return tlsEnabled;
   }
@@ -182,7 +188,9 @@ public class MessagingConfig implements Config {
     return this;
   }
 
-  /** @return the private key of the certificate chain */
+  /**
+   * @return the private key of the certificate chain
+   */
   public File getPrivateKey() {
     return privateKey;
   }

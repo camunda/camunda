@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 
-/** @author Thorben Lindhauer */
+/**
+ * @author Thorben Lindhauer
+ */
 public class TransactionBuilder extends AbstractTransactionBuilder<TransactionBuilder> {
 
   protected TransactionBuilder(final BpmnModelInstance modelInstance, final Transaction element) {

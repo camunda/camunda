@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ScriptTaskBuilder extends AbstractScriptTaskBuilder<ScriptTaskBuilder> {
 
   public ScriptTaskBuilder(final BpmnModelInstance modelInstance, final ScriptTask element) {

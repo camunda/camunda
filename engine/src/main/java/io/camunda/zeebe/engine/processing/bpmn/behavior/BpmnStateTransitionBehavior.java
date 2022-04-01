@@ -67,7 +67,9 @@ public final class BpmnStateTransitionBehavior {
     this.elementInstanceState = elementInstanceState;
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
@@ -98,7 +100,9 @@ public final class BpmnStateTransitionBehavior {
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
@@ -106,7 +110,9 @@ public final class BpmnStateTransitionBehavior {
     return transitionedContext;
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
     if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
@@ -146,7 +152,9 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public <T extends ExecutableFlowNode> Either<Failure, BpmnElementContext> transitionToCompleted(
       final T element, final BpmnElementContext context) {
     final boolean endOfExecutionPath;
@@ -180,7 +188,9 @@ public final class BpmnStateTransitionBehavior {
     return Either.right(completed);
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
     if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
       throw new IllegalStateException(
@@ -192,7 +202,9 @@ public final class BpmnStateTransitionBehavior {
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
     metrics.elementInstanceTerminated(context);

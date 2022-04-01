@@ -21,7 +21,9 @@ import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public interface Query<T extends ModelElementInstance> {
 
   Stream<T> stream();

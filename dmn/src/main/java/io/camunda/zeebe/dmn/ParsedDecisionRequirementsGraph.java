@@ -17,13 +17,19 @@ import java.util.Collection;
  */
 public interface ParsedDecisionRequirementsGraph {
 
-  /** @return the id of the DRG, or {@code null} if the DMN is not valid */
+  /**
+   * @return the id of the DRG, or {@code null} if the DMN is not valid
+   */
   String getId();
 
-  /** @return the name of the DRG, or {@code null} if the DMN is not valid */
+  /**
+   * @return the name of the DRG, or {@code null} if the DMN is not valid
+   */
   String getName();
 
-  /** @return the namespace of the DRG, or {@code null} if the DMN is not valid */
+  /**
+   * @return the namespace of the DRG, or {@code null} if the DMN is not valid
+   */
   String getNamespace();
 
   /**
@@ -32,7 +38,9 @@ public interface ParsedDecisionRequirementsGraph {
    */
   Collection<ParsedDecision> getDecisions();
 
-  /** @return {@code true} if the DMN is valid */
+  /**
+   * @return {@code true} if the DMN is valid
+   */
   boolean isValid();
 
   /**

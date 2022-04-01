@@ -33,15 +33,23 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol
 public interface DeploymentRecordValue extends RecordValue {
-  /** @return the resources to deploy */
+  /**
+   * @return the resources to deploy
+   */
   List<DeploymentResource> getResources();
 
-  /** @return the deployed processes */
+  /**
+   * @return the deployed processes
+   */
   List<ProcessMetadataValue> getProcessesMetadata();
 
-  /** @return the deployed decisions */
+  /**
+   * @return the deployed decisions
+   */
   List<DecisionRecordValue> getDecisionsMetadata();
 
-  /** @return the deployed decision requirements (DRGs) */
+  /**
+   * @return the deployed decision requirements (DRGs)
+   */
   List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata();
 }

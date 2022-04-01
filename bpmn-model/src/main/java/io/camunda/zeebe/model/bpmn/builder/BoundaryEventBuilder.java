@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class BoundaryEventBuilder extends AbstractBoundaryEventBuilder<BoundaryEventBuilder> {
 
   public BoundaryEventBuilder(final BpmnModelInstance modelInstance, final BoundaryEvent element) {

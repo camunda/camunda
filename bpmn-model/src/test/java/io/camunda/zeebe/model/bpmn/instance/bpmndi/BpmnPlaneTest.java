@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.di.Plane;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class BpmnPlaneTest extends BpmnModelElementInstanceTest {
 
   @Override

@@ -25,7 +25,9 @@ import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
 
   private final Collection<T> collection;

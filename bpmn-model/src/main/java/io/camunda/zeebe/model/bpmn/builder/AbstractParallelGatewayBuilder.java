@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class AbstractParallelGatewayBuilder<B extends AbstractParallelGatewayBuilder<B>>
     extends AbstractGatewayBuilder<B, ParallelGateway> {
 

@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractFlowElementBuilder<
         B extends AbstractFlowElementBuilder<B, E>, E extends FlowElement>
     extends AbstractBaseElementBuilder<B, E> {

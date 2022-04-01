@@ -186,7 +186,9 @@ final class ContainerState implements CloseableResource {
         String.format("\"intent\":\"%s\"", intent));
   }
 
-  /** @return true if the message was found in the specified intent. Otherwise, returns false */
+  /**
+   * @return true if the message was found in the specified intent. Otherwise, returns false
+   */
   public boolean hasMessageInState(final String name, final String intent) {
     return hasLogContaining(
         String.format("\"name\":\"%s\"", name), String.format("\"intent\":\"%s\"", intent));

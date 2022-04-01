@@ -25,7 +25,9 @@ import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** @author Filip Hrisafov */
+/**
+ * @author Filip Hrisafov
+ */
 public class TextAnnotationTest extends BpmnModelElementInstanceTest {
 
   protected static BpmnModelInstance modelInstance;

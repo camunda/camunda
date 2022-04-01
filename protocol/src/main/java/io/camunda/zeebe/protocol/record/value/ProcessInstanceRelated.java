@@ -17,6 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 public interface ProcessInstanceRelated {
 
-  /** @return the key of the corresponding process instance */
+  /**
+   * @return the key of the corresponding process instance
+   */
   long getProcessInstanceKey();
 }

@@ -18,7 +18,9 @@ package io.camunda.zeebe.model.bpmn.instance;
 
 import io.camunda.zeebe.model.bpmn.TransactionMethod;
 
-/** @author Thorben Lindhauer */
+/**
+ * @author Thorben Lindhauer
+ */
 public interface Transaction extends SubProcess {
 
   TransactionMethod getMethod();

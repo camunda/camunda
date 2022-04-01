@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class SequenceFlowBuilder extends AbstractSequenceFlowBuilder<SequenceFlowBuilder> {
 
   public SequenceFlowBuilder(final BpmnModelInstance modelInstance, final SequenceFlow element) {

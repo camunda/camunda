@@ -30,23 +30,35 @@ import org.immutables.value.Value;
 public interface MessageSubscriptionRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated {
 
-  /** @return the process instance key tied to the subscription */
+  /**
+   * @return the process instance key tied to the subscription
+   */
   @Override
   long getProcessInstanceKey();
 
-  /** @return the element instance key tied to the subscription */
+  /**
+   * @return the element instance key tied to the subscription
+   */
   long getElementInstanceKey();
 
-  /** @return the BPMN process id tied to the subscription */
+  /**
+   * @return the BPMN process id tied to the subscription
+   */
   String getBpmnProcessId();
 
-  /** @return the name of the message */
+  /**
+   * @return the name of the message
+   */
   String getMessageName();
 
-  /** @return the correlation key */
+  /**
+   * @return the correlation key
+   */
   String getCorrelationKey();
 
-  /** @return the key of the correlated message */
+  /**
+   * @return the key of the correlated message
+   */
   long getMessageKey();
 
   /**

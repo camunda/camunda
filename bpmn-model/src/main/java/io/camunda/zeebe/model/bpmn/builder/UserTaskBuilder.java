@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class UserTaskBuilder extends AbstractUserTaskBuilder<UserTaskBuilder> {
 
   public UserTaskBuilder(final BpmnModelInstance modelInstance, final UserTask element) {

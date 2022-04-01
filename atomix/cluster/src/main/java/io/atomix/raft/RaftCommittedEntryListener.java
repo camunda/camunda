@@ -25,6 +25,8 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 @FunctionalInterface
 public interface RaftCommittedEntryListener {
 
-  /** @param indexedRaftLogEntry the new committed entry */
+  /**
+   * @param indexedRaftLogEntry the new committed entry
+   */
   void onCommit(IndexedRaftLogEntry indexedRaftLogEntry);
 }

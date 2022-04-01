@@ -16,7 +16,9 @@
 
 package io.camunda.zeebe.model.bpmn;
 
-/** @author Thorben Lindhauer */
+/**
+ * @author Thorben Lindhauer
+ */
 public enum TransactionMethod {
   Compensate("##Compensate"),
   Image("##Image"),

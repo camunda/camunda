@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.util.GetBpmnModelElementTypeRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class BpmnModelElementInstanceTest extends AbstractModelElementInstanceTest {
 
   @ClassRule

@@ -78,7 +78,9 @@ public final class ProcessInstanceRecordStream
     return valueFilter(v -> v.getParentElementInstanceKey() == parentElementInstanceKey);
   }
 
-  /** @return stream with only records for the process instance (i.e. root scope of the instance) */
+  /**
+   * @return stream with only records for the process instance (i.e. root scope of the instance)
+   */
   public ProcessInstanceRecordStream filterRootScope() {
     return filter(r -> r.getKey() == r.getValue().getProcessInstanceKey());
   }

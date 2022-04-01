@@ -23,7 +23,9 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface VariableDocumentRecordValue extends RecordValueWithVariables {
 
-  /** @return the scope key associated with the variable document */
+  /**
+   * @return the scope key associated with the variable document
+   */
   long getScopeKey();
 
   /**

@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.impl.instance.SupportedInterfaceRef;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class CallableElementTest extends BpmnModelElementInstanceTest {
 
   @Override

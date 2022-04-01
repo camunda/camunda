@@ -19,10 +19,14 @@ import java.util.Map;
 
 /** Encapsulates the configuration of the exporter. */
 public interface Configuration {
-  /** @return the configured ID of the exporter */
+  /**
+   * @return the configured ID of the exporter
+   */
   String getId();
 
-  /** @return raw map of the parsed arguments from the configuration file */
+  /**
+   * @return raw map of the parsed arguments from the configuration file
+   */
   Map<String, Object> getArguments();
 
   /**

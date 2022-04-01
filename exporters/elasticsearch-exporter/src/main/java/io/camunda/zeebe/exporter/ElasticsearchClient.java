@@ -183,7 +183,9 @@ public class ElasticsearchClient {
     return bulkRequest.stream().mapToInt(String::length).sum();
   }
 
-  /** @return true if request was acknowledged */
+  /**
+   * @return true if request was acknowledged
+   */
   public boolean putIndexTemplate(final ValueType valueType) {
     final String templateName = indexPrefixForValueType(valueType);
     final String aliasName = aliasNameForValueType(valueType);
@@ -191,7 +193,9 @@ public class ElasticsearchClient {
     return putIndexTemplate(templateName, aliasName, filename);
   }
 
-  /** @return true if request was acknowledged */
+  /**
+   * @return true if request was acknowledged
+   */
   public boolean putIndexTemplate(
       final String templateName, final String aliasName, final String filename) {
     final Map<String, Object> template = getTemplateFromClasspath(filename);
@@ -262,7 +266,9 @@ public class ElasticsearchClient {
     }
   }
 
-  /** @return true if request was acknowledged */
+  /**
+   * @return true if request was acknowledged
+   */
   public boolean createComponentTemplate(final String templateName, final String filename) {
     final Map<String, Object> template = getTemplateFromClasspath(filename);
 
@@ -292,7 +298,9 @@ public class ElasticsearchClient {
     return template;
   }
 
-  /** @return true if request was acknowledged */
+  /**
+   * @return true if request was acknowledged
+   */
   private boolean putIndexTemplate(final String templateName, final Object body) {
     try {
       final var request = new Request("PUT", "/_index_template/" + templateName);
@@ -307,7 +315,9 @@ public class ElasticsearchClient {
     }
   }
 
-  /** @return true if request was acknowledged */
+  /**
+   * @return true if request was acknowledged
+   */
   private boolean putComponentTemplate(final String templateName, final Object body) {
     try {
       final var request = new Request("PUT", "/_component_template/" + templateName);

@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import io.camunda.zeebe.model.bpmn.instance.dc.Point;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class WaypointTest extends BpmnModelElementInstanceTest {
 
   @Override

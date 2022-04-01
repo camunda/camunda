@@ -25,7 +25,9 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class GetBpmnModelElementTypeRule extends TestWatcher implements GetModelElementTypeRule {
 
   private ModelInstance modelInstance;

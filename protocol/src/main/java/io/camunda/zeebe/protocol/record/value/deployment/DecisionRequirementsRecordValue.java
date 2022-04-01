@@ -28,6 +28,8 @@ import org.immutables.value.Value;
 public interface DecisionRequirementsRecordValue
     extends RecordValue, DecisionRequirementsMetadataValue {
 
-  /** @return the binary DMN resource */
+  /**
+   * @return the binary DMN resource
+   */
   byte[] getResource();
 }

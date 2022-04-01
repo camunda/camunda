@@ -32,7 +32,9 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    */
   boolean hasSnapshotId(String id);
 
-  /** @return the latest {@link PersistedSnapshot} if exists */
+  /**
+   * @return the latest {@link PersistedSnapshot} if exists
+   */
   Optional<PersistedSnapshot> getLatestSnapshot();
 
   /**

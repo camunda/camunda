@@ -30,16 +30,24 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
 
-  /** @return the type of the job */
+  /**
+   * @return the type of the job
+   */
   String getType();
 
-  /** @return user-defined headers associated with this job */
+  /**
+   * @return user-defined headers associated with this job
+   */
   Map<String, String> getCustomHeaders();
 
-  /** @return the assigned worker to complete the job */
+  /**
+   * @return the assigned worker to complete the job
+   */
   String getWorker();
 
-  /** @return remaining retries */
+  /**
+   * @return remaining retries
+   */
   int getRetries();
 
   /**
@@ -74,18 +82,28 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
    */
   String getErrorCode();
 
-  /** @return the element id of the corresponding service task */
+  /**
+   * @return the element id of the corresponding service task
+   */
   String getElementId();
 
-  /** @return the element instance key of the corresponding service task */
+  /**
+   * @return the element instance key of the corresponding service task
+   */
   long getElementInstanceKey();
 
-  /** @return the bpmn process id of the corresponding process definition */
+  /**
+   * @return the bpmn process id of the corresponding process definition
+   */
   String getBpmnProcessId();
 
-  /** @return the version of the corresponding process definition */
+  /**
+   * @return the version of the corresponding process definition
+   */
   int getProcessDefinitionVersion();
 
-  /** @return the process key of the corresponding process definition */
+  /**
+   * @return the process key of the corresponding process definition
+   */
   long getProcessDefinitionKey();
 }

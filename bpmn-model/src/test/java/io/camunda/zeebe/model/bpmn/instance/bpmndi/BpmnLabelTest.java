@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.di.Label;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class BpmnLabelTest extends BpmnModelElementInstanceTest {
 
   @Override
