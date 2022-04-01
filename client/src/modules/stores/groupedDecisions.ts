@@ -17,6 +17,8 @@ import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 import {fetchGroupedDecisions} from 'modules/api/decisions';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {getSearchString} from 'modules/utils/getSearchString';
+import {getDecisionInstanceFilters} from 'modules/utils/filter';
 
 type Decision = ReadonlyDeep<{
   decisionId: string;
@@ -29,8 +31,8 @@ type Decision = ReadonlyDeep<{
 }>;
 
 type State = {
-  decisions: ReadonlyArray<Decision>;
-  status: 'initial' | 'fetched' | 'error';
+  decisions: Decision[];
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
@@ -41,6 +43,8 @@ const DEFAULT_STATE: State = {
 class GroupedDecisions extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   disposer: IReactionDisposer | null = null;
+  retryCount: number = 0;
+  retryDecisionsFetchTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
     super();
@@ -49,6 +53,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       state: observable,
       handleFetchSuccess: action,
       handleFetchFailure: action,
+      startFetching: action,
       reset: override,
       decisions: computed,
       areDecisionsEmpty: computed,
@@ -57,11 +62,23 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   }
 
   fetchDecisions = this.retryOnConnectionLost(async () => {
+    this.startFetching();
+    const {name} = getDecisionInstanceFilters(getSearchString());
+
     try {
       const response = await fetchGroupedDecisions();
 
       if (response.ok) {
-        this.handleFetchSuccess(await response.json());
+        const decisions: Decision[] = await response.json();
+        if (
+          name !== undefined &&
+          !this.isSelectedDecisionValid(decisions, name)
+        ) {
+          this.handleRefetch(decisions);
+        } else {
+          this.resetRetryDecisionsFetch();
+          this.handleFetchSuccess(decisions);
+        }
       } else {
         this.handleFetchFailure();
       }
@@ -69,6 +86,23 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       this.handleFetchFailure(error);
     }
   });
+
+  startFetching = () => {
+    this.state.status = 'fetching';
+  };
+
+  handleRefetch = (decisions: Decision[]) => {
+    if (this.retryCount < 3) {
+      this.retryCount += 1;
+
+      this.retryDecisionsFetchTimeout = setTimeout(() => {
+        this.fetchDecisions();
+      }, 5000);
+    } else {
+      this.resetRetryDecisionsFetch();
+      this.handleFetchSuccess(decisions);
+    }
+  };
 
   handleFetchSuccess = (decisions: Decision[]) => {
     this.state.decisions = decisions;
@@ -106,6 +140,13 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     }, {});
   }
 
+  isSelectedDecisionValid = (decisions: Decision[], decisionId: string) => {
+    return (
+      decisions.find((decision) => decision.decisionId === decisionId) !==
+      undefined
+    );
+  };
+
   getDecisionName = (decisionId: string | null) => {
     const decision = this.state.decisions.find(
       (decision) => decision.decisionId === decisionId
@@ -142,6 +183,14 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   get areDecisionsEmpty() {
     return this.state.decisions.length === 0;
   }
+
+  resetRetryDecisionsFetch = () => {
+    if (this.retryDecisionsFetchTimeout !== null) {
+      clearTimeout(this.retryDecisionsFetchTimeout);
+    }
+
+    this.retryCount = 0;
+  };
 
   reset() {
     super.reset();

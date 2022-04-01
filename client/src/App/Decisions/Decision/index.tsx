@@ -7,7 +7,7 @@
 import {useEffect, useState} from 'react';
 import {reaction} from 'mobx';
 import {observer} from 'mobx-react';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
@@ -16,11 +16,16 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
+import {deleteSearchParams} from 'modules/utils/filter';
+import {useNotifications} from 'modules/notifications';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const notifications = useNotifications();
+
   const {
-    state: {status},
+    state: {status, decisions},
     getDecisionName,
   } = groupedDecisionsStore;
   const params = new URLSearchParams(location.search);
@@ -34,22 +39,40 @@ const Decision: React.FC = observer(() => {
   const decisionName = getDecisionName(decisionId);
 
   useEffect(() => {
-    if (status === 'fetched' && isDecisionSelected && isVersionSelected) {
-      const decisionDefinitionId =
-        groupedDecisionsStore.getDecisionDefinitionId({
-          decisionId,
-          version: Number(version),
-        });
+    if (status === 'fetched' && isDecisionSelected) {
+      const decisionDefinitionId = isVersionSelected
+        ? groupedDecisionsStore.getDecisionDefinitionId({
+            decisionId,
+            version: Number(version),
+          })
+        : null;
 
-      if (decisionDefinitionId !== null) {
+      if (decisionDefinitionId === null) {
+        decisionXmlStore.reset();
+
+        if (
+          !groupedDecisionsStore.isSelectedDecisionValid(decisions, decisionId)
+        ) {
+          navigate(deleteSearchParams(location, ['name', 'version']));
+          notifications.displayNotification('error', {
+            headline: 'Decision could not be found',
+          });
+        }
+      } else {
         decisionXmlStore.fetchDiagramXml(decisionDefinitionId);
       }
     }
-
-    if (!isDecisionSelected || !isVersionSelected) {
-      return decisionXmlStore.reset();
-    }
-  }, [isDecisionSelected, isVersionSelected, status, decisionId, version]);
+  }, [
+    isDecisionSelected,
+    isVersionSelected,
+    status,
+    decisionId,
+    version,
+    notifications,
+    location,
+    navigate,
+    decisions,
+  ]);
 
   useEffect(() => {
     const disposer = reaction(

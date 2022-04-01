@@ -35,17 +35,27 @@ const InstancesTable: React.FC = observer(() => {
     hasLatestDecisionInstances,
   } = decisionInstancesStore;
   const {
-    state: {status: groupedDecisionsStatus},
+    state: {status: groupedDecisionsStatus, decisions},
   } = groupedDecisionsStore;
 
   const location = useLocation();
   const filters = useFilters();
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const decisionId = params.get('name');
+
     if (groupedDecisionsStatus === 'fetched') {
+      if (
+        decisionId !== null &&
+        !groupedDecisionsStore.isSelectedDecisionValid(decisions, decisionId)
+      ) {
+        return;
+      }
+
       decisionInstancesStore.fetchInstancesFromFilters();
     }
-  }, [location.search, groupedDecisionsStatus]);
+  }, [location.search, groupedDecisionsStatus, decisions]);
 
   const getTableState = () => {
     if (['initial', 'first-fetch'].includes(status)) {

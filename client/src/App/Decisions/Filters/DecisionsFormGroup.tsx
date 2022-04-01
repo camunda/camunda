@@ -16,36 +16,44 @@ const DecisionsFormGroup: React.FC = observer(() => {
   const form = useForm();
   const selectedDecisionId = useField('name').input.value;
   const versions = getVersions(selectedDecisionId);
-
+  const options = [
+    {
+      label: 'All',
+      value: '',
+    },
+    ...decisions,
+  ];
   return (
     <FormGroup>
       <SectionTitle appearance="emphasis">Decision</SectionTitle>
       <Field name="name">
-        {({input}) => (
-          <Select
-            label="Name"
-            selectedOptions={
-              decisions.length > 0 && input.value ? [input.value] : ['']
-            }
-            onCmInput={(event) => {
-              const decisionId = event.detail.selectedOptions[0] ?? '';
-              input.onChange(decisionId);
-              form.change('version', getDefaultVersion(decisionId));
-            }}
-            disabled={areDecisionsEmpty}
-            options={[
-              {
-                options: [
-                  {
-                    label: 'All',
-                    value: '',
-                  },
-                  ...decisions,
-                ],
-              },
-            ]}
-          />
-        )}
+        {({input}) => {
+          const isSelectedValueValid =
+            options.find((option) => option.value === input.value) !==
+            undefined;
+
+          return (
+            <Select
+              label="Name"
+              selectedOptions={
+                isSelectedValueValid && decisions.length > 0 && input.value
+                  ? [input.value]
+                  : ['']
+              }
+              onCmInput={(event) => {
+                const decisionId = event.detail.selectedOptions[0] ?? '';
+                input.onChange(decisionId);
+                form.change('version', getDefaultVersion(decisionId));
+              }}
+              disabled={areDecisionsEmpty}
+              options={[
+                {
+                  options,
+                },
+              ]}
+            />
+          );
+        }}
       </Field>
       <Field name="version">
         {({input}) => (
