@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -446,5 +447,41 @@ public final class CancelProcessInstanceTest {
 
     // then
     assertThat(canceledRecord.getValue()).isEqualTo(activatedEvent.getValue());
+  }
+
+  /**
+   * Regression test against activating jobs of cancelled process instances
+   *
+   * <p>See: https://github.com/camunda/zeebe/issues/8588
+   */
+  @Test
+  public void shouldCancelJobsWithIncidents() {
+    // given
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    final var job = ENGINE.job().ofInstance(processInstanceKey).withType("test").throwError();
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKey(job.getKey())
+                .findAny())
+        .describedAs("Expect an incident on the job")
+        .isPresent();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .findAny())
+        .describedAs("Wait until the process instance has terminated")
+        .isPresent();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED).withRecordKey(job.getKey()).findAny())
+        .describedAs("Expect that the job is cancelled")
+        .isPresent();
   }
 }
