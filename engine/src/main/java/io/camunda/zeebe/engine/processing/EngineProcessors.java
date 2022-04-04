@@ -34,7 +34,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.immutable.VariablesLookup;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -247,14 +247,14 @@ public final class EngineProcessors {
         writers);
   }
 
-  private record VariableStateEvaluationContextLookup(VariablesLookup lookup)
+  private record VariableStateEvaluationContextLookup(VariableState variableState)
       implements EvaluationContextLookup {
 
     @Override
     public EvaluationContext getContext(final long scopeKey) {
       ensureGreaterThan("variable scope key", scopeKey, 0);
 
-      return (name) -> lookup.getVariable(scopeKey, BufferUtil.wrapString(name));
+      return (name) -> variableState.getVariable(scopeKey, BufferUtil.wrapString(name));
     }
   }
 }
