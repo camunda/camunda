@@ -33,7 +33,7 @@ public final class ExpressionProcessor {
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
-  private final ContextLookup contextLookup;
+  private final EvaluationContextLookup evaluationContextLookup;
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage, final VariablesLookup lookup) {
@@ -42,9 +42,9 @@ public final class ExpressionProcessor {
   }
 
   private ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage, final ContextLookup lookup) {
+      final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
     this.expressionLanguage = expressionLanguage;
-    contextLookup = lookup;
+    evaluationContextLookup = lookup;
   }
 
   /**
@@ -56,8 +56,8 @@ public final class ExpressionProcessor {
    * @return new instance which uses {@code primaryContext} as new top level evaluation context
    */
   public ExpressionProcessor withPrimaryContext(final EvaluationContext primaryContext) {
-    final ContextLookup combinedLookup =
-        scopeKey -> primaryContext.combine(contextLookup.getContext(scopeKey));
+    final EvaluationContextLookup combinedLookup =
+        scopeKey -> primaryContext.combine(evaluationContextLookup.getContext(scopeKey));
     return new ExpressionProcessor(expressionLanguage, combinedLookup);
   }
 
@@ -69,8 +69,8 @@ public final class ExpressionProcessor {
    * @return new instance which uses {@code secondaryContext} as fallback
    */
   public ExpressionProcessor withSecondaryContext(final EvaluationContext secondaryContext) {
-    final ContextLookup combinedLookup =
-        scopeKey -> contextLookup.getContext(scopeKey).combine(secondaryContext);
+    final EvaluationContextLookup combinedLookup =
+        scopeKey -> evaluationContextLookup.getContext(scopeKey).combine(secondaryContext);
     return new ExpressionProcessor(expressionLanguage, combinedLookup);
   }
 
@@ -383,7 +383,7 @@ public final class ExpressionProcessor {
     if (variableScopeKey < 0) {
       context = EMPTY_EVALUATION_CONTEXT;
     } else {
-      context = contextLookup.getContext(variableScopeKey);
+      context = evaluationContextLookup.getContext(variableScopeKey);
     }
 
     return expressionLanguage.evaluateExpression(expression, context);
@@ -411,7 +411,7 @@ public final class ExpressionProcessor {
   }
 
   private record VariableStateEvaluationContextLookup(VariablesLookup lookup)
-      implements ContextLookup {
+      implements EvaluationContextLookup {
 
     @Override
     public EvaluationContext getContext(final long scopeKey) {
@@ -427,7 +427,7 @@ public final class ExpressionProcessor {
   }
 
   @FunctionalInterface
-  public interface ContextLookup {
+  public interface EvaluationContextLookup {
     EvaluationContext getContext(final long scopeKey);
   }
 }

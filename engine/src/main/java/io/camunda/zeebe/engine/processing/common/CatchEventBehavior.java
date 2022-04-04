@@ -351,11 +351,13 @@ public final class CatchEventBehavior {
       this.context = context;
     }
 
-    private ExpressionProcessor expressionProcessor() { return expressionProcessor;}
+    private ExpressionProcessor expressionProcessor() { return expressionProcessor; }
+
     private ExecutableCatchEvent event() {
       return event;
     }
-    private BpmnElementContext context() {return context;}
+
+    private BpmnElementContext context() {return context; }
 
     public OngoingEvaluation recordMessageName(final DirectBuffer messageName) {
       this.messageName = messageName;
