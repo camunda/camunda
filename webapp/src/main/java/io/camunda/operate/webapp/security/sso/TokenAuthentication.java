@@ -55,6 +55,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private String clientSecret;
   private String idToken;
   private String refreshToken;
+  private List<Permission> permissions = new ArrayList<>();
 
   //private List<Permission> permissions = new ArrayList<>();
 
@@ -87,6 +88,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       }
     }
     return super.isAuthenticated();
+  }
+
+  public List<Permission> getPermissions() {
+    return permissions;
   }
 
   private void getNewTokenByRefreshToken() {

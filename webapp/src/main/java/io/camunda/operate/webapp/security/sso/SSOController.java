@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestTemplate;
 
 @Controller
 @Profile(SSO_AUTH_PROFILE)
@@ -52,6 +54,9 @@ public class SSOController {
     try {
       auth0Service.authenticate(req, res);
       redirectToPage(req, res);
+    } catch (InsufficientAuthenticationException iae) {
+      // remove logout, user might just not be allowed to access. Redirect to no permission
+      clearContextAndRedirectToNoPermission(req, res, iae);
     } catch (Auth0ServiceException ase) {
       handleAuth0Exception(ase,req, res);
     }

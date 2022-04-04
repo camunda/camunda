@@ -14,10 +14,12 @@ import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
@@ -37,6 +39,7 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.RolePermissionService;
+import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -54,6 +57,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -66,6 +70,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import org.springframework.web.client.RestTemplate;
 
 @RunWith(Parameterized.class)
 @SpringBootTest(
@@ -96,6 +101,8 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         "camunda.operate.cloud.organizationid=3",
         "camunda.operate.auth0.domain=domain",
         "camunda.operate.auth0.backendDomain=backendDomain",
+        "camunda.operate.cloud.permissionaudience=audience",
+        "camunda.operate.cloud.permissionurl=https://permissionurl",
         "camunda.operate.auth0.claimName=claimName"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
@@ -120,6 +127,10 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @MockBean
   private AuthenticationController authenticationController;
+
+  @MockBean
+  @Qualifier("auth0_restTemplate")
+  private RestTemplate restTemplate;
 
   @MockBean
   private ElsIndicesCheck probes;
@@ -157,6 +168,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
+    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
@@ -187,6 +199,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
+    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
@@ -200,12 +213,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
             orgExtractor.apply(operateProperties.getAuth0().getClaimName(), "wrong-organization"));
 
     response = get(SSO_CALLBACK_URI, cookies);
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        "logout",
-        operateProperties.getAuth0().getClientId(),
-        NO_PERMISSION
-    );
+    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
 
     response = get(ROOT, cookies);
     // Check that access to url is not possible
@@ -239,6 +247,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Test
   public void testLogout() throws Throwable {
     // Step 1 Login
+    mockPermissionAllowed();
     ResponseEntity<String> response = get(ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     response = get(LOGIN_RESOURCE, cookies);
@@ -274,6 +283,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     HttpEntity<?> httpEntity = httpEntityWithCookie(response);
 
     // Step 2 Get Login provider url
+    mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, httpEntity);
 
     assertThat(redirectLocationIn(response)).contains(
@@ -348,5 +358,19 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Override
   public TestRestTemplate getTestRestTemplate() {
     return testRestTemplate;
+  }
+
+  private void mockPermissionAllowed() {
+    final ClusterInfo.OrgPermissions operate =
+        new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
+
+    final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
+        new ResponseEntity<>(clusterInfo, HttpStatus.OK);
+
+    when(restTemplate.exchange(
+        eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
+        .thenReturn(clusterInfoResponseEntity);
   }
 }
