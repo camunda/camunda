@@ -74,7 +74,7 @@
     <version.mockito-jupiter>4.4.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.1</version.msgpack>
-    <version.netty>4.1.74.Final</version.netty>
+    <version.netty>4.1.75.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.19.4</version.protobuf>
