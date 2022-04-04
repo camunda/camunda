@@ -17,6 +17,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
@@ -112,10 +113,17 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
     logger.debug("Check for expired sessions");
     SearchRequest searchRequest = new SearchRequest(operateWebSessionIndex.getFullQualifiedName());
     retryElasticsearchClient.doWithEachSearchResult(searchRequest, sh -> {
-      ElasticsearchSession session = documentToSession(sh.getSourceAsMap());
-      logger.debug("Check if session {} is expired: {}", session, session.isExpired());
-      if (session.isExpired()) {
-        delete(session.getId());
+      final Map<String, Object> document = sh.getSourceAsMap();
+      final Optional<ElasticsearchSession> maybeSession = documentToSession(document);
+      if(maybeSession.isPresent()) {
+        final ElasticsearchSession session = maybeSession.get();
+        logger.debug("Check if session {} is expired: {}", session, session.isExpired());
+        if (session.isExpired()) {
+          delete(session.getId());
+        }
+      } else {
+        // need to delete entry in Elasticsearch in case of failing restore session
+        delete(getSessionIdFrom(document));
       }
     });
   }
@@ -151,18 +159,28 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public ElasticsearchSession getSession(final String id) {
     logger.debug("Retrieve session {} from Elasticsearch", id);
-    ElasticsearchSession session = null;
     retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
-    Map<String, Object> document = retryElasticsearchClient
-          .getDocument(operateWebSessionIndex.getFullQualifiedName(), id);
-    if (document != null) {
-        session = documentToSession(document);
+
+    final Map<String, Object> document = retryElasticsearchClient.getDocument(
+        operateWebSessionIndex.getFullQualifiedName(), id);
+    if (document == null) {
+      return null;
     }
-    if (session != null && session.isExpired()) {
-        delete(session.getId());
-        return null;
+
+    final Optional<ElasticsearchSession> maybeSession = documentToSession(document);
+    if (maybeSession.isEmpty() ) {
+      // need to delete entry in Elasticsearch in case of failing restore session
+      delete(getSessionIdFrom(document));
+      return null;
     }
-    return session;
+
+    final ElasticsearchSession session = maybeSession.get();
+    if (session.isExpired()) {
+      delete(session.getId());
+      return null;
+    } else {
+      return session;
+    }
   }
 
   @Override
@@ -190,19 +208,30 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
     );
   }
 
-  private ElasticsearchSession documentToSession(Map<String, Object> document) {
-    String sessionId = (String) document.get(ID);
-    ElasticsearchSession session = new ElasticsearchSession(sessionId);
-    session.setCreationTime((long) document.get(CREATION_TIME));
-    session.setLastAccessedTime((long) document.get(LAST_ACCESSED_TIME));
-    session.setMaxInactiveIntervalInSeconds((int) document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS));
+  private String getSessionIdFrom(final Map<String, Object> document){
+    return (String) document.get(ID);
+  }
 
-    Object attributesObject = document.get(ATTRIBUTES);
-    if (attributesObject != null && attributesObject.getClass().isInstance(new HashMap<String, String>()))  {
-      Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
-      attributes.keySet().forEach(name -> session.setAttribute(name, deserialize(Base64.getDecoder().decode(attributes.get(name)))));
+  private Optional<ElasticsearchSession> documentToSession(Map<String, Object> document) {
+    try {
+      final String sessionId = getSessionIdFrom(document);
+      ElasticsearchSession session = new ElasticsearchSession(sessionId);
+      session.setCreationTime((long) document.get(CREATION_TIME));
+      session.setLastAccessedTime((long) document.get(LAST_ACCESSED_TIME));
+      session.setMaxInactiveIntervalInSeconds((int) document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS));
+
+      Object attributesObject = document.get(ATTRIBUTES);
+      if (attributesObject != null && attributesObject.getClass()
+          .isInstance(new HashMap<String, String>())) {
+        Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
+        attributes.keySet().forEach(name -> session.setAttribute(name,
+            deserialize(Base64.getDecoder().decode(attributes.get(name)))));
+      }
+      return Optional.of(session);
+    } catch (Exception e) {
+      logger.error("Could not restore session.", e);
+      return Optional.empty();
     }
-    return session;
   }
 
   private void executeAsyncElasticsearchRequest(Runnable requestRunnable) {
