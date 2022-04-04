@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
-import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
-
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
@@ -17,7 +15,6 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -36,12 +33,6 @@ public final class ExpressionProcessor {
   private final EvaluationContextLookup evaluationContextLookup;
 
   public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage, final VariablesLookup lookup) {
-
-    this(expressionLanguage, new VariableStateEvaluationContextLookup(lookup));
-  }
-
-  private ExpressionProcessor(
       final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
     this.expressionLanguage = expressionLanguage;
     evaluationContextLookup = lookup;
@@ -408,22 +399,6 @@ public final class ExpressionProcessor {
     public EvaluationException(final String message) {
       super(message);
     }
-  }
-
-  private record VariableStateEvaluationContextLookup(VariablesLookup lookup)
-      implements EvaluationContextLookup {
-
-    @Override
-    public EvaluationContext getContext(final long scopeKey) {
-      ensureGreaterThan("variable scope key", scopeKey, 0);
-
-      return (name) -> lookup.getVariable(scopeKey, BufferUtil.wrapString(name));
-    }
-  }
-
-  @FunctionalInterface
-  public interface VariablesLookup {
-    DirectBuffer getVariable(final long scopeKey, final DirectBuffer name);
   }
 
   @FunctionalInterface

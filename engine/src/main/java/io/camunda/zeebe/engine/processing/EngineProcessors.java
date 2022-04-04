@@ -8,13 +8,16 @@
 package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
+import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
@@ -31,6 +34,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.VariablesLookup;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -39,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.Consumer;
 
@@ -69,7 +74,8 @@ public final class EngineProcessors {
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
+            ExpressionLanguageFactory.createExpressionLanguage(),
+            new VariableStateEvaluationContextLookup(variablesState));
 
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
     final CatchEventBehavior catchEventBehavior =
@@ -239,5 +245,16 @@ public final class EngineProcessors {
         zeebeState,
         subscriptionCommandSender,
         writers);
+  }
+
+  private record VariableStateEvaluationContextLookup(VariablesLookup lookup)
+      implements EvaluationContextLookup {
+
+    @Override
+    public EvaluationContext getContext(final long scopeKey) {
+      ensureGreaterThan("variable scope key", scopeKey, 0);
+
+      return (name) -> lookup.getVariable(scopeKey, BufferUtil.wrapString(name));
+    }
   }
 }

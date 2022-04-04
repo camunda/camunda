@@ -11,13 +11,14 @@ import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
-public interface VariableState {
+public interface VariableState extends VariablesLookup {
 
   /** The value of the parent scope key for scope with no parents. */
   long NO_PARENT = -1;
 
   DirectBuffer getVariableLocal(long scopeKey, DirectBuffer name);
 
+  @Override
   DirectBuffer getVariable(long scopeKey, DirectBuffer name);
 
   DirectBuffer getVariable(long scopeKey, DirectBuffer name, int nameOffset, int nameLength);
