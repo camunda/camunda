@@ -136,6 +136,7 @@ public final class CatchEventBehavior {
 
   private Either<Failure, OngoingEvaluation> evaluateCorrelationKey(
       final OngoingEvaluation evaluation) {
+
     final var event = evaluation.event();
     final var context = evaluation.context();
     if (!event.isMessage()) {
