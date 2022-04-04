@@ -111,9 +111,10 @@ public final class CatchEventBehavior {
       final ExecutableCatchEvent event,
       final BpmnElementContext context) {
     return Either.<Failure, EvalResult>right(new EvalResult(event))
-        .flatMap(result -> evaluateMessageName(ep, event, context).map(result::messageName))
-        .flatMap(result -> evaluateCorrelationKey(ep, event, context).map(result::correlationKey))
-        .flatMap(result -> evaluateTimer(ep, event, context).map(result::timer));
+        .flatMap(result -> evaluateMessageName(ep, event, context).map(result::withMessageName))
+        .flatMap(
+            result -> evaluateCorrelationKey(ep, event, context).map(result::withCorrelationKey))
+        .flatMap(result -> evaluateTimer(ep, event, context).map(result::withTimer));
   }
 
   private Either<Failure, DirectBuffer> evaluateMessageName(
@@ -340,17 +341,17 @@ public final class CatchEventBehavior {
       this.event = event;
     }
 
-    public EvalResult messageName(final DirectBuffer messageName) {
+    public EvalResult withMessageName(final DirectBuffer messageName) {
       this.messageName = messageName;
       return this;
     }
 
-    public EvalResult correlationKey(final DirectBuffer correlationKey) {
+    public EvalResult withCorrelationKey(final DirectBuffer correlationKey) {
       this.correlationKey = correlationKey;
       return this;
     }
 
-    public EvalResult timer(final Timer timer) {
+    public EvalResult withTimer(final Timer timer) {
       this.timer = timer;
       return this;
     }
