@@ -8,6 +8,8 @@ package org.camunda.optimize.service.goals;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
@@ -18,6 +20,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.ProcessGoalsReader;
 import org.camunda.optimize.service.es.writer.ProcessGoalsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +45,7 @@ public class ProcessGoalsService {
   private final ProcessGoalsWriter processGoalsWriter;
   private final ProcessGoalsReader processGoalsReader;
   private final ProcessGoalsEvaluator processGoalsEvaluator;
+  private final AbstractIdentityService identityService;
 
   public List<ProcessGoalsResponseDto> getProcessDefinitionGoals(final String userId) {
     final Map<String, String> procDefKeysAndName = new HashMap<>();
@@ -69,7 +73,8 @@ public class ProcessGoalsService {
         return new ProcessGoalsResponseDto(
           StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
           procDefKey,
-          null,
+          goalsForKey.flatMap(goals -> Optional.ofNullable(goals.getOwner())
+            .map(owner -> identityService.getIdentityNameById(owner).orElse(owner))).orElse(null),
           goalsForKey.map(
             goals -> {
               ProcessDurationGoalsAndResultsDto goalsAndResults = new ProcessDurationGoalsAndResultsDto();
@@ -87,7 +92,7 @@ public class ProcessGoalsService {
                                  final String processDefKey,
                                  final List<ProcessDurationGoalDto> durationGoals) {
     validateGoals(durationGoals);
-    checkAuthorizationToProcessDefinitionGoals(userId, processDefKey);
+    checkAuthorizationToProcessDefinition(userId, processDefKey);
     final ProcessGoalsDto processGoalsDto = new ProcessGoalsDto();
     processGoalsDto.setProcessDefinitionKey(processDefKey);
     processGoalsDto.setOwner(null);
@@ -99,8 +104,22 @@ public class ProcessGoalsService {
                                                                     final String processDefKey,
                                                                     final List<ProcessDurationGoalDto> goals) {
     validateGoals(goals);
-    checkAuthorizationToProcessDefinitionGoals(userId, processDefKey);
+    checkAuthorizationToProcessDefinition(userId, processDefKey);
     return processGoalsEvaluator.evaluateGoalsForProcess(new ProcessGoalsDto(processDefKey, null, goals));
+  }
+
+  public void updateProcessGoalsOwner(final String userId, final String processDefKey, String ownerId) {
+    checkAuthorizationToProcessDefinition(userId, processDefKey);
+    String ownerIdToSave = null;
+    if (ownerId != null) {
+      if (!identityService.isUserAuthorizedToAccessIdentity(userId, new IdentityDto(ownerId, IdentityType.USER))) {
+        throw new ForbiddenException(String.format(
+          "User with ID %s is not permitted to set process goal owner to user with ID: %s", userId, ownerId));
+      }
+      ownerIdToSave = identityService.getUserById(ownerId).map(IdentityDto::getId)
+        .orElseThrow(() -> new NotFoundException("User with ID does not exist: " + ownerId));
+    }
+    processGoalsWriter.updateProcessOwner(processDefKey, ownerIdToSave);
   }
 
   private void validateGoals(final List<ProcessDurationGoalDto> durationGoals) {
@@ -113,7 +132,7 @@ public class ProcessGoalsService {
     }
   }
 
-  private void checkAuthorizationToProcessDefinitionGoals(final String userId, final String processDefKey) {
+  private void checkAuthorizationToProcessDefinition(final String userId, final String processDefKey) {
     final Optional<DefinitionWithTenantIdsDto> definitionForKey =
       definitionService.getProcessDefinitionWithTenants(processDefKey);
     if (definitionForKey.isEmpty()) {

@@ -81,7 +81,7 @@ public class AuthorizationClient {
   }
 
   public void grantAllResourceAuthorizationsForKermitGroup(final int resourceType) {
-    grantAllResourceAuthorizationsForGroup(GROUP_ID, resourceType);
+    grantSingleResourceAuthorizationsForGroup(GROUP_ID, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
   public void grantSingleResourceAuthorizationForKermitGroup(final String resourceId, final int resourceType) {
@@ -89,15 +89,11 @@ public class AuthorizationClient {
   }
 
   public void revokeAllDefinitionAuthorizationsForKermitGroup(final int resourceType) {
-    revokeAllDefinitionAuthorizationsForGroup(GROUP_ID, resourceType);
+    revokeSingleResourceAuthorizationsForGroup(GROUP_ID, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
   public void revokeSingleResourceAuthorizationsForKermitGroup(final String resourceId, final int resourceType) {
     revokeSingleResourceAuthorizationsForGroup(GROUP_ID, resourceId, resourceType);
-  }
-
-  public void grantAllResourceAuthorizationsForGroup(final String groupId, final int resourceType) {
-    grantSingleResourceAuthorizationsForGroup(groupId, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
   public void grantSingleResourceAuthorizationsForGroup(final String groupId,
@@ -110,10 +106,6 @@ public class AuthorizationClient {
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId(groupId);
     engineExtension.createAuthorization(authorizationDto);
-  }
-
-  public void revokeAllDefinitionAuthorizationsForGroup(final String groupId, final int definitionResourceType) {
-    revokeSingleResourceAuthorizationsForGroup(groupId, ALL_RESOURCES_RESOURCE_ID, definitionResourceType);
   }
 
   public void revokeSingleResourceAuthorizationsForGroup(final String groupId,

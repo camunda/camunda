@@ -8,11 +8,13 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.service.goals.ProcessGoalsService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -65,6 +67,16 @@ public class ProcessGoalsRestService {
                                                                  @NotNull @Valid List<ProcessDurationGoalDto> goals) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processGoalsService.evaluateGoalsForProcess(userId, processDefKey, goals);
+  }
+
+  @PUT
+  @Path("/{processDefinitionKey}/owner")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateProcessGoalsOwner(@Context final ContainerRequestContext requestContext,
+                                      @PathParam("processDefinitionKey") final String processDefKey,
+                                      @NotNull @RequestBody ProcessGoalsOwnerDto ownerDto) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    processGoalsService.updateProcessGoalsOwner(userId, processDefKey, ownerDto.getOwner());
   }
 
 }

@@ -47,7 +47,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public static final String DEFAULT_USERNAME = "demo";
   public static final String DEFAULT_PASSWORD = "demo";
-  public static final String DEFAULT_CONTEXT_LOCATION = "org.camunda.optimize.SpringDefaultITConfig";
+  private static final String DEFAULT_CONTEXT_LOCATION = "org.camunda.optimize.SpringDefaultITConfig";
 
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
   /**

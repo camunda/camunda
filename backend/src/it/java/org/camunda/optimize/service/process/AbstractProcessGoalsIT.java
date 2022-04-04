@@ -8,13 +8,16 @@ package org.camunda.optimize.service.process;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.SLA_DURATION;
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.TARGET_DURATION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.DAYS;
@@ -35,6 +38,12 @@ public class AbstractProcessGoalsIT extends AbstractIT {
   protected void setGoalsForProcess(final String processDefKey, final List<ProcessDurationGoalDto> goals) {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateProcessGoalsRequest(processDefKey, goals)
+      .execute();
+  }
+
+  protected void setOwnerForProcess(final String processDefKey, final String owner) {
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildSetProcessOwnerRequest(processDefKey, new ProcessGoalsOwnerDto(owner))
       .execute();
   }
 
@@ -64,6 +73,17 @@ public class AbstractProcessGoalsIT extends AbstractIT {
       List.of(new ProcessDurationGoalDto(TARGET_DURATION, 50., 1, null)),
       List.of(new ProcessDurationGoalDto(null, 50., 1, HOURS))
     );
+  }
+
+  protected void assertExpectedProcessOwner(final String defKey, final String expectedOwnerId) {
+    assertThat(getProcessGoals())
+      .filteredOn(def -> def.getProcessDefinitionKey().equals(defKey))
+      .extracting(ProcessGoalsResponseDto::getOwner)
+      .singleElement()
+      .satisfies(processOwner -> assertThat(processOwner)
+        .isEqualTo(expectedOwnerId == null ? null : embeddedOptimizeExtension.getIdentityService()
+          .getIdentityNameById(expectedOwnerId)
+          .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache"))));
   }
 
 }

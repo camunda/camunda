@@ -32,6 +32,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -496,6 +497,10 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
+    return buildGetProcessGoalsRequest(null);
+  }
+
   public OptimizeRequestExecutor buildGetProcessGoalsRequest(ProcessGoalSorter sorter) {
     this.path = "process/goals";
     this.method = GET;
@@ -519,8 +524,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
-    return buildGetProcessGoalsRequest(null);
+  public OptimizeRequestExecutor buildSetProcessOwnerRequest(final String processDefinitionKey,
+                                                             final ProcessGoalsOwnerDto owner) {
+    this.path = "process/" + processDefinitionKey + "/owner";
+    this.method = PUT;
+    this.body = getBody(owner);
+    return this;
   }
 
   public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {

@@ -21,14 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.SLA_DURATION;
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.TARGET_DURATION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.DAYS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.HOURS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MONTHS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.SECONDS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.YEARS;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
 
@@ -97,10 +92,7 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateProcessGoalsRequest(
-        DEF_KEY,
-        goals
-      )
+      .buildUpdateProcessGoalsRequest(DEF_KEY, goals)
       .execute();
 
     // then
@@ -161,6 +153,24 @@ public class ProcessGoalsUpdateIT extends AbstractProcessGoalsIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateExistingProcessGoalsOwnerIsNotRemoved() {
+    // given
+    deploySimpleProcessDefinition(DEF_KEY);
+    importAllEngineEntitiesFromScratch();
+    setGoalsForProcess(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 5, DAYS)));
+    setOwnerForProcess(DEF_KEY, DEFAULT_USERNAME);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateProcessGoalsRequest(DEF_KEY, List.of(new ProcessDurationGoalDto(SLA_DURATION, 50., 2, MONTHS)))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExpectedProcessOwner(DEF_KEY, DEFAULT_USERNAME);
   }
 
   private static Stream<List<ProcessDurationGoalDto>> validGoalsLists() {
