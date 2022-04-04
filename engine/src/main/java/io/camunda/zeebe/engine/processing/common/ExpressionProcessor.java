@@ -47,7 +47,6 @@ public final class ExpressionProcessor {
     contextLookup = lookup;
   }
 
-
   /**
    * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
    * primaryContext} for all lookups. Only if it doesn't find a variable in {@code primaryContext},

@@ -110,59 +110,61 @@ public final class CatchEventBehavior {
       final ExpressionProcessor ep,
       final ExecutableCatchEvent event,
       final BpmnElementContext context) {
-    return Either.<Failure, EvalResult>right(new EvalResult(event))
-        .flatMap(result -> evaluateMessageName(ep, event, context, result))
-        .flatMap(result -> evaluateCorrelationKey(ep, event, context, result))
-        .flatMap(result -> evaluateTimer(ep, event, context, result));
+    return Either.<Failure, OngoingEvaluation>right(new OngoingEvaluation(ep, event, context))
+        .flatMap(this::evaluateMessageName)
+        .flatMap(this::evaluateCorrelationKey)
+        .flatMap(this::evaluateTimer)
+        .map(OngoingEvaluation::getResult);
   }
 
-  private Either<Failure, EvalResult> evaluateMessageName(
-      final ExpressionProcessor expressionProcessor,
-      final ExecutableCatchEvent event,
-      final BpmnElementContext context,
-      final EvalResult result) {
+  private Either<Failure, OngoingEvaluation> evaluateMessageName(
+      final OngoingEvaluation evaluation) {
+    final var event = evaluation.event();
+
     if (!event.isMessage()) {
-      return Either.right(null);
+      return Either.right(evaluation);
     }
-    final var scopeKey = context.getElementInstanceKey();
+    final var scopeKey = evaluation.context().getElementInstanceKey();
     final ExecutableMessage message = event.getMessage();
     final Expression messageNameExpression = message.getMessageNameExpression();
-    return expressionProcessor
+    return evaluation
+        .expressionProcessor()
         .evaluateStringExpression(messageNameExpression, scopeKey)
         .map(BufferUtil::wrapString)
-        .map(result::withMessageName);
+        .map(evaluation::withMessageName);
   }
 
-  private Either<Failure, EvalResult> evaluateCorrelationKey(
-      final ExpressionProcessor expressionProcessor,
-      final ExecutableCatchEvent event,
-      final BpmnElementContext context,
-      final EvalResult result) {
+  private Either<Failure, OngoingEvaluation> evaluateCorrelationKey(
+      final OngoingEvaluation evaluation) {
+    final var event = evaluation.event();
+    final var context = evaluation.context();
     if (!event.isMessage()) {
-      return Either.right(null);
+      return Either.right(evaluation);
     }
     final var expression = event.getMessage().getCorrelationKeyExpression();
     final long scopeKey =
         event.getElementType() == BpmnElementType.BOUNDARY_EVENT
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
-    return expressionProcessor
+    return evaluation
+        .expressionProcessor()
         .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
         .map(BufferUtil::wrapString)
-        .map(result::withCorrelationKey)
+        .map(evaluation::withCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
   }
 
-  private Either<Failure, EvalResult> evaluateTimer(
-      final ExpressionProcessor expressionProcessor,
-      final ExecutableCatchEvent event,
-      final BpmnElementContext context,
-      final EvalResult result) {
+  private Either<Failure, OngoingEvaluation> evaluateTimer(final OngoingEvaluation evaluation) {
+    final var event = evaluation.event();
+    final var context = evaluation.context();
     if (!event.isTimer()) {
-      return Either.right(null);
+      return Either.right(evaluation);
     }
     final var scopeKey = context.getElementInstanceKey();
-    return event.getTimerFactory().apply(expressionProcessor, scopeKey).map(result::withTimer);
+    return event
+        .getTimerFactory()
+        .apply(evaluation.expressionProcessor(), scopeKey)
+        .map(evaluation::withTimer);
   }
 
   private void subscribeToMessageEvents(
@@ -335,34 +337,64 @@ public final class CatchEventBehavior {
         closeOnCorrelate);
   }
 
-  private static class EvalResult {
+  /**
+   * Transient helper object that captures the information necessary to evaluate important
+   * expressions for a message, and to capture intermediate results of the evaluation
+   */
+  private static class OngoingEvaluation {
+    private final ExpressionProcessor expressionProcessor;
     private final ExecutableCatchEvent event;
+    private final BpmnElementContext context;
     private DirectBuffer messageName;
     private DirectBuffer correlationKey;
     private Timer timer;
 
-    public EvalResult(final ExecutableCatchEvent event) {
+    public OngoingEvaluation(
+        final ExpressionProcessor expressionProcessor,
+        final ExecutableCatchEvent event,
+        final BpmnElementContext context) {
+      this.expressionProcessor = expressionProcessor;
       this.event = event;
+      this.context = context;
     }
 
-    public EvalResult withMessageName(final DirectBuffer messageName) {
+    private ExpressionProcessor expressionProcessor() {
+      return expressionProcessor;
+    }
+
+    private ExecutableCatchEvent event() {
+      return event;
+    }
+
+    private BpmnElementContext context() {
+      return context;
+    }
+
+    public OngoingEvaluation withMessageName(final DirectBuffer messageName) {
       this.messageName = messageName;
       return this;
     }
 
-    public EvalResult withCorrelationKey(final DirectBuffer correlationKey) {
+    public OngoingEvaluation withCorrelationKey(final DirectBuffer correlationKey) {
       this.correlationKey = correlationKey;
       return this;
     }
 
-    public EvalResult withTimer(final Timer timer) {
+    public OngoingEvaluation withTimer(final Timer timer) {
       this.timer = timer;
       return this;
     }
 
-    public ExecutableCatchEvent event() {
-      return event;
+    EvalResult getResult() {
+      return new EvalResult(event, messageName, correlationKey, timer);
     }
+  }
+
+  private record EvalResult(
+      ExecutableCatchEvent event,
+      DirectBuffer messageName,
+      DirectBuffer correlationKey,
+      Timer timer) {
 
     public boolean isMessage() {
       return event.isMessage();
