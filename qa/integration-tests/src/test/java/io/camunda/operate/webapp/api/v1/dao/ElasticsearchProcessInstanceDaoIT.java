@@ -6,6 +6,7 @@
 package io.camunda.operate.webapp.api.v1.dao;
 
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
+import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.PROCESS_DEFINITION_KEY;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -245,6 +246,34 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
       assertThat(processInstanceResults.getTotal()).isEqualTo(3);
       List<ProcessInstance> processDefinitions = processInstanceResults.getItems();
       assertThat(processDefinitions).hasSize(3);
+    });
+  }
+
+  @Test
+  public void shouldFilterByProcessDefinition() throws Exception {
+    given(() -> {
+      deployProcesses(
+          "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn",
+          "error-end-event.bpmn", "intermediate-throw-event.bpmn", "message-end-event.bpmn");
+      startProcesses("demoProcess", "errorProcess", "complexProcess",
+          "error-end-process", "intermediate-throw-event-process", "message-end-event-process");
+    });
+
+    when(() ->
+        processInstanceResults = dao.search(new Query<ProcessInstance>()
+            .setSize(2)
+            .setSort(Sort.listOf(BPMN_PROCESS_ID, Order.ASC))));
+        final Long processDefinitionKey = processInstanceResults.getItems().get(1).getProcessDefinitionKey();
+    processInstanceResults = dao.search(new Query<ProcessInstance>()
+        .setFilter(new ProcessInstance()
+            .setProcessDefinitionKey(processDefinitionKey))
+        .setSort(Sort.listOf(BPMN_PROCESS_ID, Order.ASC)));
+    then(() -> {
+      assertThat(processInstanceResults.getTotal()).isEqualTo(1);
+      List<ProcessInstance> processInstances = processInstanceResults.getItems();
+      assertThat(processInstances).hasSize(1);
+      assertThat(processInstances).extracting(PROCESS_DEFINITION_KEY)
+          .containsExactly(processDefinitionKey);
     });
   }
 

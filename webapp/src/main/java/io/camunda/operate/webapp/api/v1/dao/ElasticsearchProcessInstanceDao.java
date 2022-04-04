@@ -21,8 +21,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.es.writer.ProcessInstanceWriter;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -123,6 +121,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
     queryBuilders.add(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     if (filter != null) {
       queryBuilders.add(buildTermQuery(ProcessInstance.KEY, filter.getKey()));
+      queryBuilders.add(buildTermQuery(ProcessInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
       queryBuilders.add(buildTermQuery(ProcessInstance.PARENT_KEY, filter.getParentKey()));
       queryBuilders.add(buildTermQuery(ProcessInstance.VERSION, filter.getProcessVersion()));
       queryBuilders.add(buildTermQuery(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
