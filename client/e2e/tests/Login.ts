@@ -55,7 +55,7 @@ test('Log out', async (t) => {
 
 test('Redirect to initial page after login', async (t) => {
   await t.expect(await getPathname()).eql('/login');
-  await t.navigateTo('/instances?active=true&incidents=true');
+  await t.navigateTo('/processes?active=true&incidents=true');
   await t.expect(await getPathname()).eql('/login');
 
   await t
@@ -65,7 +65,7 @@ test('Redirect to initial page after login', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({

@@ -34,7 +34,7 @@ test('Scrolling behavior - root level', async (t) => {
     },
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/instances/${processInstanceKey}`);
+  await t.navigateTo(`/processes/${processInstanceKey}`);
 
   await t
     .expect(screen.queryByTestId(`node-details-${processInstanceKey}`).exists)
@@ -107,7 +107,7 @@ test('Scrolling behaviour - tree level', async (t) => {
     },
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/instances/${processInstanceKey}`);
+  await t.navigateTo(`/processes/${processInstanceKey}`);
 
   const withinFirstSubtree = within(
     screen.queryAllByTestId(/^tree-node-/).nth(4)

@@ -73,10 +73,10 @@ const AddMode: Story = () => {
   }, []);
 
   return (
-    <MemoryRouter initialEntries={['/instances/6755399441055885']}>
+    <MemoryRouter initialEntries={['/processes/6755399441055885']}>
       <Routes>
         <Route
-          path="/instances/:processInstanceId"
+          path="/processes/:processInstanceId"
           element={
             <Wrapper>
               <Styled.VariablesPanel>
@@ -136,10 +136,10 @@ const EditMode: Story = () => {
   }, []);
 
   return (
-    <MemoryRouter initialEntries={['/instances/6755399441055885']}>
+    <MemoryRouter initialEntries={['/processes/6755399441055885']}>
       <Routes>
         <Route
-          path="/instances/:processInstanceId"
+          path="/processes/:processInstanceId"
           element={
             <Wrapper>
               <Styled.VariablesPanel>
@@ -189,10 +189,10 @@ const WithActiveOperations: Story = () => {
   }, []);
 
   return (
-    <MemoryRouter initialEntries={['/instances/6755399441055885']}>
+    <MemoryRouter initialEntries={['/processes/6755399441055885']}>
       <Routes>
         <Route
-          path="/instances/:processInstanceId"
+          path="/processes/:processInstanceId"
           element={
             <Wrapper>
               <Styled.VariablesPanel>

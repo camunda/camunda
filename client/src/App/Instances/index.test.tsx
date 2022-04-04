@@ -33,19 +33,19 @@ import {LocationLog} from 'modules/utils/LocationLog';
 
 jest.mock('modules/utils/bpmn');
 
-function getWrapper(initialPath: string = '/instances') {
+function getWrapper(initialPath: string = '/processes') {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/instances" element={children} />
+            <Route path="/processes" element={children} />
           </Routes>
-          <Link to="/instances?active=true">go to active</Link>
-          <Link to="/instances?process=eventBasedGatewayProcess&version=1">
+          <Link to="/processes?active=true">go to active</Link>
+          <Link to="/processes?process=eventBasedGatewayProcess&version=1">
             go to event based
           </Link>
-          <Link to="/instances">go to no filters</Link>
+          <Link to="/processes">go to no filters</Link>
           <LocationLog />
         </MemoryRouter>
       </ThemeProvider>
@@ -87,7 +87,7 @@ describe('Instances', () => {
 
   it('should render title and document title', () => {
     render(<Instances />, {
-      wrapper: getWrapper('/instances?incidents=true&active=true'),
+      wrapper: getWrapper('/processes?incidents=true&active=true'),
     });
 
     expect(screen.getByText('Operate Instances')).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe('Instances', () => {
 
   it('should render page components', async () => {
     render(<Instances />, {
-      wrapper: getWrapper('/instances?active=true&incidents=true'),
+      wrapper: getWrapper('/processes?active=true&incidents=true'),
     });
 
     // diagram panel
@@ -135,7 +135,7 @@ describe('Instances', () => {
     );
 
     render(<Instances />, {
-      wrapper: getWrapper('/instances?active=true&incidents=true'),
+      wrapper: getWrapper('/processes?active=true&incidents=true'),
     });
 
     expect(instanceSelectionStore.state).toEqual({
@@ -192,7 +192,7 @@ describe('Instances', () => {
     );
 
     render(<Instances />, {
-      wrapper: getWrapper('/instances?process=bigVarProcess&version=1'),
+      wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
     });
 
     await waitFor(() =>

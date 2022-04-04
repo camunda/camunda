@@ -48,10 +48,10 @@ jest.mock('modules/notifications', () => ({
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/instances']}>
+      <MemoryRouter initialEntries={['/processes']}>
         <Routes>
-          <Route path="/instances/:processInstanceId" element={children} />
-          <Route path="/instances" element={children} />
+          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path="/processes" element={children} />
         </Routes>
         <LocationLog />
       </MemoryRouter>
@@ -235,7 +235,7 @@ describe('Operations', () => {
       }
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -251,7 +251,7 @@ describe('Operations', () => {
     );
 
     expect(mockDisplayNotification).not.toHaveBeenCalled();
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
   });
 
   describe('Cancel Operation', () => {
@@ -344,7 +344,7 @@ describe('Operations', () => {
       );
 
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/instances/${rootInstanceId}`
+        `/processes/${rootInstanceId}`
       );
     });
   });

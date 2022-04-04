@@ -44,14 +44,14 @@ type Props = {
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
-function getWrapper(initialPath: string = '/instances/4294980768') {
+function getWrapper(initialPath: string = '/processes/4294980768') {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/instances/:processInstanceId" element={children} />
-            <Route path="/instances" element={<>instances page</>} />
+            <Route path="/processes/:processInstanceId" element={children} />
+            <Route path="/processes" element={<>instances page</>} />
           </Routes>
           <LocationLog />
         </MemoryRouter>
@@ -186,7 +186,7 @@ describe('Instance', () => {
       )
     );
 
-    render(<Instance />, {wrapper: getWrapper('/instances/123')});
+    render(<Instance />, {wrapper: getWrapper('/processes/123')});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe('Instance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
       expect(screen.getByTestId('search')).toHaveTextContent(
         '?active=true&incidents=true'
       );

@@ -29,7 +29,7 @@ const createWrapper = (initialPath: string = '/decisions') => {
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
             <Route path="/decisions" element={children} />
-            <Route path="/instances/:processInstanceId" element={<></>} />
+            <Route path="/processes/:processInstanceId" element={<></>} />
             <Route path="/decisions/:decisionInstanceId" element={<></>} />
           </Routes>
           <LocationLog />
@@ -256,7 +256,7 @@ describe('<InstancesTable />', () => {
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/instances/2251799813689544'
+      '/processes/2251799813689544'
     );
   });
 

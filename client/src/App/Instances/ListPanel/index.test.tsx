@@ -33,7 +33,7 @@ function createWrapper(initialPath: string = '/') {
           <MemoryRouter initialEntries={[initialPath]}>
             {children}
             <ListFooter />
-            <Link to="/instances?incidents=true&active=true&process=bigVarProcess">
+            <Link to="/processes?incidents=true&active=true&process=bigVarProcess">
               go to big var
             </Link>
           </MemoryRouter>
@@ -87,7 +87,7 @@ describe('ListPanel', () => {
       instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
-        wrapper: createWrapper('/instances?incidents=true&active=true'),
+        wrapper: createWrapper('/processes?incidents=true&active=true'),
       });
 
       await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -443,7 +443,7 @@ describe('ListPanel', () => {
       );
 
       render(<ListPanel />, {
-        wrapper: createWrapper('/instances?incidents=true&active=true'),
+        wrapper: createWrapper('/processes?incidents=true&active=true'),
       });
 
       instancesStore.init(true);
@@ -487,7 +487,7 @@ describe('ListPanel', () => {
       );
 
       render(<ListPanel />, {
-        wrapper: createWrapper('/instances?incidents=true&active=true'),
+        wrapper: createWrapper('/processes?incidents=true&active=true'),
       });
 
       instancesStore.init(true);
@@ -544,7 +544,7 @@ describe('ListPanel', () => {
       await instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
-        wrapper: createWrapper('/instances?incidents=true&active=true'),
+        wrapper: createWrapper('/processes?incidents=true&active=true'),
       });
 
       await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));

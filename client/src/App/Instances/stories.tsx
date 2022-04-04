@@ -29,18 +29,18 @@ const mocks = [
 ];
 
 export default {
-  title: 'Pages/Instances',
+  title: 'Pages/Processes',
 };
 
 const Success: Story = () => {
   return (
     <MemoryRouter
       initialEntries={[
-        '/instances?active=true&incidents=true&process=bigVarProcess&version=1',
+        '/processes?active=true&incidents=true&process=bigVarProcess&version=1',
       ]}
     >
       <Routes>
-        <Route path="/instances" element={<Layout />}>
+        <Route path="/processes" element={<Layout />}>
           <Route index element={<InstancesComponent />} />
         </Route>
       </Routes>
@@ -81,9 +81,9 @@ Success.parameters = {
 
 const Error: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances?incidents=true']}>
+    <MemoryRouter initialEntries={['/processes?incidents=true']}>
       <Routes>
-        <Route path="/instances" element={<Layout />}>
+        <Route path="/processes" element={<Layout />}>
           <Route index element={<InstancesComponent />} />
         </Route>
       </Routes>
@@ -126,11 +126,11 @@ const Skeleton: Story = () => {
   return (
     <MemoryRouter
       initialEntries={[
-        '/instances?active=true&incidents=true&process=bigVarProcess&version=1',
+        '/processes?active=true&incidents=true&process=bigVarProcess&version=1',
       ]}
     >
       <Routes>
-        <Route path="/instances" element={<Layout />}>
+        <Route path="/processes" element={<Layout />}>
           <Route index element={<InstancesComponent />} />
         </Route>
       </Routes>
@@ -161,9 +161,9 @@ Skeleton.parameters = {
 
 const NoFilterApplied: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances']}>
+    <MemoryRouter initialEntries={['/processes']}>
       <Routes>
-        <Route path="/instances" element={<Layout />}>
+        <Route path="/processes" element={<Layout />}>
           <Route index element={<InstancesComponent />} />
         </Route>
       </Routes>
@@ -188,9 +188,9 @@ NoFilterApplied.parameters = {
 
 const Empty: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances?active=true&incidents=true']}>
+    <MemoryRouter initialEntries={['/processes?active=true&incidents=true']}>
       <Routes>
-        <Route path="/instances" element={<Layout />}>
+        <Route path="/processes" element={<Layout />}>
           <Route index element={<InstancesComponent />} />
         </Route>
       </Routes>
@@ -217,11 +217,11 @@ const NoVersionSelected: Story = () => {
   return (
     <MemoryRouter
       initialEntries={[
-        '/instances?active=true&incidents=true&process=complexProcess&version=all',
+        '/processes?active=true&incidents=true&process=complexProcess&version=all',
       ]}
     >
       <Routes>
-        <Route path="/instances" element={<Layout />}>
+        <Route path="/processes" element={<Layout />}>
           <Route index element={<InstancesComponent />} />
         </Route>
       </Routes>

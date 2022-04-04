@@ -45,10 +45,10 @@ const instanceMock = createInstance({id: '1'});
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={[`/instances/1`]}>
+      <MemoryRouter initialEntries={[`/processes/1`]}>
         <Routes>
           <Route
-            path="/instances/:processInstanceId"
+            path="/processes/:processInstanceId"
             element={
               <Form onSubmit={() => {}}>
                 {({handleSubmit}) => {

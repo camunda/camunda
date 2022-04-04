@@ -26,7 +26,7 @@ test('Navigate to called and parent instances', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/instances/${callActivityProcessInstance.processInstanceKey}`
+    `/processes/${callActivityProcessInstance.processInstanceKey}`
   );
 
   await t

@@ -48,7 +48,7 @@ test('Navigating in header should affect filters and url correctly', async (t) =
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -99,7 +99,7 @@ test('Instance IDs filter', async (t) => {
   // changes reflected in the url
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -131,7 +131,7 @@ test('Instance IDs filter', async (t) => {
   // changes reflected in the url
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -211,7 +211,7 @@ test('Error Message filter', async (t) => {
   // changes reflected in the url
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -234,7 +234,7 @@ test('Error Message filter', async (t) => {
   // changes reflected in the url
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -311,7 +311,7 @@ test('End Date filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -336,7 +336,7 @@ test('End Date filter', async (t) => {
   // changes reflected in the url
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -378,7 +378,7 @@ test('Variable filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -402,7 +402,7 @@ test('Variable filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -473,7 +473,7 @@ test('Operation ID filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -497,7 +497,7 @@ test('Operation ID filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -531,7 +531,7 @@ test('Checkboxes', async (t) => {
     ],
   });
 
-  await t.expect(await getPathname()).eql('/instances');
+  await t.expect(await getPathname()).eql('/processes');
   await t.click(active.field);
 
   await validateCheckedState({
@@ -547,7 +547,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -564,7 +564,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -589,7 +589,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -614,7 +614,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -633,7 +633,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -658,7 +658,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -678,7 +678,7 @@ test('Checkboxes', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -701,7 +701,7 @@ test('Process Filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -736,7 +736,7 @@ test('Process Filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -764,7 +764,7 @@ test('Process Filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -784,7 +784,7 @@ test('Process Filter', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -819,7 +819,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -857,7 +857,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -886,7 +886,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -916,7 +916,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -935,7 +935,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -960,7 +960,7 @@ test('Should set filters from url', async (t) => {
   } = InstancesPage.Filters;
 
   await t.navigateTo(
-    `/instances?${convertToQueryString({
+    `/processes?${convertToQueryString({
       active: 'true',
       incidents: 'true',
       completed: 'true',

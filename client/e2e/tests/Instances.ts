@@ -140,7 +140,7 @@ test('Select flow node in diagram', async (t) => {
     )
     .ok()
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -168,7 +168,7 @@ test('Select flow node in diagram', async (t) => {
     .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1)
     .expect(await getPathname())
-    .eql('/instances')
+    .eql('/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -184,7 +184,7 @@ test('Select flow node in diagram', async (t) => {
 
 test('Wait for process creation', async (t) => {
   await t.navigateTo(
-    '/instances?active=true&incidents=true&process=testProcess&version=1'
+    '/processes?active=true&incidents=true&process=testProcess&version=1'
   );
 
   await t.expect(screen.queryByTestId('table-skeleton').exists).ok();

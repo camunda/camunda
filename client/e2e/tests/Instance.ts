@@ -28,7 +28,7 @@ test('Instance with an incident - instance header', async (t) => {
   } = t.fixtureCtx;
 
   const instanceId = instanceWithIncident.processInstanceKey;
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`/processes/${instanceId}`);
 
   await t
     .expect(screen.queryByTestId('instance-header-skeleton').exists)
@@ -67,7 +67,7 @@ test('Instance with an incident - history panel', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/instances/${processWithMultipleTokens.processInstanceKey}`
+    `/processes/${processWithMultipleTokens.processInstanceKey}`
   );
   await t
     .expect(screen.queryByText('Instance History').exists)
@@ -130,7 +130,7 @@ test('Instance with an incident - diagram', async (t) => {
 
   const instanceId = instanceWithIncident.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`/processes/${instanceId}`);
 
   await t
     .expect(screen.queryByTestId('diagram').exists)
@@ -175,7 +175,7 @@ test('Instance with an incident - resolve incidents', async (t) => {
 
   const instanceId = instanceWithIncidentToResolve.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`/processes/${instanceId}`);
 
   // click and expand incident bar
   await t
@@ -298,7 +298,7 @@ test('Instance with an incident - incident bar', async (t) => {
 
   const instanceId = instanceWithIncidentForIncidentsBar.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`/processes/${instanceId}`);
 
   // click and expand incident bar
   await t
@@ -456,7 +456,7 @@ test('Instance with an incident - cancel an instance', async (t) => {
 
   const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`/processes/${instanceId}`);
 
   await t
     .expect(
@@ -508,7 +508,7 @@ test('Instance without an incident', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/instances/${instanceWithoutAnIncident.processInstanceKey}`
+    `/processes/${instanceWithoutAnIncident.processInstanceKey}`
   );
 
   await t

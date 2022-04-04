@@ -93,7 +93,7 @@ describe('<MetricPanel />', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
     userEvent.click(screen.getByText('Instances with Incident'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent('?incidents=true');
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -106,21 +106,21 @@ describe('<MetricPanel />', () => {
 
     userEvent.click(screen.getByText('Instances with Incident'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
     );
 
     userEvent.click(screen.getByText('Active Instances'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true'
     );
 
     userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true&active=true'
     );
@@ -139,7 +139,7 @@ describe('<MetricPanel />', () => {
 
     userEvent.click(screen.getByText('Active Instances'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent('?active=true');
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -154,7 +154,7 @@ describe('<MetricPanel />', () => {
 
     userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?incidents=true&active=true'
     );

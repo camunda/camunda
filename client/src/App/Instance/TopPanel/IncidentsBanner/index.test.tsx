@@ -27,9 +27,9 @@ const {fetchIncidents} = incidentsStore;
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/instances/1']}>
+      <MemoryRouter initialEntries={['/processes/1']}>
         <Routes>
-          <Route path="/instances/:processInstanceId" element={children} />
+          <Route path="/processes/:processInstanceId" element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

@@ -15,12 +15,12 @@ import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 
-const createWrapper = (initialPath: string = '/instances/123') => {
+const createWrapper = (initialPath: string = '/processes/123') => {
   const Wrapper: React.FC = ({children}) => (
     <ThemeProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/instances/:processInstanceId" element={children} />
+          <Route path="/processes/:processInstanceId" element={children} />
         </Routes>
         <LocationLog />
       </MemoryRouter>
@@ -84,10 +84,10 @@ describe('User', () => {
     await currentInstanceStore.fetchCurrentInstance();
 
     render(<Breadcrumb />, {
-      wrapper: createWrapper('/instances/123'),
+      wrapper: createWrapper('/processes/123'),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances/123');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes/123');
 
     userEvent.click(
       screen.getByRole('link', {
@@ -95,7 +95,7 @@ describe('User', () => {
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/instances/546546543276'
+      '/processes/546546543276'
     );
 
     userEvent.click(
@@ -104,7 +104,7 @@ describe('User', () => {
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/instances/968765314354'
+      '/processes/968765314354'
     );
 
     userEvent.click(
@@ -113,7 +113,7 @@ describe('User', () => {
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/instances/2251799813685447'
+      '/processes/2251799813685447'
     );
   });
 });

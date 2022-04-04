@@ -29,7 +29,7 @@ test('Validations for add variable works correctly', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
-  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
@@ -189,7 +189,7 @@ test('Validations for edit variable works correctly', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
-  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
@@ -310,7 +310,7 @@ test('Edit variables', async (t) => {
     initialData: {instance},
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
@@ -355,7 +355,7 @@ test('Edit variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`/instances/${instance.processInstanceKey}`)
+    .navigateTo(`/processes/${instance.processInstanceKey}`)
     .expect(Selector('[data-testid="testData"]').exists)
     .ok();
 });
@@ -365,7 +365,7 @@ test('Add variables', async (t) => {
     initialData: {instance},
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
@@ -422,7 +422,7 @@ test('Add variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`/instances/${instance.processInstanceKey}`)
+    .navigateTo(`/processes/${instance.processInstanceKey}`)
     .expect(screen.queryByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
     .expect(screen.queryByRole('cell', {name: '"secondTestValue"'}).exists)
@@ -466,7 +466,7 @@ test('Should not change add variable state when enter is pressed', async (t) => 
   const {
     initialData: {instance},
   } = t.fixtureCtx;
-  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
@@ -492,7 +492,7 @@ test('Remove fields when instance is canceled', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
-  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
@@ -530,7 +530,7 @@ test('Infinite scrolling', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/instances/${instanceWithManyVariables.processInstanceKey}`
+    `/processes/${instanceWithManyVariables.processInstanceKey}`
   );
 
   await t.expect(screen.queryByTestId('variables-list').exists).ok();

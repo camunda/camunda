@@ -49,10 +49,10 @@ jest.mock('modules/notifications', () => {
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/instances/1']}>
+      <MemoryRouter initialEntries={['/processes/1']}>
         <Routes>
-          <Route path="/instances/:processInstanceId" element={children} />
-          <Route path="/instances" element={children} />
+          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path="/processes" element={children} />
         </Routes>
         <LocationLog />
       </MemoryRouter>
@@ -185,12 +185,12 @@ describe('InstanceHeader', () => {
       screen.getByTestId('instance-header-skeleton')
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances/1');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes/1');
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(await screen.findByRole('link', {name: /view all/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
@@ -453,7 +453,7 @@ describe('InstanceHeader', () => {
       screen.getByTestId('instance-header-skeleton')
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances/1');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes/1');
     userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -478,7 +478,7 @@ describe('InstanceHeader', () => {
 
     await waitFor(() => expect(onPollingFailure).toHaveBeenCalled());
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/instances');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
 
     jest.clearAllTimers();
     jest.useRealTimers();

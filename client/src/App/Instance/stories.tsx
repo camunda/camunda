@@ -78,9 +78,9 @@ export default {
 
 const RunningInstance: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+    <MemoryRouter initialEntries={['/processes/2251799813685591']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -112,7 +112,7 @@ RunningInstance.parameters = {
 
 const Error: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+    <MemoryRouter initialEntries={['/processes/2251799813685591']}>
       <Routes>
         <Route path="instances/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
@@ -148,9 +148,9 @@ Error.parameters = {
 
 const Skeleton: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+    <MemoryRouter initialEntries={['/processes/2251799813685591']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -169,9 +169,9 @@ Skeleton.parameters = {
 
 const Incident: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/6755399441057842']}>
+    <MemoryRouter initialEntries={['/processes/6755399441057842']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -209,9 +209,9 @@ Incident.parameters = {
 
 const CompletedInstance: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/9007199254741571']}>
+    <MemoryRouter initialEntries={['/processes/9007199254741571']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -245,9 +245,9 @@ CompletedInstance.parameters = {
 
 const CanceledInstance: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/4503599627371108']}>
+    <MemoryRouter initialEntries={['/processes/4503599627371108']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -294,9 +294,9 @@ const MultiInstanceSelected: Story = () => {
   }, []);
 
   return (
-    <MemoryRouter initialEntries={['/instances/2251799813686430']}>
+    <MemoryRouter initialEntries={['/processes/2251799813686430']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -334,9 +334,9 @@ MultiInstanceSelected.parameters = {
 
 const ChildInstance: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+    <MemoryRouter initialEntries={['/processes/2251799813685591']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>
@@ -368,9 +368,9 @@ ChildInstance.parameters = {
 
 const ChildInstanceWithLongParentHierarchy: Story = () => {
   return (
-    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+    <MemoryRouter initialEntries={['/processes/2251799813685591']}>
       <Routes>
-        <Route path="instances/:processInstanceId" element={<Layout />}>
+        <Route path="processes/:processInstanceId" element={<Layout />}>
           <Route index element={<InstanceDetail />} />
         </Route>
       </Routes>

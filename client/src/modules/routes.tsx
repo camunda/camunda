@@ -21,10 +21,10 @@ const Paths = {
     return '/';
   },
   instances() {
-    return '/instances';
+    return '/processes';
   },
   instance(processInstanceId: string = ':processInstanceId') {
-    return `/instances/${processInstanceId}`;
+    return `/processes/${processInstanceId}`;
   },
   decisions() {
     return '/decisions';

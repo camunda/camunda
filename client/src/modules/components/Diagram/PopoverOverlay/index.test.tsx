@@ -42,9 +42,9 @@ import {LocationLog} from 'modules/utils/LocationLog';
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/instances/1']}>
+      <MemoryRouter initialEntries={['/processes/1']}>
         <Routes>
-          <Route path="/instances/:processInstanceId" element={children} />
+          <Route path="/processes/:processInstanceId" element={children} />
           <Route path="/decisions/:decisionInstanceId" element={<></>} />
         </Routes>
         <LocationLog />

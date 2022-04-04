@@ -63,7 +63,7 @@ describe('DiagramPanel', () => {
 
   it('should render header', async () => {
     render(<DiagramPanel />, {
-      wrapper: getWrapper('/instances?process=bigVarProcess&version=1'),
+      wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe('DiagramPanel', () => {
 
   it('should show a message when no process version is selected', async () => {
     render(<DiagramPanel />, {
-      wrapper: getWrapper('/instances?process=bigVarProcess&version=all'),
+      wrapper: getWrapper('/processes?process=bigVarProcess&version=all'),
     });
 
     expect(
@@ -119,7 +119,7 @@ describe('DiagramPanel', () => {
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
     render(<DiagramPanel />, {
       wrapper: getWrapper(
-        '/instances?process=eventBasedGatewayProcess&version=all'
+        '/processes?process=eventBasedGatewayProcess&version=all'
       ),
     });
 

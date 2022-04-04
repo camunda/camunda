@@ -22,7 +22,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 
 function createWrapper(
   initialPath: string = '/',
-  referrer: To = {pathname: '/instances'}
+  referrer: To = {pathname: '/processes'}
 ) {
   const Wrapper: React.FC = ({children}) => {
     return (
@@ -113,7 +113,7 @@ describe('<Login />', () => {
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/instances')
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/processes')
     );
   });
 
@@ -124,7 +124,7 @@ describe('<Login />', () => {
 
     render(<Login />, {
       wrapper: createWrapper('/login', {
-        pathname: '/instances',
+        pathname: '/processes',
         search: '?gseUrl=https://www.testUrl.com',
       }),
     });
@@ -136,7 +136,7 @@ describe('<Login />', () => {
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/instances')
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/processes')
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https://www.testUrl.com'

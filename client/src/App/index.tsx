@@ -18,7 +18,7 @@ import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {Paths} from 'modules/routes';
-import {HashRouterMigrator} from './HashRouterMigrator';
+import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
 import {Layout} from './Layout';
@@ -33,7 +33,7 @@ const App: React.FC = () => {
         <CommonUiContext />
         <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
           <GettingStartedExperience />
-          <HashRouterMigrator />
+          <RedirectDeprecatedRoutes />
           <SessionWatcher />
           <TrackPagination />
           <Routes>
