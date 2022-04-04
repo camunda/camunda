@@ -1,5 +1,5 @@
 {
-  "numberOfProcessInstances": 100000000,
+  "numberOfProcessInstances": 10000000,
   "processDefinitions": "AnalysisTesting:1",
   "numberOfDecisionInstances": 5000000,
   "decisionDefinitions": "DecideDish:1"
