@@ -304,10 +304,9 @@ public abstract class AbstractAlertIT extends AbstractIT {
     );
   }
 
-
-  private SingleProcessReportDefinitionRequestDto getProcessNumberReportDefinitionDto(String collectionId,
-                                                                                      String processDefinitionKey,
-                                                                                      String processDefinitionVersion) {
+  protected SingleProcessReportDefinitionRequestDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                                        String processDefinitionKey,
+                                                                                        String processDefinitionVersion) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
@@ -380,7 +379,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected void setWebhookConfiguration(final Integer webhookPort, final String payload) {
     Map<String, WebhookConfiguration> webhookConfigurationMap = new HashMap<>();
-
 
 
     final WebhookConfiguration webhook1 = uiConfigurationClient.createWebhookConfiguration(

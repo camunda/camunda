@@ -111,14 +111,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return view.getProperties();
   }
 
-  @JsonIgnore
-  public boolean isFrequencyReport() {
-    return Optional.ofNullable(view)
-      .map(ProcessViewDto::getFirstProperty)
-      .map(p -> p.equals(ViewProperty.FREQUENCY))
-      .orElse(false);
-  }
-
   @Override
   public List<String> createCommandKeys() {
     final String groupByCommandKey = groupBy == null ? MISSING_COMMAND_PART_PLACEHOLDER : groupBy.createCommandKey();
