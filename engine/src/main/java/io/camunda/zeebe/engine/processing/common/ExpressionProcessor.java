@@ -49,19 +49,6 @@ public final class ExpressionProcessor {
 
   /**
    * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
-   * secondaryContext} for all lookups which it cannot find in its primary evaluation context
-   *
-   * @param secondaryContext fallback evaluation context
-   * @return new instance which uses {@code secondaryContext} as fallback
-   */
-  public ExpressionProcessor withSecondaryContext(final EvaluationContext secondaryContext) {
-    final ContextLookup combinedLookup =
-        scopeKey -> contextLookup.getContext(scopeKey).combine(secondaryContext);
-    return new ExpressionProcessor(expressionLanguage, combinedLookup);
-  }
-
-  /**
-   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
    * primaryContext} for all lookups. Only if it doesn't find a variable in {@code primaryContext},
    * it will lookup variables in the evaluation context of {@code this} evaluation processor
    *
@@ -71,6 +58,19 @@ public final class ExpressionProcessor {
   public ExpressionProcessor withPrimaryContext(final EvaluationContext primaryContext) {
     final ContextLookup combinedLookup =
         scopeKey -> primaryContext.combine(contextLookup.getContext(scopeKey));
+    return new ExpressionProcessor(expressionLanguage, combinedLookup);
+  }
+
+  /**
+   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
+   * secondaryContext} for all lookups which it cannot find in its primary evaluation context
+   *
+   * @param secondaryContext fallback evaluation context
+   * @return new instance which uses {@code secondaryContext} as fallback
+   */
+  public ExpressionProcessor withSecondaryContext(final EvaluationContext secondaryContext) {
+    final ContextLookup combinedLookup =
+        scopeKey -> contextLookup.getContext(scopeKey).combine(secondaryContext);
     return new ExpressionProcessor(expressionLanguage, combinedLookup);
   }
 
