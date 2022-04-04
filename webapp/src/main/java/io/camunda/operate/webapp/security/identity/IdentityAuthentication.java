@@ -7,12 +7,12 @@
 package io.camunda.operate.webapp.security.identity;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
-import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.identity.sdk.authentication.UserDetails;
+import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
@@ -164,7 +164,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     return RetryOperation.<T>newBuilder()
         .noOfRetry(10)
         .delayInterval(500, TimeUnit.MILLISECONDS)
-        .retryOn(RestException.class)
+        .retryOn(IdentityException.class)
         .retryConsumer(retryConsumer)
         .build()
         .retry();

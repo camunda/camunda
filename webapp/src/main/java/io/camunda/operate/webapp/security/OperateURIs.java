@@ -25,9 +25,6 @@ public final class OperateURIs {
 
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
 
-  public static final String IAM_CALLBACK_URI = "/iam-callback";
-  public static final String IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback";
-
   public static final String// For redirects after login
       REQUESTED_URL = "requestedUrl"
   ;

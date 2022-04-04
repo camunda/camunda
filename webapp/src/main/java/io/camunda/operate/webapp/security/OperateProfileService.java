@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 public class OperateProfileService {
 
   public static final String SSO_AUTH_PROFILE = "sso-auth";
-  public static final String IAM_AUTH_PROFILE = "iam-auth";
   public static final String IDENTITY_AUTH_PROFILE = "identity-auth";
   public static final String AUTH_PROFILE = "auth";
   public static final String DEFAULT_AUTH = AUTH_PROFILE;
@@ -24,11 +23,10 @@ public class OperateProfileService {
   public static final Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE,
       LDAP_AUTH_PROFILE,
       SSO_AUTH_PROFILE,
-      IDENTITY_AUTH_PROFILE,
-      IAM_AUTH_PROFILE);
+      IDENTITY_AUTH_PROFILE
+  );
 
-  private static final Set<String> CANT_LOGOUT_AUTH_PROFILES =
-      Set.of(SSO_AUTH_PROFILE, IAM_AUTH_PROFILE);
+  private static final Set<String> CANT_LOGOUT_AUTH_PROFILES = Set.of(SSO_AUTH_PROFILE);
 
   @Autowired
   private Environment environment;
@@ -48,10 +46,6 @@ public class OperateProfileService {
     return Arrays.asList(environment.getActiveProfiles()).contains(SSO_AUTH_PROFILE);
   }
 
-  public boolean isIAMProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(IAM_AUTH_PROFILE);
-  }
-
   public boolean isIdentityProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(IDENTITY_AUTH_PROFILE);
   }
@@ -62,6 +56,6 @@ public class OperateProfileService {
   }
 
   public boolean isLoginDelegated() {
-    return isIAMProfile() || isIdentityProfile() || isSSOProfile();
+    return isIdentityProfile() || isSSOProfile();
   }
 }

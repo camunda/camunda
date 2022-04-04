@@ -27,9 +27,7 @@
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
     <version.zeebe>8.0.0-rc1</version.zeebe>
-    <version.iam>1.3.5</version.iam>
     <version.identity>8.0.0-rc1</version.identity>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.2</version.log4j>
@@ -89,12 +87,6 @@
         <version>${version.zeebe}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-cloud-iam-sdk</artifactId>
-        <version>${version.iam}</version>
       </dependency>
 
       <dependency>
@@ -488,7 +480,7 @@
 
     <repository>
       <id>camunda-shared-services-snapshot</id>
-      <name>IAM Snapshot Repository</name>
+      <name>Shared services Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-shared-services-snapshots/</url>
       <releases>
         <enabled>false</enabled>
@@ -500,7 +492,7 @@
 
     <repository>
       <id>camunda-shared-services</id>
-      <name>IAM Repository</name>
+      <name>Shared services Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-shared-services/</url>
       <releases>
         <enabled>true</enabled>

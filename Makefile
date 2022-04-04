@@ -33,16 +33,6 @@ env-sso-up:
        CAMUNDA_OPERATE_CLOUD_ORGANIZATIONID=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
 	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,sso-auth
 
-.PHONY: env-iam-up
-env-iam-up:
-	@docker-compose -f ./config/docker-compose.iam-backend.yml up -d \
-	&& docker-compose up -d elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=false \
-	&& CAMUNDA_OPERATE_IAM_ISSUER_URL=http://app.iam.localhost \
-       CAMUNDA_OPERATE_IAM_CLIENT_ID=operate \
-       CAMUNDA_OPERATE_IAM_CLIENT_SECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7 \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,iam-auth
-
 .PHONY: env-identity-up
 env-identity-up:
 	@docker-compose -f ./config/docker-compose.identity.yml up -d \
@@ -59,7 +49,6 @@ env-identity-up:
 env-down:
 	@docker-compose down -v \
 	&& docker-compose -f ./config/docker-compose.identity.yml down -v \
-	&& docker-compose -f ./config/docker-compose.iam-backend.yml down -v \
 	&& mvn clean
 
 .PHONY: env-status

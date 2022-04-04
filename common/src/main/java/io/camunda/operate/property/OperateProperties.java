@@ -78,9 +78,6 @@ public class OperateProperties {
   private Auth0Properties auth0 = new Auth0Properties();
 
   @NestedConfigurationProperty
-  private IamProperties iam = new IamProperties();
-
-  @NestedConfigurationProperty
   private IdentityProperties identity = new IdentityProperties();
 
   @NestedConfigurationProperty
@@ -232,14 +229,6 @@ public class OperateProperties {
   public OperateProperties setAuth0(final Auth0Properties auth0) {
     this.auth0 = auth0;
     return this;
-  }
-
-  public IamProperties getIam() {
-    return iam;
-  }
-
-  public void setIam(final IamProperties iam) {
-    this.iam = iam;
   }
 
   public IdentityProperties getIdentity() {
