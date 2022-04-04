@@ -131,7 +131,7 @@ public final class CatchEventBehavior {
         .expressionProcessor()
         .evaluateStringExpression(messageNameExpression, scopeKey)
         .map(BufferUtil::wrapString)
-        .map(evaluation::withMessageName);
+        .map(evaluation::recordMessageName);
   }
 
   private Either<Failure, OngoingEvaluation> evaluateCorrelationKey(
@@ -150,7 +150,7 @@ public final class CatchEventBehavior {
         .expressionProcessor()
         .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
         .map(BufferUtil::wrapString)
-        .map(evaluation::withCorrelationKey)
+        .map(evaluation::recordCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
   }
 
@@ -164,7 +164,7 @@ public final class CatchEventBehavior {
     return event
         .getTimerFactory()
         .apply(evaluation.expressionProcessor(), scopeKey)
-        .map(evaluation::withTimer);
+        .map(evaluation::recordTimer);
   }
 
   private void subscribeToMessageEvents(
@@ -370,17 +370,17 @@ public final class CatchEventBehavior {
       return context;
     }
 
-    public OngoingEvaluation withMessageName(final DirectBuffer messageName) {
+    public OngoingEvaluation recordMessageName(final DirectBuffer messageName) {
       this.messageName = messageName;
       return this;
     }
 
-    public OngoingEvaluation withCorrelationKey(final DirectBuffer correlationKey) {
+    public OngoingEvaluation recordCorrelationKey(final DirectBuffer correlationKey) {
       this.correlationKey = correlationKey;
       return this;
     }
 
-    public OngoingEvaluation withTimer(final Timer timer) {
+    public OngoingEvaluation recordTimer(final Timer timer) {
       this.timer = timer;
       return this;
     }
