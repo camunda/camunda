@@ -27,7 +27,10 @@ public class ProcessGoalSorter extends Sorter<ProcessGoalsResponseDto> {
 
   private static final Map<String, Comparator<ProcessGoalsResponseDto>> sortComparators = Map.of(
     ProcessGoalsResponseDto.Fields.processName.toLowerCase(),
-    Comparator.comparing(ProcessGoalsResponseDto::getProcessName)
+    Comparator.comparing(ProcessGoalsResponseDto::getProcessName),
+    ProcessGoalsResponseDto.Fields.owner.toLowerCase(),
+    Comparator.comparing(processGoalsResponseDto -> processGoalsResponseDto.getOwner().getName(),
+                         Comparator.nullsLast(Comparator.naturalOrder()))
   );
 
   private static final Comparator<ProcessGoalsResponseDto> DEFAULT_PROCESS_GOAL_COMPARATOR =

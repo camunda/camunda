@@ -18,7 +18,7 @@ public class ProcessGoalsResponseDto {
 
   private String processName;
   private String processDefinitionKey;
-  private String owner;
+  private ProcessGoalsOwnerResponseDto owner;
   private ProcessDurationGoalsAndResultsDto durationGoals;
 
 }

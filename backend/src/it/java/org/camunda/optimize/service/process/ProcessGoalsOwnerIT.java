@@ -64,7 +64,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertExpectedProcessOwner(DEF_KEY, ownerDto.getOwner());
+    assertExpectedProcessOwner(DEF_KEY, ownerDto.getId());
   }
 
   @Test

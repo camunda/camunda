@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
@@ -42,6 +43,7 @@ import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.SLA
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.TARGET_DURATION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.SECONDS;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -89,13 +91,13 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
         new ProcessGoalsResponseDto(
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
-          null,
+          new ProcessGoalsOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         ),
         new ProcessGoalsResponseDto(
           SECOND_PROCESS_DEFINITION_KEY,
           SECOND_PROCESS_DEFINITION_KEY,
-          null,
+          new ProcessGoalsOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         )
       );
@@ -138,13 +140,13 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
         new ProcessGoalsResponseDto(
           eventProcessDefinitionDto.getName(),
           eventProcessDefinitionDto.getKey(),
-          null,
+          new ProcessGoalsOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         ),
         new ProcessGoalsResponseDto(
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
-          null,
+          new ProcessGoalsOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         )
       );
@@ -170,16 +172,21 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
   }
 
   @ParameterizedTest
-  @MethodSource("getSortOrderAndExpectedProcessNameComparator")
-  public void getProcessGoals_sortByProcessName(final SortOrder sortingOrder,
+  @MethodSource("getSortCriteriaAndExpectedProcessNameComparator")
+  public void getProcessGoals_sortByProcessName(final String sortBy,
+                                                final SortOrder sortingOrder,
                                                 final Comparator<ProcessGoalsResponseDto> comparator) {
     // given
-    deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
-    deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final ProcessDefinitionEngineDto firstDef = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
+    final ProcessDefinitionEngineDto secondDef = deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
     importAllEngineEntitiesFromScratch();
+    setOwnerForProcess(firstDef.getKey(), DEFAULT_USERNAME);
+    setOwnerForProcess(secondDef.getKey(), KERMIT_USER);
 
     // when
-    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalsResponseDto.Fields.processName, sortingOrder);
+    ProcessGoalSorter sorter = new ProcessGoalSorter(sortBy, sortingOrder);
     List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(sorter);
 
     // then
@@ -187,8 +194,9 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
   }
 
   @ParameterizedTest
-  @MethodSource("getSortOrderAndExpectedProcessNameComparator")
-  public void getProcessGoals_useDefinitionKeyForSortOrderForProcessWithNoName(final SortOrder sortOrder,
+  @MethodSource("getProcessNameSortCriteriaAndExpectedProcessNameComparator")
+  public void getProcessGoals_useDefinitionKeyForSortOrderForProcessWithNoName(final String sortBy,
+                                                                               final SortOrder sortOrder,
                                                                                final Comparator<ProcessGoalsResponseDto> comparator) {
     // given
     ProcessDefinitionEngineDto processDefinitionWithName = deploySimpleProcessDefinition(DEF_KEY);
@@ -197,7 +205,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessGoalSorter sorter = new ProcessGoalSorter(ProcessGoalsResponseDto.Fields.processName, sortOrder);
+    ProcessGoalSorter sorter = new ProcessGoalSorter(sortBy, sortOrder);
     List<ProcessGoalsResponseDto> processGoalsDtos = getProcessGoals(sorter);
 
     // then
@@ -223,7 +231,12 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
 
     // then
     assertThat(processGoalsDtos).hasSize(1).containsExactly(
-      new ProcessGoalsResponseDto(DEF_KEY, DEF_KEY, null, new ProcessDurationGoalsAndResultsDto())
+      new ProcessGoalsResponseDto(
+        DEF_KEY,
+        DEF_KEY,
+        new ProcessGoalsOwnerResponseDto(),
+        new ProcessDurationGoalsAndResultsDto()
+      )
     );
   }
 
@@ -258,7 +271,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         DEF_KEY,
         DEF_KEY,
-        null,
+        new ProcessGoalsOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto()
       ));
   }
@@ -320,7 +333,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        null,
+        new ProcessGoalsOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -354,7 +367,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        null,
+        new ProcessGoalsOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -623,7 +636,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        null,
+        new ProcessGoalsOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -635,7 +648,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         SECOND_PROCESS_DEFINITION_KEY,
         SECOND_PROCESS_DEFINITION_KEY,
-        null,
+        new ProcessGoalsOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto()
       )
     );
@@ -672,7 +685,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        null,
+        new ProcessGoalsOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -705,11 +718,46 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private static Stream<Arguments> getSortOrderAndExpectedProcessNameComparator() {
+  private static Stream<Arguments> getProcessNameSortCriteriaAndExpectedProcessNameComparator() {
+    return getSortCriteriaAndExpectedProcessNameComparator()
+      .filter(args -> args.get()[0] == ProcessGoalsResponseDto.Fields.processName);
+  }
+
+  private static Stream<Arguments> getSortCriteriaAndExpectedProcessNameComparator() {
     return Stream.of(
-      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessGoalsResponseDto::getProcessName)),
-      Arguments.of(null, Comparator.comparing(ProcessGoalsResponseDto::getProcessName)),
-      Arguments.of(SortOrder.DESC, Comparator.comparing(ProcessGoalsResponseDto::getProcessName).reversed())
+      Arguments.of(
+        ProcessGoalsResponseDto.Fields.processName,
+        SortOrder.ASC,
+        Comparator.comparing(ProcessGoalsResponseDto::getProcessName)
+      ),
+      Arguments.of(
+        ProcessGoalsResponseDto.Fields.processName,
+        null,
+        Comparator.comparing(ProcessGoalsResponseDto::getProcessName)
+      ),
+      Arguments.of(
+        ProcessGoalsResponseDto.Fields.processName,
+        SortOrder.DESC,
+        Comparator.comparing(ProcessGoalsResponseDto::getProcessName).reversed()
+      ),
+      Arguments.of(
+        ProcessGoalsResponseDto.Fields.owner,
+        SortOrder.ASC,
+        Comparator.comparing(
+          (ProcessGoalsResponseDto processGoalsResponseDto) -> processGoalsResponseDto.getOwner().getName())
+      ),
+      Arguments.of(
+        ProcessGoalsResponseDto.Fields.owner,
+        null,
+        Comparator.comparing(
+          (ProcessGoalsResponseDto processGoalsResponseDto) -> processGoalsResponseDto.getOwner().getName())
+      ),
+      Arguments.of(
+        ProcessGoalsResponseDto.Fields.owner,
+        SortOrder.DESC,
+        Comparator.comparing(
+          (ProcessGoalsResponseDto processGoalsResponseDto) -> processGoalsResponseDto.getOwner().getName()).reversed()
+      )
     );
   }
 

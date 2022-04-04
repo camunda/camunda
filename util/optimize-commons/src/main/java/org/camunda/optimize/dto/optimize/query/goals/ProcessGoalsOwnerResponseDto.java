@@ -13,8 +13,9 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProcessGoalsOwnerDto implements OptimizeDto {
+public class ProcessGoalsOwnerResponseDto implements OptimizeDto {
 
   private String id;
+  private String name;
 
 }

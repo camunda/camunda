@@ -76,7 +76,7 @@ public class ProcessGoalsRestService {
                                       @PathParam("processDefinitionKey") final String processDefKey,
                                       @NotNull @RequestBody ProcessGoalsOwnerDto ownerDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    processGoalsService.updateProcessGoalsOwner(userId, processDefKey, ownerDto.getOwner());
+    processGoalsService.updateProcessGoalsOwner(userId, processDefKey, ownerDto.getId());
   }
 
 }

@@ -9,6 +9,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -81,9 +82,10 @@ public class AbstractProcessGoalsIT extends AbstractIT {
       .extracting(ProcessGoalsResponseDto::getOwner)
       .singleElement()
       .satisfies(processOwner -> assertThat(processOwner)
-        .isEqualTo(expectedOwnerId == null ? null : embeddedOptimizeExtension.getIdentityService()
+        .isEqualTo(expectedOwnerId == null ? new ProcessGoalsOwnerResponseDto()
+                     : new ProcessGoalsOwnerResponseDto(expectedOwnerId, embeddedOptimizeExtension.getIdentityService()
           .getIdentityNameById(expectedOwnerId)
-          .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache"))));
+          .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
   }
 
 }

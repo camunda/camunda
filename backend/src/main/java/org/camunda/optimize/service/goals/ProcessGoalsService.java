@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.ProcessGoalsReader;
@@ -74,7 +75,10 @@ public class ProcessGoalsService {
           StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
           procDefKey,
           goalsForKey.flatMap(goals -> Optional.ofNullable(goals.getOwner())
-            .map(owner -> identityService.getIdentityNameById(owner).orElse(owner))).orElse(null),
+            .map(owner -> {
+              final String ownerName = identityService.getIdentityNameById(owner).orElse(owner);
+              return new ProcessGoalsOwnerResponseDto(owner, ownerName);
+            })).orElse(new ProcessGoalsOwnerResponseDto()),
           goalsForKey.map(
             goals -> {
               ProcessDurationGoalsAndResultsDto goalsAndResults = new ProcessDurationGoalsAndResultsDto();
@@ -136,7 +140,7 @@ public class ProcessGoalsService {
     final Optional<DefinitionWithTenantIdsDto> definitionForKey =
       definitionService.getProcessDefinitionWithTenants(processDefKey);
     if (definitionForKey.isEmpty()) {
-      throw new NotFoundException("Process definition with key " + processDefKey + "does not exist");
+      throw new NotFoundException("Process definition with key " + processDefKey + " does not exist");
     }
     if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
       userId, PROCESS, definitionForKey.get().getKey(), definitionForKey.get().getTenantIds())) {
