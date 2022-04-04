@@ -52,6 +52,8 @@ public class TasklistProperties {
 
   @NestedConfigurationProperty private ClientProperties client = new ClientProperties();
 
+  @NestedConfigurationProperty private CloudProperties cloud = new CloudProperties();
+
   @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
 
@@ -231,5 +233,13 @@ public class TasklistProperties {
 
   public void setRoles(final List<String> roles) {
     this.roles = roles;
+  }
+
+  public CloudProperties getCloud() {
+    return cloud;
+  }
+
+  public void setCloud(final CloudProperties cloud) {
+    this.cloud = cloud;
   }
 }

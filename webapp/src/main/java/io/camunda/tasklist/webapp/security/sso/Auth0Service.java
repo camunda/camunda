@@ -11,7 +11,9 @@ import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
+import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import java.time.Duration;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
@@ -22,9 +24,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 @Component
 @Profile(TasklistProfileService.SSO_AUTH_PROFILE)
@@ -32,7 +43,7 @@ public class Auth0Service {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Auth0Service.class);
   private static final String LOGOUT_URL_TEMPLATE = "https://%s/v2/logout?client_id=%s&returnTo=%s";
-  private static final String AUDIENCE_URL_TEMPLATE = "https://%s/userinfo";
+  private static final String PERMISSION_URL_TEMPLATE = "%s/%s";
 
   private static final List<String> SCOPES =
       List.of(
@@ -45,12 +56,51 @@ public class Auth0Service {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private RestTemplateBuilder builder;
+
+  @Autowired
+  @Qualifier("auth0_restTemplate")
+  private RestTemplate restTemplate;
+
+  @Bean("auth0_restTemplate")
+  public RestTemplate restTemplate() {
+    return builder.build();
+  }
+
   public void authenticate(final HttpServletRequest req, final HttpServletResponse res) {
     final Tokens tokens = retrieveTokens(req, res);
     final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
+    checkPermission(authentication, tokens.getAccessToken());
     authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
     SecurityContextHolder.getContext().setAuthentication(authentication);
     sessionExpiresWhenAuthenticationExpires(req);
+  }
+
+  private void checkPermission(final TokenAuthentication authentication, final String accessToken) {
+    final HttpHeaders headers = new HttpHeaders();
+
+    headers.setBearerAuth(accessToken);
+    final String urlDomain = tasklistProperties.getCloud().getPermissionUrl();
+    final String url =
+        String.format(
+            PERMISSION_URL_TEMPLATE, urlDomain, tasklistProperties.getAuth0().getOrganization());
+    final ResponseEntity<ClusterInfo> responseEntity =
+        restTemplate.exchange(url, HttpMethod.GET, new HttpEntity(headers), ClusterInfo.class);
+    final ClusterInfo clusterInfo = responseEntity.getBody();
+
+    final ClusterInfo.Permission tasklistPermissions =
+        clusterInfo.getPermissions().getCluster().getTasklist();
+    if (tasklistPermissions.getRead()) {
+      authentication.getPermissions().add(Permission.READ);
+    } else {
+      throw new InsufficientAuthenticationException("User doesn't have read access");
+    }
+
+    if (tasklistPermissions.getDelete()
+        && tasklistPermissions.getCreate()
+        && tasklistPermissions.getUpdate()) {
+      authentication.getPermissions().add(Permission.WRITE);
+    }
   }
 
   private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {
@@ -60,8 +110,7 @@ public class Auth0Service {
   public String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
     return authenticationController
         .buildAuthorizeUrl(req, res, getRedirectURI(req, SSO_CALLBACK, true))
-        .withAudience(
-            String.format(AUDIENCE_URL_TEMPLATE, tasklistProperties.getAuth0().getBackendDomain()))
+        .withAudience(tasklistProperties.getCloud().getPermissionAudience())
         .withScope(String.join(" ", SCOPES))
         .build();
   }
