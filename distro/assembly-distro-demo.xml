@@ -31,6 +31,17 @@
       </excludes>
       <outputDirectory>config/</outputDirectory>
     </fileSet>
+
+    <fileSet>
+      <directory>src/config/</directory>
+      <excludes>
+        <exclude>${exclude.from.config}</exclude>
+        <exclude>environment-config.yaml</exclude>
+        <!-- this will be included in files section -->
+        <exclude>environment-config-demo.yaml</exclude>
+      </excludes>
+      <outputDirectory>config/</outputDirectory>
+    </fileSet>
   </fileSets>
 
   <files>
@@ -66,6 +77,13 @@
       <source>src/config/environment-logback-demo.xml</source>
       <outputDirectory>config</outputDirectory>
       <destName>environment-logback.xml</destName>
+    </file>
+
+    <!-- environment configuration -->
+    <file>
+      <source>src/config/environment-config-demo.yaml</source>
+      <outputDirectory>config</outputDirectory>
+      <destName>environment-config.yaml</destName>
     </file>
 
     <!-- elastic config -->

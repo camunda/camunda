@@ -24,6 +24,8 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -112,10 +114,10 @@ public class CustomerOnboardingDataImportService {
                 processInstance,
                 ElasticDumpEntryDto.class
               );
-              ProcessInstanceDto processInstanceDto = elasticDumpEntryDto.getProcessInstanceDto();
-              if (processInstanceDto != null) {
-                Optional<Long> processInstanceDuration = Optional.ofNullable(processInstanceDto.getDuration());
-                if (processInstanceDto.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
+              ProcessInstanceDto rawProcessInstanceFromDump = elasticDumpEntryDto.getProcessInstanceDto();
+              if (rawProcessInstanceFromDump != null) {
+                Optional<Long> processInstanceDuration = Optional.ofNullable(rawProcessInstanceFromDump.getDuration());
+                if (rawProcessInstanceFromDump.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
                   processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
                 }
                 if (processInstanceDtos.size() % batchSize == 0) {
@@ -124,21 +126,23 @@ public class CustomerOnboardingDataImportService {
                 }
               } else {
                 log.error("Process instance not loaded correctly. Please check your json file.");
+              }
             }
-          }  if (!processInstanceDtos.isEmpty()) {
+            if (!processInstanceDtos.isEmpty()) {
               addProcessInstancesToElasticSearch(processInstanceDtos);
             }
+          }
+        } else {
+          log.error(
+            "Could not load customer onboarding process instances. Please validate the process instance json file.");
         }
       } else {
-        log.error("Could not load customer onboarding process instances. Please validate the process instance json file.");
+        log.error("Process instance file cannot be null.");
       }
-    } else{
-      log.error("Process instance file cannot be null.");
+    } catch (IOException e) {
+      log.error("Unable to add customer onboarding process instances to elasticsearch", e);
     }
-  } catch(IOException e) {
-    log.error("Unable to add customer onboarding process instances to elasticsearch", e);
   }
-}
 
   private void addProcessInstancesToElasticSearch(List<ProcessInstanceDto> processInstanceDtos) {
     List<ProcessInstanceDto> completedProcessInstances = processInstanceDtos.stream()
@@ -166,5 +170,4 @@ public class CustomerOnboardingDataImportService {
       );
     }
   }
-
 }
