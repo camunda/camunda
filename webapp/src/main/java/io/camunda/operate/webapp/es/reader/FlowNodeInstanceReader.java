@@ -710,6 +710,11 @@ public class FlowNodeInstanceReader extends AbstractReader {
     final String[] calledProcessDefinitionName = {null};
     final String[] calledDecisionInstanceId = {null};
     final String[] calledDecisionDefinitionName = {null};
+    final FlowNodeType type = flowNodeInstance.getType();
+    if (type == null) {
+      logger.error(String.format("FlowNodeType for FlowNodeInstance with id %s is null", flowNodeInstance.getId()));
+      return null;
+    }
     if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
       findCalledProcessInstance(flowNodeInstance.getId(),
           sh -> {
