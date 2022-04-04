@@ -17,6 +17,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
@@ -54,11 +55,9 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchSessionRepository
     implements SessionRepository<ElasticsearchSessionRepository.ElasticsearchSession> {
 
-  public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 3; // min
-
+  public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30; // min
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSessionRepository.class);
-
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired private GenericConversionService conversionService;
@@ -114,10 +113,17 @@ public class ElasticsearchSessionRepository
     retryElasticsearchClient.doWithEachSearchResult(
         searchRequest,
         sh -> {
-          final ElasticsearchSession session = documentToSession(sh.getSourceAsMap());
-          LOGGER.debug("Check if session {} is expired: {}", session, session.isExpired());
-          if (session.isExpired()) {
-            delete(session.getId());
+          final Map<String, Object> document = sh.getSourceAsMap();
+          final Optional<ElasticsearchSession> maybeSession = documentToSession(document);
+          if (maybeSession.isPresent()) {
+            final ElasticsearchSession session = maybeSession.get();
+            LOGGER.debug("Check if session {} is expired: {}", session, session.isExpired());
+            if (session.isExpired()) {
+              delete(session.getId());
+            }
+          } else {
+            // need to delete entry in Elasticsearch in case of failing restore session
+            delete(getSessionIdFrom(document));
           }
         });
   }
@@ -155,18 +161,28 @@ public class ElasticsearchSessionRepository
   @Override
   public ElasticsearchSession getSession(final String id) {
     LOGGER.debug("Retrieve session {} from Elasticsearch", id);
-    ElasticsearchSession session = null;
     retryElasticsearchClient.refresh(tasklistWebSessionIndex.getFullQualifiedName());
+
     final Map<String, Object> document =
         retryElasticsearchClient.getDocument(tasklistWebSessionIndex.getFullQualifiedName(), id);
-    if (document != null) {
-      session = documentToSession(document);
-    }
-    if (session != null && session.isExpired()) {
-      delete(session.getId());
+    if (document == null) {
       return null;
     }
-    return session;
+
+    final Optional<ElasticsearchSession> maybeSession = documentToSession(document);
+    if (maybeSession.isEmpty()) {
+      // need to delete entry in Elasticsearch in case of failing restore session
+      delete(getSessionIdFrom(document));
+      return null;
+    }
+
+    final ElasticsearchSession session = maybeSession.get();
+    if (session.isExpired()) {
+      delete(session.getId());
+      return null;
+    } else {
+      return session;
+    }
   }
 
   @Override
@@ -207,25 +223,34 @@ public class ElasticsearchSessionRepository
         attributes);
   }
 
-  private ElasticsearchSession documentToSession(Map<String, Object> document) {
-    final String sessionId = (String) document.get(ID);
-    final ElasticsearchSession session = new ElasticsearchSession(sessionId);
-    session.setCreationTime((long) document.get(CREATION_TIME));
-    session.setLastAccessedTime((long) document.get(LAST_ACCESSED_TIME));
-    session.setMaxInactiveIntervalInSeconds((int) document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS));
+  private String getSessionIdFrom(final Map<String, Object> document) {
+    return (String) document.get(ID);
+  }
 
-    final Object attributesObject = document.get(ATTRIBUTES);
-    if (attributesObject != null
-        && attributesObject.getClass().isInstance(new HashMap<String, String>())) {
-      final Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
-      attributes
-          .keySet()
-          .forEach(
-              name ->
-                  session.setAttribute(
-                      name, deserialize(Base64.getDecoder().decode(attributes.get(name)))));
+  private Optional<ElasticsearchSession> documentToSession(Map<String, Object> document) {
+    try {
+      final String sessionId = getSessionIdFrom(document);
+      final ElasticsearchSession session = new ElasticsearchSession(sessionId);
+      session.setCreationTime((long) document.get(CREATION_TIME));
+      session.setLastAccessedTime((long) document.get(LAST_ACCESSED_TIME));
+      session.setMaxInactiveIntervalInSeconds((int) document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS));
+
+      final Object attributesObject = document.get(ATTRIBUTES);
+      if (attributesObject != null
+          && attributesObject.getClass().isInstance(new HashMap<String, String>())) {
+        final Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
+        attributes
+            .keySet()
+            .forEach(
+                name ->
+                    session.setAttribute(
+                        name, deserialize(Base64.getDecoder().decode(attributes.get(name)))));
+      }
+      return Optional.of(session);
+    } catch (Exception e) {
+      LOGGER.error("Could not restore session.", e);
+      return Optional.empty();
     }
-    return session;
   }
 
   private void executeAsyncElasticsearchRequest(Runnable requestRunnable) {
@@ -286,32 +311,14 @@ public class ElasticsearchSessionRepository
       changed = true;
     }
 
+    @Override
+    public int hashCode() {
+      return Objects.hash(getId());
+    }
+
     public void setLastAccessedTime(long lastAccessedTime) {
       delegate.setLastAccessedTime(lastAccessedTime);
       changed = true;
-    }
-
-    public long getLastAccessedTime() {
-      return delegate.getLastAccessedTime();
-    }
-
-    public void setMaxInactiveIntervalInSeconds(int interval) {
-      delegate.setMaxInactiveIntervalInSeconds(interval);
-      changed = true;
-    }
-
-    public int getMaxInactiveIntervalInSeconds() {
-      return delegate.getMaxInactiveIntervalInSeconds();
-    }
-
-    public boolean isExpired() {
-      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-      return delegate.isExpired() || (authentication != null && !authentication.isAuthenticated());
-    }
-
-    @Override
-    public String toString() {
-      return String.format("ElasticsearchSession: %s ", getId());
     }
 
     @Override
@@ -326,9 +333,27 @@ public class ElasticsearchSessionRepository
       return Objects.equals(getId(), session.getId());
     }
 
+    public long getLastAccessedTime() {
+      return delegate.getLastAccessedTime();
+    }
+
     @Override
-    public int hashCode() {
-      return Objects.hash(getId());
+    public String toString() {
+      return String.format("ElasticsearchSession: %s ", getId());
+    }
+
+    public void setMaxInactiveIntervalInSeconds(int interval) {
+      delegate.setMaxInactiveIntervalInSeconds(interval);
+      changed = true;
+    }
+
+    public int getMaxInactiveIntervalInSeconds() {
+      return delegate.getMaxInactiveIntervalInSeconds();
+    }
+
+    public boolean isExpired() {
+      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+      return delegate.isExpired() || (authentication != null && !authentication.isAuthenticated());
     }
   }
 }
