@@ -51,7 +51,6 @@ public final class SubProcessProcessor
 
     variableMappingBehavior
         .applyInputMappings(activating, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
         .ifRightOrLeft(
             ok -> {
               final var activated = stateTransitionBehavior.transitionToActivated(activating);

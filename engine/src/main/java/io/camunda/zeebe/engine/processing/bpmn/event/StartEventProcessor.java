@@ -10,9 +10,12 @@ package io.camunda.zeebe.engine.processing.bpmn.event;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 
 public class StartEventProcessor implements BpmnElementProcessor<ExecutableStartEvent> {
@@ -20,11 +23,15 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public StartEventProcessor(final BpmnBehaviors bpmnBehaviors) {
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+    stateBehavior = bpmnBehaviors.stateBehavior();
   }
 
   @Override
@@ -40,8 +47,21 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
+    final ExecutableCatchEventSupplier flowScope =
+        (ExecutableCatchEventSupplier) element.getFlowScope();
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+
     variableMappingBehavior
         .applyOutputMappings(context, element)
+        .flatMap(
+            ok ->
+                eventSubscriptionBehavior.subscribeToEvents(
+                    flowScope,
+                    context.copy(
+                        flowScopeInstance.getKey(),
+                        flowScopeInstance.getValue(),
+                        flowScopeInstance.getState())))
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
