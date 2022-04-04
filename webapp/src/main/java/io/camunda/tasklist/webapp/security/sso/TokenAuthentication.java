@@ -57,8 +57,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private String refreshToken;
   private List<Permission> permissions = new ArrayList<>();
 
-  // private List<Permission> permissions = new ArrayList<>();
-
   public TokenAuthentication() {
     super(null);
   }
