@@ -21,9 +21,6 @@ public final class TasklistURIs {
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
 
   public static final String REQUESTED_URL = "requestedUrl";
-
-  public static final String IAM_CALLBACK_URI = "/iam-callback";
-  public static final String IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback";
   public static final String COOKIE_JSESSIONID = "TASKLIST-SESSION";
 
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";

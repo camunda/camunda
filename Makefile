@@ -17,16 +17,6 @@ env-sso-up:
 operate-up:
 	docker-compose up -d operate
 
-.PHONY: env-iam-up
-env-iam-up:
-	@docker-compose -f ./config/docker-compose.iam-backend.yml up -d \
-	&& @docker-compose up -d elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=false \
-	&& CAMUNDA_TASKLIST_IAM_ISSUER_URL=http://app.iam.localhost \
-       CAMUNDA_TASKLIST_IAM_CLIENT_ID=tasklist \
-       CAMUNDA_TASKLIST_IAM_CLIENT_SECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7 \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,iam-auth
-
 .PHONY: env-identity-up
 env-identity-up:
 	@docker-compose -f ./config/docker-compose.identity.yml up -d \

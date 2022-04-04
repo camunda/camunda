@@ -15,7 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-import io.camunda.iam.sdk.authentication.exception.TokenExpiredException;
+import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
@@ -126,7 +126,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             URLEncoder.encode(IDENTITY_CALLBACK_URI, Charset.defaultCharset()),
             tasklistProperties.getIdentity().getClientId());
     // Step 3 assume authentication will be fail
-    doThrow(TokenExpiredException.class).when(identityAuthentication).authenticate(any(), any());
+    doThrow(IdentityException.class).when(identityAuthentication).authenticate(any(), any());
     when(identityAuthentication.isAuthenticated()).thenReturn(false);
     response = get(IDENTITY_CALLBACK_URI, cookies);
 
@@ -153,7 +153,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             URLEncoder.encode(IDENTITY_CALLBACK_URI, Charset.defaultCharset()),
             tasklistProperties.getIdentity().getClientId());
     // Step 3 assume authentication succeed but return no READ permission
-    doThrow(TokenExpiredException.class).when(identityAuthentication).authenticate(any(), any());
+    doThrow(IdentityException.class).when(identityAuthentication).authenticate(any(), any());
     when(identityAuthentication.isAuthenticated()).thenReturn(true);
     when(identityAuthentication.getPermissions()).thenReturn(List.of(Permission.WRITE));
     response = get(IDENTITY_CALLBACK_URI, cookies);

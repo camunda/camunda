@@ -6,7 +6,6 @@
 package io.camunda.tasklist.webapp.security.es;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
@@ -29,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 @Configuration
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + IAM_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
 public class ElasticsearchUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER =
