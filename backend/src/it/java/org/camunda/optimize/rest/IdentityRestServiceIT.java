@@ -108,6 +108,22 @@ public class IdentityRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void searchForUser_excludeGroupsFromResults() {
+    // given
+    final GroupDto groupIdentity = new GroupDto("group", "The Baggins Group", 2L);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(groupIdentity);
+    final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
+    embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity);
+
+    // when
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins", true);
+
+    // then the result does not contain the user group that matches
+    assertThat(searchResult)
+      .isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
+  }
+
+  @Test
   public void searchForGroupAndUser_userMetaDataDisabled() {
     // given
     embeddedOptimizeExtension.getConfigurationService()

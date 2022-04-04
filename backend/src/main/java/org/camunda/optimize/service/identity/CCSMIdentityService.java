@@ -50,7 +50,7 @@ public class CCSMIdentityService extends AbstractIdentityService {
 
   @Override
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId, final String searchString,
-                                                                   final int maxResults) {
+                                                                   final int maxResults, final boolean excludeUserGroups) {
     return new IdentitySearchResultResponseDto(0, Collections.emptyList());
   }
 

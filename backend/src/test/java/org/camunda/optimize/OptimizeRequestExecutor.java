@@ -512,7 +512,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildEvaluateProcessGoalsRequest(final String processDefinitionKey,
-                                                                final List<ProcessDurationGoalDto> goals) {
+                                                                  final List<ProcessDurationGoalDto> goals) {
     this.path = "process/" + processDefinitionKey + "/goals/evaluate";
     this.method = POST;
     this.body = getBody(goals);
@@ -1000,14 +1000,18 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest
     (DecisionVariableNameRequestDto variableRequestDto) {
-    return buildDecisionInputVariableNamesRequest(Collections.singletonList(variableRequestDto),
-                                                  true);
+    return buildDecisionInputVariableNamesRequest(
+      Collections.singletonList(variableRequestDto),
+      true
+    );
   }
 
   public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest
     (DecisionVariableNameRequestDto variableRequestDto, final boolean authenticationEnabled) {
-    return buildDecisionInputVariableNamesRequest(Collections.singletonList(variableRequestDto),
-                                                  authenticationEnabled);
+    return buildDecisionInputVariableNamesRequest(
+      Collections.singletonList(variableRequestDto),
+      authenticationEnabled
+    );
   }
 
   public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos, final boolean authenticationEnabled) {
@@ -1020,7 +1024,9 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildDecisionOutputVariableValuesRequest(DecisionVariableValueRequestDto requestDto) {
     return buildDecisionOutputVariableValuesRequest(requestDto, true);
   }
-  public OptimizeRequestExecutor buildDecisionOutputVariableValuesRequest(DecisionVariableValueRequestDto requestDto, final boolean authenticationEnabled) {
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableValuesRequest(DecisionVariableValueRequestDto requestDto,
+                                                                          final boolean authenticationEnabled) {
     this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "decision-variables/outputs/values";
     this.method = POST;
     this.body = getBody(requestDto);
@@ -1037,7 +1043,10 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto, final boolean authenticationEnabled) {
-    return buildDecisionOutputVariableNamesRequest(Collections.singletonList(variableRequestDto), authenticationEnabled);
+    return buildDecisionOutputVariableNamesRequest(
+      Collections.singletonList(variableRequestDto),
+      authenticationEnabled
+    );
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
@@ -1045,10 +1054,10 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos, final boolean authenticationEnabled) {
-  this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "decision-variables/outputs/names";
-  this.method = POST;
-  this.body = getBody(variableRequestDtos);
-  return this;
+    this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "decision-variables/outputs/names";
+    this.method = POST;
+    this.body = getBody(variableRequestDtos);
+    return this;
   }
 
   public OptimizeRequestExecutor buildGetAssigneesByIdRequest(List<String> ids) {
@@ -1648,10 +1657,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms, final Integer limit) {
+    return buildSearchForIdentities(searchTerms, limit, null);
+  }
+
+  public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms, final Integer limit,
+                                                          final Boolean excludeUserGroups) {
     this.path = IDENTITY_RESOURCE_PATH + IDENTITY_SEARCH_SUB_PATH;
     this.method = GET;
     addSingleQueryParam("terms", searchTerms);
     Optional.ofNullable(limit).ifPresent(limitValue -> addSingleQueryParam("limit", limitValue));
+    Optional.ofNullable(excludeUserGroups).ifPresent(exclude -> addSingleQueryParam("excludeUserGroups", exclude));
     return this;
   }
 

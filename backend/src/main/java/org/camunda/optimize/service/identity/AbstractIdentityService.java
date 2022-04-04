@@ -46,7 +46,8 @@ public abstract class AbstractIdentityService {
 
   public abstract IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
                                                                             final String searchString,
-                                                                            final int maxResults);
+                                                                            final int maxResults,
+                                                                            final boolean excludeUserGroups);
 
   public boolean isSuperUserIdentity(final String userId) {
     return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId) ||

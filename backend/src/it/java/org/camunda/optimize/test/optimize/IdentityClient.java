@@ -39,12 +39,19 @@ public class IdentityClient {
     return searchForIdentity(searchTerms, limit, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final String username, final String password) {
+  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final String username,
+                                                           final String password) {
     return searchForIdentity(searchTerms, null, username, password);
   }
 
   public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms) {
     return searchForIdentity(searchTerms, null);
+  }
+
+  public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final boolean excludeUserGroups) {
+    return getRequestExecutor()
+      .buildSearchForIdentities(searchTerms, null, excludeUserGroups)
+      .execute(IdentitySearchResultResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public IdentitySearchResultResponseDto searchForIdentity(final String searchTerms, final Integer limit,

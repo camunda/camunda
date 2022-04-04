@@ -33,17 +33,20 @@ public abstract class AbstractCachedIdentityService extends AbstractIdentityServ
 
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
                                                                    final String searchString,
-                                                                   final int maxResults) {
+                                                                   final int maxResults,
+                                                                   final boolean excludeUserGroups) {
     final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
+    final IdentityType[] identityTypesToSearch = excludeUserGroups ?
+      new IdentityType[]{IdentityType.USER} : IdentityType.values();
     IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(
-      searchString, IdentityType.values(), maxResults
+      searchString, identityTypesToSearch, maxResults
     );
     while (!result.getResult().isEmpty()
       && filteredIdentities.size() < maxResults) {
       // continue searching until either the maxResult number of hits has been found or
       // the end of the cache has been reached
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
-      result = syncedIdentityCache.searchIdentitiesAfter(searchString, IdentityType.values(), maxResults, result);
+      result = syncedIdentityCache.searchIdentitiesAfter(searchString, identityTypesToSearch, maxResults, result);
     }
     return new IdentitySearchResultResponseDto(filteredIdentities.size(), filteredIdentities);
   }

@@ -45,9 +45,11 @@ public class IdentityRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public IdentitySearchResultResponseDto searchIdentity(@QueryParam("terms") final String searchTerms,
                                                         @QueryParam("limit") @DefaultValue("25") final int limit,
+                                                        @QueryParam("excludeUserGroups") final boolean excludeUserGroups,
                                                         @Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return identityService.searchForIdentitiesAsUser(userId, Optional.ofNullable(searchTerms).orElse(""), limit);
+    return identityService.searchForIdentitiesAsUser(
+      userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
   }
 
   @GET
