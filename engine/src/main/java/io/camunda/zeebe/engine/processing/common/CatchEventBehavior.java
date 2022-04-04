@@ -111,16 +111,16 @@ public final class CatchEventBehavior {
       final ExecutableCatchEvent event,
       final BpmnElementContext context) {
     return Either.<Failure, EvalResult>right(new EvalResult(event))
-        .flatMap(result -> evaluateMessageName(ep, event, context).map(result::withMessageName))
-        .flatMap(
-            result -> evaluateCorrelationKey(ep, event, context).map(result::withCorrelationKey))
-        .flatMap(result -> evaluateTimer(ep, event, context).map(result::withTimer));
+        .flatMap(result -> evaluateMessageName(ep, event, context, result))
+        .flatMap(result -> evaluateCorrelationKey(ep, event, context, result))
+        .flatMap(result -> evaluateTimer(ep, event, context, result));
   }
 
-  private Either<Failure, DirectBuffer> evaluateMessageName(
+  private Either<Failure, EvalResult> evaluateMessageName(
       final ExpressionProcessor expressionProcessor,
       final ExecutableCatchEvent event,
-      final BpmnElementContext context) {
+      final BpmnElementContext context,
+      final EvalResult result) {
     if (!event.isMessage()) {
       return Either.right(null);
     }
@@ -129,13 +129,15 @@ public final class CatchEventBehavior {
     final Expression messageNameExpression = message.getMessageNameExpression();
     return expressionProcessor
         .evaluateStringExpression(messageNameExpression, scopeKey)
-        .map(BufferUtil::wrapString);
+        .map(BufferUtil::wrapString)
+        .map(result::withMessageName);
   }
 
-  private Either<Failure, DirectBuffer> evaluateCorrelationKey(
+  private Either<Failure, EvalResult> evaluateCorrelationKey(
       final ExpressionProcessor expressionProcessor,
       final ExecutableCatchEvent event,
-      final BpmnElementContext context) {
+      final BpmnElementContext context,
+      final EvalResult result) {
     if (!event.isMessage()) {
       return Either.right(null);
     }
@@ -147,18 +149,20 @@ public final class CatchEventBehavior {
     return expressionProcessor
         .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
         .map(BufferUtil::wrapString)
+        .map(result::withCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
   }
 
-  private Either<Failure, Timer> evaluateTimer(
+  private Either<Failure, EvalResult> evaluateTimer(
       final ExpressionProcessor expressionProcessor,
       final ExecutableCatchEvent event,
-      final BpmnElementContext context) {
+      final BpmnElementContext context,
+      final EvalResult result) {
     if (!event.isTimer()) {
       return Either.right(null);
     }
     final var scopeKey = context.getElementInstanceKey();
-    return event.getTimerFactory().apply(expressionProcessor, scopeKey);
+    return event.getTimerFactory().apply(expressionProcessor, scopeKey).map(result::withTimer);
   }
 
   private void subscribeToMessageEvents(
