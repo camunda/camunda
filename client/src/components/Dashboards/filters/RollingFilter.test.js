@@ -21,14 +21,14 @@ jest.mock('debounce', () => jest.fn((fn) => fn));
 
 const props = {
   filter: {
-    start: {value: '2', unit: 'days'},
+    start: {value: 2, unit: 'days'},
   },
 };
 
 it('should load initial values correctly', () => {
   const node = shallow(<RollingFilter {...props} />);
 
-  expect(node.find(Input).prop('value')).toBe('2');
+  expect(node.find(Input).prop('value')).toBe(2);
   expect(node.find(Select).prop('value')).toBe('days');
 });
 
@@ -37,7 +37,7 @@ it('should invoke onChange when update the value input or the unit selection', (
   const node = shallow(<RollingFilter {...props} onChange={spy} />);
 
   node.find(Input).simulate('change', {target: {value: '3'}});
-  expect(spy).toHaveBeenCalledWith({value: '3'});
+  expect(spy).toHaveBeenCalledWith({value: 3});
 
   spy.mockClear();
 

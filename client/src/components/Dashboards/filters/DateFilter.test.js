@@ -52,7 +52,7 @@ it('should invoke setFilter when updating the rolling filter', () => {
   const spy = jest.fn();
   const filter = {
     type: 'rolling',
-    start: {value: '2', unit: 'days'},
+    start: {value: 2, unit: 'days'},
     end: null,
     excludeUndefined: false,
     includeUndefined: false,

@@ -78,6 +78,10 @@ export default function DateFilter({
 
   function getFixedDateFilterName(filter) {
     if (!filter) {
+      if (fixedType === 'rolling') {
+        return emptyText;
+      }
+
       return t('common.filter.dateModal.unit.' + fixedType);
     }
 
@@ -120,7 +124,7 @@ export default function DateFilter({
   function openRollingFilter() {
     setFilter({
       type: 'rolling',
-      start: {value: '2', unit: 'days'},
+      start: {value: 2, unit: 'days'},
       end: null,
       excludeUndefined: false,
       includeUndefined: false,

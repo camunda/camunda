@@ -19,7 +19,7 @@ export default function RollingFilter({filter, onChange}) {
     () =>
       debounce((value) => {
         if (!value || numberParser.isPositiveInt(value)) {
-          onChange({value});
+          onChange({value: Number(value)});
         }
       }, 500),
     [onChange]
