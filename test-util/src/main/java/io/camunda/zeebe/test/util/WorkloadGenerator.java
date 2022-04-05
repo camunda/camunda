@@ -42,6 +42,8 @@ public final class WorkloadGenerator {
           .endEvent()
           .done();
 
+  private WorkloadGenerator() {}
+
   /**
    * Given a client, deploy a process, start instances, work on service tasks, create and resolve
    * incidents and finish the instance.
@@ -115,6 +117,7 @@ public final class WorkloadGenerator {
 
     // wrap up
     Awaitility.await("the process instance was completed")
+        .timeout(Duration.ofMinutes(1))
         .until(
             () ->
                 RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
