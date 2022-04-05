@@ -30,7 +30,7 @@ fixture('Filters')
       .maximizeWindow()
       .click(
         screen.queryByRole('link', {
-          name: /view instances/i,
+          name: /view processes/i,
         })
       );
 
@@ -42,7 +42,7 @@ fixture('Filters')
 test('Navigating in header should affect filters and url correctly', async (t) => {
   await t.click(
     screen.queryByRole('link', {
-      name: /view instances/i,
+      name: /view processes/i,
     })
   );
 
@@ -1034,7 +1034,7 @@ test('Should set filters from url', async (t) => {
   );
   await t.click(
     screen.queryByRole('link', {
-      name: /view instances/i,
+      name: /view processes/i,
     })
   );
 

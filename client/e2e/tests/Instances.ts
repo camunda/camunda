@@ -28,7 +28,7 @@ fixture('Instances')
   .beforeEach(async (t) => {
     await t.useRole(demoUser).click(
       screen.queryByRole('link', {
-        name: /view instances/i,
+        name: /view processes/i,
       })
     );
 
@@ -48,7 +48,7 @@ test('Instances Page Initial Load', async (t) => {
 
   await t.click(
     screen.getByRole('link', {
-      name: /view instances/i,
+      name: /view processes/i,
     })
   );
 
@@ -100,7 +100,7 @@ test('Select flow node in diagram', async (t) => {
 
   await t.click(
     screen.getByRole('link', {
-      name: /view instances/i,
+      name: /view processes/i,
     })
   );
 

@@ -90,8 +90,8 @@ describe('Instances', () => {
       wrapper: getWrapper('/processes?incidents=true&active=true'),
     });
 
-    expect(screen.getByText('Operate Instances')).toBeInTheDocument();
-    expect(document.title).toBe('Operate: Instances');
+    expect(screen.getByText('Operate Process Instances')).toBeInTheDocument();
+    expect(document.title).toBe('Operate: Process Instances');
   });
 
   it('should render page components', async () => {

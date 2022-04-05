@@ -114,7 +114,7 @@ const Instances: React.FC = observer(() => {
 
   return (
     <Container>
-      <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
+      <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
       <Content>
         <Filters />
         <RightContainer ref={containerRef}>

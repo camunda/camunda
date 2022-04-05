@@ -47,12 +47,12 @@ const Header: React.FC = observer(() => {
           />
           <NavElement
             to={Locations.filters(location)}
-            title="View Instances"
-            label="Instances"
+            title="View Processes"
+            label="Processes"
             onClick={() => {
               tracking.track({
                 eventName: 'navigation',
-                link: 'header-instances',
+                link: 'header-processes',
               });
             }}
           />

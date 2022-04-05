@@ -70,7 +70,8 @@ describe('Header', () => {
 
     expect(screen.getByText('Operate')).toBeInTheDocument();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Instances')).toBeInTheDocument();
+    expect(screen.getByText('Processes')).toBeInTheDocument();
+    expect(screen.getByText('Decisions')).toBeInTheDocument();
   });
 
   it('should go to the correct pages when clicking on header links', async () => {
@@ -92,7 +93,7 @@ describe('Header', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     expect(screen.getByTestId('search')).toHaveTextContent('');
 
-    userEvent.click(await screen.findByText('Instances'));
+    userEvent.click(await screen.findByText('Processes'));
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?active=true&incidents=true&completed=true'
     );
@@ -100,6 +101,11 @@ describe('Header', () => {
     userEvent.click(await screen.findByText('Dashboard'));
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     expect(screen.getByTestId('search')).toHaveTextContent('');
+
+    userEvent.click(await screen.findByText('Decisions'));
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?evaluated=true&failed=true'
+    );
   });
 
   it('should preserve persistent params', async () => {
@@ -122,7 +128,7 @@ describe('Header', () => {
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
 
-    userEvent.click(await screen.findByText('Instances'));
+    userEvent.click(await screen.findByText('Processes'));
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true'
     );
@@ -131,6 +137,12 @@ describe('Header', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
+
+    userEvent.click(await screen.findByText('Decisions'));
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&evaluated=true&failed=true'
     );
   });
 

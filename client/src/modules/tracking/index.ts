@@ -14,7 +14,7 @@ type Events =
       link:
         | 'header-logo'
         | 'header-dashboard'
-        | 'header-instances'
+        | 'header-processes'
         | 'header-decisions'
         | 'dashboard-running-instances'
         | 'dashboard-instances-with-incidents'

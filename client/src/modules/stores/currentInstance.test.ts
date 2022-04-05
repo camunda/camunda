@@ -117,7 +117,7 @@ describe('stores/currentInstance', () => {
       })
     );
     expect(currentInstanceStore.processTitle).toBe(
-      'Operate: Instance 123 of Process processName'
+      'Operate: Process Instance 123 of processName'
     );
   });
 

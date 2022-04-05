@@ -103,7 +103,7 @@ const Instance = () => {
           return (
             <>
               {instance && (
-                <VisuallyHiddenH1>{`Operate Instance ${instance.id}`}</VisuallyHiddenH1>
+                <VisuallyHiddenH1>{`Operate Process Instance ${instance.id}`}</VisuallyHiddenH1>
               )}
             </>
           );

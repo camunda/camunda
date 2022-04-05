@@ -25,7 +25,7 @@ fixture('InstancesTable')
       .maximizeWindow()
       .click(
         screen.queryByRole('link', {
-          name: /view instances/i,
+          name: /view processes/i,
         })
       );
 

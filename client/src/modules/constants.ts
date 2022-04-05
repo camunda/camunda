@@ -86,9 +86,9 @@ const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',
   DASHBOARD: 'Operate: Dashboard',
-  INSTANCES: 'Operate: Instances',
+  INSTANCES: 'Operate: Process Instances',
   INSTANCE: (instanceId: string, processName: string) =>
-    `Operate: Instance ${instanceId} of Process ${processName}`,
+    `Operate: Process Instance ${instanceId} of ${processName}`,
   DECISION_INSTANCES: 'Operate: Decision Instances',
   DECISION_INSTANCE: (id: string, name: string) =>
     `Operate: Decision Instance ${id} of ${name}`,
