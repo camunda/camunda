@@ -157,7 +157,7 @@ test('new variable still exists after refresh if task is completed', async (t) =
     .ok();
 });
 
-test.skip.after(async (t) => {
+test.after(async (t) => {
   await t.click(screen.getByRole('button', {name: 'Unclaim'}));
   await t.expect(screen.getByRole('button', {name: 'Claim'}).exists).ok();
 })('edited variable is not saved after refresh', async (t) => {
@@ -179,7 +179,14 @@ test.skip.after(async (t) => {
     .pressKey('delete')
     .typeText(variableValueField, '"updatedValue"');
 
-  await t.navigateTo(await getURL());
+  await t
+    .click(screen.queryByTestId('logo'))
+    .click(
+      within(screen.getByTestId('expanded-panel'))
+        .getAllByText('usertask_with_variables')
+        .nth(0),
+    );
+
   await t.expect(variableValueField.value).eql('"something"');
 });
 
