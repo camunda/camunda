@@ -75,7 +75,7 @@ class Diagram extends React.PureComponent<Props, State> {
     processedSequenceFlows: prevSequenceFlows,
     selectableFlowNodes: prevSelectableFlowNodes,
   }: Props) {
-    const hasNewDefinitions = this.props.definitions !== prevDefinitions;
+    const hasNewDefinitions = !isEqual(this.props.definitions, prevDefinitions);
     const hasNewTheme = this.props.theme !== prevTheme;
     const hasNewSelectableFlowNoes = !isEqual(
       this.props.selectableFlowNodes,
