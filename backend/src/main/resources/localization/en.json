@@ -602,7 +602,7 @@
     "missingVariable": "Missing variable",
     "nonExistingVariable": "Variable does not exist",
     "nonExistingFlowNode": "Flow Node(s) does not exist",
-    "percentageOfInstances": "% of total instances"
+    "percentageOfInstances": "% of total instances that matches the filter"
   },
   "dashboard": {
     "label": "Dashboard",

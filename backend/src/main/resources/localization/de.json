@@ -602,7 +602,7 @@
     "missingVariable": "Fehlende Variable",
     "nonExistingVariable": "Variable existiert nicht",
     "nonExistingFlowNode": "Prozessknoten existiert nicht",
-    "percentageOfInstances": "% der gesamten Instanzen"
+    "percentageOfInstances": "% der gesamten Instanzen, die dem Filter entsprechen"
   },
   "dashboard": {
     "label": "Dashboard",
