@@ -48,7 +48,7 @@ test('Statistics', async (t) => {
     .eql(
       `${
         incidentInstancesCount + activeInstancesCount
-      } Running Instances in total`
+      } Running Process Instances in total`
     )
     .expect(incidentInstancesCount)
     .eql(1)
@@ -96,7 +96,7 @@ test('Navigation to Instances View', async (t) => {
     .eql(`${instancesWithIncidentCount} results found`);
 });
 
-test('Select instances by process', async (t) => {
+test('Select process instances by name', async (t) => {
   await t.expect(screen.queryByTestId('instances-by-process').exists).ok();
 
   const withinInstanceByProcess = within(

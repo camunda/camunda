@@ -31,7 +31,7 @@ describe('InstancesBar', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not display active instance count if has invalid active instances count', () => {
+  it('should not display active process instance count if has invalid active process instances count', () => {
     render(
       <InstancesBar
         incidentsCount={10}

@@ -69,7 +69,7 @@ const MetricPanel = observer(() => {
       >
         {`${
           status === 'fetched' ? `${running} ` : ''
-        }Running Instances in total`}
+        }Running Process Instances in total`}
       </Title>
       {status === 'fetched' && (
         <InstancesBar
@@ -97,7 +97,7 @@ const MetricPanel = observer(() => {
             incidents: true,
           })}
         >
-          Instances with Incident
+          Process Instances with Incident
         </Label>
         <Label
           data-testid="active-instances-link"
@@ -112,7 +112,7 @@ const MetricPanel = observer(() => {
             active: true,
           })}
         >
-          Active Instances
+          Active Process Instances
         </Label>
       </LabelContainer>
     </Panel>

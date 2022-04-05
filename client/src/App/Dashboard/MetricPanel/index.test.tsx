@@ -55,24 +55,26 @@ describe('<MetricPanel />', () => {
 
     expect(screen.getByTestId('instances-bar-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('total-instances-link')).toHaveTextContent(
-      'Running Instances in total'
+      'Running Process Instances in total'
     );
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('instances-bar-skeleton')
     );
     expect(
-      screen.getByText('1087 Running Instances in total')
+      screen.getByText('1087 Running Process Instances in total')
     ).toBeInTheDocument();
   });
 
-  it('should show active instances and instances with incidents', async () => {
+  it('should show active process instances and process instances with incidents', async () => {
     render(<MetricPanel />, {
       wrapper: createWrapper(),
     });
 
-    expect(screen.getByText('Instances with Incident')).toBeInTheDocument();
-    expect(screen.getByText('Active Instances')).toBeInTheDocument();
+    expect(
+      screen.getByText('Process Instances with Incident')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Active Process Instances')).toBeInTheDocument();
     expect(
       await screen.findByTestId('incident-instances-badge')
     ).toHaveTextContent('877');
@@ -91,7 +93,7 @@ describe('<MetricPanel />', () => {
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
-    userEvent.click(screen.getByText('Instances with Incident'));
+    userEvent.click(screen.getByText('Process Instances with Incident'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent('?incidents=true');
@@ -104,21 +106,23 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
-    userEvent.click(screen.getByText('Instances with Incident'));
+    userEvent.click(screen.getByText('Process Instances with Incident'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
     );
 
-    userEvent.click(screen.getByText('Active Instances'));
+    userEvent.click(screen.getByText('Active Process Instances'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true'
     );
 
-    userEvent.click(await screen.findByText('1087 Running Instances in total'));
+    userEvent.click(
+      await screen.findByText('1087 Running Process Instances in total')
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(
@@ -126,7 +130,7 @@ describe('<MetricPanel />', () => {
     );
   });
 
-  it('should go to the correct page when clicking on active instances', async () => {
+  it('should go to the correct page when clicking on active process instances', async () => {
     render(<MetricPanel />, {
       wrapper: createWrapper(),
     });
@@ -137,7 +141,7 @@ describe('<MetricPanel />', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    userEvent.click(screen.getByText('Active Instances'));
+    userEvent.click(screen.getByText('Active Process Instances'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent('?active=true');
@@ -152,7 +156,9 @@ describe('<MetricPanel />', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    userEvent.click(await screen.findByText('1087 Running Instances in total'));
+    userEvent.click(
+      await screen.findByText('1087 Running Process Instances in total')
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
     expect(screen.getByTestId('search')).toHaveTextContent(

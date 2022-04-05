@@ -25,13 +25,13 @@ function Dashboard() {
           <MetricPanel />
         </Tile>
         <Tile>
-          <TileTitle>Instances by Process</TileTitle>
+          <TileTitle>Process Instances by Name</TileTitle>
           <TileContent>
             <InstancesByProcess />
           </TileContent>
         </Tile>
         <Tile>
-          <TileTitle>Incidents by Error Message</TileTitle>
+          <TileTitle>Process Incidents by Error Message</TileTitle>
           <TileContent>
             <IncidentsByError />
           </TileContent>

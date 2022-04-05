@@ -84,7 +84,7 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('Incidents by Error Message could not be fetched')
+      await screen.findByText('Data could not be fetched')
     ).toBeInTheDocument();
   });
 
@@ -100,7 +100,7 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('Incidents by Error Message could not be fetched')
+      await screen.findByText('Data could not be fetched')
     ).toBeInTheDocument();
   });
 
@@ -116,11 +116,11 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('There are no Instances with Incidents')
+      await screen.findByText('There are no Process Instances with Incidents')
     ).toBeInTheDocument();
   });
 
-  it('should render incidents by error message', async () => {
+  it('should render process incidents by error message', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
         res.once(ctx.json(mockIncidentsByError))

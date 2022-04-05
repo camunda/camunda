@@ -153,9 +153,7 @@ const InstancesByProcess = observer(() => {
 
   if (status === 'error') {
     return (
-      <StatusMessage variant="error">
-        Instances by Process could not be fetched
-      </StatusMessage>
+      <StatusMessage variant="error">Data could not be fetched</StatusMessage>
     );
   }
 

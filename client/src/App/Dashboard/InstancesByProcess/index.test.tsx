@@ -76,7 +76,7 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      await screen.findByText('Instances by Process could not be fetched')
+      await screen.findByText('Data could not be fetched')
     ).toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      await screen.findByText('Instances by Process could not be fetched')
+      await screen.findByText('Data could not be fetched')
     ).toBeInTheDocument();
   });
 

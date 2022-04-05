@@ -127,16 +127,14 @@ const IncidentsByError = observer(() => {
   if (status === 'fetched' && incidents.length === 0) {
     return (
       <StatusMessage variant="success">
-        There are no Instances with Incidents
+        There are no Process Instances with Incidents
       </StatusMessage>
     );
   }
 
   if (status === 'error') {
     return (
-      <StatusMessage variant="error">
-        Incidents by Error Message could not be fetched
-      </StatusMessage>
+      <StatusMessage variant="error">Data could not be fetched</StatusMessage>
     );
   }
 
