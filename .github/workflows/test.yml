@@ -27,7 +27,14 @@ jobs:
           maven-version: 3.8.5
       - run: mvn -T1C -B -DskipChecks -DskipTests package
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
-      - run: mvn -pl !:zeebe-elasticsearch-exporter -T2 -B -D skipUTs -D skipChecks -Dfailsafe.rerunFailingTestsCount=3 -Dflaky.test.reportDir=failsafe-reports -D junitThreadCount=12 -P parallel-tests,extract-flaky-tests verify
+      - run: >
+          mvn -B -T2
+          -D junitThreadCount=12
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests
+          -pl !:zeebe-elasticsearch-exporter
+          verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
         if: failure()
@@ -50,7 +57,11 @@ jobs:
           maven-version: 3.8.5
       - run: mvn -T1C -B -DskipChecks -DskipTests package
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
-      - run: mvn -pl :zeebe-elasticsearch-exporter -B -D skipUTs -D skipChecks -Dfailsafe.rerunFailingTestsCount=3 verify
+      - run: >
+          mvn -B
+          -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
+          -pl :zeebe-elasticsearch-exporter
+          verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
         if: failure()
@@ -92,8 +103,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-      - run: mvn -T1C -B -D skipTests -D skipChecks -am -pl :${{ matrix.project }} package
-      - run: mvn -B -D skipITs -D skipChecks verify -pl :${{ matrix.project }}
+      - run: >
+          mvn -B -T1C
+          -D skipTests -D skipChecks
+          -am -pl :${{ matrix.project }}
+          package
+      - run: >
+          mvn -B
+          -D skipITs -D skipChecks
+          -pl :${{ matrix.project }}
+          verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
         if: failure()
@@ -114,8 +133,16 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
-      - run: mvn -T1C -B -D skipTests -D skipChecks -am -pl :zeebe-workflow-engine,:zeebe-logstreams package
-      - run: mvn -B -D skipITs -D skipChecks -pl :zeebe-workflow-engine,:zeebe-logstreams verify
+      - run: >
+          mvn -T1C -B
+          -D skipTests -D skipChecks
+          -am -pl :zeebe-workflow-engine,:zeebe-logstreams
+          package
+      - run: >
+          mvn -B
+          -D skipITs -D skipChecks
+          -pl :zeebe-workflow-engine,:zeebe-logstreams
+          verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
         if: failure()
@@ -144,9 +171,18 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Build relevant modules
-        run: mvn -B -am -pl qa/integration-tests install -DskipTests -DskipChecks "-Dmaven.javadoc.skip=true" -T1C
+        run: >
+          mvn -B -T1C
+          -D skipTests -D skipChecks "-D maven.javadoc.skip=true"
+          -am -pl qa/integration-tests
+          install
       - name: Run smoke test
-        run: mvn -B -pl qa/integration-tests verify -P smoke-test -DskipUTs -DskipChecks
+        run: >
+          mvn -B
+          -DskipUTs -DskipChecks
+          -pl qa/integration-tests
+          -P smoke-test
+          verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v2
         if: failure()
