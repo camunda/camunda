@@ -100,7 +100,6 @@ const IncidentTR = styled(Table.TR)`
 
     return css`
       cursor: pointer;
-      transition: background-color 200ms, opacity 200ms;
       opacity: ${isSelected ? opacity.selected : opacity.default};
 
       &:nth-child(odd) {
