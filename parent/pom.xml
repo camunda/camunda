@@ -89,7 +89,7 @@
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.32.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
-    <version.asm>9.2</version.asm>
+    <version.asm>9.3</version.asm>
     <version.testcontainers>1.16.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
