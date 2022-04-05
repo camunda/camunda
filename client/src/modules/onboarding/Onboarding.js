@@ -10,49 +10,43 @@ import {getOnboardingConfig} from 'config';
 
 import {withUser} from 'HOC';
 
-export function Onboarding({getUser}) {
+export function Onboarding({user}) {
   const location = useLocation();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (initialized) {
-      window.Appcues?.page();
-    }
-  }, [location, initialized]);
-
-  useEffect(() => {
     (async () => {
       const {enabled, appCuesScriptUrl} = await getOnboardingConfig();
-      if (!enabled || !appCuesScriptUrl || !(await enableAppCues(appCuesScriptUrl))) {
+      if (!enabled || !appCuesScriptUrl) {
         return;
       }
-      const user = await getUser();
-      window.Appcues?.identify(user.id);
+      await enableAppCues(appCuesScriptUrl);
       setInitialized(true);
     })();
-  }, [getUser]);
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      window.Appcues?.identify(user.id);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (initialized && user?.id) {
+      window.Appcues?.page();
+    }
+  }, [location, initialized, user?.id]);
 
   return null;
 }
 
-let appCuesInitTriggered = false;
-let appCuesInitialized = false;
 async function enableAppCues(appCuesScriptUrl) {
   return new Promise((resolve) => {
     // ensure the script is only runs once as otherwise AppCues might get loaded multiple times causing warn logs
-    if (!appCuesInitTriggered) {
-      appCuesInitTriggered = true;
-      const appCuesScriptElement = document.createElement('script');
-      appCuesScriptElement.src = appCuesScriptUrl;
-      document.head.appendChild(appCuesScriptElement);
-
-      appCuesScriptElement.onload = () => {
-        appCuesInitialized = true;
-        resolve(appCuesInitialized);
-      };
-    } else {
-      resolve(appCuesInitialized);
-    }
+    const appCuesScriptElement = document.createElement('script');
+    appCuesScriptElement.src = appCuesScriptUrl;
+    document.head.appendChild(appCuesScriptElement);
+    appCuesScriptElement.onload = resolve;
   });
 }
 
