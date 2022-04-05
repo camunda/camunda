@@ -14,4 +14,6 @@ public class OptimizeApiConfiguration {
   private String accessToken;
   @JsonProperty("jwtSetUri")
   private String jwtSetUri;
+  @JsonProperty("audience")
+  private String audience;
 }

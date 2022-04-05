@@ -11,6 +11,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Component;
@@ -43,7 +45,18 @@ public class CCSMPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigurerA
     if (this.getJwtDecodingMethod().equals(JWT_DECODING_STATIC_TOKEN_METHOD)) {
       return new OptimizeStaticTokenDecoder(configurationService);
     } else {
-      return NimbusJwtDecoder.withJwkSetUri(getJwtSetUri()).build();
+      return createJwtDecoderWithAudience();
     }
+  }
+
+  private JwtDecoder createJwtDecoderWithAudience() {
+    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(getJwtSetUri()).build();
+    OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(getAudienceFromConfiguration());
+    jwtDecoder.setJwtValidator(audienceValidator);
+    return jwtDecoder;
+  }
+
+  private String getAudienceFromConfiguration() {
+    return configurationService.getOptimizeApiConfiguration().getAudience();
   }
 }

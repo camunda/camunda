@@ -76,10 +76,14 @@ security:
 # A global access token used by all public APIs of Optimize
 api:
   # Authentication information to be provided for the public APIs of Optimize.
-  # Provide either a static access token OR a URL for a resource server. If both are provided, the static access
-  # token will be ignored and the resource server will be used for validation instead
+  # Provide either
+  # 1. A static access token OR
+  # 2. a URL for a resource server AND an audience to validate against.
+  # If both are provided, the static access token will be ignored and the resource server will be used for validation
+  # instead
   accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
   jwtSetUri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:null}
+  audience: ${CAMUNDA_OPTIMIZE_API_AUDIENCE:optimize}
 
 container:
   # A host name or IP address, to identify a specific network interface on
