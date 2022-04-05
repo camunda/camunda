@@ -94,4 +94,13 @@ public class Query {
   public int hashCode() {
     return Objects.hash(queryBuilder, aggregationBuilder, groupName);
   }
+
+  @Override
+  public String toString() {
+    return "Query{" +
+        "queryBuilder=" + queryBuilder +
+        ", aggregationBuilder=" + aggregationBuilder +
+        ", groupName='" + groupName + '\'' +
+        '}';
+  }
 }

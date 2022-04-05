@@ -42,23 +42,40 @@ import static org.mockito.Mockito.when;
 @WithMockUser(DEFAULT_USER)
 public class UsageMetricIT {
 
-  public static final String METRIC_ENDPOINT =
+  public static final String PROCESS_INSTANCE_METRIC_ENDPOINT =
       "/actuator/usage-metrics/process-instances?startTime={startTime}&endTime={endTime}";
+  public static final String DECISION_EVALUATION_METRIC_ENDPOINT =
+      "/actuator/usage-metrics/decision-instances?startTime={startTime}&endTime={endTime}";
 
   @Autowired private TestRestTemplate testRestTemplate;
   @MockBean private MetricContract.Reader reader;
 
   @Test
-  public void validateActuatorEndpointRegistered() {
+  public void validateProcessInstanceActuatorEndpointRegistered() {
     when(reader.retrieveProcessInstanceCount(any(), any())).thenReturn(3L);
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(PROCESS_INSTANCE_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(3L);
   }
+
+  @Test
+  public void validateDecisionInstanceActuatorEndpointRegistered() {
+    when(reader.retrieveDecisionInstanceCount(any(), any())).thenReturn(4L);
+
+    final Map<String, String> parameters = new HashMap<>();
+    parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
+    parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
+    final ResponseEntity<UsageMetricDTO> response =
+        testRestTemplate.getForEntity(DECISION_EVALUATION_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
+
+    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getBody().getTotal()).isEqualTo(4L);
+  }
+
 }

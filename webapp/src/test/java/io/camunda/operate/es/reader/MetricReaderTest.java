@@ -40,7 +40,7 @@ public class MetricReaderTest {
   private MetricReader subject;
 
   @Test
-  public void verifyRetrieveCountReturnsExpectedValue() {
+  public void verifyRetrieveProcessCountReturnsExpectedValue() {
     // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
@@ -54,7 +54,7 @@ public class MetricReaderTest {
   }
 
   @Test
-  public void verifySearchIsCalledWithRightParam() {
+  public void verifyProcessSearchIsCalledWithRightParam() {
     // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
@@ -69,13 +69,13 @@ public class MetricReaderTest {
 
     Query expected = Query.whereEquals(EVENT, MetricContract.EVENT_PROCESS_INSTANCE_FINISHED)
         .and(range(EVENT_TIME, oneHourBefore, now))
-        .aggregate(MetricReader.PROCESS_INSTANCES, VALUE, 1);
+        .aggregate(MetricReader.PROCESS_INSTANCES_AGG_NAME, VALUE, 1);
     Query calledValue = entityCaptor.getValue();
     assertEquals(expected, calledValue);
   }
 
   @Test
-  public void throwExceptionIfResponseHasError() {
+  public void throwExceptionIfProcessResponseHasError() {
     // When
     when(dao.searchWithAggregation(any())).thenReturn(new AggregationResponse(true));
 
@@ -83,5 +83,51 @@ public class MetricReaderTest {
     Assertions.assertThrows(
         OperateRuntimeException.class,
         () -> subject.retrieveProcessInstanceCount(OffsetDateTime.now(), OffsetDateTime.now()));
+  }
+
+  @Test
+  public void verifyRetrieveDecisionCountReturnsExpectedValue() {
+    // Given
+    final OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
+
+    // When
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResponse(false, List.of(), 99L));
+    Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+
+    // Then
+    assertEquals(result, 99L);
+  }
+
+  @Test
+  public void verifyDecisionSearchIsCalledWithRightParam() {
+    // Given
+    final OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
+
+    // When
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResponse(false, List.of(), 99L));
+    subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+
+    // Then
+    ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
+    verify(dao).searchWithAggregation(entityCaptor.capture());
+
+    Query expected = Query.whereEquals(EVENT, MetricContract.EVENT_DECISION_INSTANCE_EVALUATED)
+        .and(range(EVENT_TIME, oneHourBefore, now))
+        .aggregate(MetricReader.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
+    Query calledValue = entityCaptor.getValue();
+    assertEquals(expected, calledValue);
+  }
+
+  @Test
+  public void throwExceptionIfDecisionResponseHasError() {
+    // When
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResponse(true));
+
+    // Then
+    Assertions.assertThrows(
+        OperateRuntimeException.class,
+        () -> subject.retrieveDecisionInstanceCount(OffsetDateTime.now(), OffsetDateTime.now()));
   }
 }

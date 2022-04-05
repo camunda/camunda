@@ -12,12 +12,15 @@ import java.time.OffsetDateTime;
 public interface MetricContract {
 
   String EVENT_PROCESS_INSTANCE_FINISHED = "EVENT_PROCESS_INSTANCE_FINISHED";
+  String EVENT_DECISION_INSTANCE_EVALUATED = "EVENT_DECISION_INSTANCE_EVALUATED";
 
   interface Reader {
     Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
+    Long retrieveDecisionInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
   }
 
   interface Writer {
     IndexRequest registerProcessInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp);
+    IndexRequest registerDecisionInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp);
   }
 }
