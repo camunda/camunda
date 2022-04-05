@@ -19,11 +19,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.junit.jupiter.api.Test;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.matchers.Times;
-import org.mockserver.model.HttpError;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.verify.VerificationTimes;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
@@ -44,23 +38,32 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUB
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.mockserver.model.HttpRequest.request;
 
 public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
 
   private static final String PROCESS_ID = "demoProcess";
-  private static final Map<String, Object> VARIABLES =
+  private static final Map<String, Object> BASIC_VARIABLES =
     Map.of("var1", "someValue",
            "var2", false,
            "var3", 123,
            "var4", 123.3,
            "var5", ""
+    );
+  private static final Map<String, Object> PERSON_VARIABLES =
+    Map.of("name", "Pond",
+           "age", 28,
+           "IQ", 99999999999999L,
+           "birthday", "1992-11-17T00:00:00+01:00",
+           "muscleMassInPercent", 99.9,
+           "deceased", false,
+           "hands", (short) 2,
+           "likes", List.of("optimize", "garlic"),
+           "skills", Map.of("read", true, "write", false)
     );
 
   @Test
@@ -111,7 +114,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     // given
     final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    zeebeExtension.addVariablesToScope(processInstanceEvent.getProcessInstanceKey(), VARIABLES, false);
+    zeebeExtension.addVariablesToScope(processInstanceEvent.getProcessInstanceKey(), BASIC_VARIABLES, false);
     waitUntilMinimumVariableDocumentsExportedCount(5);
 
     // when
@@ -215,7 +218,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     final long startedInstanceKey2 =
       zeebeExtension.startProcessInstanceWithVariables(
         deployedProcess2.getBpmnProcessId(),
-        VARIABLES
+        BASIC_VARIABLES
       );
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
     waitUntilMinimumVariableDocumentsExportedCount(10);
@@ -230,30 +233,6 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       getProcessInstanceForId(String.valueOf(startedInstanceKey2));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance1);
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance2);
-  }
-
-  @Test
-  public void zeebeVariableImport_variableImportRetriesWhenDefinitionCannotBeFetched() {
-    // given
-    final long startedInstanceKey = deployProcessAndStartProcessInstanceWithVariables();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + PROCESS_DEFINITION_INDEX_NAME + ".*/_search")
-      .withMethod(POST);
-    esMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    ProcessInstanceDto savedProcessInstance =
-      getProcessInstanceForId(String.valueOf(startedInstanceKey));
-    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
-    assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
   }
 
   @Test
@@ -287,8 +266,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   @Test
   public void zeebeVariableImport_importObjectVariables() {
     // given
-    final Map<String, Object> objectVar = createPersonVariableWithAllTypes();
-    final Map<String, Object> variables = Map.of("objectVar", objectVar);
+    final Map<String, Object> variables = Map.of("objectVar", PERSON_VARIABLES);
 
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     final long processInstanceKey = zeebeExtension.startProcessInstanceWithVariables(
@@ -312,7 +290,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         Tuple.tuple(
           "objectVar",
           OBJECT.getId(),
-          Collections.singletonList(variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())
+          Collections.singletonList(variablesClient.createMapJsonObjectVariableDto(PERSON_VARIABLES).getValue())
         ),
         Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
         Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("28.0")),
@@ -474,24 +452,8 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     return zeebeExtension.startProcessInstanceWithVariables(
       deployedProcess.getBpmnProcessId(),
-      VARIABLES
+      BASIC_VARIABLES
     );
   }
 
-  private Map<String, Object> createPersonVariableWithAllTypes() {
-    Map<String, Object> person = new HashMap<>();
-    person.put("name", "Pond");
-    person.put("age", 28);
-    person.put("IQ", 99999999999999L);
-    person.put("birthday", "1992-11-17T00:00:00+01:00");
-    person.put("muscleMassInPercent", 99.9);
-    person.put("deceased", false);
-    person.put("hands", (short) 2);
-    person.put("likes", List.of("optimize", "garlic"));
-    Map<String, Boolean> skillsMap = new HashMap<>();
-    skillsMap.put("read", true);
-    skillsMap.put("write", false);
-    person.put("skills", skillsMap);
-    return person;
-  }
 }

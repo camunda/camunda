@@ -18,6 +18,7 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   private long scopeKey;
   private long processInstanceKey;
   private long processDefinitionKey;
+  private String bpmnProcessId;
 
   @Override
   public String toJson() {
