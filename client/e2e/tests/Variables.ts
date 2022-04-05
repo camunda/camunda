@@ -157,7 +157,7 @@ test('new variable still exists after refresh if task is completed', async (t) =
     .ok();
 });
 
-test.after(async (t) => {
+test.skip.after(async (t) => {
   await t.click(screen.getByRole('button', {name: 'Unclaim'}));
   await t.expect(screen.getByRole('button', {name: 'Claim'}).exists).ok();
 })('edited variable is not saved after refresh', async (t) => {
