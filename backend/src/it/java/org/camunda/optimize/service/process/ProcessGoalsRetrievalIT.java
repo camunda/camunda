@@ -172,7 +172,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
   }
 
   @ParameterizedTest
-  @MethodSource("getSortCriteriaAndExpectedProcessNameComparator")
+  @MethodSource("getSortCriteriaAndExpectedComparator")
   public void getProcessGoals_sortByProcessName(final String sortBy,
                                                 final SortOrder sortingOrder,
                                                 final Comparator<ProcessGoalsResponseDto> comparator) {
@@ -719,11 +719,11 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
   }
 
   private static Stream<Arguments> getProcessNameSortCriteriaAndExpectedProcessNameComparator() {
-    return getSortCriteriaAndExpectedProcessNameComparator()
+    return getSortCriteriaAndExpectedComparator()
       .filter(args -> args.get()[0] == ProcessGoalsResponseDto.Fields.processName);
   }
 
-  private static Stream<Arguments> getSortCriteriaAndExpectedProcessNameComparator() {
+  private static Stream<Arguments> getSortCriteriaAndExpectedComparator() {
     return Stream.of(
       Arguments.of(
         ProcessGoalsResponseDto.Fields.processName,

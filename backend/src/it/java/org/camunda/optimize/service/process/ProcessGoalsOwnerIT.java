@@ -170,7 +170,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
 }

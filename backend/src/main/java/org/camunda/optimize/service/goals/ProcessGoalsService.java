@@ -116,12 +116,14 @@ public class ProcessGoalsService {
     checkAuthorizationToProcessDefinition(userId, processDefKey);
     String ownerIdToSave = null;
     if (ownerId != null) {
-      if (!identityService.isUserAuthorizedToAccessIdentity(userId, new IdentityDto(ownerId, IdentityType.USER))) {
-        throw new ForbiddenException(String.format(
-          "User with ID %s is not permitted to set process goal owner to user with ID: %s", userId, ownerId));
+      final Optional<String> ownerUserId = identityService.getUserById(ownerId).map(IdentityDto::getId);
+      if (ownerUserId.isEmpty() ||
+        !identityService.isUserAuthorizedToAccessIdentity(userId, new IdentityDto(ownerId, IdentityType.USER))) {
+        throw new NotFoundException(String.format(
+          "Could not find a user with ID %s that the user %s is authorized to see", ownerId, userId));
+      } else {
+        ownerIdToSave = ownerUserId.get();
       }
-      ownerIdToSave = identityService.getUserById(ownerId).map(IdentityDto::getId)
-        .orElseThrow(() -> new NotFoundException("User with ID does not exist: " + ownerId));
     }
     processGoalsWriter.updateProcessOwner(processDefKey, ownerIdToSave);
   }
