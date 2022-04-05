@@ -22,11 +22,18 @@ const Result: React.FC = observer(() => {
       {status === 'initial' && (
         <SpinnerSkeleton data-testid="result-loading-spinner" />
       )}
-      {status === 'fetched' && decisionInstance !== null && (
-        <JSONViewer
-          data-testid="results-json-viewer"
-          value={decisionInstance.result ?? '{}'}
-        />
+      {status === 'fetched' &&
+        decisionInstance !== null &&
+        decisionInstance.state !== 'FAILED' && (
+          <JSONViewer
+            data-testid="results-json-viewer"
+            value={decisionInstance.result ?? '{}'}
+          />
+        )}
+      {status === 'fetched' && decisionInstance?.state === 'FAILED' && (
+        <StatusMessage variant="default">
+          No result available because the evaluation failed
+        </StatusMessage>
       )}
       {status === 'error' && (
         <StatusMessage variant="error">Data could not be fetched</StatusMessage>

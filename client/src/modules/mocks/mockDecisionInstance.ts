@@ -129,4 +129,14 @@ const assignApproverGroup: DecisionInstanceType = {
   result: null,
 } as const;
 
-export {invoiceClassification, assignApproverGroup};
+const assignApproverGroupWithoutVariables: DecisionInstanceType = {
+  ...assignApproverGroup,
+  evaluatedInputs: [],
+  evaluatedOutputs: [],
+} as const;
+
+export {
+  invoiceClassification,
+  assignApproverGroup,
+  assignApproverGroupWithoutVariables,
+};

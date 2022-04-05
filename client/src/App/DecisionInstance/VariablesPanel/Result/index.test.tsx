@@ -11,7 +11,10 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
+import {
+  assignApproverGroup,
+  invoiceClassification,
+} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
@@ -69,6 +72,23 @@ describe('<Result />', () => {
 
     expect(
       await screen.findByTestId('results-json-viewer')
+    ).toBeInTheDocument();
+  });
+
+  it('should show empty message for failed decision instances', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
+        res.once(ctx.json(assignApproverGroup))
+      )
+    );
+    decisionInstanceStore.fetchDecisionInstance('1');
+
+    render(<Result />, {wrapper: ThemeProvider});
+
+    expect(
+      await screen.findByText(
+        'No result available because the evaluation failed'
+      )
     ).toBeInTheDocument();
   });
 });

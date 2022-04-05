@@ -75,29 +75,40 @@ const InputsAndOutputs: React.FC = observer(() => {
               data-testid="inputs-skeleton"
             />
           )}
-          {status === 'fetched' && (
-            <Table>
-              <thead>
-                <TR>
-                  {INPUTS_STRUCTURE.map(({header, columnWidth}, index) => (
-                    <TH key={index} $width={columnWidth}>
-                      {header}
-                    </TH>
-                  ))}
-                </TR>
-              </thead>
-              <tbody>
-                {decisionInstance?.evaluatedInputs.map(({id, name, value}) => {
-                  return (
-                    <TR key={id}>
-                      <TD>{name}</TD>
-                      <TD>{value}</TD>
-                    </TR>
-                  );
-                })}
-              </tbody>
-            </Table>
-          )}
+          {status === 'fetched' &&
+            decisionInstance?.state === 'FAILED' &&
+            decisionInstance?.evaluatedInputs.length === 0 && (
+              <StatusMessage variant="default">
+                No input available because the evaluation failed
+              </StatusMessage>
+            )}
+          {status === 'fetched' &&
+            decisionInstance?.evaluatedInputs !== undefined &&
+            decisionInstance.evaluatedInputs.length > 0 && (
+              <Table>
+                <thead>
+                  <TR>
+                    {INPUTS_STRUCTURE.map(({header, columnWidth}, index) => (
+                      <TH key={index} $width={columnWidth}>
+                        {header}
+                      </TH>
+                    ))}
+                  </TR>
+                </thead>
+                <tbody>
+                  {decisionInstance?.evaluatedInputs.map(
+                    ({id, name, value}) => {
+                      return (
+                        <TR key={id}>
+                          <TD>{name}</TD>
+                          <TD>{value}</TD>
+                        </TR>
+                      );
+                    }
+                  )}
+                </tbody>
+              </Table>
+            )}
           {status === 'error' && (
             <StatusMessage variant="error">
               Data could not be fetched
@@ -112,7 +123,7 @@ const InputsAndOutputs: React.FC = observer(() => {
               data-testid="outputs-skeleton"
             />
           )}
-          {status === 'fetched' && (
+          {status === 'fetched' && decisionInstance?.state !== 'FAILED' && (
             <Table>
               <thead>
                 <TR>
@@ -141,6 +152,11 @@ const InputsAndOutputs: React.FC = observer(() => {
           {status === 'error' && (
             <StatusMessage variant="error">
               Data could not be fetched
+            </StatusMessage>
+          )}
+          {decisionInstance?.state === 'FAILED' && (
+            <StatusMessage variant="default">
+              No output available because the evaluation failed
             </StatusMessage>
           )}
         </Panel>

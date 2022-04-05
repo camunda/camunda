@@ -12,7 +12,11 @@ import {
   within,
 } from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
+import {
+  assignApproverGroup,
+  assignApproverGroupWithoutVariables,
+  invoiceClassification,
+} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceStore} from 'modules/stores/decisionInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
@@ -62,6 +66,48 @@ describe('<InputsAndOutputs />', () => {
 
     expect(screen.queryByTestId('inputs-skeleton')).not.toBeInTheDocument();
     expect(screen.queryByTestId('outputs-skeleton')).not.toBeInTheDocument();
+  });
+
+  it('should show empty message for failed decision instances with variables', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
+        res.once(ctx.json(assignApproverGroup))
+      )
+    );
+    decisionInstanceStore.fetchDecisionInstance('1');
+
+    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+
+    expect(
+      await screen.findByText(
+        'No output available because the evaluation failed'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText('No input available because the evaluation failed')
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show empty message for failed decision instances without variables', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
+        res.once(ctx.json(assignApproverGroupWithoutVariables))
+      )
+    );
+    decisionInstanceStore.fetchDecisionInstance('1');
+
+    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+
+    expect(
+      await screen.findByText(
+        'No output available because the evaluation failed'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('No input available because the evaluation failed')
+    ).toBeInTheDocument();
   });
 
   it('should load inputs and outputs', async () => {
