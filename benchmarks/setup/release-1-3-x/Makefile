@@ -5,7 +5,7 @@ all: zeebe starter timer simpleStarter worker
 
 .PHONY: zeebe
 zeebe:
-	-helm install --namespace $(namespace) $(namespace) zeebe/zeebe-cluster-helm -f zeebe-values.yaml --skip-crds
+	-helm install --namespace $(namespace) $(namespace) camundacloud/zeebe-cluster-helm -f zeebe-values.yaml --skip-crds
 	-kubectl apply -n $(namespace) -f curator-cronjob.yaml
 	-kubectl apply -n $(namespace) -f curator-configmap.yaml
 
@@ -17,7 +17,7 @@ zeebe-template:
 
 .PHONY: update
 update:
-	-helm upgrade --namespace $(namespace) $(namespace) zeebe/zeebe-cluster-helm -f zeebe-values.yaml
+	-helm upgrade --namespace $(namespace) $(namespace) camundacloud/zeebe-cluster-helm -f zeebe-values.yaml
 
 .PHONY: starter
 starter:
