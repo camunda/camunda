@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Logstreams</name>
   <artifactId>zeebe-logstreams</artifactId>
-  <version>1.2.12-SNAPSHOT</version>
+  <version>1.2.12</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.12-SNAPSHOT</version>
+    <version>1.2.12</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
