@@ -25,7 +25,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
-      - run: mvn -T1C -B -DskipChecks -DskipTests package
+      - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
           mvn -B -T2 --no-snapshot-updates
@@ -55,7 +55,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
-      - run: mvn -T1C -B -DskipChecks -DskipTests package
+      - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
           mvn -B --no-snapshot-updates
@@ -107,7 +107,7 @@ jobs:
           mvn -B -T1C
           -D skipTests -D skipChecks
           -am -pl :${{ matrix.project }}
-          package
+          install
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
@@ -137,7 +137,7 @@ jobs:
           mvn -T1C -B
           -D skipTests -D skipChecks
           -am -pl :zeebe-workflow-engine,:zeebe-logstreams
-          package
+          install
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
