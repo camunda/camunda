@@ -55,10 +55,11 @@ const CreateOperationDropdown: React.FC<Props> = ({label, selectedCount}) => {
     `About to ${
       // @ts-expect-error ts-migrate(2538) FIXME: Type 'null' cannot be used as an index type.
       ACTION_NAMES[modalMode]
-    } ${pluralSuffix(
-      selectedCount,
-      'Instance'
-    )}. In case there are called instances, these will be canceled too.`;
+    } ${pluralSuffix(selectedCount, 'Instance')}.${
+      modalMode === 'CANCEL_PROCESS_INSTANCE'
+        ? ' In case there are called instances, these will be canceled too.'
+        : ''
+    } `;
 
   return (
     <Styled.DropdownContainer
