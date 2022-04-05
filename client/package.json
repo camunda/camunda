@@ -75,7 +75,7 @@
     "@types/react-transition-group": "4.4.4",
     "@types/styled-components": "5.1.24",
     "babel-loader": "8.1.0",
-    "eslint-plugin-camunda-licensed": "0.4.4",
+    "eslint-plugin-camunda-licensed": "0.4.5",
     "eslint-plugin-prettier": "4.0.0",
     "glob": "7.2.0",
     "http-proxy-middleware": "2.0.4",
