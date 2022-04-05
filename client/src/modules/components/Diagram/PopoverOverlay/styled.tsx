@@ -24,6 +24,7 @@ const Popper = styled.div`
     const colors = theme.colors.modules.diagram.popoverOverlay.arrowStyle;
 
     return css`
+      z-index: 5;
       &[data-popper-reference-hidden='true'] {
         visibility: hidden;
       }
