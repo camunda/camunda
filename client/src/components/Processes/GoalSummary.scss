@@ -8,7 +8,9 @@
   position: relative;
 
   .Icon {
-    color: var(--red-darken-38);
+    &.error {
+      color: var(--red-darken-38);
+    }
 
     &.success {
       color: var(--green-base-44);

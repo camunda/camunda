@@ -1,9 +1,13 @@
 .GoalResult {
   min-width: max-content;
-  padding: 0 20px 20px 20px;
+  padding: 20px 20px 20px 20px;
   height: 100%;
 
   .goal {
+    &:first-child p {
+      margin-top: 0;
+    }
+
     p {
       margin-bottom: 5px;
     }

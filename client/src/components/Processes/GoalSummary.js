@@ -8,13 +8,24 @@ import React from 'react';
 import classNames from 'classnames';
 
 import {Icon} from 'components';
+import {t} from 'translation';
 
 import './GoalSummary.scss';
 
 export default function GoalSummary({goals}) {
-  if (goals.length === 0 || goals.every((goal) => !goal.value)) {
+  if (goals.length === 0) {
     return null;
   }
+
+  if (goals.every((goal) => !goal.value)) {
+    return (
+      <div className="GoalSummary">
+        <Icon type="info" />
+        <span className="height-center">{t('report.noDataNotice')}</span>
+      </div>
+    );
+  }
+
   const allSucceeded = goals.every((goal) => goal.successful);
   const allFailed = goals.every((goal) => !goal.successful);
 
@@ -22,7 +33,7 @@ export default function GoalSummary({goals}) {
     return (
       <div className="GoalSummary">
         <Icon
-          className={classNames({success: allSucceeded})}
+          className={classNames({success: allSucceeded, error: allFailed})}
           type={allSucceeded ? 'check-circle' : 'clear'}
         />
         <span className="center">{goals.length}</span>
@@ -34,7 +45,7 @@ export default function GoalSummary({goals}) {
     <div className="GoalSummary">
       <Icon className="success" type="check-circle" />
       <span className="height-center">1</span>
-      <Icon type="clear" />
+      <Icon type="clear" className="error" />
       <span className="height-center">1</span>
     </div>
   );

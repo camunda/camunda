@@ -17,10 +17,10 @@ it('should not display the summary if no goals are defined', () => {
   expect(node.isEmptyRender()).toBe(true);
 });
 
-it('should not display the summary if all goals has no value', () => {
+it('should display no data if all goals has no value', () => {
   const node = shallow(<GoalSummary goals={[{value: null}, {value: null}]} />);
 
-  expect(node.isEmptyRender()).toBe(true);
+  expect(node).toIncludeText('No data');
 });
 
 it('should display single indicator if all goals succeeded or failed', () => {
@@ -49,5 +49,5 @@ it('should display two indicators if one goal succeeds and the other fails', () 
 
   expect(node.find(Icon).length).toBe(2);
   expect(node.find(Icon).at(0).prop('className')).toBe('success');
-  expect(node.find(Icon).at(1).prop('className')).toBe(undefined);
+  expect(node.find(Icon).at(1).prop('className')).toBe('error');
 });
