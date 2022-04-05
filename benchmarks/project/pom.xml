@@ -99,7 +99,7 @@
       </snapshots>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
     </repository>
 
     <repository>
@@ -111,7 +111,7 @@
       </snapshots>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
     </repository>
   </repositories>
 

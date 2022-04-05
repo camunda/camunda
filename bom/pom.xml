@@ -27,8 +27,8 @@
 
   <properties>
     <!-- release parent settings -->
-    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots</nexus.snapshot.repository>
-    <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io</nexus.release.repository>
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
     <version.java>11</version.java>
@@ -237,7 +237,7 @@
       </snapshots>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
     </repository>
 
     <repository>
@@ -249,7 +249,7 @@
       </snapshots>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
     </repository>
   </repositories>
 
