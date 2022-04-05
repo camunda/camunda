@@ -47,6 +47,7 @@ import {
 } from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 const OPTIONAL_FILTER_FIELDS: Record<
   OptionalFilter,
@@ -102,6 +103,11 @@ const Filters: React.FC = observer(() => {
   };
 
   useEffect(() => {
+    const decisionsFilters = getDecisionInstanceFilters(location.search);
+    storeStateLocally({
+      decisionsFilters,
+    });
+
     const {possibleOptionalFilters} = decisionInstancesVisibleFiltersStore;
 
     const params = Array.from(
@@ -220,7 +226,7 @@ const Filters: React.FC = observer(() => {
                 type="reset"
                 onClick={() => {
                   form.reset();
-                  navigate(Locations.decisions(location));
+                  navigate(Locations.decisions(location, initialValues));
                   decisionInstancesVisibleFiltersStore.reset();
                 }}
               >

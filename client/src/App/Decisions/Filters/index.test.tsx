@@ -11,11 +11,13 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Header} from 'App/Layout/Header';
 import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {decisionInstancesVisibleFiltersStore} from 'modules/stores/decisionInstancesVisibleFilters';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {getStateLocally} from 'modules/utils/localStorage';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
@@ -26,6 +28,7 @@ function getWrapper(initialPath: string = '/decisions') {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
+          <Header />
           {children}
           <LocationLog />
         </MemoryRouter>
@@ -62,6 +65,7 @@ describe('<Filters />', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
     groupedDecisionsStore.reset();
+    localStorage.clear();
   });
 
   it('should render the correct elements', () => {
@@ -90,8 +94,8 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.selectOptions(screen.getByLabelText(/name/i), [
       'invoice-assign-approver',
@@ -121,7 +125,7 @@ describe('<Filters />', () => {
     userEvent.click(screen.getByText(/evaluation date/i));
     userEvent.paste(screen.getByLabelText(/evaluation date/i), '1111-11-11');
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -134,9 +138,9 @@ describe('<Filters />', () => {
 
     userEvent.click(screen.getByRole('button', {name: /reset/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?evaluated=true&failed=true'
+      /^\?evaluated=true&failed=true$/
     );
   });
 
@@ -154,6 +158,12 @@ describe('<Filters />', () => {
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
+
+    expect(getStateLocally().decisionsFilters).toEqual({
+      ...MOCK_FILTERS_PARAMS,
+      evaluated: Boolean(MOCK_FILTERS_PARAMS.evaluated),
+      failed: Boolean(MOCK_FILTERS_PARAMS.failed),
+    });
   });
 
   it('should persist enabled filters on session', () => {
@@ -284,7 +294,7 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/decision instance id\(s\)/i));
@@ -295,7 +305,7 @@ describe('<Filters />', () => {
         'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).toBeInTheDocument();
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
 
@@ -345,7 +355,7 @@ describe('<Filters />', () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/process instance id/i));
@@ -354,7 +364,7 @@ describe('<Filters />', () => {
     expect(
       await screen.findByText('Id has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.clear(screen.getByLabelText(/process instance id/i));
 
@@ -394,7 +404,7 @@ describe('<Filters />', () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/evaluation date/i));
@@ -404,7 +414,7 @@ describe('<Filters />', () => {
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
 
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
 
     userEvent.clear(screen.getByLabelText(/evaluation date/i));
 
@@ -417,5 +427,37 @@ describe('<Filters />', () => {
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
+  });
+
+  it('should persist applied filters on navigation', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+
+    userEvent.click(screen.getByText(/^more filters$/i));
+    userEvent.click(screen.getByText(/process instance id/i));
+    userEvent.type(
+      screen.getByLabelText(/process instance id/i),
+      '2251799813729387'
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?processInstanceId=2251799813729387$/
+      )
+    );
+
+    userEvent.click(screen.getByText('Dashboard'));
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+
+    userEvent.click(screen.getByText('Decisions'));
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?processInstanceId=2251799813729387$/
+    );
   });
 });

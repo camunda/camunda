@@ -6,7 +6,10 @@
 
 import {To, Location} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {ProcessInstanceFilters} from 'modules/utils/filter';
+import {
+  DecisionInstanceFilters,
+  ProcessInstanceFilters,
+} from 'modules/utils/filter';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 type RouterState = {
@@ -102,13 +105,28 @@ const Locations = {
       search: getPersistentQueryParams(location.search),
     };
   },
-  decisions(location: Location): To {
+  decisions(location: Location, filters?: DecisionInstanceFilters): To {
     const params = new URLSearchParams(
       getPersistentQueryParams(location.search)
     );
 
-    params.set('evaluated', 'true');
-    params.set('failed', 'true');
+    const storage = getStateLocally();
+
+    if (filters !== undefined) {
+      Object.entries(filters).forEach(([key, value]) => {
+        params.set(key, value as string);
+      });
+    } else if (
+      storage.decisionsFilters !== undefined &&
+      storage.decisionsFilters !== null
+    ) {
+      Object.entries(storage.decisionsFilters).forEach(([key, value]) => {
+        params.set(key, value as string);
+      });
+    } else {
+      params.set('evaluated', 'true');
+      params.set('failed', 'true');
+    }
 
     return {
       pathname: Paths.decisions(),
