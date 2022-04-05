@@ -53,7 +53,7 @@
     <version.commons-text>1.9</version.commons-text>
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
-    <version.error-prone>2.11.0</version.error-prone>
+    <version.error-prone>2.12.0</version.error-prone>
     <version.grpc>1.45.1</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
@@ -74,7 +74,7 @@
     <version.mockito-jupiter>4.4.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.1</version.msgpack>
-    <version.netty>4.1.74.Final</version.netty>
+    <version.netty>4.1.75.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.19.4</version.protobuf>
@@ -132,7 +132,7 @@
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
-    <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
+    <plugin.version.jacoco>0.8.8</plugin.version.jacoco>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.maven-jar>3.2.2</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
