@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
   <artifactId>zeebe-parent</artifactId>
-  <version>1.2.12</version>
+  <version>1.2.13-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>1.2.12</version>
+    <version>1.2.13-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 

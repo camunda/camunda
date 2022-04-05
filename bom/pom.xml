@@ -4,7 +4,7 @@
   <name>Zeebe BOM</name>
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>1.2.12</version>
+  <version>1.2.13-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -274,7 +274,7 @@
     <url>https://github.com/zeebe-io/zeebe</url>
     <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
-    <tag>1.2.12</tag>
+    <tag>1.2.0</tag>
   </scm>
 
 </project>

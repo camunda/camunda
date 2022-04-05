@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Workflow Engine</name>
   <artifactId>zeebe-workflow-engine</artifactId>
-  <version>1.2.12</version>
+  <version>1.2.13-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.12</version>
+    <version>1.2.13-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
