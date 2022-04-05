@@ -84,7 +84,7 @@
     "babel-loader": "8.1.0",
     "chromatic": "6.5.3",
     "eslint-config-prettier": "8.5.0",
-    "eslint-plugin-camunda-licensed": "0.4.4",
+    "eslint-plugin-camunda-licensed": "0.4.5",
     "eslint-plugin-prettier": "4.0.0",
     "http-proxy-middleware": "2.0.4",
     "husky": "7.0.4",
