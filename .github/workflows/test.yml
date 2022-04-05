@@ -28,7 +28,7 @@ jobs:
       - run: mvn -T1C -B -DskipChecks -DskipTests package
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
-          mvn -B -T2
+          mvn -B -T2 --no-snapshot-updates
           -D junitThreadCount=12
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
@@ -58,7 +58,7 @@ jobs:
       - run: mvn -T1C -B -DskipChecks -DskipTests package
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
-          mvn -B
+          mvn -B --no-snapshot-updates
           -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
           -pl :zeebe-elasticsearch-exporter
           verify
@@ -109,7 +109,7 @@ jobs:
           -am -pl :${{ matrix.project }}
           package
       - run: >
-          mvn -B
+          mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -pl :${{ matrix.project }}
           verify
@@ -139,7 +139,7 @@ jobs:
           -am -pl :zeebe-workflow-engine,:zeebe-logstreams
           package
       - run: >
-          mvn -B
+          mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -pl :zeebe-workflow-engine,:zeebe-logstreams
           verify
@@ -178,7 +178,7 @@ jobs:
           install
       - name: Run smoke test
         run: >
-          mvn -B
+          mvn -B --no-snapshot-updates
           -DskipUTs -DskipChecks
           -pl qa/integration-tests
           -P smoke-test
