@@ -172,6 +172,11 @@
     "editGoal": "Edit Goal",
     "goals": "Goals",
     "goalRemoved": "Goals removed from '{processName}' process",
+    "addOwner": "Add Owner",
+    "editOwner": "Edit Owner",
+    "addProcessOwner": "Add Process Owner",
+    "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to set a default recipient for alerts or sort and filter processes.",
+    "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
@@ -1259,7 +1264,8 @@
         "processEvents": "process events",
         "ingestedEvents": "Events",
         "items": "Items",
-        "goals": "Goals"
+        "goals": "Goals",
+        "owner": "Owner"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",

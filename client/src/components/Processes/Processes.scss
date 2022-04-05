@@ -4,6 +4,18 @@
   height: 100%;
 
   .EntityList {
+    .ownerInfo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .ownerName {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
     .setGoalBtn {
       margin: 4px;
     }
@@ -12,12 +24,16 @@
       display: inline-block;
     }
 
-    .ListItem:not(:hover) .setGoalBtn {
-      opacity: 0;
+    .ListItem:not(:hover) {
+      .setGoalBtn,
+      .setOwnerBtn {
+        opacity: 0;
+        width: 0px;
 
-      &.active,
-      &.focus-visible {
-        opacity: 1;
+        &.active,
+        &.focus-visible {
+          opacity: 1;
+        }
       }
     }
 

@@ -35,3 +35,7 @@ export async function evaluateGoals(processDefinitionKey, goals) {
 
   return await response.json();
 }
+
+export function updateOwner(processDefinitionKey, id) {
+  return put(`api/process/${processDefinitionKey}/owner`, {id});
+}

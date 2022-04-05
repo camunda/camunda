@@ -6,8 +6,8 @@
 
 import {get} from 'request';
 
-export async function searchIdentities(terms) {
-  const response = await get(`api/identity/search`, {terms});
+export async function searchIdentities(terms, excludeUserGroups) {
+  const response = await get(`api/identity/search`, {terms, excludeUserGroups});
 
   return await response.json();
 }

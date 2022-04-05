@@ -172,6 +172,11 @@
     "editGoal": "Ziel bearbeiten",
     "goals": "Ziele",
     "goalRemoved": "Ziele aus dem '{processName}' Prozess wurden entfernt",
+    "addOwner": "Eigentümer hinzufügen",
+    "editOwner": "Eigentümer bearbeiten",
+    "addProcessOwner": "Prozesseigentümer hinzufügen",
+    "ownerInfo": "Der Prozesseigentümer ist für Geschäftsmetriken des Prozesses verantwortlich. Sie können den Prozesseigentümer verwenden, um einen Standardempfänger für Alarme einzurichten sowie zum Sortieren und Filtern von Prozessen.",
+    "ownerRemoveWarning": "Der Eigentümer '{owner}' wird aus dem Prozess entfernt",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
@@ -1259,7 +1264,8 @@
         "processEvents": "Prozessevents",
         "ingestedEvents": "Events",
         "items": "Elemente",
-        "goals": "Ziele"
+        "goals": "Ziele",
+        "owner": "Eigentümer"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",
