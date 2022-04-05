@@ -29,6 +29,7 @@ describe('<Bar />', () => {
         metaData={mockStartMetaData}
         isBold={false}
         isSelected={false}
+        hasTopBorder={false}
       />,
       {
         wrapper: ThemeProvider,
@@ -48,6 +49,7 @@ describe('<Bar />', () => {
         metaData={mockMultiInstanceBodyMetaData}
         isBold={false}
         isSelected={false}
+        hasTopBorder={false}
       />,
       {
         wrapper: ThemeProvider,
@@ -66,6 +68,7 @@ describe('<Bar />', () => {
         metaData={mockMultiInstanceBodyMetaData}
         isBold={false}
         isSelected={false}
+        hasTopBorder={false}
       />,
       {
         wrapper: ThemeProvider,

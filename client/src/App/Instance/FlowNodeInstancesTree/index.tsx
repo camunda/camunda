@@ -131,6 +131,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                 metaData={metaData}
                 isSelected={isSelected}
                 isBold={isFoldable || metaData.type.elementType === 'PROCESS'}
+                hasTopBorder={treeDepth > 1}
               />
             </Foldable.Summary>
           )}

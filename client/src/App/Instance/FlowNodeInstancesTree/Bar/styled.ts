@@ -20,11 +20,12 @@ const NodeIcon = styled(BasicFlowNodeIcon)`
 `;
 
 type ContainerProps = {
-  showSelectionStyle?: boolean;
+  $isSelected?: boolean;
+  $hasTopBorder?: boolean;
 };
 
 const Container = styled.div<ContainerProps>`
-  ${({theme, showSelectionStyle}) => {
+  ${({theme, $isSelected, $hasTopBorder}) => {
     return css`
       display: flex;
       height: 27px;
@@ -37,7 +38,7 @@ const Container = styled.div<ContainerProps>`
       border-width: 1px 0px 0px 1px;
       border-style: solid;
 
-      ${showSelectionStyle
+      ${$isSelected
         ? css`
             border-color: ${theme.colors.borderColor};
             border-width: 1px 0px 0px 1px;
@@ -56,6 +57,11 @@ const Container = styled.div<ContainerProps>`
             }
           `
         : ''};
+
+      ${!$hasTopBorder &&
+      css`
+        border-top: none;
+      `}
     `;
   }}
 `;

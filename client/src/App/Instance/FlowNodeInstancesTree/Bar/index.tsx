@@ -17,6 +17,7 @@ type Props = {
   metaData: FlowNodeMetaData;
   isSelected: boolean;
   isBold: boolean;
+  hasTopBorder: boolean;
 };
 
 const Bar: React.FC<Props> = ({
@@ -24,9 +25,10 @@ const Bar: React.FC<Props> = ({
   metaData,
   isSelected,
   isBold,
+  hasTopBorder,
 }) => {
   return (
-    <Container showSelectionStyle={isSelected}>
+    <Container $isSelected={isSelected} $hasTopBorder={hasTopBorder}>
       <NodeIcon
         flowNodeInstanceType={flowNodeInstance.type}
         types={metaData.type}

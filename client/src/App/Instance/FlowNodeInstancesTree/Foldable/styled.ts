@@ -54,7 +54,7 @@ const SummaryLabel = styled.div<SummaryLabelProps>`
               width: 32px;
               bottom: -1px;
               z-index: 1;
-              background: ${isSelected ? 'none' : colors.backgroundColor};
+              background: ${colors.backgroundColor};
             }
           `
         : ''};
