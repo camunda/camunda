@@ -39,7 +39,7 @@
 
     <jackson.version>2.13.2.20220328</jackson.version>
     <jsonpath.version>2.7.0</jsonpath.version>
-    <elasticsearch.version>7.17.0</elasticsearch.version>
+    <elasticsearch.version>7.17.2</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
