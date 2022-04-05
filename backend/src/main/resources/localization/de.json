@@ -189,7 +189,7 @@
       "updateGoals": "Ziele aktualisieren",
       "resultPreview": "Ergebnisvorschau:",
       "instancesThisMonth": "Instanzen die in den letzten 30 Tagen beendet wurden",
-      "noInstances": "Im Zeitbereich sind keine Instanzen aufgetreten. Setze Ziele für erwartete Laufzeit.",
+      "noInstances": "Im Zeitbereich sind keine Instanzen aufgetreten. Sie können Ziele für die erwartete Laufzeit setzen.",
       "resultInfo": "Diese Vorschau zeigt den Status jedes Ziels anhand seiner aktuellen Konfiguration an."
     }
   },
