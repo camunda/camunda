@@ -50,7 +50,7 @@ export function ResultPreview({mightFail, processDefinitionKey, goals}) {
           <Icon type="info" />
         </Tooltip>
       </div>
-      {loading ? <LoadingIndicator /> : <GoalResult durationGoals={{goals, results}} />}
+      {loading ? <LoadingIndicator /> : <GoalResult durationGoals={{goals, results}} displayTip />}
     </div>
   );
 }

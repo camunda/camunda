@@ -189,7 +189,8 @@
       "updateGoals": "Update Goals",
       "resultPreview": "Result Preview:",
       "instancesThisMonth": "Instances ended in the last 30 days",
-      "noInstances": "No instances occured in the time range. Set goals for expected durations.",
+      "noInstances": "No instances occured in the time range.",
+      "setGoals": "Set goals for expected durations.",
       "resultInfo": "This preview displays each goal's status based on its current configuration."
     }
   },

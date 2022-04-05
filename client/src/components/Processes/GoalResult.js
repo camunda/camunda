@@ -13,11 +13,13 @@ import {NoDataNotice} from 'components';
 
 import './GoalResult.scss';
 
-export default function GoalResult({durationGoals: {goals, results}}) {
+export default function GoalResult({durationGoals: {goals, results}, displayTip}) {
   if (!results || results.every((goal) => !goal.value)) {
     return (
       <div className="GoalResult">
-        <NoDataNotice type="info">{t('processes.timeGoals.noInstances')}</NoDataNotice>
+        <NoDataNotice type="info">
+          {t('processes.timeGoals.noInstances')} {displayTip && t('processes.timeGoals.setGoals')}
+        </NoDataNotice>
       </div>
     );
   }
