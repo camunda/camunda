@@ -32,7 +32,7 @@
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.16.3</version.elasticsearch>
-    <version.spring.boot>2.5.6</version.spring.boot>
+    <version.spring.boot>2.5.12</version.spring.boot>
     <version.spring.session>1.3.5.RELEASE</version.spring.session>
     <version.junit>4.13.2</version.junit>
     <version.swagger>3.0.0</version.swagger>
