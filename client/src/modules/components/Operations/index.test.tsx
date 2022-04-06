@@ -238,7 +238,7 @@ describe('Operations', () => {
       }
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -254,7 +254,7 @@ describe('Operations', () => {
     );
 
     expect(mockDisplayNotification).not.toHaveBeenCalled();
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
   });
 
   describe('Cancel Operation', () => {
@@ -346,7 +346,7 @@ describe('Operations', () => {
         })
       );
 
-      expect(screen.getByTestId('pathname')).toHaveTextContent(
+      expect(screen.getByTestId('pathname').textContent).toBe(
         `/processes/${rootInstanceId}`
       );
     });

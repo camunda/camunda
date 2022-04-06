@@ -199,9 +199,9 @@ describe('Instance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
       expect(screen.getByTestId('search')).toHaveTextContent(
-        '?active=true&incidents=true'
+        /^\?active=true&incidents=true$/
       );
     });
 

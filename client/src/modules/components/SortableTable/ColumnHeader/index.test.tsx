@@ -48,12 +48,12 @@ describe('ColumnHeader', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByRole('button', {name: 'Sort by Version'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?sort=version%2Bdesc'
+      /^\?sort=version%2Bdesc$/
     );
   });
 
@@ -62,12 +62,12 @@ describe('ColumnHeader', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByRole('button', {name: 'Sort by Version'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?sort=version%2Basc'
+      /^\?sort=version%2Basc$/
     );
   });
 });

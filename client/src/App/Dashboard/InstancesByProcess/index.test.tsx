@@ -137,7 +137,7 @@ describe('InstancesByProcess', () => {
 
     userEvent.click(processLink);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?process=orderProcess&version=all&active=true&incidents=true'
+      /^\?process=orderProcess&version=all&active=true&incidents=true$/
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -176,7 +176,7 @@ describe('InstancesByProcess', () => {
 
     userEvent.click(firstVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?process=mockProcess&version=1&active=true&incidents=true'
+      /^\?process=mockProcess&version=1&active=true&incidents=true$/
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
@@ -198,7 +198,7 @@ describe('InstancesByProcess', () => {
 
     userEvent.click(secondVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?process=mockProcess&version=2&active=true&incidents=true'
+      /^\?process=mockProcess&version=2&active=true&incidents=true$/
     );
   });
 
@@ -231,7 +231,7 @@ describe('InstancesByProcess', () => {
     expect(processLink).toBeInTheDocument();
     userEvent.click(processLink);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?process=loanProcess&version=1&active=true&incidents=true'
+      /^\?process=loanProcess&version=1&active=true&incidents=true$/
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -303,7 +303,7 @@ describe('InstancesByProcess', () => {
 
     userEvent.click(processLink);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=orderProcess&version=all&active=true&incidents=true'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=orderProcess&version=all&active=true&incidents=true$/
     );
 
     userEvent.click(
@@ -317,7 +317,7 @@ describe('InstancesByProcess', () => {
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&active=true&incidents=true'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&active=true&incidents=true$/
     );
   });
 });

@@ -149,7 +149,7 @@ describe('IncidentsByError', () => {
       )
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -170,7 +170,7 @@ describe('IncidentsByError', () => {
 
     userEvent.click(firstVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      /^\?process=mockProcess&version=1&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
@@ -246,7 +246,7 @@ describe('IncidentsByError', () => {
       )
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
-      `?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true`
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
 
     userEvent.click(expandButton);
@@ -257,7 +257,7 @@ describe('IncidentsByError', () => {
 
     userEvent.click(firstVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
   });
 

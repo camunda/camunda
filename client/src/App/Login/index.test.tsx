@@ -66,7 +66,7 @@ describe('<Login />', () => {
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/')
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/)
     );
   });
 
@@ -114,7 +114,7 @@ describe('<Login />', () => {
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/processes')
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/)
     );
   });
 
@@ -137,10 +137,10 @@ describe('<Login />', () => {
     userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/processes')
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/)
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https://www.testUrl.com'
+      /^\?gseUrl=https:\/\/www.testUrl.com$/
     );
   });
 

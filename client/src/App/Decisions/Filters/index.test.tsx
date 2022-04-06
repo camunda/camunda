@@ -96,7 +96,7 @@ describe('<Filters />', () => {
     });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.selectOptions(screen.getByLabelText(/name/i), [
       'invoice-assign-approver',
@@ -295,7 +295,7 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/decision instance id\(s\)/i));
@@ -306,7 +306,7 @@ describe('<Filters />', () => {
         'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).toBeInTheDocument();
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
 
@@ -356,7 +356,7 @@ describe('<Filters />', () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/process instance id/i));
@@ -365,7 +365,7 @@ describe('<Filters />', () => {
     expect(
       await screen.findByText('Id has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.clear(screen.getByLabelText(/process instance id/i));
 
@@ -405,7 +405,7 @@ describe('<Filters />', () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/evaluation date/i));
@@ -415,7 +415,7 @@ describe('<Filters />', () => {
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
 
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.clear(screen.getByLabelText(/evaluation date/i));
 
@@ -436,7 +436,7 @@ describe('<Filters />', () => {
     });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByText(/^more filters$/i));
     userEvent.click(screen.getByText(/process instance id/i));
@@ -453,7 +453,7 @@ describe('<Filters />', () => {
 
     userEvent.click(screen.getByText('Dashboard'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(screen.getByText('Decisions'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);

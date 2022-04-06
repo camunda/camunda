@@ -88,7 +88,9 @@ describe('User', () => {
       wrapper: createWrapper('/processes/123'),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes/123');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/processes\/123$/
+    );
 
     userEvent.click(
       screen.getByRole('link', {
@@ -96,7 +98,7 @@ describe('User', () => {
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/processes/546546543276'
+      /^\/processes\/546546543276$/
     );
 
     userEvent.click(
@@ -105,7 +107,7 @@ describe('User', () => {
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/processes/968765314354'
+      /^\/processes\/968765314354$/
     );
 
     userEvent.click(
@@ -114,7 +116,7 @@ describe('User', () => {
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/processes/2251799813685447'
+      /^\/processes\/2251799813685447$/
     );
   });
 });

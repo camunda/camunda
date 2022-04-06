@@ -211,7 +211,7 @@ describe('<InstancesTable />', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/decisions');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
     userEvent.click(
       screen.getByRole('link', {
@@ -220,7 +220,7 @@ describe('<InstancesTable />', () => {
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/decisions/2251799813689541'
+      /^\/decisions\/2251799813689541$/
     );
   });
 
@@ -248,7 +248,7 @@ describe('<InstancesTable />', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/decisions');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
     userEvent.click(
       screen.getByRole('link', {
@@ -257,7 +257,7 @@ describe('<InstancesTable />', () => {
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      '/processes/2251799813689544'
+      /^\/processes\/2251799813689544$/
     );
   });
 

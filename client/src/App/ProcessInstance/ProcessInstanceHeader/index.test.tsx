@@ -186,12 +186,14 @@ describe('InstanceHeader', () => {
       screen.getByTestId('instance-header-skeleton')
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes/1');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/processes\/1$/
+    );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(await screen.findByRole('link', {name: /view all/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
@@ -430,7 +432,7 @@ describe('InstanceHeader', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should display notification and redirect if delete operation is performed', async () => {
+  it('should call onPollingFailure if delete operation is performed', async () => {
     jest.useFakeTimers();
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
@@ -454,7 +456,9 @@ describe('InstanceHeader', () => {
       screen.getByTestId('instance-header-skeleton')
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes/1');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/processes\/1$/
+    );
     userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -478,8 +482,6 @@ describe('InstanceHeader', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => expect(onPollingFailure).toHaveBeenCalled());
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/processes');
 
     jest.clearAllTimers();
     jest.useRealTimers();

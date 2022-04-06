@@ -91,21 +91,21 @@ describe('Header', () => {
     expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
 
     userEvent.click(await screen.findByText('Operate'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(await screen.findByText('Processes'));
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?active=true&incidents=true&completed=true'
+      /^\?active=true&incidents=true&completed=true$/
     );
 
     userEvent.click(await screen.findByText('Dashboard'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     userEvent.click(await screen.findByText('Decisions'));
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?evaluated=true&failed=true'
+      /^\?evaluated=true&failed=true$/
     );
   });
 
@@ -124,26 +124,27 @@ describe('Header', () => {
     expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
 
     userEvent.click(await screen.findByText('Operate'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com$/
     );
 
     userEvent.click(await screen.findByText('Processes'));
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true$/
     );
 
     userEvent.click(await screen.findByText('Dashboard'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com$/
     );
 
     userEvent.click(await screen.findByText('Decisions'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&evaluated=true&failed=true'
+      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&evaluated=true&failed=true$/
     );
   });
 

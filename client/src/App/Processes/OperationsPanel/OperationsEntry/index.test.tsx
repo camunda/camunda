@@ -171,7 +171,7 @@ describe('OperationsEntry', () => {
 
     userEvent.click(screen.getByText('3 Instances'));
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052'
+      /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);

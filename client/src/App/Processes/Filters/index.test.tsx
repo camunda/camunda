@@ -148,7 +148,7 @@ describe('Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        '?process=bigVarProcess&version=1'
+        /^\?process=bigVarProcess&version=1$/
       )
     );
   });
@@ -341,7 +341,7 @@ describe('Filters', () => {
         wrapper: getWrapper(),
       });
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), 'a');
@@ -351,7 +351,7 @@ describe('Filters', () => {
           'Id has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-instance-ids'));
 
@@ -382,7 +382,7 @@ describe('Filters', () => {
       render(<Filters />, {
         wrapper: getWrapper(),
       });
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('Parent Instance Id');
       userEvent.type(screen.getByTestId('filter-parent-instance-id'), 'a');
@@ -390,7 +390,7 @@ describe('Filters', () => {
       expect(
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
 
@@ -430,7 +430,7 @@ describe('Filters', () => {
       render(<Filters />, {
         wrapper: getWrapper(),
       });
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('Start Date');
       userEvent.type(screen.getByTestId('filter-start-date'), 'a');
@@ -439,7 +439,7 @@ describe('Filters', () => {
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-start-date'));
 
@@ -459,7 +459,7 @@ describe('Filters', () => {
         wrapper: getWrapper(),
       });
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('End Date');
       userEvent.type(screen.getByTestId('filter-end-date'), 'a');
@@ -468,7 +468,7 @@ describe('Filters', () => {
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-end-date'));
 
@@ -487,7 +487,7 @@ describe('Filters', () => {
       render(<Filters />, {
         wrapper: getWrapper(),
       });
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('Variable');
 
@@ -500,7 +500,7 @@ describe('Filters', () => {
         await screen.findByText('Variable has to be filled')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-variable-value'));
       userEvent.type(
@@ -516,14 +516,14 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
     });
 
     it('should validate variable value', async () => {
       render(<Filters />, {
         wrapper: getWrapper(),
       });
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('Variable');
 
@@ -536,7 +536,7 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-variable-name'));
 
@@ -555,7 +555,7 @@ describe('Filters', () => {
       expect(
         await screen.findByText('Variable has to be filled')
       ).toBeInTheDocument();
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.type(
         screen.getByTestId('filter-variable-name'),
@@ -566,14 +566,14 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
     });
 
     it('should validate operation id', async () => {
       render(<Filters />, {
         wrapper: getWrapper(),
       });
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       displayOptionalFilter('Operation Id');
 
@@ -583,7 +583,7 @@ describe('Filters', () => {
         await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toHaveTextContent('');
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       userEvent.clear(screen.getByTestId('filter-operation-id'));
 
@@ -609,7 +609,7 @@ describe('Filters', () => {
     userEvent.click(screen.getByTestId(/incidents/));
 
     await waitFor(() =>
-      expect(screen.getByTestId('search')).toHaveTextContent('?active=true')
+      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/)
     );
 
     expect(screen.getByTitle(/reset filters/i)).toBeEnabled();
@@ -619,7 +619,7 @@ describe('Filters', () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     displayOptionalFilter('Start Date');
     userEvent.type(screen.getByTestId('filter-start-date'), 'a');
@@ -628,11 +628,11 @@ describe('Filters', () => {
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
 
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
     displayOptionalFilter('End Date');
     userEvent.click(screen.getByTestId('delete-endDate'));
 
-    expect(screen.getByTestId('search')).toHaveTextContent('');
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
 
   it('should be able to submit form after deleting an invalid optional filter', async () => {
@@ -640,7 +640,7 @@ describe('Filters', () => {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?active=true&incidents=true'
+      /^\?active=true&incidents=true$/
     );
 
     displayOptionalFilter('Start Date');
@@ -651,7 +651,7 @@ describe('Filters', () => {
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?active=true&incidents=true'
+      /^\?active=true&incidents=true$/
     );
 
     userEvent.click(screen.getByTestId('delete-startDate'));
@@ -661,7 +661,7 @@ describe('Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        '?active=true&incidents=true&errorMessage=test'
+        /^\?active=true&incidents=true&errorMessage=test$/
       )
     );
   });
@@ -1146,7 +1146,7 @@ describe('Filters', () => {
           ),
         });
 
-        expect(screen.getByTestId('search')).toHaveTextContent(
+        expect(screen.getByTestId('search').textContent).toBe(
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
@@ -1164,7 +1164,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-ids'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1193,7 +1193,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-parentInstanceId'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1220,7 +1220,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-errorMessage'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1246,7 +1246,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-startDate'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1271,7 +1271,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-endDate'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1293,7 +1293,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-variable'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1318,7 +1318,7 @@ describe('Filters', () => {
         userEvent.click(screen.getByTestId('delete-operationId'));
 
         await waitFor(() =>
-          expect(screen.getByTestId('search')).toHaveTextContent(
+          expect(screen.getByTestId('search').textContent).toBe(
             `?${new URLSearchParams(
               Object.entries({
                 process: 'bigVarProcess',
@@ -1362,7 +1362,7 @@ describe('Filters', () => {
           ),
         });
 
-        expect(screen.getByTestId('search')).toHaveTextContent(
+        expect(screen.getByTestId('search').textContent).toBe(
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
@@ -1381,7 +1381,7 @@ describe('Filters', () => {
 
         await waitFor(() =>
           expect(screen.getByTestId('search')).toHaveTextContent(
-            '?active=true&incidents=true'
+            /^\?active=true&incidents=true$/
           )
         );
 
