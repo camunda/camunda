@@ -15,7 +15,7 @@ import {
   override,
 } from 'mobx';
 import {fetchSequenceFlows} from 'modules/api/instances';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
@@ -46,9 +46,10 @@ class SequenceFlows extends NetworkReconnectionHandler {
 
   init() {
     this.processSeqenceFlowsDisposer = when(
-      () => currentInstanceStore.state.instance?.id !== undefined,
+      () => processInstanceDetailsStore.state.processInstance?.id !== undefined,
       () => {
-        const instanceId = currentInstanceStore.state.instance?.id;
+        const instanceId =
+          processInstanceDetailsStore.state.processInstance?.id;
         if (instanceId !== undefined) {
           this.fetchProcessSequenceFlows(instanceId);
         }
@@ -56,11 +57,11 @@ class SequenceFlows extends NetworkReconnectionHandler {
     );
 
     this.disposer = autorun(() => {
-      const {instance} = currentInstanceStore.state;
+      const {processInstance} = processInstanceDetailsStore.state;
 
-      if (isInstanceRunning(instance)) {
-        if (this.intervalId === null && instance?.id !== undefined) {
-          this.startPolling(instance?.id);
+      if (isInstanceRunning(processInstance)) {
+        if (this.intervalId === null && processInstance?.id !== undefined) {
+          this.startPolling(processInstance?.id);
         }
       } else {
         this.stopPolling();

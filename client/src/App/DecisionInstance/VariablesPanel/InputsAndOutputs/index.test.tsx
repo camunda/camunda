@@ -17,14 +17,14 @@ import {
   assignApproverGroupWithoutVariables,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
 import {InputsAndOutputs} from './index';
 
 describe('<InputsAndOutputs />', () => {
   afterEach(() => {
-    decisionInstanceStore.reset();
+    decisionInstanceDetailsStore.reset();
   });
 
   it('should have section panels', async () => {
@@ -33,7 +33,7 @@ describe('<InputsAndOutputs />', () => {
         res.once(ctx.json(invoiceClassification))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {
       wrapper: ThemeProvider,
@@ -53,7 +53,7 @@ describe('<InputsAndOutputs />', () => {
         res.once(ctx.status(500))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
@@ -74,7 +74,7 @@ describe('<InputsAndOutputs />', () => {
         res.once(ctx.json(assignApproverGroup))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
@@ -95,7 +95,7 @@ describe('<InputsAndOutputs />', () => {
         res.once(ctx.json(assignApproverGroupWithoutVariables))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
@@ -116,7 +116,7 @@ describe('<InputsAndOutputs />', () => {
         res.once(ctx.json(invoiceClassification))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 
@@ -166,7 +166,7 @@ describe('<InputsAndOutputs />', () => {
         res.once(ctx.status(500))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
 

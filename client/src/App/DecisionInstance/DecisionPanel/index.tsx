@@ -7,15 +7,15 @@
 
 import {observer} from 'mobx-react';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {IncidentBanner, Container} from './styled';
 
 const DecisionPanel: React.FC = observer(() => {
-  const {decisionInstance} = decisionInstanceStore.state;
+  const {decisionInstance} = decisionInstanceDetailsStore.state;
   const highlightableRules = Array.from(
     new Set(
-      decisionInstanceStore.state.decisionInstance?.evaluatedOutputs.map(
+      decisionInstanceDetailsStore.state.decisionInstance?.evaluatedOutputs.map(
         (output) => output.ruleIndex
       )
     )

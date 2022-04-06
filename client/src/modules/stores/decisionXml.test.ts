@@ -11,7 +11,7 @@ import {waitFor} from '@testing-library/react';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionXmlStore} from './decisionXml';
-import {decisionInstanceStore} from './decisionInstance';
+import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 
 describe('decisionXmlStore', () => {
   it('should initialize and reset ', async () => {
@@ -27,13 +27,13 @@ describe('decisionXmlStore', () => {
     expect(decisionXmlStore.state.status).toBe('initial');
 
     decisionXmlStore.init();
-    decisionInstanceStore.fetchDecisionInstance('4423094875234230');
+    decisionInstanceDetailsStore.fetchDecisionInstance('4423094875234230');
 
     await waitFor(() => expect(decisionXmlStore.state.status).toBe('fetched'));
     expect(decisionXmlStore.state.xml).toEqual(mockDmnXml);
 
     decisionXmlStore.reset();
-    decisionInstanceStore.reset();
+    decisionInstanceDetailsStore.reset();
 
     expect(decisionXmlStore.state.status).toBe('initial');
     expect(decisionXmlStore.state.xml).toEqual(null);

@@ -6,7 +6,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdStore} from 'modules/stores/drd';
 import {Container, EvaluatedIcon, FailedIcon, SkeletonCircle} from './styled';
 import {Button} from 'modules/components/Button';
@@ -16,7 +16,7 @@ import {tracking} from 'modules/tracking';
 const Header: React.FC = observer(() => {
   const {
     state: {status, decisionInstance},
-  } = decisionInstanceStore;
+  } = decisionInstanceDetailsStore;
 
   return (
     <Container data-testid="decision-instance-header">

@@ -12,7 +12,7 @@ import {Copyright} from 'modules/components/Copyright';
 import {Paths} from 'modules/routes';
 
 const Layout: React.FC = () => {
-  const instancesMatch = useMatch(Paths.instances());
+  const instancesMatch = useMatch(Paths.processes());
   const decisionsMatch = useMatch(Paths.decisions());
   const dashboardMatch = useMatch(Paths.dashboard());
   const showFooter = instancesMatch === null && decisionsMatch === null;

@@ -24,10 +24,10 @@ const Paths = {
   dashboard() {
     return '/';
   },
-  instances() {
+  processes() {
     return '/processes';
   },
-  instance(processInstanceId: string = ':processInstanceId') {
+  processInstance(processInstanceId: string = ':processInstanceId') {
     return `/processes/${processInstanceId}`;
   },
   decisions() {
@@ -51,20 +51,7 @@ const Locations = {
       search: getPersistentQueryParams(location.search),
     };
   },
-  runningInstances(location: Location): To {
-    const params = new URLSearchParams(
-      getPersistentQueryParams(location.search)
-    );
-
-    params.set('active', 'true');
-    params.set('incidents', 'true');
-
-    return {
-      pathname: Paths.instances(),
-      search: params.toString(),
-    };
-  },
-  filters(location: Location, filters?: ProcessInstanceFilters): To {
+  processes(location: Location, filters?: ProcessInstanceFilters): To {
     const params = new URLSearchParams(
       getPersistentQueryParams(location.search)
     );
@@ -84,25 +71,13 @@ const Locations = {
     }
 
     return {
-      pathname: Paths.instances(),
+      pathname: Paths.processes(),
       search: params.toString(),
     };
   },
-  incidents(location: Location): To {
-    const params = new URLSearchParams(
-      getPersistentQueryParams(location.search)
-    );
-
-    params.set('incidents', 'true');
-
+  processInstance(location: Location, id: string): To {
     return {
-      pathname: Paths.instances(),
-      search: params.toString(),
-    };
-  },
-  instance(location: Location, id: string): To {
-    return {
-      pathname: Paths.instance(id),
+      pathname: Paths.processInstance(id),
       search: getPersistentQueryParams(location.search),
     };
   },

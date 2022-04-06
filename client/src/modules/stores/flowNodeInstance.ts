@@ -14,13 +14,13 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isEqual} from 'lodash';
 
-const MAX_INSTANCES_STORED = 200;
+const MAX_PROCESS_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
 
 type FlowNodeInstanceType = {
@@ -84,9 +84,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
   init() {
     this.instanceExecutionHistoryDisposer = when(
-      () => currentInstanceStore.state.instance?.id !== undefined,
+      () => processInstanceDetailsStore.state.processInstance?.id !== undefined,
       () => {
-        const instanceId = currentInstanceStore.state.instance?.id;
+        const instanceId =
+          processInstanceDetailsStore.state.processInstance?.id;
         if (instanceId !== undefined) {
           this.fetchInstanceExecutionHistory(instanceId);
           this.startPolling();
@@ -95,14 +96,15 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     );
 
     this.instanceFinishedDisposer = when(
-      () => currentInstanceStore.isRunning === false,
+      () => processInstanceDetailsStore.isRunning === false,
       () => this.stopPolling()
     );
   }
 
   pollInstances = async () => {
-    const processInstanceId = currentInstanceStore.state.instance?.id;
-    const {isRunning} = currentInstanceStore;
+    const processInstanceId =
+      processInstanceDetailsStore.state.processInstance?.id;
+    const {isRunning} = processInstanceDetailsStore;
     if (processInstanceId === undefined || !isRunning) {
       return;
     }
@@ -181,7 +183,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     flowNodeInstances[treePath]!.children = [
       ...subTreeChildren,
       ...subTree.children,
-    ].slice(-MAX_INSTANCES_STORED);
+    ].slice(-MAX_PROCESS_INSTANCES_STORED);
 
     this.handleFetchSuccess(flowNodeInstances);
   };
@@ -226,7 +228,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     flowNodeInstances[treePath]!.children = [
       ...subTree.children,
       ...subTreeChildren,
-    ].slice(0, MAX_INSTANCES_STORED);
+    ].slice(0, MAX_PROCESS_INSTANCES_STORED);
 
     this.handleFetchSuccess(flowNodeInstances);
 
@@ -261,7 +263,8 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     searchAfter?: FlowNodeInstanceType['sortValues'];
     searchBefore?: FlowNodeInstanceType['sortValues'];
   }): Promise<FlowNodeInstances | undefined> => {
-    const processInstanceId = currentInstanceStore.state.instance?.id;
+    const processInstanceId =
+      processInstanceDetailsStore.state.processInstance?.id;
 
     if (processInstanceId === undefined) {
       return;
@@ -390,7 +393,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   };
 
   startPolling = () => {
-    if (currentInstanceStore.isRunning && this.intervalId === null) {
+    if (processInstanceDetailsStore.isRunning && this.intervalId === null) {
       this.intervalId = setInterval(this.pollInstances, 5000);
     }
   };
@@ -424,7 +427,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   }
 
   get instanceExecutionHistory(): FlowNodeInstanceType | null {
-    const {instance: processInstance} = currentInstanceStore.state;
+    const {processInstance} = processInstanceDetailsStore.state;
     const {status} = this.state;
 
     if (

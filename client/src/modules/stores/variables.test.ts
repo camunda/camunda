@@ -6,7 +6,7 @@
  */
 
 import {variablesStore} from './variables';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -92,12 +92,12 @@ describe('stores/variables', () => {
       flowNodeInstanceId: '123',
     });
 
-    await currentInstanceStore.fetchCurrentInstance('123');
+    await processInstanceDetailsStore.fetchProcessInstance('123');
   });
 
   afterEach(() => {
     variablesStore.reset();
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
   });
 
@@ -124,7 +124,7 @@ describe('stores/variables', () => {
       sortValues: null,
     });
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'CANCELED'})
     );
 
@@ -221,7 +221,7 @@ describe('stores/variables', () => {
       ])
     );
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'CANCELED'})
     );
     jest.runOnlyPendingTimers();

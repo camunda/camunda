@@ -9,7 +9,7 @@ import {useEffect} from 'react';
 import {Collapse} from '../Collapse';
 import InstancesBar from 'modules/components/InstancesBar';
 import {PanelListItem} from '../PanelListItem';
-import {instancesByProcessStore} from 'modules/stores/instancesByProcess';
+import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import * as Styled from './styled';
 import {
   concatTitle,
@@ -30,9 +30,9 @@ const InstancesByProcess = observer(() => {
   const location = useLocation();
 
   useEffect(() => {
-    instancesByProcessStore.init();
+    processInstancesByNameStore.init();
     return () => {
-      instancesByProcessStore.reset();
+      processInstancesByNameStore.reset();
     };
   }, []);
 
@@ -45,7 +45,7 @@ const InstancesByProcess = observer(() => {
           return (
             <Styled.VersionLi key={item.processId}>
               <PanelListItem
-                to={Locations.filters(location, {
+                to={Locations.processes(location, {
                   process: item.bpmnProcessId,
                   version: item.version,
                   active: true,
@@ -97,7 +97,7 @@ const InstancesByProcess = observer(() => {
 
     return (
       <PanelListItem
-        to={Locations.filters(location, {
+        to={Locations.processes(location, {
           process: item.bpmnProcessId,
           version:
             item.processes.length === 1 ? item.processes[0].version : 'all',
@@ -138,13 +138,13 @@ const InstancesByProcess = observer(() => {
     );
   };
 
-  const {instances, status} = instancesByProcessStore.state;
+  const {processInstances, status} = processInstancesByNameStore.state;
 
   if (['initial', 'fetching'].includes(status)) {
     return <Skeleton />;
   }
 
-  if (status === 'fetched' && instances.length === 0) {
+  if (status === 'fetched' && processInstances.length === 0) {
     return (
       <StatusMessage variant="default">
         There are no Processes deployed
@@ -160,7 +160,7 @@ const InstancesByProcess = observer(() => {
 
   return (
     <ul data-testid="instances-by-process">
-      {instances.map((item, index) => {
+      {processInstances.map((item, index) => {
         const processesCount = item.processes.length;
         const name = item.processName || item.bpmnProcessId;
         const IncidentByProcessComponent = renderIncidentByProcess(item);

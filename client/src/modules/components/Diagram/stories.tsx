@@ -18,9 +18,9 @@ import {instance} from 'modules/mocks/instance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import DiagramComponent from '.';
-import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   calledDecisionMetadata,
   calledFailedDecisionMetadata,
@@ -45,8 +45,8 @@ const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
   const [diagram, setDiagram] = useState<any>(null);
 
   useEffect(() => {
-    singleInstanceDiagramStore.init();
-    currentInstanceStore.setCurrentInstance(instance);
+    processInstanceDetailsDiagramStore.init();
+    processInstanceDetailsStore.setProcessInstance(instance);
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
     async function init() {
@@ -56,8 +56,8 @@ const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
     init();
 
     return () => {
-      singleInstanceDiagramStore.reset();
-      currentInstanceStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+      processInstanceDetailsStore.reset();
       flowNodeMetaDataStore.reset();
       flowNodeSelectionStore.reset();
     };

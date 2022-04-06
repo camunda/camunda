@@ -6,7 +6,7 @@
  */
 
 import {sequenceFlowsStore} from './sequenceFlows';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {createInstance, createSequenceFlows} from 'modules/testUtils';
@@ -25,11 +25,11 @@ describe('stores/sequenceFlows', () => {
 
   afterEach(() => {
     sequenceFlowsStore.reset();
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
   });
 
   it('should fetch sequence flows when current instance is available', async () => {
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'CANCELED'})
     );
 
@@ -46,7 +46,7 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should poll when current instance is running', async () => {
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'ACTIVE'})
     );
 
@@ -115,7 +115,7 @@ describe('stores/sequenceFlows', () => {
     );
 
     // stop polling when current instance is no longer running
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'CANCELED'})
     );
 
@@ -160,7 +160,7 @@ describe('stores/sequenceFlows', () => {
       eventListeners[event] = cb;
     });
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: '123',
         state: 'ACTIVE',

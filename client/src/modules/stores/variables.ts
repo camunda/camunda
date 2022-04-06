@@ -22,7 +22,7 @@ import {
   VariablePayload,
   fetchVariable,
 } from 'modules/api/instances';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   MAX_VARIABLES_PER_REQUEST,
@@ -106,13 +106,14 @@ class Variables extends NetworkReconnectionHandler {
     this.instanceId = instanceId;
 
     this.variablesWithActiveOperationsDisposer = when(
-      () => currentInstanceStore.state.instance?.state === 'CANCELED',
+      () =>
+        processInstanceDetailsStore.state.processInstance?.state === 'CANCELED',
       this.removeVariablesWithActiveOperations
     );
 
     this.disposer = autorun(() => {
       if (
-        isInstanceRunning(currentInstanceStore.state.instance) &&
+        isInstanceRunning(processInstanceDetailsStore.state.processInstance) &&
         this.scopeId !== null
       ) {
         if (this.intervalId === null) {

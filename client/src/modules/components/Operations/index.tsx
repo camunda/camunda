@@ -9,8 +9,8 @@ import React, {useState} from 'react';
 
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
-import {instancesStore} from 'modules/stores/instances';
-import {instanceSelectionStore} from 'modules/stores/instanceSelection';
+import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {observer} from 'mobx-react';
 
 import {hasIncident, isRunning} from 'modules/utils/instance';
@@ -57,12 +57,14 @@ const Operations: React.FC<Props> = observer(
       );
     };
 
-    const isSelected = instanceSelectionStore.isInstanceChecked(instance.id);
+    const isSelected = processInstancesSelectionStore.isProcessInstanceChecked(
+      instance.id
+    );
 
     return (
       <OperationsContainer>
         {(forceSpinner ||
-          instancesStore.instanceIdsWithActiveOperations.includes(
+          processInstancesStore.processInstanceIdsWithActiveOperations.includes(
             instance.id
           )) && (
           <OperationSpinner

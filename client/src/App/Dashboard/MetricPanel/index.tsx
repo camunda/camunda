@@ -53,7 +53,7 @@ const MetricPanel = observer(() => {
             link: 'dashboard-running-instances',
           });
         }}
-        to={Locations.filters(
+        to={Locations.processes(
           location,
           running === 0
             ? {
@@ -94,7 +94,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-instances-with-incidents',
             });
           }}
-          to={Locations.filters(location, {
+          to={Locations.processes(location, {
             incidents: true,
           })}
         >
@@ -109,7 +109,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-active-instances',
             });
           }}
-          to={Locations.filters(location, {
+          to={Locations.processes(location, {
             active: true,
           })}
         >

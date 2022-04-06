@@ -8,7 +8,7 @@
 import {waitFor} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeStatesStore} from './flowNodeStates';
 
 const PROCESS_INSTANCE_ID = '2251799813686320';
@@ -41,7 +41,7 @@ describe('stores/flowNodeStates', () => {
       )
     );
 
-    currentInstanceStore.fetchCurrentInstance(PROCESS_INSTANCE_ID);
+    processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
   });
 
   afterEach(() => {

@@ -7,7 +7,7 @@
 
 import {makeObservable, action, observable, override} from 'mobx';
 import {fetchProcessInstancesStatistics} from 'modules/api/instances';
-import {instancesStore} from 'modules/stores/instances';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
@@ -45,7 +45,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   }
 
   init = () => {
-    instancesStore.addCompletedOperationsHandler(() => {
+    processInstancesStore.addCompletedOperationsHandler(() => {
       const filters = getProcessInstancesRequestFilters();
       const processIds = filters?.processIds || [];
 

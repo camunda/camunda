@@ -11,7 +11,7 @@ import {render, screen, waitFor} from '@testing-library/react';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdDataStore} from 'modules/stores/drdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -43,11 +43,11 @@ describe('<Drd />', () => {
 
     drdDataStore.init();
     decisionXmlStore.init();
-    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+    decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
   });
 
   afterEach(() => {
-    decisionInstanceStore.reset();
+    decisionInstanceDetailsStore.reset();
     decisionXmlStore.reset();
     drdDataStore.reset();
   });

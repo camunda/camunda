@@ -6,12 +6,12 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Header} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {instancesStore} from 'modules/stores/instances';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
@@ -56,9 +56,9 @@ describe('Header', () => {
   });
 
   afterEach(() => {
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
     authenticationStore.reset();
-    instancesStore.reset();
+    processInstancesStore.reset();
     clearStateLocally();
   });
 

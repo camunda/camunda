@@ -15,8 +15,8 @@ import {
   override,
 } from 'mobx';
 import {fetchProcessInstanceIncidents} from 'modules/api/instances';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
-import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
@@ -98,10 +98,16 @@ class Incidents extends NetworkReconnectionHandler {
 
   init() {
     this.disposer = autorun(() => {
-      if (currentInstanceStore.state.instance?.state === 'INCIDENT') {
+      if (
+        processInstanceDetailsStore.state.processInstance?.state === 'INCIDENT'
+      ) {
         if (this.intervalId === null) {
-          this.fetchIncidents(currentInstanceStore.state.instance.id);
-          this.startPolling(currentInstanceStore.state.instance.id);
+          this.fetchIncidents(
+            processInstanceDetailsStore.state.processInstance.id
+          );
+          this.startPolling(
+            processInstanceDetailsStore.state.processInstance.id
+          );
         }
       } else {
         this.stopPolling();
@@ -220,7 +226,7 @@ class Incidents extends NetworkReconnectionHandler {
     }
     return this.state.response.incidents.map((incident) => ({
       ...incident,
-      flowNodeName: singleInstanceDiagramStore.getFlowNodeName(
+      flowNodeName: processInstanceDetailsDiagramStore.getFlowNodeName(
         incident.flowNodeId
       ),
       isSelected: flowNodeSelectionStore.isSelected({
@@ -249,7 +255,7 @@ class Incidents extends NetworkReconnectionHandler {
 
     return this.state.response.flowNodes.map((flowNode) => ({
       ...flowNode,
-      name: singleInstanceDiagramStore.getFlowNodeName(flowNode.id),
+      name: processInstanceDetailsDiagramStore.getFlowNodeName(flowNode.id),
     }));
   }
 

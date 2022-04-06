@@ -8,7 +8,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {observer} from 'mobx-react';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdDataStore} from 'modules/stores/drdData';
 import {drdStore} from 'modules/stores/drd';
 import {DecisionPanel} from './DecisionPanel';
@@ -28,7 +28,7 @@ const DecisionInstance: React.FC = observer(() => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);
   const decisionName =
-    decisionInstanceStore.state.decisionInstance?.decisionName;
+    decisionInstanceDetailsStore.state.decisionInstance?.decisionName;
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
@@ -39,14 +39,14 @@ const DecisionInstance: React.FC = observer(() => {
     decisionXmlStore.init();
 
     return () => {
-      decisionInstanceStore.reset();
+      decisionInstanceDetailsStore.reset();
       drdDataStore.reset();
       decisionXmlStore.reset();
     };
   }, []);
 
   useEffect(() => {
-    decisionInstanceStore.fetchDecisionInstance(decisionInstanceId);
+    decisionInstanceDetailsStore.fetchDecisionInstance(decisionInstanceId);
   }, [decisionInstanceId]);
 
   useEffect(() => {

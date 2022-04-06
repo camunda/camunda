@@ -58,7 +58,7 @@ const IncidentsByError = observer(() => {
           return (
             <Styled.VersionLi key={item.processId}>
               <PanelListItem
-                to={Locations.filters(location, {
+                to={Locations.processes(location, {
                   process: item.bpmnProcessId,
                   version: item.version,
                   errorMessage: truncateErrorMessage(errorMessage),
@@ -96,7 +96,7 @@ const IncidentsByError = observer(() => {
 
     return (
       <PanelListItem
-        to={Locations.filters(location, {
+        to={Locations.processes(location, {
           errorMessage: truncateErrorMessage(errorMessage),
           incidents: true,
         })}

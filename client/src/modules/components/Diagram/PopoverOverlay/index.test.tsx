@@ -9,7 +9,7 @@ import {rest} from 'msw';
 import {render, screen} from '@testing-library/react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
 import {PopoverOverlay} from './';
@@ -23,7 +23,7 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
-import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   calledDecisionMetadata,
   calledFailedDecisionMetadata,
@@ -69,15 +69,15 @@ describe('PopoverOverlay', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
-    singleInstanceDiagramStore.init();
+    processInstanceDetailsDiagramStore.init();
   });
 
   afterEach(() => {
     flowNodeMetaDataStore.reset();
     flowNodeSelectionStore.reset();
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
     incidentsStore.reset();
-    singleInstanceDiagramStore.reset();
+    processInstanceDetailsDiagramStore.reset();
   });
 
   it('should render meta data for incident flow node', async () => {
@@ -94,7 +94,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(mockIncidents))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'INCIDENT',
@@ -141,7 +141,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -189,7 +189,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -259,7 +259,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(multiInstancesMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: '123',
         state: 'ACTIVE',
@@ -294,7 +294,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(multiInstanceCallActivityMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -328,7 +328,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(mockIncidents))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'INCIDENT',
@@ -361,7 +361,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(calledDecisionMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'COMPLETED',
@@ -402,7 +402,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(calledFailedDecisionMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'INCIDENT',
@@ -448,7 +448,7 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(calledUnevaluatedDecisionMetadata))
       )
     );
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',

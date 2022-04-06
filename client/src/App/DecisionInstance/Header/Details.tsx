@@ -7,7 +7,7 @@
 
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
-import {DecisionInstanceType} from 'modules/stores/decisionInstance';
+import {DecisionInstanceType} from 'modules/stores/decisionInstanceDetails';
 import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date/formatDate';
 import {useLocation, useParams} from 'react-router-dom';
@@ -61,7 +61,7 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
             <TD>
               {decisionInstance.processInstanceId ? (
                 <Link
-                  to={Locations.instance(
+                  to={Locations.processInstance(
                     location,
                     decisionInstance.processInstanceId
                   )}

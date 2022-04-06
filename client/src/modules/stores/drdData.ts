@@ -18,7 +18,7 @@ import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
 import {fetchDrdData} from 'modules/api/decisions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {logger} from 'modules/logger';
-import {decisionInstanceStore} from './decisionInstance';
+import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 
 type DrdData = ReadonlyDeep<{
   [decisionId: string]: [
@@ -69,10 +69,14 @@ class Drd extends NetworkReconnectionHandler {
 
   init = () => {
     this.disposer = reaction(
-      () => decisionInstanceStore.state.decisionInstance?.decisionDefinitionId,
+      () =>
+        decisionInstanceDetailsStore.state.decisionInstance
+          ?.decisionDefinitionId,
       (decisionDefinitionId) => {
         if (decisionDefinitionId !== undefined) {
-          this.fetchDrdData(decisionInstanceStore.state.decisionInstanceId);
+          this.fetchDrdData(
+            decisionInstanceDetailsStore.state.decisionInstanceId
+          );
         }
       }
     );
@@ -128,7 +132,7 @@ class Drd extends NetworkReconnectionHandler {
         drdData[decisionId]?.some((drdData) => {
           return (
             drdData.decisionInstanceId ===
-            decisionInstanceStore.state.decisionInstanceId
+            decisionInstanceDetailsStore.state.decisionInstanceId
           );
         })
       ) ?? null

@@ -6,12 +6,12 @@
  */
 
 import {processStatisticsStore} from './processStatistics';
-import {instancesDiagramStore} from './instancesDiagram';
+import {processInstancesDiagramStore} from './processInstancesDiagram';
 import {mockProcessXML, mockProcessStatistics} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
-import {instancesStore} from './instances';
+import {processInstancesStore} from './processInstances';
 import {processesStore} from './processes';
 
 const mockInstances = [
@@ -46,8 +46,8 @@ const mockInstances = [
 describe('stores/processStatistics', () => {
   afterEach(() => {
     processStatisticsStore.reset();
-    instancesStore.reset();
-    instancesDiagramStore.reset();
+    processInstancesStore.reset();
+    processInstancesDiagramStore.reset();
     processesStore.reset();
   });
 
@@ -128,10 +128,12 @@ describe('stores/processStatistics', () => {
       )
     );
     processStatisticsStore.init();
-    instancesStore.init();
-    instancesStore.fetchInstancesFromFilters();
+    processInstancesStore.init();
+    processInstancesStore.fetchProcessInstancesFromFilters();
 
-    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    await waitFor(() =>
+      expect(processInstancesStore.state.status).toBe('fetched')
+    );
 
     expect(processStatisticsStore.state.statistics).toEqual([]);
 
@@ -167,10 +169,12 @@ describe('stores/processStatistics', () => {
       )
     );
     processStatisticsStore.init();
-    instancesStore.init();
-    instancesStore.fetchInstancesFromFilters();
+    processInstancesStore.init();
+    processInstancesStore.fetchProcessInstancesFromFilters();
 
-    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    await waitFor(() =>
+      expect(processInstancesStore.state.status).toBe('fetched')
+    );
     expect(processStatisticsStore.state.statistics).toEqual([]);
 
     mockServer.use(
@@ -181,10 +185,10 @@ describe('stores/processStatistics', () => {
       )
     );
 
-    instancesStore.fetchInstancesFromFilters();
+    processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.filteredInstancesCount).toBe(2)
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2)
     );
 
     expect(processStatisticsStore.state.statistics).toEqual([]);

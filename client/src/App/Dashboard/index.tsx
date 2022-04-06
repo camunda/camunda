@@ -6,7 +6,7 @@
  */
 
 import {useEffect} from 'react';
-import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
+import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {MetricPanel} from './MetricPanel';
 import {InstancesByProcess} from './InstancesByProcess';
 import {IncidentsByError} from './IncidentsByError';

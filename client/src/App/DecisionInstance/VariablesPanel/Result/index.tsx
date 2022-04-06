@@ -7,7 +7,7 @@
 
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {JSONViewer} from './JSONViewer/index';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {Container} from './styled';
@@ -15,7 +15,7 @@ import {Container} from './styled';
 const Result: React.FC = observer(() => {
   const {
     state: {status, decisionInstance},
-  } = decisionInstanceStore;
+  } = decisionInstanceDetailsStore;
 
   return (
     <Container>

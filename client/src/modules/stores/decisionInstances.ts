@@ -19,7 +19,7 @@ import {tracking} from 'modules/tracking';
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   decisionInstances: DecisionInstanceEntity[];
-  filteredInstancesCount: number;
+  filteredProcessInstancesCount: number;
   latestFetch: {
     fetchType: FetchType;
     decisionInstancesCount: number;
@@ -34,12 +34,12 @@ type State = {
     | 'error';
 };
 
-const MAX_INSTANCES_STORED = 200;
+const MAX_PROCESS_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
   decisionInstances: [],
-  filteredInstancesCount: 0,
+  filteredProcessInstancesCount: 0,
   latestFetch: null,
   status: 'initial',
 };
@@ -66,7 +66,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     });
   }
 
-  fetchInstancesFromFilters = this.retryOnConnectionLost(async () => {
+  fetchProcessInstancesFromFilters = this.retryOnConnectionLost(async () => {
     this.startFetching();
     this.fetchInstances({
       fetchType: 'initial',
@@ -126,7 +126,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
 
     return (
       (latestFetch?.fetchType === 'next' &&
-        decisionInstances.length === MAX_INSTANCES_STORED) ||
+        decisionInstances.length === MAX_PROCESS_INSTANCES_STORED) ||
       (latestFetch?.fetchType === 'prev' &&
         latestFetch?.decisionInstancesCount === MAX_INSTANCES_PER_REQUEST)
     );
@@ -142,7 +142,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
       (latestFetch?.fetchType === 'next' &&
         latestFetch?.decisionInstancesCount === MAX_INSTANCES_PER_REQUEST) ||
       (latestFetch?.fetchType === 'prev' &&
-        decisionInstances.length === MAX_INSTANCES_STORED) ||
+        decisionInstances.length === MAX_PROCESS_INSTANCES_STORED) ||
       latestFetch?.fetchType === 'initial'
     );
   };
@@ -189,7 +189,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     } else {
       this.state.status = 'fetching';
     }
-    this.state.filteredInstancesCount = 0;
+    this.state.filteredProcessInstancesCount = 0;
   };
 
   startFetchingNext = () => {
@@ -236,12 +236,15 @@ class DecisionInstances extends NetworkReconnectionHandler {
         ];
 
         return allDecisionInstances.slice(
-          Math.max(allDecisionInstances.length - MAX_INSTANCES_STORED, 0)
+          Math.max(
+            allDecisionInstances.length - MAX_PROCESS_INSTANCES_STORED,
+            0
+          )
         );
       case 'prev':
         return [...decisionInstances, ...this.state.decisionInstances].slice(
           0,
-          MAX_INSTANCES_STORED
+          MAX_PROCESS_INSTANCES_STORED
         );
       case 'initial':
       default:
@@ -257,7 +260,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     totalCount: number;
   }) => {
     this.state.decisionInstances = decisionInstances;
-    this.state.filteredInstancesCount = totalCount;
+    this.state.filteredProcessInstancesCount = totalCount;
   };
 
   get areDecisionInstancesEmpty() {
@@ -269,7 +272,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
 
   get hasLatestDecisionInstances() {
     return (
-      this.state.decisionInstances.length === MAX_INSTANCES_STORED &&
+      this.state.decisionInstances.length === MAX_PROCESS_INSTANCES_STORED &&
       this.state.latestFetch !== null &&
       this.state.latestFetch?.decisionInstancesCount !== 0
     );

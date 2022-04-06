@@ -25,8 +25,8 @@ import {
 } from './styled';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {beautifyMetadata} from './beautifyMetadata';
@@ -45,7 +45,8 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const {metaData} = flowNodeMetaDataStore.state;
-  const processInstanceId = currentInstanceStore.state.instance?.id;
+  const processInstanceId =
+    processInstanceDetailsStore.state.processInstance?.id;
   const location = useLocation();
 
   const {styles, attributes} = usePopper(
@@ -79,7 +80,8 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
     return null;
   }
 
-  const flowNodeMetaData = singleInstanceDiagramStore.getMetaData(flowNodeId);
+  const flowNodeMetaData =
+    processInstanceDetailsDiagramStore.getMetaData(flowNodeId);
   const flowNodeName = flowNodeMetaData?.name || flowNodeId;
   const {instanceMetadata, incident, incidentCount} = metaData;
   const {
@@ -166,7 +168,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                       <SummaryDataValue>
                         {calledProcessInstanceId ? (
                           <Link
-                            to={Locations.instance(
+                            to={Locations.processInstance(
                               location,
                               calledProcessInstanceId
                             )}
@@ -242,7 +244,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                             'Current Instance'
                           ) : (
                             <Link
-                              to={Locations.instance(
+                              to={Locations.processInstance(
                                 location,
                                 rootCauseInstance.instanceId
                               )}

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {DecisionInstanceType} from 'modules/stores/decisionInstance';
+import {DecisionInstanceType} from 'modules/stores/decisionInstanceDetails';
 
 const mockLiteralExpression: DecisionInstanceType = {
   id: '247986278462738-1',

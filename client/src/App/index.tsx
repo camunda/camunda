@@ -10,8 +10,8 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
-import {Instances} from './Instances';
-import {Instance} from './Instance';
+import {Processes} from './Processes';
+import {ProcessInstance} from './ProcessInstance';
 import {Decisions} from './Decisions';
 import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
@@ -48,8 +48,11 @@ const App: React.FC = () => {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path={Paths.instances()} element={<Instances />} />
-              <Route path={Paths.instance()} element={<Instance />} />
+              <Route path={Paths.processes()} element={<Processes />} />
+              <Route
+                path={Paths.processInstance()}
+                element={<ProcessInstance />}
+              />
               <Route path={Paths.decisions()} element={<Decisions />} />
               <Route
                 path={Paths.decisionInstance()}

@@ -14,7 +14,7 @@ import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionInstance} from './';
 import userEvent from '@testing-library/user-event';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 
@@ -46,7 +46,7 @@ describe('<DecisionInstance />', () => {
   });
 
   afterEach(() => {
-    decisionInstanceStore.reset();
+    decisionInstanceDetailsStore.reset();
     drdStore.reset();
   });
 

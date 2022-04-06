@@ -7,7 +7,7 @@
 
 import {IReactionDisposer, makeAutoObservable, when} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 type Selection = {
   flowNodeId?: string;
@@ -34,7 +34,7 @@ class FlowNodeSelection {
 
   init = () => {
     this.rootNodeSelectionDisposer = when(
-      () => currentInstanceStore.state.instance?.id !== undefined,
+      () => processInstanceDetailsStore.state.processInstance?.id !== undefined,
       () => this.clearSelection()
     );
   };
@@ -69,7 +69,7 @@ class FlowNodeSelection {
 
   get rootNode() {
     return {
-      flowNodeInstanceId: currentInstanceStore.state.instance?.id,
+      flowNodeInstanceId: processInstanceDetailsStore.state.processInstance?.id,
       isMultiInstance: false,
     };
   }
@@ -77,7 +77,7 @@ class FlowNodeSelection {
   get isRootNodeSelected() {
     return (
       this.state.selection?.flowNodeInstanceId ===
-      currentInstanceStore.state.instance?.id
+      processInstanceDetailsStore.state.processInstance?.id
     );
   }
 

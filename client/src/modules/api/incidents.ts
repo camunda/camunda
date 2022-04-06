@@ -7,7 +7,7 @@
 
 import {request} from 'modules/request';
 
-async function fetchInstancesByProcess() {
+async function fetchProcessInstancesByName() {
   return request({url: '/api/incidents/byProcess'});
 }
 
@@ -15,4 +15,4 @@ async function fetchIncidentsByError() {
   return request({url: '/api/incidents/byError'});
 }
 
-export {fetchInstancesByProcess, fetchIncidentsByError};
+export {fetchProcessInstancesByName, fetchIncidentsByError};

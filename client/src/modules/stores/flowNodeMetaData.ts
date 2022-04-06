@@ -16,7 +16,7 @@ import {
 } from 'mobx';
 import {fetchFlowNodeMetaData} from 'modules/api/flowNodeMetaData';
 import {FlowNodeInstance} from './flowNodeInstance';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
@@ -141,7 +141,8 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
       flowNodeInstanceId?: FlowNodeInstance['id'];
       flowNodeType?: string;
     }) => {
-      const processInstanceId = currentInstanceStore.state.instance?.id;
+      const processInstanceId =
+        processInstanceDetailsStore.state.processInstance?.id;
 
       if (processInstanceId === undefined || flowNodeId === undefined) {
         return;

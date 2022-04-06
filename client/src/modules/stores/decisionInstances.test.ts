@@ -25,7 +25,7 @@ describe('decisionInstancesStore', () => {
 
     expect(decisionInstancesStore.state.status).toBe('initial');
 
-    decisionInstancesStore.fetchInstancesFromFilters();
+    decisionInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
       expect(decisionInstancesStore.state.status).toBe('fetched')
@@ -44,7 +44,7 @@ describe('decisionInstancesStore', () => {
 
     expect(decisionInstancesStore.state.status).toBe('initial');
 
-    decisionInstancesStore.fetchInstancesFromFilters();
+    decisionInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
       expect(decisionInstancesStore.state.status).toBe('error')

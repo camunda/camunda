@@ -6,7 +6,7 @@
  */
 
 import {incidentsStore} from './incidents';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
@@ -15,7 +15,7 @@ import {mockIncidents} from 'modules/mocks/incidents';
 
 describe('stores/incidents', () => {
   afterEach(() => {
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
     incidentsStore.reset();
   });
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('stores/incidents', () => {
   });
 
   it('should poll for incidents if instance state is incident', async () => {
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'INCIDENT'})
     );
 
@@ -69,7 +69,7 @@ describe('stores/incidents', () => {
     );
 
     // stop polling when instance state is no longer an incident.
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'CANCELED'})
     );
 
@@ -159,7 +159,7 @@ describe('stores/incidents', () => {
       eventListeners[event] = cb;
     });
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: '123',
         state: 'INCIDENT',

@@ -47,7 +47,7 @@ const Header: React.FC = observer(() => {
             }}
           />
           <NavElement
-            to={Locations.filters(location)}
+            to={Locations.processes(location)}
             title="View Processes"
             label="Processes"
             onClick={() => {

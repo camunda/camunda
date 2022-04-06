@@ -30,7 +30,7 @@ const CalledInstanceCancellationModal: React.FC<Props> = ({
         <Modal.BodyText>
           To cancel this instance, the root instance{' '}
           <Link
-            to={Locations.instance(location, rootInstanceId)}
+            to={Locations.processInstance(location, rootInstanceId)}
             title={`View root instance ${rootInstanceId}`}
           >
             {rootInstanceId}

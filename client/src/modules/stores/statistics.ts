@@ -13,7 +13,7 @@ import {
   override,
 } from 'mobx';
 import {fetchProcessCoreStatistics} from 'modules/api/instances';
-import {instancesStore} from 'modules/stores/instances';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type StatisticsType = {
@@ -56,7 +56,9 @@ class Statistics extends NetworkReconnectionHandler {
       this.startPolling();
     }
 
-    instancesStore.addCompletedOperationsHandler(() => this.fetchStatistics());
+    processInstancesStore.addCompletedOperationsHandler(() =>
+      this.fetchStatistics()
+    );
   }
 
   fetchStatistics = this.retryOnConnectionLost(async () => {

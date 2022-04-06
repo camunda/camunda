@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
@@ -25,11 +25,11 @@ describe('stores/flowNodeSelection', () => {
       )
     );
 
-    await currentInstanceStore.fetchCurrentInstance(PROCESS_INSTANCE_ID);
+    await processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
   });
 
   afterAll(() => {
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
   });
 
   beforeEach(() => {

@@ -12,7 +12,7 @@ import {
 } from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
@@ -38,7 +38,9 @@ describe('<Header />', () => {
       )
     );
 
-    decisionInstanceStore.fetchDecisionInstance(MOCK_DECISION_INSTANCE_ID);
+    decisionInstanceDetailsStore.fetchDecisionInstance(
+      MOCK_DECISION_INSTANCE_ID
+    );
 
     render(<Header />, {wrapper: Wrapper});
 
@@ -56,7 +58,9 @@ describe('<Header />', () => {
       )
     );
 
-    decisionInstanceStore.fetchDecisionInstance(MOCK_DECISION_INSTANCE_ID);
+    decisionInstanceDetailsStore.fetchDecisionInstance(
+      MOCK_DECISION_INSTANCE_ID
+    );
 
     render(<Header />, {wrapper: Wrapper});
 

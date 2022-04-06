@@ -15,7 +15,7 @@ import {
   observable,
 } from 'mobx';
 import {fetchFlowNodeStates} from 'modules/api/flowNodeStates';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
@@ -50,7 +50,7 @@ class FlowNodeStates extends NetworkReconnectionHandler {
 
   init = (processInstanceId: string) => {
     this.flowNodeStatesDisposer = when(
-      () => currentInstanceStore.state.instance !== null,
+      () => processInstanceDetailsStore.state.processInstance !== null,
       () => {
         this.fetchFlowNodeStates(processInstanceId);
         this.startPolling(processInstanceId);

@@ -15,7 +15,7 @@ import {
 } from 'mobx';
 import {fetchDecisionXML} from 'modules/api/decisions';
 import {logger} from 'modules/logger';
-import {decisionInstanceStore} from './decisionInstance';
+import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
@@ -45,7 +45,9 @@ class DecisionXml extends NetworkReconnectionHandler {
 
   init = () => {
     this.disposer = reaction(
-      () => decisionInstanceStore.state.decisionInstance?.decisionDefinitionId,
+      () =>
+        decisionInstanceDetailsStore.state.decisionInstance
+          ?.decisionDefinitionId,
       (decisionDefinitionId) => {
         if (decisionDefinitionId !== undefined) {
           this.fetchDiagramXml(decisionDefinitionId);

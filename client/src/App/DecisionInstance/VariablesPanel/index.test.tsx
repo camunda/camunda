@@ -16,7 +16,7 @@ import {VariablesPanel} from './index';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 describe('<VariablesPanel />', () => {
@@ -57,7 +57,7 @@ describe('<VariablesPanel />', () => {
       )
     );
 
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<VariablesPanel />, {wrapper: ThemeProvider});
 
@@ -97,7 +97,7 @@ describe('<VariablesPanel />', () => {
         res.once(ctx.json(invoiceClassification))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
     storeStateLocally({
       decisionInstanceTab: 'result',
     });

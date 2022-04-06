@@ -8,7 +8,7 @@
 import {waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {
   createInstance,
   createMultiInstanceFlowNodeInstances,
@@ -21,7 +21,7 @@ const mockFlowNodeInstances =
 
 describe('stores/flowNodeInstance', () => {
   afterEach(() => {
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
     flowNodeInstanceStore.reset();
   });
 
@@ -38,7 +38,7 @@ describe('stores/flowNodeInstance', () => {
       )
     );
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -93,7 +93,7 @@ describe('stores/flowNodeInstance', () => {
       )
     );
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -136,7 +136,7 @@ describe('stores/flowNodeInstance', () => {
       )
     );
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -185,7 +185,7 @@ describe('stores/flowNodeInstance', () => {
       eventListeners[event] = cb;
     });
 
-    currentInstanceStore.setCurrentInstance(
+    processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
@@ -236,7 +236,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     it('should start polling when process instance is active', async () => {
-      currentInstanceStore.setCurrentInstance(
+      processInstanceDetailsStore.setProcessInstance(
         createInstance({
           id: PROCESS_INSTANCE_ID,
           state: 'ACTIVE',
@@ -263,7 +263,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     it('should not start polling when process instance is completed', async () => {
-      currentInstanceStore.setCurrentInstance(
+      processInstanceDetailsStore.setProcessInstance(
         createInstance({
           id: PROCESS_INSTANCE_ID,
           state: 'COMPLETED',
@@ -288,7 +288,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     it('should stop polling after process instance has finished', async () => {
-      currentInstanceStore.setCurrentInstance(
+      processInstanceDetailsStore.setProcessInstance(
         createInstance({
           id: PROCESS_INSTANCE_ID,
           state: 'ACTIVE',
@@ -301,7 +301,7 @@ describe('stores/flowNodeInstance', () => {
         expect(flowNodeInstanceStore.state.status).toBe('fetched');
       });
 
-      currentInstanceStore.setCurrentInstance(
+      processInstanceDetailsStore.setProcessInstance(
         createInstance({
           id: PROCESS_INSTANCE_ID,
           state: 'COMPLETED',

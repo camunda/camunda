@@ -14,7 +14,7 @@ import {
 } from 'modules/mocks/mockDecisionInstance';
 import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionPanel} from '.';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
@@ -35,7 +35,7 @@ describe('<DecisionPanel />', () => {
 
   afterEach(() => {
     decisionXmlStore.reset();
-    decisionInstanceStore.reset();
+    decisionInstanceDetailsStore.reset();
   });
 
   it('should render decision table', async () => {
@@ -45,7 +45,7 @@ describe('<DecisionPanel />', () => {
       )
     );
 
-    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+    decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
     render(<DecisionPanel />, {wrapper: ThemeProvider});
 
@@ -62,7 +62,7 @@ describe('<DecisionPanel />', () => {
       )
     );
 
-    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+    decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
     render(<DecisionPanel />, {wrapper: ThemeProvider});
 
@@ -78,7 +78,7 @@ describe('<DecisionPanel />', () => {
       )
     );
 
-    decisionInstanceStore.fetchDecisionInstance('337423841237089');
+    decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
     render(<DecisionPanel />, {wrapper: ThemeProvider});
 

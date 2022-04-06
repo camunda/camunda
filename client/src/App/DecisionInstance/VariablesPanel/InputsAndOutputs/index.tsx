@@ -8,7 +8,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {Panel, Title, SkeletonBlock, PanelContainer} from './styled';
 import {Table, TR, TH, TD} from 'modules/components/VariablesTable';
 import {Skeleton} from './Skeleton';
@@ -20,7 +20,7 @@ import {
 const InputsAndOutputs: React.FC = observer(() => {
   const {
     state: {status, decisionInstance},
-  } = decisionInstanceStore;
+  } = decisionInstanceDetailsStore;
   const INPUTS_STRUCTURE = [
     {
       header: 'Name',

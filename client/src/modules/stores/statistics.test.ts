@@ -6,11 +6,11 @@
  */
 
 import {statisticsStore} from './statistics';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
-import {instancesStore} from './instances';
+import {processInstancesStore} from './processInstances';
 import {mockProcessXML, groupedProcessesMock} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
 
@@ -38,9 +38,9 @@ describe('stores/statistics', () => {
     );
   });
   afterEach(() => {
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
     statisticsStore.reset();
-    instancesStore.reset();
+    processInstancesStore.reset();
   });
 
   it('should reset state', async () => {
@@ -153,10 +153,12 @@ describe('stores/statistics', () => {
         )
       )
     );
-    instancesStore.init();
-    instancesStore.fetchInstancesFromFilters();
+    processInstancesStore.init();
+    processInstancesStore.fetchProcessInstancesFromFilters();
 
-    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    await waitFor(() =>
+      expect(processInstancesStore.state.status).toBe('fetched')
+    );
 
     expect(statisticsStore.state.running).toBe(1087);
     expect(statisticsStore.state.active).toBe(210);
@@ -192,7 +194,7 @@ describe('stores/statistics', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() =>
-      expect(instancesStore.state.filteredInstancesCount).toBe(2)
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2)
     );
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));

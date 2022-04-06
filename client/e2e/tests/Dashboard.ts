@@ -38,7 +38,7 @@ test('Statistics', async (t) => {
       'incident-instances-badge'
     ).textContent
   );
-  const activeInstancesCount = Number(
+  const activeProcessInstancesCount = Number(
     await within(screen.queryByTestId('metric-panel')).queryByTestId(
       'active-instances-badge'
     ).textContent
@@ -48,17 +48,17 @@ test('Statistics', async (t) => {
     .expect(screen.queryByTestId('total-instances-link').textContent)
     .eql(
       `${
-        incidentInstancesCount + activeInstancesCount
+        incidentInstancesCount + activeProcessInstancesCount
       } Running Process Instances in total`
     )
     .expect(incidentInstancesCount)
     .eql(1)
-    .expect(activeInstancesCount)
+    .expect(activeProcessInstancesCount)
     .eql(37);
 });
 
 test('Navigation to Instances View', async (t) => {
-  const activeInstancesCount = await screen
+  const activeProcessInstancesCount = await screen
     .getAllByTestId('active-instances-badge')
     .nth(0).textContent;
 
@@ -75,7 +75,7 @@ test('Navigation to Instances View', async (t) => {
 
   await t
     .expect(screen.getByTestId('result-count').textContent)
-    .eql(`${activeInstancesCount} results found`);
+    .eql(`${activeProcessInstancesCount} results found`);
 
   await t.click(
     screen

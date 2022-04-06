@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {currentInstanceStore} from './currentInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
 import {waitFor} from '@testing-library/react';
@@ -38,11 +38,11 @@ describe('stores/flowNodeMetaData', () => {
       )
     );
 
-    await currentInstanceStore.fetchCurrentInstance(PROCESS_INSTANCE_ID);
+    await processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
   });
 
   afterAll(() => {
-    currentInstanceStore.reset();
+    processInstanceDetailsStore.reset();
   });
 
   beforeEach(() => {

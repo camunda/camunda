@@ -31,7 +31,12 @@ const ROW_HEIGHT = 37;
 
 const InstancesTable: React.FC = observer(() => {
   const {
-    state: {status, filteredInstancesCount, latestFetch, decisionInstances},
+    state: {
+      status,
+      filteredProcessInstancesCount,
+      latestFetch,
+      decisionInstances,
+    },
     areDecisionInstancesEmpty,
     hasLatestDecisionInstances,
   } = decisionInstancesStore;
@@ -54,7 +59,7 @@ const InstancesTable: React.FC = observer(() => {
         return;
       }
 
-      decisionInstancesStore.fetchInstancesFromFilters();
+      decisionInstancesStore.fetchProcessInstancesFromFilters();
     }
   }, [location.search, groupedDecisionsStatus, decisions]);
 
@@ -85,7 +90,7 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container>
-      <PanelHeader title="Instances" count={filteredInstancesCount} />
+      <PanelHeader title="Instances" count={filteredProcessInstancesCount} />
       <SortableTable
         state={getTableState()}
         headerColumns={[
@@ -195,7 +200,10 @@ const InstancesTable: React.FC = observer(() => {
                   cellContent:
                     processInstanceId !== null ? (
                       <Link
-                        to={Locations.instance(location, processInstanceId)}
+                        to={Locations.processInstance(
+                          location,
+                          processInstanceId
+                        )}
                         title={`View process instance ${processInstanceId}`}
                         onClick={() => {
                           tracking.track({

@@ -15,14 +15,14 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
-import {decisionInstanceStore} from 'modules/stores/decisionInstance';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
 import {Result} from './index';
 
 describe('<Result />', () => {
   beforeEach(() => {
-    decisionInstanceStore.reset();
+    decisionInstanceDetailsStore.reset();
   });
 
   it('should show an error message', async () => {
@@ -31,7 +31,7 @@ describe('<Result />', () => {
         res.once(ctx.status(500))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<Result />, {wrapper: ThemeProvider});
 
@@ -51,7 +51,7 @@ describe('<Result />', () => {
       wrapper: ThemeProvider,
     });
 
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     expect(screen.getByTestId('result-loading-spinner')).toBeInTheDocument();
 
@@ -66,7 +66,7 @@ describe('<Result />', () => {
         res.once(ctx.json(invoiceClassification))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<Result />, {wrapper: ThemeProvider});
 
@@ -81,7 +81,7 @@ describe('<Result />', () => {
         res.once(ctx.json(assignApproverGroup))
       )
     );
-    decisionInstanceStore.fetchDecisionInstance('1');
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<Result />, {wrapper: ThemeProvider});
 

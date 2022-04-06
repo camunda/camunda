@@ -12,7 +12,7 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import {rest} from 'msw';
-import {instancesStore} from 'modules/stores/instances';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import {Operations} from './index';
 import {mockServer} from 'modules/mock-server/node';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
@@ -182,8 +182,8 @@ describe('Operations', () => {
         )
       );
 
-      instancesStore.init();
-      instancesStore.fetchInstancesFromFilters();
+      processInstancesStore.init();
+      processInstancesStore.fetchProcessInstancesFromFilters();
 
       render(
         <Operations
@@ -197,7 +197,9 @@ describe('Operations', () => {
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+      await waitFor(() =>
+        expect(processInstancesStore.state.status).toBe('fetched')
+      );
       expect(
         await screen.findByTestId('operation-spinner')
       ).toBeInTheDocument();
@@ -215,7 +217,7 @@ describe('Operations', () => {
 
       await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
 
-      instancesStore.reset();
+      processInstancesStore.reset();
 
       jest.clearAllTimers();
       jest.useRealTimers();
