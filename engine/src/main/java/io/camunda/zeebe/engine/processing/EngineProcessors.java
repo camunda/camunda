@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
 
-import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
@@ -34,7 +33,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -71,11 +69,16 @@ public final class EngineProcessors {
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
 
-    final var variablesState = zeebeState.getVariableState();
+    final EvaluationContextLookup contextLookup =
+        (scopeKey) -> {
+          ensureGreaterThan("variable scope key", scopeKey, 0);
+          return (name) ->
+              zeebeState.getVariableState().getVariable(scopeKey, BufferUtil.wrapString(name));
+        };
+
     final var expressionProcessor =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(),
-            new VariableStateEvaluationContextLookup(variablesState));
+            ExpressionLanguageFactory.createExpressionLanguage(), contextLookup);
 
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
     final CatchEventBehavior catchEventBehavior =
@@ -245,16 +248,5 @@ public final class EngineProcessors {
         zeebeState,
         subscriptionCommandSender,
         writers);
-  }
-
-  private record VariableStateEvaluationContextLookup(VariableState variableState)
-      implements EvaluationContextLookup {
-
-    @Override
-    public EvaluationContext getContext(final long scopeKey) {
-      ensureGreaterThan("variable scope key", scopeKey, 0);
-
-      return (name) -> variableState.getVariable(scopeKey, BufferUtil.wrapString(name));
-    }
   }
 }
