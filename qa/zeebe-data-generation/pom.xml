@@ -4,9 +4,7 @@
   ~ under one or more contributor license agreements. Licensed under a commercial license.
   ~ You may not use this file except in compliance with the commercial license.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <properties>
@@ -40,7 +38,7 @@
   <parent>
     <artifactId>qa</artifactId>
     <groupId>org.camunda.optimize</groupId>
-    <version>3.8.0-SNAPSHOT</version>
+    <version>3.8.0-RC1</version>
   </parent>
 
   <artifactId>zeebe-data-generation</artifactId>
