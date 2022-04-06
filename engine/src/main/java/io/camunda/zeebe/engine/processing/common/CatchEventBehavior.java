@@ -119,16 +119,16 @@ public final class CatchEventBehavior {
 
   private Either<Failure, OngoingEvaluation> evaluateMessageName(
       final OngoingEvaluation evaluation) {
-    final var expressionProcessor = evaluation.expressionProcessor();
     final var event = evaluation.event();
 
     if (!event.isMessage()) {
-      return Either.right(null);
+      return Either.right(evaluation);
     }
     final var scopeKey = evaluation.context().getElementInstanceKey();
     final ExecutableMessage message = event.getMessage();
     final Expression messageNameExpression = message.getMessageNameExpression();
-    return expressionProcessor
+    return evaluation
+        .expressionProcessor()
         .evaluateStringExpression(messageNameExpression, scopeKey)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordMessageName);
@@ -136,7 +136,6 @@ public final class CatchEventBehavior {
 
   private Either<Failure, OngoingEvaluation> evaluateCorrelationKey(
       final OngoingEvaluation evaluation) {
-    final var expressionProcessor = evaluation.expressionProcessor();
     final var event = evaluation.event();
     final var context = evaluation.context();
     if (!event.isMessage()) {
@@ -147,7 +146,8 @@ public final class CatchEventBehavior {
         event.getElementType() == BpmnElementType.BOUNDARY_EVENT
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
-    return expressionProcessor
+    return evaluation
+        .expressionProcessor()
         .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordCorrelationKey)
@@ -155,7 +155,6 @@ public final class CatchEventBehavior {
   }
 
   private Either<Failure, OngoingEvaluation> evaluateTimer(final OngoingEvaluation evaluation) {
-    final var expressionProcessor = evaluation.expressionProcessor();
     final var event = evaluation.event();
     final var context = evaluation.context();
     if (!event.isTimer()) {
@@ -164,7 +163,7 @@ public final class CatchEventBehavior {
     final var scopeKey = context.getElementInstanceKey();
     return event
         .getTimerFactory()
-        .apply(expressionProcessor, scopeKey)
+        .apply(evaluation.expressionProcessor(), scopeKey)
         .map(evaluation::recordTimer);
   }
 
@@ -338,6 +337,11 @@ public final class CatchEventBehavior {
         closeOnCorrelate);
   }
 
+  /**
+   * Transient helper object that captures the information necessary
+   * to evaluate important expressions for a message, and to capture
+   * intermediate results of the evaluation
+   */
   private static class OngoingEvaluation {
     private final ExpressionProcessor expressionProcessor;
     private final ExecutableCatchEvent event;
