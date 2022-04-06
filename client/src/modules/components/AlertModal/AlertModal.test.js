@@ -36,6 +36,10 @@ jest.mock('services', () => {
   };
 });
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 const initialAlert = {
   id: '71395',
   name: 'Sample Alert',
@@ -238,6 +242,13 @@ it('should load an initial report if specified', () => {
 
   expect(node.find('Typeahead').prop('initialValue')).toBe('5');
   expect(node.find('Typeahead').prop('disabled')).toBe(true);
+});
+
+it('should not load the report twice if both initialAlert and initialReport are defined', () => {
+  const node = shallow(<AlertModal {...props} initialReport="5" initialAlert={initialAlert} />);
+
+  expect(evaluateReport.mock.calls.length).toBe(1);
+  expect(node.find('Typeahead').prop('initialValue')).toBe('8');
 });
 
 it('should allow to remove an alert from inside the modal if onRemove prop is provided', () => {

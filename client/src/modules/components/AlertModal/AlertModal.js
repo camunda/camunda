@@ -63,9 +63,7 @@ export class AlertModal extends React.Component {
   componentDidMount = async () => {
     if (this.isDefined(this.props.initialAlert)) {
       this.loadAlert();
-    }
-
-    if (this.props.initialReport) {
+    } else if (this.props.initialReport) {
       this.updateReport(this.props.initialReport);
     }
 
