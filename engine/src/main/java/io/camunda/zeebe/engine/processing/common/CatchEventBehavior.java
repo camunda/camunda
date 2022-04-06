@@ -9,11 +9,9 @@ package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.common.MessageExpressionEvaluation.EvalResult;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -31,15 +29,15 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
 
+  private static final MessageExpressionEvaluation MESSAGE_EXPRESSION_EVALUATION =
+      new MessageExpressionEvaluation();
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
@@ -94,7 +92,7 @@ public final class CatchEventBehavior {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
-            .map(event -> evalExpressions(expressionProcessor, event, context))
+            .map(event -> MESSAGE_EXPRESSION_EVALUATION.apply(expressionProcessor, event, context))
             .collect(Either.collectorFoldingLeft());
 
     evaluationResults.ifRight(
@@ -104,67 +102,6 @@ public final class CatchEventBehavior {
         });
 
     return evaluationResults.map(r -> null);
-  }
-
-  private Either<Failure, EvalResult> evalExpressions(
-      final ExpressionProcessor ep,
-      final ExecutableCatchEvent event,
-      final BpmnElementContext context) {
-    return Either.<Failure, OngoingEvaluation>right(new OngoingEvaluation(ep, event, context))
-        .flatMap(this::evaluateMessageName)
-        .flatMap(this::evaluateCorrelationKey)
-        .flatMap(this::evaluateTimer)
-        .map(OngoingEvaluation::getResult);
-  }
-
-  private Either<Failure, OngoingEvaluation> evaluateMessageName(
-      final OngoingEvaluation evaluation) {
-    final var event = evaluation.event();
-
-    if (!event.isMessage()) {
-      return Either.right(evaluation);
-    }
-    final var scopeKey = evaluation.context().getElementInstanceKey();
-    final ExecutableMessage message = event.getMessage();
-    final Expression messageNameExpression = message.getMessageNameExpression();
-    return evaluation
-        .expressionProcessor()
-        .evaluateStringExpression(messageNameExpression, scopeKey)
-        .map(BufferUtil::wrapString)
-        .map(evaluation::recordMessageName);
-  }
-
-  private Either<Failure, OngoingEvaluation> evaluateCorrelationKey(
-      final OngoingEvaluation evaluation) {
-    final var event = evaluation.event();
-    final var context = evaluation.context();
-    if (!event.isMessage()) {
-      return Either.right(null);
-    }
-    final var expression = event.getMessage().getCorrelationKeyExpression();
-    final long scopeKey =
-        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
-            ? context.getFlowScopeKey()
-            : context.getElementInstanceKey();
-    return evaluation
-        .expressionProcessor()
-        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
-        .map(BufferUtil::wrapString)
-        .map(evaluation::recordCorrelationKey)
-        .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
-  }
-
-  private Either<Failure, OngoingEvaluation> evaluateTimer(final OngoingEvaluation evaluation) {
-    final var event = evaluation.event();
-    final var context = evaluation.context();
-    if (!event.isTimer()) {
-      return Either.right(null);
-    }
-    final var scopeKey = context.getElementInstanceKey();
-    return event
-        .getTimerFactory()
-        .apply(evaluation.expressionProcessor(), scopeKey)
-        .map(evaluation::recordTimer);
   }
 
   private void subscribeToMessageEvents(
@@ -178,9 +115,9 @@ public final class CatchEventBehavior {
 
   private void subscribeToMessageEvent(
       final BpmnElementContext context, final SideEffects sideEffects, final EvalResult result) {
-    final var event = result.event;
-    final var correlationKey = result.correlationKey;
-    final var messageName = result.messageName;
+    final var event = result.event();
+    final var correlationKey = result.correlationKey();
+    final var messageName = result.messageName();
 
     final long processInstanceKey = context.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
@@ -223,8 +160,8 @@ public final class CatchEventBehavior {
         .filter(EvalResult::isTimer)
         .forEach(
             result -> {
-              final var event = result.event;
-              final var timer = result.timer;
+              final var event = result.event();
+              final var timer = result.timer();
               subscribeToTimerEvent(
                   context.getElementInstanceKey(),
                   context.getProcessInstanceKey(),
@@ -335,73 +272,5 @@ public final class CatchEventBehavior {
         messageName,
         correlationKey,
         closeOnCorrelate);
-  }
-
-  /**
-   * Transient helper object that captures the information necessary to evaluate important
-   * expressions for a message, and to capture intermediate results of the evaluation
-   */
-  private static class OngoingEvaluation {
-    private final ExpressionProcessor expressionProcessor;
-    private final ExecutableCatchEvent event;
-    private final BpmnElementContext context;
-    private DirectBuffer messageName;
-    private DirectBuffer correlationKey;
-    private Timer timer;
-
-    public OngoingEvaluation(
-        final ExpressionProcessor expressionProcessor,
-        final ExecutableCatchEvent event,
-        final BpmnElementContext context) {
-      this.expressionProcessor = expressionProcessor;
-      this.event = event;
-      this.context = context;
-    }
-
-    private ExpressionProcessor expressionProcessor() {
-      return expressionProcessor;
-    }
-
-    private ExecutableCatchEvent event() {
-      return event;
-    }
-
-    private BpmnElementContext context() {
-      return context;
-    }
-
-    public OngoingEvaluation recordMessageName(final DirectBuffer messageName) {
-      this.messageName = messageName;
-      return this;
-    }
-
-    public OngoingEvaluation recordCorrelationKey(final DirectBuffer correlationKey) {
-      this.correlationKey = correlationKey;
-      return this;
-    }
-
-    public OngoingEvaluation recordTimer(final Timer timer) {
-      this.timer = timer;
-      return this;
-    }
-
-    EvalResult getResult() {
-      return new EvalResult(event, messageName, correlationKey, timer);
-    }
-  }
-
-  private record EvalResult(
-      ExecutableCatchEvent event,
-      DirectBuffer messageName,
-      DirectBuffer correlationKey,
-      Timer timer) {
-
-    public boolean isMessage() {
-      return event.isMessage();
-    }
-
-    public boolean isTimer() {
-      return event.isTimer();
-    }
   }
 }
