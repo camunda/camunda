@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/camunda/zeebe/clients/go/internal/containersuite"
-	"github.com/camunda/zeebe/clients/go/pkg/zbc"
+	"github.com/camunda/zeebe/clients/go/v8/internal/containersuite"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
 )
