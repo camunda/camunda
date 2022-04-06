@@ -142,7 +142,7 @@ public class DefinitionRestService {
     }
 
     definitionVersions.sort(Comparator.comparing(
-      (DefinitionVersionResponseDto definitionVersionDto) -> Integer.valueOf(definitionVersionDto.getVersion()))
+        (DefinitionVersionResponseDto definitionVersionDto) -> Integer.valueOf(definitionVersionDto.getVersion()))
                               .reversed());
     return definitionVersions;
   }
@@ -262,8 +262,8 @@ public class DefinitionRestService {
   }
 
   private List<DefinitionResponseDto> getDefinitions(final DefinitionType type, final String collectionId,
-                                                              final boolean camundaEventImportedOnly,
-                                                              final String userId) {
+                                                     final boolean camundaEventImportedOnly,
+                                                     final String userId) {
     if (collectionId != null) {
       return getDefinitionKeysForCollection(type, camundaEventImportedOnly, userId, collectionId);
     } else {

@@ -197,17 +197,17 @@ pipeline {
     stage('Zeebe Integration Tests') {
       failFast false
       parallel {
-        stage("1.3.0") {
+        stage("8.0.0") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-zeebe-1-3-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              label "optimize-ci-build-zeebe-8-0-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
             }
           }
           steps {
-            integrationTestSteps("1.3.0", false)
+            integrationTestSteps("8.0.0", false)
           }
           post {
             always {
