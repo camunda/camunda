@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
@@ -47,21 +48,15 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
-    final ExecutableCatchEventSupplier flowScope =
-        (ExecutableCatchEventSupplier) element.getFlowScope();
+    final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+    final BpmnElementContextImpl flowScopeInstanceContext =
+        buildContextForFlowScopeInstance(context);
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
-            ok ->
-                eventSubscriptionBehavior.subscribeToEvents(
-                    flowScope,
-                    context.copy(
-                        flowScopeInstance.getKey(),
-                        flowScopeInstance.getValue(),
-                        flowScopeInstance.getState())))
+            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
@@ -74,5 +69,14 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
+  }
+
+  private BpmnElementContextImpl buildContextForFlowScopeInstance(
+      final BpmnElementContext context) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+    final var flowScopeInstanceContext = new BpmnElementContextImpl();
+    flowScopeInstanceContext.init(
+        flowScopeInstance.getKey(), flowScopeInstance.getValue(), flowScopeInstance.getState());
+    return flowScopeInstanceContext;
   }
 }
