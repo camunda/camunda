@@ -1,4 +1,4 @@
-FROM alpine:3.15.3 as builder
+FROM alpine:3.15.4 as builder
 
 ARG SKIP_DOWNLOAD=false
 ARG VERSION=2.0.0
@@ -22,7 +22,7 @@ RUN /tmp/download.sh
 
 ##### FINAL IMAGE #####
 
-FROM alpine:3.15.3
+FROM alpine:3.15.4
 
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
