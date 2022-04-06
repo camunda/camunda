@@ -338,9 +338,8 @@ public final class CatchEventBehavior {
   }
 
   /**
-   * Transient helper object that captures the information necessary
-   * to evaluate important expressions for a message, and to capture
-   * intermediate results of the evaluation
+   * Transient helper object that captures the information necessary to evaluate important
+   * expressions for a message, and to capture intermediate results of the evaluation
    */
   private static class OngoingEvaluation {
     private final ExpressionProcessor expressionProcessor;
