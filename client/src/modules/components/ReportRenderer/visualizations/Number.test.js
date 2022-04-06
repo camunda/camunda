@@ -92,6 +92,29 @@ it('should display a progress bar if target values are active', () => {
   expect(node.find(ProgressBar)).toExist();
 });
 
+it('should not display a progress bar for multi measure/aggregation reports', () => {
+  const node = shallow(
+    <Number
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          view: {
+            properties: ['duration'],
+          },
+          configuration: {
+            aggregationTypes: ['avg', 'max'],
+            targetValue: {active: true, countProgress: {baseline: '0', target: '12'}},
+          },
+        },
+      }}
+      formatter={(v) => 2 * v}
+    />
+  );
+
+  expect(node.find(ProgressBar)).not.toExist();
+});
+
 it('should show the view label underneath the number', () => {
   const node = shallow(<Number report={report} />);
   expect(node).toIncludeText('Process Instance Count');

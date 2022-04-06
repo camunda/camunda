@@ -76,8 +76,12 @@ it('should contain a target input for variable reports', () => {
 });
 
 it('should contain a target input for duration property', () => {
-  props.report.data.view.properties = ['duration'];
-  const node = shallow(<NumberConfig {...props} />);
+  const node = shallow(
+    <NumberConfig
+      {...props}
+      report={update(props.report, {data: {view: {properties: {$set: ['duration']}}}})}
+    />
+  );
 
   expect(node.find('CountTargetInput')).not.toExist();
   expect(node.find('DurationTargetInput')).toExist();
@@ -94,11 +98,12 @@ it('should not show target input for multi-measure reports', () => {
   expect(node.find('DurationTargetInput')).not.toExist();
 });
 
-it('should not show target input for multi-aggregation reports', () => {
+it('should not show target input for multi-aggregation duration reports', () => {
   const node = shallow(
     <NumberConfig
       report={update(props.report, {
         data: {
+          view: {properties: {$set: ['duration']}},
           configuration: {
             aggregationTypes: {
               $set: [

@@ -22,8 +22,9 @@ export default function NumberConfig({report, onChange}) {
     view.properties.includes('percentage') ||
     view.entity === 'variable';
   const goalSet = targetValue.active;
-
-  const isMultiMeasure = view.properties.length > 1 || configuration.aggregationTypes.length > 1;
+  const isMultiMeasure =
+    view.properties.length > 1 ||
+    (view.properties.includes('duration') && configuration.aggregationTypes.length > 1);
 
   return (
     <div className="NumberConfig">
