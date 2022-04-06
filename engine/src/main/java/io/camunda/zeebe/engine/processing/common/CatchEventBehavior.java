@@ -146,7 +146,7 @@ public final class CatchEventBehavior {
 
     sideEffects.add(
         () ->
-            sendOpenMessageSubscription(
+            subscriptionCommandSender.openMessageSubscription(
                 subscriptionPartitionId,
                 processInstanceKey,
                 elementInstanceKey,
@@ -247,36 +247,9 @@ public final class CatchEventBehavior {
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sideEffects.add(
         () ->
-            sendCloseMessageSubscriptionCommand(
+            subscriptionCommandSender.closeMessageSubscription(
                 subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
 
     return true;
-  }
-
-  private boolean sendCloseMessageSubscriptionCommand(
-      final int subscriptionPartitionId,
-      final long processInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName) {
-    return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
-  }
-
-  private boolean sendOpenMessageSubscription(
-      final int subscriptionPartitionId,
-      final long processInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer bpmnProcessId,
-      final DirectBuffer messageName,
-      final DirectBuffer correlationKey,
-      final boolean closeOnCorrelate) {
-    return subscriptionCommandSender.openMessageSubscription(
-        subscriptionPartitionId,
-        processInstanceKey,
-        elementInstanceKey,
-        bpmnProcessId,
-        messageName,
-        correlationKey,
-        closeOnCorrelate);
   }
 }
