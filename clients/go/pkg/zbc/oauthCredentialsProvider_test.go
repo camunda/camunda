@@ -16,8 +16,8 @@ package zbc
 
 import (
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/pkg/entities"
-	"github.com/camunda/zeebe/clients/go/pkg/worker"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/worker"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/net/context"

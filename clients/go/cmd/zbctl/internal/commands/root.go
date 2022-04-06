@@ -16,7 +16,7 @@ package commands
 
 import (
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/pkg/zbc"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"net"

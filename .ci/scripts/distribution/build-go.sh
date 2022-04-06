@@ -10,7 +10,7 @@ ln -s "${PWD}" "${ORG_DIR}/zeebe"
 
 cd "${ORG_DIR}/zeebe/clients/go"
 
-PREFIX=github.com/camunda/zeebe/clients/go
+PREFIX=github.com/camunda/zeebe/clients/go/v8
 EXCLUDE=""
 
 for file in {internal,cmd/zbctl/internal}/*; do

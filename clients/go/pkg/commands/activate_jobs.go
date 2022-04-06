@@ -16,8 +16,8 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda/zeebe/clients/go/pkg/entities"
-	"github.com/camunda/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"io"
 	"log"
 	"time"

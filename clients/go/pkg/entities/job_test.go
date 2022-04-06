@@ -17,7 +17,7 @@ package entities
 import (
 	"testing"
 
-	"github.com/camunda/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/google/go-cmp/cmp"
 )
 
