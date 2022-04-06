@@ -21,7 +21,7 @@ export default function GoalSummary({goals}) {
     return (
       <div className="GoalSummary">
         <Icon type="info" />
-        <span className="height-center">{t('report.noDataNotice')}</span>
+        <span className="height-center">{t('processes.noData')}</span>
       </div>
     );
   }

@@ -130,9 +130,7 @@ export default withErrorHandling(
                       </ul>
                     </div>
                   ))}
-                <p>
-                  <b>{t('common.deleter.noUndo')}</b>
-                </p>
+                <p>{!this.props.isReversableAction && <b>{t('common.deleter.noUndo')}</b>}</p>
               </>
             )}
           </Modal.Content>

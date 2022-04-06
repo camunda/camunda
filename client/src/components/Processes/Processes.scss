@@ -4,6 +4,11 @@
   height: 100%;
 
   .EntityList {
+    .ListItem .meta,
+    .columnHeaders .meta {
+      flex-basis: 250px;
+    }
+
     .ownerInfo {
       display: flex;
       align-items: center;

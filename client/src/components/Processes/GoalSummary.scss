@@ -1,11 +1,12 @@
 .GoalSummary {
-  width: 100px;
+  min-width: 100px;
   height: 26px;
   padding: 1px 13px 1px 6px;
   border-radius: 14px;
   border: solid 1px var(--silver-darken-80);
   background-color: #fff;
   position: relative;
+  margin-right: 5px;
 
   .Icon {
     &.error {

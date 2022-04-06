@@ -42,6 +42,7 @@ export default function EditOwnerModal({initialOwner, onClose, onConfirm}) {
           deleteText={t('common.removeEntity', {entity: t('processes.owner')})}
           descriptionText={t('processes.ownerRemoveWarning', {owner: initialOwner?.name || ''})}
           deleteButtonText={t('common.removeEntity', {entity: t('processes.owner')})}
+          isReversableAction
         />
       </Modal.Content>
       <Modal.Actions>

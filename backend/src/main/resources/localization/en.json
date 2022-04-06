@@ -175,8 +175,9 @@
     "addOwner": "Add Owner",
     "editOwner": "Edit Owner",
     "addProcessOwner": "Add Process Owner",
-    "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to set a default recipient for alerts or sort and filter processes.",
+    "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to sort and filter processes.",
     "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
+    "noData": "No Data",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",

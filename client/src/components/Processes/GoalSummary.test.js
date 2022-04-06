@@ -20,7 +20,7 @@ it('should not display the summary if no goals are defined', () => {
 it('should display no data if all goals has no value', () => {
   const node = shallow(<GoalSummary goals={[{value: null}, {value: null}]} />);
 
-  expect(node).toIncludeText('No data');
+  expect(node).toIncludeText('No Data');
 });
 
 it('should display single indicator if all goals succeeded or failed', () => {
