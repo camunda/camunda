@@ -1338,6 +1338,16 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@bpmn-io/element-templates-icons-renderer@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/element-templates-icons-renderer/-/element-templates-icons-renderer-0.1.2.tgz#517e6a2c906ceb192fd3b66c6c3c6109eaad2d72"
+  integrity sha512-HMcjVGPfCrkkMKy6N6seQlh0R6F0YfXUJvflPTLgo6Kbv/k0/f0RUuicke2JW0How7uQrANp+ryn5j+c6W6ilg==
+  dependencies:
+    bpmn-js "^9.0.3"
+    diagram-js "^8.2.1"
+    inherits "^2.0.4"
+    tiny-svg "^2.2.3"
+
 "@camunda-cloud/common-ui-react@0.0.18-rc4":
   version "0.0.18-rc4"
   resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.18-rc4.tgz#22a993a7ffe476e931f42a3223f133207f3366b3"
@@ -5081,7 +5091,7 @@ boxen@^5.1.2:
     widest-line "^3.1.0"
     wrap-ansi "^7.0.0"
 
-bpmn-js@9.0.3:
+bpmn-js@9.0.3, bpmn-js@^9.0.3:
   version "9.0.3"
   resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.0.3.tgz#6345cddd7704b10c1163b063a0d16a1c64e028d8"
   integrity sha512-Frr0skhc3l5Sw3xj9lPkYm2gotxA2sdqNDh1uWb2P/u8jol0VaJFldlQI0aVwWmoo1ze3VVNJ0qYZs5HdDqt9g==
@@ -7020,7 +7030,7 @@ diagram-js@^7.8.2:
     path-intersection "^2.2.1"
     tiny-svg "^2.2.2"
 
-diagram-js@^8.2.0:
+diagram-js@^8.2.0, diagram-js@^8.2.1:
   version "8.2.1"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-8.2.1.tgz#ec9acbd5b5bbb3323ce5df424a2bbf830e3e1e3f"
   integrity sha512-R9D4CtRPCXFllGE4P/UTcK3fgYG/0WQfb87Pl7frdfnAbCbjZAM2vU0qgZaBhfU0cmW2OhdDPmEtz89brrOZDA==
@@ -16862,6 +16872,11 @@ tiny-svg@^2.2.1, tiny-svg@^2.2.2:
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-2.2.2.tgz#9d9825c2e0ccb5e259bb1ae7d7ac79194e086657"
   integrity sha512-u6zCuMkDR/3VAh83X7hDRn/pi0XhwG2ycuNS0cTFtQjGdOG2tSvEb8ds65VeGWc3H6PUjJKeunueXqgkZqtMsg==
+
+tiny-svg@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-2.2.3.tgz#59fdb8ecf5ea5385861b2964cc3b55afae9e604c"
+  integrity sha512-u5KGg889pD1W2c9GlLrTnAGzIkAO00/VXZGyzeiGHw+b9er8McLO0SnhxPQQDwDqFO0MrJ825AEsRUoTiDZFuQ==
 
 tinycolor2@^1.4.1:
   version "1.4.2"

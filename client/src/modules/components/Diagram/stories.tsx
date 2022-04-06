@@ -19,7 +19,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import DiagramComponent from '.';
+import DiagramComponent from './index.legacy';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   calledDecisionMetadata,
@@ -30,18 +30,25 @@ import {
   multiInstancesMetadata,
   singleInstanceMetadata,
 } from 'modules/mocks/metadata';
+import {elementTemplateIconsProcess} from 'modules/mocks/elementTemplatesIconsProcess';
 
 export default {
   title: 'Components/Diagram',
 };
 
 const Container = styled.div`
-  display: flex;
+  display: block;
   height: 500px;
   border: 1px solid #ccc;
 `;
 
-const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
+const Diagram = ({
+  flowNodeId,
+  xml = metadataDemoProcess,
+}: {
+  flowNodeId?: string;
+  xml?: string;
+}) => {
   const [diagram, setDiagram] = useState<any>(null);
 
   useEffect(() => {
@@ -50,7 +57,7 @@ const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
     async function init() {
-      setDiagram(await parseDiagramXML(metadataDemoProcess));
+      setDiagram(await parseDiagramXML(xml));
       flowNodeSelectionStore.selectFlowNode({flowNodeId: flowNodeId});
     }
     init();
@@ -61,7 +68,7 @@ const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
       flowNodeMetaDataStore.reset();
       flowNodeSelectionStore.reset();
     };
-  }, [setDiagram, flowNodeId]);
+  }, [setDiagram, flowNodeId, xml]);
 
   return (
     <ThemeProvider>
@@ -69,7 +76,7 @@ const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
         {diagram !== null && (
           <Container>
             <DiagramComponent
-              selectableFlowNodes={[flowNodeId]}
+              selectableFlowNodes={flowNodeId !== undefined ? [flowNodeId] : []}
               definitions={diagram.definitions}
               hidePopover={false}
               selectedFlowNodeId={flowNodeId}
@@ -203,6 +210,18 @@ CalledUnevaluatedDecision.parameters = {
   ],
 };
 
+const ElementTemplateIcons: Story = () => (
+  <Diagram xml={elementTemplateIconsProcess} />
+);
+ElementTemplateIcons.storyName = 'Element Template Icons';
+ElementTemplateIcons.parameters = {
+  msw: [
+    rest.get('/api/processes/:processInstanceId/xml', (_, res, ctx) => {
+      return res(ctx.text(elementTemplateIconsProcess));
+    }),
+  ],
+};
+
 export {
   SingleInstance,
   MultipleInstances,
@@ -211,4 +230,5 @@ export {
   CalledEvaluatedDecision,
   CalledUnevaluatedDecision,
   CalledFailedDecision,
+  ElementTemplateIcons,
 };

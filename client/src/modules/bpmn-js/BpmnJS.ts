@@ -7,6 +7,8 @@
 
 // @ts-expect-error ts-migrate(7016) FIXME: Try `npm install @types/bpmn-js` if it exists or a... Remove this comment to see the full error message
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+// @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
+import ElementTemplatesIconsRenderer from '@bpmn-io/element-templates-icons-renderer';
 import {IReactionDisposer, reaction} from 'mobx';
 import {isEqual} from 'lodash';
 import {theme} from 'modules/theme';
@@ -168,6 +170,7 @@ class BpmnJS {
       container,
       bpmnRenderer:
         theme[currentTheme.state.selectedTheme].colors.modules.diagram,
+      additionalModules: [ElementTemplatesIconsRenderer],
     });
   };
 

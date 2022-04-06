@@ -8,6 +8,8 @@
 import React from 'react';
 // @ts-expect-error ts-migrate(7016) FIXME: Try `npm install @types/bpmn-js` if it exists or a... Remove this comment to see the full error message
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
+// @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
+import ElementTemplatesIconsRenderer from '@bpmn-io/element-templates-icons-renderer';
 import {flatMap, isEqual} from 'lodash';
 import {withTheme, DefaultTheme} from 'styled-components';
 
@@ -153,6 +155,7 @@ class Diagram extends React.PureComponent<Props, State> {
     this.Viewer = new BPMNViewer({
       container: this.containerRef.current,
       bpmnRenderer: this.props.theme.colors.modules.diagram,
+      additionalModules: [ElementTemplatesIconsRenderer],
     });
 
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
