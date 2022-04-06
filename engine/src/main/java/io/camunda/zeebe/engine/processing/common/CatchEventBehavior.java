@@ -11,6 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.MessageExpressionEvaluation.EvalResult;
+import io.camunda.zeebe.engine.processing.common.MessageExpressionEvaluation.MessageEvalResult;
+import io.camunda.zeebe.engine.processing.common.MessageExpressionEvaluation.TimerEvalResult;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -107,14 +109,17 @@ public final class CatchEventBehavior {
   private void subscribeToMessageEvents(
       final BpmnElementContext context,
       final SideEffects sideEffects,
-      final List<EvalResult> results) {
+      final List<? extends EvalResult> results) {
     results.stream()
         .filter(EvalResult::isMessage)
+        .map(MessageEvalResult.class::cast)
         .forEach(result -> subscribeToMessageEvent(context, sideEffects, result));
   }
 
   private void subscribeToMessageEvent(
-      final BpmnElementContext context, final SideEffects sideEffects, final EvalResult result) {
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final MessageEvalResult result) {
     final var event = result.event();
     final var correlationKey = result.correlationKey();
     final var messageName = result.messageName();
@@ -155,9 +160,10 @@ public final class CatchEventBehavior {
       final BpmnElementContext context,
       final SideEffects sideEffects,
       final TypedCommandWriter commandWriter,
-      final List<EvalResult> results) {
+      final List<? extends EvalResult> results) {
     results.stream()
         .filter(EvalResult::isTimer)
+        .map(TimerEvalResult.class::cast)
         .forEach(
             result -> {
               final var event = result.event();
