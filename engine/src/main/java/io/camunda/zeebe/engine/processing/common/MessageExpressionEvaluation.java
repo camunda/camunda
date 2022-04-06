@@ -29,71 +29,89 @@ public class MessageExpressionEvaluation
   @Override
   public Either<Failure, EvalResult> apply(
       final ExpressionProcessor expressionProcessor,
-      final ExecutableCatchEvent executableCatchEvent,
-      final BpmnElementContext bpmnElementContext) {
-    return Either.<Failure, OngoingEvaluation>right(
-            new OngoingEvaluation(expressionProcessor, executableCatchEvent, bpmnElementContext))
-        .flatMap(this::evaluateMessageName)
-        .flatMap(this::evaluateCorrelationKey)
-        .flatMap(this::evaluateTimer)
-        .map(OngoingEvaluation::getResult);
+      final ExecutableCatchEvent catchEvent,
+      final BpmnElementContext context) {
+    return Either.<Failure, EvalResult>right(new EvalResult(catchEvent))
+        .flatMap(result -> evaluateMessageName(expressionProcessor, context, result))
+        .flatMap(result -> evaluateCorrelationKey(expressionProcessor, context, result))
+        .flatMap(result -> evaluateTimer(expressionProcessor, context, result));
   }
 
-  private Either<Failure, OngoingEvaluation> evaluateMessageName(
-      final OngoingEvaluation evaluation) {
+  private Either<Failure, EvalResult> evaluateMessageName(
+      final ExpressionProcessor expressionProcessor,
+      final BpmnElementContext context,
+      final EvalResult evaluation) {
     final var event = evaluation.event();
 
     if (!event.isMessage()) {
       return Either.right(evaluation);
     }
-    final var scopeKey = evaluation.context().getElementInstanceKey();
+    final var scopeKey = context.getElementInstanceKey();
     final ExecutableMessage message = event.getMessage();
     final Expression messageNameExpression = message.getMessageNameExpression();
-    return evaluation
-        .expressionProcessor()
+    return expressionProcessor
         .evaluateStringExpression(messageNameExpression, scopeKey)
         .map(BufferUtil::wrapString)
-        .map(evaluation::recordMessageName);
+        .map(evaluation::withMessageName);
   }
 
-  private Either<Failure, OngoingEvaluation> evaluateCorrelationKey(
-      final OngoingEvaluation evaluation) {
+  private Either<Failure, EvalResult> evaluateCorrelationKey(
+      final ExpressionProcessor expressionProcessor,
+      final BpmnElementContext context,
+      final EvalResult evaluation) {
     final var event = evaluation.event();
-    final var context = evaluation.context();
     if (!event.isMessage()) {
-      return Either.right(null);
+      return Either.right(evaluation);
     }
     final var expression = event.getMessage().getCorrelationKeyExpression();
     final long scopeKey =
         event.getElementType() == BpmnElementType.BOUNDARY_EVENT
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
-    return evaluation
-        .expressionProcessor()
+    return expressionProcessor
         .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
         .map(BufferUtil::wrapString)
-        .map(evaluation::recordCorrelationKey)
+        .map(evaluation::withCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
   }
 
-  private Either<Failure, OngoingEvaluation> evaluateTimer(final OngoingEvaluation evaluation) {
+  private Either<Failure, EvalResult> evaluateTimer(
+      final ExpressionProcessor expressionProcessor,
+      final BpmnElementContext context,
+      final EvalResult evaluation) {
     final var event = evaluation.event();
-    final var context = evaluation.context();
     if (!event.isTimer()) {
-      return Either.right(null);
+      return Either.right(evaluation);
     }
     final var scopeKey = context.getElementInstanceKey();
-    return event
-        .getTimerFactory()
-        .apply(evaluation.expressionProcessor(), scopeKey)
-        .map(evaluation::recordTimer);
+    return event.getTimerFactory().apply(expressionProcessor, scopeKey).map(evaluation::withTimer);
   }
 
-  public record EvalResult(
-      ExecutableCatchEvent event,
-      DirectBuffer messageName,
-      DirectBuffer correlationKey,
-      Timer timer) {
+  public static final class EvalResult {
+
+    private final ExecutableCatchEvent event;
+    private DirectBuffer messageName;
+    private DirectBuffer correlationKey;
+    private Timer timer;
+
+    public EvalResult(final ExecutableCatchEvent event) {
+      this.event = event;
+    }
+
+    public EvalResult withMessageName(final DirectBuffer messageName) {
+      this.messageName = messageName;
+      return this;
+    }
+
+    public EvalResult withCorrelationKey(final DirectBuffer correlationKey) {
+      this.correlationKey = correlationKey;
+      return this;
+    }
+
+    public EvalResult withTimer(final Timer timer) {
+      this.timer = timer;
+      return this;
+    }
 
     public boolean isMessage() {
       return event.isMessage();
@@ -102,54 +120,21 @@ public class MessageExpressionEvaluation
     public boolean isTimer() {
       return event.isTimer();
     }
-  }
 
-  private static class OngoingEvaluation {
-    private final ExpressionProcessor expressionProcessor;
-    private final ExecutableCatchEvent event;
-    private final BpmnElementContext context;
-    private DirectBuffer messageName;
-    private DirectBuffer correlationKey;
-    private Timer timer;
-
-    public OngoingEvaluation(
-        final ExpressionProcessor expressionProcessor,
-        final ExecutableCatchEvent event,
-        final BpmnElementContext context) {
-      this.expressionProcessor = expressionProcessor;
-      this.event = event;
-      this.context = context;
-    }
-
-    private ExpressionProcessor expressionProcessor() {
-      return expressionProcessor;
-    }
-
-    private ExecutableCatchEvent event() {
+    public ExecutableCatchEvent event() {
       return event;
     }
 
-    private BpmnElementContext context() {
-      return context;
+    public DirectBuffer messageName() {
+      return messageName;
     }
 
-    public OngoingEvaluation recordMessageName(final DirectBuffer messageName) {
-      this.messageName = messageName;
-      return this;
+    public DirectBuffer correlationKey() {
+      return correlationKey;
     }
 
-    public OngoingEvaluation recordCorrelationKey(final DirectBuffer correlationKey) {
-      this.correlationKey = correlationKey;
-      return this;
-    }
-
-    public OngoingEvaluation recordTimer(final Timer timer) {
-      this.timer = timer;
-      return this;
-    }
-
-    EvalResult getResult() {
-      return new EvalResult(event, messageName, correlationKey, timer);
+    public Timer timer() {
+      return timer;
     }
   }
 }
