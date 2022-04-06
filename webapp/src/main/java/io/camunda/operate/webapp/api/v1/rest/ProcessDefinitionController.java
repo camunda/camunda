@@ -54,7 +54,6 @@ public class ProcessDefinitionController extends ErrorController
 
   @Operation(
       summary = "Search process definitions",
-      tags = {"Process"},
       responses = {
           @ApiResponse(
               description = "Success",

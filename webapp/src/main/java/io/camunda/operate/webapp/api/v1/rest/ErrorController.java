@@ -11,6 +11,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,20 @@ public abstract class ErrorController {
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Error> handleException(Exception exception) {
+    // Show client only detail message, log all messages
+    return handleInvalidRequest(
+        new ClientException(
+            getOnlyDetailMessage(exception), exception)
+    );
+  }
+
+  private String getOnlyDetailMessage(final Exception exception) {
+    return StringUtils.substringBefore(exception.getMessage(), "; nested exception is");
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ValidationException.class)
   public ResponseEntity<Error> handleInvalidRequest(ValidationException exception) {
     logger.info(exception.getMessage(), exception);
@@ -50,6 +65,8 @@ public abstract class ErrorController {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
   }
+
+
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(ResourceNotFoundException.class)

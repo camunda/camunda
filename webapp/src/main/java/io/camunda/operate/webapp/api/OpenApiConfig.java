@@ -25,13 +25,13 @@ public class OpenApiConfig {
   public OpenAPI operateAPI(){
     return  new OpenAPI().info(
         new Info()
-            .title("Operate API")
-            .description("API for Operate data that can be accessed.")
+            .title("Operate Public API")
+            .description("To access active and completed process instances in Operate for monitoring and troubleshooting")
             .contact(new Contact()
                 .url("https://www.camunda.com"))
             .license(new License()
-                .name("Camunda Operate License")
-                .url("https://camunda.com/legal/terms/cloud-terms-and-conditions/general-terms-and-conditions-for-the-operate-trial-version/"))
+                .name("License")
+                .url("https://docs.camunda.io/docs/reference/licenses/"))
         );
   }
 

@@ -49,7 +49,6 @@ public class VariableController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Search variables for process instances",
-      tags = {"process", "variable", "search"},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -104,7 +103,6 @@ public class VariableController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Get variable by key",
-      tags = {"variable"},
       responses = {
           @ApiResponse(
               description = "Success",

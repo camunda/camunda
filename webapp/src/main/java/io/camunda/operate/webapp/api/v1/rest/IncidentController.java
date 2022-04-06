@@ -62,7 +62,6 @@ public class IncidentController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Search incidents",
-      tags = {"incidents", "search"},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -129,7 +128,6 @@ public class IncidentController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Get incident by key",
-      tags = {"incident"},
       responses = {
           @ApiResponse(
               description = "Success",

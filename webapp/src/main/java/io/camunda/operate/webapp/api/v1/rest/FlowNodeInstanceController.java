@@ -49,7 +49,6 @@ public class FlowNodeInstanceController extends ErrorController implements Searc
 
   @Operation(
       summary = "Search flownode-instances",
-      tags = {"flownode-instance", "search"},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -119,7 +118,6 @@ public class FlowNodeInstanceController extends ErrorController implements Searc
 
   @Operation(
       summary = "Get flownode instance by key",
-      tags = {"flownode-instance"},
       responses = {
           @ApiResponse(
               description = "Success",
