@@ -27,12 +27,18 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface EvaluatedOutputValue extends RecordValue {
 
-  /** @return the id of the evaluated output */
+  /**
+   * @return the id of the evaluated output
+   */
   String getOutputId();
 
-  /** @return the name of the evaluated output */
+  /**
+   * @return the name of the evaluated output
+   */
   String getOutputName();
 
-  /** @return the value of the evaluated output expression as JSON string */
+  /**
+   * @return the value of the evaluated output expression as JSON string
+   */
   String getOutputValue();
 }

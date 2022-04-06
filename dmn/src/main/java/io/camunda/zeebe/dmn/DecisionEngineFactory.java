@@ -12,7 +12,9 @@ import io.camunda.zeebe.dmn.impl.DmnScalaDecisionEngine;
 /** The entry point to create a new {@link DecisionEngine}. */
 public final class DecisionEngineFactory {
 
-  /** @return a new instance of the {@link DecisionEngine} */
+  /**
+   * @return a new instance of the {@link DecisionEngine}
+   */
   public static DecisionEngine createDecisionEngine() {
     return new DmnScalaDecisionEngine();
   }

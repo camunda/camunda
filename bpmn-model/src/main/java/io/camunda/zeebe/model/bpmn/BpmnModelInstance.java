@@ -26,7 +26,9 @@ import org.camunda.bpm.model.xml.ModelInstance;
  */
 public interface BpmnModelInstance extends ModelInstance {
 
-  /** @return the {@link Definitions}, root element of the Bpmn Model. */
+  /**
+   * @return the {@link Definitions}, root element of the Bpmn Model.
+   */
   Definitions getDefinitions();
 
   /**

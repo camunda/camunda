@@ -13,7 +13,9 @@ import io.camunda.zeebe.util.sched.clock.ActorClock;
 /** The entry point to create the default {@link ExpressionLanguage}. */
 public class ExpressionLanguageFactory {
 
-  /** @return a new instance of the {@link ExpressionLanguage} */
+  /**
+   * @return a new instance of the {@link ExpressionLanguage}
+   */
   public static ExpressionLanguage createExpressionLanguage() {
     return new FeelExpressionLanguage(ActorClock.current());
   }

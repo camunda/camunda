@@ -19,13 +19,19 @@ import java.util.function.BooleanSupplier;
 
 public interface ReadonlyProcessingContext {
 
-  /** @return the actor on which the processing runs */
+  /**
+   * @return the actor on which the processing runs
+   */
   ActorControl getActor();
 
-  /** @return the logstream, on which the processor runs */
+  /**
+   * @return the logstream, on which the processor runs
+   */
   LogStream getLogStream();
 
-  /** @return the reader, which is used by the processor to read next events */
+  /**
+   * @return the reader, which is used by the processor to read next events
+   */
   LogStreamReader getLogStreamReader();
 
   /**
@@ -34,27 +40,43 @@ public interface ReadonlyProcessingContext {
    */
   int getMaxFragmentSize();
 
-  /** @return the actual log stream writer, used to write any record */
+  /**
+   * @return the actual log stream writer, used to write any record
+   */
   TypedStreamWriter getLogStreamWriter();
 
-  /** @return the specific writers, like command, response, etc */
+  /**
+   * @return the specific writers, like command, response, etc
+   */
   Writers getWriters();
 
-  /** @return the pool, which contains the mapping from ValueType to UnpackedObject (record) */
+  /**
+   * @return the pool, which contains the mapping from ValueType to UnpackedObject (record)
+   */
   RecordValues getRecordValues();
 
-  /** @return the map of processors, which are executed during processing */
+  /**
+   * @return the map of processors, which are executed during processing
+   */
   RecordProcessorMap getRecordProcessorMap();
 
-  /** @return the state, where the data is stored during processing */
+  /**
+   * @return the state, where the data is stored during processing
+   */
   MutableZeebeState getZeebeState();
 
-  /** @return the transaction context for the current actor */
+  /**
+   * @return the transaction context for the current actor
+   */
   TransactionContext getTransactionContext();
 
-  /** @return condition which indicates, whether the processing should stop or not */
+  /**
+   * @return condition which indicates, whether the processing should stop or not
+   */
   BooleanSupplier getAbortCondition();
 
-  /** @return the consumer of events to apply their state changes */
+  /**
+   * @return the consumer of events to apply their state changes
+   */
   EventApplier getEventApplier();
 }

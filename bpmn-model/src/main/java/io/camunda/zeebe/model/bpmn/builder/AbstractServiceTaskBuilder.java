@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBuilder<B>>
     extends AbstractJobWorkerTaskBuilder<B, ServiceTask> {
 

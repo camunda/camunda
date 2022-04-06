@@ -24,7 +24,9 @@ import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.function.Consumer;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class EmbeddedSubProcessBuilder
     extends AbstractEmbeddedSubProcessBuilder<
         EmbeddedSubProcessBuilder, AbstractSubProcessBuilder<?>> {

@@ -33,7 +33,9 @@ public final class VersionUtil {
 
   private VersionUtil() {}
 
-  /** @return the current version or 'development' if none can be determined. */
+  /**
+   * @return the current version or 'development' if none can be determined.
+   */
   public static String getVersion() {
     if (version == null) {
       // read version from file

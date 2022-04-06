@@ -12,16 +12,24 @@ import java.util.Comparator;
 /** Represents an identifier of an {@link PersistedSnapshot}. */
 public interface SnapshotId extends Comparable<SnapshotId> {
 
-  /** @return the index of the snapshot */
+  /**
+   * @return the index of the snapshot
+   */
   long getIndex();
 
-  /** @return the term when the snapshot was taken */
+  /**
+   * @return the term when the snapshot was taken
+   */
   long getTerm();
 
-  /** @return the processed position when the snapshot was taken */
+  /**
+   * @return the processed position when the snapshot was taken
+   */
   long getProcessedPosition();
 
-  /** @return the exported position when the snapshot was taken */
+  /**
+   * @return the exported position when the snapshot was taken
+   */
   long getExportedPosition();
 
   /**

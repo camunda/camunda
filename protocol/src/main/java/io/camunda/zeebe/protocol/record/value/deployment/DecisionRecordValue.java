@@ -28,22 +28,34 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface DecisionRecordValue extends RecordValue {
 
-  /** @return the ID of the decision in the DMN */
+  /**
+   * @return the ID of the decision in the DMN
+   */
   String getDecisionId();
 
-  /** @return the name of the decision in the DMN */
+  /**
+   * @return the name of the decision in the DMN
+   */
   String getDecisionName();
 
-  /** @return the version of the deployed decision */
+  /**
+   * @return the version of the deployed decision
+   */
   int getVersion();
 
-  /** @return the key of the deployed decision */
+  /**
+   * @return the key of the deployed decision
+   */
   long getDecisionKey();
 
-  /** @return the ID of the DRG in the DMN this decision belongs to */
+  /**
+   * @return the ID of the DRG in the DMN this decision belongs to
+   */
   String getDecisionRequirementsId();
 
-  /** @return the key of the deployed DRG this decision belongs to */
+  /**
+   * @return the key of the deployed DRG this decision belongs to
+   */
   long getDecisionRequirementsKey();
 
   /**

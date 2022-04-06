@@ -18,5 +18,7 @@ package io.camunda.zeebe.model.bpmn;
 
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
-/** @author Daniel Meyer */
+/**
+ * @author Daniel Meyer
+ */
 public interface BpmnModelType extends ModelElementType {}

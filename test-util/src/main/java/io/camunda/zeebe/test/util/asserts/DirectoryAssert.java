@@ -91,7 +91,9 @@ public final class DirectoryAssert extends AbstractPathAssert<DirectoryAssert> {
     return myself;
   }
 
-  /** @see #isDirectoryContainingExactly(Collection) */
+  /**
+   * @see #isDirectoryContainingExactly(Collection)
+   */
   public DirectoryAssert isDirectoryContainingExactly(final Path... paths) {
     return isDirectoryContainingExactly(Arrays.asList(paths));
   }
@@ -134,7 +136,9 @@ public final class DirectoryAssert extends AbstractPathAssert<DirectoryAssert> {
     return myself;
   }
 
-  /** @see #isDirectoryContainingAllOf(Collection) */
+  /**
+   * @see #isDirectoryContainingAllOf(Collection)
+   */
   public DirectoryAssert isDirectoryContainingAllOf(final Path... paths) {
     return isDirectoryContainingAllOf(Arrays.asList(paths));
   }

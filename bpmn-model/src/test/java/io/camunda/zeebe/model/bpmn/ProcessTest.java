@@ -25,7 +25,9 @@ import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.Test;
 
-/** @author Daniel Meyer */
+/**
+ * @author Daniel Meyer
+ */
 public class ProcessTest extends BpmnModelTest {
 
   @Test

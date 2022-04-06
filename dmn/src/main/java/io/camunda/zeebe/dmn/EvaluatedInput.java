@@ -15,7 +15,9 @@ import org.agrona.DirectBuffer;
  */
 public interface EvaluatedInput {
 
-  /** @return the id of the evaluated input */
+  /**
+   * @return the id of the evaluated input
+   */
   String inputId();
 
   /**

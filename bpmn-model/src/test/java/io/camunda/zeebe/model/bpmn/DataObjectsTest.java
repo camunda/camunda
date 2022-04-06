@@ -29,7 +29,9 @@ import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** @author Dario Campagna */
+/**
+ * @author Dario Campagna
+ */
 public class DataObjectsTest {
 
   private static BpmnModelInstance modelInstance;

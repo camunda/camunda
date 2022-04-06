@@ -23,12 +23,18 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface ProcessInstanceCreationRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated {
-  /** @return the BPMN process id to create a process from */
+  /**
+   * @return the BPMN process id to create a process from
+   */
   String getBpmnProcessId();
 
-  /** @return the version of the BPMN process to create a process from */
+  /**
+   * @return the version of the BPMN process to create a process from
+   */
   int getVersion();
 
-  /** @return the unique key of the BPMN process definition to create a process from */
+  /**
+   * @return the unique key of the BPMN process definition to create a process from
+   */
   long getProcessDefinitionKey();
 }

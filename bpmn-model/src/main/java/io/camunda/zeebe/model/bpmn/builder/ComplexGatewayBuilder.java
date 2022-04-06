@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ComplexGateway;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ComplexGatewayBuilder extends AbstractComplexGatewayBuilder<ComplexGatewayBuilder> {
 
   public ComplexGatewayBuilder(

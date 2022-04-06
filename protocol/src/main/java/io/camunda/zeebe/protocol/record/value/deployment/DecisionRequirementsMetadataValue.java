@@ -27,25 +27,39 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface DecisionRequirementsMetadataValue {
 
-  /** @return the ID of the DRG in the DMN */
+  /**
+   * @return the ID of the DRG in the DMN
+   */
   String getDecisionRequirementsId();
 
-  /** @return the name of the DRG in the DMN */
+  /**
+   * @return the name of the DRG in the DMN
+   */
   String getDecisionRequirementsName();
 
-  /** @return the version of the deployed DRG */
+  /**
+   * @return the version of the deployed DRG
+   */
   int getDecisionRequirementsVersion();
 
-  /** @return the key of the deployed DRG */
+  /**
+   * @return the key of the deployed DRG
+   */
   long getDecisionRequirementsKey();
 
-  /** @return the namespace of the DRG in the DMN */
+  /**
+   * @return the namespace of the DRG in the DMN
+   */
   String getNamespace();
 
-  /** @return the name of the resource through which this DRG was deployed */
+  /**
+   * @return the name of the resource through which this DRG was deployed
+   */
   String getResourceName();
 
-  /** @return the checksum of the DMN resource (MD5) */
+  /**
+   * @return the checksum of the DMN resource (MD5)
+   */
   byte[] getChecksum();
 
   /**

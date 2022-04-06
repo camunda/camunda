@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.impl.instance.Transformation;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class DataAssociationTest extends BpmnModelElementInstanceTest {
 
   @Override

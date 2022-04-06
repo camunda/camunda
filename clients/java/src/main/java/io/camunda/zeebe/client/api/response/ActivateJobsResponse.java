@@ -19,6 +19,8 @@ import java.util.List;
 
 public interface ActivateJobsResponse {
 
-  /** @return the list of activated jobs */
+  /**
+   * @return the list of activated jobs
+   */
   List<ActivatedJob> getJobs();
 }

@@ -108,6 +108,8 @@ public interface ZeebeClientBuilder {
    */
   ZeebeClientBuilder overrideAuthority(String authority);
 
-  /** @return a new {@link ZeebeClient} with the provided configuration options. */
+  /**
+   * @return a new {@link ZeebeClient} with the provided configuration options.
+   */
   ZeebeClient build();
 }

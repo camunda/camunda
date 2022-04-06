@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import org.junit.Before;
 import org.junit.Test;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ConditionalSequenceFlowTest {
 
   protected BpmnModelInstance modelInstance;

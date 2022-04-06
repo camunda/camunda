@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Script;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuilder<B>>
     extends AbstractJobWorkerTaskBuilder<B, ScriptTask> {
 

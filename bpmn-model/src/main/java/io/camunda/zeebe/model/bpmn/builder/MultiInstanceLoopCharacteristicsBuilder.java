@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 
-/** @author Thorben Lindhauer */
+/**
+ * @author Thorben Lindhauer
+ */
 public class MultiInstanceLoopCharacteristicsBuilder
     extends AbstractMultiInstanceLoopCharacteristicsBuilder<
         MultiInstanceLoopCharacteristicsBuilder> {

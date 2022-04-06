@@ -71,12 +71,16 @@ public class ClaimedFragmentBatch {
     this.onCompleteHandler = onCompleteHandler;
   }
 
-  /** @return the claimed batch buffer to write in. */
+  /**
+   * @return the claimed batch buffer to write in.
+   */
   public MutableDirectBuffer getBuffer() {
     return buffer;
   }
 
-  /** @return the buffer offset of the last batch fragment */
+  /**
+   * @return the buffer offset of the last batch fragment
+   */
   public int getFragmentOffset() {
     return currentOffset + HEADER_LENGTH;
   }

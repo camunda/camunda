@@ -31,7 +31,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class CollaborationParserTest {
 
   private static BpmnModelInstance modelInstance;

@@ -24,7 +24,9 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.Reference;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?>> {
 
   private final String attributeName;

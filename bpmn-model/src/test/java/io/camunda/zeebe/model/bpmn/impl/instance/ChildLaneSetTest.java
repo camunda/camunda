@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import io.camunda.zeebe.model.bpmn.instance.LaneSet;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ChildLaneSetTest extends BpmnModelElementInstanceTest {
 
   @Override

@@ -33,7 +33,9 @@ import org.camunda.bpm.model.xml.type.child.ChildElement;
 import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
-/** @author Giulio Piccinin */
+/**
+ * @author Giulio Piccinin
+ */
 public class DataStoreReferenceImpl extends FlowElementImpl implements DataStoreReference {
 
   protected static AttributeReference<ItemDefinition> itemSubjectRefAttribute;

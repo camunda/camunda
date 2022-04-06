@@ -12,7 +12,9 @@ import java.util.Optional;
 /** A parsed expression. */
 public interface Expression {
 
-  /** @return the (raw) expression as string */
+  /**
+   * @return the (raw) expression as string
+   */
   String getExpression();
 
   /**
@@ -27,7 +29,9 @@ public interface Expression {
    */
   boolean isStatic();
 
-  /** @return {@code true} if the expression is valid and can be evaluated */
+  /**
+   * @return {@code true} if the expression is valid and can be evaluated
+   */
   boolean isValid();
 
   /**

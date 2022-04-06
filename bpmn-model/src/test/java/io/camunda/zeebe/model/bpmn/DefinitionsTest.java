@@ -40,7 +40,9 @@ import org.camunda.bpm.model.xml.impl.util.IoUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
-/** @author Daniel Meyer */
+/**
+ * @author Daniel Meyer
+ */
 public class DefinitionsTest extends BpmnModelTest {
 
   @Test

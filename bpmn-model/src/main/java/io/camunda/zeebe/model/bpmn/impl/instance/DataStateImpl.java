@@ -28,7 +28,9 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class DataStateImpl extends BaseElementImpl implements DataState {
 
   protected static Attribute<String> nameAttribute;

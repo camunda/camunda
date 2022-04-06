@@ -20,6 +20,8 @@ import java.util.Map;
 /** Shared behaviour for all record values containing a variables document. */
 public interface RecordValueWithVariables extends RecordValue {
 
-  /** @return the variables of this record. Can be empty. */
+  /**
+   * @return the variables of this record. Can be empty.
+   */
   Map<String, Object> getVariables();
 }

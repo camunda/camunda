@@ -149,7 +149,9 @@ public class ExporterIntegrationRule extends ExternalResource {
     return brokerRule.getBrokerCfg();
   }
 
-  /** @return the currently configured exporters */
+  /**
+   * @return the currently configured exporters
+   */
   public List<ExporterCfg> getConfiguredExporters() {
     return getBrokerConfig().getExporters().entrySet().stream()
         .filter(entry -> !entry.getKey().equals(TEST_RECORD_EXPORTER_ID))
@@ -157,7 +159,9 @@ public class ExporterIntegrationRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  /** @return true if any exporter has been configured for the broker, false otherwise */
+  /**
+   * @return true if any exporter has been configured for the broker, false otherwise
+   */
   public boolean hasConfiguredExporters() {
     return getConfiguredExporters().isEmpty();
   }

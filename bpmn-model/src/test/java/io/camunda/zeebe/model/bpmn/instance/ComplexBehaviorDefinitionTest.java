@@ -18,7 +18,9 @@ package io.camunda.zeebe.model.bpmn.instance;
 
 import java.util.Collection;
 
-/** @author Filip Hrisafov */
+/**
+ * @author Filip Hrisafov
+ */
 public class ComplexBehaviorDefinitionTest extends BpmnModelElementInstanceTest {
 
   @Override

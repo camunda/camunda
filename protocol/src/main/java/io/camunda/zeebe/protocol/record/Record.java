@@ -50,16 +50,24 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   long getKey();
 
-  /** @return the unix timestamp at which the record was published on the partition. */
+  /**
+   * @return the unix timestamp at which the record was published on the partition.
+   */
   long getTimestamp();
 
-  /** @return the intent of the record */
+  /**
+   * @return the intent of the record
+   */
   Intent getIntent();
 
-  /** @return the partition ID on which the record was published */
+  /**
+   * @return the partition ID on which the record was published
+   */
   int getPartitionId();
 
-  /** @return the type of the record (event, command or command rejection) */
+  /**
+   * @return the type of the record (event, command or command rejection)
+   */
   RecordType getRecordType();
 
   /**
@@ -74,10 +82,14 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   String getRejectionReason();
 
-  /** @return the version of the broker that wrote this record */
+  /**
+   * @return the version of the broker that wrote this record
+   */
   String getBrokerVersion();
 
-  /** @return the type of the record (e.g. job, process, process instance, etc.) */
+  /**
+   * @return the type of the record (e.g. job, process, process instance, etc.)
+   */
   ValueType getValueType();
 
   /**

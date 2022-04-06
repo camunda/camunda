@@ -29,16 +29,24 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface MessageStartEventSubscriptionRecordValue extends RecordValueWithVariables {
 
-  /** @return the process key tied to the subscription */
+  /**
+   * @return the process key tied to the subscription
+   */
   long getProcessDefinitionKey();
 
-  /** @return the BPMN process id tied to the subscription */
+  /**
+   * @return the BPMN process id tied to the subscription
+   */
   String getBpmnProcessId();
 
-  /** @return the id of the start event tied to the subscription */
+  /**
+   * @return the id of the start event tied to the subscription
+   */
   String getStartEventId();
 
-  /** @return the name of the message */
+  /**
+   * @return the name of the message
+   */
   String getMessageName();
 
   /**

@@ -27,7 +27,9 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<B>>
     extends AbstractTaskBuilder<B, UserTask> implements ZeebeUserTaskPropertiesBuilder<B> {
 

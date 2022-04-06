@@ -29,7 +29,9 @@ import java.util.Collection;
 import org.junit.Before;
 import org.junit.Test;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ReferenceTest extends BpmnModelTest {
 
   private BpmnModelInstance testBpmnModelInstance;

@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class CallActivityBuilder extends AbstractCallActivityBuilder<CallActivityBuilder> {
 
   public CallActivityBuilder(final BpmnModelInstance modelInstance, final CallActivity element) {

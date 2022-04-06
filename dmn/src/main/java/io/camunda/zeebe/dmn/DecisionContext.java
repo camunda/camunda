@@ -18,6 +18,8 @@ import java.util.Map;
  */
 public interface DecisionContext {
 
-  /** @return the Context as map */
+  /**
+   * @return the Context as map
+   */
   Map<String, Object> toMap();
 }

@@ -23,19 +23,29 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol
 public interface ProcessMetadataValue extends RecordValue {
-  /** @return the bpmn process ID of this process */
+  /**
+   * @return the bpmn process ID of this process
+   */
   String getBpmnProcessId();
 
-  /** @return the version of this process */
+  /**
+   * @return the version of this process
+   */
   int getVersion();
 
-  /** @return the key of this process */
+  /**
+   * @return the key of this process
+   */
   long getProcessDefinitionKey();
 
-  /** @return the name of the resource through which this process was deployed */
+  /**
+   * @return the name of the resource through which this process was deployed
+   */
   String getResourceName();
 
-  /** @return the checksum of the process (MD5) */
+  /**
+   * @return the checksum of the process (MD5)
+   */
   byte[] getChecksum();
 
   /**

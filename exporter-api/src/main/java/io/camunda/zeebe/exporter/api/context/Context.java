@@ -22,10 +22,14 @@ import org.slf4j.Logger;
 /** Encapsulates context associated with the exporter on open. */
 public interface Context {
 
-  /** @return pre-configured logger for this exporter */
+  /**
+   * @return pre-configured logger for this exporter
+   */
   Logger getLogger();
 
-  /** @return configuration for this exporter */
+  /**
+   * @return configuration for this exporter
+   */
   Configuration getConfiguration();
 
   /**

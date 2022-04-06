@@ -18,7 +18,9 @@ import org.agrona.DirectBuffer;
  */
 public interface DecisionEvaluationResult {
 
-  /** @return {@code true} if the evaluation was not successful, otherwise {@code false} */
+  /**
+   * @return {@code true} if the evaluation was not successful, otherwise {@code false}
+   */
   boolean isFailure();
 
   /**
@@ -39,7 +41,9 @@ public interface DecisionEvaluationResult {
    */
   String getFailedDecisionId();
 
-  /** @return the output of the decision if it was made successfully, otherwise {@code null} */
+  /**
+   * @return the output of the decision if it was made successfully, otherwise {@code null}
+   */
   DirectBuffer getOutput();
 
   /**

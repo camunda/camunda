@@ -75,6 +75,8 @@ public interface ExponentialBackoffBuilder {
    */
   ExponentialBackoffBuilder random(Random random);
 
-  /** @return a new {@link BackoffSupplier} with the provided configuration options. */
+  /**
+   * @return a new {@link BackoffSupplier} with the provided configuration options.
+   */
   BackoffSupplier build();
 }

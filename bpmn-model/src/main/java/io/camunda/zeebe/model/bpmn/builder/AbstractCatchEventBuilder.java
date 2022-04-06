@@ -33,7 +33,9 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.function.Consumer;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractCatchEventBuilder<
         B extends AbstractCatchEventBuilder<B, E>, E extends CatchEvent>
     extends AbstractEventBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {

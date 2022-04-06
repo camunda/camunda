@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ManualTaskBuilder extends AbstractManualTaskBuilder<ManualTaskBuilder> {
 
   public ManualTaskBuilder(final BpmnModelInstance modelInstance, final ManualTask element) {

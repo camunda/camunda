@@ -10,21 +10,33 @@ package io.camunda.zeebe.snapshots;
 /** A chunk of an already persisted Snapshot. */
 public interface SnapshotChunk {
 
-  /** @return a unique snapshot identifier * */
+  /**
+   * @return a unique snapshot identifier *
+   */
   String getSnapshotId();
 
-  /** @return the total count of snapshot chunks, which correspond to the same snapshot */
+  /**
+   * @return the total count of snapshot chunks, which correspond to the same snapshot
+   */
   int getTotalCount();
 
-  /** @return the name of the current chunk (e.g. file name) */
+  /**
+   * @return the name of the current chunk (e.g. file name)
+   */
   String getChunkName();
 
-  /** @return the checksum of the content, can be use to verify the integrity of the content */
+  /**
+   * @return the checksum of the content, can be use to verify the integrity of the content
+   */
   long getChecksum();
 
-  /** @return the content of the current chunk */
+  /**
+   * @return the content of the current chunk
+   */
   byte[] getContent();
 
-  /** @return the checksum of the entire snapshot */
+  /**
+   * @return the checksum of the entire snapshot
+   */
   long getSnapshotChecksum();
 }

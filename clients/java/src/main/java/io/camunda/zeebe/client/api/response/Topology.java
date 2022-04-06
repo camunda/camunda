@@ -18,18 +18,28 @@ package io.camunda.zeebe.client.api.response;
 import java.util.List;
 
 public interface Topology {
-  /** @return all (known) brokers of the cluster */
+  /**
+   * @return all (known) brokers of the cluster
+   */
   List<BrokerInfo> getBrokers();
 
-  /** @return the size of the Zeebe broker cluster */
+  /**
+   * @return the size of the Zeebe broker cluster
+   */
   int getClusterSize();
 
-  /** @return the configured number of partitions */
+  /**
+   * @return the configured number of partitions
+   */
   int getPartitionsCount();
 
-  /** @return the configured replication factor for every partition */
+  /**
+   * @return the configured replication factor for every partition
+   */
   int getReplicationFactor();
 
-  /** @return the gateway version or an empty string if none was found */
+  /**
+   * @return the gateway version or an empty string if none was found
+   */
   String getGatewayVersion();
 }

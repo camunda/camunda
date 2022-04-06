@@ -27,7 +27,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class QueryTest {
 
   private static BpmnModelInstance modelInstance;

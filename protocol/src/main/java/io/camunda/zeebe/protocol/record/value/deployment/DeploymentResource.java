@@ -23,9 +23,13 @@ import org.immutables.value.Value;
 @ImmutableProtocol
 public interface DeploymentResource {
 
-  /** @return the resource contents */
+  /**
+   * @return the resource contents
+   */
   byte[] getResource();
 
-  /** @return the name of the resource */
+  /**
+   * @return the name of the resource
+   */
   String getResourceName();
 }

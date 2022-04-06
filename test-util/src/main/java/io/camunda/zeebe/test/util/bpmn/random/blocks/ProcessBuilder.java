@@ -76,7 +76,9 @@ public final class ProcessBuilder {
     return hasEventSubProcess;
   }
 
-  /** @return the build process and any potentially called child processes */
+  /**
+   * @return the build process and any potentially called child processes
+   */
   public List<BpmnModelInstance> buildProcess() {
     final var result = new ArrayList<BpmnModelInstance>();
 
