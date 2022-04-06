@@ -85,7 +85,7 @@ spec:
           mountPath: /optimize/config/OptimizeLicense.txt
           subPath: OptimizeLicense.txt
       - name: cambpm
-        image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:7.14.0
+        image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:7.15.0
         imagePullPolicy: Always
         command: ["/camunda/configure-and-run.sh"]
         env:

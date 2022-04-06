@@ -178,33 +178,15 @@ pipeline {
         setBuildEnvVars()
         setCamBpmSnapshotVersion()
         script {
-          env.CAMBPM_7_14_VERSION = getCamBpmVersion('engine-7.14')
           env.CAMBPM_7_15_VERSION = getCamBpmVersion('engine-7.15')
           env.CAMBPM_7_16_VERSION = getCamBpmVersion('engine-7.16')
+          env.CAMBPM_7_17_VERSION = getCamBpmVersion('engine-7.17')
         }
       }
     }
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.14') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.14_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_14_VERSION, env.ES_VERSION)
-            }
-          }
-          steps {
-            integrationTestSteps('7.14')
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage('IT 7.15') {
           agent {
             kubernetes {
@@ -234,6 +216,24 @@ pipeline {
           }
           steps {
             integrationTestSteps('7.16')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT 7.17') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.17_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_17_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('7.17')
           }
           post {
             always {
