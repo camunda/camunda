@@ -44,7 +44,7 @@
     <version.assertj>3.22.0</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
-    <version.camunda>7.16.0</version.camunda>
+    <version.camunda>7.17.0</version.camunda>
     <version.checkstyle>10.1</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
@@ -95,7 +95,7 @@
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
     <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
-    <version.rest-assured>5.0.0</version.rest-assured>
+    <version.rest-assured>5.0.1</version.rest-assured>
     <version.spring>5.3.18</version.spring>
     <version.spring-boot>2.6.6</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -145,7 +145,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.22.0</plugin.version.spotless>
+    <plugin.version.spotless>2.22.1</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
