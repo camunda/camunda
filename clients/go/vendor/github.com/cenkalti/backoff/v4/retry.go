@@ -1,6 +1,9 @@
 package backoff
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 // An Operation is executing by Retry() or RetryNotify().
 // The operation will be retried using a backoff policy if it returns an error.
@@ -21,16 +24,31 @@ type Notify func(error, time.Duration)
 //
 // Retry sleeps the goroutine for the duration returned by BackOff after a
 // failed operation returns.
-func Retry(o Operation, b BackOff) error { return RetryNotify(o, b, nil) }
+func Retry(o Operation, b BackOff) error {
+	return RetryNotify(o, b, nil)
+}
 
 // RetryNotify calls notify function with the error and wait duration
 // for each failed attempt before sleep.
 func RetryNotify(operation Operation, b BackOff, notify Notify) error {
+	return RetryNotifyWithTimer(operation, b, notify, nil)
+}
+
+// RetryNotifyWithTimer calls notify function with the error and wait duration using the given Timer
+// for each failed attempt before sleep.
+// A default timer that uses system timer is used when nil is passed.
+func RetryNotifyWithTimer(operation Operation, b BackOff, notify Notify, t Timer) error {
 	var err error
 	var next time.Duration
-	var t *time.Timer
+	if t == nil {
+		t = &defaultTimer{}
+	}
 
-	cb := ensureContext(b)
+	defer func() {
+		t.Stop()
+	}()
+
+	ctx := getContext(b)
 
 	b.Reset()
 	for {
@@ -38,11 +56,16 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			return nil
 		}
 
-		if permanent, ok := err.(*PermanentError); ok {
+		var permanent *PermanentError
+		if errors.As(err, &permanent) {
 			return permanent.Err
 		}
 
-		if next = cb.NextBackOff(); next == Stop {
+		if next = b.NextBackOff(); next == Stop {
+			if cerr := ctx.Err(); cerr != nil {
+				return cerr
+			}
+
 			return err
 		}
 
@@ -50,17 +73,12 @@ func RetryNotify(operation Operation, b BackOff, notify Notify) error {
 			notify(err, next)
 		}
 
-		if t == nil {
-			t = time.NewTimer(next)
-			defer t.Stop()
-		} else {
-			t.Reset(next)
-		}
+		t.Start(next)
 
 		select {
-		case <-cb.Context().Done():
-			return err
-		case <-t.C:
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C():
 		}
 	}
 }
@@ -74,8 +92,20 @@ func (e *PermanentError) Error() string {
 	return e.Err.Error()
 }
 
+func (e *PermanentError) Unwrap() error {
+	return e.Err
+}
+
+func (e *PermanentError) Is(target error) bool {
+	_, ok := target.(*PermanentError)
+	return ok
+}
+
 // Permanent wraps the given err in a *PermanentError.
-func Permanent(err error) *PermanentError {
+func Permanent(err error) error {
+	if err == nil {
+		return nil
+	}
 	return &PermanentError{
 		Err: err,
 	}
