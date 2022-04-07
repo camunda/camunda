@@ -21,6 +21,7 @@
       <excludes>
         <exclude>${exclude.from.config}</exclude>
         <exclude>environment-logback-demo.xml</exclude>
+        <exclude>environment-config-demo.yaml</exclude>
       </excludes>
       <outputDirectory>config/</outputDirectory>
     </fileSet>

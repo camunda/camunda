@@ -28,16 +28,7 @@
         <exclude>environment-logback.xml</exclude>
         <!-- this will be included in files section -->
         <exclude>environment-logback-demo.xml</exclude>
-      </excludes>
-      <outputDirectory>config/</outputDirectory>
-    </fileSet>
-
-    <fileSet>
-      <directory>src/config/</directory>
-      <excludes>
-        <exclude>${exclude.from.config}</exclude>
         <exclude>environment-config.yaml</exclude>
-        <!-- this will be included in files section -->
         <exclude>environment-config-demo.yaml</exclude>
       </excludes>
       <outputDirectory>config/</outputDirectory>
