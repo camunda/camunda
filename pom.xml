@@ -26,7 +26,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.previousVersion>3.7.0</project.previousVersion>
 
-    <camunda.engine.version>7.17.0</camunda.engine.version>
+    <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.17.0-ee</camunda.maven.artifacts.version>
 
     <zeebe.version>8.0.0</zeebe.version>
