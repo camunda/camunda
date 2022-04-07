@@ -64,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1649313464315,
+  "iteration": 1649313464318,
   "links": [],
   "panels": [
     {
@@ -1192,7 +1192,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "$DS_PROMETHEUS",
-      "description": "Requests which hit the gateway and a response have been sent to the client per second.",
+      "description": "Shows which requests have hit the gateway and which response have been sent to the client (per second).",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1236,11 +1236,11 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[1m])) by (grpc_method)",
+          "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[1m])) by (grpc_method, code)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{grpc_method}} Request",
+          "legendFormat": "{{grpc_method}} Request ({{code}})",
           "refId": "A"
         }
       ],
@@ -1251,7 +1251,7 @@
       "title": "Requests handled by Gateway per sec",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -1783,5 +1783,5 @@
   "timezone": "",
   "title": "Zeebe Overview",
   "uid": "NzsO1mUnk",
-  "version": 8
+  "version": 9
 }
