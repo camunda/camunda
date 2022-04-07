@@ -125,8 +125,8 @@ export function Processes({mightFail}) {
         <TimeGoalsModal
           process={openProcess}
           onClose={() => setOpenProcess()}
-          onConfirm={(goals) => {
-            mightFail(
+          onConfirm={async (goals) => {
+            await mightFail(
               updateGoals(openProcess.processDefinitionKey, goals),
               () => {
                 setOpenProcess();
@@ -135,7 +135,6 @@ export function Processes({mightFail}) {
               showError
             );
           }}
-          onRemove={loadProcessesList}
         />
       )}
       {editOwnerInfo && (

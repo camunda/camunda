@@ -153,12 +153,9 @@ it('should calculate default duration values based on percentiles', async () => 
   expect(node.find('.singleGoal').at(1).find(Input).prop('value')).toBe('50');
 });
 
-it('should invoke removeGoals when confirming the delete modal', async () => {
+it('should invoke onConfirm with an empty array when confirming the delete modal', async () => {
   const spy = jest.fn();
-  const removeSpy = jest.fn();
-  const node = shallow(
-    <TimeGoalsModal {...props} process={processWithGoals} onClose={spy} onRemove={removeSpy} />
-  );
+  const node = shallow(<TimeGoalsModal {...props} process={processWithGoals} onConfirm={spy} />);
 
   await runAllEffects();
 
@@ -167,12 +164,10 @@ it('should invoke removeGoals when confirming the delete modal', async () => {
   expect(node.find(Deleter).prop('entity')).toEqual(processWithGoals);
 
   await node.find(Deleter).prop('deleteEntity')();
-  expect(updateGoals).toHaveBeenCalledWith('defKey', []);
+  expect(spy).toHaveBeenCalledWith([]);
 
   node.find(Deleter).simulate('close');
   expect(node.find(Deleter).prop('entity')).toEqual();
-  expect(removeSpy).toHaveBeenCalled();
-  expect(spy).toHaveBeenCalled();
 });
 
 it('should filter out hidden goals when saving', async () => {
