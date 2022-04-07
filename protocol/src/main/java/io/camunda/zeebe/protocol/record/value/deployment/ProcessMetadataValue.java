@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 
 /** Represents deployed process meta data, so all important properties of an deployed process. */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableProcessMetadataValue.Builder.class)
 public interface ProcessMetadataValue extends RecordValue {
   /**
    * @return the bpmn process ID of this process

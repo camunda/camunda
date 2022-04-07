@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableVariableDocumentRecordValue.Builder.class)
 public interface VariableDocumentRecordValue extends RecordValueWithVariables {
 
   /**

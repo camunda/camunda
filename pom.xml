@@ -43,7 +43,6 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
-    <module>protocol-util</module>
     <module>zb-db</module>
     <module>expression-language</module>
     <module>feel</module>

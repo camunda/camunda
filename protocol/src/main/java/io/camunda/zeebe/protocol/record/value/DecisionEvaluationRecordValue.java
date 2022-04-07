@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 
 /** Represents the evaluation of a DMN decision. */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableDecisionEvaluationRecordValue.Builder.class)
 public interface DecisionEvaluationRecordValue extends RecordValue {
 
   /**

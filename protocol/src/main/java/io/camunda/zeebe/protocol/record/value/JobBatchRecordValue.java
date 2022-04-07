@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  * <p>See {@link JobBatchIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableJobBatchRecordValue.Builder.class)
 public interface JobBatchRecordValue extends RecordValue {
   /**
    * @return the type of the job

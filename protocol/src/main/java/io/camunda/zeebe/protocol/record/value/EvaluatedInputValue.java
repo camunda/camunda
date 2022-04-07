@@ -24,7 +24,7 @@ import org.immutables.value.Value;
  * evaluated input expression.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableEvaluatedInputValue.Builder.class)
 public interface EvaluatedInputValue extends RecordValue {
 
   /**

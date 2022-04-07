@@ -14,8 +14,7 @@ import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
-import io.camunda.zeebe.protocol.util.ProtocolTypeMapping;
-import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.Mapping;
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 
 /**
  * A generic annotation introspector for the protocol's immutable concrete types.
@@ -29,28 +28,35 @@ import io.camunda.zeebe.protocol.util.ProtocolTypeMapping.Mapping;
  * <p>Additionally, for forwards-compatibility reasons, we ignore unknown properties for all
  * immutable protocol types.
  *
- * <p>By default, we only look at types found via {@link ProtocolTypeMapping} which have a builder
- * type. If none found, we fall back to the parent implementation.
+ * <p>By default, we only introspect types annotated with the marker {@link ImmutableProtocol.Type}
+ * or {@link ImmutableProtocol.Builder} annotations.
  */
 final class AnnotationIntrospector extends NopAnnotationIntrospector {
 
   @Override
   public Value findPropertyIgnoralByName(final MapperConfig<?> config, final Annotated ann) {
-    final Mapping<?> mapping = ProtocolTypeMapping.getForBuilderType(ann.getRawType());
-    if (mapping == null) {
-      return super.findPropertyIgnoralByName(config, ann);
+    if (ann.hasAnnotation(ImmutableProtocol.Type.class)
+        || ann.hasAnnotation(ImmutableProtocol.Builder.class)) {
+      return JsonIgnoreProperties.Value.forIgnoreUnknown(true);
     }
 
-    return JsonIgnoreProperties.Value.forIgnoreUnknown(true);
+    return super.findPropertyIgnoralByName(config, ann);
   }
 
   @Override
   public Class<?> findPOJOBuilder(final AnnotatedClass ac) {
-    final Mapping<?> mapping = ProtocolTypeMapping.getForConcreteType(ac.getRawType());
-    if (mapping == null) {
-      return super.findPOJOBuilder(ac);
+    // find builder for abstract type, e.g. Record, TimerRecordValue, etc.
+    final ImmutableProtocol annotation = ac.getAnnotation(ImmutableProtocol.class);
+    if (annotation != null) {
+      return annotation.builder();
     }
 
-    return mapping.getBuilderClass();
+    // find builder for concrete type, e.g. ImmutableRecord, ImmutableTimerRecordValue, etc.
+    final ImmutableProtocol.Type type = ac.getAnnotation(ImmutableProtocol.Type.class);
+    if (type != null && type.builder() != null) {
+      return type.builder();
+    }
+
+    return super.findPOJOBuilder(ac);
   }
 }

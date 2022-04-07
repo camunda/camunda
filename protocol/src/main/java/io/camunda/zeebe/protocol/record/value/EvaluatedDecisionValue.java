@@ -24,7 +24,7 @@ import org.immutables.value.Value;
  * An evaluated DMN decision. It contains details of the evaluation depending on the decision type.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableEvaluatedDecisionValue.Builder.class)
 public interface EvaluatedDecisionValue extends RecordValue {
 
   /**
