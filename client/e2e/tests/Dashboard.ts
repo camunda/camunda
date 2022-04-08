@@ -11,7 +11,7 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {validateCheckedState} from './utils/validateCheckedState';
 import {screen, within} from '@testing-library/testcafe';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
 
 fixture('Dashboard')
   .page(config.endpoint)
@@ -57,7 +57,7 @@ test('Statistics', async (t) => {
     .eql(37);
 });
 
-test('Navigation to Instances View', async (t) => {
+test('Navigation to Processes View', async (t) => {
   const activeProcessInstancesCount = await screen
     .getAllByTestId('active-instances-badge')
     .nth(0).textContent;
@@ -69,8 +69,8 @@ test('Navigation to Instances View', async (t) => {
   await t.click(screen.queryByTestId('active-instances-link'));
 
   await validateCheckedState({
-    checked: [InstancesPage.Filters.active.field],
-    unChecked: [InstancesPage.Filters.incidents.field],
+    checked: [ProcessesPage.Filters.active.field],
+    unChecked: [ProcessesPage.Filters.incidents.field],
   });
 
   await t
@@ -88,8 +88,8 @@ test('Navigation to Instances View', async (t) => {
   await t.click(screen.queryByTestId('incident-instances-link'));
 
   await validateCheckedState({
-    checked: [InstancesPage.Filters.incidents.field],
-    unChecked: [InstancesPage.Filters.active.field],
+    checked: [ProcessesPage.Filters.incidents.field],
+    unChecked: [ProcessesPage.Filters.active.field],
   });
 
   await t
@@ -119,8 +119,8 @@ test('Select process instances by name', async (t) => {
 
   await validateCheckedState({
     checked: [
-      InstancesPage.Filters.active.field,
-      InstancesPage.Filters.incidents.field,
+      ProcessesPage.Filters.active.field,
+      ProcessesPage.Filters.incidents.field,
     ],
     unChecked: [],
   });
@@ -130,7 +130,7 @@ test('Select process instances by name', async (t) => {
     .eql(`${totalInstanceCount} results found`);
 });
 
-test('Select instances by error message', async (t) => {
+test('Select process instances by error message', async (t) => {
   await t.expect(screen.queryByTestId('incidents-by-error').exists).ok();
 
   const withinInstanceByError = within(
@@ -147,8 +147,8 @@ test('Select instances by error message', async (t) => {
   await t.click(screen.queryByTestId('incident-byError-0'));
 
   await validateCheckedState({
-    checked: [InstancesPage.Filters.incidents.field],
-    unChecked: [InstancesPage.Filters.active.field],
+    checked: [ProcessesPage.Filters.incidents.field],
+    unChecked: [ProcessesPage.Filters.active.field],
   });
 
   await t
@@ -156,13 +156,13 @@ test('Select instances by error message', async (t) => {
     .eql(`${incidentCount} results found`);
 
   await t
-    .expect(InstancesPage.Filters.errorMessage.value.value)
+    .expect(ProcessesPage.Filters.errorMessage.value.value)
     .eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).notOk();
 });
 
-test('Select instances by error message (expanded)', async (t) => {
+test('Select process instances by error message (expanded)', async (t) => {
   await t.expect(screen.queryByTestId('incidents-by-error').exists).ok();
 
   const withinInstanceByError = within(
@@ -188,8 +188,8 @@ test('Select instances by error message (expanded)', async (t) => {
   );
 
   await validateCheckedState({
-    checked: [InstancesPage.Filters.incidents.field],
-    unChecked: [InstancesPage.Filters.active.field],
+    checked: [ProcessesPage.Filters.incidents.field],
+    unChecked: [ProcessesPage.Filters.active.field],
   });
 
   await t
@@ -197,7 +197,7 @@ test('Select instances by error message (expanded)', async (t) => {
     .eql(`${incidentCount} results found`);
 
   await t
-    .expect(InstancesPage.Filters.errorMessage.value.value)
+    .expect(ProcessesPage.Filters.errorMessage.value.value)
     .eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).ok();

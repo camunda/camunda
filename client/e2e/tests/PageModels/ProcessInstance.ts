@@ -7,7 +7,7 @@
 
 import {screen} from '@testing-library/testcafe';
 
-class InstancePage {
+class ProcessInstancePage {
   newVariableNameField = screen.queryByTestId('add-variable-name').shadowRoot();
   newVariableValueField = screen
     .queryByTestId('add-variable-value')
@@ -21,4 +21,4 @@ class InstancePage {
   operationSpinner = screen.queryByTestId('operation-spinner');
 }
 
-export const instancePage = new InstancePage();
+export const processInstancePage = new ProcessInstancePage();

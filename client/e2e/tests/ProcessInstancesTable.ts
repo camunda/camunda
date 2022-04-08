@@ -9,12 +9,12 @@ import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
-import {setup} from './InstancesTable.setup';
+import {setup} from './ProcessInstancesTable.setup';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
 
-fixture('InstancesTable')
+fixture('Process Instances Table')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
@@ -46,8 +46,8 @@ test('Sorting', async (t) => {
 
   await displayOptionalFilter('Instance Id(s)');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instanceIds.join(),
     {
       paste: true,
@@ -154,8 +154,8 @@ test('Scrolling', async (t) => {
       return instanceId2 - instanceId1;
     });
 
-  await t.click(InstancesPage.Filters.processName.field);
-  await InstancesPage.selectProcess('Process For Infinite Scroll');
+  await t.click(ProcessesPage.Filters.processName.field);
+  await ProcessesPage.selectProcess('Process For Infinite Scroll');
 
   await t.click(screen.queryByRole('button', {name: /Sort by Instance Id/}));
 

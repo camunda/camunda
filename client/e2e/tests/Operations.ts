@@ -11,8 +11,8 @@ import {config} from '../config';
 import {setup} from './Operations.setup';
 import {DATE_REGEX} from './constants';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
-import {instancePage as InstancePage} from './PageModels/Instance';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
+import {processInstancePage as ProcessInstancePage} from './PageModels/ProcessInstance';
 
 fixture('Operations')
   .page(config.endpoint)
@@ -47,8 +47,8 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   await displayOptionalFilter('Instance Id(s)');
 
   // filter by instance id
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instance.processInstanceKey,
     {
       paste: true,
@@ -68,8 +68,8 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   );
 
   // expect spinner to show and disappear
-  await t.expect(InstancePage.operationSpinner.exists).ok();
-  await t.expect(InstancePage.operationSpinner.exists).notOk();
+  await t.expect(ProcessInstancePage.operationSpinner.exists).ok();
+  await t.expect(ProcessInstancePage.operationSpinner.exists).notOk();
 
   // cancel single instance using operation button
   await t
@@ -114,7 +114,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
 
   // expect operation id filter to be set
   await t
-    .expect(InstancesPage.Filters.operationId.value.value)
+    .expect(ProcessesPage.Filters.operationId.value.value)
     .eql(operationId);
 
   const instanceRow = within(
@@ -147,8 +147,8 @@ test('Retry and cancel multiple instances ', async (t) => {
   await displayOptionalFilter('Instance Id(s)');
 
   // filter by instance ids
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
     instances.map((instance) => instance.processInstanceKey).join(','),
     {paste: true}
@@ -161,7 +161,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length);
 
-  await t.click(InstancesPage.selectAllInstancesCheckbox);
+  await t.click(ProcessesPage.selectAllInstancesCheckbox);
 
   await t.click(
     screen.queryByRole('button', {
@@ -201,7 +201,7 @@ test('Retry and cancel multiple instances ', async (t) => {
 
   // reset filters
   await t
-    .click(InstancesPage.resetFiltersButton)
+    .click(ProcessesPage.resetFiltersButton)
     .expect(within(instancesList).getAllByRole('row').count)
     .gt(instances.length);
 
@@ -214,7 +214,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     )
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length)
-    .expect(InstancesPage.Filters.operationId.value.value)
+    .expect(ProcessesPage.Filters.operationId.value.value)
     .eql(
       await within(instancesListItems.nth(0)).queryByTestId('operation-id')
         .innerText
@@ -234,7 +234,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     )
   );
 
-  await t.click(InstancesPage.selectAllInstancesCheckbox);
+  await t.click(ProcessesPage.selectAllInstancesCheckbox);
 
   await t.click(
     screen.queryByRole('button', {

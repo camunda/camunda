@@ -7,12 +7,12 @@
 
 import {screen, within} from '@testing-library/testcafe';
 import {config} from '../config';
-import {setup} from './InstanceHistory.setup';
+import {setup} from './ProcessInstanceHistory.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {getFlowNodeInstances} from './api';
 
-fixture('Instance History')
+fixture('Process Instance History')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();

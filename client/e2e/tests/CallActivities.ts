@@ -21,7 +21,7 @@ fixture('Call Activities')
     await t.useRole(demoUser).maximizeWindow();
   });
 
-test('Navigate to called and parent instances', async (t) => {
+test('Navigate to called and parent process instances', async (t) => {
   const {
     initialData: {callActivityProcessInstance},
   } = t.fixtureCtx;

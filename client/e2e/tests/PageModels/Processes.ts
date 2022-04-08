@@ -8,7 +8,7 @@
 import {within, screen} from '@testing-library/testcafe';
 import {t} from 'testcafe';
 
-class InstancesPage {
+class ProcessesPage {
   Filters = {
     active: {
       field: within(
@@ -155,4 +155,4 @@ class InstancesPage {
   };
 }
 
-export const instancesPage = new InstancesPage();
+export const processesPage = new ProcessesPage();

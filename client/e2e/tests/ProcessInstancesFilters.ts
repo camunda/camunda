@@ -6,7 +6,7 @@
  */
 
 import {config} from '../config';
-import {setup} from './Filters.setup';
+import {setup} from './ProcessInstancesFilters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {convertToQueryString} from './utils/convertToQueryString';
@@ -15,11 +15,11 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
 import {validateCheckedState} from './utils/validateCheckedState';
 import {validateSelectValue} from './utils/validateSelectValue';
 
-fixture('Filters')
+fixture('Process Instances Filters')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
@@ -65,7 +65,7 @@ test('Navigating in header should affect filters and url correctly', async (t) =
     finishedInstances,
     completed,
     canceled,
-  } = InstancesPage.Filters;
+  } = ProcessesPage.Filters;
 
   await validateCheckedState({
     checked: [runningInstances.field, active.field, incidents.field],
@@ -82,8 +82,8 @@ test('Instance IDs filter', async (t) => {
 
   await displayOptionalFilter('Instance Id(s)');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instanceId.toString(),
     {
       paste: true,
@@ -119,7 +119,7 @@ test('Instance IDs filter', async (t) => {
     )
     .eql(instanceId);
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // wait for reset filter to be applied, see there is more than one result again
   await t
@@ -127,7 +127,7 @@ test('Instance IDs filter', async (t) => {
     .gt(1);
 
   // instance ids filter is hidden
-  await t.expect(InstancesPage.Filters.instanceIds.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.instanceIds.field.exists).notOk();
 
   // changes reflected in the url
   await t
@@ -147,12 +147,12 @@ test('Parent Instance Id filter', async (t) => {
     initialData: {callActivityProcessInstance},
   } = t.fixtureCtx;
 
-  await t.click(InstancesPage.Filters.completed.field);
+  await t.click(ProcessesPage.Filters.completed.field);
 
   await displayOptionalFilter('Parent Instance Id');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.parentInstanceId.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.parentInstanceId.field,
     callActivityProcessInstance.processInstanceKey,
     {paste: true}
   );
@@ -173,7 +173,7 @@ test('Parent Instance Id filter', async (t) => {
     )
     .eql(callActivityProcessInstance.processInstanceKey);
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // wait for reset filter to be applied, see there is more than one result again
   await t
@@ -181,7 +181,7 @@ test('Parent Instance Id filter', async (t) => {
     .gt(1);
 
   // parent id filter is hidden
-  await t.expect(InstancesPage.Filters.parentInstanceId.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.parentInstanceId.field.exists).notOk();
 });
 
 test('Error Message filter', async (t) => {
@@ -196,8 +196,8 @@ test('Error Message filter', async (t) => {
 
   await displayOptionalFilter('Error Message');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.errorMessage.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.errorMessage.field,
     errorMessage,
     {
       paste: true,
@@ -222,7 +222,7 @@ test('Error Message filter', async (t) => {
       })
     );
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // wait for reset filter to be applied, see there is more than one result again.
   await t
@@ -230,7 +230,7 @@ test('Error Message filter', async (t) => {
     .eql(instanceCount);
 
   // error message filter is hidden
-  await t.expect(InstancesPage.Filters.errorMessage.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.errorMessage.field.exists).notOk();
 
   // changes reflected in the url
   await t
@@ -252,8 +252,8 @@ test('End Date filter', async (t) => {
 
   await displayOptionalFilter('Instance Id(s)');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instanceToCancel.processInstanceKey,
     {
       paste: true,
@@ -276,7 +276,7 @@ test('End Date filter', async (t) => {
     )
     .ok();
 
-  await t.click(InstancesPage.Filters.finishedInstances.field);
+  await t.click(ProcessesPage.Filters.finishedInstances.field);
 
   // wait for filter to be applied
   await t
@@ -291,7 +291,7 @@ test('End Date filter', async (t) => {
   ).innerText;
 
   // reset the filters to start over
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   const instanceCount = await within(
     screen.queryByTestId('data-list')
@@ -299,9 +299,9 @@ test('End Date filter', async (t) => {
 
   await displayOptionalFilter('End Date');
 
-  await t.click(InstancesPage.Filters.finishedInstances.field);
+  await t.click(ProcessesPage.Filters.finishedInstances.field);
 
-  await InstancesPage.typeText(InstancesPage.Filters.endDate.field, endDate, {
+  await ProcessesPage.typeText(ProcessesPage.Filters.endDate.field, endDate, {
     paste: true,
   });
 
@@ -324,7 +324,7 @@ test('End Date filter', async (t) => {
       })
     );
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // wait for filter to be applied, see there are more results again.
   await t
@@ -332,7 +332,7 @@ test('End Date filter', async (t) => {
     .eql(instanceCount);
 
   // end date filter is hidden
-  await t.expect(InstancesPage.Filters.endDate.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.endDate.field.exists).notOk();
 
   // changes reflected in the url
   await t
@@ -356,16 +356,16 @@ test('Variable filter', async (t) => {
     screen.queryByTestId('data-list')
   ).getAllByRole('row').count;
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.variableName.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.variableName.field,
     'filtersTest',
     {
       paste: true,
     }
   );
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.variableValue.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.variableValue.field,
     '123',
     {
       paste: true,
@@ -390,7 +390,7 @@ test('Variable filter', async (t) => {
       })
     );
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // wait for filter to be applied, see there is more than one result again.
   await t
@@ -398,8 +398,8 @@ test('Variable filter', async (t) => {
     .eql(instanceCount);
 
   // variable name and value filters are hidden
-  await t.expect(InstancesPage.Filters.variableName.field.exists).notOk();
-  await t.expect(InstancesPage.Filters.variableValue.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.variableName.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.variableValue.field.exists).notOk();
 
   await t
     .expect(await getPathname())
@@ -420,8 +420,8 @@ test('Operation ID filter', async (t) => {
 
   await displayOptionalFilter('Instance Id(s)');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instanceToCancelForOperations.processInstanceKey,
     {
       paste: true,
@@ -450,7 +450,7 @@ test('Operation ID filter', async (t) => {
   await t.click(screen.queryByRole('button', {name: 'Collapse Operations'}));
 
   // reset the filters to start over
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   const instanceCount = await within(
     screen.queryByTestId('data-list')
@@ -458,9 +458,9 @@ test('Operation ID filter', async (t) => {
 
   await displayOptionalFilter('Operation Id');
 
-  await t.click(InstancesPage.Filters.finishedInstances.field);
-  await InstancesPage.typeText(
-    InstancesPage.Filters.operationId.field,
+  await t.click(ProcessesPage.Filters.finishedInstances.field);
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.operationId.field,
     operationId,
     {
       paste: true,
@@ -486,7 +486,7 @@ test('Operation ID filter', async (t) => {
       })
     );
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // wait for filter to be applied, see there are more results again.
   await t
@@ -494,7 +494,7 @@ test('Operation ID filter', async (t) => {
     .eql(instanceCount);
 
   // operation id filter is hidden
-  await t.expect(InstancesPage.Filters.operationId.field.exists).notOk();
+  await t.expect(ProcessesPage.Filters.operationId.field.exists).notOk();
 
   await t
     .expect(await getPathname())
@@ -516,7 +516,7 @@ test('Checkboxes', async (t) => {
     finishedInstances,
     completed,
     canceled,
-  } = InstancesPage.Filters;
+  } = ProcessesPage.Filters;
 
   await t.click(runningInstances.field);
 
@@ -670,7 +670,7 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   await validateCheckedState({
     checked: [runningInstances.field, active.field, incidents.field],
@@ -691,12 +691,12 @@ test('Checkboxes', async (t) => {
 
 test('Process Filter', async (t) => {
   // select a process with multiple versions, see that latest version is selected by default, a diagram is displayed and selected instances are removed
-  await t.click(InstancesPage.Filters.processName.field);
+  await t.click(ProcessesPage.Filters.processName.field);
 
-  await InstancesPage.selectProcess('Process With Multiple Versions');
+  await ProcessesPage.selectProcess('Process With Multiple Versions');
 
   await validateSelectValue(
-    InstancesPage.Filters.processVersion.field,
+    ProcessesPage.Filters.processVersion.field,
     'Version 2'
   );
 
@@ -716,10 +716,10 @@ test('Process Filter', async (t) => {
   await t.expect(screen.queryByTestId('diagram').exists).ok();
 
   // select all versions, see that diagram disappeared and selected instances are removed
-  await t.click(InstancesPage.Filters.processVersion.field);
+  await t.click(ProcessesPage.Filters.processVersion.field);
 
-  await InstancesPage.selectVersion('All');
-  await validateSelectValue(InstancesPage.Filters.processVersion.field, 'All');
+  await ProcessesPage.selectVersion('All');
+  await validateSelectValue(ProcessesPage.Filters.processVersion.field, 'All');
 
   await t
     .expect(screen.queryByTestId('diagram').exists)
@@ -749,17 +749,17 @@ test('Process Filter', async (t) => {
     );
 
   // reset the filters to start over
-  await t.click(InstancesPage.resetFiltersButton);
+  await t.click(ProcessesPage.resetFiltersButton);
 
   // select a process and a flow node
-  await t.click(InstancesPage.Filters.processName.field);
-  await InstancesPage.selectProcess('Process With Multiple Versions');
+  await t.click(ProcessesPage.Filters.processName.field);
+  await ProcessesPage.selectProcess('Process With Multiple Versions');
 
-  await t.click(InstancesPage.Filters.flowNode.field);
-  await InstancesPage.selectFlowNode('StartEvent_1');
+  await t.click(ProcessesPage.Filters.flowNode.field);
+  await ProcessesPage.selectFlowNode('StartEvent_1');
 
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'StartEvent_1'
   );
 
@@ -778,10 +778,10 @@ test('Process Filter', async (t) => {
     );
 
   // change process and see flow node filter has been reset
-  await t.click(InstancesPage.Filters.processName.field);
-  await InstancesPage.selectProcess('Order process');
+  await t.click(ProcessesPage.Filters.processName.field);
+  await ProcessesPage.selectProcess('Order process');
 
-  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
+  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
 
   await t
     .expect(await getPathname())
@@ -809,14 +809,14 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .ok();
 
   await t
-    .expect(InstancesPage.Filters.processVersion.field.getAttribute('disabled'))
+    .expect(ProcessesPage.Filters.processVersion.field.getAttribute('disabled'))
     .eql('true')
-    .expect(InstancesPage.Filters.flowNode.field.getAttribute('disabled'))
+    .expect(ProcessesPage.Filters.flowNode.field.getAttribute('disabled'))
     .eql('true');
 
-  await validateSelectValue(InstancesPage.Filters.processVersion.field, 'All');
+  await validateSelectValue(ProcessesPage.Filters.processVersion.field, 'All');
 
-  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
+  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
 
   await t
     .expect(await getPathname())
@@ -830,8 +830,8 @@ test('Process Filter - Interaction with diagram', async (t) => {
     );
 
   // select a process that has only one version
-  await t.click(InstancesPage.Filters.processName.field);
-  await InstancesPage.selectProcess('Order process');
+  await t.click(ProcessesPage.Filters.processName.field);
+  await ProcessesPage.selectProcess('Order process');
 
   await t
     .expect(screen.queryByTestId('diagram').exists)
@@ -846,15 +846,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .notOk();
 
   await t
-    .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+    .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
     .eql('false');
 
   await validateSelectValue(
-    InstancesPage.Filters.processVersion.field,
+    ProcessesPage.Filters.processVersion.field,
     'Version 1'
   );
 
-  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
+  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
 
   await t
     .expect(await getPathname())
@@ -881,7 +881,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .ok();
 
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'Ship Articles'
   );
 
@@ -911,7 +911,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .notOk();
 
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'Check payment'
   );
 
@@ -947,7 +947,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
       })
     );
 
-  await validateSelectValue(InstancesPage.Filters.flowNode.field, '--');
+  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
 });
 
 test('Should set filters from url', async (t) => {
@@ -958,7 +958,7 @@ test('Should set filters from url', async (t) => {
     finishedInstances,
     completed,
     canceled,
-  } = InstancesPage.Filters;
+  } = ProcessesPage.Filters;
 
   await t.navigateTo(
     `/processes?${convertToQueryString({
@@ -981,35 +981,35 @@ test('Should set filters from url', async (t) => {
   );
 
   await validateSelectValue(
-    InstancesPage.Filters.processName.field,
+    ProcessesPage.Filters.processName.field,
     'Process With Multiple Versions'
   );
   await validateSelectValue(
-    InstancesPage.Filters.processVersion.field,
+    ProcessesPage.Filters.processVersion.field,
     'Version 2'
   );
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'Always fails'
   );
 
   await t
-    .expect(InstancesPage.Filters.instanceIds.value.value)
+    .expect(ProcessesPage.Filters.instanceIds.value.value)
     .eql('2251799813685255')
-    .expect(InstancesPage.Filters.parentInstanceId.value.value)
+    .expect(ProcessesPage.Filters.parentInstanceId.value.value)
     .eql('2251799813685731')
-    .expect(InstancesPage.Filters.errorMessage.value.value)
+    .expect(ProcessesPage.Filters.errorMessage.value.value)
     .eql('some error message')
-    .expect(InstancesPage.Filters.startDate.value.value)
+    .expect(ProcessesPage.Filters.startDate.value.value)
     .eql('2020-09-10 18:41:44')
-    .expect(InstancesPage.Filters.endDate.value.value)
+    .expect(ProcessesPage.Filters.endDate.value.value)
     .eql('2020-12-12 12:12:12')
 
-    .expect(InstancesPage.Filters.variableName.value.value)
+    .expect(ProcessesPage.Filters.variableName.value.value)
     .eql('test')
-    .expect(InstancesPage.Filters.variableValue.value.value)
+    .expect(ProcessesPage.Filters.variableValue.value.value)
     .eql('123')
-    .expect(InstancesPage.Filters.operationId.value.value)
+    .expect(ProcessesPage.Filters.operationId.value.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
 
   await validateCheckedState({
@@ -1040,34 +1040,34 @@ test('Should set filters from url', async (t) => {
   );
 
   await validateSelectValue(
-    InstancesPage.Filters.processName.field,
+    ProcessesPage.Filters.processName.field,
     'Process With Multiple Versions'
   );
   await validateSelectValue(
-    InstancesPage.Filters.processVersion.field,
+    ProcessesPage.Filters.processVersion.field,
     'Version 2'
   );
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'Always fails'
   );
 
   await t
-    .expect(InstancesPage.Filters.instanceIds.value.value)
+    .expect(ProcessesPage.Filters.instanceIds.value.value)
     .eql('2251799813685255')
-    .expect(InstancesPage.Filters.parentInstanceId.value.value)
+    .expect(ProcessesPage.Filters.parentInstanceId.value.value)
     .eql('2251799813685731')
-    .expect(InstancesPage.Filters.errorMessage.value.value)
+    .expect(ProcessesPage.Filters.errorMessage.value.value)
     .eql('some error message')
-    .expect(InstancesPage.Filters.startDate.value.value)
+    .expect(ProcessesPage.Filters.startDate.value.value)
     .eql('2020-09-10 18:41:44')
-    .expect(InstancesPage.Filters.endDate.value.value)
+    .expect(ProcessesPage.Filters.endDate.value.value)
     .eql('2020-12-12 12:12:12')
-    .expect(InstancesPage.Filters.variableName.value.value)
+    .expect(ProcessesPage.Filters.variableName.value.value)
     .eql('test')
-    .expect(InstancesPage.Filters.variableValue.value.value)
+    .expect(ProcessesPage.Filters.variableValue.value.value)
     .eql('123')
-    .expect(InstancesPage.Filters.operationId.value.value)
+    .expect(ProcessesPage.Filters.operationId.value.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
 
   await validateCheckedState({
@@ -1094,37 +1094,37 @@ test('Should order optional filters', async (t) => {
 
   await t
     .expect(
-      InstancesPage.Filters.operationId.field.parent().getAttribute('order')
+      ProcessesPage.Filters.operationId.field.parent().getAttribute('order')
     )
     .eql('6');
   await t
     .expect(
-      InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
+      ProcessesPage.Filters.instanceIds.field.parent().getAttribute('order')
     )
     .eql('5');
   await t
     .expect(
-      InstancesPage.Filters.startDate.field.parent().getAttribute('order')
+      ProcessesPage.Filters.startDate.field.parent().getAttribute('order')
     )
     .eql('4');
   await t
     .expect(
-      InstancesPage.Filters.variableName.field.parent().getAttribute('order')
+      ProcessesPage.Filters.variableName.field.parent().getAttribute('order')
     )
     .eql('3');
   await t
-    .expect(InstancesPage.Filters.endDate.field.parent().getAttribute('order'))
+    .expect(ProcessesPage.Filters.endDate.field.parent().getAttribute('order'))
     .eql('2');
   await t
     .expect(
-      InstancesPage.Filters.parentInstanceId.field
+      ProcessesPage.Filters.parentInstanceId.field
         .parent()
         .getAttribute('order')
     )
     .eql('1');
   await t
     .expect(
-      InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
+      ProcessesPage.Filters.errorMessage.field.parent().getAttribute('order')
     )
     .eql('0');
 
@@ -1140,37 +1140,37 @@ test('Should order optional filters', async (t) => {
 
   await t
     .expect(
-      InstancesPage.Filters.instanceIds.field.parent().getAttribute('order')
+      ProcessesPage.Filters.instanceIds.field.parent().getAttribute('order')
     )
     .eql('6');
   await t
     .expect(
-      InstancesPage.Filters.errorMessage.field.parent().getAttribute('order')
+      ProcessesPage.Filters.errorMessage.field.parent().getAttribute('order')
     )
     .eql('5');
   await t
-    .expect(InstancesPage.Filters.endDate.field.parent().getAttribute('order'))
+    .expect(ProcessesPage.Filters.endDate.field.parent().getAttribute('order'))
     .eql('4');
   await t
     .expect(
-      InstancesPage.Filters.operationId.field.parent().getAttribute('order')
+      ProcessesPage.Filters.operationId.field.parent().getAttribute('order')
     )
     .eql('3');
   await t
     .expect(
-      InstancesPage.Filters.parentInstanceId.field
+      ProcessesPage.Filters.parentInstanceId.field
         .parent()
         .getAttribute('order')
     )
     .eql('2');
   await t
     .expect(
-      InstancesPage.Filters.startDate.field.parent().getAttribute('order')
+      ProcessesPage.Filters.startDate.field.parent().getAttribute('order')
     )
     .eql('1');
   await t
     .expect(
-      InstancesPage.Filters.variableName.field.parent().getAttribute('order')
+      ProcessesPage.Filters.variableName.field.parent().getAttribute('order')
     )
     .eql('0');
 });

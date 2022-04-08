@@ -6,14 +6,14 @@
  */
 
 import {config} from '../config';
-import {setup} from './Instance.setup';
+import {setup} from './ProcessInstance.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {DATE_REGEX} from './constants';
-import {instancePage as InstancePage} from './PageModels/Instance';
+import {processInstancePage as ProcessInstancePage} from './PageModels/ProcessInstance';
 
-fixture('Instance')
+fixture('Process Instance')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
@@ -195,7 +195,7 @@ test('Instance with an incident - resolve incidents', async (t) => {
   await t
     .click(withinVariablesList.queryByRole('button', {name: 'Enter edit mode'}))
     .typeText(
-      within(InstancePage.editVariableValueField).queryByRole('textbox'),
+      within(ProcessInstancePage.editVariableValueField).queryByRole('textbox'),
       '20',
       {
         paste: true,
@@ -203,9 +203,9 @@ test('Instance with an incident - resolve incidents', async (t) => {
       }
     )
     .click(withinVariablesList.queryByRole('button', {name: 'Save variable'}))
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk({timeout: 120000});
 
   // retry one incident to resolve it
@@ -235,16 +235,16 @@ test('Instance with an incident - resolve incidents', async (t) => {
   // add variable isCool
 
   await t
-    .click(InstancePage.addVariableButton)
+    .click(ProcessInstancePage.addVariableButton)
     .typeText(
-      within(InstancePage.newVariableNameField).queryByRole('textbox'),
+      within(ProcessInstancePage.newVariableNameField).queryByRole('textbox'),
       'isCool',
       {
         paste: true,
       }
     )
     .typeText(
-      within(InstancePage.newVariableValueField).queryByRole('textbox'),
+      within(ProcessInstancePage.newVariableValueField).queryByRole('textbox'),
       'true',
       {
         paste: true,
@@ -259,9 +259,9 @@ test('Instance with an incident - resolve incidents', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Save variable'}))
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk({timeout: 120000});
 
   // retry second incident to resolve it
@@ -474,9 +474,9 @@ test('Instance with an incident - cancel an instance', async (t) => {
       })
     )
     .click(screen.getByRole('button', {name: 'Apply'}))
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .ok()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk({timeout: 120000});
 
   await t
@@ -525,6 +525,6 @@ test('Instance without an incident', async (t) => {
     .ok()
     .expect(screen.queryByText('Instance History').exists)
     .ok()
-    .expect(InstancePage.addVariableButton.exists)
+    .expect(ProcessInstancePage.addVariableButton.exists)
     .ok();
 });

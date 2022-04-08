@@ -6,14 +6,14 @@
  */
 
 import {config} from '../config';
-import {setup} from './InstanceSelection.setup';
+import {setup} from './ProcessInstanceSelection.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
 
-fixture('Select Instances')
+fixture('Process Instances Selection')
   .page(config.endpoint)
   .before(async () => {
     await setup();
@@ -30,24 +30,24 @@ fixture('Select Instances')
       );
   });
 
-test('Selection of instances are removed on filter selection', async (t) => {
+test('Selection of process instances are removed on filter selection', async (t) => {
   // select instances
   await t
-    .click(InstancesPage.selectAllInstancesCheckbox)
-    .expect(InstancesPage.selectAllInstancesCheckbox.checked)
+    .click(ProcessesPage.selectAllInstancesCheckbox)
+    .expect(ProcessesPage.selectAllInstancesCheckbox.checked)
     .ok();
 
   // instances are not selected after selecting finished instances filter
 
   await t
-    .click(InstancesPage.Filters.finishedInstances.field)
-    .expect(InstancesPage.selectAllInstancesCheckbox.checked)
+    .click(ProcessesPage.Filters.finishedInstances.field)
+    .expect(ProcessesPage.selectAllInstancesCheckbox.checked)
     .notOk();
 
   // select instances
   await t
-    .click(InstancesPage.selectAllInstancesCheckbox)
-    .expect(InstancesPage.selectAllInstancesCheckbox.checked)
+    .click(ProcessesPage.selectAllInstancesCheckbox)
+    .expect(ProcessesPage.selectAllInstancesCheckbox.checked)
     .ok();
 
   // instances are not selected after applying instance id filter
@@ -57,20 +57,20 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
   await displayOptionalFilter('Instance Id(s)');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instanceId.toString(),
     {
       paste: true,
     }
   );
 
-  await t.expect(InstancesPage.selectAllInstancesCheckbox.checked).notOk();
+  await t.expect(ProcessesPage.selectAllInstancesCheckbox.checked).notOk();
 
   // select instances
   await t
-    .click(InstancesPage.selectAllInstancesCheckbox)
-    .expect(InstancesPage.selectAllInstancesCheckbox.checked)
+    .click(ProcessesPage.selectAllInstancesCheckbox)
+    .expect(ProcessesPage.selectAllInstancesCheckbox.checked)
     .ok();
 
   // instances are not selected after applying error message filter
@@ -79,23 +79,23 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
   await displayOptionalFilter('Error Message');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.errorMessage.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.errorMessage.field,
     errorMessage,
     {paste: true}
   );
 
-  await t.expect(InstancesPage.selectAllInstancesCheckbox.checked).notOk();
+  await t.expect(ProcessesPage.selectAllInstancesCheckbox.checked).notOk();
 });
 
-test('Selection of instances are not removed on sort', async (t) => {
+test('Selection of process instances are not removed on sort', async (t) => {
   await t
-    .click(InstancesPage.selectAllInstancesCheckbox)
-    .expect(InstancesPage.selectAllInstancesCheckbox.checked)
+    .click(ProcessesPage.selectAllInstancesCheckbox)
+    .expect(ProcessesPage.selectAllInstancesCheckbox.checked)
     .ok();
 
   await t
     .click(screen.queryByRole('button', {name: 'Sort by Process'}))
-    .expect(InstancesPage.selectAllInstancesCheckbox.checked)
+    .expect(ProcessesPage.selectAllInstancesCheckbox.checked)
     .ok();
 });

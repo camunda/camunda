@@ -6,16 +6,16 @@
  */
 
 import {config} from '../config';
-import {setup} from './Variables.setup';
+import {setup} from './ProcessInstanceVariables.setup';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
-import {instancePage as InstancePage} from './PageModels/Instance';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
+import {processInstancePage as ProcessInstancePage} from './PageModels/ProcessInstance';
 
-fixture('Add/Edit Variables')
+fixture('Process Instance Variables')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
@@ -33,66 +33,66 @@ test('Validations for add variable works correctly', async (t) => {
   await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
-    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  // open single instance page, after clicking add new variable button see that save variable button is disabled and no spinner is displayed.
+  // open process instance page, after clicking add new variable button see that save variable button is disabled and no spinner is displayed.
   await t
-    .click(InstancePage.addVariableButton)
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .click(ProcessInstancePage.addVariableButton)
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
     .notOk();
 
   // add a new variable called test, see that save button is disabled, and no sipnner is displayed.
-  const nameField = within(InstancePage.newVariableNameField).queryByRole(
-    'textbox'
-  );
+  const nameField = within(
+    ProcessInstancePage.newVariableNameField
+  ).queryByRole('textbox');
 
   await t
     .typeText(nameField, 'test')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
     .ok();
 
   // add a valid value to the newly added variable, see that save button is enabled and no spinner is displayed.
-  const valueField = within(InstancePage.newVariableValueField).queryByRole(
-    'textbox'
-  );
+  const valueField = within(
+    ProcessInstancePage.newVariableValueField
+  ).queryByRole('textbox');
 
   await t
     .typeText(valueField, '123')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -103,16 +103,16 @@ test('Validations for add variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, 'someTestValue')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -123,16 +123,16 @@ test('Validations for add variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '"someTestValue"')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -143,16 +143,16 @@ test('Validations for add variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '{"name": "value","found":true}')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -162,22 +162,22 @@ test('Validations for add variable works correctly', async (t) => {
   await t
     .selectText(nameField)
     .pressKey('delete')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   await t
     .expect(
-      within(InstancePage.newVariableNameField).queryByText(
+      within(ProcessInstancePage.newVariableNameField).queryByText(
         'Name has to be filled'
       ).exists
     )
     .ok()
     .expect(
-      within(InstancePage.newVariableValueField).queryByText(
+      within(ProcessInstancePage.newVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -193,41 +193,41 @@ test('Validations for edit variable works correctly', async (t) => {
   await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
-    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  // open single instance page, after clicking the edit variable button see that save variable button is disabled.
+  // open process instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
     .click(screen.queryByTestId('edit-variable-button'))
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk()
     .expect(
-      within(InstancePage.editVariableValueField).queryByText(
+      within(ProcessInstancePage.editVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
     .notOk();
 
-  const valueField = within(InstancePage.editVariableValueField).queryByRole(
-    'textbox'
-  );
+  const valueField = within(
+    ProcessInstancePage.editVariableValueField
+  ).queryByRole('textbox');
 
   // clear value field, see that save button is disabled, and no sipnner is displayed.
   await t
     .selectText(valueField)
     .pressKey('delete')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk()
     .expect(
-      within(InstancePage.editVariableValueField).queryByText(
+      within(ProcessInstancePage.editVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -236,14 +236,14 @@ test('Validations for edit variable works correctly', async (t) => {
   // type a valid value, see that save button is enabled and no spinner is displayed.
   await t
     .typeText(valueField, '123')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk()
     .expect(
-      within(InstancePage.editVariableValueField).queryByText(
+      within(ProcessInstancePage.editVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -254,14 +254,14 @@ test('Validations for edit variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, 'someTestValue')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk()
     .expect(
-      within(InstancePage.editVariableValueField).queryByText(
+      within(ProcessInstancePage.editVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -272,14 +272,14 @@ test('Validations for edit variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '"someTestValue"')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk()
     .expect(
-      within(InstancePage.editVariableValueField).queryByText(
+      within(ProcessInstancePage.editVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -290,14 +290,14 @@ test('Validations for edit variable works correctly', async (t) => {
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '{"name": "value","found":true}')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk()
     .expect(
-      within(InstancePage.editVariableValueField).queryByText(
+      within(ProcessInstancePage.editVariableValueField).queryByText(
         'Invalid input text'
       ).exists
     )
@@ -314,44 +314,44 @@ test('Edit variables', async (t) => {
   await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
-    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  // open single instance page, after clicking the edit variable button see that save variable button is disabled.
+  // open process instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
     .click(screen.queryByTestId('edit-variable-button'))
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok();
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
-  const valueField = within(InstancePage.editVariableValueField).queryByRole(
-    'textbox'
-  );
+  const valueField = within(
+    ProcessInstancePage.editVariableValueField
+  ).queryByRole('textbox');
 
   await t
     .selectText(valueField)
     .pressKey('delete')
     .typeText(valueField, '"editedTestValue"')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
-    .click(InstancePage.saveVariableButton)
-    .expect(InstancePage.variableSpinner.exists)
+    .click(ProcessInstancePage.saveVariableButton)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .ok()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .ok();
 
   // see that spinners both disappear after save variable operation completes.
   await t
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   // refresh the page and see the variable is still there.
@@ -369,56 +369,56 @@ test('Add variables', async (t) => {
   await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
-    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  // open single instance page, click add new variable button and see that save variable button is disabled.
+  // open process instance page, click add new variable button and see that save variable button is disabled.
   await t
-    .click(InstancePage.addVariableButton)
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .click(ProcessInstancePage.addVariableButton)
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok();
 
   // add a key to the newly added variable and see that save variable button is disabled and no spinner is displayed.
-  const nameField = within(InstancePage.newVariableNameField).queryByRole(
-    'textbox'
-  );
+  const nameField = within(
+    ProcessInstancePage.newVariableNameField
+  ).queryByRole('textbox');
 
   await t
     .typeText(nameField, 'secondTestKey')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .ok()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   // add a value to the newly added variable and see that save variable button is enabled and no spinner is displayed.
-  const valueField = within(InstancePage.newVariableValueField).queryByRole(
-    'textbox'
-  );
+  const valueField = within(
+    ProcessInstancePage.newVariableValueField
+  ).queryByRole('textbox');
 
   await t
     .typeText(valueField, '"secondTestValue"')
-    .expect(InstancePage.saveVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk()
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
-    .click(InstancePage.saveVariableButton)
-    .expect(InstancePage.variableSpinner.exists)
+    .click(ProcessInstancePage.saveVariableButton)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .ok()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .ok();
 
   // see that spinners both disappear after save variable operation completes
   await t
-    .expect(InstancePage.variableSpinner.exists)
+    .expect(ProcessInstancePage.variableSpinner.exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
   // refresh the page and see the variable is still there.
@@ -439,18 +439,18 @@ test('Add variables', async (t) => {
   await displayOptionalFilter('Instance Id(s)');
   await displayOptionalFilter('Variable');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.variableName.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.variableName.field,
     'secondTestKey'
   );
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.variableValue.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.variableValue.field,
     '"secondTestValue"'
   );
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instance.processInstanceKey
   );
 
@@ -470,17 +470,17 @@ test('Should not change add variable state when enter is pressed', async (t) => 
   await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
-    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  await t.click(InstancePage.addVariableButton);
+  await t.click(ProcessInstancePage.addVariableButton);
 
-  const nameField = within(InstancePage.newVariableNameField).queryByRole(
-    'textbox'
-  );
-  const valueField = within(InstancePage.newVariableValueField).queryByRole(
-    'textbox'
-  );
+  const nameField = within(
+    ProcessInstancePage.newVariableNameField
+  ).queryByRole('textbox');
+  const valueField = within(
+    ProcessInstancePage.newVariableValueField
+  ).queryByRole('textbox');
 
   await t.expect(nameField.exists).ok().expect(valueField.exists).ok();
 
@@ -496,24 +496,26 @@ test('Remove fields when instance is canceled', async (t) => {
   await t.navigateTo(`/processes/${instance.processInstanceKey}`);
 
   await t
-    .expect(InstancePage.addVariableButton.hasAttribute('disabled'))
+    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
   await t
-    .click(InstancePage.addVariableButton)
+    .click(ProcessInstancePage.addVariableButton)
     .expect(
-      within(InstancePage.newVariableNameField).queryByRole('textbox').exists
+      within(ProcessInstancePage.newVariableNameField).queryByRole('textbox')
+        .exists
     )
     .ok()
     .expect(
-      within(InstancePage.newVariableValueField).queryByRole('textbox').exists
+      within(ProcessInstancePage.newVariableValueField).queryByRole('textbox')
+        .exists
     )
     .ok();
 
   await t
     .click(screen.queryByRole('button', {name: /^Cancel Instance/}))
     .click(screen.queryByRole('button', {name: 'Apply'}))
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .ok();
 
   await t
@@ -521,7 +523,7 @@ test('Remove fields when instance is canceled', async (t) => {
     .notOk()
     .expect(screen.queryByTestId('add-variable-value').exists)
     .notOk()
-    .expect(InstancePage.operationSpinner.exists)
+    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 });
 

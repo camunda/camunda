@@ -6,7 +6,7 @@
  */
 
 import {config} from '../config';
-import {setup} from './Instances.setup';
+import {setup} from './Processes.setup';
 import {deploy} from '../setup-utils';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
@@ -18,9 +18,9 @@ import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {validateCheckedState} from './utils/validateCheckedState';
 import {validateSelectValue} from './utils/validateSelectValue';
-import {instancesPage as InstancesPage} from './PageModels/Instances';
+import {processesPage as ProcessesPage} from './PageModels/Processes';
 
-fixture('Instances')
+fixture('Processes')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
@@ -36,7 +36,7 @@ fixture('Instances')
     await setFlyoutTestAttribute('processName');
   });
 
-test('Instances Page Initial Load', async (t) => {
+test('Processes Page Initial Load', async (t) => {
   const {initialData} = t.fixtureCtx;
   const {
     runningInstances,
@@ -45,7 +45,7 @@ test('Instances Page Initial Load', async (t) => {
     finishedInstances,
     completed,
     canceled,
-  } = InstancesPage.Filters;
+  } = ProcessesPage.Filters;
 
   await t.click(
     screen.getByRole('link', {
@@ -70,8 +70,8 @@ test('Instances Page Initial Load', async (t) => {
 
   await displayOptionalFilter('Instance Id(s)');
 
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
@@ -108,8 +108,8 @@ test('Select flow node in diagram', async (t) => {
   await displayOptionalFilter('Instance Id(s)');
 
   // Filter by Instance ID
-  await InstancesPage.typeText(
-    InstancesPage.Filters.instanceIds.field,
+  await ProcessesPage.typeText(
+    ProcessesPage.Filters.instanceIds.field,
     instance.processInstanceKey,
     {
       paste: true,
@@ -117,8 +117,8 @@ test('Select flow node in diagram', async (t) => {
   );
 
   // Select "Order Process"
-  await t.click(InstancesPage.Filters.processName.field);
-  await InstancesPage.selectProcess('Order process');
+  await t.click(ProcessesPage.Filters.processName.field);
+  await ProcessesPage.selectProcess('Order process');
 
   await t.expect(screen.queryByTestId('diagram').exists).ok();
 
@@ -130,7 +130,7 @@ test('Select flow node in diagram', async (t) => {
   );
 
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'Ship Articles'
   );
 
@@ -161,7 +161,7 @@ test('Select flow node in diagram', async (t) => {
   );
 
   await validateSelectValue(
-    InstancesPage.Filters.flowNode.field,
+    ProcessesPage.Filters.flowNode.field,
     'Check payment'
   );
 
@@ -192,7 +192,7 @@ test('Wait for process creation', async (t) => {
   await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
 
   await t
-    .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+    .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
     .eql('true');
 
   await deploy(['newProcess.bpmn']);
@@ -208,11 +208,11 @@ test('Wait for process creation', async (t) => {
     .ok();
 
   await t
-    .expect(InstancesPage.Filters.processName.field.getAttribute('disabled'))
+    .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
     .eql('false');
 
   await validateSelectValue(
-    InstancesPage.Filters.processName.field,
+    ProcessesPage.Filters.processName.field,
     'Test Process'
   );
 });
