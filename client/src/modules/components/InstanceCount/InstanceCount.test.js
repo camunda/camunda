@@ -72,6 +72,19 @@ it('should show the total instance count if there are filters', () => {
   expect(node).toIncludeText('500');
 });
 
+it('should display an astrick near the total instance count if the report includes date filters', () => {
+  const node = shallow(
+    <InstanceCount
+      {...props}
+      report={update(props.report, {
+        data: {filter: {$set: [{type: 'instanceStartDate'}]}},
+      })}
+    />
+  );
+
+  expect(node).toIncludeText('Displaying data from 123 of *500 instances');
+});
+
 it('should contain a popover with information about the filters', () => {
   const node = shallow(<InstanceCount {...props} />);
 

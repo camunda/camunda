@@ -1083,6 +1083,7 @@
       "list": {
         "appliedTo": "Angewendet auf",
         "invalidDefinition": "Datenquelle hat keine Versions- oder Mandantenselektion.",
+        "totalInstanceWarning": "Filter gilt für die Gesamtzahl der Instanzen",
         "operators": {
           "isBetween": "liegt zwischen",
           "between": "zwischen",

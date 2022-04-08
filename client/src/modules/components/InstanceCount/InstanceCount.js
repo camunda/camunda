@@ -152,7 +152,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
             }`,
             {
               count: instanceCount,
-              totalCount,
+              totalCount: (haveDateFilter(data.filter) ? '*' : '') + totalCount,
             }
           )}
       </span>
@@ -161,3 +161,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
 }
 
 export default withErrorHandling(InstanceCount);
+
+function haveDateFilter(filters) {
+  return filters?.some((filter) => filter.type.toLowerCase().includes('date'));
+}

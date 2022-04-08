@@ -109,6 +109,7 @@ export default class FilterList extends React.Component {
             >
               <DateFilterPreview filterType={filter.type} filter={filter.data} />
               {this.appliedToSnippet(filter)}
+              <span className="note">* {t('common.filter.list.totalInstanceWarning')}</span>
             </ActionItem>
           </li>
         );
@@ -159,6 +160,7 @@ export default class FilterList extends React.Component {
                       </>
                     )}
                     {this.appliedToSnippet(filter)}
+                    <span className="note">* {t('common.filter.list.totalInstanceWarning')}</span>
                   </ActionItem>
                 );
               }}

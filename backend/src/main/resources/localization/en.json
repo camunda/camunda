@@ -1083,6 +1083,7 @@
       "list": {
         "appliedTo": "Applied to",
         "invalidDefinition": "Data Source is missing version or tenant selection.",
+        "totalInstanceWarning": "Filter applies to the total instance count",
         "operators": {
           "isBetween": "is between",
           "between": "between",

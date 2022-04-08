@@ -134,6 +134,12 @@ exports[`should display date preview if the filter is a date filter 1`] = `
         }
         filterType="instanceStartDate"
       />
+      <span
+        className="note"
+      >
+        * 
+        Filter applies to the total instance count
+      </span>
     </ActionItem>
   </li>
 </ul>

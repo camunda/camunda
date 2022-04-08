@@ -15,6 +15,11 @@
       .header .type {
         font-size: 10px;
       }
+
+      .content > span.note {
+        display: block;
+        margin-top: 5px;
+      }
     }
 
     .parameterName {

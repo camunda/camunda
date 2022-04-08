@@ -473,7 +473,11 @@ export default withErrorHandling(
                 `report.instanceCount.process.label${
                   result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
                 }-withFilter`,
-                {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
+                {
+                  count: result.instanceCount,
+                  totalCount:
+                    (haveDateFilter(data.filter) ? '*' : '') + result.instanceCountWithoutFilters,
+                }
               )}
             </div>
           )}
@@ -489,4 +493,8 @@ function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
   }
   const availableFlowNodesIds = Object.keys(availableFlowNodeNames);
   return flowNodeIds.every((id) => availableFlowNodesIds.includes(id));
+}
+
+function haveDateFilter(filters) {
+  return filters?.some((filter) => filter.type.toLowerCase().includes('date'));
 }

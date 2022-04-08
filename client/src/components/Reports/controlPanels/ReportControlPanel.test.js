@@ -461,6 +461,19 @@ it('should show the number of process instances in the current Filter', () => {
   expect(node).toIncludeText('Displaying data from 3 of 5 instances');
 });
 
+it('should display an astrick near the total instance count if the report includes date filters', () => {
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={update(props.report, {
+        data: {filter: {$set: [{type: 'instanceStartDate'}]}},
+      })}
+    />
+  );
+
+  expect(node).toIncludeText('Displaying data from 3 of *5 instances');
+});
+
 it('should show a measure selection for views that have a measure', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
