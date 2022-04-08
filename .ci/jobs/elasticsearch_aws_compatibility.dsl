@@ -3,10 +3,8 @@ pipelineJob('elasticsearch_aws_compatibility') {
   displayName 'Elasticsearch AWS compatibility test'
   description 'Run IT suite against elasticsearch on AWS.'
 
-  // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
-    disabled()
-  }
+  // We are not currently officially supporting AWS, but may in future. In the meantime, this job is disabled
+  disabled()
 
   definition {
     cps {
