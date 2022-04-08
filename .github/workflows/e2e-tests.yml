@@ -67,3 +67,9 @@ jobs:
           PORT: 8080
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
         run: yarn run test:e2e:ci
+      - name: Archive screenshots
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: testcafe screenshots
+          path: client/artifacts/screenshots/*.png
