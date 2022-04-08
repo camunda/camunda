@@ -39,9 +39,10 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
     http.csrf().disable()
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers(API, ROOT).authenticated()
+        .antMatchers(API, PUBLIC_API, ROOT).authenticated()
         .and().exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
+    oAuth2WebConfigurer.configure(http);
   }
 
 }

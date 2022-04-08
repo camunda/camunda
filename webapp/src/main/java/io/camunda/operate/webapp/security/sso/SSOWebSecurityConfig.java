@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.security.sso;
 
 import static io.camunda.operate.webapp.security.OperateURIs.API;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
+import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 
@@ -38,9 +39,10 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
     http.csrf().disable()
       .authorizeRequests()
       .antMatchers(AUTH_WHITELIST).permitAll()
-      .antMatchers(API, ROOT).authenticated()
+      .antMatchers(API, PUBLIC_API, ROOT).authenticated()
       .and().exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
+    oAuth2WebConfigurer.configure(http);
   }
 
 }

@@ -43,7 +43,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   @Autowired
   OperateProfileService errorMessageService;
 
-  @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
+  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
@@ -78,7 +78,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   protected void failureHandler(HttpServletRequest request, HttpServletResponse response,
       AuthenticationException ex) throws IOException {
     String requestedUrl = request.getRequestURI();
-    if (requestedUrl.contains("api")) {
+    if (requestedUrl.contains("api") || requestedUrl.contains("/v1/")) {
       sendError(request,response, ex);
     } else {
       storeRequestedUrlAndRedirectToLogin(request, response, requestedUrl);
