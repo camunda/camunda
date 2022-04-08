@@ -14,7 +14,7 @@ git remote add origin "https://${GITHUB_TOKEN_USR}:${GITHUB_TOKEN_PSW}@github.co
 
 # configure Jenkins GitHub user for Maven container
 git config --global user.email "ci@camunda.com"
-git config --global user.name "${GITHUB_TOKEN_USR}"
+git config --global user.name "zeebe[bot]"
 
 # setup maven central gpg keys
 gpg -q --allow-secret-key-import --import --no-tty --batch --yes "${GPG_SEC_KEY}"
