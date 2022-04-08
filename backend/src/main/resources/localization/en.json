@@ -900,6 +900,7 @@
     "errors": {
       "inValidLink": "This link is not valid.",
       "number": "Enter a number",
+      "percentage": "Enter a valid percentage",
       "positiveNum": "Enter a positive number",
       "positiveInt": "Enter a positive whole number"
     },

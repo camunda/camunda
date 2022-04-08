@@ -900,6 +900,7 @@
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "number": "Eine Zahl eingeben",
+      "percentage": "Einen gültigen Prozentsatz eingeben",
       "positiveNum": "Einen positiven Zahlenwert eingeben",
       "positiveInt": "Einen positiven ganzzahligen Wert eingeben"
     },
