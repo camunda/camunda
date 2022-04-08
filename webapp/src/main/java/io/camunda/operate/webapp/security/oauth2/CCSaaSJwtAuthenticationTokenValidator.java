@@ -39,11 +39,11 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
 
   private boolean isValid(final Map<String, Object> payload) {
     try {
-      final String audience = getAudience(payload);
+      //FIXME clean up usage of audience and scope: scope should not be directly compared to clusterId
+      //but to some new parameter e.g. CAMUNDA_CLOUD_CLIENT_SCOPE
+      //final String audience = getAudience(payload);
       final String scope = getScope(payload);
-      final OAuthClientProperties clientConfig = operateProperties.getClient();
-      return clientConfig.getAudience().equals(audience)
-          && clientConfig.getScope().equals(scope);
+      return operateProperties.getCloud().getClusterId().equals(scope);
     } catch (Exception e) {
       logger.error(
           String.format("Validation of JWT payload failed due to %s. Request is not authenticated.", e.getMessage()), e);
