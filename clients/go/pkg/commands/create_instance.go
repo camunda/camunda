@@ -17,8 +17,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/internal/utils"
-	"github.com/camunda/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
 const LatestVersion = -1

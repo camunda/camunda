@@ -12,13 +12,13 @@ In order to do this please follow [this guide](../../gateway-protocol-impl/READM
 To regenerate the gateway mock `internal/mock_pb/mock_gateway.go` run [`mockgen`](https://github.com/golang/mock#installation):
 
 ```
-GO111MODULE=off mockgen github.com/camunda/zeebe/clients/go/pkg/pb GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
+GO111MODULE=off mockgen github.com/camunda/zeebe/clients/go/v8/pkg/pb GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
 ```
 
 If you see errors regarding packages which are not found then as alternative you can try this:
 
 ```
-GO111MODULE=off mockgen -source $GOPATH/src/github.com/camunda/zeebe/clients/go/pkg/pb/gateway.pb.go GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
+GO111MODULE=off mockgen -source $GOPATH/src/github.com/camunda/zeebe/clients/go/v8/pkg/pb/gateway.pb.go GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
 ```
 
 ### Integration tests
