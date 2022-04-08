@@ -1,0 +1,164 @@
+---
+name: Deploy preview environment
+
+description: Deploys a Tasklist preview environment.
+
+inputs:
+  step:
+    description: >-
+      Indicates which step of the Preview Environment lifecycle should be executed.
+      Values: start (default), stop
+    required: false
+    default: start
+
+  deployment_id:
+    description: >-
+      Identifier for this deployment. Could look like "coffee-and-cigarettes" or "pr-1337".
+      It MUST be unique.
+      Providing the wrong identifier here might lead to other deployments/namespaces being overwritten.
+      The name provided here will be prefixed with "tasklist-".
+      Example: deployment_id="foo" --> namespace "tasklist-foo"
+    required: false
+    default: ${{ github.branch }}
+
+  deployment_ref:
+    description: >-
+      When step='stop', this is supposed to contain the branch name that will be used to lookup the actual Argo CD deployment name.
+      Typically it's populated using `github.event.ref`.
+      Example: `deployment_ref="foo" --> deployment_id "foo"` (currently)
+    required: false
+    default: ${{ github.event.ref }}
+
+  revision:
+    description: Revision or branch of the Tasklist Helm chart. Typically the branch to be deployed, or `master`.
+    required: true
+
+  docker_tag:
+    description: Docker tag to deploy.
+    required: true
+
+  argocd_server:
+    description: Url of the Argo CD instance to target.
+    required: false
+    default: argocd.int.camunda.com
+
+  argocd_token:
+    description: An Argo CD token with sufficient permissions to create Applications.
+    required: true
+
+  argocd_version:
+    default: v2.3.1
+    description: Version tag of Argo CD CLI tool
+    required: false
+runs:
+  using: composite
+  steps:
+  - name: Echo inputs
+    shell: bash
+    run: |
+      echo "Inputs"
+      echo "-----"
+      echo "Deployment ID / App Name: ${{ inputs.deployment_id }}"
+      echo "Tasklist tag:              ${{ inputs.docker_tag }}"
+      echo "Chart revision:           ${{ inputs.revision }}"
+      echo "Lifecycle step:           ${{ inputs.step }}"
+  - name: Restore cache
+    uses: actions/cache@v2
+    id: tool-cache-argocd
+    with:
+      path: /usr/local/bin/argocd
+      key: ${{ runner.os }}-tool-cache-argo-${{ inputs.argocd_version }}
+  - name: Setup Argo CD
+    shell: bash
+    if: ${{ steps.tool-cache-argocd.outputs.cache-hit != 'true' }}
+    run: |-
+      curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/${{ inputs.argocd_version }}/argocd-linux-amd64
+      chmod +x /usr/local/bin/argocd
+      argocd version
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+  - name: Determine APP_NAME
+    shell: bash
+    run: |-
+      if [[ "${{ inputs.step}}" = "stop" ]]; then
+        APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
+      else
+        APP_NAME="${{ inputs.deployment_id }}"
+      fi
+      echo "APP_NAME=${APP_NAME}" >> ${GITHUB_ENV}
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+    #########################################################################
+    # Create a GitHub deployment that points to the URL we're going to deploy to.
+    # If a Pull Request exists, it will show the status of this deployment.
+  - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+    if: ${{ inputs.step == 'start'}}
+    name: Create GitHub deployment
+    id: deployment
+    with:
+      step: start
+      token: "${{ github.token }}"
+      env: ${{ env.APP_NAME }}
+  - name: Deploy
+    shell: bash
+    if: ${{ inputs.step == 'start'}}
+    run: >-
+      argocd app create
+      --dest-namespace tasklist-${APP_NAME}
+      --file .ci/preview-environments/argo/application.yml
+      --helm-set ccsm-helm.tasklist.image.tag=${{ inputs.docker_tag }}
+      --helm-set git.branch=${{ inputs.revision }}
+      --helm-set global.labels.app=${{ env.APP_NAME }}
+      --name ${{ env.APP_NAME }}
+      --revision ${{ inputs.revision }}
+      --upsert
+
+      argocd app sync ${{ env.APP_NAME }} --async --force || true
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+  - name: Tear down
+    shell: bash
+    if: ${{ inputs.step == 'stop'}}
+    run: argocd app delete ${APP_NAME} --yes
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+  - name: Wait for sync (up to 15 minutes)
+    shell: bash
+    run: |-
+      echo "::group::wait for sync"
+      argocd app wait ${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
+      echo "::endgroup::"
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+    #########################################################################
+    # Update the deployment status so we can see the result in the Pull Request
+    # or in the list of environments.
+  - name: Update branch deployment status
+    # When running the "start" step, `always()` ensures that the deployment status
+    # is updated regardless of previous steps failing.
+    if: ${{ inputs.step == 'start' && always() }}
+    uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+    with:
+      step: finish
+      token: ${{ github.token }}
+      status: ${{ job.status }}
+      deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+      env_url: https://${{ inputs.deployment_id }}.tasklist.camunda.cloud
+    # When tearing down the deployment, also deactivate GitHub Deployment environment
+  - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+    if: ${{ inputs.step == 'stop'  && always() }}
+    name: Deactivate GitHub Deployment environment
+    with:
+      step: deactivate-env
+      token: "${{ github.token }}"
+      env: ${{ env.APP_NAME }}
