@@ -66,6 +66,9 @@ pipeline {
 
     stages {
         stage('Prepare Distribution') {
+        environment {
+            GITHUB_TOKEN = credentials('github-camunda-zeebe-app')
+        }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     setHumanReadableBuildDisplayName()
