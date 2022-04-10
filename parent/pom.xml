@@ -1840,29 +1840,6 @@
           <version>${version.plexus-util}</version>
           <scope>test</scope>
         </dependency>
-        <dependency>
-          <groupId>org.revapi</groupId>
-          <artifactId>revapi-java</artifactId>
-          <version>${version.revapi}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>io.zeebe</groupId>
-          <artifactId>flaky-test-extractor-maven-plugin</artifactId>
-          <version>${plugin.version.flaky-tests}</version>
-          <scope>test</scope>
-          <exclusions>
-            <exclusion>
-              <groupId>org.apache.maven.surefire</groupId>
-              <artifactId>surefire-shared-utils</artifactId>
-            </exclusion>
-            <!-- excluded for dependency convergence -->
-            <exclusion>
-              <groupId>org.fusesource.jansi</groupId>
-              <artifactId>jansi</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -1887,12 +1864,6 @@
                   <goal>analyze-only</goal>
                 </goals>
                 <phase>verify</phase>
-                <configuration>
-                  <ignoredUnusedDeclaredDependencies combine.children="append">
-                    <dep>org.revapi:revapi-java</dep>
-                    <dep>io.zeebe:flaky-test-extractor-maven-plugin</dep>
-                  </ignoredUnusedDeclaredDependencies>
-                </configuration>
               </execution>
             </executions>
           </plugin>
