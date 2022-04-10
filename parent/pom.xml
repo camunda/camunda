@@ -112,7 +112,6 @@
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.143</version.classgraph>
-    <version.plexus-util>3.4.1</version.plexus-util>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -1544,12 +1543,6 @@
                   <dep>io.camunda:zeebe-build-tools</dep>
                   <dep>io.camunda:zeebe-gateway-protocol</dep>
                   <dep>org.ow2.asm:asm</dep>
-                  <dep>org.apache.maven.surefire:surefire-junit4</dep>
-                  <dep>org.apache.maven.surefire:surefire-junit47</dep>
-                  <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
-                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                  <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>org.codehaus.plexus:plexus-utils</dep>
                   <dep>org.bouncycastle:bcpkix-jdk15on</dep>
                   <dep>org.bouncycastle:bcprov-jdk15on</dep>
                 </ignoredUnusedDeclaredDependencies>
@@ -1837,7 +1830,11 @@
         <dependency>
           <groupId>org.codehaus.plexus</groupId>
           <artifactId>plexus-utils</artifactId>
-          <version>${version.plexus-util}</version>
+          <!--
+            leave this as 1.1; we add this dependency to ensure that plugins work well with the
+            go-offline goal. you can read more about why here: https://issues.apache.org/jira/browse/MNG-6965
+            -->
+          <version>1.1</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -1846,6 +1843,16 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
+            <configuration>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <dep>org.apache.maven.surefire:surefire-junit4</dep>
+                <dep>org.apache.maven.surefire:surefire-junit47</dep>
+                <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
+                <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                <dep>org.junit.vintage:junit-vintage-engine</dep>
+                <dep>org.codehaus.plexus:plexus-utils</dep>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
             <executions>
               <execution>
                 <id>go-offline</id>
