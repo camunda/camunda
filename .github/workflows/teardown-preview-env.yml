@@ -1,0 +1,38 @@
+on:
+  delete:
+    branches:
+      - "!master"
+
+name: teardown-preview-env
+jobs:
+  teardown:
+    name: teardown-${{ github.event.ref }}
+    runs-on: ubuntu-20.04
+    steps:
+      #########################################################################
+      # Setup: import secrets from vault
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@67281159dfa7c251b824d2aad468b4d7c41c1ccc
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/common/github.com/actions/camunda-cloud/tasklist ARGOCD_TOKEN;
+      #########################################################################
+      # Setup: checkout code. This is required because we are using
+      # composite actions and deployment manifests.
+      - name: Checkout
+        uses: actions/checkout@v2
+      #########################################################################
+      # Tear down preview environment
+      - name: Tear down ${{ steps.params.outputs.deployment_id }} Preview Environment
+        uses: ./.github/actions/deploy-preview
+        with:
+          deployment_ref: ${{ github.event.ref }}
+          revision: ${{ github.ref_name }}
+          docker_tag: ci-${{ github.sha }}
+          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          step: stop

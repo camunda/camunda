@@ -1,0 +1,49 @@
+---
+name: deploy-preview-env
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'Name of deployment.'
+        required: false
+        default: latest
+      chart_ref:
+        description: 'Deployable ref, commit or branch. This will be checked out.'
+        required: true
+      docker_tag:
+        description: 'Docker tag to deploy'
+        required: false
+        default: latest
+jobs:
+  deploy-preview:
+    timeout-minutes: 10
+    concurrency: deploy-${{ github.events.inputs.ref }}
+    name: Deploy Preview Environment
+    runs-on: ubuntu-20.04
+    steps:
+      #########################################################################
+      # Setup: import secrets from vault
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@67281159dfa7c251b824d2aad468b4d7c41c1ccc
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/common/github.com/actions/camunda-cloud/tasklist ARGOCD_TOKEN;
+      #########################################################################
+      # Setup: checkout code. This is required because we are using
+      # composite actions and deployment manifests.
+      - name: Checkout
+        uses: actions/checkout@v2
+      #########################################################################
+      # Create a preview environment
+      - name: Deploy Preview Environment
+        uses: ./.github/actions/deploy-preview
+        with:
+          deployment_id: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+          revision: ${{ github.event.inputs.chart_ref }}
+          docker_tag: ${{ github.event.inputs.docker_tag }}
+          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
