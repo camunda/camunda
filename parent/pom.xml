@@ -112,7 +112,6 @@
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.143</version.classgraph>
-    <version.plexus-util>3.4.1</version.plexus-util>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -130,7 +129,7 @@
     <plugin.version.dependency>3.3.0</plugin.version.dependency>
     <plugin.version.enforcer>3.0.0</plugin.version.enforcer>
     <plugin.version.exec>3.0.0</plugin.version.exec>
-    <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
+    <plugin.version.failsafe>3.0.0-M6</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.8</plugin.version.jacoco>
     <plugin.version.license>4.1</plugin.version.license>
@@ -146,7 +145,7 @@
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
     <plugin.version.spotless>2.22.1</plugin.version.spotless>
-    <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
+    <plugin.version.surefire>3.0.0-M6</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
@@ -1544,12 +1543,6 @@
                   <dep>io.camunda:zeebe-build-tools</dep>
                   <dep>io.camunda:zeebe-gateway-protocol</dep>
                   <dep>org.ow2.asm:asm</dep>
-                  <dep>org.apache.maven.surefire:surefire-junit4</dep>
-                  <dep>org.apache.maven.surefire:surefire-junit47</dep>
-                  <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
-                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                  <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>org.codehaus.plexus:plexus-utils</dep>
                   <dep>org.bouncycastle:bcpkix-jdk15on</dep>
                   <dep>org.bouncycastle:bcprov-jdk15on</dep>
                 </ignoredUnusedDeclaredDependencies>
@@ -1837,31 +1830,12 @@
         <dependency>
           <groupId>org.codehaus.plexus</groupId>
           <artifactId>plexus-utils</artifactId>
-          <version>${version.plexus-util}</version>
+          <!--
+            leave this as 1.1; we add this dependency to ensure that plugins work well with the
+            go-offline goal. you can read more about why here: https://issues.apache.org/jira/browse/MNG-6965
+            -->
+          <version>1.1</version>
           <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.revapi</groupId>
-          <artifactId>revapi-java</artifactId>
-          <version>${version.revapi}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>io.zeebe</groupId>
-          <artifactId>flaky-test-extractor-maven-plugin</artifactId>
-          <version>${plugin.version.flaky-tests}</version>
-          <scope>test</scope>
-          <exclusions>
-            <exclusion>
-              <groupId>org.apache.maven.surefire</groupId>
-              <artifactId>surefire-shared-utils</artifactId>
-            </exclusion>
-            <!-- excluded for dependency convergence -->
-            <exclusion>
-              <groupId>org.fusesource.jansi</groupId>
-              <artifactId>jansi</artifactId>
-            </exclusion>
-          </exclusions>
         </dependency>
       </dependencies>
       <build>
@@ -1869,6 +1843,16 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
+            <configuration>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <dep>org.apache.maven.surefire:surefire-junit4</dep>
+                <dep>org.apache.maven.surefire:surefire-junit47</dep>
+                <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
+                <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                <dep>org.junit.vintage:junit-vintage-engine</dep>
+                <dep>org.codehaus.plexus:plexus-utils</dep>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
             <executions>
               <execution>
                 <id>go-offline</id>
@@ -1887,12 +1871,6 @@
                   <goal>analyze-only</goal>
                 </goals>
                 <phase>verify</phase>
-                <configuration>
-                  <ignoredUnusedDeclaredDependencies combine.children="append">
-                    <dep>org.revapi:revapi-java</dep>
-                    <dep>io.zeebe:flaky-test-extractor-maven-plugin</dep>
-                  </ignoredUnusedDeclaredDependencies>
-                </configuration>
               </execution>
             </executions>
           </plugin>
