@@ -9,10 +9,13 @@ import {Component} from 'react';
 import PanelHeader from './PanelHeader';
 import PanelFooter from './PanelFooter';
 import PanelBody from './PanelBody';
-
 import * as Styled from './styled';
 
-class Panel extends Component<{}> {
+type Props = {
+  children?: React.ReactNode;
+};
+
+class Panel extends Component<Props> {
   static Footer = PanelFooter;
   static Header = PanelHeader;
   static Body = PanelBody;

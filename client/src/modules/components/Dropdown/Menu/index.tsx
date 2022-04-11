@@ -13,6 +13,7 @@ type Props = {
   onKeyDown: (...args: any[]) => any;
   placement?: 'top' | 'bottom';
   className?: string;
+  children?: React.ReactNode;
 };
 
 export default class Menu extends React.Component<Props> {

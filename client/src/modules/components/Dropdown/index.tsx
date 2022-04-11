@@ -20,6 +20,7 @@ type Props = {
   onOpen?: (...args: any[]) => any;
   className?: string;
   calculateWidth?: (...args: any[]) => any;
+  children?: React.ReactNode;
 };
 
 type State = {

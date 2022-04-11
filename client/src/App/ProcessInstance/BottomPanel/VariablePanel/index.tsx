@@ -14,7 +14,7 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import {Form} from 'react-final-form';
 import {useNotifications} from 'modules/notifications';
 
-import * as Styled from './styled';
+import {VariablesPanel} from './styled';
 
 type FormValues = {
   name?: string;
@@ -36,7 +36,7 @@ const VariablePanel = observer(function VariablePanel() {
   const {displayStatus} = variablesStore;
 
   return (
-    <Styled.VariablesPanel>
+    <VariablesPanel>
       {displayStatus === 'error' ? (
         <StatusMessage variant="error">
           Variables could not be fetched
@@ -95,7 +95,7 @@ const VariablePanel = observer(function VariablePanel() {
           }}
         </Form>
       )}
-    </Styled.VariablesPanel>
+    </VariablesPanel>
   );
 });
 
