@@ -10,11 +10,11 @@ apt install -y gpg gh
 
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
-git remote add origin "https://${GITHUB_TOKEN_USR}:${GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git"
+git remote add origin "https://${GITHUB_TOKEN_USR}[bot]:${GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git"
 
 # configure Jenkins GitHub user for Maven container
 git config --global user.email "ci@camunda.com"
-git config --global user.name "zeebe[bot]"
+git config --global user.name "${GITHUB_TOKEN_USR}[bot]"
 
 # setup maven central gpg keys
 gpg -q --allow-secret-key-import --import --no-tty --batch --yes "${GPG_SEC_KEY}"
