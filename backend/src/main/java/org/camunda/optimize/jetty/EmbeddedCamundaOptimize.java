@@ -96,23 +96,24 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     final HandlerCollection handlerCollection = new HandlerCollection();
     handlerCollection.addHandler(createSecurityHeaderHandlers(configurationService));
 
-    handlerCollection.addHandler(replacePathSectionRewriteHandler(
+    // the external API path rewrite handler is wrapping the app context modifying any external api requests
+    // before the appServletContextHandler receives them
+    final Handler externalApiRewriteHandler = replacePathSectionRewriteHandler(
       appServletContextHandler, EXTERNAL_SUB_PATH + "/api", "/api" + EXTERNAL_SUB_PATH
-    ));
-
+    );
     // If running in cloud environment an additional rewrite handler is added to handle requests containing the
     // clusterId as sub-path and effectively stripping of this path element to handle the request as if
     // it was received without that sub-path.
+    // This one wraps the external API handler to always strip the clusterId first.
     final String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
     if (StringUtils.isNotBlank(clusterId)) {
-      handlerCollection.addHandler(createAlternativeApplicationRootPathRewriteHandler(
-        appServletContextHandler, "/" + clusterId
-      ));
+      final RewriteHandler alternativeApplicationRootPathRewriteHandler =
+        createAlternativeApplicationRootPathRewriteHandler(externalApiRewriteHandler, "/" + clusterId);
+      handlerCollection.addHandler(alternativeApplicationRootPathRewriteHandler);
+    } else {
+      // otherwise just the external path rewrite handler is added
+      handlerCollection.addHandler(externalApiRewriteHandler);
     }
-
-    handlerCollection.addHandler(
-      appServletContextHandler
-    );
 
     newJettyServer.setHandler(handlerCollection);
 
@@ -125,8 +126,9 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return newJettyServer;
   }
 
-  private Handler replacePathSectionRewriteHandler(final ServletContextHandler handler,
-                                                   final String originalPath, final String replacementPath) {
+  private Handler replacePathSectionRewriteHandler(final Handler handler,
+                                                   final String originalPath,
+                                                   final String replacementPath) {
     final RewriteHandler rewriteHandler = new RewriteHandler();
     rewriteHandler.setRewriteRequestURI(true);
     rewriteHandler.setRewritePathInfo(true);
