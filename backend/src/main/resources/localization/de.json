@@ -445,8 +445,11 @@
         "variableName": "Variablennamen",
         "type": "Typ",
         "newName": "Neuer Name",
-        "renameInfo": "Sie können einen Alias bereitstellen, um jeden Ihrer Variablennamen in der Benutzeroberfläche zu überschreiben.",
-        "renameWarning": "Warnung! Änderungen werden über alle Berichte für diese Prozessdefinition aktualisiert. Dies kann sich auf andere Benutzer auswirken."
+        "renameInfo": "Sie können einen Alias angeben, der anstelle des im Modeler definierten Variablennamens angezeigt wird.",
+        "important": "Wichtig!",
+        "followGuidelines": "Befolgen Sie diese Richtlinien, um unerwartetes Verhalten zu vermeiden.",
+        "globalChanges": "Änderungen aktualisieren alle Berichte mit dieser Prozessdefinition",
+        "useSameVariable": "Verwenden Sie den gleichen Alias für Variablen, die in mehreren Prozessdefinitionen angezeigt werden"
       }
     },
     "noDefinitionMessage": {

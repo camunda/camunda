@@ -445,8 +445,11 @@
         "variableName": "Variable Name",
         "type": "Type",
         "newName": "New Name",
-        "renameInfo": "You may provide a UI-only alias to override each over your variable names.",
-        "renameWarning": "Warning! Changes will update across all reports using this process definition. This can affect other users."
+        "renameInfo": "You may provide a UI-only alias that is displayed instead of the variable name defined in the Modeler. ",
+        "important": "Important!",
+        "followGuidelines": "Follow these guidelines to avoid unexpected behavior.",
+        "globalChanges": "Changes will update all reports using this process definition",
+        "useSameVariable": "Use the same alias for variables that appear in multiple process definitions"
       }
     },
     "noDefinitionMessage": {

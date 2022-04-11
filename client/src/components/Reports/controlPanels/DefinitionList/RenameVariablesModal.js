@@ -80,8 +80,13 @@ export function RenameVariablesModal({
           <div className="info">
             {t('report.definition.variables.renameInfo')}
             <p>
-              <b>{t('report.definition.variables.renameWarning')}</b>
+              <b>{t('report.definition.variables.important')} </b>
+              {t('report.definition.variables.followGuidelines')}
             </p>
+            <ul>
+              <li>{t('report.definition.variables.globalChanges')}</li>
+              <li>{t('report.definition.variables.useSameVariable')}</li>
+            </ul>
           </div>
           <div className="searchInputContainer">
             <Input
