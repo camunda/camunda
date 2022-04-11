@@ -29,7 +29,7 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: mvn -pl !:zeebe-elasticsearch-exporter -T2 -B -D skipUTs -D skipChecks -Dfailsafe.rerunFailingTestsCount=3 -Dflaky.test.reportDir=failsafe-reports -D junitThreadCount=12 -P parallel-tests,extract-flaky-tests verify
       - name: Archive Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Integration test results
@@ -52,7 +52,7 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: mvn -pl :zeebe-elasticsearch-exporter -B -D skipUTs -D skipChecks -Dfailsafe.rerunFailingTestsCount=3 verify
       - name: Archive Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Exporter test results
@@ -95,7 +95,7 @@ jobs:
       - run: mvn -T1C -B -D skipTests -D skipChecks -am -pl :${{ matrix.project }} package
       - run: mvn -B -D skipITs -D skipChecks verify -pl :${{ matrix.project }}
       - name: Archive Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Unit test results for ${{ matrix.project }}
@@ -117,7 +117,7 @@ jobs:
       - run: mvn -T1C -B -D skipTests -D skipChecks -am -pl :zeebe-workflow-engine,:zeebe-logstreams package
       - run: mvn -B -D skipITs -D skipChecks -pl :zeebe-workflow-engine,:zeebe-logstreams verify
       - name: Archive Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Slow unit test results
@@ -148,7 +148,7 @@ jobs:
       - name: Run smoke test
         run: mvn -B -pl qa/integration-tests verify -P smoke-test -DskipUTs -DskipChecks
       - name: Archive Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Smoke test results for ${{ matrix.os }}
