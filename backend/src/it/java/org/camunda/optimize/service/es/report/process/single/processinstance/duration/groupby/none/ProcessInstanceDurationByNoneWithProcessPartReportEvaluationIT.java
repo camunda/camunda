@@ -1,14 +1,14 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.none;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -21,7 +21,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -42,6 +41,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getAggregationTypesAsListForProcessParts;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.util.BpmnModels.END_LOOP;
 import static org.camunda.optimize.util.BpmnModels.START_LOOP;
@@ -207,7 +207,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         START_EVENT,
         END_EVENT
       );
-    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    reportData.getConfiguration().setAggregationTypes(getAggregationTypesAsListForProcessParts());
 
     final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
@@ -415,8 +415,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         START_EVENT,
         END_EVENT
       );
-    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
+    reportData.getConfiguration().setAggregationTypes(getAggregationTypesAsListForProcessParts());
     final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
 
@@ -484,10 +484,6 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(calculatedResult).isNull();
   }
 
-  private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListForProcessParts().toArray(new AggregationType[0]);
-  }
-
   private List<ProcessFilterDto<?>> createVariableFilter(String value) {
     return ProcessFilterBuilder
       .filter()
@@ -511,13 +507,15 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   }
 
   private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse) {
-    final Map<AggregationType, Double> resultByAggregationType = evaluationResponse.getResult().getMeasures().stream()
+    final Map<AggregationDto, Double> resultByAggregationType = evaluationResponse.getResult()
+      .getMeasures()
+      .stream()
       .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
     assertThat(resultByAggregationType)
-      .hasSize(getSupportedAggregationTypes().length)
-      .containsEntry(AVERAGE, 4000.)
-      .containsEntry(MIN, 1000.)
-      .containsEntry(MAX, 9000.);
+      .hasSize(getAggregationTypesAsListForProcessParts().length)
+      .containsEntry(new AggregationDto(AVERAGE), 4000.)
+      .containsEntry(new AggregationDto(MIN), 1000.)
+      .containsEntry(new AggregationDto(MAX), 9000.);
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, String start, String end) {

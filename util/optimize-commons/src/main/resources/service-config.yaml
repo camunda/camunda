@@ -13,9 +13,11 @@ security:
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
       audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
     ccsm:
-      issuerUrl: ${CAMUNDA_OPTIMIZE_IAM_ISSUER_URL:}
-      clientId: ${CAMUNDA_OPTIMIZE_IAM_CLIENTID:}
-      clientSecret: ${CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET:}
+      issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
+      issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
+      clientId: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID:}
+      clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
+      audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set
@@ -74,10 +76,14 @@ security:
 # A global access token used by all public APIs of Optimize
 api:
   # Authentication information to be provided for the public APIs of Optimize.
-  # Provide either a static access token OR a URL for a resource server. If both are provided, the static access
-  # token will be ignored and the resource server will be used for validation instead
+  # Provide either
+  # 1. A static access token OR
+  # 2. a URL for a resource server AND an audience to validate against.
+  # If both are provided, the static access token will be ignored and the resource server will be used for validation
+  # instead
   accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
   jwtSetUri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:null}
+  audience: ${CAMUNDA_OPTIMIZE_API_AUDIENCE:optimize}
 
 container:
   # A host name or IP address, to identify a specific network interface on
@@ -264,6 +270,8 @@ import:
         # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
         # Please refer to the technical guide on how to configure the heap size.
         maxEntryLimit: 100000
+  # Controls whether customer onboarding data should be loaded to optimize
+  customer-onboarding: false
   # Some data can no longer be imported to a given document if its number of nested documents has reached the configured
   # limit. Enable this setting to skip this data during import if the nested document limit has been reached.
   skipDataAfterNestedDocLimitReached: false
@@ -309,6 +317,8 @@ es:
     timeout: 10000
     # Maximum size of the Elasticsearch response consumer heap buffer.
     responseConsumerBufferLimitInMb: 100
+    # The path prefix under which Elasticsearch is available
+    pathPrefix: ''
     # a list of Elasticsearch nodes Optimize can connect to. If you  have built
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.
@@ -513,7 +523,7 @@ historyCleanup:
 # Configuration relating to the automatic archiving of data within Optimize
 dataArchive:
   # Determines whether Optimize should try to archive data to cold indices
-  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:true}
+  enabled: ${CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED:false}
   # The interval in minutes between attempts to archive data made by Optimize
   archiveIntervalInMins: 480
 
@@ -590,6 +600,10 @@ analytics:
       stage: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_STAGE:dev}
       organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
       clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
+
+onboarding:
+  enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
+  appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
 
 # Configuration of application internal in-memory caches
 caches:

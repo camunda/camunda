@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get, post} from 'request';
+import {get, put, post} from 'request';
 
 export async function loadProcesses(sortBy, sortOrder) {
   const params = {};
@@ -26,6 +26,16 @@ export async function loadTenants(key) {
   return await response.json();
 }
 
-export function saveGoals(processDefinitionKey, goals) {
-  return post(`api/process/${processDefinitionKey}/goals`, goals);
+export function updateGoals(processDefinitionKey, goals) {
+  return put(`api/process/${processDefinitionKey}/goals`, goals);
+}
+
+export async function evaluateGoals(processDefinitionKey, goals) {
+  const response = await post(`api/process/${processDefinitionKey}/goals/evaluate`, goals);
+
+  return await response.json();
+}
+
+export function updateOwner(processDefinitionKey, id) {
+  return put(`api/process/${processDefinitionKey}/owner`, {id});
 }

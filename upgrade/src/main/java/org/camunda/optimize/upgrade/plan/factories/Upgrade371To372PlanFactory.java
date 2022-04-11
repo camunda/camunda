@@ -1,13 +1,10 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
-import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -17,14 +14,10 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class Upgrade371To372PlanFactory implements UpgradePlanFactory {
 
@@ -34,42 +27,7 @@ public class Upgrade371To372PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.7.1")
       .toVersion("3.7.2")
       .addUpgradeSteps(migrateReportFiltersAndConfig())
-      .addUpgradeStep(deleteInvalidDecisionVariables())
       .build();
-  }
-
-  private static UpgradeStep deleteInvalidDecisionVariables() {
-    final List<String> supportedTypes = ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES.stream()
-      .map(type -> type.getId().toLowerCase())
-      .collect(Collectors.toList());
-    // @formatter:off
-    final String decisionVarDeleteScript =
-      "ctx._source.inputs.removeIf(input -> {\n" +
-      "  !params.supportedTypes.contains(input.type.toLowerCase())\n" +
-      "});\n" +
-      "ctx._source.outputs.removeIf(output -> {\n" +
-      "  !params.supportedTypes.contains(output.type.toLowerCase())\n" +
-      "});\n";
-    // @formatter:on
-    return new UpdateDataStep(
-      new DecisionInstanceIndex("*"),
-      boolQuery()
-        .should(
-          boolQuery().mustNot(nestedQuery(
-            DecisionInstanceIndex.INPUTS,
-            termsQuery(DecisionInstanceIndex.INPUTS + "." + DecisionInstanceIndex.VARIABLE_VALUE_TYPE, supportedTypes),
-            ScoreMode.None
-          )))
-        .should(
-          boolQuery().mustNot(nestedQuery(
-            DecisionInstanceIndex.OUTPUTS,
-            termsQuery(DecisionInstanceIndex.OUTPUTS + "." + DecisionInstanceIndex.VARIABLE_VALUE_TYPE, supportedTypes),
-            ScoreMode.None
-          ))
-        ),
-      decisionVarDeleteScript,
-      Map.of("supportedTypes", supportedTypes)
-    );
   }
 
   private static List<UpgradeStep> migrateReportFiltersAndConfig() {

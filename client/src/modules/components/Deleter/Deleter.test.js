@@ -169,3 +169,11 @@ it('should invoke onConflict if the conflict response is a boolean true', () => 
 
   expect(spy).toHaveBeenCalled();
 });
+
+it('should not show the undo warning if the reversableAction prop is set to true', () => {
+  const node = shallow(<Deleter {...props} isReversableAction />);
+  setupRef(node);
+  node.setProps({entity});
+
+  expect(node.find(Modal.Content).html()).not.toMatch('This action cannot be undone.');
+});

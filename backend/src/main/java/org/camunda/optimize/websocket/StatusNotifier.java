@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.websocket;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 public class StatusNotifier implements ImportObserver {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private StatusCheckingService statusCheckingService;
-  private ObjectMapper objectMapper;
-  private Session session;
+  private final StatusCheckingService statusCheckingService;
+  private final ObjectMapper objectMapper;
+  private final Session session;
 
-  private Map<String, EngineStatusDto> engineStatusMap;
+  private final Map<String, EngineStatusDto> engineStatusMap;
 
   public StatusNotifier(StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
     this.statusCheckingService = statusCheckingService;
@@ -77,7 +77,8 @@ public class StatusNotifier implements ImportObserver {
         logger.debug("Could not write to websocket session [{}], because it already seems closed.", session.getId());
       }
     } catch (IOException e) {
-      logger.error("can't write status to web socket", e);
+      logger.warn("can't write status to web socket");
+      logger.debug("Exception when writing status", e);
     }
   }
 }

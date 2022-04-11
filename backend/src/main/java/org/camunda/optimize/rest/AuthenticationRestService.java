@@ -1,12 +1,11 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
-import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.dto.LogoutRequestDto;
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
@@ -35,7 +34,6 @@ public class AuthenticationRestService {
   public static final String LOGOUT = "/logout";
   public static final String TEST = "/test";
   public static final String CALLBACK = "/callback";
-  private static final String LOGOUT_CALLBACK = "/logout-callback";
 
   private final AbstractAuthenticationService authenticationService;
 
@@ -72,17 +70,6 @@ public class AuthenticationRestService {
                                 final @QueryParam("state") String state,
                                 final @QueryParam("error") String error) {
     return authenticationService.loginCallback(requestContext, new AuthCodeDto(code, state, error));
-  }
-
-  @GET
-  @Path(LOGOUT_CALLBACK)
-  public Response logoutCallback(@Context ContainerRequestContext requestContext,
-                                 final @QueryParam("logout_token") String logoutToken,
-                                 final @QueryParam("redirect_uri") String redirectUri) {
-    return authenticationService.logoutCallback(
-      requestContext,
-      new LogoutRequestDto(logoutToken, redirectUri)
-    );
   }
 
   /**

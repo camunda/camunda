@@ -9,7 +9,7 @@ metadata:
   annotations:
     camunda.cloud/created-by: "" # {"$openapi":"created-by"}
 spec:
-  version: 7.10.0
+  version: 7.17.1
   nodeSets:
   - name: default
     count: 1

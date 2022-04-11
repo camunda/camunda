@@ -1,11 +1,12 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -30,13 +31,14 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.rest.providers.ElasticsearchStatusExceptionMapper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockserver.integration.ClientAndServer;
@@ -44,6 +46,7 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
+import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -72,13 +75,9 @@ import static org.mockserver.model.HttpRequest.request;
 
 public class SingleProcessReportHandlingIT extends AbstractIT {
 
-  private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
-  private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
-
-  @AfterEach
-  public void cleanUp() {
-    LocalDateUtil.reset();
-  }
+  @RegisterExtension
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().forLevel(Level.ERROR).captureForType(ElasticsearchStatusExceptionMapper.class);
 
   @Test
   public void reportIsWrittenToElasticsearch() throws IOException {
@@ -353,8 +352,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     String reportId = reportClient.createEmptySingleProcessReport();
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(FOO_PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion(FOO_PROCESS_DEFINITION_VERSION)
+      .setProcessDefinitionKey("fooProcessDefinitionKey")
+      .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
@@ -479,6 +478,11 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     // then the response has the correct error code
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("elasticsearchError");
+
+    // and the original exception was logged
+    final Throwable elasticsearchStatusException = logCapturer
+      .assertContains("Mapping ElasticsearchStatusException").getThrowable();
+    assertThat(elasticsearchStatusException).isInstanceOf(ElasticsearchStatusException.class);
   }
 
   private void assertEmptyResult(final ProcessReportDataType reportType,

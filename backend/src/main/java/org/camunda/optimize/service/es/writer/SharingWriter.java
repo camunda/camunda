@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.writer;
 
@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -47,7 +48,7 @@ public class SharingWriter {
 
       IndexResponse indexResponse = esClient.index(request);
 
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
         String message = "Could not write report share to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
@@ -75,7 +76,7 @@ public class SharingWriter {
 
       IndexResponse indexResponse = esClient.index(request);
 
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
         String message = "Could not write dashboard share to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
@@ -105,8 +106,8 @@ public class SharingWriter {
 
       IndexResponse indexResponse = esClient.index(request);
 
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED) &&
-        !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
+      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED) &&
+        !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
         String message = "Could not write dashboard share to Elasticsearch.";
         log.error(message);
         throw new OptimizeRuntimeException(message);
@@ -141,7 +142,7 @@ public class SharingWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
+    if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete report share with id [%s]. Report share does not exist." +
                         "Maybe it was already deleted by someone else?", shareId);
@@ -166,7 +167,7 @@ public class SharingWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
+    if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete dashboard share with id [%s]. Dashboard share does not exist." +
                         "Maybe it was already deleted by someone else?", shareId);

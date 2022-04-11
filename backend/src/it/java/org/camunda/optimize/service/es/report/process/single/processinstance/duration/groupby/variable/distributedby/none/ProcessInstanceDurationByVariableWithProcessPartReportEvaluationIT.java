@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.none;
 
@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -64,6 +63,7 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getAggregationTypesAsListForProcessParts;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -302,7 +302,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    reportData.getConfiguration().setAggregationTypes(getAggregationTypesAsListForProcessParts());
 
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
@@ -310,7 +310,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     assertThat(evaluationResponse.getResult().getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)
-      .containsExactly(getSupportedAggregationTypes());
+      .containsExactly(getAggregationTypesAsListForProcessParts());
     evaluationResponse.getResult().getMeasures().forEach(measureResult -> {
       final List<MapResultEntryDto> resultData = measureResult.getData();
       assertThat(resultData)
@@ -360,7 +360,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    reportData.getConfiguration().setAggregationTypes(getAggregationTypesAsListForProcessParts());
 
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
@@ -368,7 +368,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     assertThat(evaluationResponse.getResult().getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)
-      .containsExactly(getSupportedAggregationTypes());
+      .containsExactly(getAggregationTypesAsListForProcessParts());
     evaluationResponse.getResult().getMeasures().forEach(measureResult -> {
       final List<MapResultEntryDto> resultData = measureResult.getData();
       assertThat(resultData)
@@ -1151,10 +1151,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
-  }
-
-  private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListForProcessParts().toArray(new AggregationType[0]);
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {

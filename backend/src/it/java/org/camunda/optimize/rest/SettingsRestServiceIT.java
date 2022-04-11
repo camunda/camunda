@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
@@ -31,6 +31,7 @@ public class SettingsRestServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getConfigurationService().getTelemetryConfiguration();
     final SettingsResponseDto expectedSettings = SettingsResponseDto.builder()
       .metadataTelemetryEnabled(defaultTelemetryConfig.isInitializeTelemetry())
+      .sharingEnabled(true)
       .build();
 
     // when
@@ -53,10 +54,10 @@ public class SettingsRestServiceIT extends AbstractIT {
     final SettingsResponseDto settings = getSettings();
 
     // then
-    assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
+    assertThat(settings.getMetadataTelemetryEnabled()).isEqualTo(newSettings.getMetadataTelemetryEnabled());
     assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
     assertThat(settings.getLastModified()).isEqualTo(now);
-    assertThat(settings.isManuallyConfirmed()).isTrue();
+    assertThat(settings.isTelemetryManuallyConfirmed()).isTrue();
   }
 
   @ParameterizedTest
@@ -72,10 +73,10 @@ public class SettingsRestServiceIT extends AbstractIT {
     final SettingsResponseDto settings = getSettings();
 
     // then
-    assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
+    assertThat(settings.getMetadataTelemetryEnabled()).isEqualTo(newSettings.getMetadataTelemetryEnabled());
     assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
     assertThat(settings.getLastModified()).isEqualTo(now);
-    assertThat(settings.isManuallyConfirmed()).isTrue();
+    assertThat(settings.isTelemetryManuallyConfirmed()).isTrue();
   }
 
   private void addSuperUserAndPermissions(final SuperUserType superUserType) {

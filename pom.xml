@@ -23,23 +23,23 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.7.0</project.previousVersion>
+    <project.previousVersion>3.8.0</project.previousVersion>
 
     <camunda.engine.version>7.16.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
+    <camunda.maven.artifacts.version>7.17.0-ee</camunda.maven.artifacts.version>
 
-    <zeebe.version>1.3.5</zeebe.version>
-    <iam.version>1.3.4</iam.version>
+    <zeebe.version>8.0.0</zeebe.version>
+    <identity.version>8.0.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
-    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M6</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
-    <jackson.version>2.13.1</jackson.version>
+    <jackson.version>2.13.2.20220328</jackson.version>
     <jsonpath.version>2.7.0</jsonpath.version>
-    <elasticsearch.version>7.17.0</elasticsearch.version>
+    <elasticsearch.version>7.17.2</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
@@ -47,8 +47,8 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.17.2</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.version>5.3.16</spring.version>
-    <mockito.version>4.3.1</mockito.version>
+    <spring.version>5.3.18</spring.version>
+    <mockito.version>4.4.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
     <junit.platform.version>1.8.2</junit.platform.version>
@@ -58,7 +58,7 @@
     <postgres.version>42.3.3</postgres.version>
 
     <lombok.version>1.18.22</lombok.version>
-    <logback.version>1.2.10</logback.version>
+    <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.36</slf4j.version>
 
     <version.node>v14.15.4</version.node>
@@ -72,7 +72,9 @@
     <sonar.organization>camunda</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <aggregate.report.dir>test-coverage/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
-    <sonar.junit.reportPaths>${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/</sonar.junit.reportPaths>
+    <sonar.junit.reportPaths>
+      ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
+    </sonar.junit.reportPaths>
     <!-- update blocked by https://jira.camunda.com/browse/CAM-14205 -->
     <h2.version>2.0.202</h2.version>
   </properties>
@@ -120,6 +122,13 @@
     </profile>
 
     <profile>
+      <id>engine-7.17</id>
+      <properties>
+        <camunda.engine.version>7.17.0</camunda.engine.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>engine-7.16</id>
       <properties>
         <camunda.engine.version>7.16.0</camunda.engine.version>
@@ -130,13 +139,6 @@
       <id>engine-7.15</id>
       <properties>
         <camunda.engine.version>7.15.0</camunda.engine.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.14</id>
-      <properties>
-        <camunda.engine.version>7.14.0</camunda.engine.version>
       </properties>
     </profile>
 
@@ -328,7 +330,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.1.1</version>
+      <version>4.2.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -339,7 +341,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -397,7 +399,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.4</version>
+          <version>3.3.0</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>
@@ -424,7 +426,7 @@
           <extensions>true</extensions>
           <configuration>
             <serverId>camunda-nexus</serverId>
-            <nexusUrl>https://app.camunda.com/nexus/</nexusUrl>
+            <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
             <skipStaging>true</skipStaging>
           </configuration>
         </plugin>
@@ -452,7 +454,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.7</version>
+          <version>0.8.8</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -525,7 +527,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.10.0</version>
+        <version>3.10.1</version>
         <configuration>
           <release>11</release>
         </configuration>
@@ -537,18 +539,21 @@
   <distributionManagement>
     <snapshotRepository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize-snapshots</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize-snapshots/</url>
     </snapshotRepository>
     <repository>
       <id>camunda-nexus</id>
-      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize/</url>
     </repository>
   </distributionManagement>
 
   <scm>
     <url>https://github.com/camunda/camunda-optimize</url>
-    <connection>scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git
+    </connection>
+    <developerConnection>
+      scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git
+    </developerConnection>
     <tag>HEAD</tag>
   </scm>
 

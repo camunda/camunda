@@ -1,11 +1,11 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.command.aggregations;
 
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
@@ -13,22 +13,32 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public interface AggregationStrategy {
-  default Double getValue(Aggregations aggs) {
+public abstract class AggregationStrategy<T extends ValuesSourceAggregationBuilder<T>> {
+
+  protected abstract ValuesSourceAggregationBuilder<T> createAggregationBuilderForAggregation(final String customIdentifier);
+
+  protected abstract Double getValueForAggregation(final String customIdentifier, final Aggregations aggs);
+
+  public abstract AggregationDto getAggregationType();
+
+  public Double getValue(final Aggregations aggs) {
     return getValue(null, aggs);
   }
 
-  Double getValue(String customIdentifier, Aggregations aggs);
+  public Double getValue(final String customIdentifier, final Aggregations aggs) {
+    return getValueForAggregation(customIdentifier, aggs);
+  }
 
-  default ValuesSourceAggregationBuilder<?> createAggregationBuilder() {
+  public ValuesSourceAggregationBuilder<T> createAggregationBuilder() {
     return createAggregationBuilder(null);
   }
 
-  ValuesSourceAggregationBuilder<?> createAggregationBuilder(String customIdentifier);
+  public ValuesSourceAggregationBuilder<T> createAggregationBuilder(final String customIdentifier) {
+    return createAggregationBuilderForAggregation(customIdentifier);
+  }
 
-  AggregationType getAggregationType();
-
-  default String createAggregationName(final String... segments) {
+  protected String createAggregationName(final String... segments) {
     return Arrays.stream(segments).filter(Objects::nonNull).collect(Collectors.joining("_"));
   }
+
 }

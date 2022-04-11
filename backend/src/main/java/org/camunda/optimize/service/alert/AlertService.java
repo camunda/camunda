@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.alert;
 
@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -382,6 +383,15 @@ public class AlertService implements ReportReferencingService {
     ValidationHelper.ensureNotEmpty(THRESHOLD_OPERATOR, toCreate.getThresholdOperator());
     ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
     ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
+
+    if (report.getData() instanceof ProcessReportDataDto) {
+      ProcessReportDataDto data = (ProcessReportDataDto) report.getData();
+      if (data.getView() != null && data.getView().getFirstProperty() != null &&
+        data.getView().getFirstProperty().equals(ViewProperty.PERCENTAGE) &&
+        (toCreate.getThreshold() == null || (toCreate.getThreshold() > 100 || toCreate.getThreshold() < 0))) {
+        throw new OptimizeValidationException("The threshold for alerts on % reports must be between 0 and 100.");
+      }
+    }
 
     final boolean emailsDefined = CollectionUtils.isNotEmpty(toCreate.getEmails());
     if (emailsDefined) {

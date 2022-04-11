@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.dto.optimize;
 
@@ -71,8 +71,8 @@ public class ReportConstants {
   public static final String AVERAGE_AGGREGATION_TYPE = "avg";
   public static final String MIN_AGGREGATION_TYPE = "min";
   public static final String MAX_AGGREGATION_TYPE = "max";
-  public static final String MEDIAN_AGGREGATION_TYPE = "median";
   public static final String SUM_AGGREGATION_TYPE = "sum";
+  public static final String PERCENTILE_AGGREGATION_TYPE = "percentile";
 
   public static final String DISTRIBUTED_BY_NONE = "none";
   public static final String DISTRIBUTED_BY_USER_TASK = "userTask";

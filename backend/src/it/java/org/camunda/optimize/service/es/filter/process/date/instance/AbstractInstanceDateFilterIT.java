@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.filter.process.date.instance;
 
@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -69,7 +69,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
   protected AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> createAndEvaluateReportWithStartDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
-    DateFilterUnit unit,
+    DateUnit unit,
     Long value,
     boolean newToken,
     DateFilterType filterType
@@ -90,7 +90,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  protected List<ProcessFilterDto<?>> createRollingStartDateFilter(final DateFilterUnit unit, final Long value) {
+  protected List<ProcessFilterDto<?>> createRollingStartDateFilter(final DateUnit unit, final Long value) {
     return ProcessFilterBuilder
       .filter()
       .rollingInstanceStartDate()
@@ -99,7 +99,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
       .buildList();
   }
 
-  protected List<ProcessFilterDto<?>> createRelativeStartDateFilter(final DateFilterUnit unit, final Long value) {
+  protected List<ProcessFilterDto<?>> createRelativeStartDateFilter(final DateUnit unit, final Long value) {
     return ProcessFilterBuilder
       .filter()
       .relativeInstanceStartDate()
@@ -111,7 +111,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
   protected AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> createAndEvaluateReportWithRollingEndDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
-    DateFilterUnit unit,
+    DateUnit unit,
     boolean newToken
   ) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
@@ -149,20 +149,20 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
       // @formatter:on
   }
 
-  protected static Stream<DateFilterUnit> getRollingSupportedFilterUnits() {
+  protected static Stream<DateUnit> getRollingSupportedFilterUnits() {
     return Stream.of(
-      DateFilterUnit.MINUTES,
-      DateFilterUnit.DAYS,
-      DateFilterUnit.HOURS,
-      DateFilterUnit.WEEKS,
-      DateFilterUnit.MONTHS,
-      DateFilterUnit.YEARS
+      DateUnit.MINUTES,
+      DateUnit.DAYS,
+      DateUnit.HOURS,
+      DateUnit.WEEKS,
+      DateUnit.MONTHS,
+      DateUnit.YEARS
     );
   }
 
-  protected static Stream<DateFilterUnit> getRelativeSupportedFilterUnits() {
+  protected static Stream<DateUnit> getRelativeSupportedFilterUnits() {
     return Stream.concat(
-      Stream.of(DateFilterUnit.QUARTERS),
+      Stream.of(DateUnit.QUARTERS),
       getRollingSupportedFilterUnits()
     );
   }

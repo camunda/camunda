@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.duration;
 
@@ -56,9 +56,10 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
                                    final ExecutionContext<ProcessReportDataDto> context) {
     final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
     getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
-      Double measureResult = getProcessPartAggregationResult(aggs, aggregationStrategy.getAggregationType());
+      Double measureResult = getProcessPartAggregationResult(
+        aggs, aggregationStrategy.getAggregationType());
       if (measureResult != null) {
-        // rounding to closest integer since the lowest precision
+        // rounding to the closest integer since the lowest precision
         // for duration in the data is milliseconds anyway for data types.
         measureResult = Precision.round(measureResult, 0);
       }

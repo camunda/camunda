@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportVal
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
@@ -38,7 +37,6 @@ public class ProcessVariableRestService {
   private final ProcessVariableService processVariableService;
   private final SessionService sessionService;
   private final ProcessVariableLabelService processVariableLabelService;
-  private final ConfigurationService configurationService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

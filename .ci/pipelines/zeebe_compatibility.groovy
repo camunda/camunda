@@ -157,12 +157,12 @@ void integrationTestSteps(String version, boolean snapshot) {
     withCredentials([usernamePassword(credentialsId: 'camunda-nexus', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
       def zeebeVersionToUse =
         (version == "latest") ? getZeebeVersionFromTag("${version}", snapshot) : version
-      def iamVersionToUse =
-        (version == "latest") ? getIAMVersionFromTag("${version}", snapshot, "$USERNAME", "$PASSWORD") : version
+      def identityVersionToUse =
+        (version == "latest") ? getIdentityVersionFromTag("${version}", snapshot, "$USERNAME", "$PASSWORD") : version
       sh("""    
-        echo "running zeebe tests using Zeebe version: ${zeebeVersionToUse}, IAM version: ${iamVersionToUse}"
+        echo "running zeebe tests using Zeebe version: ${zeebeVersionToUse}, Identity version: ${identityVersionToUse}"
       """)
-      runMaven("verify -Dzeebe.version=${zeebeVersionToUse} -Diam.version=${iamVersionToUse} -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
+      runMaven("verify -Dzeebe.version=${zeebeVersionToUse} -Didentity.version=${identityVersionToUse} -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
     }
   }
 }
@@ -197,17 +197,17 @@ pipeline {
     stage('Zeebe Integration Tests') {
       failFast false
       parallel {
-        stage("1.3.0") {
+        stage("8.0.0") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-zeebe-1-3-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              label "optimize-ci-build-zeebe-8-0-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
             }
           }
           steps {
-            integrationTestSteps("1.3.0", false)
+            integrationTestSteps("8.0.0", false)
           }
           post {
             always {

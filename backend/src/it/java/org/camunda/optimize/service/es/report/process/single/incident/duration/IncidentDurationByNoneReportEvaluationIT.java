@@ -1,13 +1,13 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.incident.duration;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -33,6 +33,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
@@ -439,20 +443,20 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
       .isEqualTo(3000.);
   }
 
-  private Stream<Arguments> aggregationTypes() {
+  private Stream<Arguments> aggregations() {
     // @formatter:off
     return Stream.of(
-      Arguments.of(AggregationType.MIN, 1000.),
-      Arguments.of(AggregationType.MAX, 9000.),
-      Arguments.of(AggregationType.AVERAGE, 4000.),
-      Arguments.of(AggregationType.MEDIAN, 2000.)
+      Arguments.of(new AggregationDto(MIN), 1000.),
+      Arguments.of(new AggregationDto(MAX), 9000.),
+      Arguments.of(new AggregationDto(AVERAGE), 4000.),
+      Arguments.of(new AggregationDto(PERCENTILE, 50.), 2000.)
     );
     // @formatter:on
   }
 
   @ParameterizedTest
-  @MethodSource("aggregationTypes")
-  public void aggregationTypes(final AggregationType aggregationType, final double expectedResult) {
+  @MethodSource("aggregations")
+  public void aggregations(final AggregationDto aggregationDto, final double expectedResult) {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
@@ -472,7 +476,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    reportData.getConfiguration().setAggregationTypes(aggregationType);
+    reportData.getConfiguration().setAggregationTypes(aggregationDto);
     final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then

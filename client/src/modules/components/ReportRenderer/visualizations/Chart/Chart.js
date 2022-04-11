@@ -21,7 +21,9 @@ export function Chart(props) {
   } = props;
 
   const reportView = view || Object.values(result.data)[0].data.view;
-  const targetValueType = reportView.properties[0] === 'frequency' ? 'countChart' : 'durationChart';
+  const targetValueType = ['frequency', 'percentage'].includes(reportView.properties[0])
+    ? 'countChart'
+    : 'durationChart';
   const targetValue =
     configuration.targetValue.active && configuration.targetValue[targetValueType];
 

@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.util;
 
@@ -36,9 +36,9 @@ public class EngineVersionChecker {
 
   // Any minor or major versions newer than specified here will also be accepted
   static {
-    supportedEngines.add("7.14.0");
     supportedEngines.add("7.15.0");
     supportedEngines.add("7.16.0");
+    supportedEngines.add("7.17.0");
   }
 
   public static void checkEngineVersionSupport(final Client engineClient,

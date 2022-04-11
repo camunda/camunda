@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.jetty;
 
@@ -96,18 +96,25 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     final HandlerCollection handlerCollection = new HandlerCollection();
     handlerCollection.addHandler(createSecurityHeaderHandlers(configurationService));
 
+    // the external API path rewrite handler is wrapping the app context modifying any external api requests
+    // before the appServletContextHandler receives them
+    final Handler externalApiRewriteHandler = replacePathSectionRewriteHandler(
+      appServletContextHandler, EXTERNAL_SUB_PATH + "/api", "/api" + EXTERNAL_SUB_PATH
+    );
     // If running in cloud environment an additional rewrite handler is added to handle requests containing the
     // clusterId as sub-path and effectively stripping of this path element to handle the request as if
     // it was received without that sub-path.
+    // This one wraps the external API handler to always strip the clusterId first.
     final String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
     if (StringUtils.isNotBlank(clusterId)) {
-      handlerCollection.addHandler(createAlternativeApplicationRootPathRewriteHandler(
-        appServletContextHandler, "/" + clusterId
-      ));
+      final RewriteHandler alternativeApplicationRootPathRewriteHandler =
+        createAlternativeApplicationRootPathRewriteHandler(externalApiRewriteHandler, "/" + clusterId);
+      handlerCollection.addHandler(alternativeApplicationRootPathRewriteHandler);
+    } else {
+      // otherwise just the external path rewrite handler is added
+      handlerCollection.addHandler(externalApiRewriteHandler);
     }
-    handlerCollection.addHandler(createAlternativeApplicationRootPathRewriteHandler(
-      appServletContextHandler, EXTERNAL_SUB_PATH
-    ));
+
     newJettyServer.setHandler(handlerCollection);
 
     initWebSockets(appServletContextHandler);
@@ -117,6 +124,20 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     ));
 
     return newJettyServer;
+  }
+
+  private Handler replacePathSectionRewriteHandler(final Handler handler,
+                                                   final String originalPath,
+                                                   final String replacementPath) {
+    final RewriteHandler rewriteHandler = new RewriteHandler();
+    rewriteHandler.setRewriteRequestURI(true);
+    rewriteHandler.setRewritePathInfo(true);
+    final RewriteRegexRule alternativeRootPathEraserRegexRule = new RewriteRegexRule(
+      String.format(SUB_PATH_PATTERN_TEMPLATE, originalPath), replacementPath + "/$2"
+    );
+    rewriteHandler.addRule(alternativeRootPathEraserRegexRule);
+    rewriteHandler.setHandler(handler);
+    return rewriteHandler;
   }
 
   private RewriteHandler createAlternativeApplicationRootPathRewriteHandler(final Handler handler,

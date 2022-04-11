@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service;
 
@@ -11,12 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +56,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setHeader(getHeaderCustomization());
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
-    uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
+    uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     final String optimizeProfile = determineOptimizeProfile();
@@ -65,8 +67,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
 
     final SettingsResponseDto settings = settingService.getSettings();
-    uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
-    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
+    uiConfigurationDto.setMetadataTelemetryEnabled(settings.getMetadataTelemetryEnabled().orElse(true));
+    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isTelemetryManuallyConfirmed());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
@@ -76,6 +78,10 @@ public class UIConfigurationService implements ConfigurationReloadable {
     mixpanel.setOsanoScriptUrl(configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
     mixpanel.setStage(configurationService.getAnalytics().getMixpanel().getProperties().getStage());
     mixpanel.setClusterId(configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
+
+    final OnboardingResponseDto onboarding = uiConfigurationDto.getOnboarding();
+    onboarding.setEnabled(configurationService.getOnboarding().isEnabled());
+    onboarding.setAppCuesScriptUrl(configurationService.getOnboarding().getAppCuesScriptUrl());
 
     return uiConfigurationDto;
   }

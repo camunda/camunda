@@ -34,7 +34,7 @@ spec:
           defaultMode: 0555
       initContainers:
       - name: migration
-        image: registry.camunda.cloud/optimize-ee/optimize:3.6.0
+        image: registry.camunda.cloud/optimize-ee/optimize:3.7.3
         command: ['./upgrade/upgrade.sh', '--skip-warning']
         volumeMounts:
           - name: configuration
@@ -42,7 +42,7 @@ spec:
             subPath: environment-config.yaml
       containers:
       - name: optimize
-        image: registry.camunda.cloud/optimize-ee/optimize:3.6.0
+        image: registry.camunda.cloud/optimize-ee/optimize:3.7.3
         imagePullPolicy: Always
         env:
         - name: OPTIMIZE_JAVA_OPTS
@@ -85,7 +85,7 @@ spec:
           mountPath: /optimize/config/OptimizeLicense.txt
           subPath: OptimizeLicense.txt
       - name: cambpm
-        image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:7.14.0
+        image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:7.15.0
         imagePullPolicy: Always
         command: ["/camunda/configure-and-run.sh"]
         env:

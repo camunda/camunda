@@ -1,14 +1,14 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.none;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 
@@ -152,7 +153,12 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
 
     // when
     reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(past).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedInstanceStartDate()
+                           .start(past)
+                           .end(null)
+                           .add()
+                           .buildList());
     result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -248,7 +254,7 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(MAX));
     reportData.getConfiguration().setUserTaskDurationTimes(UserTaskDurationTime.IDLE);
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);

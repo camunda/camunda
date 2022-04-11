@@ -25,7 +25,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.14.0}
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.15.0}
     container_name: cambpm
     environment:
       - DB_DRIVER=org.postgresql.Driver

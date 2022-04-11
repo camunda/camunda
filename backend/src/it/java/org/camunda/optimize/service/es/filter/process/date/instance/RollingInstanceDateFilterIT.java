@@ -1,13 +1,13 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
@@ -46,7 +46,7 @@ public class RollingInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        DateFilterUnit.DAYS,
+        DateUnit.DAYS,
         1L,
         false,
         DateFilterType.ROLLING
@@ -61,7 +61,7 @@ public class RollingInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     result = createAndEvaluateReportWithStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
-      DateFilterUnit.DAYS,
+      DateUnit.DAYS,
       1L,
       true,
       DateFilterType.ROLLING
@@ -89,7 +89,7 @@ public class RollingInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
       createAndEvaluateReportWithRollingEndDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        DateFilterUnit.DAYS,
+        DateUnit.DAYS,
         true
       );
 
@@ -101,7 +101,7 @@ public class RollingInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     result = createAndEvaluateReportWithRollingEndDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
-      DateFilterUnit.DAYS,
+      DateUnit.DAYS,
       true
     );
 
@@ -123,10 +123,10 @@ public class RollingInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .rollingInstanceStartDate()
-                           .start(1L, DateFilterUnit.DAYS)
+                           .start(1L, DateUnit.DAYS)
                            .add()
                            .rollingInstanceEndDate()
-                           .start(1L, DateFilterUnit.DAYS)
+                           .start(1L, DateUnit.DAYS)
                            .add()
                            .buildList());
     List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);

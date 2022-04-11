@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.retrieval.variable;
 
@@ -244,6 +244,28 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName)
       .containsExactly("var4");
+  }
+
+  @Test
+  public void noVariablesWithoutVersionSelection() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", "value1");
+    variables.put("var2", "value2");
+    variables.put("var3", "value3");
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    variables.clear();
+    variables.put("var4", "value4");
+    startInstanceAndImportEngineEntities(processDefinition, variables);
+
+    // when
+    final ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(variableRequestDto);
+
+    // then
+    assertThat(variableResponse).isEmpty();
   }
 
   @Test

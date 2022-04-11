@@ -1,13 +1,13 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
@@ -29,7 +29,7 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRelativeSupportedFilterUnits")
-  public void testStartDateCurrentIntervalRelativeLogic(DateFilterUnit dateFilterUnit) {
+  public void testStartDateCurrentIntervalRelativeLogic(DateUnit dateUnit) {
     // given
     embeddedOptimizeExtension.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -47,7 +47,7 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        dateFilterUnit,
+        dateUnit,
         0L,
         false,
         DateFilterType.RELATIVE
@@ -56,18 +56,18 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     assertResults(processInstance, result, 1);
 
     // when
-    if (dateFilterUnit.equals(DateFilterUnit.QUARTERS)) {
+    if (dateUnit.equals(DateUnit.QUARTERS)) {
       LocalDateUtil.setCurrentTime(OffsetDateTime.now()
-                                     .plus(3 * 2L, DateFilterUtil.unitOf(DateFilterUnit.MONTHS.getId())));
+                                     .plus(3 * 2L, DateFilterUtil.unitOf(DateUnit.MONTHS.getId())));
     } else {
-      LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(2L, DateFilterUtil.unitOf(dateFilterUnit.getId())));
+      LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(2L, DateFilterUtil.unitOf(dateUnit.getId())));
     }
 
     //token has to be refreshed, as the old one expired already after moving the date
     result = createAndEvaluateReportWithStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
-      dateFilterUnit,
+      dateUnit,
       0L,
       true,
       DateFilterType.RELATIVE
@@ -91,7 +91,7 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .relativeInstanceStartDate()
-                           .start(1L, DateFilterUnit.DAYS)
+                           .start(1L, DateUnit.DAYS)
                            .add()
                            .buildList());
     List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);

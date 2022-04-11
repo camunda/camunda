@@ -1,22 +1,26 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractAlertIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
@@ -28,6 +32,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
 
 public class AlertRestServiceIT extends AbstractAlertIT {
 
@@ -120,6 +126,147 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
     // then
     assertThat(id).isNotNull();
+  }
+
+  @Test
+  public void createNewAlertWithForPercentageReport() {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
+      TemplatedProcessReportDataBuilder.createReportData()
+        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+        .setProcessDefinitionKey(processDefinition.getKey())
+        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+        .build()
+    );
+    reportDef.setCollectionId(collectionId);
+    final String reportId = reportClient.createSingleProcessReport(reportDef);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
+    alert.setThreshold(50.);
+
+    // when
+    String id = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute(String.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(id).isNotNull();
+  }
+
+  @ParameterizedTest
+  @ValueSource(doubles = { 101.0, -1.0 })
+  public void createNewAlertWithThresholdNotInValidRange(final double threshold) {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
+      TemplatedProcessReportDataBuilder.createReportData()
+        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+        .setProcessDefinitionKey(processDefinition.getKey())
+        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+        .build()
+    );
+    reportDef.setCollectionId(collectionId);
+    final String reportId = reportClient.createSingleProcessReport(reportDef);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
+    alert.setThreshold(threshold);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewAlertWithNullThreshold() {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
+      TemplatedProcessReportDataBuilder.createReportData()
+        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+        .setProcessDefinitionKey(processDefinition.getKey())
+        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+        .build()
+    );
+    reportDef.setCollectionId(collectionId);
+    final String reportId = reportClient.createSingleProcessReport(reportDef);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
+    alert.setThreshold(null);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(doubles = { 101.0, -1.0 })
+  public void updateAlertWithThresholdNotInValidRange(final double threshold) {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
+      TemplatedProcessReportDataBuilder.createReportData()
+        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+        .setProcessDefinitionKey(processDefinition.getKey())
+        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+        .build()
+    );
+    reportDef.setCollectionId(collectionId);
+    final String reportId = reportClient.createSingleProcessReport(reportDef);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
+    alert.setThreshold(50.);
+    final String savedAlert = alertClient.createAlert(alert);
+
+    // when
+    alert.setThreshold(threshold);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(savedAlert, alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateAlertWithNullThreshold() {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
+      TemplatedProcessReportDataBuilder.createReportData()
+        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+        .setProcessDefinitionKey(processDefinition.getKey())
+        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+        .build()
+    );
+    reportDef.setCollectionId(collectionId);
+    final String reportId = reportClient.createSingleProcessReport(reportDef);
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
+    alert.setThreshold(50.);
+    final String savedAlert = alertClient.createAlert(alert);
+
+    // when
+    alert.setThreshold(null);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(savedAlert, alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

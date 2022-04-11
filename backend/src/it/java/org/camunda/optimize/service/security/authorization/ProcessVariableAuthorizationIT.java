@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.security.authorization;
 
@@ -90,20 +90,20 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
       .withoutAuthentication()
       .buildProcessVariableNamesRequest(Collections.singletonList(
         createVariableNameRequest("someKey", "1", Collections.emptyList())
-      ))
+      ), false)
       .execute();
 
     Response variableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildProcessVariableValuesRequest(
+      .buildProcessVariableValuesRequestExternal(
         createVariableValueRequest("", "", Collections.emptyList())
       )
       .execute();
 
     // then
     assertThat(variableNameResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(variableValueResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    assertThat(variableValueResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test

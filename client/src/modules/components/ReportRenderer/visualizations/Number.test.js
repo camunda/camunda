@@ -57,7 +57,11 @@ const report = {
 const variable = {name: 'foo', type: 'String'};
 const variableReport = update(report, {
   data: {view: {$set: {entity: 'variable', properties: [variable]}}},
-  result: {measures: {$set: [{data: 123, aggregationType: 'avg', property: variable}]}},
+  result: {
+    measures: {
+      $set: [{data: 123, aggregationType: {type: 'avg', value: null}, property: variable}],
+    },
+  },
 });
 
 const props = {
@@ -95,7 +99,9 @@ it('should show the view label underneath the number', () => {
   node.setProps({
     report: {
       reportType: 'process',
-      result: {measures: [{data: 123, aggregationType: 'avg', property: 'duration'}]},
+      result: {
+        measures: [{data: 123, aggregationType: {type: 'avg', value: null}, property: 'duration'}],
+      },
       data: {
         configuration: {targetValue: {active: false}},
         view: {

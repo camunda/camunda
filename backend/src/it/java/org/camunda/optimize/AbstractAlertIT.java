@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize;
 
@@ -304,10 +304,9 @@ public abstract class AbstractAlertIT extends AbstractIT {
     );
   }
 
-
-  private SingleProcessReportDefinitionRequestDto getProcessNumberReportDefinitionDto(String collectionId,
-                                                                                      String processDefinitionKey,
-                                                                                      String processDefinitionVersion) {
+  protected SingleProcessReportDefinitionRequestDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                                        String processDefinitionKey,
+                                                                                        String processDefinitionVersion) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
@@ -380,7 +379,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected void setWebhookConfiguration(final Integer webhookPort, final String payload) {
     Map<String, WebhookConfiguration> webhookConfigurationMap = new HashMap<>();
-
 
 
     final WebhookConfiguration webhook1 = uiConfigurationClient.createWebhookConfiguration(

@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service;
 
@@ -111,6 +111,15 @@ public class DefinitionService implements ConfigurationReloadable {
           "User [%s] is not authorized to definition with type [%s] and key [%s].", userId, type, key
         )));
       });
+  }
+
+  public List<DefinitionWithTenantIdsDto> getAllDefinitionsWithTenants(final DefinitionType type) {
+    return definitionReader.getFullyImportedDefinitionsWithTenantIds(
+      type, Collections.emptySet(), Collections.emptySet());
+  }
+
+  public Optional<DefinitionWithTenantIdsDto> getProcessDefinitionWithTenants(final String processDefinitionKey) {
+    return definitionReader.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, processDefinitionKey);
   }
 
   public List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
@@ -292,7 +301,7 @@ public class DefinitionService implements ConfigurationReloadable {
           .filter(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
             userId, tenantId, definition
           ))
-          // sort by name case insensitive
+          // sort by name case-insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
           .collect(toList());
         return new TenantWithDefinitionsResponseDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);

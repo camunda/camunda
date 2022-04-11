@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.telemetry;
 
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -41,7 +42,8 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
   @Override
   protected void run() {
     log.info("Checking whether telemetry data can be sent.");
-    if (settingsService.getSettings().isMetadataTelemetryEnabled()) {
+    Optional<Boolean> telemetryMetadata = settingsService.getSettings().getMetadataTelemetryEnabled();
+    if (telemetryMetadata.isPresent() && Boolean.TRUE.equals(telemetryMetadata.get())) {
       try {
         telemetryService.sendTelemetryData();
         log.info("Telemetry data was sent.");

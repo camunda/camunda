@@ -5,7 +5,7 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 7 ]] || die "7 arguments required [NAMESPACE] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION] [ES_REFRESH_INTERVAL] [EVENT_IMPORT_ENABLED] [ES_NUM_NODES], $# provided"
+[[ "$#" -eq 7 ]] || die "7 arguments required [NAMESPACE] [SQL_DUMP_NAME] [ES_VERSION] [CAMBPM_VERSION] [ES_REFRESH_INTERVAL] [EVENT_IMPORT_ENABLED] [ES_NUM_NODES], $# provided"
 
 NAMESPACE=$1
 SQL_DUMP=$2

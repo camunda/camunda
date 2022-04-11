@@ -12,6 +12,8 @@ import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {Dropdown, Icon, Popover, DatePicker, Button} from 'components';
 import {t} from 'translation';
 
+import RollingFilter from './RollingFilter';
+
 import './DateFilter.scss';
 
 export default function DateFilter({
@@ -22,19 +24,23 @@ export default function DateFilter({
   emptyText = t('common.select'),
   title,
 }) {
-  const isFixed = filter?.type === 'fixed';
+  const isFixed = filter?.type === 'fixed' || filter?.type === 'rolling';
 
-  const [showDatePicker, setShowDatePicker] = useState(isFixed);
+  const [showFixedPopover, setShowFixedPopover] = useState(isFixed);
   const [autoOpen, setAutoOpen] = useState(false);
-  const startDate = filter?.start ? parseISO(filter.start) : null;
-  const endDate = filter?.end ? parseISO(filter.end) : null;
+  const startDate = filter?.type === 'fixed' && filter?.start ? parseISO(filter.start) : null;
+  const endDate = filter?.type === 'fixed' && filter?.end ? parseISO(filter.end) : null;
 
   const [fixedType, setFixedType] = useState(getFixedType(startDate, endDate));
 
   useEffect(() => {
-    setShowDatePicker(isFixed);
+    setShowFixedPopover(isFixed);
     setAutoOpen(false);
   }, [isFixed]);
+
+  useEffect(() => {
+    setFixedType(getFixedType(startDate, endDate));
+  }, [endDate, filter, startDate]);
 
   function setRelativeFilter(unit, past) {
     setFilter({
@@ -51,7 +57,7 @@ export default function DateFilter({
   }
 
   function getFilterName(filter) {
-    if (!filter || filter?.type === 'fixed') {
+    if (!filter || filter?.type === 'fixed' || filter?.type === 'rolling') {
       return emptyText;
     }
 
@@ -72,15 +78,38 @@ export default function DateFilter({
 
   function getFixedDateFilterName(filter) {
     if (!filter) {
+      if (fixedType === 'rolling') {
+        return emptyText;
+      }
+
       return t('common.filter.dateModal.unit.' + fixedType);
+    }
+
+    if (fixedType === 'rolling') {
+      const value = filter.start.value;
+      const unit = filter.start.unit.slice(0, -1);
+
+      let prefix = 'all';
+      if (+value > 1) {
+        prefix = 'plural';
+      } else if (['weeks', 'minutes', 'hours'].includes(unit)) {
+        prefix = 'week';
+      }
+      return (
+        <>
+          {t('common.filter.list.operators.occurs')}{' '}
+          {t('common.filter.dateModal.preview.last.' + prefix)}{' '}
+          {`${+value} ${t(`common.unit.${unit}.${+value === 1 ? 'label' : 'label-plural'}`)}`}
+        </>
+      );
     }
 
     return (
       <>
         {t('common.filter.dateModal.unit.' + fixedType)}{' '}
-        {fixedType !== 'before' && format(startDate, 'yyyy-MM-dd')}
+        {fixedType !== 'before' && startDate && format(startDate, 'yyyy-MM-dd')}
         {fixedType === 'between' && <span className="to"> {t('common.filter.dateModal.to')} </span>}
-        {fixedType !== 'after' && format(endDate, 'yyyy-MM-dd')}
+        {fixedType !== 'after' && endDate && format(endDate, 'yyyy-MM-dd')}
       </>
     );
   }
@@ -88,8 +117,31 @@ export default function DateFilter({
   function openDatePicker(type) {
     setFilter();
     setFixedType(type);
-    setShowDatePicker(true);
+    setShowFixedPopover(true);
     setAutoOpen(true);
+  }
+
+  function openRollingFilter() {
+    setFilter({
+      type: 'rolling',
+      start: {value: 2, unit: 'days'},
+      end: null,
+      excludeUndefined: false,
+      includeUndefined: false,
+    });
+    setFixedType('rolling');
+    setShowFixedPopover(true);
+    setAutoOpen(true);
+  }
+
+  function updateRolling({value, unit}) {
+    setFilter({
+      type: 'rolling',
+      start: {value: value || filter?.start?.value, unit: unit || filter?.start?.unit},
+      end: null,
+      excludeUndefined: false,
+      includeUndefined: false,
+    });
   }
 
   return (
@@ -98,7 +150,7 @@ export default function DateFilter({
         {title}
         {children}
       </div>
-      {showDatePicker && filter?.type !== 'relative' ? (
+      {showFixedPopover && filter?.type !== 'relative' ? (
         <Popover
           title={
             <>
@@ -108,28 +160,32 @@ export default function DateFilter({
           }
           autoOpen={autoOpen}
         >
-          <DatePicker
-            type={fixedType}
-            forceOpen
-            initialDates={{startDate, endDate}}
-            onDateChange={({startDate, endDate, valid}) => {
-              if (valid) {
-                setFilter({
-                  type: 'fixed',
-                  start: startDate ? format(startOfDay(startDate), BACKEND_DATE_FORMAT) : null,
-                  end: endDate ? format(endOfDay(endDate), BACKEND_DATE_FORMAT) : null,
-                  excludeUndefined: false,
-                  includeUndefined: false,
-                });
-              }
-            }}
-          />
+          {fixedType === 'rolling' ? (
+            <RollingFilter filter={filter} onChange={updateRolling} />
+          ) : (
+            <DatePicker
+              type={fixedType}
+              forceOpen
+              initialDates={{startDate, endDate}}
+              onDateChange={({startDate, endDate, valid}) => {
+                if (valid) {
+                  setFilter({
+                    type: 'fixed',
+                    start: startDate ? format(startOfDay(startDate), BACKEND_DATE_FORMAT) : null,
+                    end: endDate ? format(endOfDay(endDate), BACKEND_DATE_FORMAT) : null,
+                    excludeUndefined: false,
+                    includeUndefined: false,
+                  });
+                }
+              }}
+            />
+          )}
           <hr />
           <Button
             className="reset-button"
             onClick={() => {
               setFilter();
-              setShowDatePicker(false);
+              setShowFixedPopover(false);
             }}
           >
             {t('common.off')}
@@ -190,6 +246,9 @@ export default function DateFilter({
               </Dropdown.Option>
             ))}
           </Dropdown.Submenu>
+          <Dropdown.Option onClick={() => openRollingFilter()}>
+            {t('common.filter.dateModal.unit.custom')}
+          </Dropdown.Option>
           <hr />
           <Dropdown.Option disabled={!filter} onClick={() => setFilter()}>
             {t('common.off')}
@@ -205,7 +264,9 @@ const getFixedType = (start, end) => {
     return 'between';
   } else if (start) {
     return 'after';
-  } else {
+  } else if (end) {
     return 'before';
+  } else {
+    return 'rolling';
   }
 };

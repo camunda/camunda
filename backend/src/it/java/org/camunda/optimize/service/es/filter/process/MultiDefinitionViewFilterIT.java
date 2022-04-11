@@ -1,13 +1,13 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
@@ -537,7 +538,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(4L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, UserTaskDurationTime.TOTAL)
+      .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE), UserTaskDurationTime.TOTAL)
         .groupedByContains(FIRST_CLAIM_USER, 1.0)
         .groupedByContains(SECOND_CLAIM_USER, 2.0)
       .doAssert(result);
@@ -605,7 +606,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(4L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, UserTaskDurationTime.TOTAL)
+      .measure(ViewProperty.DURATION, AVERAGE, UserTaskDurationTime.TOTAL)
         .groupByContains(OTHER_USER_TASK_2)
           .distributedByContains(FIRST_CLAIM_USER, null)
           .distributedByContains(SECOND_CLAIM_USER, 2.0)

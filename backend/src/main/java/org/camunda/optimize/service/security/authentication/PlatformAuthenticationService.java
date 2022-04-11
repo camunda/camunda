@@ -1,12 +1,11 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.security.authentication;
 
-import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.dto.LogoutRequestDto;
+import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -71,12 +70,6 @@ public class PlatformAuthenticationService extends AbstractAuthenticationService
   @Override
   public Response loginCallback(final ContainerRequestContext requestContext, final AuthCodeDto authCode) {
     throw new NotSupportedException("Login callback called but not supported");
-  }
-
-  @Override
-  public Response logoutCallback(final ContainerRequestContext requestContext,
-                                 final LogoutRequestDto logoutRequestDto) {
-    throw new NotSupportedException("Logout callback called but not supported");
   }
 
   @Override

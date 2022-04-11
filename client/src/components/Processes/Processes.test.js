@@ -4,16 +4,33 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {EntityList} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import {Processes} from './Processes';
-import {loadProcesses, saveGoals} from './service';
+import {loadProcesses, updateGoals, updateOwner} from './service';
 import TimeGoalsModal from './TimeGoalsModal';
+import EditOwnerModal from './EditOwnerModal';
 
-jest.mock('./service', () => ({loadProcesses: jest.fn(), saveGoals: jest.fn()}));
+jest.mock('./service', () => ({
+  loadProcesses: jest.fn().mockReturnValue([
+    {
+      processDefinitionKey: 'defKey',
+      processName: 'defName',
+      durationGoals: {},
+      owner: {id: null},
+    },
+  ]),
+  updateGoals: jest.fn(),
+  updateOwner: jest.fn(),
+}));
+
+jest.mock('config', () => ({
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -23,13 +40,10 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-it('should load processes', () => {
-  loadProcesses.mockReturnValue([
-    {processDefinitionKey: 'defKey', processName: 'defName', timeGoals: [], owner: 'test'},
-  ]);
+it('should load processes', async () => {
   const node = shallow(<Processes {...props} />);
 
-  runLastEffect();
+  await runAllEffects();
 
   expect(loadProcesses).toHaveBeenCalled();
   const entityData = node.find(EntityList).prop('data');
@@ -38,7 +52,7 @@ it('should load processes', () => {
     {
       icon: 'data-source',
       id: 'defKey',
-      meta: ['test', expect.any(Object)],
+      meta: [expect.any(Object), expect.any(Object)],
       name: 'defName',
       type: 'Process',
     },
@@ -54,25 +68,63 @@ it('should load processes with sort parameters', () => {
   expect(node.find('EntityList').prop('sorting')).toEqual({key: 'lastModifier', order: 'desc'});
 });
 
-it('should invoke saveGoals when confirming the TimeGoalsModal', () => {
+it('should invoke updateGoals when confirming the TimeGoalsModal', async () => {
   const node = shallow(<Processes {...props} />);
 
-  runLastEffect();
+  await runAllEffects();
+  loadProcesses.mockClear();
 
-  node.find(EntityList).prop('data')[0].meta[1].props.onClick();
+  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
+  addGoalBtn.props.onClick();
   node.find(TimeGoalsModal).simulate('confirm', [{type: 'targetDuration'}]);
 
-  expect(saveGoals).toHaveBeenCalledWith('defKey', [{type: 'targetDuration'}]);
+  expect(updateGoals).toHaveBeenCalledWith('defKey', [{type: 'targetDuration'}]);
+  expect(loadProcesses).toHaveBeenCalled();
   expect(node.find(TimeGoalsModal)).not.toExist();
 });
 
-it('should close the TimeGoalsModal when onClose prop is called', () => {
+it('should close the TimeGoalsModal when onClose prop is called', async () => {
   const node = shallow(<Processes {...props} />);
 
-  runLastEffect();
+  await runAllEffects();
 
-  node.find(EntityList).prop('data')[0].meta[1].props.onClick();
+  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
+  addGoalBtn.props.onClick();
   node.find(TimeGoalsModal).simulate('close');
 
   expect(node.find(TimeGoalsModal)).not.toExist();
+});
+
+it('should reload processes when onRemove is called on the timeGoalsModal', async () => {
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
+  addGoalBtn.props.onClick();
+  node.find(TimeGoalsModal).simulate('remove');
+
+  expect(loadProcesses).toHaveBeenCalled();
+});
+
+it('should hide owner column in ccsm mode', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  expect(node.find(EntityList).prop('columns')[1].key).not.toBe('owner');
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(1);
+});
+
+it('should edit a process owner', async () => {
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const addOwnerBtn = node.find(EntityList).prop('data')[0].meta[0].props.children[1];
+  addOwnerBtn.props.onClick();
+  node.find(EditOwnerModal).simulate('confirm', 'userId');
+
+  expect(updateOwner).toHaveBeenCalledWith('defKey', 'userId');
 });

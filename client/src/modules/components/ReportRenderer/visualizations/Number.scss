@@ -1,11 +1,13 @@
 .Number {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  justify-content: center;
   flex-grow: 1;
   overflow: auto;
 
   .container {
-    align-self: center;
+    padding: 0 10px;
+    overflow-y: auto;
     margin: 0 auto;
 
     .data {

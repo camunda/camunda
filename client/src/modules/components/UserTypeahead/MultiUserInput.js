@@ -24,6 +24,7 @@ export default function MultiUserInput({
   optionsOnly,
   onRemove,
   onClear,
+  excludeGroups = false,
 }) {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -33,7 +34,7 @@ export default function MultiUserInput({
     setLoading(true);
 
     const {total, result} = await debounceRequest(async () => {
-      return await (fetchUsers || searchIdentities)(query);
+      return await (fetchUsers || searchIdentities)(query, excludeGroups);
     }, delay);
 
     setIdentities(result);

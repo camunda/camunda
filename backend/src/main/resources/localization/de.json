@@ -167,20 +167,37 @@
     "owner": "Eigentümer",
     "timeGoal": "Ziel: Zeit",
     "displayData": "Ziele zeigen Daten von Instanzen an",
-    "endedThisMonth": "die im aktuellen Monat beendet wurden",
+    "endedThisMonth": "die in den letzten 30 Tagen beendet wurden",
     "setGoal": "Ziel setzen",
     "editGoal": "Ziel bearbeiten",
+    "goals": "Ziele",
+    "goalRemoved": "Ziele aus dem '{processName}' Prozess wurden entfernt",
+    "addOwner": "Eigentümer hinzufügen",
+    "editOwner": "Eigentümer bearbeiten",
+    "addProcessOwner": "Prozesseigentümer hinzufügen",
+    "ownerInfo": "Der Prozesseigentümer ist für Geschäftsmetriken des Prozesses verantwortlich. Sie können den Prozesseigentümer verwenden, um Prozesse zu sortieren und zu filtern",
+    "ownerRemoveWarning": "Der Eigentümer '{owner}' wird aus dem Prozess entfernt",
+    "noData": "keine Daten",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
+      "setDuration": "Legen Sie eine Ziellaufzeit fest, indem Sie einen Prozentsatz der Prozessinstanzen festlegen, die weniger als die festgelegte Dauer brauchen, um abzuschließen.",
+      "availableGoals": "Sie können Ziellaufzeiten verwenden, um zu verfolgen, wie viele Instanzen vollständig automatisiert sind oder Ihre Service Level-Agreements (SLAs) erreichen.",
       "targetDuration": "Ziel",
       "slaDuration": "SLA",
       "instancesTake": "der Prozessinstanzen benötigen",
+      "instancesTook": "der Instanzen benötigten weniger als",
       "lessThan": "weniger als",
       "displayGoal": "Ziel anzeigen",
       "durationDistribution": "Laufzeitverteilung",
+      "durationDistributionInfo": "Diese Grafik zeigt die Laufzeiten für Prozessinstanzen, die im aktuellen Monat enden",
       "saveGoals": "Ziele speichern",
-      "updateGoals": "Ziele aktualisieren"
+      "updateGoals": "Ziele aktualisieren",
+      "resultPreview": "Ergebnisvorschau:",
+      "instancesThisMonth": "Instanzen die in den letzten 30 Tagen beendet wurden",
+      "noInstances": "Im Zeitbereich sind keine Instanzen aufgetreten.",
+      "setGoals": "Sie können Ziele für die erwartete Laufzeit setzen.",
+      "resultInfo": "Diese Vorschau zeigt den Status jedes Ziels anhand seiner aktuellen Konfiguration an."
     }
   },
   "events": {
@@ -336,6 +353,7 @@
       "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
       "duration": "Dauer",
+      "percentage": "Prozentsatz",
       "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
@@ -505,21 +523,23 @@
       },
       "aggregation": {
         "userTaskLegend": "Benutzeraufgabendauer",
-        "durationLegend": "Daueraggregationen",
+        "durationLegend": "Basis-Aggregationen",
         "variableLegend": "Variablenaggregationen",
+        "percentileLegend": "Perzentilaggregationen",
         "sum": "Summe",
         "min": "Minimum",
         "avg": "Durchschnitt",
         "median": "Median",
         "max": "Maximum",
-        "multiProcessWarning": "Berichte die nach Prozess gruppiert sind unterstützen keine Median-Aggregation."
+        "p50": "P50 (median)"
       },
       "aggregationShort": {
         "sum": "Se",
         "min": "Min",
         "avg": "Durchschn",
         "median": "Med",
-        "max": "Max"
+        "max": "Max",
+        "percentile": "P{value}"
       },
       "userTaskDuration": {
         "idle": "Wartezeit",
@@ -588,7 +608,8 @@
     "runningEndedFlowNodeWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Prozessknoten berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status Filters auf 'laufende Prozessknoten' keine Ergebnisse",
     "missingVariable": "Fehlende Variable",
     "nonExistingVariable": "Variable existiert nicht",
-    "nonExistingFlowNode": "Prozessknoten existiert nicht"
+    "nonExistingFlowNode": "Prozessknoten existiert nicht",
+    "percentageOfInstances": "% der gesamten Instanzen, die dem Filter entsprechen"
   },
   "dashboard": {
     "label": "Dashboard",
@@ -1243,7 +1264,9 @@
         "process": "Prozess",
         "processEvents": "Prozessevents",
         "ingestedEvents": "Events",
-        "items": "Elemente"
+        "items": "Elemente",
+        "goals": "Ziele",
+        "owner": "Eigentümer"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

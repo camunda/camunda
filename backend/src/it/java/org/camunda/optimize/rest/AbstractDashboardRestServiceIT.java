@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
@@ -30,7 +30,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardSt
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
@@ -168,10 +168,10 @@ public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
           )
         ),
         createDashboardDateVariableFilterWithDefaultValues(
-          new RollingDateFilterDataDto(new RollingDateFilterStartDto(1L, DateFilterUnit.YEARS))
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(1L, DateUnit.YEARS))
         ),
         createDashboardDateVariableFilterWithDefaultValues(
-          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(2L, DateFilterUnit.MINUTES))
+          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(2L, DateUnit.MINUTES))
         ),
         createDashboardBooleanVariableFilterWithDefaultValues(),
         createDashboardStringVariableFilterWithDefaultValues(),
@@ -205,22 +205,22 @@ public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
       ),
       Collections.singletonList(
         createDashboardEndDateFilterWithDefaultValues(
-          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(1L, DateFilterUnit.MINUTES))
+          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(1L, DateUnit.MINUTES))
         )
       ),
       Collections.singletonList(
         createDashboardEndDateFilterWithDefaultValues(
-          new RollingDateFilterDataDto(new RollingDateFilterStartDto(2L, DateFilterUnit.YEARS))
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(2L, DateUnit.YEARS))
         )
       ),
       Collections.singletonList(
         createDashboardStartDateFilterWithDefaultValues(
-          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(3L, DateFilterUnit.SECONDS))
+          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(3L, DateUnit.SECONDS))
         )
       ),
       Collections.singletonList(
         createDashboardStartDateFilterWithDefaultValues(
-          new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS))
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateUnit.DAYS))
         )
       )
     );

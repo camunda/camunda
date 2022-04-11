@@ -21,6 +21,7 @@ export function UserTypeahead({
   mightFail,
   fetchUsers,
   optionsOnly,
+  excludeGroups = false,
 }) {
   const getSelectedUser = (user, cb) => {
     const {id, name} = user;
@@ -69,6 +70,7 @@ export function UserTypeahead({
       onRemove={removeUser}
       onClear={() => onChange([])}
       optionsOnly={optionsOnly}
+      excludeGroups={excludeGroups}
     />
   );
 }

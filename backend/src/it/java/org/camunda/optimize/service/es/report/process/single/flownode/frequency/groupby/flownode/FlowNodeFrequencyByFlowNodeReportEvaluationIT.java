@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode;
 
@@ -15,7 +15,7 @@ import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -238,8 +238,10 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getFirstMeasureData()).isNotEmpty();
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), START_EVENT).get().getValue()).isEqualTo(1);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), END_EVENT).get().getValue()).isEqualTo(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), START_EVENT)).isPresent()
+      .get().satisfies(data -> assertThat(data.getValue()).isEqualTo(1));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), END_EVENT)).isPresent()
+      .get().satisfies(data -> assertThat(data.getValue()).isEqualTo(1));
   }
 
   @Test
@@ -748,7 +750,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
-        .flowNode(TEST_ACTIVITY, durationFilterData(DurationFilterUnit.SECONDS, 10L, LESS_THAN))
+        .flowNode(TEST_ACTIVITY, durationFilterData(DurationUnit.SECONDS, 10L, LESS_THAN))
         .filterLevel(VIEW)
         .add()
         .buildList());

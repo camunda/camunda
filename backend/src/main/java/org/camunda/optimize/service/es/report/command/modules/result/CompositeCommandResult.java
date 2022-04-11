@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.command.modules.result;
 
@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -158,7 +158,7 @@ public class CompositeCommandResult {
   private <T> Map<ViewMeasureIdentifier, T> createMeasureMap(final Supplier<T> defaultValueSupplier) {
     final Map<ViewMeasureIdentifier, T> measureMap = new LinkedHashMap<>();
 
-    // if this is a frequency view only null key is expected
+    // if this is a frequency or percentage view only null key is expected
     if (ViewProperty.FREQUENCY.equals(viewProperty) || ViewProperty.PERCENTAGE.equals(viewProperty)) {
       measureMap.put(new ViewMeasureIdentifier(), defaultValueSupplier.get());
     }
@@ -397,7 +397,7 @@ public class CompositeCommandResult {
   @Builder
   @Data
   public static class ViewMeasure {
-    private AggregationType aggregationType;
+    private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
     private Double value;
 
@@ -410,7 +410,12 @@ public class CompositeCommandResult {
   @AllArgsConstructor
   @NoArgsConstructor
   public static class ViewMeasureIdentifier {
-    private AggregationType aggregationType;
+
+    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
+      this.aggregationType = aggregationDto;
+    }
+
+    private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
   }
 }

@@ -57,7 +57,10 @@ export function Number({report, formatter, mightFail}) {
 
   if (targetValue && targetValue.active) {
     let min, max;
-    if (data.view.properties[0] === 'frequency' || data.view.entity === 'variable') {
+    if (
+      ['frequency', 'percentage'].includes(data.view.properties[0]) ||
+      data.view.entity === 'variable'
+    ) {
       min = targetValue.countProgress.baseline;
       max = targetValue.countProgress.target;
     } else {
@@ -88,6 +91,8 @@ export function Number({report, formatter, mightFail}) {
 
           if (processVariableReport) {
             viewString = processVariable.label || data.view.properties[0].name;
+          } else if (measure.property === 'percentage') {
+            viewString = t('report.percentageOfInstances');
           } else {
             const config = reportConfig[reportType];
             const view = config.view.find(({matcher}) => matcher(data));
@@ -105,7 +110,8 @@ export function Number({report, formatter, mightFail}) {
           }
 
           if (measure.property === 'duration' || data.view.entity === 'variable') {
-            viewString += ' - ' + t('report.config.aggregationShort.' + measure.aggregationType);
+            const {type, value} = measure.aggregationType;
+            viewString += ' - ' + t('report.config.aggregationShort.' + type, {value});
           }
 
           const formatter =

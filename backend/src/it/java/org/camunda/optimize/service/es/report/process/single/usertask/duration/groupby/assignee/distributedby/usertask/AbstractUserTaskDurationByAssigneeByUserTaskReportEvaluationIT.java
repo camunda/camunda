@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.usertask.duration.groupby.assignee.distributedby.usertask;
 
@@ -12,6 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -55,6 +56,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
 @SuppressWarnings(SAME_PARAM_VALUE)
@@ -598,7 +600,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L);
     result.getMeasures().forEach(measureResult -> {
-      final AggregationType aggType = measureResult.getAggregationType();
+      final AggregationDto aggType = measureResult.getAggregationType();
       // @formatter:off
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
@@ -911,7 +913,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L);
     result.getMeasures().forEach(measureResult -> {
-      final AggregationType aggType = measureResult.getAggregationType();
+      final AggregationDto aggType = measureResult.getAggregationType();
       // @formatter:off
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
@@ -1199,10 +1201,6 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double durationInMs);
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
-
-  protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
-  }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
     return createReport(processDefinitionKey, newArrayList(version));

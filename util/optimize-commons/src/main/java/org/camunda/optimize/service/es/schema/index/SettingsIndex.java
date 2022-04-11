@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.schema.index;
 
@@ -15,10 +15,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_INDEX_NAME;
 
 public class SettingsIndex extends DefaultIndexMappingCreator {
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
   public static final String ID = "1";
 
   public static final String METADATA_TELEMETRY_ENABLED = SettingsResponseDto.Fields.metadataTelemetryEnabled.name();
+  public static final String SHARING_ENABLED = SettingsResponseDto.Fields.sharingEnabled.name();
   public static final String LAST_MODIFIED = SettingsResponseDto.Fields.lastModified.name();
   public static final String LAST_MODIFIER = SettingsResponseDto.Fields.lastModifier.name();
 
@@ -37,6 +38,9 @@ public class SettingsIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(METADATA_TELEMETRY_ENABLED)
+        .field("type", "boolean")
+      .endObject()
+      .startObject(SHARING_ENABLED)
         .field("type", "boolean")
       .endObject()
       .startObject(LAST_MODIFIED)

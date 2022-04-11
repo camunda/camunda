@@ -65,6 +65,14 @@ export function frequency(number, precision) {
   return intl.format(number);
 }
 
+export function percentage(number) {
+  if (!number && number !== 0) {
+    return '--';
+  }
+
+  return Number(Number(number).toFixed(2)) + '%';
+}
+
 export function duration(timeObject, precision) {
   if (!timeObject && timeObject !== 0) {
     return '--';
@@ -140,7 +148,7 @@ export const convertDurationToObject = (value) => {
   };
 };
 
-export const convertToBiggestPossibleDuration = (value) => {
+export const convertToDecimalTimeUnit = (value) => {
   // sort the time units in descending order, then find
   // the biggest one that fits the provided value even if it
   // has decimal places
@@ -154,7 +162,7 @@ export const convertToBiggestPossibleDuration = (value) => {
     possibleUnits[possibleUnits.length - 1];
 
   return {
-    value: Number((value / divisor).toFixed(3)).toString(),
+    value: String(Number((value / divisor).toFixed(3))),
     unit,
   };
 };

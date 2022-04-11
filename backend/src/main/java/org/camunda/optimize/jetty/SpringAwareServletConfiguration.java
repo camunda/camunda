@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.jetty;
 
@@ -46,8 +46,8 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
   private static final String OPTIMIZE_REST_PACKAGE = "org.camunda.optimize.rest";
-  public static final String CONTEXT_CLASS_PARAMETER_NAME = "contextClass";
-  public static final String CONTEXT_CLASS_PARAMETER_VALUE =
+  private static final String CONTEXT_CLASS_PARAMETER_NAME = "contextClass";
+  private static final String CONTEXT_CLASS_PARAMETER_VALUE =
     "org.springframework.web.context.support.AnnotationConfigWebApplicationContext";
 
   private final ContextLoaderListener contextLoaderListener = new ContextLoaderListener();
@@ -127,6 +127,15 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     }
     final ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
     holderPwd.setInitParameter("dirAllowed", "false");
+    ServletHolder externalHome = new ServletHolder("external-home", DefaultServlet.class);
+    if (webappURL != null) {
+      externalHome.setInitParameter("resourceBase", webappURL.toExternalForm());
+    }
+    externalHome.setInitParameter("dirAllowed","true");
+    // Use request pathInfo, don't calculate from contextPath
+    externalHome.setInitParameter("pathInfoOnly","true");
+    context.addServlet(externalHome,"/external/*"); // must end in "/*" for pathInfo to work
+    // Root path needs to be added last, otherwise it won't work
     context.addServlet(holderPwd, "/");
   }
 
@@ -214,7 +223,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
   private void addJavaScriptLicenseEnricher(final ServletContextHandler context) {
     FilterHolder licenseEnricherFilterHolder = new FilterHolder();
-    licenseEnricherFilterHolder.setFilter(new JavaScriptMainLicenseEnricherFilter(this));
+    licenseEnricherFilterHolder.setFilter(new JavaScriptMainLicenseEnricherFilter());
     context.addFilter(
       licenseEnricherFilterHolder,
       STATIC_RESOURCE_PATH + "/*",

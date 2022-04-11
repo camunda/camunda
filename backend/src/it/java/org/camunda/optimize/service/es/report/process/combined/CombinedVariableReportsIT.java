@@ -1,13 +1,14 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.combined;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -79,8 +80,8 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     // given
     Map<String, Object> variables = ImmutableMap.of(TEST_VARIABLE, 1);
     deployAndStartSimpleProcessWithVariables(variables);
-    String singleReportId1 = createVariableReport(AggregationType.SUM);
-    String singleReportId2 = createVariableReport(AggregationType.AVERAGE);
+    String singleReportId1 = createVariableReport(new AggregationDto(AggregationType.SUM));
+    String singleReportId2 = createVariableReport(new AggregationDto(AggregationType.AVERAGE));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -92,10 +93,10 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
   }
 
   private String createVariableReport() {
-    return createVariableReport(AggregationType.AVERAGE);
+    return createVariableReport(new AggregationDto(AggregationType.AVERAGE));
   }
 
-  private String createVariableReport(final AggregationType aggregationType) {
+  private String createVariableReport(final AggregationDto aggregationType) {
     ProcessReportDataDto data = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
@@ -105,7 +106,8 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
       .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
       .build();
     data.getConfiguration().setAggregationTypes(aggregationType);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(data);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
@@ -117,7 +119,8 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }

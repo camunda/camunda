@@ -17,6 +17,13 @@ Object {
   "name": "Sample Alert",
   "reminder": null,
   "report": Object {
+    "data": Object {
+      "view": Object {
+        "properties": Array [
+          "duration",
+        ],
+      },
+    },
     "id": "6",
     "result": Object {
       "data": 123,

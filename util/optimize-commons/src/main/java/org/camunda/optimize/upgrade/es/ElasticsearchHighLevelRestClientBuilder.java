@@ -1,10 +1,11 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.upgrade.es;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -79,7 +80,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   /**
    * The clientConfigCallback can be set only once per builder.
-   * This method cares about all aspects that need to be considered in it's setup.
+   * This method cares about all aspects that need to be considered in its setup.
    *
    * @param configurationService configuration source for the client callback
    * @param sslContext           ssl setup to apply, might be <code>null</code> if there is no ssl setup
@@ -114,6 +115,9 @@ public class ElasticsearchHighLevelRestClientBuilder {
           .setConnectTimeout(configurationService.getElasticsearchConnectionTimeout())
           .setSocketTimeout(0)
       );
+    if (!StringUtils.isEmpty(configurationService.getElasticsearchPathPrefix())) {
+      restClientBuilder.setPathPrefix(configurationService.getElasticsearchPathPrefix());
+    }
 
     restClientBuilder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService));
 

@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.export;
 
@@ -10,7 +10,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
@@ -173,10 +173,8 @@ public class CSVUtils {
     return result;
   }
 
-  public static String mapAggregationType(AggregationType aggregationType) {
-    switch (aggregationType) {
-      case MEDIAN:
-        return "median";
+  public static String mapAggregationType(AggregationDto aggregationDto) {
+    switch (aggregationDto.getType()) {
       case AVERAGE:
         return "average";
       case MIN:
@@ -185,8 +183,10 @@ public class CSVUtils {
         return "maximum";
       case SUM:
         return "sum";
+      case PERCENTILE:
+        return "p" + aggregationDto.getValue();
       default:
-        throw new IllegalStateException("Uncovered type: " + aggregationType);
+        throw new IllegalStateException("Uncovered type: " + aggregationDto.getValue());
     }
   }
 

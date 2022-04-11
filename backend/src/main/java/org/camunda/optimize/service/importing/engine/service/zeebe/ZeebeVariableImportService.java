@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.importing.engine.service.zeebe;
 
@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
@@ -41,7 +42,7 @@ import static org.camunda.optimize.service.es.schema.index.ExternalProcessVariab
 @Slf4j
 public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImportService<ZeebeVariableRecordDto> {
 
-  public static final Map<String, Object> OBJECT_VALUE_INFO = Map.of(
+  private static final Map<String, Object> OBJECT_VALUE_INFO = Map.of(
     SERIALIZATION_DATA_FORMAT, MediaType.APPLICATION_JSON
   );
 
@@ -71,20 +72,27 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeVariableRecordDto> recordsForInstance) {
     final ZeebeVariableDataDto firstRecordValue = recordsForInstance.get(0).getValue();
-    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto =
-      getStoredDefinitionForRecord(firstRecordValue.getProcessDefinitionKey());
     final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
-      processDefinitionOptimizeDto.getKey(),
+      getBpmnProcessId(firstRecordValue),
       firstRecordValue.getProcessInstanceKey(),
       firstRecordValue.getProcessDefinitionKey()
     );
     return updateProcessVariables(instanceToAdd, recordsForInstance);
   }
 
-  private ProcessDefinitionOptimizeDto getStoredDefinitionForRecord(final Long definitionKey) {
-    return processDefinitionReader.getProcessDefinition(String.valueOf(definitionKey))
-      .orElseThrow(() -> new OptimizeRuntimeException(
-        "The process definition with id " + definitionKey + " has not yet been imported to Optimize"));
+  private String getBpmnProcessId(final ZeebeVariableDataDto zeebeVariableDataDto) {
+    return Optional.ofNullable(zeebeVariableDataDto.getBpmnProcessId())
+      .orElseGet(() -> {
+        // Zeebe variable records older than 1.4.0 didn't contain the process ID, so we have to fetch it from the
+        // stored definition. We can remove this handling in future as part of:
+        // https://jira.camunda.com/browse/OPT-6065
+        final String processDefKey = String.valueOf(zeebeVariableDataDto.getProcessDefinitionKey());
+        final Optional<ProcessDefinitionOptimizeDto> processDefinition =
+          processDefinitionReader.getProcessDefinition(processDefKey);
+        return processDefinition.map(DefinitionOptimizeResponseDto::getKey)
+          .orElseThrow(() -> new OptimizeRuntimeException(
+            "The process definition with id " + processDefKey + " has not yet been imported to Optimize"));
+      });
   }
 
   private ProcessInstanceDto updateProcessVariables(final ProcessInstanceDto instanceToAdd,
@@ -123,19 +131,19 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
   private Optional<ProcessVariableUpdateDto> convertToProcessVariableDto(final ZeebeVariableRecordDto variableRecordDto) {
     final ZeebeVariableDataDto zeebeVariableDataDto = variableRecordDto.getValue();
     return getVariableTypeFromJsonNode(zeebeVariableDataDto, variableRecordDto.getKey()).map(type -> {
-      ProcessVariableUpdateDto pluginVariableDto = new ProcessVariableUpdateDto();
-      pluginVariableDto.setId(String.valueOf(variableRecordDto.getKey()));
-      pluginVariableDto.setName(zeebeVariableDataDto.getName());
-      pluginVariableDto.setVersion(variableRecordDto.getPosition());
-      pluginVariableDto.setType(type);
-      pluginVariableDto.setValue(zeebeVariableDataDto.getValue());
+      ProcessVariableUpdateDto processVariableDto = new ProcessVariableUpdateDto();
+      processVariableDto.setId(String.valueOf(variableRecordDto.getKey()));
+      processVariableDto.setName(zeebeVariableDataDto.getName());
+      processVariableDto.setVersion(variableRecordDto.getPosition());
+      processVariableDto.setType(type);
+      processVariableDto.setValue(zeebeVariableDataDto.getValue());
       if (type.equals(STRING_TYPE)) {
-        pluginVariableDto.setValue(stripExtraDoubleQuotationsIfExist(zeebeVariableDataDto.getValue()));
+        processVariableDto.setValue(stripExtraDoubleQuotationsIfExist(zeebeVariableDataDto.getValue()));
       } else if (OBJECT_TYPE.equalsIgnoreCase(type)) {
         // Zeebe object variables are always in JSON format
-        pluginVariableDto.setValueInfo(OBJECT_VALUE_INFO);
+        processVariableDto.setValueInfo(OBJECT_VALUE_INFO);
       }
-      return pluginVariableDto;
+      return processVariableDto;
     });
   }
 

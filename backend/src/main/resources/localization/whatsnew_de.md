@@ -1,11 +1,13 @@
-## Schnellere Dashboard- und Alert-Erstellung
+## Zeitbasierte Ziele festlegen und verfolgen
 
-Fügen Sie Datenquellen hinzu, während Sie eine Sammlung erstellen, erstellen Sie Dashboards mit Multi-Prozess-Vorlagen und erstellen Sie Warnungen direkt aus Dashboards und Berichten.
+Legen Sie durch datengesteuerte Service Level Agreement (SLA) Ziele fest, wie lange Ihre Prozesse dauern sollen, damit Sie schnell erkennen können, welche Prozesse unterdurchschnittlich performen.
 
-## Verbesserte Variablenunterstützung
+## KPI-Berichte
 
-Aus der Process Engine importierte Objektvariablen werden zur Analyse in einfache Variablen reduziert. Variable Filter können jetzt auch mit ODER-Logik kombiniert werden.
+Erstellen Sie Berichte und Alarme, die den prozentualen Anteil der vollständig automatisierten Instanzen oder die Zwischenfallrate (%) verfolgen, sowie SLA-Statistiken zu Dauern wie P99- oder P95-Dauer zusätzlich zu Minimum, Median und Maximum.
 
-## Öffentliche API-Endpunkte
+## Verbesserte UX
 
-Entwickler können Dashboards und Berichte programmgesteuert sichern, migrieren und verwalten mittels der öffentlichen [REST API](https://docs.camunda.org/optimize/3.7/technical-guide/rest-api/). Darüber hinaus können sie die Berichtsdaten zur Offline-Analyse exportieren.
+Geben Sie Variablen einfach verständliche Displaynamen, filtern Sie laute Ausreißeranalyse-Heatmaps und wenden Sie fortlaufende Datumsfilter auf Ihre Dashboards an, um sich auf die wichtigsten Daten zu konzentrieren.
+
+Weitere Details finden Sie im [Blogbeitrag](https://camunda.com/blog/2022/04/camunda-optimize-3-8-0-released/).

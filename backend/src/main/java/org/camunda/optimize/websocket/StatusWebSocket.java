@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.websocket;
 
@@ -34,7 +34,7 @@ public class StatusWebSocket {
   private final ConfigurationService configurationService;
   private final ImportSchedulerManagerService importSchedulerManagerService;
 
-  private Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
+  private final Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
   @OnOpen
   public void onOpen(Session session) {

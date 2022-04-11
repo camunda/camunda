@@ -1,14 +1,14 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.variable;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -38,8 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 
@@ -106,7 +106,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.DOUBLE);
-    reportData.getConfiguration().setAggregationTypes(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE));
     ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -126,7 +126,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationTypes(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE));
     ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -146,7 +146,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationTypes(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE));
     ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -167,7 +167,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
-    reportData.getConfiguration().setAggregationTypes(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE));
     ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -187,7 +187,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    reportData.getConfiguration().setAggregationTypes(AVERAGE);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE));
     ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -197,7 +197,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
   @ParameterizedTest
   @MethodSource("aggregationTypes")
-  public void supportsAllAggregationTypes(final AggregationType aggregationType, final Double expectedResult) {
+  public void supportsAllAggregationTypes(final AggregationDto aggregationType, final Double expectedResult) {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put(TEST_VARIABLE, 1);
@@ -216,18 +216,21 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(3L);
     assertThat(evaluationResponse.getMeasures())
-      .extracting(MeasureResponseDto::getAggregationType)
-      .containsExactly(aggregationType);
+      .extracting(MeasureResponseDto::getAggregationType).containsExactly(aggregationType);
     assertThat(evaluationResponse.getFirstMeasureData()).isEqualTo(expectedResult);
   }
 
   private static Stream<Arguments> aggregationTypes() {
     return Stream.of(
-      Arguments.of(MIN, 1.),
-      Arguments.of(MAX, 6.),
-      Arguments.of(MEDIAN, 5.),
-      Arguments.of(AVERAGE, 4.),
-      Arguments.of(SUM, 12.)
+      Arguments.of(new AggregationDto(MIN), 1.),
+      Arguments.of(new AggregationDto(MAX), 6.),
+      Arguments.of(new AggregationDto(AVERAGE), 4.),
+      Arguments.of(new AggregationDto(SUM), 12.),
+      Arguments.of(new AggregationDto(PERCENTILE, 99.), 6.),
+      Arguments.of(new AggregationDto(PERCENTILE, 95.), 6.),
+      Arguments.of(new AggregationDto(PERCENTILE, 75.), 5.75),
+      Arguments.of(new AggregationDto(PERCENTILE, 50.), 5.),
+      Arguments.of(new AggregationDto(PERCENTILE, 25.), 2.)
     );
   }
 

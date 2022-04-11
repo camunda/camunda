@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.security;
 
@@ -78,10 +78,9 @@ public class ReportAuthorizationService {
 
   private boolean isAuthorizedToAccessDecisionReportDefinition(@NonNull final String userId,
                                                                @NonNull final DecisionReportDataDto reportData) {
-    final boolean authorizedToAccessDefinition = definitionAuthorizationService.isAuthorizedToAccessDefinition(
+    return definitionAuthorizationService.isAuthorizedToAccessDefinition(
       userId, DefinitionType.DECISION, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
     );
-    return authorizedToAccessDefinition;
   }
 
   private boolean isAuthorizedToAccessProcessReportDefinition(@NonNull final String userId,

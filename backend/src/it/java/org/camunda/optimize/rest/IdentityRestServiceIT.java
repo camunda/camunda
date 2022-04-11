@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
@@ -105,6 +105,22 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThat(searchResult)
       // user is first as name and email contains baggins
       .isEqualTo(new IdentitySearchResultResponseDto(2L, Lists.newArrayList(userIdentity, groupIdentity)));
+  }
+
+  @Test
+  public void searchForUser_excludeGroupsFromResults() {
+    // given
+    final GroupDto groupIdentity = new GroupDto("group", "The Baggins Group", 2L);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(groupIdentity);
+    final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
+    embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity);
+
+    // when
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins", true);
+
+    // then the result does not contain the user group that matches
+    assertThat(searchResult)
+      .isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
   }
 
   @Test

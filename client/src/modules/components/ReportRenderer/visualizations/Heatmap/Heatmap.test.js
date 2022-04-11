@@ -48,7 +48,7 @@ const report = {
   data: {
     configuration: {
       xml: 'some diagram XML',
-      aggregationTypes: ['avg'],
+      aggregationTypes: [{type: 'avg', value: null}],
     },
     view: {
       properties: ['frequency'],
@@ -142,7 +142,7 @@ it('should convert the data to target value heat when target value mode is activ
           view: {properties: {$set: ['duration']}},
           configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+        result: {measures: {0: {aggregationType: {$set: {type: 'avg', value: null}}}}},
       })}
     />
   );
@@ -172,7 +172,7 @@ it('should show a tooltip with information about actual and target value', () =>
           view: {properties: {$set: ['duration']}},
           configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+        result: {measures: {0: {aggregationType: {$set: {type: 'avg', value: null}}}}},
       })}
     />
   );
@@ -201,7 +201,7 @@ it('should inform if the actual value is less than 1% of the target value', () =
           view: {properties: {$set: ['duration']}},
           configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+        result: {measures: {0: {aggregationType: {$set: {type: 'avg', value: null}}}}},
       })}
     />
   );
@@ -239,7 +239,11 @@ it('should show a tooltip with information if no actual value is available', () 
         },
         data: {
           ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationTypes: ['avg']},
+          configuration: {
+            xml: 'test',
+            heatmapTargetValue,
+            aggregationTypes: [{type: 'avg', value: null}],
+          },
         },
       }}
     />
@@ -266,7 +270,7 @@ it('should invoke report evaluation when clicking the download instances button'
           view: {properties: {$set: ['duration']}},
           configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+        result: {measures: {0: {aggregationType: {$set: {type: 'avg', value: null}}}}},
       })}
     />
   );

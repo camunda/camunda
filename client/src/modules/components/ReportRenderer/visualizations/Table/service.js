@@ -98,7 +98,9 @@ export function getCombinedTableProps(
                 ? t('report.view.resolutionDuration')
                 : t('report.view.duration')) +
               (measure.aggregationType
-                ? ` - ${t('report.config.aggregation.' + measure.aggregationType)}`
+                ? ` - ${t('report.config.aggregationShort.' + measure.aggregationType.type, {
+                    value: measure.aggregationType.value,
+                  })}`
                 : '') +
               (measure.userTaskDurationTime
                 ? ` (${t('report.config.userTaskDuration.' + measure.userTaskDurationTime)})`

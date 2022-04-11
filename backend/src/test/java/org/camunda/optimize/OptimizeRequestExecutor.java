@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize;
 
@@ -31,6 +31,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
+import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -77,6 +79,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuild
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.glassfish.jersey.client.ClientProperties;
+import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.TrustManager;
@@ -102,6 +105,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -131,6 +135,7 @@ import static org.camunda.optimize.rest.PublicApiRestService.LABELS_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_SUB_PATH;
+import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
@@ -251,11 +256,7 @@ public class OptimizeRequestExecutor {
       for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
         if (queryParam.getValue() instanceof List) {
           for (Object p : ((List) queryParam.getValue())) {
-            if (p == null) {
-              webTarget = webTarget.queryParam(queryParam.getKey(), "null");
-            } else {
-              webTarget = webTarget.queryParam(queryParam.getKey(), p);
-            }
+            webTarget = webTarget.queryParam(queryParam.getKey(), Objects.requireNonNullElse(p, "null"));
           }
         } else {
           webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
@@ -496,15 +497,39 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest(ProcessGoalSorter sorter) {
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
+    return buildGetProcessGoalsRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildGetProcessGoalsRequest(ProcessGoalSorter sorter) {
     this.path = "process/goals";
     this.method = GET;
     Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionGoalsRequest() {
-    return buildGetProcessDefinitionGoalsRequest(null);
+  public OptimizeRequestExecutor buildUpdateProcessGoalsRequest(final String processDefinitionKey,
+                                                                final List<ProcessDurationGoalDto> goals) {
+    this.path = "process/" + processDefinitionKey + "/goals";
+    this.method = PUT;
+    this.body = getBody(goals);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateProcessGoalsRequest(final String processDefinitionKey,
+                                                                  final List<ProcessDurationGoalDto> goals) {
+    this.path = "process/" + processDefinitionKey + "/goals/evaluate";
+    this.method = POST;
+    this.body = getBody(goals);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSetProcessOwnerRequest(final String processDefinitionKey,
+                                                             final ProcessGoalsOwnerDto owner) {
+    this.path = "process/" + processDefinitionKey + "/owner";
+    this.method = PUT;
+    this.body = getBody(owner);
+    return this;
   }
 
   public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
@@ -810,7 +835,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildEvaluateSharedReportRequest(String shareId,
                                                                   PaginationRequestDto paginationRequestDto) {
-    this.path = "share/report/" + shareId + "/evaluate";
+    this.path = "external/share/report/" + shareId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(paginationRequestDto).ifPresent(this::addPaginationParams);
     return this;
@@ -824,7 +849,7 @@ public class OptimizeRequestExecutor {
                                                                            String reportId,
                                                                            PaginationRequestDto paginationRequestDto,
                                                                            AdditionalProcessReportEvaluationFilterDto filterDto) {
-    this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
+    this.path = "/external/share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(paginationRequestDto).ifPresent(this::addPaginationParams);
     Optional.ofNullable(filterDto).ifPresent(filters -> this.body = getBody(filters));
@@ -832,7 +857,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildEvaluateSharedDashboardRequest(String shareId) {
-    this.path = "share/dashboard/" + shareId + "/evaluate";
+    this.path = "/external/share/dashboard/" + shareId + "/evaluate";
     this.method = GET;
     return this;
   }
@@ -926,7 +951,11 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos) {
-    this.path = "variables";
+    return buildProcessVariableNamesRequest(variableRequestDtos, true);
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos, boolean authenticationEnabled) {
+    this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "variables";
     this.method = POST;
     this.body = getBody(variableRequestDtos);
     return this;
@@ -943,7 +972,8 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
     this.path = PUBLIC_PATH + LABELS_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(definitionVariableLabelsDto);
     return this;
@@ -963,6 +993,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildProcessVariableValuesRequestExternal(ProcessVariableValueRequestDto valueRequestDto) {
+    this.path = "external/variables/values";
+    this.method = POST;
+    this.body = getBody(valueRequestDto);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDecisionInputVariableValuesRequest(DecisionVariableValueRequestDto requestDto) {
     this.path = "decision-variables/inputs/values";
     this.method = POST;
@@ -970,30 +1007,63 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
-    return buildDecisionInputVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest
+    (DecisionVariableNameRequestDto variableRequestDto) {
+    return buildDecisionInputVariableNamesRequest(
+      Collections.singletonList(variableRequestDto),
+      true
+    );
   }
 
-  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
-    this.path = "decision-variables/inputs/names";
+  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest
+    (DecisionVariableNameRequestDto variableRequestDto, final boolean authenticationEnabled) {
+    return buildDecisionInputVariableNamesRequest(
+      Collections.singletonList(variableRequestDto),
+      authenticationEnabled
+    );
+  }
+
+  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos, final boolean authenticationEnabled) {
+    this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "decision-variables/inputs/names";
     this.method = POST;
     this.body = getBody(variableRequestDtos);
     return this;
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableValuesRequest(DecisionVariableValueRequestDto requestDto) {
-    this.path = "decision-variables/outputs/values";
+    return buildDecisionOutputVariableValuesRequest(requestDto, true);
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableValuesRequest(DecisionVariableValueRequestDto requestDto,
+                                                                          final boolean authenticationEnabled) {
+    this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "decision-variables/outputs/values";
     this.method = POST;
     this.body = getBody(requestDto);
     return this;
   }
 
+  @NotNull
+  private String addExternalPrefixIfNeeded(final boolean authenticationEnabled) {
+    return authenticationEnabled ? "" : "external/";
+  }
+
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
-    return buildDecisionOutputVariableNamesRequest(Collections.singletonList(variableRequestDto));
+    return buildDecisionOutputVariableNamesRequest(Collections.singletonList(variableRequestDto), true);
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto, final boolean authenticationEnabled) {
+    return buildDecisionOutputVariableNamesRequest(
+      Collections.singletonList(variableRequestDto),
+      authenticationEnabled
+    );
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
-    this.path = "decision-variables/outputs/names";
+    return buildDecisionOutputVariableNamesRequest(variableRequestDtos, true);
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos, final boolean authenticationEnabled) {
+    this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "decision-variables/outputs/names";
     this.method = POST;
     this.body = getBody(variableRequestDtos);
     return this;
@@ -1021,7 +1091,11 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetCandidateGroupsByIdRequest(List<String> ids) {
-    this.path = "/candidateGroup";
+    return buildGetCandidateGroupsByIdRequest(ids, true);
+  }
+
+  public OptimizeRequestExecutor buildGetCandidateGroupsByIdRequest(List<String> ids, boolean authenticationEnabled) {
+    this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "candidateGroup";
     this.method = GET;
     addSingleQueryParam("idIn", String.join(",", ids));
     return this;
@@ -1043,6 +1117,13 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetFlowNodeNames(FlowNodeIdsToNamesRequestDto entity) {
     this.path = "flow-node/flowNodeNames";
+    this.method = POST;
+    this.body = getBody(entity);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetFlowNodeNamesExternal(FlowNodeIdsToNamesRequestDto entity) {
+    this.path = "external/flow-node/flowNodeNames";
     this.method = POST;
     this.body = getBody(entity);
     return this;
@@ -1585,10 +1666,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms, final Integer limit) {
+    return buildSearchForIdentities(searchTerms, limit, null);
+  }
+
+  public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms, final Integer limit,
+                                                          final Boolean excludeUserGroups) {
     this.path = IDENTITY_RESOURCE_PATH + IDENTITY_SEARCH_SUB_PATH;
     this.method = GET;
     addSingleQueryParam("terms", searchTerms);
     Optional.ofNullable(limit).ifPresent(limitValue -> addSingleQueryParam("limit", limitValue));
+    Optional.ofNullable(excludeUserGroups).ifPresent(exclude -> addSingleQueryParam("excludeUserGroups", exclude));
     return this;
   }
 
@@ -1608,7 +1695,8 @@ public class OptimizeRequestExecutor {
                                                                     final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(secret).ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + s));
+    Optional.ofNullable(secret)
+      .ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + s));
     this.mediaType = mediaType;
     this.body = getBody(eventDtos);
     return this;
@@ -1698,7 +1786,8 @@ public class OptimizeRequestExecutor {
                                                               final String accessToken) {
     this.path = INGESTION_PATH + VARIABLE_SUB_PATH;
     this.method = POST;
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(externalVariables);
     return this;
@@ -1715,8 +1804,19 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildToggleShareRequest(final boolean enableSharing, final String accessToken) {
+    String enablePath = enableSharing ? "/enable" : "/disable";
+    this.path = PUBLIC_PATH + SHARE_PATH + enablePath;
+    this.method = POST;
+    this.mediaType = MediaType.TEXT_PLAIN;
+    this.body = Entity.text("");
+    setAccessToken(accessToken);
+    return this;
+  }
+
   private void setAccessToken(final String accessToken) {
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
+    Optional.ofNullable(accessToken)
+      .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
   }
 
   private void setCollectionIdQueryParam(final String collectionId) {

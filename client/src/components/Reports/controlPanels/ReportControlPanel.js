@@ -327,7 +327,9 @@ export default withErrorHandling(
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
 
-      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
+      const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
+        data.view?.properties[0]
+      );
 
       return (
         <div className="ReportControlPanel">
@@ -423,13 +425,13 @@ export default withErrorHandling(
                       xml={data.configuration.xml}
                       processPart={data.configuration.processPart}
                       update={(newPart) => {
+                        const aggregations = data.configuration.aggregationTypes;
                         const change = {configuration: {processPart: {$set: newPart}}};
-                        if (data.configuration.aggregationTypes.includes('median')) {
-                          const newAggregations = data.configuration.aggregationTypes.filter(
-                            (type) => type !== 'median'
-                          );
+                        const isPercentile = (agg) => agg.type === 'percentile';
+                        if (aggregations.find(isPercentile)) {
+                          const newAggregations = aggregations.filter((agg) => !isPercentile(agg));
                           if (newAggregations.length === 0) {
-                            newAggregations.push('avg');
+                            newAggregations.push({type: 'avg', value: null});
                           }
 
                           change.configuration.aggregationTypes = {$set: newAggregations};

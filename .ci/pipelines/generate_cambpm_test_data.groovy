@@ -222,6 +222,8 @@ pipeline {
                   mvn -s \$MAVEN_SETTINGS_XML -pl qa/data-generation -am clean install -DskipTests -Dskip.docker -Dskip.fe.build 
                   if [ "${USE_E2E_PRESETS}" = true ]; then
                     mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
+                  elif [ "${USE_QUERY_PERFORMANCE_PRESETS}" = true ]; then
+                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="\$(cat qa/query-performance-tests/query_performance_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
                   else
                     mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}' --adjustProcessInstanceDates '${ADJUST_PROCESS_INSTANCE_DATES}' --startDate "03/01/2018" --endDate "03/01/2020" --jdbcDriver "org.postgresql.Driver" --dbUrl "jdbc:postgresql://localhost:5432/engine" --dbUser "camunda" --dbPassword "camunda""
                   fi
@@ -252,6 +254,14 @@ pipeline {
               sh("""
                   if [ "${USE_E2E_PRESETS}" = true ]; then
                     gsutil -h "x-goog-meta-NUM_INSTANCES:\$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" \
+                           -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \
+                           -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \
+                           -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\$EXPECTED_NUMBER_OF_USER_TASKS" \
+                           -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\$EXPECTED_NUMBER_OF_VARIABLES" \
+                           -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \
+                           cp "/export/${SQL_DUMP}" gs://optimize-data/
+                  elif [ "${USE_QUERY_PERFORMANCE_PRESETS}" = true ]; then
+                    gsutil -h "x-goog-meta-NUM_INSTANCES:\$(cat qa/query-performance-tests/query_performance_presets.json | jq -r .numberOfProcessInstances)" \
                            -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \
                            -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \
                            -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\$EXPECTED_NUMBER_OF_USER_TASKS" \

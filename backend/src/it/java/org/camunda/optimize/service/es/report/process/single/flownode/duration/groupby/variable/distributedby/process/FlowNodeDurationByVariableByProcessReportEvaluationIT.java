@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.flownode.duration.groupby.variable.distributedby.process;
 
@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -33,8 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
@@ -83,7 +84,7 @@ public class FlowNodeDurationByVariableByProcessReportEvaluationIT extends Abstr
       .containsExactly(
         Tuple.tuple(
           ViewProperty.DURATION,
-          AVERAGE,
+          new AggregationDto(AVERAGE),
           List.of(
             createHyperMapResult("aStringValue", new MapResultEntryDto(processIdentifier, 1000.0, processDisplayName)))
         ));
@@ -206,7 +207,10 @@ public class FlowNodeDurationByVariableByProcessReportEvaluationIT extends Abstr
     // when
     final ProcessReportDataDto reportData =
       createReport(List.of(v1definition, allVersionsDefinition), STRING_VAR, VariableType.STRING);
-    reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
+    reportData.getConfiguration().setAggregationTypes(
+      new AggregationDto(MAX), new AggregationDto(MIN), new AggregationDto(AVERAGE),
+      new AggregationDto(SUM), new AggregationDto(PERCENTILE, 50.), new AggregationDto(PERCENTILE, 99.)
+    );
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
@@ -214,35 +218,42 @@ public class FlowNodeDurationByVariableByProcessReportEvaluationIT extends Abstr
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getMeasures()).hasSize(5)
+    assertThat(result.getMeasures()).hasSize(6)
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
-        Tuple.tuple(MAX, List.of(
+        Tuple.tuple(new AggregationDto(MAX), List.of(
           createHyperMapResult(
             "aStringValue",
             new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           ))),
-        Tuple.tuple(MIN, List.of(
+        Tuple.tuple(new AggregationDto(MIN), List.of(
           createHyperMapResult(
             "aStringValue",
             new MapResultEntryDto(allVersionsIdentifier, 1000.0, allVersionsDisplayName),
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           ))),
-        Tuple.tuple(AVERAGE, List.of(
+        Tuple.tuple(new AggregationDto(AVERAGE), List.of(
           createHyperMapResult(
             "aStringValue",
             new MapResultEntryDto(allVersionsIdentifier, 3000.0, allVersionsDisplayName),
             new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
           ))),
-        Tuple.tuple(SUM, List.of(
+        Tuple.tuple(new AggregationDto(SUM), List.of(
           createHyperMapResult(
             "aStringValue",
             new MapResultEntryDto(allVersionsIdentifier, 18000.0, allVersionsDisplayName),
             new MapResultEntryDto(v1Identifier, 3000.0, v1displayName)
           ))),
-        // We cannot support the median aggregation type with this distribution as the information is lost on merging
-        Tuple.tuple(MEDIAN, List.of(
+        // We cannot support percentile aggregation types with this distribution as the information is
+        // lost on merging
+        Tuple.tuple(new AggregationDto(PERCENTILE, 50.), List.of(
+          createHyperMapResult(
+            "aStringValue",
+            new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ))),
+        Tuple.tuple(new AggregationDto(PERCENTILE, 99.), List.of(
           createHyperMapResult(
             "aStringValue",
             new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),

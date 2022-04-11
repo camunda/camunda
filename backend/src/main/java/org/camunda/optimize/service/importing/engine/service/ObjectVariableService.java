@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.importing.engine.service;
 
@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -129,8 +128,8 @@ public class ObjectVariableService {
 
   private List<ProcessVariableDto> mapToFlattenedVariable(final String name, final Object value,
                                                           final ProcessVariableUpdateDto origin) {
-    if (value == null) {
-      log.info("Variable attribute '{}' of '{}' is null and won't be imported", name, origin.getName());
+    if (value == null || String.valueOf(value).isEmpty()) {
+      log.info("Variable attribute '{}' of '{}' is null or empty and won't be imported", name, origin.getName());
       return Collections.emptyList();
     }
 
@@ -222,7 +221,7 @@ public class ObjectVariableService {
   private Optional<OffsetDateTime> parsePossibleDate(final String dateAsString) {
     try {
       return Optional.of(DateParserUtils.parseOffsetDateTime(dateAsString));
-    } catch (DateTimeParseException e) {
+    } catch (Exception e) {
       return Optional.empty();
     }
   }

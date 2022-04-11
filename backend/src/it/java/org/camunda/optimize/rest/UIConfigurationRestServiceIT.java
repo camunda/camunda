@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
@@ -215,9 +215,9 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
     // then
     assertThat(response.isMetadataTelemetryEnabled())
-      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isMetadataTelemetryEnabled());
+      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().getMetadataTelemetryEnabled().get());
     assertThat(response.isSettingsManuallyConfirmed())
-      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isManuallyConfirmed());
+      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isTelemetryManuallyConfirmed());
   }
 
   @Test
@@ -262,13 +262,28 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.getMixpanel().isEnabled()).isEqualTo(true);
+    assertThat(response.getMixpanel().isEnabled()).isTrue();
     assertThat(response.getMixpanel().getApiHost()).isEqualTo(apiHost);
     assertThat(response.getMixpanel().getToken()).isEqualTo(testToken);
     assertThat(response.getMixpanel().getOrganizationId()).isEqualTo(organizationId);
     assertThat(response.getMixpanel().getOsanoScriptUrl()).isEqualTo(scriptUrl);
     assertThat(response.getMixpanel().getStage()).isEqualTo(stage);
     assertThat(response.getMixpanel().getClusterId()).isEqualTo(clusterId);
+  }
+
+  @Test
+  public void getOnboardingConfiguration() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnabled(true);
+    final String scriptUrl = "test";
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setAppCuesScriptUrl(scriptUrl);
+
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.getOnboarding().isEnabled()).isEqualTo(true);
+    assertThat(response.getOnboarding().getAppCuesScriptUrl()).isEqualTo(scriptUrl);
   }
 
   private void setWebappsEndpoint(final String webappsEndpoint) {

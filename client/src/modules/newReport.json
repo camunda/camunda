@@ -4,7 +4,12 @@
     "data": {
       "configuration": {
         "color": "#1991c8",
-        "aggregationTypes": ["avg"],
+        "aggregationTypes": [
+          {
+            "type": "avg",
+            "value": null
+          }
+        ],
         "userTaskDurationTimes": ["total"],
         "showInstanceCount": false,
         "pointMarkers": true,
@@ -127,7 +132,12 @@
     "data": {
       "configuration": {
         "color": "#1991c8",
-        "aggregationTypes": ["avg"],
+        "aggregationTypes": [
+          {
+            "type": "avg",
+            "value": null
+          }
+        ],
         "userTaskDurationTimes": ["total"],
         "showInstanceCount": false,
         "pointMarkers": true,

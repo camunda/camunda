@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single.usertask.duration.groupby.assignee.distributedby.process;
 
@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -288,7 +289,7 @@ public class UserTaskDurationByAssigneeByProcessReportEvaluationIT extends Abstr
 
     // when
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
-    reportData.getConfiguration().setAggregationTypes(AVERAGE, MAX);
+    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AVERAGE), new AggregationDto(MAX));
     final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
@@ -300,7 +301,7 @@ public class UserTaskDurationByAssigneeByProcessReportEvaluationIT extends Abstr
       .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
       .containsExactly(
         Tuple.tuple(
-          AVERAGE, List.of(
+          new AggregationDto(AVERAGE), List.of(
             createHyperMapResult(
               DEFAULT_USERNAME,
               DEFAULT_FULLNAME,
@@ -316,7 +317,7 @@ public class UserTaskDurationByAssigneeByProcessReportEvaluationIT extends Abstr
           )
         ),
         Tuple.tuple(
-          MAX, List.of(
+          new AggregationDto(MAX), List.of(
             createHyperMapResult(
               DEFAULT_USERNAME,
               DEFAULT_FULLNAME,

@@ -1,11 +1,11 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.filter.process.date.modelelement;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -28,7 +28,7 @@ public class RollingFlowNodeStartDateFilterIT extends AbstractRollingFlowNodeDat
   }
 
   @Override
-  protected List<ProcessFilterDto<?>> createRollingDateViewFilter(final Long value, final DateFilterUnit unit) {
+  protected List<ProcessFilterDto<?>> createRollingDateViewFilter(final Long value, final DateUnit unit) {
     return ProcessFilterBuilder.filter()
       .rollingFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
@@ -39,7 +39,7 @@ public class RollingFlowNodeStartDateFilterIT extends AbstractRollingFlowNodeDat
 
   @Override
   protected List<ProcessFilterDto<?>> createRollingDateInstanceFilter(final List<String> flowNodeIds,
-                                                                      final Long value, final DateFilterUnit unit) {
+                                                                      final Long value, final DateUnit unit) {
     return ProcessFilterBuilder.filter()
       .rollingFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.INSTANCE)

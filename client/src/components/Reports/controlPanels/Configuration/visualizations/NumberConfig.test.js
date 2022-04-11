@@ -30,7 +30,7 @@ const props = {
             },
           },
         },
-        aggregationTypes: ['avg'],
+        aggregationTypes: [{type: 'avg', value: null}],
       },
     },
   },
@@ -98,11 +98,30 @@ it('should not show target input for multi-aggregation reports', () => {
   const node = shallow(
     <NumberConfig
       report={update(props.report, {
-        data: {configuration: {aggregationTypes: {$set: ['avg', 'max']}}},
+        data: {
+          configuration: {
+            aggregationTypes: {
+              $set: [
+                {type: 'avg', value: null},
+                {type: 'max', value: null},
+              ],
+            },
+          },
+        },
       })}
     />
   );
 
   expect(node.find('CountTargetInput')).not.toExist();
   expect(node.find('DurationTargetInput')).not.toExist();
+});
+
+it('should not show precision selection for percentage reports', () => {
+  const node = shallow(
+    <NumberConfig
+      report={update(props.report, {data: {view: {properties: {$set: ['percentage']}}}})}
+    />
+  );
+
+  expect(node.find('.precision')).not.toExist();
 });

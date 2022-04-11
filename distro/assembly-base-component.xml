@@ -63,6 +63,12 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
+      <source>src/License.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>crlf</lineEnding>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
       <source>src/LicenseBook_Optimize.txt</source>
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>

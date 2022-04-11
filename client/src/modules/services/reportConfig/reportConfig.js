@@ -114,22 +114,35 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
     // remove sum aggregation from incident view
     if (newReport.view.entity === 'incident') {
       newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-        (type) => type !== 'sum'
+        (agg) => agg.type !== 'sum'
       );
 
       if (newReport.configuration.aggregationTypes.length === 0) {
-        newReport.configuration.aggregationTypes = ['avg'];
+        newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
       }
     }
 
-    // remove median aggregation from group by process
+    // remove percentile aggregation from group by process
     if (newReport.distributedBy.type === 'process') {
       newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
-        (type) => type !== 'median'
+        (agg) => agg.type !== 'percentile'
       );
 
       if (newReport.configuration.aggregationTypes.length === 0) {
-        newReport.configuration.aggregationTypes = ['avg'];
+        newReport.configuration.aggregationTypes = [{type: 'avg', value: null}];
+      }
+    }
+
+    // remove percentage measure if it is not supported
+    if (
+      newReport.view.properties.includes('percentage') &&
+      newReport.view.entity !== 'processInstance'
+    ) {
+      newReport.view.properties = newReport.view.properties.filter(
+        (measure) => measure !== 'percentage'
+      );
+      if (newReport.view.properties.length === 0) {
+        newReport.view.properties = ['frequency'];
       }
     }
 

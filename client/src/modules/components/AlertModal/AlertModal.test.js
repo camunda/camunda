@@ -24,7 +24,9 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    evaluateReport: jest.fn().mockReturnValue({id: '6', result: {data: 123}}),
+    evaluateReport: jest
+      .fn()
+      .mockReturnValue({id: '6', data: {view: {properties: ['duration']}}, result: {data: 123}}),
     formatters: {
       ...rest.formatters,
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
@@ -32,6 +34,10 @@ jest.mock('services', () => {
     },
     getOptimizeVersion: jest.fn().mockReturnValue('2.4.0-alpha2'),
   };
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
 const initialAlert = {
@@ -236,6 +242,13 @@ it('should load an initial report if specified', () => {
 
   expect(node.find('Typeahead').prop('initialValue')).toBe('5');
   expect(node.find('Typeahead').prop('disabled')).toBe(true);
+});
+
+it('should not load the report twice if both initialAlert and initialReport are defined', () => {
+  const node = shallow(<AlertModal {...props} initialReport="5" initialAlert={initialAlert} />);
+
+  expect(evaluateReport.mock.calls.length).toBe(1);
+  expect(node.find('Typeahead').prop('initialValue')).toBe('8');
 });
 
 it('should allow to remove an alert from inside the modal if onRemove prop is provided', () => {

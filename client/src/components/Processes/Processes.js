@@ -6,13 +6,17 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {Button, EntityList} from 'components';
+import {Button, EntityList, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {getOptimizeProfile} from 'config';
 
 import TimeGoalsModal from './TimeGoalsModal';
-import {loadProcesses, saveGoals} from './service';
+import GoalResult from './GoalResult';
+import GoalSummary from './GoalSummary';
+import EditOwnerModal from './EditOwnerModal';
+import {loadProcesses, updateGoals, updateOwner} from './service';
 
 import './Processes.scss';
 
@@ -20,6 +24,8 @@ export function Processes({mightFail}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
   const [openProcess, setOpenProcess] = useState();
+  const [editOwnerInfo, setEditOwnerInfo] = useState();
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   const loadProcessesList = useCallback(
     (sortBy, sortOrder) => {
@@ -33,6 +39,22 @@ export function Processes({mightFail}) {
     loadProcessesList();
   }, [loadProcessesList]);
 
+  useEffect(() => {
+    (async () => {
+      setOptimizeProfile(await getOptimizeProfile());
+    })();
+  }, []);
+
+  const columns = [
+    {name: t('common.name'), key: 'processName', defaultOrder: 'asc'},
+    {name: t('processes.timeGoal'), key: 'durationGoals', defaultOrder: 'asc'},
+  ];
+
+  if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
+    const ownerColumn = {name: t('processes.owner'), key: 'owner', defaultOrder: 'asc'};
+    columns.splice(1, 0, ownerColumn);
+  }
+
   return (
     <div className="Processes">
       <EntityList
@@ -45,40 +67,87 @@ export function Processes({mightFail}) {
         }
         empty={t('processes.empty')}
         isLoading={!processes}
-        columns={[
-          {name: t('common.name'), key: 'processName', defaultOrder: 'asc'},
-          t('processes.owner'),
-          t('processes.timeGoal'),
-        ]}
+        columns={columns}
         sorting={sorting}
         onChange={loadProcessesList}
-        data={processes?.map(({processDefinitionKey, processName, owner, timeGoals}) => ({
-          id: processDefinitionKey,
-          type: t('common.process.label'),
-          icon: 'data-source',
-          name: processName || processDefinitionKey,
-          meta: [
-            owner,
-            <Button
-              className="setGoalBtn"
-              onClick={() => {
-                setOpenProcess({processDefinitionKey, timeGoals});
-              }}
-            >
-              {timeGoals?.length > 0 ? t('processes.editGoal') : t('processes.setGoal')}
-            </Button>,
-          ],
-        }))}
+        data={processes?.map(({processDefinitionKey, processName, owner, durationGoals}) => {
+          const meta = [
+            <>
+              <Tooltip
+                position="bottom"
+                content={<GoalResult durationGoals={durationGoals} />}
+                delay={300}
+              >
+                <div className="summaryContainer">
+                  <GoalSummary goals={durationGoals.results} />
+                </div>
+              </Tooltip>
+              <Button
+                className="setGoalBtn"
+                onClick={() => {
+                  setOpenProcess({processDefinitionKey, processName, durationGoals});
+                }}
+              >
+                {durationGoals?.goals?.length > 0
+                  ? t('processes.editGoal')
+                  : t('processes.setGoal')}
+              </Button>
+            </>,
+          ];
+
+          if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
+            meta.unshift(
+              <div className="ownerInfo">
+                <Tooltip content={owner?.name} overflowOnly>
+                  <div className="ownerName">{owner?.name}</div>
+                </Tooltip>
+                <Button
+                  className="setOwnerBtn"
+                  onClick={() => setEditOwnerInfo({processDefinitionKey, owner})}
+                >
+                  {owner?.name ? t('processes.editOwner') : t('processes.addOwner')}
+                </Button>
+              </div>
+            );
+          }
+
+          return {
+            id: processDefinitionKey,
+            type: t('common.process.label'),
+            icon: 'data-source',
+            name: processName || processDefinitionKey,
+            meta,
+          };
+        })}
       />
       {openProcess && (
         <TimeGoalsModal
-          processDefinitionKey={openProcess.processDefinitionKey}
-          initialGoals={openProcess.timeGoals}
+          process={openProcess}
           onClose={() => setOpenProcess()}
           onConfirm={(goals) => {
             mightFail(
-              saveGoals(openProcess.processDefinitionKey, goals),
-              setOpenProcess,
+              updateGoals(openProcess.processDefinitionKey, goals),
+              () => {
+                setOpenProcess();
+                loadProcessesList();
+              },
+              showError
+            );
+          }}
+          onRemove={loadProcessesList}
+        />
+      )}
+      {editOwnerInfo && (
+        <EditOwnerModal
+          initialOwner={editOwnerInfo.owner}
+          onClose={() => setEditOwnerInfo()}
+          onConfirm={async (userId) => {
+            await mightFail(
+              updateOwner(editOwnerInfo.processDefinitionKey, userId),
+              () => {
+                setEditOwnerInfo();
+                loadProcessesList();
+              },
               showError
             );
           }}

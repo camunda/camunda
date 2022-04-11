@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.util.configuration;
 
@@ -51,6 +51,7 @@ public class ConfigurationServiceConstants {
   public static final String IMPORT_DMN_DATA = "$.import.data.dmn.enabled";
   public static final String IMPORT_USER_TASK_WORKER_DATA = "$.import.data.user-task-worker.enabled";
   public static final String IMPORT_USER_TASK_IDENTITY_META_DATA = "$.import.data.user-task-worker.metadata";
+  public static final String CUSTOMER_ONBOARDING_DATA = "$.import.customer-onboarding";
 
   public static final String PLUGIN_BASE_DIRECTORY = "$.plugin.directory";
   public static final String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
@@ -65,6 +66,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
   public static final String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
   public static final String ELASTIC_SEARCH_PROXY = "$.es.connection.proxy";
+  public static final String ELASTIC_SEARCH_PATH_PREFIX = "$.es.connection.pathPrefix";
 
   public static final String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
   public static final String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";
@@ -99,8 +101,6 @@ public class ConfigurationServiceConstants {
   public static final String EXPORT_CSV_LIMIT = "$.export.csv.limit";
   public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 
-  public static final String JSON_EXPORT_CONFIGURATION = "$.export.json";
-
   public static final String HISTORY_CLEANUP = "$.historyCleanup";
   public static final String HISTORY_CLEANUP_PROCESS_DATA = HISTORY_CLEANUP + ".processDataCleanup";
 
@@ -126,6 +126,8 @@ public class ConfigurationServiceConstants {
   public static final String CACHES_CONFIGURATION = "$.caches";
 
   public static final String ANALYTICS_CONFIGURATION = "$.analytics";
+
+  public static final String ONBOARDING_CONFIGURATION = "$.onboarding";
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";

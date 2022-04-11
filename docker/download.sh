@@ -18,7 +18,7 @@ function useNexusDownload {
 
   # Download distro from nexus
   mvn dependency:get -B --global-settings /tmp/settings.xml \
-    -DremoteRepositories="camunda-nexus::::https://app.camunda.com/nexus/content/groups/internal" \
+    -DremoteRepositories="camunda-nexus::::https://artifacts.camunda.com/artifactory/internal/" \
     -DgroupId="${ARTIFACT_GROUP}" -DartifactId="${ARTIFACT}" \
     -Dversion="${ARTIFACT_VERSION}" -Dpackaging="tar.gz" -Dclassifier="${DISTRO}" -Dtransitive=false
   mvn dependency:copy -B --global-settings /tmp/settings.xml \

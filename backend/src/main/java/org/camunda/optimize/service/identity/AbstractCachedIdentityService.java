@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.identity;
 
@@ -33,17 +33,20 @@ public abstract class AbstractCachedIdentityService extends AbstractIdentityServ
 
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
                                                                    final String searchString,
-                                                                   final int maxResults) {
+                                                                   final int maxResults,
+                                                                   final boolean excludeUserGroups) {
     final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
+    final IdentityType[] identityTypesToSearch = excludeUserGroups ?
+      new IdentityType[]{IdentityType.USER} : IdentityType.values();
     IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(
-      searchString, IdentityType.values(), maxResults
+      searchString, identityTypesToSearch, maxResults
     );
     while (!result.getResult().isEmpty()
       && filteredIdentities.size() < maxResults) {
       // continue searching until either the maxResult number of hits has been found or
       // the end of the cache has been reached
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
-      result = syncedIdentityCache.searchIdentitiesAfter(searchString, IdentityType.values(), maxResults, result);
+      result = syncedIdentityCache.searchIdentitiesAfter(searchString, identityTypesToSearch, maxResults, result);
     }
     return new IdentitySearchResultResponseDto(filteredIdentities.size(), filteredIdentities);
   }

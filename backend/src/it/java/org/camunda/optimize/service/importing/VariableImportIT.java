@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.importing;
 
@@ -638,6 +638,35 @@ public class VariableImportIT extends AbstractImportIT {
       )
       .containsExactlyInAnyOrder(
         Tuple.tuple("objectVar", OBJECT.getId(), Collections.emptyList())
+      );
+  }
+
+  @SneakyThrows
+  @Test
+  public void objectVariablesCanHaveNullOrEmptyPropertyValues() {
+    // given
+    final Map<String, Object> object = new HashMap<>();
+    object.put("emptyProp", "");
+    object.put("nullProp", null);
+    VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(object);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVariableDto);
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleUserTaskDiagram(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instance);
+
+    // then
+    assertThat(instanceVariables)
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple("objectVar", OBJECT.getId(), singletonList(objectVariableDto.getValue()))
       );
   }
 

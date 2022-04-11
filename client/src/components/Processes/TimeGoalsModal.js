@@ -15,59 +15,65 @@ import {
   Select,
   DurationChart,
   LoadingIndicator,
+  Deleter,
+  Tooltip,
+  Icon,
+  Message,
 } from 'components';
-import {evaluateReport, formatters} from 'services';
+import {evaluateReport, formatters, numberParser} from 'services';
 import {t} from 'translation';
 import {newReport} from 'config';
 import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+import {addNotification, showError} from 'notifications';
 
-import {loadTenants} from './service';
+import {loadTenants, updateGoals} from './service';
+import ResultPreview from './ResultPreview';
 
 import './TimeGoalsModal.scss';
 
-export function TimeGoalsModal({
-  onClose,
-  onConfirm,
-  mightFail,
-  processDefinitionKey,
-  initialGoals,
-}) {
+const defaultGoals = [
+  {
+    type: 'targetDuration',
+    percentile: '75',
+    value: '7',
+    unit: 'days',
+  },
+  {
+    type: 'slaDuration',
+    percentile: '99',
+    value: '7',
+    unit: 'days',
+  },
+];
+
+export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process}) {
+  const isEditing = process.durationGoals?.goals?.length > 0;
   const [data, setData] = useState();
-  const [goals, setGoals] = useState(
-    initialGoals?.length > 0
-      ? initialGoals
-      : [
-          {
-            type: 'targetDuration',
-            percentile: '75',
-            value: '',
-            unit: null,
-            visible: true,
-          },
-          {
-            type: 'slaDuration',
-            percentile: '99',
-            value: '',
-            unit: null,
-            visible: true,
-          },
-        ]
+  const [isGoalVisible, setIsGoalVisible] = useState(
+    defaultGoals.map((goal) =>
+      isEditing ? process.durationGoals?.goals?.some(({type}) => goal.type === type) : true
+    )
   );
+  const [goals, setGoals] = useState(
+    defaultGoals.map(
+      (goal) => process.durationGoals?.goals?.find(({type}) => goal.type === type) || goal
+    )
+  );
+  const [deleting, setDeleting] = useState();
 
   useEffect(() => {
     (async () => {
-      const tenantData = await loadTenants(processDefinitionKey);
+      const tenantData = await loadTenants(process.processDefinitionKey);
       mightFail(
-        evaluateReport(getReportPayload(processDefinitionKey, tenantData), []),
+        evaluateReport(getReportPayload(process.processDefinitionKey, tenantData), []),
         ({result}) => setData(result),
         showError
       );
     })();
-  }, [mightFail, processDefinitionKey]);
+  }, [mightFail, process]);
 
   useEffect(() => {
-    if (data?.instanceCount > 0 && (!initialGoals || !initialGoals.length)) {
+    if (data?.instanceCount > 0 && !isEditing) {
       const targetDuration = findPercentageDuration(data, 0.8);
       const slaDuration = findPercentageDuration(data, 0.99);
 
@@ -76,81 +82,165 @@ export function TimeGoalsModal({
       updateGoalValue(1, 'value', slaDuration.value);
       updateGoalValue(1, 'unit', slaDuration.unit);
     }
-  }, [data, initialGoals]);
+  }, [data, isEditing]);
 
   function updateGoalValue(idx, prop, value) {
     setGoals((currentGoals) => update(currentGoals, {[idx]: {[prop]: {$set: value}}}));
   }
 
+  const isDurationValuesValid = goals.every((goal) => numberParser.isPositiveInt(goal.value));
+  const visibleGoals = goals.filter((_, idx) => isGoalVisible[idx]);
+
   return (
     <Modal open size="max" onClose={onClose} className="TimeGoalsModal">
       <Modal.Header>{t('processes.timeGoals.label')}</Modal.Header>
       <Modal.Content>
-        <fieldset className="goalsConfig">
-          <legend>{t('processes.timeGoals.configure')}</legend>
-          {goals.map(({type, value, percentile, unit, visible}, idx) => (
-            <div className="singleGoal" key={type}>
-              <b>{t('processes.timeGoals.' + type)}</b>
-              <Select
-                value={percentile}
-                onChange={(selectValue) => updateGoalValue(idx, 'percentile', selectValue)}
-              >
-                <Select.Option value="99">99%</Select.Option>
-                <Select.Option value="95">95%</Select.Option>
-                <Select.Option value="90">90%</Select.Option>
-                <Select.Option value="75">75%</Select.Option>
-                <Select.Option value="25">25%</Select.Option>
-              </Select>
-              <span>
-                {t('processes.timeGoals.instancesTake')} <b>{t('processes.timeGoals.lessThan')}</b>
-              </span>
-              <Input
-                type="text"
-                value={value}
-                onChange={(evt) => updateGoalValue(idx, 'value', evt.target.value)}
-              />
-              <Select
-                className="unitSelection"
-                value={unit}
-                onChange={(selectValue) => updateGoalValue(idx, 'unit', selectValue)}
-              >
-                <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>
-                <Select.Option value="seconds">
-                  {t('common.unit.second.label-plural')}
-                </Select.Option>
-                <Select.Option value="minutes">
-                  {t('common.unit.minute.label-plural')}
-                </Select.Option>
-                <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
-                <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
-                <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
-                <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
-                <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
-              </Select>
-              <LabeledInput
-                type="checkbox"
-                label={t('processes.timeGoals.displayGoal')}
-                checked={visible}
-                onChange={(evt) => updateGoalValue(idx, 'visible', evt.target.checked)}
+        {data ? (
+          <>
+            <div className="GoalsSection">
+              <fieldset className="goalsConfig">
+                <legend className="title">
+                  {t('processes.timeGoals.configure')}{' '}
+                  <Tooltip
+                    content={
+                      <div>
+                        {t('processes.timeGoals.setDuration')}
+                        <br />
+                        <br />
+                        {t('processes.timeGoals.availableGoals')}
+                      </div>
+                    }
+                  >
+                    <Icon type="info" />
+                  </Tooltip>
+                </legend>
+                {goals.map(({type, value, percentile, unit}, idx) => (
+                  <div className="singleGoal" key={type}>
+                    <b>{t('processes.timeGoals.' + type)}</b>
+                    <Select
+                      value={percentile.toString()}
+                      onChange={(selectValue) => updateGoalValue(idx, 'percentile', selectValue)}
+                    >
+                      <Select.Option value="99">99%</Select.Option>
+                      <Select.Option value="95">95%</Select.Option>
+                      <Select.Option value="90">90%</Select.Option>
+                      <Select.Option value="75">75%</Select.Option>
+                      <Select.Option value="25">25%</Select.Option>
+                    </Select>
+                    <span>
+                      {t('processes.timeGoals.instancesTake')}{' '}
+                      <b>{t('processes.timeGoals.lessThan')}</b>
+                    </span>
+                    <Input
+                      isInvalid={!numberParser.isPositiveInt(value)}
+                      type="text"
+                      value={value}
+                      onChange={(evt) => updateGoalValue(idx, 'value', evt.target.value)}
+                      maxLength="8"
+                    />
+                    <Select
+                      className="unitSelection"
+                      value={unit}
+                      onChange={(selectValue) => updateGoalValue(idx, 'unit', selectValue)}
+                    >
+                      <Select.Option value="millis">
+                        {t('common.unit.milli.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="seconds">
+                        {t('common.unit.second.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="minutes">
+                        {t('common.unit.minute.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="hours">
+                        {t('common.unit.hour.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="days">
+                        {t('common.unit.day.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="weeks">
+                        {t('common.unit.week.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="months">
+                        {t('common.unit.month.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="years">
+                        {t('common.unit.year.label-plural')}
+                      </Select.Option>
+                    </Select>
+                    <LabeledInput
+                      type="checkbox"
+                      label={t('processes.timeGoals.displayGoal')}
+                      checked={isGoalVisible[idx]}
+                      onChange={(evt) =>
+                        setIsGoalVisible((visibleGoals) =>
+                          update(visibleGoals, {[idx]: {$set: evt.target.checked}})
+                        )
+                      }
+                    />
+                  </div>
+                ))}
+                {!isDurationValuesValid && (
+                  <Message className="positiveIntegerError" error>
+                    {t('common.errors.positiveInt')}
+                  </Message>
+                )}
+              </fieldset>
+              <ResultPreview
+                goals={visibleGoals}
+                processDefinitionKey={process.processDefinitionKey}
               />
             </div>
-          ))}
-        </fieldset>
-        <h3 className="chartTitle">{t('processes.timeGoals.durationDistribution')}</h3>
-        {data ? (
-          <DurationChart data={data?.measures[0].data} colors="#1991c8" />
+            <h3 className="chartTitle title">
+              {t('processes.timeGoals.durationDistribution')}{' '}
+              <Tooltip
+                position="bottom"
+                content={t('processes.timeGoals.durationDistributionInfo')}
+              >
+                <Icon type="info" />
+              </Tooltip>
+            </h3>
+            <DurationChart data={data.measures[0].data} colors="#1991c8" />
+          </>
         ) : (
           <LoadingIndicator />
         )}
+        <Deleter
+          type="goals"
+          entity={deleting}
+          onClose={() => {
+            setDeleting();
+            onRemove();
+            onClose();
+          }}
+          getName={({processName}) => processName}
+          deleteEntity={async () => {
+            await updateGoals(deleting.processDefinitionKey, []);
+            addNotification({
+              type: 'success',
+              text: t('processes.goalRemoved', {processName: deleting.processName}),
+            });
+          }}
+        />
       </Modal.Content>
       <Modal.Actions>
+        {isEditing && (
+          <Button link className="deleteButton" onClick={() => setDeleting(process)}>
+            {t('common.deleteEntity', {entity: t('processes.goals')})}
+          </Button>
+        )}
         <Button main onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary onClick={() => onConfirm(goals)}>
-          {initialGoals?.length > 0
-            ? t('processes.timeGoals.updateGoals')
-            : t('processes.timeGoals.saveGoals')}
+        <Button
+          main
+          primary
+          onClick={() => {
+            onConfirm(visibleGoals);
+          }}
+          disabled={!data || !isDurationValuesValid}
+        >
+          {isEditing ? t('processes.timeGoals.updateGoals') : t('processes.timeGoals.updateGoals')}
         </Button>
       </Modal.Actions>
     </Modal>
@@ -179,11 +269,31 @@ function getReportPayload(processDefinitionKey, tenantData) {
       },
       groupBy: {$set: {type: 'duration', value: null}},
       visualization: {$set: 'bar'},
+      filter: {
+        $set: [
+          {
+            type: 'instanceEndDate',
+            data: {
+              type: 'rolling',
+              start: {
+                value: '30',
+                unit: 'days',
+              },
+              end: null,
+            },
+            appliedTo: ['all'],
+            filterLevel: 'instance',
+          },
+        ],
+      },
     },
   });
 }
 
 function findPercentageDuration(data, percentage) {
+  // find the duration bucket that contains nth percentile instance
+  // and return the duration of the next bucket to ensure that goals succeed
+  // if the nth percentile instance is in the last bucket, return its duration even if goals fail
   const targetDurationPosition = percentage * data.instanceCount - 1;
   const durationData = data?.measures[0].data;
   let instancesCounter = 0;
@@ -191,7 +301,7 @@ function findPercentageDuration(data, percentage) {
     instancesCounter += durationData[idx].value;
     if (instancesCounter > targetDurationPosition) {
       const durationBucket = durationData[idx + 1] || durationData[idx];
-      const {value, unit} = formatters.convertToBiggestPossibleDuration(durationBucket.key);
+      const {value, unit} = formatters.convertToDecimalTimeUnit(durationBucket.key);
       return {value: Math.ceil(value).toString(), unit};
     }
   }

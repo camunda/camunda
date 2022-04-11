@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
@@ -12,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -131,7 +132,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       viewMeasures.add(CompositeCommandResult.ViewMeasure.builder().value(totalCount).build());
     } else if (viewPart instanceof ProcessViewUserTaskDuration) {
       for (UserTaskDurationTime userTaskDurationTime : context.getReportConfiguration().getUserTaskDurationTimes()) {
-        for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
+        for (AggregationDto aggregationType : context.getReportConfiguration().getAggregationTypes()) {
           Double mergedAggResult = calculateMergedAggregationResult(
             processBuckets,
             aggregationType,
@@ -146,7 +147,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
         }
       }
     } else {
-      for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
+      for (AggregationDto aggregationType : context.getReportConfiguration().getAggregationTypes()) {
         Double mergedAggResult = calculateMergedAggregationResult(processBuckets, aggregationType, null);
         viewMeasures.add(
           CompositeCommandResult.ViewMeasure.builder()
@@ -159,15 +160,15 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
   }
 
   private Double calculateMergedAggregationResult(final List<ProcessBucket> processBuckets,
-                                                  final AggregationType aggregationType,
+                                                  final AggregationDto aggregationType,
                                                   final UserTaskDurationTime userTaskDurationTime) {
-    Map<AggregationType, List<CompositeCommandResult.ViewMeasure>> measuresByAggType = processBuckets.stream()
+    Map<AggregationDto, List<CompositeCommandResult.ViewMeasure>> measuresByAggType = processBuckets.stream()
       .map(ProcessBucket::getResult)
       .flatMap(results -> results.getViewMeasures().stream())
       .filter(measure -> measure.getUserTaskDurationTime() == userTaskDurationTime)
       .collect(Collectors.groupingBy(CompositeCommandResult.ViewMeasure::getAggregationType));
     Double mergedAggResult;
-    switch (aggregationType) {
+    switch (aggregationType.getType()) {
       case MAX:
         mergedAggResult = measuresByAggType.getOrDefault(aggregationType, Collections.emptyList())
           .stream()
@@ -201,7 +202,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
               final Optional<CompositeCommandResult.ViewMeasure> avgMeasure = bucket.getResult()
                 .getViewMeasures()
                 .stream()
-                .filter(measure -> measure.getAggregationType() == AggregationType.AVERAGE)
+                .filter(measure -> measure.getAggregationType().getType() == AggregationType.AVERAGE)
                 .findFirst();
               return avgMeasure.map(measure -> Pair.of(bucket, measure.getValue()));
             })
@@ -212,9 +213,9 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
           mergedAggResult = totalValueSum / totalDocCount;
         }
         break;
-      // We cannot support the median aggregation type with this distribution as the information is lost on merging
+      // We cannot support percentile aggregation types with this distribution as the information is lost on merging
       // of buckets
-      case MEDIAN:
+      case PERCENTILE:
         mergedAggResult = null;
         break;
       default:

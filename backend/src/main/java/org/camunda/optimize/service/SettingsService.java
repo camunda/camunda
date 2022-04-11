@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service;
 
@@ -31,6 +31,7 @@ public class SettingsService {
       .orElse(
         SettingsResponseDto.builder()
           .metadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry())
+          .sharingEnabled(configurationService.getSharingEnabled())
           .build()
       );
   }
@@ -39,6 +40,13 @@ public class SettingsService {
     validateUserAuthorizedToConfigureSettingsOrFail(userId);
     settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     settingsDto.setLastModifier(userId);
+    settingsWriter.upsertSettings(settingsDto);
+  }
+
+  public void setSettings(final SettingsResponseDto settingsDto) {
+    settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    // Make sure that the configuration service is in sync with the settings service
+    settingsDto.getSharingEnabled().ifPresent(configurationService::setSharingEnabled);
     settingsWriter.upsertSettings(settingsDto);
   }
 

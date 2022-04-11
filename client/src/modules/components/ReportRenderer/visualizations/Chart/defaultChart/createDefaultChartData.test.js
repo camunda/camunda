@@ -13,7 +13,7 @@ it('should return correct chart data object for a single report', () => {
     measures: [
       {
         property: 'duration',
-        aggregationType: 'avg',
+        aggregationType: {type: 'avg', value: null},
         data: [
           {key: 'foo', value: 123},
           {key: 'bar', value: 5},
@@ -70,7 +70,7 @@ it('should return correct chart data object for multi-measure report', () => {
             },
             {
               property: 'duration',
-              aggregationType: 'avg',
+              aggregationType: {type: 'avg', value: null},
               data: [
                 {key: 'foo', value: 175824},
                 {key: 'bar', value: 592754},
@@ -97,7 +97,7 @@ it('should assign line/bar visualization to dataset according to measureVisualiz
       },
       {
         property: 'duration',
-        aggregationType: 'avg',
+        aggregationType: {type: 'avg', value: null},
         data: [
           {key: 'foo', value: 175824},
           {key: 'bar', value: 592754},

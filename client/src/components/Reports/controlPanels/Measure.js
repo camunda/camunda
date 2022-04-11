@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Select, SelectionPreview, Button} from 'components';
+import {Select, SelectionPreview} from 'components';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 
@@ -14,8 +14,13 @@ import AggregationType from './AggregationType';
 
 import './Measure.scss';
 
+const measureOrder = ['frequency', 'percentage', 'duration'];
+
 export default function Measure({report, onChange}) {
   const selectedView = reportConfig.process.view.find(({matcher}) => matcher(report));
+  const firstMeasure = report.view.properties?.[0];
+  const secondMeasure = report.view.properties?.[1];
+  const isIncidentReport = report.view.entity === 'incident';
 
   function updateMeasure(newMeasures) {
     onChange(
@@ -25,22 +30,36 @@ export default function Measure({report, onChange}) {
     );
   }
 
+  const options = (
+    <>
+      <Select.Option value="frequency" disabled={firstMeasure === 'frequency'}>
+        {getLabel('frequency', isIncidentReport)}
+      </Select.Option>
+      {report.view.entity === 'processInstance' && (
+        <Select.Option value="percentage" disabled={firstMeasure === 'percentage'}>
+          {getLabel('percentage', isIncidentReport)}
+        </Select.Option>
+      )}
+      <Select.Option value="duration" disabled={firstMeasure === 'duration'}>
+        {getLabel('duration', isIncidentReport)}
+      </Select.Option>
+    </>
+  );
+
   if (report.view.properties?.length === 2) {
     return (
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <SelectionPreview onClick={() => updateMeasure(['duration'])}>
-            <span>{t('report.view.count')}</span>
+          <SelectionPreview onClick={() => updateMeasure([secondMeasure])}>
+            <span>{getLabel(firstMeasure, isIncidentReport)}</span>
           </SelectionPreview>
         </li>
         <li className="Measure select">
           <span className="label"></span>
-          <SelectionPreview onClick={() => updateMeasure(['frequency'])}>
+          <SelectionPreview onClick={() => updateMeasure([firstMeasure])}>
             <span>
-              {report.view.entity === 'incident'
-                ? t('report.view.resolutionDuration')
-                : t('report.view.duration')}
+              <span>{getLabel(secondMeasure, isIncidentReport)}</span>
             </span>
           </SelectionPreview>
           <AggregationType report={report} onChange={onChange} />
@@ -52,25 +71,43 @@ export default function Measure({report, onChange}) {
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <Select
-            value={report.view.properties[0]}
-            onChange={(property) => updateMeasure([property])}
-          >
-            <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
-            <Select.Option value="duration">
-              {report.view.entity === 'incident'
-                ? t('report.view.resolutionDuration')
-                : t('report.view.duration')}
-            </Select.Option>
+          <Select value={firstMeasure} onChange={(property) => updateMeasure([property])}>
+            {options}
           </Select>
           <AggregationType report={report} onChange={onChange} />
         </li>
         <li className="addMeasure">
-          <Button onClick={() => updateMeasure(['frequency', 'duration'])}>
-            + {t('report.addMeasure')}
-          </Button>
+          <Select
+            value={firstMeasure}
+            onChange={(secondMeasure) => {
+              updateMeasure(
+                [firstMeasure, secondMeasure].sort(
+                  (a, b) => measureOrder.indexOf(a) - measureOrder.indexOf(b)
+                )
+              );
+            }}
+            label={'+ ' + t('report.addMeasure')}
+          >
+            {options}
+          </Select>
         </li>
       </>
     );
   }
+}
+
+function getLabel(measure, isIncident) {
+  if (measure === 'frequency') {
+    return t('report.view.count');
+  }
+
+  if (measure === 'percentage') {
+    return t('report.view.percentage');
+  }
+
+  if (isIncident) {
+    return t('report.view.resolutionDuration');
+  }
+
+  return t('report.view.duration');
 }

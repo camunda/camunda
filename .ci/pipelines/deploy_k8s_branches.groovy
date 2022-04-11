@@ -173,7 +173,7 @@ pipeline {
                 http://localhost:8090/api/ingestion/event/batch \
                 -H 'Expect:' \
                 -H 'Content-Type: application/cloudevents-batch+json' \
-                -H 'Authorization: secret' \
+                -H 'Authorization: Bearer secret' \
                 -f --connect-timeout 5 --max-time 10 --retry 60 --retry-delay 0 --retry-max-time 600 --retry-all-errors\
                 --data "@${WORKSPACE}/optimize/client/demo-data/eventIngestionBatch.json"
             """)

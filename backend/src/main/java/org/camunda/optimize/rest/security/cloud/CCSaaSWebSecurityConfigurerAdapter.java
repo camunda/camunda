@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest.security.cloud;
 
@@ -50,8 +50,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
+import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
+import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 @Configuration
 @RequiredArgsConstructor
@@ -133,6 +138,17 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
       .authorizeRequests()
         // ready endpoint is public for infra
         .antMatchers(createApiPath(READYZ_PATH)).permitAll()
+        // public share resources
+        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
+                   EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
+                   EXTERNAL_SUB_PATH + "/*.ico").permitAll()
+        // public share related resources (API)
+        .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
+        // common public api resources
+        .antMatchers(
+          createApiPath(UI_CONFIGURATION_PATH),
+          createApiPath(LOCALIZATION_PATH)
+        ).permitAll()
         // everything else requires authentication
         .anyRequest().authenticated()
       .and()

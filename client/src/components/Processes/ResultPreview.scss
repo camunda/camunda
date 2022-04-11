@@ -1,0 +1,18 @@
+.ResultPreview {
+  display: flex;
+  flex-direction: column;
+
+  .resultHeading {
+    padding: 0px 20px;
+    margin-bottom: 10px;
+
+    > .Icon {
+      height: 18px;
+      color: var(--silver-darken-80);
+    }
+  }
+
+  .GoalResult {
+    min-width: 200px;
+  }
+}

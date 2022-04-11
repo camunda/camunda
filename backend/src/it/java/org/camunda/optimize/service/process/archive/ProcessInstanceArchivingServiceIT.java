@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.process.archive;
 
@@ -23,8 +23,8 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 public class ProcessInstanceArchivingServiceIT extends AbstractIT {
 
   @Test
-  public void processInstanceArchiverIsStartedByDefault() {
-    assertThat(getProcessInstanceArchivingService().isScheduledToRun()).isTrue();
+  public void processInstanceArchiverIsNotStartedByDefault() {
+    assertThat(getProcessInstanceArchivingService().isScheduledToRun()).isFalse();
   }
 
   @Test

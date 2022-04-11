@@ -135,26 +135,24 @@ export function DashboardView(props) {
                       </Button>
                     </>
                   )}
-                  {optimizeProfile === 'platform' && (
-                    <Popover
-                      main
-                      className="tool-button share-button"
-                      icon="share"
-                      title={t('common.sharing.buttonTitle')}
-                      disabled={!sharingEnabled || !isAuthorizedToShare}
-                      tooltip={getShareTooltip()}
-                    >
-                      <ShareEntity
-                        type="dashboard"
-                        resourceId={id}
-                        shareEntity={shareDashboard}
-                        revokeEntitySharing={revokeDashboardSharing}
-                        getSharedEntity={getSharedDashboard}
-                        filter={filter}
-                        defaultFilter={getDefaultFilter(availableFilters)}
-                      />
-                    </Popover>
-                  )}
+                  <Popover
+                    main
+                    className="tool-button share-button"
+                    icon="share"
+                    title={t('common.sharing.buttonTitle')}
+                    disabled={!sharingEnabled || !isAuthorizedToShare}
+                    tooltip={getShareTooltip()}
+                  >
+                    <ShareEntity
+                      type="dashboard"
+                      resourceId={id}
+                      shareEntity={shareDashboard}
+                      revokeEntitySharing={revokeDashboardSharing}
+                      getSharedEntity={getSharedDashboard}
+                      filter={filter}
+                      defaultFilter={getDefaultFilter(availableFilters)}
+                    />
+                  </Popover>
                 </React.Fragment>
               )}
               {fullScreenHandle.active && (

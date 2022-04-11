@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.security.authorization;
 
@@ -20,9 +20,9 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
-  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(
-    secondaryEngineIntegrationExtension);
+  private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient secondAuthorizationClient =
+    new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @Test
   public void getAllStoredTenantsGrantedAccessToByAllEngines() {

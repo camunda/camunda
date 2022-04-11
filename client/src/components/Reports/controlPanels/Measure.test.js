@@ -68,8 +68,30 @@ it('should show Select for single-measure reports', () => {
 it('should call updateMeasure with correct payload for switching measures', () => {
   const node = shallow(<Measure {...props} />);
 
-  node.find('Select').simulate('change', 'duration');
+  node.find('Select').at(0).simulate('change', 'duration');
 
   expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual(['duration']);
   expect(props.onChange).toHaveBeenCalled();
+});
+
+it('should keep a correct order of measures', () => {
+  const node = shallow(
+    <Measure {...props} report={update(props.report, {view: {properties: {$set: ['duration']}}})} />
+  );
+
+  node.find('Select').at(1).simulate('change', 'frequency');
+  expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual([
+    'frequency',
+    'duration',
+  ]);
+});
+
+it('should only display percentage measure for instance reports', () => {
+  const node = shallow(<Measure {...props} />);
+
+  expect(node.find({value: 'percentage'})).toExist();
+
+  node.setProps({report: update(props.report, {view: {entity: {$set: 'incident'}}})});
+
+  expect(node.find({value: 'percentage'})).not.toExist();
 });

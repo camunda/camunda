@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest;
 
@@ -10,7 +10,6 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -36,7 +35,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request)
+    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request, false)
       .withoutAuthentication()
       .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
@@ -52,7 +51,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request)
+    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request, true)
       .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
@@ -157,15 +156,20 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
   }
 
   private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto) {
+    return getExecutor(inputsOrOutputs, requestDto, true);
+  }
+
+  private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto,
+                                              boolean authenticationEnabled) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
         return embeddedOptimizeExtension
           .getRequestExecutor()
-          .buildDecisionInputVariableNamesRequest(requestDto);
+          .buildDecisionInputVariableNamesRequest(requestDto, authenticationEnabled);
       case TEST_VARIANT_OUTPUTS:
         return embeddedOptimizeExtension
           .getRequestExecutor()
-          .buildDecisionOutputVariableNamesRequest(requestDto);
+          .buildDecisionOutputVariableNamesRequest(requestDto, authenticationEnabled);
       default:
         throw new RuntimeException("unsupported type " + inputsOrOutputs);
     }

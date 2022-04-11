@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.test.optimize;
 
@@ -100,6 +100,12 @@ public class PublicApiClient {
     return getRequestExecutor()
       .buildPublicGetAllDashboardIdsInCollectionRequest(collectionId, accessToken)
       .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public Response toggleSharing(boolean enableSharing, final String accessToken) {
+    return getRequestExecutor()
+      .buildToggleShareRequest(enableSharing, accessToken)
+      .execute();
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

@@ -28,6 +28,8 @@
         <exclude>environment-logback.xml</exclude>
         <!-- this will be included in files section -->
         <exclude>environment-logback-demo.xml</exclude>
+        <exclude>environment-config.yaml</exclude>
+        <exclude>environment-config-demo.yaml</exclude>
       </excludes>
       <outputDirectory>config/</outputDirectory>
     </fileSet>
@@ -66,6 +68,13 @@
       <source>src/config/environment-logback-demo.xml</source>
       <outputDirectory>config</outputDirectory>
       <destName>environment-logback.xml</destName>
+    </file>
+
+    <!-- environment configuration -->
+    <file>
+      <source>src/config/environment-config-demo.yaml</source>
+      <outputDirectory>config</outputDirectory>
+      <destName>environment-config.yaml</destName>
     </file>
 
     <!-- elastic config -->

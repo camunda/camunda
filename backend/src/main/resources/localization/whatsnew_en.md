@@ -1,12 +1,13 @@
-## Faster Dashboard and Alert Creation
+## Set and Track Time-Based Goals
 
-Add data sources while creating a Collection, create dashboards with multi-process templates, and create Alerts directly from dashboards and reports.
+Set data-driven service level agreements (SLAs) on how long all your processes should take so you can quickly identify which processes are underperforming.
 
-## Improved Variable Support
+## KPI Reports
 
-Object variables imported from the Process Engine are flattened into simple variables for analysis. Variable filters can now be combined with OR logic, as well.
+Create reports and alerts tracking percentages like fully automated instances or incident rate (%), plus SLA statistics on durations like P99 or P95 duration in addition to minimum, median, and maximum.
 
-## Public API Endpoints
+## Improved UX
 
-Developers can backup, migrate and control dashboards and reports programmatically using the public [REST API](https://docs.camunda.org/optimize/3.7/technical-guide/rest-api/). In addition, they can export the report data for offline analysis.
+Rename variables in plain language, filter out noisy outlier analysis heatmaps, and apply rolling date filters to your dashboards to focus on the most important data.
 
+For more details, check out the [blog post](https://camunda.com/blog/2022/04/camunda-optimize-3-8-0-released/).

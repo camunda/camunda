@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.util;
 
@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
@@ -31,8 +33,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Exec
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
@@ -46,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
@@ -114,6 +117,7 @@ public class ValidationHelper {
       ensureNotNull("view", viewDto);
       ensureNotNull("group by", processReportDataDto.getGroupBy());
       validateProcessFilters(processReportDataDto.getFilter());
+      validateAggregationTypes(processReportDataDto.getConfiguration().getAggregationTypes());
     } else if (dataDto instanceof DecisionReportDataDto) {
       DecisionReportDataDto decisionReportDataDto = (DecisionReportDataDto) dataDto;
       ensureNotNull("report data", decisionReportDataDto);
@@ -121,6 +125,7 @@ public class ValidationHelper {
       ensureNotNull("view", viewDto);
       ensureNotNull("group by", decisionReportDataDto.getGroupBy());
       validateDecisionFilters(decisionReportDataDto.getFilter());
+      validateAggregationTypes(decisionReportDataDto.getConfiguration().getAggregationTypes());
     }
   }
 
@@ -162,6 +167,23 @@ public class ValidationHelper {
           validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }
       }
+    }
+  }
+
+  public static void validateAggregationTypes(Set<AggregationDto> aggregationDtos) {
+    if (aggregationDtos != null) {
+      aggregationDtos
+        .forEach(aggType -> {
+          final Double aggValue = aggType.getValue();
+          if (aggType.getType() == AggregationType.PERCENTILE) {
+            if (aggValue == null || aggValue < 0.0 || aggValue > 100.0) {
+              throw new OptimizeValidationException("Percentile aggregation values be between 0 and 100");
+            }
+          } else if (aggValue != null) {
+            throw new OptimizeValidationException("Aggregation values can only be supplied for percentile " +
+                                                    "aggregations");
+          }
+        });
     }
   }
 

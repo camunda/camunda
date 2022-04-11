@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.test.optimize;
 
@@ -311,7 +311,7 @@ public class VariablesClient {
 
   public List<DecisionVariableNameResponseDto> getDecisionInputVariableNames(final List<DecisionVariableNameRequestDto> variableRequestDtos) {
     return getRequestExecutor()
-      .buildDecisionInputVariableNamesRequest(variableRequestDtos)
+      .buildDecisionInputVariableNamesRequest(variableRequestDtos, true)
       .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 

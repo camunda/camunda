@@ -8,9 +8,11 @@ services:
       - "8090:8090"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
-      - CAMUNDA_OPTIMIZE_IAM_ISSUER_URL=http://iam-backend.local:9090/
-      - CAMUNDA_OPTIMIZE_IAM_CLIENTID=optimize
-      - CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
       - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
       - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
       - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
@@ -22,79 +24,38 @@ services:
       - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
     networks:
       - optimize
-      - iam-network
-  iam-backend:
-    image: docker.io/camunda/iam:1.3.0
-    container_name: iam-backend
-    hostname: iam-backend
+      - identity-network
+  keycloak:
+    container_name: keycloak
+    image: jboss/keycloak:16.1.1
+    ports:
+      - "18080:8080"
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    networks:
+      - identity-network
+  identity:
     depends_on:
-      - iam-database
-      - iam-mailserver
+      - keycloak
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:SNAPSHOT
+    ports:
+      - "8081:8081"
     environment:
-      SMTP_HOST: localhost
-      SMTP_PORT: 11025
-      SMTP_USER: mailhog
-      SMTP_PASSWORD: mailhog
-      SMTP_WITH_TLS: "false"
-      DB_URL: jdbc:postgresql://iam-database:5432/iam
-      DB_USER: camunda
-      DB_PASSWORD: mydatabasepassword
-      DATABASE_ENCRYPTION_KEY: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      FRONTEND_URL: http://iam-backend.local:9090
-      BACKEND_URL: http://iam-backend.local:9090/api
-      EMAIL_SENDER: support@camunda.com
-      EMAIL_NOREPLY_SENDER: noreply@camunda.com
-      EMAIL_SENDER_NAME: Camunda Team
-      TOKEN_ISSUER: http://localhost:8080
-      TOKEN_SIGNING_KEY: "{ \"kty\": \"RSA\", \"n\": \"on67R4CfHONIwOSEXYbZ2uzm92gRta4WZxnaVpdpoh3oK_Y7Re6eKFFMZF7XbHT1lEyIkul4irTYrSduCEEL3IpQrF-eH9GCJoCQiTaQq3eO3oPthmQB0GZZOoT1A6EalhsQY1cACcrkr-ZJ58wOAAEdCTGjCCJlch7-yMLUzB97iQWMWceEc90h1Bh9cThhEvPVVMyrVe53L9Lsn72y7K8M-ZkFiVtd8c3Wou0n3aettD-G6WNkg8dJZILTBS3zcF4RIVRX7uR1ZFmqRZK_taul0aACZpGXXM1GxXMocFQbOshnDo_D3LEMAwHnVHGZhB-dY0L8hPQIVm7IMPAjIIP-zOfnYtgt9CKuGv_rUk5ZNebpXGkvfvo39-_lZI-TWEViuuBNJcMHYIBAPABWFuenInRHNGcExWd6kNWTKKQnJK55zBlZ6JB1MDCBi96ZNEOnkgIlYLC1N2dYB05RuemLD5Lnu-UlOAqkq8luv5-5kG0CymorTWbUTkjMWpIllBR1YHjVGSoP38vXVbofjULJ-hV4OWXxFgfmV1t0eKsR74U_FQ6JRdC7b9uKPQ30Bw-gUJaQlR9qrb51UpgTL_TMvDYVZlzbx733Iso4c3TJspmWGQaOR8TeNh_0x9WLGvYFWg5-gJVU_1vHHnrzHNlcr-9a8wly1-pD5RihV78\", \"e\": \"AQAB\", \"d\": \"T_jLNu-IX3FElxpgQp9hjKtXKKAhRyb8g5VnrYIrTMwnPaublFlRoUoRrLw4jXoqeugHtzYMS0eh8-YZ8xoAOnQgLBWK_uHfig9wEve1z42x1LVdKu0BL42PkItrAnRBX2rGb_2bWTZvwlo2OUxl_36Myb-SGyjCgJ3civXIQQWliNQgNPdKqrNEONwssJIsxGUYsvlfwZTxN6o5Joz4CCBG5Hh5DxbWb3D8l4bcPeyOQs2ZGjf-ehSUfFEehcgNrVm-WIboF_x8Af1XHZKRo1ls7HQxekVhFx04HWkFl_Lsy8thXPtIS88euEQxk4-tHCdrEDUhjlWD3PX8tIka39cTt-PpGGTY-gtekI_qO6LOnW2YPDZq3Pg_KATnHRlOUGDvOdiyN0r00l64nCFPrDyW0vGQ7RyAJe7UtvurljfBQEWHl5G2dMjmO6ENC8PKM3AfQ9dD9V-rTHlOLpYio60TvYSGZM2G_lqDkG9f4O3b77Mt0dmDH0zp1EqsaQP9ABfIfpygahmH00kIskgeb6iGsUU36drJnqYE9tcVv_BINwSD6MKFfx9AV9wY66_g7yNg4Ir38MVr26pq1i8HWjvZhtZ_634G8TVlxoJOQzlohrnMyzo4gUqA9t_5nDWQbHJiQKyH9iHWFt9ZEEFU4tvkpsWl8tQglcEebY2LyzE\", \"p\": \"zQEu0awXy11qfiMWRg1jsGFbp68DrlAiVTFeqee3BDsggBDRTZn_tg5pHTVxWe0vHFQBPmn19HfLb--ZxQoWpaAzdOqAhQG4NXVkGpLLBS8q9nGO7ImZnrc2GBiaE83jC6loOFx1-BIBpShANp6A6ymB7Pg2Y8XPrL6Jg7dsBrIfTlQZgfHWchzOUHs3N_8uZlWWXjdjNRJQvONB4-QHur8r_xHJVtjW2jFIkpyVPuHs-71sm-IKCh0SLD3cQr-M3hpGOUpdyUoRLEzmvgi8KUFYeDKpSeMy5Ptq2zyhZgj8S3OyBKLOugg2ZCwOFijiVesynUOstsxTGc40r9yydQ\", \"q\": \"yuqDb_WiuP0vJG9d0rADHjZUqmVd3jMSAxwnTDBM0hmEn26PC1NpogM57y-YviiqvaIG97PjBIy8IUU7ajwhQR9tfwaEINA1UDJiKgYU5T2YYyStjRPsQAmPbLh3fxzZrb2A___bbZOiU-HlKS90bM4s05cKAX_iFQCZWbhnnNEo49dpj5JURo_lnX00vcZ2RIWVKf88nskzz4gBg1aKYnC1KxGV5LCgc8Yd2itT5H7k6cW_GusGehUKPhSZIVPBCIoWfUFfzfNH5I0bRGPdpjT3ArUx_rTM4MHH8Xz0XBLPq7zzyHPHPZL5ZztxNMMVcQR6PR2aya2pvVSB0bty4w\", \"dp\": \"ZYpZc1cnLf6mObYNWUNWhk2ixUqlqxhb-RCMD-IKv5i9v1EVKrfFdZprrCEFdQJLHF_rgcugHKedZ2MpKfSWRRE1i4p_f-HbKPdtTtA4qOe1Av46SaTaJ0geDg9Zece31tXhHlGFyQq6L-Dg9WzK9C_J_-Ltpbub4rc5i7k1U5e0c-qp-7gafMkR08FEF4NYqy1nXmFWzTm2LejugP84aOI524wmytJ6kPZqONw__DaRWBt6CTgLuvitQKafS5xvHK-s6sGP9JywJt4sSCIxeMm6FUcanNNhKRPy2IaOduiqdoDmwu8VMAXTUwiTLZywhtgJaOXVTXGlE5oUdKr-5Q\", \"dq\": \"mG3ohJ9COLLAyh76nP1pqjVoDoSNKhC1NC7e-mXCH4XZ0aZMwFZNoM3JpHrdw-Nqt39SupqgK9fIrzmBs4Et_eys5WIwuTGPCwp-IVFmOvq1UazIzpSrwUMtQZ-k7JDwmIolsKkz3bGsnFSyP-kNDXsnw17Pvmahn-NOT06uTuf0TouQGbDzq_oGo_LdPr4qM7khX2YD1MgSKpDhihblZ6OBBLR2JE_miHHIFQ69O4VzUoUg1Qi-WdEaW54_lgCDnnWVBUypul1JoU-6rvpSE7vv3lHdF5gb267WEvsp2UysQjdz7h3DCucwgTLvDJKLtdWGOgjWMTBKtRYZW0Lzvw\", \"qi\": \"H5ZJVUO913d3ycntfj5HG0fb4lkicnv2aTQwoX1mrwp0z-JshnXCwy-sEQgB_ZKqxCsOt1gwd_uVd5t11IcF7uepwMYkdQdnGHOqTj2j-Fj5h2NEy858rvOngb4luY5QOJUV7bY_K7fvN-rt888M2oub9jJpGuE4VNvzcXmMdPTu2rHKTwYr5Q1MasEEzALt9pzp2oS-EI04jLiZy9TjsbRV-qkBLdusyhCVIYwTrFFCkoS4qO7x77yuHpHGzOvn8GgCvcCrHy3DTu371Xg_1RvqRaT99KNbiaKNG7sn8UpqvHSzcDkToOVLj9cfyYiW4ar4sjern2iIoVuq_KS4Ug\" }"
-      ENFORCE_HTTPS: "false"
-      CLIENTS_0_CLIENT_ID: optimize
-      CLIENTS_0_NAME: Optimize
-      CLIENTS_0_CLIENT_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      CLIENTS_0_LOGOUT_URL: http://localhost:8090/api/authentication/logout-callback
-      CLIENTS_0_BASE_URL: http://localhost:8090
-      IAM_CLIENT_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      IAM_CLIENT_BASE_URL: http://localhost:8090
-      IAM_CLIENT_LOGOUT_URL: http://localhost:8090/logout
-      FEATURE_USER_MANAGEMENT: "true"
-      FEATURE_SELF_SIGN_UP: "true"
-      SERVER_PORT: 9090
-    ports:
-      - "9090:9090"
-    healthcheck:
-      test: wget http://localhost:8081/actuator/health -q -O - > /dev/null 2>&1
-      interval: 30s
-      timeout: 15s
-      retries: 5
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
+      KEYCLOAK_USERS_0_USERNAME: "demo"
+      KEYCLOAK_USERS_0_PASSWORD: "demo"
+      KEYCLOAK_USERS_0_FIRST_NAME: "demo"
+      KEYCLOAK_USERS_0_ROLES_0: "Full Access"
+      KEYCLOAK_USERS_0_ROLES_1: "Optimize"
     networks:
-      iam-network:
-        aliases:
-          - iam-backend.local
-  iam-database:
-    # The major version matches the one used with the Cloud SQL service in Kubernetes.
-    image: postgres:12.7-alpine
-    container_name: iam-database
-    environment:
-      POSTGRES_DB: iam
-      POSTGRES_USER: camunda
-      POSTGRES_PASSWORD: mydatabasepassword
-    ports:
-      - "15432:5432"
-    healthcheck:
-      test: pg_isready -d iam -U camunda
-      interval: 30s
-      timeout: 15s
-      retries: 5
-    networks:
-      - iam-network
-  iam-mailserver:
-    image: mailhog/mailhog:v1.0.1
-    container_name: iam-mailserver
-    ports:
-      - "18025:8025"
-      - "11025:1025"
-    networks:
-      - iam-network
+      - identity-network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.10.0}
     container_name: elasticsearch
@@ -137,4 +98,4 @@ services:
       - optimize
 networks:
   optimize: { }
-  iam-network: { }
+  identity-network: { }

@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest.providers;
 
@@ -29,7 +29,7 @@ public class ElasticsearchStatusExceptionMapper implements ExceptionMapper<Elast
 
   @Override
   public Response toResponse(final ElasticsearchStatusException esStatusException) {
-    log.warn("Mapping ElasticsearchStatusException");
+    log.error("Mapping ElasticsearchStatusException", esStatusException);
 
     return Response
       .status(Response.Status.INTERNAL_SERVER_ERROR)

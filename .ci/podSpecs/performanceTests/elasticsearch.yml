@@ -112,6 +112,7 @@ spec:
               memory: 16Gi
             limits:
               cpu: 16
+              memory: 16Gi
           ports:
             - containerPort: 9200
               name: http

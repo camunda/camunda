@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.filter.process.variable;
 
@@ -9,12 +9,12 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
@@ -77,14 +77,14 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         Arguments.of(
           "Include value and Null/Undefined for type " + DateFilterType.ROLLING,
           createSupplier(() -> new RollingDateFilterDataDto(
-            new RollingDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+            new RollingDateFilterStartDto(0L, DateUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         ),
         Arguments.of(
           "Include value and Null/Undefined for type " + DateFilterType.RELATIVE,
           createSupplier(() -> new RelativeDateFilterDataDto(
-            new RelativeDateFilterStartDto(0L, DateFilterUnit.MINUTES)
+            new RelativeDateFilterStartDto(0L, DateUnit.MINUTES)
           ).setIncludeUndefined(true)),
           3L
         )
@@ -327,7 +327,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .rollingDate(1L, DateFilterUnit.DAYS)
+        .rollingDate(1L, DateUnit.DAYS)
         .add()
         .buildList();
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result1 = evaluateReportWithFilter(
@@ -340,7 +340,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .rollingDate(3L, DateFilterUnit.DAYS)
+        .rollingDate(3L, DateUnit.DAYS)
         .add()
         .buildList();
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result2 = evaluateReportWithFilter(
@@ -368,7 +368,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .relativeDate(0L, DateFilterUnit.DAYS)
+        .relativeDate(0L, DateUnit.DAYS)
         .add()
         .buildList();
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result1 = evaluateReportWithFilter(
@@ -387,7 +387,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .relativeDate(1L, DateFilterUnit.DAYS)
+        .relativeDate(1L, DateUnit.DAYS)
         .add()
         .buildList();
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result3 = evaluateReportWithFilter(

@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process.single;
 
@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -32,7 +31,6 @@ import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 public abstract class ModelElementDurationByModelElementDateByModelElementReportEvaluationIT
@@ -76,10 +74,6 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     assertThat(resultData).isEmpty();
   }
 
-  protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.values();
-  }
-
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
                                                   final AggregateByDateUnit groupByDateUnit) {
     return createReportData(
@@ -114,18 +108,6 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
       .extracting(e -> e.get(0))
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(expected);
-  }
-
-  protected Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> evaluateHyperMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
-
-    Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> resultsMap = new HashMap<>();
-    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationTypes(aggType);
-      final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient
-        .evaluateHyperMapReport(reportData).getResult();
-      resultsMap.put(aggType, result);
-    });
-    return resultsMap;
   }
 
   protected String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {

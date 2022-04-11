@@ -11,7 +11,7 @@
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.45.v20220203</jetty.version>
+    <jetty.version>9.4.46.v20220331</jetty.version>
     <jersey.version>2.35</jersey.version>
     <spring.security.version>5.6.2</spring.security.version>
     <it.test.excludedGroups />
@@ -77,11 +77,11 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- IAM-->
+    <!-- IDENTITY-->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-cloud-iam-sdk</artifactId>
-      <version>${iam.version}</version>
+      <artifactId>identity-sdk</artifactId>
+      <version>${identity.version}</version>
     </dependency>
 
     <!-- Javax XML -->
@@ -218,7 +218,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.18.3</version>
+      <version>3.19.1</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -268,7 +268,7 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.0.5</version>
+      <version>3.0.6</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -278,7 +278,7 @@
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
-      <version>1.0.9</version>
+      <version>1.0.10</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -319,7 +319,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.6</version>
+      <version>1.6.8</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

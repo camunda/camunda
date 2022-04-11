@@ -1,13 +1,13 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 import java.time.LocalTime;
@@ -16,13 +16,13 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit.QUARTERS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit.QUARTERS;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterUtil {
 
-  public static OffsetDateTime getStartOfCurrentInterval(OffsetDateTime now, DateFilterUnit dateFilterUnit) {
-    switch (dateFilterUnit) {
+  public static OffsetDateTime getStartOfCurrentInterval(OffsetDateTime now, DateUnit dateUnit) {
+    switch (dateUnit) {
       case MINUTES:
         return now
           .with(ChronoField.SECOND_OF_MINUTE, 0)
@@ -56,17 +56,17 @@ public class DateFilterUtil {
           .with(ChronoField.DAY_OF_YEAR, 1)
           .with(LocalTime.MIN);
       default:
-        throw new OptimizeValidationException("Unknown date unit: " + dateFilterUnit);
+        throw new OptimizeValidationException("Unknown date unit: " + dateUnit);
     }
   }
 
   public static OffsetDateTime getStartOfPreviousInterval(OffsetDateTime startOfCurrentInterval,
-                                                          DateFilterUnit dateFilterUnit,
+                                                          DateUnit dateUnit,
                                                           Long unitQuantity) {
-    if (dateFilterUnit.equals(QUARTERS)) {
+    if (dateUnit.equals(QUARTERS)) {
       return startOfCurrentInterval.minus(3 * unitQuantity, ChronoUnit.MONTHS);
     } else {
-      return startOfCurrentInterval.minus(unitQuantity, unitOf(dateFilterUnit.getId()));
+      return startOfCurrentInterval.minus(unitQuantity, unitOf(dateUnit.getId()));
     }
   }
 

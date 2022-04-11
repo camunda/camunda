@@ -1,12 +1,12 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.rest.security.cloud;
 
-import io.camunda.iam.sdk.IamApi;
-import io.camunda.iam.sdk.IamApiConfiguration;
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
@@ -34,10 +34,15 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 
+import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
+import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
+import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 @Configuration
 @RequiredArgsConstructor
@@ -61,8 +66,8 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
   }
 
   @Bean
-  public IamApi iamApi() {
-    return new IamApi(iamApiConfiguration());
+  public Identity identity() {
+    return new Identity(identityConfiguration());
   }
 
   @SneakyThrows
@@ -81,28 +86,39 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
       .authorizeRequests()
         // ready endpoint is public
         .antMatchers(createApiPath(READYZ_PATH)).permitAll()
-        // IAM callback request handling is public
+        // Identity callback request handling is public
         .antMatchers(createApiPath(AUTHENTICATION_PATH + CALLBACK)).permitAll()
+        // public share resources
+        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
+                   EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
+                   EXTERNAL_SUB_PATH + "/*.ico").permitAll()
+        // public share related resources (API)
+        .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
+        // common public api resources
+        .antMatchers(
+          createApiPath(UI_CONFIGURATION_PATH),
+          createApiPath(LOCALIZATION_PATH)
+        ).permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
       .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
-      .exceptionHandling().authenticationEntryPoint(this::redirectToIam);
+      .exceptionHandling().authenticationEntryPoint(this::redirectToIdentity);
     //@formatter:on
   }
 
-  private void redirectToIam(final HttpServletRequest request, final HttpServletResponse response,
-                             final AuthenticationException e) throws IOException {
-    final URI iamUri = iamApi()
+  private void redirectToIdentity(final HttpServletRequest request, final HttpServletResponse response,
+                                  final AuthenticationException e) throws IOException {
+    final URI authorizeUri = identity()
       .authentication()
       .authorizeUriBuilder(
-        buildIamCallbackUri(request, createApiPath(AUTHENTICATION_PATH + CALLBACK))
+        buildAuthorizeCallbackUri(request, createApiPath(AUTHENTICATION_PATH + CALLBACK))
       )
       .build();
-    response.sendRedirect(iamUri.toString());
+    response.sendRedirect(authorizeUri.toString());
   }
 
-  private static String buildIamCallbackUri(final HttpServletRequest req, String subPath) {
+  private static String buildAuthorizeCallbackUri(final HttpServletRequest req, String subPath) {
     String redirectUri = req.getScheme() + "://" + req.getServerName();
     if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (
       req.getScheme().equals("https") && req.getServerPort() != 443)) {
@@ -115,10 +131,11 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
     return REST_API_PATH + String.join("", subPath);
   }
 
-  private IamApiConfiguration iamApiConfiguration() {
+  private IdentityConfiguration identityConfiguration() {
     final CCSMAuthConfiguration ccsmAuthConfig = getCcsmAuthConfiguration();
-    return new IamApiConfiguration(
-      ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret()
+    return new IdentityConfiguration(
+        ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
+        ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
     );
   }
 

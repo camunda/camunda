@@ -114,11 +114,11 @@ it('should hide edit/delete if the report current user role is not "editor"', ()
   expect(node.find('.edit-button')).not.toExist();
 });
 
-it('should hide sharing popover in cloud environment', async () => {
+it('should show sharing popover in cloud environment', async () => {
   getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = await shallow(<ReportView report={report} />);
 
-  expect(node.find('Popover.share-button')).not.toExist();
+  expect(node.find('Popover.share-button')).toExist();
 });
 
 it('should show alert dropdown for number reports', async () => {

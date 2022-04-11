@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.es.report.process;
 
@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -31,6 +31,7 @@ import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -597,7 +598,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit(DurationFilterUnit.DAYS)
+                           .unit(DurationUnit.DAYS)
                            .value((long) 1)
                            .operator(GREATER_THAN)
                            .add()
@@ -621,7 +622,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit(DurationFilterUnit.DAYS)
+                           .unit(DurationUnit.DAYS)
                            .value((long) 1)
                            .operator(LESS_THAN)
                            .add()
@@ -684,6 +685,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getDuration()).isNotNull();
   }
 
+  @Disabled("Disabled until we fix the time shift issue.")
   @EnumSource(SortOrder.class)
   @ParameterizedTest
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {

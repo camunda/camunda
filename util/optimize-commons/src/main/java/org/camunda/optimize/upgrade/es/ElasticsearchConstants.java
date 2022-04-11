@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.upgrade.es;
 
@@ -42,7 +42,9 @@ public class ElasticsearchConstants {
   public static final String MAPPING_ENABLED_SETTING = "enabled";
 
   public static final String MAPPING_PROPERTY_TYPE = "type";
+  public static final String PROPERTIES_PROPERTY_TYPE = "properties";
   public static final String FORMAT_PROPERTY_TYPE = "format";
+  public static final String DYNAMIC_PROPERTY_TYPE = "dynamic";
 
   public static final String TYPE_KEYWORD = "keyword";
   public static final String TYPE_LONG = "long";
@@ -80,6 +82,7 @@ public class ElasticsearchConstants {
   public static final String EXTERNAL_EVENTS_INDEX_NAME = "event";
   public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
   public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
+  public static final String PROCESS_GOALS_INDEX_NAME = "process-goals";
 
   public static final String ZEEBE_PROCESS_DEFINITION_INDEX_NAME = "process";
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";

@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.service.util.configuration;
 
@@ -50,6 +50,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
@@ -89,6 +90,7 @@ public class ConfigurationService {
   private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
   private Integer elasticsearchResponseConsumerBufferLimitInMb;
+  private String elasticsearchPathPrefix;
   private ProxyConfiguration elasticSearchProxyConfig;
 
   // elasticsearch connection security
@@ -136,6 +138,7 @@ public class ConfigurationService {
   private Boolean importDmnDataEnabled;
   private Boolean importUserTaskWorkerDataEnabled;
   private Boolean skipDataAfterNestedDocLimitReached;
+  private Boolean customerOnboarding;
 
   // plugin base packages
   private List<String> variableImportPluginBasePackages;
@@ -207,6 +210,8 @@ public class ConfigurationService {
   private AnalyticsConfiguration analytics;
 
   private OptimizeApiConfiguration optimizeApiConfiguration;
+
+  private OnboardingConfiguration onboarding;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -394,6 +399,15 @@ public class ConfigurationService {
     return elasticSearchProxyConfig;
   }
 
+  public String getElasticsearchPathPrefix() {
+    if (elasticsearchPathPrefix == null) {
+      elasticsearchPathPrefix = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_PATH_PREFIX, String.class
+      );
+    }
+    return elasticsearchPathPrefix;
+  }
+
   public int getEngineConnectTimeout() {
     if (engineConnectTimeout == null) {
       engineConnectTimeout = configJsonContext.read(
@@ -540,6 +554,17 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportDecisionDefinitionMaxPageSize);
     return engineImportDecisionDefinitionMaxPageSize;
+  }
+
+  public boolean getCustomerOnboardingImport() {
+    if(customerOnboarding == null) {
+      customerOnboarding = configJsonContext.read(ConfigurationServiceConstants.CUSTOMER_ONBOARDING_DATA, Boolean.class);
+    }
+    return customerOnboarding;
+  }
+
+  public void setCustomerOnboardingImport(boolean isActive) {
+    this.customerOnboarding = isActive;
   }
 
   public int getEngineImportDecisionInstanceMaxPageSize() {
@@ -1156,6 +1181,13 @@ public class ConfigurationService {
       analytics = configJsonContext.read(ANALYTICS_CONFIGURATION, AnalyticsConfiguration.class);
     }
     return analytics;
+  }
+
+  public OnboardingConfiguration getOnboarding() {
+    if (onboarding == null) {
+      onboarding = configJsonContext.read(ONBOARDING_CONFIGURATION, OnboardingConfiguration.class);
+    }
+    return onboarding;
   }
 
 }

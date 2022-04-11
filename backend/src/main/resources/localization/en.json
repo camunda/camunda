@@ -167,20 +167,37 @@
     "owner": "Owner",
     "timeGoal": "Goal: Time",
     "displayData": "Goals display data from instances",
-    "endedThisMonth": "ended in the current month",
+    "endedThisMonth": "ended in the last 30 days",
     "setGoal": "Set Goal",
     "editGoal": "Edit Goal",
+    "goals": "Goals",
+    "goalRemoved": "Goals removed from '{processName}' process",
+    "addOwner": "Add Owner",
+    "editOwner": "Edit Owner",
+    "addProcessOwner": "Add Process Owner",
+    "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to sort and filter processes.",
+    "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
+    "noData": "No Data",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
+      "setDuration": "Set a duration goal by setting a percentage of process instances that should take less than a certain duration to complete.",
+      "availableGoals": "You can use duration goals to track how many instances are fully automated (target duration) or meet your service level agreements (SLAs).",
       "targetDuration": "Target",
       "slaDuration": "SLA",
       "instancesTake": "of process instances take",
+      "instancesTook": "of instances took less than",
       "lessThan": "less than",
       "displayGoal": "Display goal",
       "durationDistribution": "Duration distribution",
+      "durationDistributionInfo": "This chart shows durations for process instances ending in the current month.",
       "saveGoals": "Save Goals",
-      "updateGoals": "Update Goals"
+      "updateGoals": "Update Goals",
+      "resultPreview": "Result Preview:",
+      "instancesThisMonth": "Instances ended in the last 30 days",
+      "noInstances": "No instances occurred in the time range.",
+      "setGoals": "Set goals for expected durations.",
+      "resultInfo": "This preview displays each goal's status based on its current configuration."
     }
   },
   "events": {
@@ -336,6 +353,7 @@
       "userTask": "User Task",
       "count": "Count",
       "duration": "Duration",
+      "percentage": "Percentage",
       "multi": "Count and Duration",
       "evaluationCount": "Evaluation Count",
       "variable": "Variable",
@@ -505,21 +523,23 @@
       },
       "aggregation": {
         "userTaskLegend": "User Task Duration",
-        "durationLegend": "Duration aggregations",
+        "durationLegend": "Basic aggregations",
         "variableLegend": "Variable aggregations",
+        "percentileLegend": "Percentile aggregations",
         "sum": "Sum",
         "min": "Minimum",
         "avg": "Average",
         "median": "Median",
         "max": "Maximum",
-        "multiProcessWarning": "Reports that are grouped by process cannot display median aggregations."
+        "p50": "P50 (median)"
       },
       "aggregationShort": {
         "sum": "Sum",
         "min": "Min",
         "avg": "Avg",
         "median": "Med",
-        "max": "Max"
+        "max": "Max",
+        "percentile": "P{value}"
       },
       "userTaskDuration": {
         "idle": "Idle",
@@ -588,7 +608,8 @@
     "runningEndedFlowNodeWarning": "Only completed flow nodes are considered when grouping by End Date. Therefore, adding 'running' flow node status filter will show no results",
     "missingVariable": "Missing variable",
     "nonExistingVariable": "Variable does not exist",
-    "nonExistingFlowNode": "Flow Node(s) does not exist"
+    "nonExistingFlowNode": "Flow Node(s) does not exist",
+    "percentageOfInstances": "% of total instances that match the filter"
   },
   "dashboard": {
     "label": "Dashboard",
@@ -1243,7 +1264,9 @@
         "process": "Process",
         "processEvents": "process events",
         "ingestedEvents": "Events",
-        "items": "Items"
+        "items": "Items",
+        "goals": "Goals",
+        "owner": "Owner"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",

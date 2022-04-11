@@ -1,7 +1,7 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
@@ -37,8 +37,8 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
-  private Set<AggregationType> aggregationTypes =
-    new LinkedHashSet<>(Collections.singletonList(AggregationType.AVERAGE));
+  private Set<AggregationDto> aggregationTypes =
+    new LinkedHashSet<>(Collections.singletonList(new AggregationDto(AggregationType.AVERAGE)));
   @Builder.Default
   private Set<UserTaskDurationTime> userTaskDurationTimes =
     new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
@@ -112,7 +112,7 @@ public class SingleReportConfigurationDto implements Combinable {
       && userTaskDurationTimesAmount <= 1 && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
   }
 
-  public void setAggregationTypes(final AggregationType... aggregationTypes) {
+  public void setAggregationTypes(final AggregationDto... aggregationTypes) {
     // deduplication using an intermediate set
     this.aggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
   }
