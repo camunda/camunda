@@ -8,11 +8,15 @@
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 
 public class StartEventProcessor implements BpmnElementProcessor<ExecutableStartEvent> {
@@ -20,11 +24,15 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public StartEventProcessor(final BpmnBehaviors bpmnBehaviors) {
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+    stateBehavior = bpmnBehaviors.stateBehavior();
   }
 
   @Override
@@ -40,8 +48,15 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
+    final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
+
+    final BpmnElementContextImpl flowScopeInstanceContext =
+        buildContextForFlowScopeInstance(context);
+
     variableMappingBehavior
         .applyOutputMappings(context, element)
+        .flatMap(
+            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
@@ -54,5 +69,14 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
+  }
+
+  private BpmnElementContextImpl buildContextForFlowScopeInstance(
+      final BpmnElementContext context) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+    final var flowScopeInstanceContext = new BpmnElementContextImpl();
+    flowScopeInstanceContext.init(
+        flowScopeInstance.getKey(), flowScopeInstance.getValue(), flowScopeInstance.getState());
+    return flowScopeInstanceContext;
   }
 }
