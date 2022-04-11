@@ -9,10 +9,11 @@ package io.camunda.zeebe.test.broker.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.util.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -148,7 +149,31 @@ final class ProtocolFactoryTest {
     assertThat(record.getIntent()).isInstanceOf(valueTypeMapping.getIntentClass());
   }
 
+  @ParameterizedTest
+  @MethodSource("provideProtocolClasses")
+  void shouldGenerateForAllProtocolClasses(final Class<?> protocolClass) {
+    // given
+    final var factory = new ProtocolFactory();
+
+    // when - Record cannot be generated directly due to its generic parameter
+    final Object generatedObject =
+        Record.class.equals(protocolClass)
+            ? factory.generateRecord()
+            : factory.generateObject(protocolClass);
+
+    // then
+    assertThat(generatedObject).isInstanceOf(protocolClass);
+    assertThat(generatedObject.getClass())
+        .as("should be an Immutable implementation of the protocol class")
+        .isNotEqualTo(protocolClass)
+        .hasAnnotation(ImmutableProtocol.Type.class);
+  }
+
   private static Stream<ValueType> provideValueTypes() {
     return ValueTypeMapping.getAcceptedValueTypes().stream();
+  }
+
+  private static Stream<Class<?>> provideProtocolClasses() {
+    return ProtocolFactory.findProtocolTypes().loadClasses().stream();
   }
 }

@@ -53,13 +53,8 @@ public final class ProcessProcessor
   @Override
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior
-        .subscribeToEvents(element, context)
-        .map(o -> stateTransitionBehavior.transitionToActivated(context))
-        .ifRightOrLeft(
-            activated -> activateStartEvent(element, activated),
-            failure -> incidentBehavior.createIncident(failure, context));
+    final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
+    activateStartEvent(element, activatedContext);
   }
 
   @Override

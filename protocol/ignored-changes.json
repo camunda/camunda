@@ -5,48 +5,39 @@
     "configuration": {
       "differences": [
         {
-          "code": "java.class.noLongerImplementsInterface",
-          "classSimpleName": "Record",
-          "interface": "java.lang.Cloneable",
-          "justification": "Cloneable was not properly implemented on the Record interface, as it was doing a deep copy instead of the expected shallow copy"
+          "justification": "The protocol annotation is not expected to be used by anyone outside of the protocol, so a new attribute will have no impact",
+          "code": "java.method.attributeWithNoDefaultAddedToAnnotationType",
+          "new": "method java.lang.Class<?> io.camunda.zeebe.protocol.record.ImmutableProtocol::builder()"
         },
         {
-          "code": "java.method.exception.checkedAdded",
-          "classQualifiedName": "io.camunda.zeebe.protocol.record.Record",
-          "methodName": "clone",
-          "justification": "Revert implementing Cloneable, which means we now default back to the implementation in Object"
+          "justification": "Ignore addition of the builder attribute, as it won't have any impact on previous usage of the interfaces",
+          "code": "java.annotation.attributeAdded",
+          "elementKind": "interface",
+          "annotationType": "io.camunda.zeebe.protocol.record.ImmutableProtocol"
         },
         {
-          "code": "java.method.returnTypeChanged",
-          "old": "method io.camunda.zeebe.protocol.record.Record<T> io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>::clone()",
-          "new": "method java.lang.Object java.lang.Object::clone() throws java.lang.CloneNotSupportedException @ io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>",
-          "justification": "Revert implementing Cloneable, which means we now default back to the implementation in Object"
+          "justification": "The retention policy for the annotation was changed to allow reflection usage at runtime; should have no impact on actual expected usage",
+          "code": "java.annotation.attributeValueChanged",
+          "old": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "new": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "annotation": "@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)"
         },
         {
-          "code": "java.method.visibilityReduced",
-          "old": "method io.camunda.zeebe.protocol.record.Record<T> io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>::clone()",
-          "new": "method java.lang.Object java.lang.Object::clone() throws java.lang.CloneNotSupportedException @ io.camunda.zeebe.protocol.record.Record<T extends io.camunda.zeebe.protocol.record.RecordValue>",
-          "justification": "Revert implementing Cloneable, which means we now default back to the implementation in Object"
-        },
-        {
+          "justification": "The protocol generation was changed to inject marker annotations on the generated types, but this should have no impact on actual usage of these types",
           "code": "java.annotation.added",
-          "annotationType": "org.immutables.value.Value.Immutable",
-          "justification": "Immutable annotations do not change the compatibility of the interface they annotate"
+          "old": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "new": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "annotationType": "org.immutables.annotate.InjectManyAnnotations"
         },
         {
+          "justification": "Generated builders are now annotated with a marker which is used for reflection; this only adds information but does not change semantics",
           "code": "java.annotation.added",
-          "annotationType": "org.immutables.value.Value.Default",
-          "justification": "Immutable annotations do not change the compatibility of the interface they annotate"
+          "annotationType": "io.camunda.zeebe.protocol.record.ImmutableProtocol.Builder"
         },
         {
+          "justification": "Generated types are now annotated with a marker which is used for reflection; this only adds information but does not change semantics",
           "code": "java.annotation.added",
-          "annotationType": "org.immutables.value.Value.NonAttribute",
-          "justification": "Immutable annotations do not change the compatibility of the interface they annotate"
-        },
-        {
-          "code": "java.annotation.added",
-          "annotationType": "io.camunda.zeebe.protocol.record.ImmutableProtocol",
-          "justification": "Immutable annotations do not change the compatibility of the interface they annotate"
+          "annotationType": "io.camunda.zeebe.protocol.record.ImmutableProtocol.Type"
         }
       ]
     }

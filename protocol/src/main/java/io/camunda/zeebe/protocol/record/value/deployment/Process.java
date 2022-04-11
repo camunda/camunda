@@ -20,7 +20,7 @@ import org.immutables.value.Value;
 
 /** Represents a deployed process, which extends the meta data with the acutal resources */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableProcess.Builder.class)
 public interface Process extends ProcessMetadataValue {
   /**
    * @return returns the corresponding binary resource

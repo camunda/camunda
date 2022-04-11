@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-parent</artifactId>
-  <version>1.4.0-SNAPSHOT</version>
+  <version>8.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe Parent</name>
@@ -44,7 +44,7 @@
     <version.assertj>3.22.0</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
-    <version.camunda>7.16.0</version.camunda>
+    <version.camunda>7.17.0</version.camunda>
     <version.checkstyle>10.1</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
@@ -53,7 +53,7 @@
     <version.commons-text>1.9</version.commons-text>
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
-    <version.error-prone>2.12.0</version.error-prone>
+    <version.error-prone>2.12.1</version.error-prone>
     <version.grpc>1.45.1</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
@@ -95,7 +95,7 @@
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
     <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
-    <version.rest-assured>5.0.0</version.rest-assured>
+    <version.rest-assured>5.0.1</version.rest-assured>
     <version.spring>5.3.18</version.spring>
     <version.spring-boot>2.6.6</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -145,7 +145,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.22.0</plugin.version.spotless>
+    <plugin.version.spotless>2.22.1</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
@@ -156,7 +156,7 @@
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>1.3.0</backwards.compat.version>
+    <backwards.compat.version>8.0.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -201,12 +201,6 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-protocol-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1218,7 +1212,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration></configuration>
+              <configuration />
             </execution>
           </executions>
         </plugin>
@@ -1401,7 +1395,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1501,7 +1495,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence></dependencyConvergence>
+                  <dependencyConvergence />
                 </rules>
               </configuration>
             </execution>
@@ -1512,7 +1506,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                  <banDuplicatePomDependencyVersions />
                 </rules>
               </configuration>
             </execution>

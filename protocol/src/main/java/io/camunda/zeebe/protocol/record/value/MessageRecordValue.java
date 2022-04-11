@@ -26,7 +26,7 @@ import org.immutables.value.Value;
  * <p>See {@link MessageIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableMessageRecordValue.Builder.class)
 public interface MessageRecordValue extends RecordValueWithVariables {
   /**
    * @return the name of the message

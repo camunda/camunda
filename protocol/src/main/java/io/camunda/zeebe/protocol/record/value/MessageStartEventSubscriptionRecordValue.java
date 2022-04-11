@@ -26,7 +26,7 @@ import org.immutables.value.Value;
  * <p>See {@link MessageStartEventSubscriptionIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableMessageStartEventSubscriptionRecordValue.Builder.class)
 public interface MessageStartEventSubscriptionRecordValue extends RecordValueWithVariables {
 
   /**

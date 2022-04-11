@@ -24,7 +24,7 @@ import org.immutables.value.Value;
  * the DMN resource, except the binary DMN resource itself.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableDecisionRequirementsMetadataValue.Builder.class)
 public interface DecisionRequirementsMetadataValue {
 
   /**

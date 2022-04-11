@@ -26,7 +26,7 @@ import org.immutables.value.Value;
  * <p>See {@link TimerIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableTimerRecordValue.Builder.class)
 public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
 
   /**

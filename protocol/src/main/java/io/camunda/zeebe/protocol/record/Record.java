@@ -20,7 +20,7 @@ import org.immutables.value.Value;
 
 /** Represents a record published to the log stream. */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableRecord.Builder.class)
 public interface Record<T extends RecordValue> extends JsonSerializable {
   /**
    * Retrieves the position of the record. Positions are locally unique to the partition, and

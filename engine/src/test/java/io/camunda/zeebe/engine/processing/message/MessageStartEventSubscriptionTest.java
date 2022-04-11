@@ -18,9 +18,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -162,6 +164,127 @@ public final class MessageStartEventSubscriptionTest {
             tuple(MessageStartEventSubscriptionIntent.CREATED, subscriptionKey),
             tuple(MessageStartEventSubscriptionIntent.CORRELATED, subscriptionKey),
             tuple(MessageStartEventSubscriptionIntent.DELETED, subscriptionKey));
+  }
+
+  @Test // see #4099
+  public void
+      shouldResolveCorrelationKeyDefinedInMessageWhenOpeningSubscriptionForEventSubprocess() {
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "subprocess",
+                s ->
+                    s.startEvent()
+                        .message(
+                            m ->
+                                m.name("event_message")
+                                    .zeebeCorrelationKeyExpression("correlation_key"))
+                        .endEvent())
+            .startEvent()
+            .message("start_message")
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+    engine
+        .message()
+        .withName("start_message")
+        .withCorrelationKey("")
+        .withVariables(Map.of("correlation_key", "key"))
+        .publish();
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withMessageName("event_message")
+                .withCorrelationKey("key")
+                .findAny())
+        .isPresent();
+  }
+
+  /**
+   * This test covers the following scenario. A process has a message start event (A) with output
+   * mappings. This process also has an event subprocess with a message start event (B) which
+   * references a variable that is only created after the output mapping of (A) has been applied.
+   * The expectation is that the output mapping for A will be applied, and only after that the
+   * message subscription for B will be opened. At this point the message subscription can be
+   * opened. If it were opened earlier, it would produce a "variable not found" incident.
+   */
+  @Test
+  public void
+      shouldResolveCorrelationKeyDefinedByOutputMappingInMessageStartEventWhenOpeningSubscriptionForEventSubprocess() {
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "subprocess",
+                s ->
+                    s.startEvent()
+                        .message(
+                            m ->
+                                m.name("event_message")
+                                    .zeebeCorrelationKeyExpression("correlation_key"))
+                        .endEvent())
+            .startEvent()
+            .message("start_message")
+            .zeebeOutputExpression("correlation_key_before_mapping", "correlation_key")
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+    engine
+        .message()
+        .withName("start_message")
+        .withCorrelationKey("")
+        .withVariables(Map.of("correlation_key_before_mapping", "key"))
+        .publish();
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withMessageName("event_message")
+                .withCorrelationKey("key")
+                .findAny())
+        .isPresent();
+  }
+
+  /**
+   * This test covers the following scenario. A process has a none start event (A) with output
+   * mappings. This process also has an event subprocess with a message start event (B) which
+   * references a variable that is only created after the output mapping of (A) has been applied.
+   * The expectation is that the output mapping for A will be applied, and only after that the
+   * message subscription for B will be opened. At this point the message subscription can be
+   * opened. If it were opened earlier, it would produce a "variable not found" incident.
+   */
+  @Test
+  public void
+      shouldResolveCorrelationKeyDefinedByOutputMappingInNoneStartEventWhenOpeningSubscriptionForEventSubprocess() {
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "subprocess",
+                s ->
+                    s.startEvent()
+                        .message(
+                            m ->
+                                m.name("event_message")
+                                    .zeebeCorrelationKeyExpression("correlation_key"))
+                        .endEvent())
+            .startEvent()
+            .zeebeOutputExpression("correlation_key_before_mapping", "correlation_key")
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+    engine
+        .processInstance()
+        .ofBpmnProcessId("process")
+        .withVariables(Map.of("correlation_key_before_mapping", "key"))
+        .create();
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withMessageName("event_message")
+                .withCorrelationKey("key")
+                .findAny())
+        .isPresent();
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {

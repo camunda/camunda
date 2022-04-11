@@ -26,7 +26,7 @@ import org.immutables.value.Value;
  * <p>See {@link ProcessInstanceResultIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableProcessInstanceResultRecordValue.Builder.class)
 public interface ProcessInstanceResultRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated {
   /**

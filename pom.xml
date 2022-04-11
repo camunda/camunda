@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -43,7 +43,6 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
-    <module>protocol-util</module>
     <module>zb-db</module>
     <module>expression-language</module>
     <module>feel</module>
@@ -79,7 +78,7 @@
               <exclude>**/target/**/*.md</exclude>
               <exclude>clients/go/vendor/**/*.md</exclude>
             </excludes>
-            <flexmark></flexmark>
+            <flexmark />
           </markdown>
         </configuration>
       </plugin>

@@ -25,7 +25,7 @@ import org.immutables.value.Value;
  * EvaluatedOutputValue outputs}.
  */
 @Value.Immutable
-@ImmutableProtocol
+@ImmutableProtocol(builder = ImmutableMatchedRuleValue.Builder.class)
 public interface MatchedRuleValue extends RecordValue {
 
   /**
