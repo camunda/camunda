@@ -106,7 +106,7 @@
     <version.jqwik>1.6.5</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.12.8</version.byte-buddy>
+    <version.byte-buddy>1.12.9</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.0</version.immutables>
