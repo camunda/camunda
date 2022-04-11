@@ -112,7 +112,7 @@ public class StandaloneGateway
 
     actorScheduler.start();
     atomixCluster.start();
-    gateway.start();
+    gateway.start().join(30, TimeUnit.SECONDS);
   }
 
   @Override
