@@ -11,17 +11,16 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.grpc.Status.Code;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import java.time.Duration;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,15 +70,16 @@ final class StandaloneGatewayIT {
           .then()
           .statusCode(200);
 
-      // we have to assert on the message here as we cannot otherwise differentiate between an
-      // UNAVAILABLE returned by the client, and one returned by the gateway, other than them having
-      // different messages
-      assertThat((CompletionStage<Topology>) topology)
-          .as("fails with UNAVAILABLE since there are no brokers")
-          .failsWithin(Duration.ofSeconds(5))
-          .withThrowableOfType(ExecutionException.class)
-          .havingRootCause()
-          .withMessage("UNAVAILABLE: No brokers available");
+      // depending on how fast the gateway is, we may get an unavailable error or an empty topology
+      try {
+        final var result = topology.join(5L, TimeUnit.SECONDS);
+        assertThat(result.getBrokers()).as("there are no known brokers").isEmpty();
+      } catch (final ClientStatusException e) {
+        assertThat(e).hasRootCauseMessage("UNAVAILABLE: No brokers available");
+        assertThat(e.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
+      } catch (final Exception e) {
+        throw e;
+      }
     }
   }
 
