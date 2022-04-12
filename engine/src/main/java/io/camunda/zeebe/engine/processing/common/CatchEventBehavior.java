@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
@@ -74,13 +75,37 @@ public final class CatchEventBehavior {
     this.timerChecker = timerChecker;
   }
 
+  /**
+   * Unsubscribe from all events in the scope of the context.
+   *
+   * @param context the context to subscript from
+   * @param commandWriter the writer for unsubscribe commands
+   * @param sideEffects the side effects for unsubscribe actions
+   */
   public void unsubscribeFromEvents(
       final BpmnElementContext context,
       final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
+    unsubscribeFromEvents(context, commandWriter, sideEffects, elementId -> true);
+  }
 
-    unsubscribeFromTimerEvents(context, commandWriter);
-    unsubscribeFromMessageEvents(context, sideEffects);
+  /**
+   * Unsubscribe from all events in the scope of the context that matches the given filter. Ignore
+   * other event subscriptions that don't match the filter.
+   *
+   * @param context the context to subscript from
+   * @param commandWriter the writer for unsubscribe commands
+   * @param sideEffects the side effects for unsubscribe actions
+   * @param elementIdFilter the filter for events to unsubscribe
+   */
+  public void unsubscribeFromEvents(
+      final BpmnElementContext context,
+      final TypedCommandWriter commandWriter,
+      final SideEffects sideEffects,
+      final Predicate<DirectBuffer> elementIdFilter) {
+
+    unsubscribeFromTimerEvents(context, commandWriter, elementIdFilter);
+    unsubscribeFromMessageEvents(context, sideEffects, elementIdFilter);
   }
 
   /** @return either a failure or nothing */
@@ -249,9 +274,16 @@ public final class CatchEventBehavior {
   }
 
   private void unsubscribeFromTimerEvents(
-      final BpmnElementContext context, final TypedCommandWriter commandWriter) {
+      final BpmnElementContext context,
+      final TypedCommandWriter commandWriter,
+      final Predicate<DirectBuffer> elementIdFilter) {
     timerInstanceState.forEachTimerForElementInstance(
-        context.getElementInstanceKey(), t -> unsubscribeFromTimerEvent(t, commandWriter));
+        context.getElementInstanceKey(),
+        timer -> {
+          if (elementIdFilter.test(timer.getHandlerNodeId())) {
+            unsubscribeFromTimerEvent(timer, commandWriter);
+          }
+        });
   }
 
   public void unsubscribeFromTimerEvent(
@@ -269,10 +301,19 @@ public final class CatchEventBehavior {
   }
 
   private void unsubscribeFromMessageEvents(
-      final BpmnElementContext context, final SideEffects sideEffects) {
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final Predicate<DirectBuffer> elementIdFilter) {
     processMessageSubscriptionState.visitElementSubscriptions(
         context.getElementInstanceKey(),
-        subscription -> unsubscribeFromMessageEvent(subscription, sideEffects));
+        subscription -> {
+          final var elementId = subscription.getRecord().getElementIdBuffer();
+          if (elementIdFilter.test(elementId)) {
+            return unsubscribeFromMessageEvent(subscription, sideEffects);
+          } else {
+            return true;
+          }
+        });
   }
 
   private boolean unsubscribeFromMessageEvent(
