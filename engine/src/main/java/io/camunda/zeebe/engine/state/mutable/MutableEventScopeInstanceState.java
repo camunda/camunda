@@ -15,12 +15,20 @@ import org.agrona.DirectBuffer;
 public interface MutableEventScopeInstanceState extends EventScopeInstanceState {
 
   /**
-   * Creates a new event scope instance in the state
+   * Creates a new event scope instance in the state. The event scope is interrupted if one of the
+   * interrupting elements is triggered. An interrupted event scope can not be triggered by other
+   * interrupting or non-interrupting events, except boundary events. After a interrupting boundary
+   * event is triggered, no other event, including boundary events, can be triggered for the event
+   * scope.
    *
    * @param eventScopeKey the event scope key
-   * @param interruptingIds list of element IDs which should set accepting to false
+   * @param interruptingElementIds element IDs that interrupt the event scope
+   * @param boundaryElementIds element IDs of boundary events
    */
-  void createInstance(long eventScopeKey, Collection<DirectBuffer> interruptingIds);
+  void createInstance(
+      long eventScopeKey,
+      Collection<DirectBuffer> interruptingElementIds,
+      Collection<DirectBuffer> boundaryElementIds);
 
   /**
    * Delete an event scope from the state. Does not fail in case the scope does not exist.
@@ -40,7 +48,9 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
 
   /**
    * Creates a new event trigger for the given event scope. Ignores the trigger if the event scope
-   * is not accepting anymore or doesn't exist.
+   * doesn't exist or if the event can be triggered in the scope (e.g. the scope is interrupted).
+   * Use {@link #canTriggerEvent(long, DirectBuffer)} to check if the event can be triggered before
+   * calling this method.
    *
    * @param eventScopeKey the key of the event scope the event is triggered in
    * @param eventKey the key of the event record (used for ordering)
