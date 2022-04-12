@@ -97,6 +97,7 @@ const IconContainer = styled.div`
 
 type FormProps = {
   hasFooter?: boolean;
+  children: React.ReactNode;
 };
 
 const Form = styled.form<FormProps>`

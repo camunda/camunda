@@ -22,7 +22,11 @@ function createWrapper(
     typeof MemoryRouter
   >['initialEntries'] = ['/'],
 ) {
-  const Wrapper: React.FC = ({children}) => {
+  type Props = {
+    children?: React.ReactNode;
+  };
+
+  const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <ApolloProvider client={client}>
         <MockThemeProvider>

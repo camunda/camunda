@@ -375,7 +375,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
               </Button>
             </DetailsFooter>
           )}
-          {editingVariable && (
+          {editingVariable ? (
             <JSONEditorModal
               title="Edit Variable"
               onClose={() => {
@@ -387,7 +387,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
               }}
               value={get(values, editingVariable)}
             />
-          )}
+          ) : null}
         </StyledForm>
       )}
     </Form>

@@ -17,7 +17,9 @@ const createWrapper = (
     typeof MemoryRouter
   >['initialEntries'] = ['/'],
 ) => {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{
+    children?: React.ReactNode;
+  }> = ({children}) => (
     <MockThemeProvider>
       <MemoryRouter initialEntries={initialEntries}>
         {children}

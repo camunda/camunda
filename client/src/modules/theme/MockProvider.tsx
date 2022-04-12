@@ -10,7 +10,11 @@ import {ThemeProvider} from 'styled-components';
 
 import {theme} from './index';
 
-const MockThemeProvider: React.FC = ({children}) => {
+type Props = {
+  children?: React.ReactNode;
+};
+
+const MockThemeProvider: React.FC<Props> = ({children}) => {
   return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
 };
 

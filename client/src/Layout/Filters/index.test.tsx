@@ -29,7 +29,7 @@ const getWrapper =
     initialEntries: React.ComponentProps<
       typeof MemoryRouter
     >['initialEntries'] = ['/'],
-  ): React.FC =>
+  ): React.FC<{children?: React.ReactNode}> =>
   ({children}) => {
     return (
       <ApolloProvider client={client}>

@@ -32,7 +32,9 @@ import {
 } from 'modules/queries/get-current-user';
 
 const getWrapper = (id: string = '0') => {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{
+    children?: React.ReactNode;
+  }> = ({children}) => (
     <ApolloProvider client={client}>
       <MockThemeProvider>
         <MemoryRouter initialEntries={[`/${id}`]}>

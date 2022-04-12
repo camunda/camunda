@@ -25,7 +25,11 @@ import userEvent from '@testing-library/user-event';
 
 const mockApolloClient = createApolloClient({maxTasksDisplayed: 5});
 
-const Wrapper: React.FC = ({children}) => {
+type Props = {
+  children?: React.ReactNode;
+};
+
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ApolloProvider client={mockApolloClient}>
       <MemoryRouter initialEntries={['/']}>

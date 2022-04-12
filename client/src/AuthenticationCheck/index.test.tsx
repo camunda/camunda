@@ -14,7 +14,11 @@ const LOGIN_CONTENT = 'Login content';
 const fetchMock = jest.spyOn(window, 'fetch');
 const LOGIN_PATH = '/login';
 
-const Wrapper: React.FC = ({children}) => {
+type Props = {
+  children?: React.ReactNode;
+};
+
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <MemoryRouter>
       <Routes>

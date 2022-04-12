@@ -15,7 +15,11 @@ import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql, rest} from 'msw';
 
-const Wrapper: React.FC = ({children}) => (
+type Props = {
+  children?: React.ReactNode;
+};
+
+const Wrapper: React.FC<Props> = ({children}) => (
   <ApolloProvider client={client}>
     <MockThemeProvider>{children}</MockThemeProvider>
   </ApolloProvider>

@@ -17,7 +17,11 @@ const CarbonTheme = styled(BaseCarbonTheme)`
   height: 100%;
 ` as typeof BaseCarbonTheme;
 
-const ThemeProvider: React.FC = ({children}) => {
+type Props = {
+  children: React.ReactNode;
+};
+
+const ThemeProvider: React.FC<Props> = ({children}) => {
   return (
     <CarbonTheme theme="g10">
       <StyledComponentThemeProvider theme={theme}>

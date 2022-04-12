@@ -34,7 +34,9 @@ const getWrapper = (
     typeof MemoryRouter
   >['initialEntries'] = ['/'],
 ) => {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{
+    children?: React.ReactNode;
+  }> = ({children}) => (
     <MockThemeProvider>
       <ApolloProvider client={client}>
         <MemoryRouter initialEntries={initialEntries}>

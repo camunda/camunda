@@ -26,7 +26,9 @@ type GetWrapperProps = {
 };
 
 const getWrapper = ({initialEntries}: GetWrapperProps) => {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{
+    children?: React.ReactNode;
+  }> = ({children}) => (
     <MockThemeProvider>
       <MemoryRouter initialEntries={initialEntries}>
         <SessionWatcher />

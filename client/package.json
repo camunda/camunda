@@ -1,6 +1,6 @@
 {
   "name": "camunda-tasklist",
-  "version": "8.0.0-SNAPSHOT",
+  "version": "8.1.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "@apollo/client": "3.4.17",
@@ -78,8 +78,8 @@
     "@types/jsoneditor": "9.5.1",
     "@types/mixpanel-browser": "2.38.0",
     "@types/node": "16.11.26",
-    "@types/react": "17.0.44",
-    "@types/react-dom": "17.0.15",
+    "@types/react": "18.0.2",
+    "@types/react-dom": "18.0.0",
     "@types/styled-components": "5.1.25",
     "babel-loader": "8.1.0",
     "chromatic": "6.5.4",

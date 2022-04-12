@@ -14,6 +14,7 @@ type Props = {
   onCmInput: React.ChangeEventHandler<HTMLInputElement>;
   fieldSuffix: React.ComponentProps<typeof CmTextfield>['fieldSuffix'];
   shouldDebounceError: boolean;
+  children: React.ReactNode;
 };
 
 const Textfield = React.forwardRef<
