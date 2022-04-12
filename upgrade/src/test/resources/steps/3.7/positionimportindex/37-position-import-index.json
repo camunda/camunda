@@ -1,4 +1,0 @@
-{"index":{"_index":"optimize-position-based-import-index_v1","_id":"zeebeVariableImportIndex-zeebe-record-bfefe4a9-ebcb-419d-95bd-d66f996174471"}}
-{"lastImportExecutionTimestamp":"2022-01-29T00:30:06.797+0100","positionOfLastEntity":0,"esTypeIndexRefersTo":"zeebeVariableImportIndex","dataSourceDto":{"type":"zeebe","name":"zeebe-record-bfefe4a9-ebcb-419d-95bd-d66f99617447","partitionId":1}}
-{"index":{"_index":"optimize-position-based-import-index_v1","_id":"zeebeIncidentImportIndex-zeebe-record-bfefe4a9-ebcb-419d-95bd-d66f996174471"}}
-{"lastImportExecutionTimestamp":"2022-01-29T00:30:06.797+0100","positionOfLastEntity":0,"esTypeIndexRefersTo":"zeebeVariableImportIndex","dataSourceDto":{"type":"zeebe","name":"zeebe-record-bfefe4a9-ebcb-419d-95bd-d66f99617447","partitionId":1}}
