@@ -10,6 +10,7 @@ import {Container, InstancesCount} from './styled';
 type Props = {
   title: string;
   count?: number;
+  children?: React.ReactNode;
 };
 
 const PanelHeader: React.FC<Props> = ({title, count = 0, children}) => {

@@ -17,7 +17,7 @@ import {Decision} from '.';
 import {MemoryRouter} from 'react-router-dom';
 
 function createWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>

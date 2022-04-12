@@ -10,7 +10,7 @@ import React from 'react';
 import * as Styled from './styled';
 
 type Props = {
-  onKeyDown: (...args: any[]) => any;
+  onKeyDown: React.ComponentProps<'li'>['onKeyDown'];
   placement?: 'top' | 'bottom';
   className?: string;
   children?: React.ReactNode;

@@ -131,6 +131,7 @@ const BaseTable = styled.table`
 
 type TableProps = {
   hideOverflow?: boolean;
+  children: React.ReactNode;
 };
 
 const Table: React.FC<TableProps> = ({children, hideOverflow}) => {

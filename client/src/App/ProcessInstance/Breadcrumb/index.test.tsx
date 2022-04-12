@@ -17,7 +17,7 @@ import {rest} from 'msw';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 const createWrapper = (initialPath: string = '/processes/123') => {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <ThemeProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>

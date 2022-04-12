@@ -19,7 +19,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 function createWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <ThemeProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         {children}

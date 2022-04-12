@@ -37,7 +37,7 @@ jest.mock('modules/notifications', () => {
 });
 
 function createWrapper(initialPath: string = '/decisions') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

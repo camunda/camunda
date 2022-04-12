@@ -20,7 +20,7 @@ import {Header} from './index';
 
 const MOCK_DECISION_INSTANCE_ID = '123567';
 
-const Wrapper: React.FC = ({children}) => (
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
   <ThemeProvider>
     <MemoryRouter initialEntries={[`/decisions/${MOCK_DECISION_INSTANCE_ID}`]}>
       <Routes>

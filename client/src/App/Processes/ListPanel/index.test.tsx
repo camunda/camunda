@@ -27,7 +27,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {ListFooter} from './ListFooter';
 
 function createWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <NotificationProvider>

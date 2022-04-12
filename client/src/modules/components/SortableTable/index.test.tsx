@@ -12,7 +12,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {SortableTable} from './';
 import {mockProps, mockSelectableProps} from './index.setup';
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter>{children}</MemoryRouter>

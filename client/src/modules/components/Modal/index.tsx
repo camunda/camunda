@@ -37,6 +37,7 @@ type ModalProps = {
   className?: string;
   size: 'SMALL' | 'BIG';
   preventKeyboardEvents?: boolean;
+  children: React.ReactNode;
 };
 
 class Modal extends React.Component<ModalProps> {

@@ -54,7 +54,9 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
 });
 
 jest.mock('modules/components/InfiniteScroller', () => {
-  const InfiniteScroller: React.FC = ({children}) => {
+  const InfiniteScroller: React.FC<{children?: React.ReactNode}> = ({
+    children,
+  }) => {
     return <>{children}</>;
   };
   return {InfiniteScroller};

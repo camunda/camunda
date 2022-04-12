@@ -14,6 +14,7 @@ type Props = {
   minHeights?: number[];
   minWidths?: number[];
   panelId: string;
+  children: React.ReactNode;
 };
 
 const ResizablePanel: React.FC<Props> = ({

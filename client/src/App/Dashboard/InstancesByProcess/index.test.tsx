@@ -22,7 +22,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 function createWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

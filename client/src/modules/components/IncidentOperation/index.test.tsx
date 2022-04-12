@@ -22,7 +22,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
       <NotificationProvider>{children}</NotificationProvider>

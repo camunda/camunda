@@ -20,7 +20,7 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/decisions/${DECISION_INSTANCE_ID}`]}>

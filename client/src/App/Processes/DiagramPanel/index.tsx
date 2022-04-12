@@ -22,7 +22,11 @@ import {processesStore} from 'modules/stores/processes';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {PanelHeader} from 'modules/components/PanelHeader';
 
-const Message: React.FC = ({children}) => {
+type Props = {
+  children: React.ReactNode;
+};
+
+const Message: React.FC<Props> = ({children}) => {
   return <DiagramEmptyMessage message={children} />;
 };
 

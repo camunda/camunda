@@ -25,7 +25,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 
 function getWrapper(initialPath: string = '/decisions') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

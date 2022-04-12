@@ -26,7 +26,7 @@ import {mockServer} from 'modules/mock-server/node';
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <MemoryRouter initialEntries={[initialPath]}>
         <ThemeProvider>{children}</ThemeProvider>

@@ -28,11 +28,7 @@ const Option = styled.div`
   }}
 `;
 
-type OptionButtonProps = {
-  disabled?: boolean;
-};
-
-const OptionButton = styled.button<OptionButtonProps>`
+const OptionButton = styled.button`
   ${({theme, disabled}) => {
     const colors = theme.colors.modules.dropdown.option.optionButton;
 

@@ -8,13 +8,13 @@
 import React from 'react';
 
 type Props = {
-  Component?: React.ReactNode;
+  Component?: React.ComponentType;
   rowsToDisplay?: number;
   children?: React.ReactNode;
 };
 
 const MultiRow: React.FC<Props> = ({Component, rowsToDisplay, children}) => {
-  function rowMultiplier(rowsToDisplay: any) {
+  function rowMultiplier(rowsToDisplay: number) {
     const rows = [];
 
     for (var i = 0; i < rowsToDisplay; i++) {
@@ -27,7 +27,7 @@ const MultiRow: React.FC<Props> = ({Component, rowsToDisplay, children}) => {
   return (
     <>
       {children}
-      {rowMultiplier(rowsToDisplay)}
+      {rowsToDisplay && rowMultiplier(rowsToDisplay)}
     </>
   );
 };

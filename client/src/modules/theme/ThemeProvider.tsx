@@ -5,14 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {ThemeProvider as DefaultProvider} from 'styled-components';
 import {observer} from 'mobx-react';
 
 import {theme} from './theme';
 import {currentTheme} from 'modules/stores/currentTheme';
 
-const ThemeProvider: React.FC = observer(({children}) => {
+type Props = {
+  children?: React.ReactNode;
+};
+
+const ThemeProvider = observer<React.FC<Props>>(({children}) => {
   return (
     <DefaultProvider theme={theme[currentTheme.state.selectedTheme]}>
       {children}

@@ -12,7 +12,11 @@ import {Container, Handle, Panel} from './styled';
 const minWidth = 540;
 const maxWidthRatio = 3 / 5;
 
-const DrdPanel: React.FC = ({children}) => {
+type Props = {
+  children: React.ReactNode;
+};
+
+const DrdPanel: React.FC<Props> = ({children}) => {
   const handleRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startDimensions = useRef<{x?: number; width?: number}>({

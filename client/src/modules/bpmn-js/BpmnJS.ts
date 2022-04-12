@@ -33,7 +33,7 @@ type BpmnJSOverlay = {
   type: string;
   elementId: string;
   position: OverlayPosition;
-  children: React.ReactNode;
+  children: HTMLElement;
 };
 
 type OverlayData = {

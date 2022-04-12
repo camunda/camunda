@@ -88,7 +88,7 @@ const GROUPED_PROCESSES = [
 ] as const;
 
 function getWrapper(initialPath: string = '/') {
-  const MockApp: React.FC = ({children}) => {
+  const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

@@ -24,7 +24,7 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
 
 const createWrapper = (initialPath: string = '/decisions') => {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

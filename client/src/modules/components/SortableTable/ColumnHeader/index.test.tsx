@@ -12,7 +12,7 @@ import {ColumnHeader} from './index';
 import {LocationLog} from 'modules/utils/LocationLog';
 import userEvent from '@testing-library/user-event';
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter>

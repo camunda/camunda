@@ -31,7 +31,7 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>

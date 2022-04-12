@@ -12,23 +12,24 @@ import * as Styled from './styled';
 type Props = {
   label?: React.ReactNode;
   disabled?: boolean;
-  onStateChange?: (...args: any[]) => any;
-  onClick?: (...args: any[]) => any;
+  onStateChange?: (options: {isOpen: boolean}) => void;
+  onClick?: () => void;
   className?: string;
+  children?: React.ReactNode;
 };
 
 export default class Option extends React.Component<Props> {
   handleOnClick = () => {
     if (!this.props.disabled && this.props.onClick) {
       this.props.onClick();
-      // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-      this.props.onStateChange({isOpen: false});
+
+      this.props.onStateChange?.({isOpen: false});
     }
   };
 
   renderChildrenProps = () =>
     React.Children.map(this.props.children, (child) =>
-      // @ts-expect-error ts-migrate(2769) FIXME: Type 'undefined' is not assignable to type 'ReactE... Remove this comment to see the full error message
+      // @ts-expect-error
       React.cloneElement(child, {
         onStateChange: this.props.onStateChange,
       })

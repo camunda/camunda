@@ -5,9 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+type Props = {
+  children?: React.ReactNode;
+};
 
-const Splitter: React.FC = ({children}) => {
+const Splitter: React.FC<Props> = ({children}) => {
   return <div>{children}</div>;
 };
 

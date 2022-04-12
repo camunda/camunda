@@ -23,7 +23,7 @@ import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstanc
 import {LocationLog} from 'modules/utils/LocationLog';
 
 function createWrapper() {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter>

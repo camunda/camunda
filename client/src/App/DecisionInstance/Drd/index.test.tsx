@@ -18,7 +18,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Drd} from '.';
 import {MemoryRouter} from 'react-router-dom';
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter>{children}</MemoryRouter>

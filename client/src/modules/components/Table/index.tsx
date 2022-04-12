@@ -9,7 +9,11 @@ import React from 'react';
 
 import * as Styled from './styled';
 
-class Table extends React.Component<{}> {
+type Props = {
+  children: React.ReactNode;
+};
+
+class Table extends React.Component<Props> {
   static THead: any;
   static TBody: any;
   static TH: any;

@@ -9,7 +9,11 @@ import {observer} from 'mobx-react';
 import {CollapsablePanel} from './styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
-const FiltersPanel: React.FC = observer(({children}) => {
+type Props = {
+  children: React.ReactNode;
+};
+
+const FiltersPanel: React.FC<Props> = observer(({children}) => {
   const {
     state: {isFiltersCollapsed},
     toggleFiltersPanel,

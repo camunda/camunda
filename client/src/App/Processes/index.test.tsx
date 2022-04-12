@@ -35,7 +35,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = '/processes') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

@@ -17,6 +17,7 @@ type Props = {
   selectedFlowNodeId?: string;
   onFlowNodeSelection?: OnFlowNodeSelection;
   overlaysData?: OverlayData[];
+  children?: React.ReactNode;
 };
 
 const Diagram: React.FC<Props> = ({

@@ -33,7 +33,7 @@ function getParam(search: string, param: string) {
 }
 
 function createWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC = ({children}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

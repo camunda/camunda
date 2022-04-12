@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import EmptyPanel, {WithRowCount} from './index';
@@ -36,15 +35,11 @@ describe('EmptyPanel', () => {
   });
 
   it('should display a skeleton', () => {
-    const containerRef = {current: {clientHeight: 200}};
-
     render(
       <EmptyPanel
-        containerRef={containerRef}
         rowHeight={12}
         label={label}
         type="skeleton"
-        // @ts-expect-error ts-migrate(2739) FIXME: Type '({ rowsToDisplay }: Props) => Element' is mi... Remove this comment to see the full error message
         Skeleton={SkeletonMock}
       />,
       {wrapper: ThemeProvider}

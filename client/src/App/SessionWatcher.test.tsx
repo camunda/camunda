@@ -24,7 +24,7 @@ jest.mock('modules/notifications', () => ({
 }));
 
 function getWrapper(initialEntries = ['/']) {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <MemoryRouter initialEntries={initialEntries}>
       {children}
       <Link to="/other-route">get out</Link>

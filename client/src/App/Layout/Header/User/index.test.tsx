@@ -23,7 +23,7 @@ const mockSsoUser = {
   canLogout: false,
 };
 
-const Wrapper: React.FC = ({children}) => {
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <ThemeProvider>{children}</ThemeProvider>;
 };
 

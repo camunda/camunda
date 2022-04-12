@@ -8,16 +8,16 @@
 import React from 'react';
 import * as Styled from './styled';
 
-function VariableRow() {
+const VariableRow: React.FC = () => {
   return (
     <Styled.Row>
       <Styled.VariableBlock />
       <Styled.ValueBlock />
     </Styled.Row>
   );
-}
+};
 
-const Rows = React.memo(function Skeleton(props) {
+const Rows: React.FC = React.memo(function Skeleton(props) {
   return (
     <div data-testid="skeleton-rows">
       <Styled.MultiRow Component={VariableRow} {...props} />

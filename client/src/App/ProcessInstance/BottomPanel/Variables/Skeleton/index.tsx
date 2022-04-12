@@ -16,7 +16,7 @@ type Props = {
   rowHeight?: number;
 };
 
-const Skeleton = ({type, label, rowHeight}: Props) => {
+const Skeleton: React.FC<Props> = ({type, label, rowHeight}) => {
   return (
     <Styled.Table>
       <tbody>

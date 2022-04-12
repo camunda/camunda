@@ -18,7 +18,7 @@ const PUBLIC_AREA_URL = '/public-area';
 const PROTECTED_AREA_URL = '/protected-area';
 
 function createWrapper(initialRoute: string = '/') {
-  const Wrapper: React.FC = ({children}) => (
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <MemoryRouter initialEntries={[initialRoute]}>
       <Routes>
         <Route path={PUBLIC_AREA_URL} element={<>Login page</>} />

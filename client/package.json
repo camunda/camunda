@@ -72,7 +72,7 @@
     "@types/mixpanel-browser": "2.38.0",
     "@types/node": "16.11.26",
     "@types/node-fetch": "2.6.1",
-    "@types/react": "17.0.44",
+    "@types/react": "18.0.1",
     "@types/react-transition-group": "4.4.4",
     "@types/styled-components": "5.1.25",
     "babel-loader": "8.1.0",

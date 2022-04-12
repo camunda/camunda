@@ -15,6 +15,7 @@ type Props = {
   fieldSuffix: React.ComponentProps<typeof CmTextfield>['fieldSuffix'];
   shouldDebounceError: boolean;
   label?: string;
+  children: React.ReactNode;
 };
 
 const Textfield = React.forwardRef<

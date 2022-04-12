@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LicenseNote} from './index';
 
-const Wrapper: React.FC = ({children}) => (
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
   <ThemeProvider>{children}</ThemeProvider>
 );
 
