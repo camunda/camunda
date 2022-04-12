@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -39,6 +40,7 @@ public class EventTriggerBehavior {
   private final StateWriter stateWriter;
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final ProcessState processState;
 
   private final VariableBehavior variableBehavior;
 
@@ -54,17 +56,33 @@ public class EventTriggerBehavior {
 
     elementInstanceState = zeebeState.getElementInstanceState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    processState = zeebeState.getProcessState();
 
     variableBehavior =
         new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
   }
 
-  public void unsubscribeFromEvents(final BpmnElementContext context) {
+  private void unsubscribeFromEventSubprocesses(final BpmnElementContext context) {
     final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehavior.unsubscribeFromEvents(context, commandWriter, sideEffectQueue);
+    catchEventBehavior.unsubscribeFromEvents(
+        context,
+        commandWriter,
+        sideEffectQueue,
+        elementId -> isEventSubprocess(context, elementId));
 
     // side effect can immediately executed, since on restart we not reprocess anymore the commands
     sideEffectQueue.flush();
+  }
+
+  private boolean isEventSubprocess(
+      final BpmnElementContext context, final DirectBuffer elementId) {
+
+    final var element =
+        processState.getFlowElement(
+            context.getProcessDefinitionKey(), elementId, ExecutableFlowElement.class);
+
+    return element.getElementType() == BpmnElementType.START_EVENT
+        && element.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS;
   }
 
   public void triggerEventSubProcess(
@@ -98,7 +116,7 @@ public class EventTriggerBehavior {
     }
 
     if (startEvent.interrupting()) {
-      unsubscribeFromEvents(flowScopeContext);
+      unsubscribeFromEventSubprocesses(flowScopeContext);
 
       final var noActiveChildInstances = terminateChildInstances(flowScopeContext);
       if (!noActiveChildInstances) {
