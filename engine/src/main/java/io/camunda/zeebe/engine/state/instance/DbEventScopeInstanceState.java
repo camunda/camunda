@@ -49,13 +49,20 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
 
   @Override
   public void createInstance(
-      final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
+      final long eventScopeKey,
+      final Collection<DirectBuffer> interruptingElementIds,
+      final Collection<DirectBuffer> boundaryElementIds) {
     eventScopeInstance.reset();
 
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstance.setAccepting(true);
-    for (final DirectBuffer interruptingId : interruptingIds) {
-      eventScopeInstance.addInterrupting(interruptingId);
+    eventScopeInstance.setInterrupted(false);
+
+    for (final DirectBuffer elementId : interruptingElementIds) {
+      eventScopeInstance.addInterruptingElementId(elementId);
+    }
+    for (final DirectBuffer elementId : boundaryElementIds) {
+      eventScopeInstance.addBoundaryElementId(elementId);
     }
 
     eventScopeInstanceColumnFamily.put(this.eventScopeKey, eventScopeInstance);
@@ -98,11 +105,19 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
-    if (isAcceptingEvent(instance)) {
-      if (instance.isInterrupting(elementId)) {
-        instance.setAccepting(false);
-        eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
+    if (canTriggerEvent(instance, elementId)) {
+      final var isInterruptingElementId = instance.isInterruptingElementId(elementId);
+      final var isBoundaryElementId = instance.isBoundaryElementId(elementId);
+
+      if (isInterruptingElementId) {
+        // only accept boundary events after an interrupting event is triggered
+        instance.setInterrupted(true);
       }
+      if (isBoundaryElementId && isInterruptingElementId) {
+        // don't accept other events after an interrupting boundary is triggered
+        instance.setAccepting(false);
+      }
+      eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
 
       createTrigger(eventScopeKey, eventKey, elementId, variables);
     }
@@ -146,15 +161,17 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
-  public boolean isAcceptingEvent(final long eventScopeKey) {
+  public boolean canTriggerEvent(final long eventScopeKey, final DirectBuffer elementId) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
-    return isAcceptingEvent(instance);
+    return canTriggerEvent(instance, elementId);
   }
 
-  private boolean isAcceptingEvent(final EventScopeInstance instance) {
-    return instance != null && instance.isAccepting();
+  private boolean canTriggerEvent(final EventScopeInstance instance, final DirectBuffer elementId) {
+    return instance != null
+        && instance.isAccepting()
+        && (!instance.isInterrupted() || instance.isBoundaryElementId(elementId));
   }
 
   private void createTrigger(

@@ -19,6 +19,7 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
 
   private final List<ExecutableCatchEvent> catchEvents = new ArrayList<>();
   private final List<DirectBuffer> interruptingIds = new ArrayList<>();
+  private final List<DirectBuffer> boundaryElementIds = new ArrayList<>();
 
   public ExecutableActivity(final String id) {
     super(id);
@@ -28,8 +29,11 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
     boundaryEvents.add(boundaryEvent);
     catchEvents.add(boundaryEvent);
 
+    final var boundaryEventElementId = boundaryEvent.getId();
+    boundaryElementIds.add(boundaryEventElementId);
+
     if (boundaryEvent.interrupting()) {
-      interruptingIds.add(boundaryEvent.getId());
+      interruptingIds.add(boundaryEventElementId);
     }
   }
 
@@ -55,6 +59,11 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
   @Override
   public Collection<DirectBuffer> getInterruptingElementIds() {
     return interruptingIds;
+  }
+
+  @Override
+  public Collection<DirectBuffer> getBoundaryElementIds() {
+    return boundaryElementIds;
   }
 
   public List<ExecutableBoundaryEvent> getBoundaryEvents() {
