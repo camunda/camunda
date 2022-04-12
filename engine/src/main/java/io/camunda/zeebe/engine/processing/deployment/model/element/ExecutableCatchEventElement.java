@@ -85,6 +85,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
     return Collections.singleton(getId());
   }
 
+  @Override
+  public Collection<DirectBuffer> getBoundaryElementIds() {
+    return Collections.emptySet();
+  }
+
   public boolean interrupting() {
     return interrupting;
   }

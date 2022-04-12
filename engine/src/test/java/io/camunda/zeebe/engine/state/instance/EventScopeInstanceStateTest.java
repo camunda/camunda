@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -18,13 +20,17 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ZeebeStateExtension.class)
 public final class EventScopeInstanceStateTest {
+
+  private static final int SCOPE_KEY = 123;
+  private static final Collection<DirectBuffer> NO_INTERRUPTING_ELEMENT_IDS =
+      Collections.emptySet();
+  private static final Collection<DirectBuffer> NO_BOUNDARY_ELEMENT_IDS = Collections.emptySet();
 
   private MutableZeebeState zeebeState;
 
@@ -38,246 +44,505 @@ public final class EventScopeInstanceStateTest {
   @Test
   void shouldCreateInterruptingEventScopeInstance() {
     // given
-    final long key = 123;
+    final var interruptingElementId = wrapString("interrupting");
+    final var interruptingElementIds = Collections.singleton(interruptingElementId);
 
     // when
-    state.createInstance(key, Collections.singleton(wrapString("foo")), Set.of());
+    state.createInstance(SCOPE_KEY, interruptingElementIds, NO_BOUNDARY_ELEMENT_IDS);
 
     // then
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance.isAccepting()).isTrue();
-    Assertions.assertThat(instance.isInterrupting(wrapString("foo"))).isTrue();
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+    assertThat(instance.isInterruptingElementId(interruptingElementId)).isTrue();
+    assertThat(instance.isBoundaryElementId(interruptingElementId)).isFalse();
   }
 
   @Test
   void shouldCreateNonInterruptingEventScopeInstance() {
     // given
-    final long key = 123;
+    final var nonInterruptingElementId = wrapString("non-interrupting");
 
     // when
-    state.createInstance(key, Collections.singleton(wrapString("foo")), Set.of());
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
 
     // then
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance.isAccepting()).isTrue();
-    Assertions.assertThat(instance.isInterrupting(wrapString("bar"))).isFalse();
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+    assertThat(instance.isInterruptingElementId(nonInterruptingElementId)).isFalse();
+    assertThat(instance.isBoundaryElementId(nonInterruptingElementId)).isFalse();
+  }
+
+  @Test
+  void shouldCreateEventScopeInstanceWithBoundaryEvents() {
+    // given
+    final var nonInterruptingBoundaryElementId = wrapString("non-interrupting-boundary");
+    final var interruptingBoundaryElementId = wrapString("interrupting-boundary");
+    final var boundaryElementIds =
+        Set.of(nonInterruptingBoundaryElementId, interruptingBoundaryElementId);
+    final var interruptingElementIds = Set.of(interruptingBoundaryElementId);
+
+    // when
+    state.createInstance(SCOPE_KEY, interruptingElementIds, boundaryElementIds);
+
+    // then
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+
+    assertThat(instance.isInterruptingElementId(nonInterruptingBoundaryElementId)).isFalse();
+    assertThat(instance.isBoundaryElementId(nonInterruptingBoundaryElementId)).isTrue();
+
+    assertThat(instance.isInterruptingElementId(interruptingBoundaryElementId)).isTrue();
+    assertThat(instance.isBoundaryElementId(interruptingBoundaryElementId)).isTrue();
+  }
+
+  @Test
+  void shouldCreateInterruptingEventScopeInstanceWithBoundaryEvents() {
+    // given
+    final var interruptingElementId = wrapString("interrupting");
+    final var interruptingElementIds = Set.of(interruptingElementId);
+    final var boundaryElementId = wrapString("non-interrupting-boundary");
+    final var boundaryElementIds = Set.of(boundaryElementId);
+
+    // when
+    state.createInstance(SCOPE_KEY, interruptingElementIds, boundaryElementIds);
+
+    // then
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+
+    assertThat(instance.isInterruptingElementId(interruptingElementId)).isTrue();
+    assertThat(instance.isBoundaryElementId(interruptingElementId)).isFalse();
+
+    assertThat(instance.isInterruptingElementId(boundaryElementId)).isFalse();
+    assertThat(instance.isBoundaryElementId(boundaryElementId)).isTrue();
+  }
+
+  @Test
+  void shouldAllowTriggeringEventForNonInterruptingScope() {
+    // given
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
+
+    // when
+    final var canTriggerEvent = state.canTriggerEvent(SCOPE_KEY, wrapString("non-interrupting"));
+
+    // then
+    assertThat(canTriggerEvent).isTrue();
+  }
+
+  @Test
+  void shouldNotAllowTriggeringEventForInterruptedScope() {
+    // given
+    final var interruptingElementId = wrapString("interrupting");
+    state.createInstance(SCOPE_KEY, Set.of(interruptingElementId), NO_BOUNDARY_ELEMENT_IDS);
+
+    final var canInterruptScope = state.canTriggerEvent(SCOPE_KEY, interruptingElementId);
+    assertThat(canInterruptScope).isTrue();
+
+    final var eventTrigger = createEventTrigger(bufferAsString(interruptingElementId), "");
+    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+
+    // when
+    final var canTriggerEventAgain = state.canTriggerEvent(SCOPE_KEY, interruptingElementId);
+    final var canTriggerNonInterruptingEvent =
+        state.canTriggerEvent(SCOPE_KEY, wrapString("non-interrupting"));
+
+    // then
+    assertThat(canTriggerEventAgain).isFalse();
+    assertThat(canTriggerNonInterruptingEvent).isFalse();
+  }
+
+  @Test
+  void shouldAllowTriggeringBoundaryEventForInterruptedScope() {
+    // given
+    final var interruptingElementId = wrapString("interrupting");
+    final var interruptingBoundaryElementId = wrapString("interrupting-boundary");
+    final var nonInterruptingBoundaryElementId = wrapString("non-interrupting-boundary");
+    state.createInstance(
+        SCOPE_KEY,
+        Set.of(interruptingElementId, interruptingBoundaryElementId),
+        Set.of(interruptingBoundaryElementId, nonInterruptingBoundaryElementId));
+
+    final var canInterruptScope = state.canTriggerEvent(SCOPE_KEY, interruptingElementId);
+    assertThat(canInterruptScope).isTrue();
+
+    final var eventTrigger = createEventTrigger(bufferAsString(interruptingElementId), "");
+    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+
+    // when
+    final var canTriggerInterruptingBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, interruptingBoundaryElementId);
+    final var canTriggerNonInterruptingBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, nonInterruptingBoundaryElementId);
+
+    // then
+    assertThat(canTriggerInterruptingBoundaryEvent).isTrue();
+    assertThat(canTriggerNonInterruptingBoundaryEvent).isTrue();
+  }
+
+  @Test
+  void shouldAllowTriggeringAfterNonInterruptingBoundaryEvents() {
+    // given
+    final var interruptingElementId = wrapString("interrupting");
+    final var interruptingBoundaryElementId = wrapString("interrupting-boundary");
+    final var nonInterruptingBoundaryElementId = wrapString("non-interrupting-boundary");
+    state.createInstance(
+        SCOPE_KEY,
+        Set.of(interruptingElementId),
+        Set.of(interruptingBoundaryElementId, nonInterruptingBoundaryElementId));
+
+    final var canTriggerBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, nonInterruptingBoundaryElementId);
+    assertThat(canTriggerBoundaryEvent).isTrue();
+
+    final var eventTrigger =
+        createEventTrigger(bufferAsString(nonInterruptingBoundaryElementId), "");
+    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+
+    // when
+    final var canTriggerInterruptingBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, interruptingBoundaryElementId);
+    final var canTriggerNonInterruptingBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, nonInterruptingBoundaryElementId);
+    final var canTriggerInterruptingEvent = state.canTriggerEvent(SCOPE_KEY, interruptingElementId);
+    final var canTriggerNonInterruptingEvent =
+        state.canTriggerEvent(SCOPE_KEY, wrapString("non-interrupting"));
+
+    // then
+    assertThat(canTriggerInterruptingBoundaryEvent).isTrue();
+    assertThat(canTriggerNonInterruptingBoundaryEvent).isTrue();
+    assertThat(canTriggerInterruptingEvent).isTrue();
+    assertThat(canTriggerNonInterruptingEvent).isTrue();
+  }
+
+  @Test
+  void shouldNotAllowTriggeringEventAfterInterruptingBoundaryEvent() {
+    // given
+    final var interruptingElementId = wrapString("interrupting");
+    final var interruptingBoundaryElementId = wrapString("interrupting-boundary");
+    final var nonInterruptingBoundaryElementId = wrapString("non-interrupting-boundary");
+    state.createInstance(
+        SCOPE_KEY,
+        Set.of(interruptingElementId, interruptingBoundaryElementId),
+        Set.of(interruptingBoundaryElementId, nonInterruptingBoundaryElementId));
+
+    final var canTriggerBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, interruptingBoundaryElementId);
+    assertThat(canTriggerBoundaryEvent).isTrue();
+
+    final var eventTrigger = createEventTrigger(bufferAsString(interruptingBoundaryElementId), "");
+    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+
+    // when
+    final var canTriggerInterruptingBoundaryEventAgain =
+        state.canTriggerEvent(SCOPE_KEY, interruptingBoundaryElementId);
+    final var canTriggerNonInterruptingBoundaryEvent =
+        state.canTriggerEvent(SCOPE_KEY, nonInterruptingBoundaryElementId);
+    final var canTriggerInterruptingEvent = state.canTriggerEvent(SCOPE_KEY, interruptingElementId);
+    final var canTriggerNonInterruptingEvent =
+        state.canTriggerEvent(SCOPE_KEY, wrapString("non-interrupting"));
+
+    // then
+    assertThat(canTriggerInterruptingBoundaryEventAgain).isFalse();
+    assertThat(canTriggerNonInterruptingBoundaryEvent).isFalse();
+    assertThat(canTriggerInterruptingEvent).isFalse();
+    assertThat(canTriggerNonInterruptingEvent).isFalse();
   }
 
   @Test
   void shouldTriggerInterruptingEventScopeInstance() {
     // given
-    final long key = 123;
     final long eventKey = 456;
     final EventTrigger eventTrigger = createEventTrigger();
+    final var interruptingElementIds = Collections.singleton(eventTrigger.getElementId());
 
-    state.createInstance(key, Collections.singleton(eventTrigger.getElementId()), Set.of());
+    state.createInstance(SCOPE_KEY, interruptingElementIds, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(key, eventKey, eventTrigger);
+    triggerEvent(SCOPE_KEY, eventKey, eventTrigger);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
 
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance.isAccepting()).isFalse();
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+    assertThat(instance.isInterrupted()).isTrue();
   }
 
   @Test
   void shouldTriggerInterruptingEventScopeInstanceOnlyOnce() {
     // given
-    final long key = 123;
     final long eventKey1 = 456;
     final EventTrigger eventTrigger1 = createEventTrigger();
     final long eventKey2 = 789;
     final EventTrigger eventTrigger2 = createEventTrigger();
 
-    state.createInstance(key, Collections.singleton(eventTrigger1.getElementId()), Set.of());
+    final var interruptingElementIds = Collections.singleton(eventTrigger1.getElementId());
+
+    state.createInstance(SCOPE_KEY, interruptingElementIds, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(key, eventKey1, eventTrigger1);
-    triggerEvent(key, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger1);
-    Assertions.assertThat(state.pollEventTrigger(key)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
 
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance.isAccepting()).isFalse();
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+    assertThat(instance.isInterrupted()).isTrue();
   }
 
   @Test
   void shouldTriggerNonInterruptingEventScopeInstanceMultipleTimes() {
     // given
-    final long key = 123;
     final long eventKey1 = 456;
     final EventTrigger eventTrigger1 = createEventTrigger();
     final long eventKey2 = 789;
     final EventTrigger eventTrigger2 = createEventTrigger();
 
-    state.createInstance(key, Collections.emptyList(), Set.of());
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(key, eventKey1, eventTrigger1);
-    triggerEvent(key, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger1);
-    Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger2);
-    Assertions.assertThat(state.pollEventTrigger(key)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger2);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
 
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance.isAccepting()).isTrue();
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isAccepting()).isTrue();
+    assertThat(instance.isInterrupted()).isFalse();
+  }
+
+  @Test
+  void shouldTriggerInterruptingEventScopeAndNonInterruptingBoundaryEvent() {
+    // given
+    final long eventKey1 = 1;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    final long eventKey2 = 2;
+    final EventTrigger eventTrigger2 = createEventTrigger();
+
+    final var interruptingIds = Set.of(eventTrigger1.getElementId());
+    final var boundaryElementIds = Set.of(eventTrigger2.getElementId());
+    state.createInstance(SCOPE_KEY, interruptingIds, boundaryElementIds);
+
+    // when
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+
+    // then
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger2);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
+
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isInterrupted()).isTrue();
+    assertThat(instance.isAccepting()).isTrue();
+  }
+
+  @Test
+  void shouldTriggerInterruptingEventScopeAndInterruptingBoundaryEvent() {
+    // given
+    final long eventKey1 = 1;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    final long eventKey2 = 2;
+    final EventTrigger eventTrigger2 = createEventTrigger();
+
+    final var interruptingIds = Set.of(eventTrigger1.getElementId(), eventTrigger2.getElementId());
+    final var boundaryElementIds = Set.of(eventTrigger2.getElementId());
+    state.createInstance(SCOPE_KEY, interruptingIds, boundaryElementIds);
+
+    // when
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+
+    // then
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger2);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
+
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isInterrupted()).isTrue();
+    assertThat(instance.isAccepting()).isFalse();
+  }
+
+  @Test
+  void shouldTriggerInterruptingBoundaryEventOnlyOnce() {
+    // given
+    final long eventKey1 = 1;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    final long eventKey2 = 2;
+    final EventTrigger eventTrigger2 = createEventTrigger();
+    final long eventKey3 = 3;
+    final EventTrigger eventTrigger3 = createEventTrigger();
+
+    final var interruptingIds = Set.of(eventTrigger1.getElementId(), eventTrigger3.getElementId());
+    final var boundaryElementIds =
+        Set.of(eventTrigger1.getElementId(), eventTrigger2.getElementId());
+    state.createInstance(SCOPE_KEY, interruptingIds, boundaryElementIds);
+
+    // when
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey3, eventTrigger3);
+
+    // then
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
+
+    final EventScopeInstance instance = state.getInstance(SCOPE_KEY);
+    assertThat(instance.isInterrupted()).isTrue();
+    assertThat(instance.isAccepting()).isFalse();
   }
 
   @Test
   void shouldTriggerStartEventForNonExistingEventScope() {
     // given
-    final long scopeKey = 123;
     final EventTrigger eventTrigger = createEventTrigger();
 
     // when
-    triggerStartEvent(scopeKey, 456, eventTrigger);
+    triggerStartEvent(SCOPE_KEY, 456, eventTrigger);
 
     // then
-    Assertions.assertThat(state.peekEventTrigger(scopeKey)).isEqualTo(eventTrigger);
+    assertThat(state.peekEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
   }
 
   @Test
   void shouldPeekEventTrigger() {
     // given
-    final long key = 123;
     final EventTrigger eventTrigger = createEventTrigger();
 
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
+
     // when
-    state.createInstance(key, Collections.emptyList(), Set.of());
-    triggerEvent(key, 1, eventTrigger);
+    triggerEvent(SCOPE_KEY, 1, eventTrigger);
 
     // then
-    Assertions.assertThat(state.peekEventTrigger(key)).isEqualTo(eventTrigger);
-    Assertions.assertThat(state.peekEventTrigger(key)).isEqualTo(eventTrigger);
+    assertThat(state.peekEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
+    assertThat(state.peekEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
   }
 
   @Test
   void shouldPollEventTrigger() {
     // given
-    final long key = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
     final EventTrigger eventTrigger2 = createEventTrigger();
 
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_INTERRUPTING_ELEMENT_IDS);
+
     // when
-    state.createInstance(key, Collections.emptyList(), Set.of());
-    triggerEvent(key, 1, eventTrigger1);
-    triggerEvent(key, 2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, 1, eventTrigger1);
+    triggerEvent(SCOPE_KEY, 2, eventTrigger2);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger1);
-    Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger2);
-    Assertions.assertThat(state.pollEventTrigger(key)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger2);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
   }
 
   @Test
   void shouldPollStartEventTrigger() {
     // given
-    final long scopeKey = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
     final EventTrigger eventTrigger2 = createEventTrigger();
 
     // when
-    triggerStartEvent(scopeKey, 1, eventTrigger1);
-    triggerStartEvent(scopeKey, 2, eventTrigger2);
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1);
+    triggerStartEvent(SCOPE_KEY, 2, eventTrigger2);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isEqualTo(eventTrigger1);
-    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isEqualTo(eventTrigger2);
-    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger2);
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
   }
 
   @Test
   void shouldDeleteTrigger() {
     // given
-    final long key = 123;
     final long eventKey = 456;
 
-    state.createInstance(key, Collections.emptyList(), Set.of());
-    triggerEvent(key, eventKey, createEventTrigger());
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
+    triggerEvent(SCOPE_KEY, eventKey, createEventTrigger());
 
     // when
-    state.deleteTrigger(key, eventKey);
+    state.deleteTrigger(SCOPE_KEY, eventKey);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(key)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
   }
 
   @Test
   void shouldDeleteStartEventTrigger() {
     // given
-    final long scopeKey = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
-    triggerStartEvent(scopeKey, 1, eventTrigger1);
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1);
 
     // when
-    state.deleteTrigger(scopeKey, 1);
+    state.deleteTrigger(SCOPE_KEY, 1);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
   }
 
   @Test
   void shouldDeleteEventScopeAndTriggers() {
     // given
-    final long key = 123;
-
-    state.createInstance(key, Collections.emptyList(), Set.of());
-    triggerEvent(123, 1, createEventTrigger());
-    triggerEvent(123, 2, createEventTrigger());
-    triggerEvent(123, 3, createEventTrigger());
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
+    triggerEvent(SCOPE_KEY, 1, createEventTrigger());
+    triggerEvent(SCOPE_KEY, 2, createEventTrigger());
+    triggerEvent(SCOPE_KEY, 3, createEventTrigger());
 
     // when
-    state.deleteInstance(key);
+    state.deleteInstance(SCOPE_KEY);
 
     // then
-    Assertions.assertThat(state.getInstance(key)).isNull();
-    Assertions.assertThat(state.peekEventTrigger(key)).isNull();
+    assertThat(state.getInstance(SCOPE_KEY)).isNull();
+    assertThat(state.peekEventTrigger(SCOPE_KEY)).isNull();
   }
 
   @Test
   void shouldDeleteStartEventTriggerOnDeletionOfInstance() {
     // given
-    final long scopeKey = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
-    triggerStartEvent(scopeKey, 1, eventTrigger1);
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1);
 
     // when
-    state.deleteInstance(scopeKey);
+    state.deleteInstance(SCOPE_KEY);
 
     // then
-    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isNull();
+    assertThat(state.pollEventTrigger(SCOPE_KEY)).isNull();
   }
 
   @Test
   void shouldNotFailOnDeletionOfNonExistingInstance() {
-    // given
-    final long key = 123;
-
-    // expect no exception
-    assertThatNoException().isThrownBy(() -> state.deleteInstance(key));
+    assertThatNoException().isThrownBy(() -> state.deleteInstance(SCOPE_KEY));
   }
 
   @Test
-  void shouldResetElementInstance() {
+  void shouldResetEventScopeAfterCreation() {
     // given
     final long firstKey = 123;
     final long secondKey = 345;
-    final DirectBuffer firstId = wrapString("a");
-    final Collection<DirectBuffer> firstIds = Collections.singletonList(firstId);
+    final var interruptingElementId = wrapString("interrupt");
+    final var interruptingElementIds = Set.of(interruptingElementId);
+    final var boundaryElementId = wrapString("boundary");
+    final var boundaryElementIds = Set.of(boundaryElementId);
 
     // when
-    state.createInstance(firstKey, firstIds, Set.of());
-    state.createInstance(secondKey, Collections.emptyList(), Set.of());
+    state.createInstance(firstKey, interruptingElementIds, boundaryElementIds);
+    state.createInstance(secondKey, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
 
     // then
-    Assertions.assertThat(state.getInstance(firstKey).isInterrupting(firstId)).isTrue();
-    Assertions.assertThat(state.getInstance(secondKey).isInterrupting(firstId)).isFalse();
+    final var firstEventScopeInstance = state.getInstance(firstKey);
+    assertThat(firstEventScopeInstance.isInterruptingElementId(interruptingElementId)).isTrue();
+    assertThat(firstEventScopeInstance.isBoundaryElementId(boundaryElementId)).isTrue();
+
+    final var secondEventScopeInstance = state.getInstance(secondKey);
+    assertThat(secondEventScopeInstance.isInterruptingElementId(interruptingElementId)).isFalse();
+    assertThat(secondEventScopeInstance.isBoundaryElementId(boundaryElementId)).isFalse();
   }
 
   private void triggerEvent(

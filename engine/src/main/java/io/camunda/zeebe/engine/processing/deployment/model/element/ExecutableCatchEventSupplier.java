@@ -14,5 +14,17 @@ import org.agrona.DirectBuffer;
 public interface ExecutableCatchEventSupplier extends ExecutableFlowElement {
   List<ExecutableCatchEvent> getEvents();
 
+  /**
+   * Returns the ids of the containing elements that interrupt the event scope (e.g. interrupting
+   * event subprocesses). An interrupted event scope can not be triggered by other interrupting or
+   * non-interrupting events. But the event scope can still be triggered by boundary events.
+   */
   Collection<DirectBuffer> getInterruptingElementIds();
+
+  /**
+   * Returns the ids of the boundary events. An interrupting boundary event must return its id also
+   * with {@link #getInterruptingElementIds()}. Otherwise, it is handled as non-interrupting
+   * boundary event.
+   */
+  Collection<DirectBuffer> getBoundaryElementIds();
 }

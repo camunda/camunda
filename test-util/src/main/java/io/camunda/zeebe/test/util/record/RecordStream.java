@@ -86,4 +86,10 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new MessageSubscriptionRecordStream(
         filter(r -> r.getValueType() == ValueType.MESSAGE_SUBSCRIPTION).map(Record.class::cast));
   }
+
+  public ProcessMessageSubscriptionRecordStream processMessageSubscriptionRecords() {
+    return new ProcessMessageSubscriptionRecordStream(
+        filter(r -> r.getValueType() == ValueType.PROCESS_MESSAGE_SUBSCRIPTION)
+            .map(Record.class::cast));
+  }
 }
