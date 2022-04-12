@@ -21,13 +21,13 @@
   <name>Zeebe Atomix Parent Pom</name>
   <artifactId>zeebe-atomix-parent</artifactId>
   <packaging>pom</packaging>
-  <version>1.2.12-SNAPSHOT</version>
+  <version>1.2.13-SNAPSHOT</version>
   <inceptionYear>2020</inceptionYear>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.12-SNAPSHOT</version>
+    <version>1.2.13-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
