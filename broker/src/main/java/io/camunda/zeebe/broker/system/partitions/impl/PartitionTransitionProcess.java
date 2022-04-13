@@ -84,9 +84,7 @@ final class PartitionTransitionProcess {
 
   private void onStepCompletion(final ActorFuture<Void> future, final Throwable error) {
     if (error != null) {
-      LOG.error(error.getMessage(), error);
       future.completeExceptionally(error);
-
       return;
     }
 
