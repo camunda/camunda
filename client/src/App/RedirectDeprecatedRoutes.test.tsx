@@ -13,7 +13,7 @@ import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 describe('<RedirectDeprecatedRoutes />', () => {
   it('should replace hash routes', () => {
     render(
-      <MemoryRouter initialEntries={['/#/']}>
+      <MemoryRouter initialEntries={['#/']}>
         <RedirectDeprecatedRoutes />
         <LocationLog />
       </MemoryRouter>
@@ -22,7 +22,29 @@ describe('<RedirectDeprecatedRoutes />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
   });
 
-  it('should replace /instances routes to /processes', () => {
+  it('should replace hash routes and old routes with new routes', () => {
+    const {unmount} = render(
+      <MemoryRouter initialEntries={['/#/instances']}>
+        <RedirectDeprecatedRoutes />
+        <LocationLog />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={['#/instances']}>
+        <RedirectDeprecatedRoutes />
+        <LocationLog />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+  });
+
+  it('should replace old routes with new routes', () => {
     const {unmount} = render(
       <MemoryRouter initialEntries={['/instances?foo=bar']}>
         <RedirectDeprecatedRoutes />
