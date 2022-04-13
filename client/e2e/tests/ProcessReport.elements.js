@@ -117,6 +117,7 @@ export const submenuOption = (text) => Selector('.Submenu .DropdownOption').with
 export const nextPageButton = Selector('.Table .Button.next');
 export const rowsPerPageButton = Selector('.Table .size .Button');
 export const addMeasureButton = Selector('.addMeasure button');
+export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionPreview .Button');
 export const heatDropdown = Selector('.Heatmap .Select');
 export const sectionToggle = (sectionName) =>
   Selector('.ReportControlPanel .sectionTitle')

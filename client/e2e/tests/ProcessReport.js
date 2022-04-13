@@ -915,6 +915,13 @@ test('multi-measure reports', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.addMeasureButton);
+  await t.click(e.dropdownOption('Percentage'));
+  await t.expect(e.reportNumber.visible).ok();
+  await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
+  await t.expect(e.reportRenderer.textContent).contains('% of total instances');
+  await t.click(e.removeMeasureButton);
+
+  await t.click(e.addMeasureButton);
   await t.click(e.dropdownOption('Duration'));
 
   await t.expect(e.reportNumber.visible).ok();
