@@ -42,6 +42,8 @@ grafana:
     default:
       zeebe:
         url: https://raw.githubusercontent.com/camunda/zeebe/main/monitor/grafana/zeebe.json
+      zeebe-overview:
+        url: https://raw.githubusercontent.com/camunda/zeebe/main/monitor/grafana/zeebe-overview.json
   persistence:
     enabled: true
     storageClassName: ssd
