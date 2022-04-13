@@ -250,7 +250,6 @@ public final class ZeebePartition extends Actor
                 });
             onRecoveredInternal();
           } else {
-            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
             onInstallFailure(error);
           }
         });
@@ -274,7 +273,6 @@ public final class ZeebePartition extends Actor
                 });
             onRecoveredInternal();
           } else {
-            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
             onInstallFailure(error);
           }
         });
@@ -340,6 +338,7 @@ public final class ZeebePartition extends Actor
           context.getPartitionId(),
           error.getMessage());
     } else {
+      LOG.error("Failed to install partition {}", context.getPartitionId(), error);
       handleRecoverableFailure();
     }
   }
