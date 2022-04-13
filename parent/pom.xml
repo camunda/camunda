@@ -1544,6 +1544,8 @@
                   <dep>org.ow2.asm:asm</dep>
                   <dep>org.bouncycastle:bcpkix-jdk15on</dep>
                   <dep>org.bouncycastle:bcprov-jdk15on</dep>
+                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                  <dep>org.junit.vintage:junit-vintage-engine</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
@@ -1817,16 +1819,6 @@
           <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter-engine</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.junit.vintage</groupId>
-          <artifactId>junit-vintage-engine</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
           <groupId>org.codehaus.plexus</groupId>
           <artifactId>plexus-utils</artifactId>
           <!--
@@ -1847,8 +1839,6 @@
                 <dep>org.apache.maven.surefire:surefire-junit4</dep>
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
-                <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                <dep>org.junit.vintage:junit-vintage-engine</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
