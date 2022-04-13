@@ -39,6 +39,11 @@ jobs:
           secrets: |
             secret/data/common/github.com/actions/camunda NEXUS_USR;
             secret/data/common/github.com/actions/camunda NEXUS_PSW;
+      - name: Download zbctl
+        working-directory: ./client/e2e
+        run: |
+          curl -OL https://github.com/camunda/zeebe/releases/download/8.0.0-rc1/zbctl
+          chmod +x zbctl
       - name: Setup yarn cache
         uses: actions/setup-node@v2
         with:
@@ -66,6 +71,7 @@ jobs:
         env:
           PORT: 8080
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
+          ZBCTL_PATH: ./e2e/zbctl
         run: yarn run test:e2e:ci
       - name: Archive screenshots
         if: failure()

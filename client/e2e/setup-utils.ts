@@ -7,12 +7,15 @@
 
 import {ZBClient, IProcessVariables, ZBWorkerTaskHandler} from 'zeebe-node';
 import * as path from 'path';
+import {deployDecisions} from './tests/utils/deployDecisions';
 import {config} from './config';
 
 const zbc = new ZBClient({
   onReady: () => console.log('zeebe-node connected!'),
   onConnectionError: () => console.log('zeebe-node disconnected!'),
 }); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
+
+deployDecisions();
 
 function deploy(processNames: string[]) {
   const paths = processNames.map((processName) =>
