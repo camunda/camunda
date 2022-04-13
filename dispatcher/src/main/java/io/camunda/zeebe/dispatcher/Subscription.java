@@ -82,7 +82,7 @@ public class Subscription implements ConsumableChannel {
 
   @Override
   public void removeConsumer(final ActorCondition consumer) {
-    actorConditions.registerConsumer(consumer);
+    actorConditions.removeConsumer(consumer);
   }
 
   protected long getLimit() {
