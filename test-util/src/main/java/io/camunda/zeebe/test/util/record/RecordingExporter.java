@@ -97,6 +97,7 @@ public final class RecordingExporter implements Exporter {
   public static void reset() {
     LOCK.lock();
     try {
+      maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
       RECORDS.clear();
     } finally {
       LOCK.unlock();
