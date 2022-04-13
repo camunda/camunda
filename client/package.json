@@ -64,7 +64,7 @@
     "@testing-library/jest-dom": "5.16.4",
     "@testing-library/react": "11.2.7",
     "@testing-library/react-hooks": "8.0.0",
-    "@testing-library/testcafe": "4.4.0",
+    "@testing-library/testcafe": "4.4.1",
     "@testing-library/user-event": "13.5.0",
     "@types/jest": "27.4.1",
     "@types/jsoneditor": "9.5.1",
