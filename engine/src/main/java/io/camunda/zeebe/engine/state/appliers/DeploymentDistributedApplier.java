@@ -8,10 +8,13 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
+import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -40,8 +43,8 @@ public class DeploymentDistributedApplier
   }
 
   private void putDmnResourcesInState(final DeploymentRecord value) {
-    value
-        .decisionRequirementsMetadata()
+    value.decisionRequirementsMetadata().stream()
+        .filter(not(DecisionRequirementsMetadataRecord::isDuplicate))
         .forEach(
             drg -> {
               final var resource = getResourceByName(value, drg.getResourceName());
@@ -50,7 +53,9 @@ public class DeploymentDistributedApplier
               decisionState.storeDecisionRequirements(decisionRequirementsRecord);
             });
 
-    value.decisionsMetadata().forEach(decisionState::storeDecisionRecord);
+    value.decisionsMetadata().stream()
+        .filter(not(DecisionRecord::isDuplicate))
+        .forEach(decisionState::storeDecisionRecord);
   }
 
   private DirectBuffer getResourceByName(
