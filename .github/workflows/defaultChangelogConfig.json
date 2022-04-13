@@ -1,0 +1,20 @@
+{
+  "typeLabels": [
+    {
+      "title": "⚡️ Breaking Changes",
+      "types": ["breaking"]
+    },
+    {
+      "title": "🚀 New Features",
+      "types": ["feat"]
+    },
+    {
+      "title": "💊 Bugfixes",
+      "types": ["fix", "revert"]
+    },
+    {
+      "title": "🧹 Chore",
+      "types": ["chore", "ci", "build", "test", "refactor", "style", "docs"]
+    }
+  ]
+}

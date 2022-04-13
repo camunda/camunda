@@ -1,0 +1,54 @@
+name: Create changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+        default: ''
+      commit:
+        description: 'From commit'
+        required: true
+        default: ''
+      branch:
+        description: 'Branch (if blank default branch will be used):'
+        required: false
+        default: ''
+
+jobs:
+  create_draft_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check target branch
+        id: target-branch
+        run: |-
+          if [[ -z "${{ github.event.inputs.branch }}" ]]; then
+            # no branch is entered
+            echo "::set-output name=branch::master";
+          else
+            echo "::set-output name=branch::${{ github.event.inputs.branch }}";
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.target-branch.outputs.branch }}
+
+      - name: Calculate changelog
+        uses: dlavrenuek/conventional-changelog-action@v1.1.0
+        id: changelog
+        with:
+          from: ${{ github.event.inputs.commit }}
+          to: HEAD
+          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+
+      - name: Append to CHANGELOG.md
+        run: |
+          printf '# v%s\n%s\n%s\n' "${{ github.event.inputs.version }}" "${{ steps.changelog.outputs.body }}" "$(cat ./CHANGELOG.md)" > ./CHANGELOG.md
+
+      - name: Commit CHANGELOG.md
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: update CHANGELOG.md"
