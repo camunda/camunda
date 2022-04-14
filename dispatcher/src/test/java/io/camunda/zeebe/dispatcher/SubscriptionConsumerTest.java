@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dispatcher;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
@@ -15,6 +16,28 @@ import io.camunda.zeebe.util.sched.ActorCondition;
 import org.junit.jupiter.api.Test;
 
 final class SubscriptionConsumerTest {
+
+  @Test
+  void consumersAreSignaledAfterRegistering() {
+    // given
+    final var consumer = mock(ActorCondition.class);
+    final var subscription =
+        new Subscription(
+            mock(AtomicPosition.class),
+            mock(AtomicPosition.class),
+            0,
+            "",
+            mock(ActorCondition.class),
+            mock(LogBuffer.class));
+
+    // when
+    subscription.registerConsumer(consumer);
+
+    // then
+    subscription.getActorConditions().signalConsumers();
+    verify(consumer).signal();
+  }
+
   @Test
   void consumersAreNotSignaledAfterRemoving() {
     // given
@@ -25,8 +48,9 @@ final class SubscriptionConsumerTest {
             mock(AtomicPosition.class),
             0,
             "",
-            consumer,
+            mock(ActorCondition.class),
             mock(LogBuffer.class));
+    subscription.registerConsumer(consumer);
 
     // when
     subscription.removeConsumer(consumer);
