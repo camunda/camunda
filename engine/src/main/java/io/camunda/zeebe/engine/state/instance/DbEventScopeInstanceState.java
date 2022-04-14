@@ -48,30 +48,6 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
-  public void shutdownInstance(final long eventScopeKey) {
-    final EventScopeInstance instance = getInstance(eventScopeKey);
-    if (instance != null) {
-      this.eventScopeKey.wrapLong(eventScopeKey);
-      instance.setAccepting(false);
-      eventScopeInstanceColumnFamily.update(this.eventScopeKey, instance);
-    }
-  }
-
-  @Override
-  public boolean createIfNotExists(
-      final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
-    this.eventScopeKey.wrapLong(eventScopeKey);
-    boolean wasCreated = false;
-
-    if (!eventScopeInstanceColumnFamily.exists(this.eventScopeKey)) {
-      createInstance(eventScopeKey, interruptingIds);
-      wasCreated = true;
-    }
-
-    return wasCreated;
-  }
-
-  @Override
   public void createInstance(
       final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
     eventScopeInstance.reset();

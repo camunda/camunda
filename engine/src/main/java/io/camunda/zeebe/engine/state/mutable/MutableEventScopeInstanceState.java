@@ -15,22 +15,6 @@ import org.agrona.DirectBuffer;
 public interface MutableEventScopeInstanceState extends EventScopeInstanceState {
 
   /**
-   * If the scope exists, sets its accepting property to false.
-   *
-   * @param eventScopeKey the event scope key
-   */
-  void shutdownInstance(long eventScopeKey);
-
-  /**
-   * Creates a new event scope instance in the state
-   *
-   * @param eventScopeKey the event scope key
-   * @param interruptingIds list of element IDs which should set accepting to false
-   * @return whether the scope was created or not
-   */
-  boolean createIfNotExists(long eventScopeKey, Collection<DirectBuffer> interruptingIds);
-
-  /**
    * Creates a new event scope instance in the state
    *
    * @param eventScopeKey the event scope key
