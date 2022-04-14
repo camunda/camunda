@@ -48,26 +48,6 @@ pipeline {
   }
 
   stages {
-    stage('Prepare') {
-      steps {
-        container('maven') {
-          sh '.ci/scripts/ensure-naming-for-process.sh'
-        }
-      }
-    }
-    stage('Frontend - Build') {
-      steps {
-        container('node') {
-          sh '''
-            apk add --no-cache git
-            cd ./client
-            yarn install --frozen-lockfile
-            yarn lint
-            yarn build
-          '''
-        }
-      }
-    }
     stage('Backend - Build') {
       steps {
         container('maven') {
@@ -100,37 +80,6 @@ pipeline {
             always {
               junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
               junit testResults: 'importer/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-            }
-          }
-        }
-        stage('Frontend - Tests') {
-          steps {
-            container('node') {
-              sh '''
-                cd ./client
-                yarn test:ci
-              '''
-            }
-          }
-          post {
-            always {
-              junit testResults: 'client/jest-test-results.xml', keepLongStdio: true, allowEmptyResults: true
-            }
-          }
-        }
-
-        stage('End to end - Tests'){
-          steps {
-            container('maven') {
-              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -DZEEBE_TASKLIST_CSRF_PREVENTION_ENABLED=false spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
-                sh ('sleep 30')
-                sh '''
-                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-                  mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test
-                  '''
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
-              }
             }
           }
         }

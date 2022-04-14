@@ -32,11 +32,13 @@
     "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "test:ci": "CI=true yarn test --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit --testTimeout 7000",
+    "test:ci": "CI=true yarn test --ci --testTimeout 7000",
     "eject": "react-scripts eject",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
-    "lint": "tsc && tsc --noEmit --project e2e/tsconfig.json && eslint src/ e2e/",
+    "ts-check": "tsc && tsc --noEmit --project e2e/tsconfig.json",
+    "eslint": "eslint src/ e2e/",
+    "lint": "yarn ts-check && yarn eslint",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci",
     "storybook": "start-storybook -p 9009 -s public",
@@ -44,14 +46,6 @@
     "chromatic": "npx chromatic --skip 'dependabot/**' --auto-accept-changes master --exit-once-uploaded",
     "postinstall": "cd .. && husky install",
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'"
-  },
-  "jest-junit": {
-    "suiteName": "client",
-    "outputName": "jest-test-results.xml",
-    "suiteNameTemplate": "{filename}",
-    "classNameTemplate": "client.{filename}",
-    "titleTemplate": "{title}",
-    "ancestorSeparator": " @ "
   },
   "browserslist": {
     "production": [
@@ -89,7 +83,6 @@
     "http-proxy-middleware": "2.0.4",
     "husky": "7.0.4",
     "jest-environment-jsdom-fifteen": "1.0.2",
-    "jest-junit": "13.1.0",
     "lint-staged": "12.3.7",
     "msw": "0.39.2",
     "prettier": "2.6.2",

@@ -27,10 +27,11 @@ beforeAll(() => {
     },
   });
 });
-beforeEach(async () => {
+
+afterEach(async () => {
+  mockServer.resetHandlers();
   await clearClientCache();
 });
-afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 
 // mock app version

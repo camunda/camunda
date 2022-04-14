@@ -2,5 +2,10 @@
   "clientScripts": [
     {"module": "@testing-library/dom/dist/@testing-library/dom.umd.js"}
   ],
-  "assertionTimeout": 20000
+  "assertionTimeout": 20000,
+  "screenshots": {
+    "path": "artifacts/screenshots",
+    "takeOnFails": true,
+    "pathPattern": "${FIXTURE}_${TEST}_${DATE}_${TIME}.png"
+  }
 }
