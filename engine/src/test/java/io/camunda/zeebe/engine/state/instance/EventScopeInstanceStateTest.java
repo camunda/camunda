@@ -12,31 +12,31 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ZeebeStateExtension.class)
 public final class EventScopeInstanceStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  private MutableZeebeState zeebeState;
 
   private MutableEventScopeInstanceState state;
 
-  @Before
-  public void setUp() {
-    final MutableZeebeState zeebeState = stateRule.getZeebeState();
+  @BeforeEach
+  void setUp() {
     state = zeebeState.getEventScopeInstanceState();
   }
 
   @Test
-  public void shouldCreateInterruptingEventScopeInstance() {
+  void shouldCreateInterruptingEventScopeInstance() {
     // given
     final long key = 123;
 
@@ -50,7 +50,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldCreateNonInterruptingEventScopeInstance() {
+  void shouldCreateNonInterruptingEventScopeInstance() {
     // given
     final long key = 123;
 
@@ -64,7 +64,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldTriggerInterruptingEventScopeInstance() {
+  void shouldTriggerInterruptingEventScopeInstance() {
     // given
     final long key = 123;
     final long eventKey = 456;
@@ -83,7 +83,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldTriggerInterruptingEventScopeInstanceOnlyOnce() {
+  void shouldTriggerInterruptingEventScopeInstanceOnlyOnce() {
     // given
     final long key = 123;
     final long eventKey1 = 456;
@@ -106,7 +106,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldTriggerNonInterruptingEventScopeInstanceMultipleTimes() {
+  void shouldTriggerNonInterruptingEventScopeInstanceMultipleTimes() {
     // given
     final long key = 123;
     final long eventKey1 = 456;
@@ -130,7 +130,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldTriggerStartEventForNonExistingEventScope() {
+  void shouldTriggerStartEventForNonExistingEventScope() {
     // given
     final long scopeKey = 123;
     final EventTrigger eventTrigger = createEventTrigger();
@@ -143,7 +143,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldPeekEventTrigger() {
+  void shouldPeekEventTrigger() {
     // given
     final long key = 123;
     final EventTrigger eventTrigger = createEventTrigger();
@@ -158,7 +158,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldPollEventTrigger() {
+  void shouldPollEventTrigger() {
     // given
     final long key = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
@@ -176,7 +176,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldPollStartEventTrigger() {
+  void shouldPollStartEventTrigger() {
     // given
     final long scopeKey = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
@@ -193,7 +193,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldDeleteTrigger() {
+  void shouldDeleteTrigger() {
     // given
     final long key = 123;
     final long eventKey = 456;
@@ -209,7 +209,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldDeleteStartEventTrigger() {
+  void shouldDeleteStartEventTrigger() {
     // given
     final long scopeKey = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
@@ -223,7 +223,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldDeleteEventScopeAndTriggers() {
+  void shouldDeleteEventScopeAndTriggers() {
     // given
     final long key = 123;
 
@@ -241,7 +241,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldDeleteStartEventTriggerOnDeletionOfInstance() {
+  void shouldDeleteStartEventTriggerOnDeletionOfInstance() {
     // given
     final long scopeKey = 123;
     final EventTrigger eventTrigger1 = createEventTrigger();
@@ -255,7 +255,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldNotFailOnDeletionOfNonExistingInstance() {
+  void shouldNotFailOnDeletionOfNonExistingInstance() {
     // given
     final long key = 123;
 
@@ -264,7 +264,7 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldResetElementInstance() {
+  void shouldResetElementInstance() {
     // given
     final long firstKey = 123;
     final long secondKey = 345;
