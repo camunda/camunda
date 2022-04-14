@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
@@ -40,7 +41,7 @@ public final class EventScopeInstanceStateTest {
     final long key = 123;
 
     // when
-    state.createIfNotExists(key, Collections.singleton(wrapString("foo")));
+    state.createInstance(key, Collections.singleton(wrapString("foo")), Set.of());
 
     // then
     final EventScopeInstance instance = state.getInstance(key);
@@ -54,7 +55,7 @@ public final class EventScopeInstanceStateTest {
     final long key = 123;
 
     // when
-    state.createIfNotExists(key, Collections.singleton(wrapString("foo")));
+    state.createInstance(key, Collections.singleton(wrapString("foo")), Set.of());
 
     // then
     final EventScopeInstance instance = state.getInstance(key);
@@ -69,7 +70,7 @@ public final class EventScopeInstanceStateTest {
     final long eventKey = 456;
     final EventTrigger eventTrigger = createEventTrigger();
 
-    state.createIfNotExists(key, Collections.singleton(eventTrigger.getElementId()));
+    state.createInstance(key, Collections.singleton(eventTrigger.getElementId()), Set.of());
 
     // when
     triggerEvent(key, eventKey, eventTrigger);
@@ -90,7 +91,7 @@ public final class EventScopeInstanceStateTest {
     final long eventKey2 = 789;
     final EventTrigger eventTrigger2 = createEventTrigger();
 
-    state.createIfNotExists(key, Collections.singleton(eventTrigger1.getElementId()));
+    state.createInstance(key, Collections.singleton(eventTrigger1.getElementId()), Set.of());
 
     // when
     triggerEvent(key, eventKey1, eventTrigger1);
@@ -113,7 +114,7 @@ public final class EventScopeInstanceStateTest {
     final long eventKey2 = 789;
     final EventTrigger eventTrigger2 = createEventTrigger();
 
-    state.createIfNotExists(key, Collections.emptyList());
+    state.createInstance(key, Collections.emptyList(), Set.of());
 
     // when
     triggerEvent(key, eventKey1, eventTrigger1);
@@ -148,7 +149,7 @@ public final class EventScopeInstanceStateTest {
     final EventTrigger eventTrigger = createEventTrigger();
 
     // when
-    state.createIfNotExists(key, Collections.emptyList());
+    state.createInstance(key, Collections.emptyList(), Set.of());
     triggerEvent(key, 1, eventTrigger);
 
     // then
@@ -164,7 +165,7 @@ public final class EventScopeInstanceStateTest {
     final EventTrigger eventTrigger2 = createEventTrigger();
 
     // when
-    state.createIfNotExists(key, Collections.emptyList());
+    state.createInstance(key, Collections.emptyList(), Set.of());
     triggerEvent(key, 1, eventTrigger1);
     triggerEvent(key, 2, eventTrigger2);
 
@@ -197,7 +198,7 @@ public final class EventScopeInstanceStateTest {
     final long key = 123;
     final long eventKey = 456;
 
-    state.createIfNotExists(key, Collections.emptyList());
+    state.createInstance(key, Collections.emptyList(), Set.of());
     triggerEvent(key, eventKey, createEventTrigger());
 
     // when
@@ -226,7 +227,7 @@ public final class EventScopeInstanceStateTest {
     // given
     final long key = 123;
 
-    state.createIfNotExists(key, Collections.emptyList());
+    state.createInstance(key, Collections.emptyList(), Set.of());
     triggerEvent(123, 1, createEventTrigger());
     triggerEvent(123, 2, createEventTrigger());
     triggerEvent(123, 3, createEventTrigger());
@@ -263,33 +264,6 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldShutdownInstance() {
-    // given
-    final long key = 123;
-    state.createIfNotExists(key, Collections.singleton(wrapString("foo")));
-
-    // when
-    state.shutdownInstance(key);
-
-    // then
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance.isAccepting()).isFalse();
-  }
-
-  @Test
-  public void shouldNotCreateInstanceIfTryingToShutdownNonExistentOne() {
-    // given
-    final long key = 123;
-
-    // when
-    state.shutdownInstance(key);
-
-    // then
-    final EventScopeInstance instance = state.getInstance(key);
-    Assertions.assertThat(instance).isNull();
-  }
-
-  @Test
   public void shouldResetElementInstance() {
     // given
     final long firstKey = 123;
@@ -298,8 +272,8 @@ public final class EventScopeInstanceStateTest {
     final Collection<DirectBuffer> firstIds = Collections.singletonList(firstId);
 
     // when
-    state.createIfNotExists(firstKey, firstIds);
-    state.createIfNotExists(secondKey, Collections.emptyList());
+    state.createInstance(firstKey, firstIds, Set.of());
+    state.createInstance(secondKey, Collections.emptyList(), Set.of());
 
     // then
     Assertions.assertThat(state.getInstance(firstKey).isInterrupting(firstId)).isTrue();
