@@ -54,17 +54,14 @@ public class ElasticsearchExporterAuthenticationIT
     // given
     configuration = getDefaultConfiguration();
     exporterConfigurator.accept(configuration);
+    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
+    esClient = createElasticsearchClient(configuration);
 
     // when
-    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
+    startBroker();
     exporterBrokerRule.performSampleWorkload();
 
     // then
-
-    // assert index settings for all created indices
-    esClient = createElasticsearchClient(configuration);
-
     // assert all records which where recorded during the tests where exported
     exporterBrokerRule.visitExportedRecords(
         r -> {

@@ -34,7 +34,7 @@ public final class ElasticsearchExporterDmnRecordIT
     esClient = createElasticsearchClient(configuration);
 
     exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
+    startBroker();
   }
 
   @Test

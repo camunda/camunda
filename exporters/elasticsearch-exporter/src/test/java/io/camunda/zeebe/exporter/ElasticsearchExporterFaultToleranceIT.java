@@ -30,9 +30,10 @@ public class ElasticsearchExporterFaultToleranceIT
 
     // when
     exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
+    startBrokerWithoutWaitingForIndexTemplates();
     exporterBrokerRule.publishMessage("message", "123");
     elastic.start();
+    awaitIndexTemplatesCreation();
 
     // then
     final var records =
