@@ -49,8 +49,8 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Technical Concepts](https://docs.camunda.io/docs/product-manuals/zeebe/technical-concepts/index)
 * [BPMN Processes](https://docs.camunda.io/docs/reference/bpmn-processes/bpmn-primer)
 * [Configuration](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/index)
-* [Java Client](https://docs.camunda.io/docs/product-manuals/clients/java-client/index)
-* [Go Client](https://docs.camunda.io/docs/product-manuals/clients/go-client/index)
+* [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
+* [Go Client](https://docs.camunda.io/docs/apis-clients/go-client/)
 
 ## Contributing
 
