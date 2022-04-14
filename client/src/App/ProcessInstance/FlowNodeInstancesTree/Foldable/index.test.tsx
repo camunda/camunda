@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 
 import noop from 'lodash/noop';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -34,11 +33,11 @@ describe('<Foldable />', () => {
     expect(screen.getByText(mockContent)).toBeInTheDocument();
   });
 
-  it('should handle content click', () => {
+  it('should handle content click', async () => {
     const mockContent = 'mock-content';
     const mockOnSelection = jest.fn();
 
-    render(
+    const {user} = render(
       <Foldable isFoldable={false} isFolded={false}>
         <Foldable.Summary
           onSelection={mockOnSelection}
@@ -52,7 +51,7 @@ describe('<Foldable />', () => {
       {wrapper: ThemeProvider}
     );
 
-    userEvent.click(screen.getByText(mockContent));
+    await user.click(screen.getByText(mockContent));
 
     expect(mockOnSelection).toHaveBeenCalled();
   });

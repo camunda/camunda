@@ -11,8 +11,7 @@ import {
   within,
   screen,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+} from 'modules/testing-library';
 import {IncidentsByError} from './index';
 import {
   mockIncidentsByError,
@@ -128,7 +127,7 @@ describe('IncidentsByError', () => {
       )
     );
 
-    render(<IncidentsByError />, {
+    const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
     });
 
@@ -143,7 +142,7 @@ describe('IncidentsByError', () => {
     );
     expect(expandButton).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       withinIncident.getByTitle(
         "View 36 Instances with error JSON path '$.paid' has no result."
       )
@@ -156,7 +155,7 @@ describe('IncidentsByError', () => {
     panelStatesStore.toggleFiltersPanel();
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    userEvent.click(expandButton);
+    await user.click(expandButton);
 
     const firstVersion = withinIncident.getByTitle(
       "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
@@ -168,7 +167,7 @@ describe('IncidentsByError', () => {
       within(firstVersion).getByText('mockProcess – Version 1')
     ).toBeInTheDocument();
 
-    userEvent.click(firstVersion);
+    await user.click(firstVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?process=mockProcess&version=1&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
@@ -228,7 +227,7 @@ describe('IncidentsByError', () => {
       )
     );
 
-    render(<IncidentsByError />, {
+    const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
@@ -240,7 +239,7 @@ describe('IncidentsByError', () => {
       "Expand 36 Instances with error JSON path '$.paid' has no result."
     );
 
-    userEvent.click(
+    await user.click(
       withinIncident.getByTitle(
         "View 36 Instances with error JSON path '$.paid' has no result."
       )
@@ -249,13 +248,13 @@ describe('IncidentsByError', () => {
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
 
-    userEvent.click(expandButton);
+    await user.click(expandButton);
 
     const firstVersion = withinIncident.getByTitle(
       "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
     );
 
-    userEvent.click(firstVersion);
+    await user.click(firstVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
     );
@@ -268,11 +267,11 @@ describe('IncidentsByError', () => {
       )
     );
 
-    render(<IncidentsByError />, {
+    const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.click(
+    await user.click(
       await screen.findByTitle(
         `View 36 Instances with error ${bigErrorMessage}`
       )
@@ -282,15 +281,15 @@ describe('IncidentsByError', () => {
       getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
     ).toBe(truncatedBigErrorMessage);
 
-    userEvent.click(screen.getByText(/go to initial/i));
+    await user.click(screen.getByText(/go to initial/i));
 
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
     ).toBeNull();
 
-    userEvent.click(screen.getByTestId('arrow-icon'));
-    userEvent.click(
+    await user.click(screen.getByTestId('arrow-icon'));
+    await user.click(
       await screen.findByTitle(
         `View 37 Instances with error ${bigErrorMessage} in version 1 of Process mockProcess`
       )

@@ -8,7 +8,7 @@
 import {operationsStore} from './operations';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {operations} from 'modules/testUtils';
 
 describe('stores/operations', () => {

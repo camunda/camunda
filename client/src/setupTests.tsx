@@ -8,7 +8,7 @@
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
-import {configure} from '@testing-library/react';
+import {configure} from 'modules/testing-library';
 import React from 'react';
 import {Textfield as MockTextfield} from 'modules/mocks/common-ui/Textfield';
 import {Checkbox as MockCheckbox} from 'modules/mocks/common-ui/Checkbox';

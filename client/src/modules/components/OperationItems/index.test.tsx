@@ -5,11 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {noop} from 'lodash';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-
 import OperationItems from './index';
 
 describe('OperationItems', () => {
@@ -55,10 +53,10 @@ describe('OperationItems', () => {
       ).toBeInTheDocument();
     });
 
-    it('should execute the passed method when clicked', () => {
+    it('should execute the passed method when clicked', async () => {
       const BUTTON_TITLE = 'Retry Instance 1';
       const MOCK_ON_CLICK = jest.fn();
-      render(
+      const {user} = render(
         <OperationItems>
           <OperationItems.Item
             type="RESOLVE_INCIDENT"
@@ -69,7 +67,7 @@ describe('OperationItems', () => {
         {wrapper: ThemeProvider}
       );
 
-      userEvent.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+      await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));
 
       expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });
@@ -105,10 +103,10 @@ describe('OperationItems', () => {
       ).toBeInTheDocument();
     });
 
-    it('should execute the passed method when clicked', () => {
+    it('should execute the passed method when clicked', async () => {
       const BUTTON_TITLE = 'Cancel Instance 1';
       const MOCK_ON_CLICK = jest.fn();
-      render(
+      const {user} = render(
         <OperationItems>
           <OperationItems.Item
             type="CANCEL_PROCESS_INSTANCE"
@@ -119,7 +117,7 @@ describe('OperationItems', () => {
         {wrapper: ThemeProvider}
       );
 
-      userEvent.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+      await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));
 
       expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });
@@ -155,10 +153,10 @@ describe('OperationItems', () => {
       ).toBeInTheDocument();
     });
 
-    it('should execute the passed method when clicked', () => {
+    it('should execute the passed method when clicked', async () => {
       const BUTTON_TITLE = 'Delete Instance 1';
       const MOCK_ON_CLICK = jest.fn();
-      render(
+      const {user} = render(
         <OperationItems>
           <OperationItems.Item
             type="DELETE_PROCESS_INSTANCE"
@@ -169,7 +167,7 @@ describe('OperationItems', () => {
         {wrapper: ThemeProvider}
       );
 
-      userEvent.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+      await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));
 
       expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });

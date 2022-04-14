@@ -9,7 +9,7 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {

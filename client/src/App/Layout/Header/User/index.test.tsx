@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {User} from './index';
 import {rest} from 'msw';
@@ -55,7 +54,7 @@ describe('User', () => {
       )
     );
 
-    render(<User />, {
+    const {user} = render(<User />, {
       wrapper: Wrapper,
     });
 
@@ -63,7 +62,7 @@ describe('User', () => {
 
     expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
 
-    userEvent.click(await screen.findByText('Michael Jordan'));
+    await user.click(await screen.findByText('Michael Jordan'));
 
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
   });
@@ -76,14 +75,14 @@ describe('User', () => {
       rest.post('/api/logout', (_, res, ctx) => res.once(ctx.json('')))
     );
 
-    render(<User />, {
+    const {user} = render(<User />, {
       wrapper: Wrapper,
     });
 
     authenticationStore.authenticate();
 
-    userEvent.click(await screen.findByText('Franz Kafka'));
-    userEvent.click(await screen.findByText('Logout'));
+    await user.click(await screen.findByText('Franz Kafka'));
+    await user.click(await screen.findByText('Logout'));
 
     expect(await screen.findByTestId('username-skeleton')).toBeInTheDocument();
   });

@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {SessionWatcher} from './SessionWatcher';
@@ -91,7 +90,7 @@ describe('<SessionWatcher />', () => {
   });
 
   it('should not show a notification', async () => {
-    render(<SessionWatcher />, {
+    const {user} = render(<SessionWatcher />, {
       wrapper: getWrapper(['/login']),
     });
 
@@ -107,7 +106,7 @@ describe('<SessionWatcher />', () => {
       headline: 'Session expired',
     });
 
-    userEvent.click(screen.getByText(/get out/i));
+    await user.click(screen.getByText(/get out/i));
 
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenNthCalledWith(1, 'info', {

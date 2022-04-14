@@ -56,8 +56,8 @@ class Modal extends React.Component<ModalProps> {
   constructor(props: ModalProps) {
     super(props);
     this.keyHandlers = new Map([
-      [27, this.props.onModalClose],
-      [9, this.handleTabKeyDown],
+      ['Escape', this.props.onModalClose],
+      ['Tab', this.handleTabKeyDown],
     ]);
     this.modalRef = React.createRef();
     this.eventListenerAdded = false;
@@ -101,8 +101,8 @@ class Modal extends React.Component<ModalProps> {
     this.prevActiveElement.focus();
   }
 
-  handleKeyDown = (e: any) => {
-    const keyHandler = this.keyHandlers.get(e.keyCode);
+  handleKeyDown = (e: KeyboardEvent) => {
+    const keyHandler = this.keyHandlers.get(e.key);
     return keyHandler && keyHandler(e);
   };
 
@@ -222,7 +222,7 @@ type ModalPrimaryButtonProps = {
 class ModalPrimaryButton extends React.Component<ModalPrimaryButtonProps> {
   componentDidMount() {
     !this.props.disableKeyBinding &&
-      this.props.addKeyHandler(13, this.handleReturnKeyPress);
+      this.props.addKeyHandler('Enter', this.handleReturnKeyPress);
   }
 
   primaryButtonRef = React.createRef<HTMLButtonElement>();

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';

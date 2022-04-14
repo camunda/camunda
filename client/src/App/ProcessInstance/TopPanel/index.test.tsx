@@ -9,7 +9,7 @@ import {
   render,
   waitForElementToBeRemoved,
   screen,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockSequenceFlows, mockIncidents} from './index.setup';
@@ -18,7 +18,6 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import userEvent from '@testing-library/user-event';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -156,7 +155,7 @@ describe('TopPanel', () => {
   });
 
   it('should toggle incident bar', async () => {
-    render(<TopPanel />, {
+    const {user} = render(<TopPanel />, {
       wrapper: Wrapper,
     });
 
@@ -166,12 +165,12 @@ describe('TopPanel', () => {
     expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();
     expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
 
-    userEvent.click(await screen.findByTitle('View 1 Incident in Instance 1'));
+    await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
 
-    userEvent.click(await screen.findByTitle('View 1 Incident in Instance 1'));
+    await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
     expect(screen.queryByText('Incident type:')).not.toBeInTheDocument();
     expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();

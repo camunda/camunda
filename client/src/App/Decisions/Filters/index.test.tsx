@@ -5,13 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Header} from 'App/Layout/Header';
 import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
@@ -91,40 +85,37 @@ describe('<Filters />', () => {
   });
 
   it('should write filters to url', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.selectOptions(screen.getByLabelText(/name/i), [
+    await user.selectOptions(screen.getByLabelText(/name/i), [
       'invoice-assign-approver',
     ]);
+    await user.selectOptions(screen.getByLabelText(/version/i), ['2']);
+    await user.click(screen.getByLabelText(/evaluated/i));
+    await user.click(screen.getByLabelText(/failed/i));
 
-    userEvent.selectOptions(screen.getByLabelText(/version/i), ['2']);
-
-    userEvent.click(screen.getByLabelText(/evaluated/i));
-
-    userEvent.click(screen.getByLabelText(/failed/i));
-
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
-    userEvent.paste(
-      screen.getByLabelText(/decision instance id\(s\)/i),
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.type(
+      screen.getByText(/decision instance id\(s\)/i),
       '2251799813689540-1'
     );
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/process instance id/i));
-    userEvent.paste(
-      screen.getByLabelText(/process instance id/i),
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/process instance id/i));
+    await user.type(
+      screen.getByText(/process instance id/i),
       '2251799813689549'
     );
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/evaluation date/i));
-    userEvent.paste(screen.getByLabelText(/evaluation date/i), '1111-11-11');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/evaluation date/i));
+    await user.type(screen.getByText(/evaluation date/i), '1111-11-11');
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     await waitFor(() =>
@@ -137,7 +128,7 @@ describe('<Filters />', () => {
       ).toEqual(MOCK_FILTERS_PARAMS)
     );
 
-    userEvent.click(screen.getByRole('button', {name: /reset/i}));
+    await user.click(screen.getByRole('button', {name: /reset/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
@@ -167,8 +158,8 @@ describe('<Filters />', () => {
     });
   });
 
-  it('should persist enabled filters on session', () => {
-    const {unmount} = render(<Filters />, {
+  it('should persist enabled filters on session', async () => {
+    const {unmount, user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
@@ -180,14 +171,14 @@ describe('<Filters />', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/decision instance id\(s\)/i));
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/process instance id/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/process instance id/i));
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/evaluation date/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/evaluation date/i));
 
     unmount();
 
@@ -226,19 +217,19 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
   });
 
-  it('should hide optional filters', () => {
-    render(<Filters />, {
+  it('should hide optional filters', async () => {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/decision instance id\(s\)/i));
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/process instance id/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/process instance id/i));
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/evaluation date/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/evaluation date/i));
 
     expect(
       screen.getByLabelText(/decision instance id\(s\)/i)
@@ -246,9 +237,9 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
 
-    userEvent.click(screen.getByTestId('delete-decisionInstanceIds'));
-    userEvent.click(screen.getByTestId('delete-processInstanceId'));
-    userEvent.click(screen.getByTestId('delete-evaluationDate'));
+    await user.click(screen.getByTestId('delete-decisionInstanceIds'));
+    await user.click(screen.getByTestId('delete-processInstanceId'));
+    await user.click(screen.getByTestId('delete-evaluationDate'));
 
     expect(
       screen.queryByLabelText(/decision instance id\(s\)/i)
@@ -259,8 +250,8 @@ describe('<Filters />', () => {
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
 
-  it('should select decision name and version', () => {
-    render(<Filters />, {
+  it('should select decision name and version', async () => {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
@@ -269,7 +260,7 @@ describe('<Filters />', () => {
     expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
     expect(screen.getByLabelText(/version/i)).toBeDisabled();
 
-    userEvent.selectOptions(screen.getByLabelText(/name/i), [
+    await user.selectOptions(screen.getByLabelText(/name/i), [
       'invoice-assign-approver',
     ]);
 
@@ -277,12 +268,12 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
     expect(screen.queryByDisplayValue(/all/i)).not.toBeInTheDocument();
 
-    userEvent.selectOptions(screen.getByLabelText(/version/i), ['1']);
+    await user.selectOptions(screen.getByLabelText(/version/i), ['1']);
 
     expect(screen.getByDisplayValue(/version 1/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
 
-    userEvent.selectOptions(screen.getByLabelText(/name/i), ['']);
+    await user.selectOptions(screen.getByLabelText(/name/i), ['']);
 
     expect(screen.queryByDisplayValue(/version 1/i)).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue(/version 2/i)).not.toBeInTheDocument();
@@ -291,15 +282,15 @@ describe('<Filters />', () => {
   });
 
   it('should validate decision instance ids', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/decision instance id\(s\)/i));
-    userEvent.type(screen.getByLabelText(/decision instance id\(s\)/i), 'a');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.type(screen.getByLabelText(/decision instance id\(s\)/i), 'a');
 
     expect(
       await screen.findByText(
@@ -308,15 +299,15 @@ describe('<Filters />', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+    await user.clear(screen.getByLabelText(/decision instance id\(s\)/i));
 
-    await waitForElementToBeRemoved(() =>
+    expect(
       screen.queryByText(
         'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
-    );
+    ).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/decision instance id\(s\)/i), '1');
+    await user.type(screen.getByLabelText(/decision instance id\(s\)/i), '1');
 
     expect(
       await screen.findByText(
@@ -324,15 +315,15 @@ describe('<Filters />', () => {
       )
     ).toBeInTheDocument();
 
-    userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+    await user.clear(screen.getByLabelText(/decision instance id\(s\)/i));
 
-    await waitForElementToBeRemoved(() =>
+    expect(
       screen.queryByText(
         'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
-    );
+    ).not.toBeInTheDocument();
 
-    userEvent.type(
+    await user.type(
       screen.getByLabelText(/decision instance id/i),
       '2251799813689549'
     );
@@ -343,49 +334,49 @@ describe('<Filters />', () => {
       )
     ).toBeInTheDocument();
 
-    userEvent.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+    await user.clear(screen.getByLabelText(/decision instance id\(s\)/i));
 
-    await waitForElementToBeRemoved(() =>
+    expect(
       screen.queryByText(
         'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
-    );
+    ).not.toBeInTheDocument();
   });
 
   it('should validate process instance id', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/process instance id/i));
-    userEvent.type(screen.getByLabelText(/process instance id/i), 'a');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/process instance id/i));
+    await user.type(screen.getByLabelText(/process instance id/i), 'a');
 
     expect(
       await screen.findByText('Id has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.clear(screen.getByLabelText(/process instance id/i));
+    await user.clear(screen.getByLabelText(/process instance id/i));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Id has to be a 16 to 19 digit number')
-    );
+    expect(
+      screen.queryByText('Id has to be a 16 to 19 digit number')
+    ).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/process instance id/i), '1');
+    await user.type(screen.getByLabelText(/process instance id/i), '1');
 
     expect(
       await screen.findByText('Id has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
 
-    userEvent.clear(screen.getByLabelText(/process instance id/i));
+    await user.clear(screen.getByLabelText(/process instance id/i));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Id has to be a 16 to 19 digit number')
-    );
+    expect(
+      screen.queryByText('Id has to be a 16 to 19 digit number')
+    ).not.toBeInTheDocument();
 
-    userEvent.type(
+    await user.type(
       screen.getByLabelText(/process instance id/i),
       '1111111111111111, 2222222222222222'
     );
@@ -394,22 +385,22 @@ describe('<Filters />', () => {
       await screen.findByText('Id has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
 
-    userEvent.clear(screen.getByLabelText(/process instance id/i));
+    await user.clear(screen.getByLabelText(/process instance id/i));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Id has to be a 16 to 19 digit number')
-    );
+    expect(
+      screen.queryByText('Id has to be a 16 to 19 digit number')
+    ).not.toBeInTheDocument();
   });
 
   it('should validate evaluation date', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/evaluation date/i));
-    userEvent.type(screen.getByLabelText(/evaluation date/i), 'a');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/evaluation date/i));
+    await user.type(screen.getByLabelText(/evaluation date/i), 'a');
 
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -417,13 +408,13 @@ describe('<Filters />', () => {
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.clear(screen.getByLabelText(/evaluation date/i));
+    await user.clear(screen.getByLabelText(/evaluation date/i));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    );
+    expect(
+      screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+    ).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/evaluation date/i), '2021-05');
+    await user.type(screen.getByLabelText(/evaluation date/i), '2021-05');
 
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -431,16 +422,16 @@ describe('<Filters />', () => {
   });
 
   it('should persist applied filters on navigation', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByText(/^more filters$/i));
-    userEvent.click(screen.getByText(/process instance id/i));
-    userEvent.type(
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText(/process instance id/i));
+    await user.type(
       screen.getByLabelText(/process instance id/i),
       '2251799813729387'
     );
@@ -451,11 +442,11 @@ describe('<Filters />', () => {
       )
     );
 
-    userEvent.click(screen.getByText('Dashboard'));
+    await user.click(screen.getByText('Dashboard'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByText('Decisions'));
+    await user.click(screen.getByText('Decisions'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?processInstanceId=2251799813729387$/

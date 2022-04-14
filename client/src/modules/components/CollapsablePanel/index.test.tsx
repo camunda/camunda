@@ -5,9 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+import {render, screen} from 'modules/testing-library';
 import {CollapsablePanel} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
@@ -44,10 +42,10 @@ describe('CollapsablePanel', () => {
     expect(screen.queryByText('Cool Panel Content')).not.toBeInTheDocument();
   });
 
-  it('should trigger toggle on button clicks', () => {
+  it('should trigger toggle on button clicks', async () => {
     const toggleMock = jest.fn();
 
-    const {rerender} = render(
+    const {rerender, user} = render(
       <CollapsablePanel
         label="Cool Panel"
         panelPosition="RIGHT"
@@ -59,7 +57,7 @@ describe('CollapsablePanel', () => {
       {wrapper: ThemeProvider}
     );
 
-    userEvent.click(screen.getByTestId('collapse-button'));
+    await user.click(screen.getByTestId('collapse-button'));
 
     rerender(
       <CollapsablePanel
@@ -72,7 +70,7 @@ describe('CollapsablePanel', () => {
       </CollapsablePanel>
     );
 
-    userEvent.click(screen.getByTestId('expand-button'));
+    await user.click(screen.getByTestId('expand-button'));
 
     expect(toggleMock).toHaveBeenCalledTimes(2);
   });

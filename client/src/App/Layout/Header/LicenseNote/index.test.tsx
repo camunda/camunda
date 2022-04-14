@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LicenseNote} from './index';
 
@@ -18,12 +17,12 @@ const licenseText =
   /Non-Production License. If you would like information on production usage, please refer to our/;
 
 describe('<LicenseNote />', () => {
-  it('should show and hide license information', () => {
-    render(<LicenseNote />, {wrapper: Wrapper});
+  it('should show and hide license information', async () => {
+    const {user} = render(<LicenseNote />, {wrapper: Wrapper});
 
     expect(screen.queryByText(licenseText)).not.toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {name: 'Non-Production License'})
     );
     expect(screen.getByText(licenseText)).toBeInTheDocument();
@@ -34,7 +33,7 @@ describe('<LicenseNote />', () => {
       screen.getByRole('link', {name: 'contact sales'})
     ).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {name: 'Non-Production License'})
     );
     expect(screen.queryByText(licenseText)).not.toBeInTheDocument();

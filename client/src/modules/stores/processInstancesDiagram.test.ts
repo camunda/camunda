@@ -8,7 +8,7 @@
 import {processInstancesDiagramStore} from './processInstancesDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 
 jest.mock('modules/utils/bpmn');
 

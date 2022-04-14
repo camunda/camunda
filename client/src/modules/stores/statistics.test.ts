@@ -9,7 +9,7 @@ import {statisticsStore} from './statistics';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
 import {mockProcessXML, groupedProcessesMock} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';

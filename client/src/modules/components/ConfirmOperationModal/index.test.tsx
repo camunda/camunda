@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ConfirmOperationModal} from './index';
-import userEvent from '@testing-library/user-event';
 
 const mockProps = {
   onModalClose: jest.fn(),
@@ -28,21 +27,27 @@ describe('ConfirmOperationModal', () => {
     expect(screen.getByTestId('cross-button')).toBeInTheDocument();
   });
 
-  it('should call apply function on apply button click', () => {
-    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
-    userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+  it('should call apply function on apply button click', async () => {
+    const {user} = render(<ConfirmOperationModal {...mockProps} />, {
+      wrapper: ThemeProvider,
+    });
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
     expect(mockProps.onApplyClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should call cancel function on cancel button click', () => {
-    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
-    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+  it('should call cancel function on cancel button click', async () => {
+    const {user} = render(<ConfirmOperationModal {...mockProps} />, {
+      wrapper: ThemeProvider,
+    });
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
     expect(mockProps.onCancelClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should call close modal function on close button click', () => {
-    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
-    userEvent.click(screen.getByTestId('cross-button'));
+  it('should call close modal function on close button click', async () => {
+    const {user} = render(<ConfirmOperationModal {...mockProps} />, {
+      wrapper: ThemeProvider,
+    });
+    await user.click(screen.getByTestId('cross-button'));
     expect(mockProps.onModalClose).toHaveBeenCalledTimes(1);
   });
 });

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {mockServer} from 'modules/mock-server/node';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';

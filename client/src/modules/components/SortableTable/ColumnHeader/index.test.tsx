@@ -5,12 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {ColumnHeader} from './index';
 import {LocationLog} from 'modules/utils/LocationLog';
-import userEvent from '@testing-library/user-event';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -44,27 +43,30 @@ describe('ColumnHeader', () => {
   });
 
   it('should toggle sorting', async () => {
-    render(<ColumnHeader label="Version" sortKey="version" />, {
+    const {user} = render(<ColumnHeader label="Version" sortKey="version" />, {
       wrapper: Wrapper,
     });
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByRole('button', {name: 'Sort by Version'}));
+    await user.click(screen.getByRole('button', {name: 'Sort by Version'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?sort=version%2Bdesc$/
     );
   });
 
-  it('should toggle sorting correctly when field is sorted by default', () => {
-    render(<ColumnHeader label="Version" sortKey="version" isDefault />, {
-      wrapper: Wrapper,
-    });
+  it('should toggle sorting correctly when field is sorted by default', async () => {
+    const {user} = render(
+      <ColumnHeader label="Version" sortKey="version" isDefault />,
+      {
+        wrapper: Wrapper,
+      }
+    );
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(screen.getByRole('button', {name: 'Sort by Version'}));
+    await user.click(screen.getByRole('button', {name: 'Sort by Version'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?sort=version%2Basc$/

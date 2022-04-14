@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, within} from 'modules/testing-library';
 import {IncidentsWrapper} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidents, mockResolvedIncidents} from './index.setup';
@@ -104,30 +103,33 @@ describe('IncidentsFilter', () => {
   });
 
   describe('Filtering', () => {
-    let rerender: any;
     beforeEach(() => {
-      const wrapper = render(
+      incidentsStore.setIncidentBarOpen(true);
+    });
+
+    it('should not have active filters by default', () => {
+      render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+        wrapper: Wrapper,
+      });
+
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
+    });
+
+    it('should filter the incidents when errorTypes are selected', async () => {
+      const {user} = render(
         <IncidentsWrapper setIsInTransition={jest.fn()} />,
         {
           wrapper: Wrapper,
         }
       );
-      rerender = wrapper.rerender;
-      incidentsStore.setIncidentBarOpen(true);
-    });
 
-    it('should not have active filters by default', () => {
-      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
-    });
-
-    it('should filter the incidents when errorTypes are selected', () => {
       const table = within(screen.getByTestId('incidents-table'));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
       expect(table.getByText(/Extract value errortype/)).toBeInTheDocument();
 
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
           /^Condition errortype/
         )
@@ -140,7 +142,14 @@ describe('IncidentsFilter', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('should filter the incidents when flowNodes are selected', () => {
+    it('should filter the incidents when flowNodes are selected', async () => {
+      const {user} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
       const table = within(screen.getByTestId('incidents-table'));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
@@ -151,7 +160,7 @@ describe('IncidentsFilter', () => {
         table.getByText(/flowNodeId_alwaysFailingTask/)
       ).toBeInTheDocument();
 
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId(/incidents-by-flownode/i)).getByText(
           /^flowNodeId_exclusiveGateway/
         )
@@ -166,9 +175,16 @@ describe('IncidentsFilter', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('should filter the incidents when both errorTypes & flowNodes are selected', () => {
+    it('should filter the incidents when both errorTypes & flowNodes are selected', async () => {
+      const {user} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
           /^Condition errortype/
         )
@@ -179,27 +195,34 @@ describe('IncidentsFilter', () => {
         screen.getByTestId(/incidents-by-flownode/i)
       );
 
-      userEvent.click(
+      await user.click(
         flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       );
       expect(screen.queryAllByLabelText(/^incident/i)).toHaveLength(0);
-      userEvent.click(
+      await user.click(
         flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       );
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
     });
 
     it('should remove filter when only related incident gets resolved', async () => {
+      const {user, rerender} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
       const flowNodeFilters = within(
         screen.getByTestId(/incidents-by-flownode/i)
       );
 
-      userEvent.click(
+      await user.click(
         flowNodeFilters.getByText(/^flowNodeId_exclusiveGateway/)
       );
-      userEvent.click(
+      await user.click(
         flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       );
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
@@ -225,22 +248,29 @@ describe('IncidentsFilter', () => {
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
     });
 
-    it('should drop all filters when clicking the clear all button', () => {
+    it('should drop all filters when clicking the clear all button', async () => {
+      const {user} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId(/incidents-by-flownode/i)).getByText(
           /^flowNodeId_exclusiveGateway/
         )
       );
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
           /^Condition errortype/
         )
       );
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
 
-      userEvent.click(screen.getByText(/^Clear All/));
+      await user.click(screen.getByText(/^Clear All/));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
     });

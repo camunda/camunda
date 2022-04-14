@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render} from '@testing-library/react';
+import {render} from 'modules/testing-library';
 import {
   createStartEventOverlay,
   createTaskOverlay,

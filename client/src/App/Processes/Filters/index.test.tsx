@@ -6,14 +6,7 @@
  */
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-  within,
-} from '@testing-library/react';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
@@ -23,30 +16,6 @@ import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagr
 import {mockProcessXML} from 'modules/testUtils';
 import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {LocationLog} from 'modules/utils/LocationLog';
-
-type OptionalFilter =
-  | 'Variable'
-  | 'Instance Id(s)'
-  | 'Operation Id'
-  | 'Parent Instance Id'
-  | 'Error Message'
-  | 'Start Date'
-  | 'End Date';
-
-const displayOptionalFilter = (filterName: OptionalFilter) => {
-  userEvent.click(screen.getByText(/^more filters$/i));
-  userEvent.click(
-    within(screen.getByTestId('more-filters-dropdown')).getByText(filterName)
-  );
-};
-
-const validateFieldRemovedFromDropdown = (filterName: string) => {
-  userEvent.click(screen.getByText(/^more filters$/i));
-  expect(
-    // eslint-disable-next-line testing-library/prefer-presence-queries
-    within(screen.getByTestId('more-filters-dropdown')).queryByText(filterName)
-  ).not.toBeInTheDocument();
-};
 
 const GROUPED_PROCESSES = [
   {
@@ -131,7 +100,7 @@ describe('Filters', () => {
   });
 
   it('should load the process and version fields', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
@@ -139,7 +108,7 @@ describe('Filters', () => {
       expect(screen.getByTestId('filter-process-name')).toBeEnabled()
     );
 
-    userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
+    await user.selectOptions(screen.getByTestId('filter-process-name'), [
       'Big variable process',
     ]);
 
@@ -231,7 +200,7 @@ describe('Filters', () => {
       completed: 'true',
       canceled: 'true',
     } as const;
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
@@ -250,58 +219,65 @@ describe('Filters', () => {
     expect(screen.getByTestId(/completed/)).not.toBeChecked();
     expect(screen.getByTestId(/canceled/)).not.toBeChecked();
 
-    userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
+    await user.selectOptions(screen.getByTestId('filter-process-name'), [
       'Big variable process',
     ]);
 
-    displayOptionalFilter('Instance Id(s)');
-    userEvent.paste(screen.getByTestId('filter-instance-ids'), MOCK_VALUES.ids);
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Instance Id(s)'));
+    await user.type(screen.getByTestId('filter-instance-ids'), MOCK_VALUES.ids);
 
-    displayOptionalFilter('Parent Instance Id');
-    userEvent.paste(
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Parent Instance Id'));
+    await user.type(
       screen.getByTestId('filter-parent-instance-id'),
       MOCK_VALUES.parentInstanceId
     );
 
-    displayOptionalFilter('Error Message');
-    userEvent.paste(
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Error Message'));
+    await user.type(
       screen.getByTestId('filter-error-message'),
       MOCK_VALUES.errorMessage
     );
 
-    displayOptionalFilter('Start Date');
-    userEvent.paste(
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Start Date'));
+    await user.type(
       screen.getByTestId('filter-start-date'),
       MOCK_VALUES.startDate
     );
 
-    displayOptionalFilter('End Date');
-    userEvent.paste(screen.getByTestId('filter-end-date'), MOCK_VALUES.endDate);
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('End Date'));
+    await user.type(screen.getByTestId('filter-end-date'), MOCK_VALUES.endDate);
 
-    userEvent.selectOptions(screen.getByTestId('filter-flow-node'), [
+    await user.selectOptions(screen.getByTestId('filter-flow-node'), [
       MOCK_VALUES.flowNodeId,
     ]);
 
-    displayOptionalFilter('Variable');
-    userEvent.paste(
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Variable'));
+    await user.type(
       screen.getByTestId('filter-variable-name'),
       MOCK_VALUES.variableName
     );
-    userEvent.paste(
+    await user.type(
       screen.getByTestId('filter-variable-value'),
       MOCK_VALUES.variableValue
     );
 
-    displayOptionalFilter('Operation Id');
-    userEvent.paste(
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Operation Id'));
+    await user.type(
       screen.getByTestId('filter-operation-id'),
       MOCK_VALUES.operationId
     );
 
-    userEvent.click(screen.getByTestId(/active/));
-    userEvent.click(screen.getByTestId(/incidents/));
-    userEvent.click(screen.getByTestId(/completed/));
-    userEvent.click(screen.getByTestId(/canceled/));
+    await user.click(screen.getByTestId(/active/));
+    await user.click(screen.getByTestId(/incidents/));
+    await user.click(screen.getByTestId(/completed/));
+    await user.click(screen.getByTestId(/canceled/));
 
     await waitFor(() =>
       expect(
@@ -315,12 +291,13 @@ describe('Filters', () => {
   });
 
   it('should have JSON editor for variable value filter', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
-    displayOptionalFilter('Variable');
-    userEvent.click(screen.getByTitle(/open json editor modal/i));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Variable'));
+    await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
@@ -337,14 +314,15 @@ describe('Filters', () => {
 
   describe('Validations', () => {
     it('should validate instance ids', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), 'a');
 
       expect(
         await screen.findByText(
@@ -353,15 +331,15 @@ describe('Filters', () => {
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-instance-ids'));
+      await user.clear(screen.getByTestId('filter-instance-ids'));
 
-      await waitForElementToBeRemoved(() =>
+      expect(
         screen.queryByText(
           'Id has to be a 16 to 19 digit number, separated by space or comma'
         )
-      );
+      ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -369,48 +347,49 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('filter-instance-ids'));
+      await user.clear(screen.getByTestId('filter-instance-ids'));
 
-      await waitForElementToBeRemoved(() =>
+      expect(
         screen.queryByText(
           'Id has to be a 16 to 19 digit number, separated by space or comma'
         )
-      );
+      ).not.toBeInTheDocument();
     });
 
     it('should validate parent instance id', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('Parent Instance Id');
-      userEvent.type(screen.getByTestId('filter-parent-instance-id'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Parent Instance Id'));
+      await user.type(screen.getByTestId('filter-parent-instance-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
+      await user.clear(screen.getByTestId('filter-parent-instance-id'));
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Id has to be a 16 to 19 digit number')
-      );
+      expect(
+        screen.queryByText('Id has to be a 16 to 19 digit number')
+      ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('filter-parent-instance-id'), '1');
+      await user.type(screen.getByTestId('filter-parent-instance-id'), '1');
 
       expect(
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
+      await user.clear(screen.getByTestId('filter-parent-instance-id'));
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Id has to be a 16 to 19 digit number')
-      );
+      expect(
+        screen.queryByText('Id has to be a 16 to 19 digit number')
+      ).not.toBeInTheDocument();
 
-      userEvent.type(
+      await user.type(
         screen.getByTestId('filter-parent-instance-id'),
         '1111111111111111, 2222222222222222'
       );
@@ -419,21 +398,22 @@ describe('Filters', () => {
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
+      await user.clear(screen.getByTestId('filter-parent-instance-id'));
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Id has to be a 16 to 19 digit number')
-      );
+      expect(
+        screen.queryByText('Id has to be a 16 to 19 digit number')
+      ).not.toBeInTheDocument();
     });
 
     it('should validate start date', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('Start Date');
-      userEvent.type(screen.getByTestId('filter-start-date'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Start Date'));
+      await user.type(screen.getByTestId('filter-start-date'), 'a');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -441,13 +421,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-start-date'));
+      await user.clear(screen.getByTestId('filter-start-date'));
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      );
+      expect(
+        screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('filter-start-date'), '2021-05');
+      await user.type(screen.getByTestId('filter-start-date'), '2021-05');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -455,14 +435,15 @@ describe('Filters', () => {
     });
 
     it('should validate end date', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('End Date');
-      userEvent.type(screen.getByTestId('filter-end-date'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('End Date'));
+      await user.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -470,13 +451,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-end-date'));
+      await user.clear(screen.getByTestId('filter-end-date'));
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      );
+      expect(
+        screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('filter-end-date'), '2021-05');
+      await user.type(screen.getByTestId('filter-end-date'), '2021-05');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -484,14 +465,15 @@ describe('Filters', () => {
     });
 
     it('should validate variable name', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('Variable');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Variable'));
 
-      userEvent.type(
+      await user.type(
         screen.getByTestId('filter-variable-value'),
         '"someValidValue"'
       );
@@ -502,8 +484,8 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-variable-value'));
-      userEvent.type(
+      await user.clear(screen.getByTestId('filter-variable-value'));
+      await user.type(
         screen.getByTestId('filter-variable-value'),
         'somethingInvalid'
       );
@@ -520,14 +502,15 @@ describe('Filters', () => {
     });
 
     it('should validate variable value', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('Variable');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Variable'));
 
-      userEvent.type(
+      await user.type(
         screen.getByTestId('filter-variable-name'),
         'aRandomVariable'
       );
@@ -538,13 +521,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-variable-name'));
+      await user.clear(screen.getByTestId('filter-variable-name'));
 
-      await waitForElementToBeRemoved(() =>
+      expect(
         screen.queryByText('Value has to be JSON')
-      );
+      ).not.toBeInTheDocument();
 
-      userEvent.type(
+      await user.type(
         screen.getByTestId('filter-variable-value'),
         'invalidValue'
       );
@@ -557,7 +540,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.type(
+      await user.type(
         screen.getByTestId('filter-variable-name'),
         'aRandomVariable'
       );
@@ -570,14 +553,15 @@ describe('Filters', () => {
     });
 
     it('should validate operation id', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      displayOptionalFilter('Operation Id');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Operation Id'));
 
-      userEvent.type(screen.getByTestId('filter-operation-id'), 'g');
+      await user.type(screen.getByTestId('filter-operation-id'), 'g');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -585,13 +569,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      userEvent.clear(screen.getByTestId('filter-operation-id'));
+      await user.clear(screen.getByTestId('filter-operation-id'));
 
       expect(
         screen.queryByTitle('Id has to be a UUID')
       ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('filter-operation-id'), 'a');
+      await user.type(screen.getByTestId('filter-operation-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -600,13 +584,13 @@ describe('Filters', () => {
   });
 
   it('should enable the reset button', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
 
     expect(screen.getByTitle(/reset filters/i)).toBeDisabled();
 
-    userEvent.click(screen.getByTestId(/incidents/));
+    await user.click(screen.getByTestId(/incidents/));
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/)
@@ -616,35 +600,38 @@ describe('Filters', () => {
   });
 
   it('should not submit an invalid form after deleting an optional filter', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    displayOptionalFilter('Start Date');
-    userEvent.type(screen.getByTestId('filter-start-date'), 'a');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Start Date'));
+    await user.type(screen.getByTestId('filter-start-date'), 'a');
 
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-    displayOptionalFilter('End Date');
-    userEvent.click(screen.getByTestId('delete-endDate'));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('End Date'));
+    await user.click(screen.getByTestId('delete-endDate'));
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
 
   it('should be able to submit form after deleting an invalid optional filter', async () => {
-    render(<Filters />, {
+    const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?active=true&incidents=true$/
     );
 
-    displayOptionalFilter('Start Date');
-    userEvent.type(screen.getByTestId('filter-start-date'), 'a');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Start Date'));
+    await user.type(screen.getByTestId('filter-start-date'), 'a');
 
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -654,10 +641,11 @@ describe('Filters', () => {
       /^\?active=true&incidents=true$/
     );
 
-    userEvent.click(screen.getByTestId('delete-startDate'));
+    await user.click(screen.getByTestId('delete-startDate'));
 
-    displayOptionalFilter('Error Message');
-    userEvent.type(screen.getByTestId('filter-error-message'), 'test');
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Error Message'));
+    await user.type(screen.getByTestId('filter-error-message'), 'test');
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -668,20 +656,22 @@ describe('Filters', () => {
 
   describe('Interaction with other fields during validation', () => {
     it('validation for Instance IDs field should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Operation Id');
-      userEvent.type(screen.getByTestId('filter-operation-id'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Operation Id'));
+      await user.type(screen.getByTestId('filter-operation-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
 
-      displayOptionalFilter('Instance Id(s)');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
 
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
 
@@ -695,12 +685,13 @@ describe('Filters', () => {
     });
 
     it('validation for Operation ID field should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -708,8 +699,9 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      displayOptionalFilter('Operation Id');
-      userEvent.type(screen.getByTestId('filter-operation-id'), 'abc');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Operation Id'));
+      await user.type(screen.getByTestId('filter-operation-id'), 'abc');
 
       expect(
         screen.getByText(
@@ -729,12 +721,13 @@ describe('Filters', () => {
     });
 
     it('validation for Start Date field should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -742,8 +735,9 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      displayOptionalFilter('Start Date');
-      userEvent.type(screen.getByTestId('filter-start-date'), '2021');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Start Date'));
+      await user.type(screen.getByTestId('filter-start-date'), '2021');
 
       expect(
         screen.getByText(
@@ -763,12 +757,13 @@ describe('Filters', () => {
     });
 
     it('validation for End Date field should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -776,8 +771,9 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      displayOptionalFilter('End Date');
-      userEvent.type(screen.getByTestId('filter-end-date'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('End Date'));
+      await user.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
         screen.getByText(
@@ -797,12 +793,13 @@ describe('Filters', () => {
     });
 
     it('validation for Variable Value field should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -810,8 +807,9 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      displayOptionalFilter('Variable');
-      userEvent.type(screen.getByTestId('filter-variable-value'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Variable'));
+      await user.type(screen.getByTestId('filter-variable-value'), 'a');
 
       expect(
         screen.getByText(
@@ -835,12 +833,13 @@ describe('Filters', () => {
     });
 
     it('validation for Variable Name field should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -848,8 +847,9 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      displayOptionalFilter('Variable');
-      userEvent.type(screen.getByTestId('filter-variable-name'), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Variable'));
+      await user.type(screen.getByTestId('filter-variable-name'), 'a');
 
       expect(
         screen.getByText(
@@ -869,12 +869,13 @@ describe('Filters', () => {
     });
 
     it('validation for Process, Version and Flow Node fields should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -882,7 +883,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
+      await user.selectOptions(screen.getByTestId('filter-process-name'), [
         'complexProcess',
       ]);
 
@@ -894,7 +895,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.selectOptions(screen.getByTestId('filter-process-version'), [
+      await user.selectOptions(screen.getByTestId('filter-process-version'), [
         'Version 2',
       ]);
 
@@ -904,7 +905,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.selectOptions(screen.getByTestId('filter-flow-node'), [
+      await user.selectOptions(screen.getByTestId('filter-flow-node'), [
         'ServiceTask_0kt6c5i',
       ]);
 
@@ -916,12 +917,13 @@ describe('Filters', () => {
     });
 
     it('clicking checkboxes should not affect other fields validation errors', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Instance Id(s)');
-      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Instance Id(s)'));
+      await user.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
         await screen.findByText(
@@ -929,7 +931,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByTestId(/active/));
+      await user.click(screen.getByTestId(/active/));
 
       expect(
         screen.getByText(
@@ -937,7 +939,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByTestId(/incidents/));
+      await user.click(screen.getByTestId(/incidents/));
 
       expect(
         screen.getByText(
@@ -945,7 +947,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByTestId(/completed/));
+      await user.click(screen.getByTestId(/completed/));
 
       expect(
         screen.getByText(
@@ -953,7 +955,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByTestId(/canceled/));
+      await user.click(screen.getByTestId(/canceled/));
 
       expect(
         screen.getByText(
@@ -961,7 +963,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByTestId('filter-running-instances'));
+      await user.click(screen.getByTestId('filter-running-instances'));
 
       expect(
         screen.getByText(
@@ -969,7 +971,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByTestId('filter-finished-instances'));
+      await user.click(screen.getByTestId('filter-finished-instances'));
 
       expect(
         screen.getByText(
@@ -979,16 +981,18 @@ describe('Filters', () => {
     });
 
     it('should continue validation on blur', async () => {
-      render(<Filters />, {
+      const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
 
-      displayOptionalFilter('Start Date');
-      displayOptionalFilter('End Date');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Start Date'));
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('End Date'));
 
-      userEvent.type(screen.getByTestId('filter-start-date'), '2021');
+      await user.type(screen.getByTestId('filter-start-date'), '2021');
 
-      userEvent.type(screen.getByTestId('filter-end-date'), '2021');
+      await user.type(screen.getByTestId('filter-end-date'), '2021');
 
       await waitFor(() =>
         expect(
@@ -1026,97 +1030,159 @@ describe('Filters', () => {
       });
 
       it('should display variable fields on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('Variable');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Variable'));
 
         expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
         expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('Variable');
+        await user.click(screen.getByText(/^more filters$/i));
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'Variable'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should display instance ids field on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('Instance Id(s)');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Instance Id(s)'));
+        await user.click(screen.getByText(/^more filters$/i));
 
         expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('Instance Id(s)');
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'Instance Id(s)'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should display operation id field on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('Operation Id');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Operation Id'));
+        await user.click(screen.getByText(/^more filters$/i));
 
         expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('Operation Id');
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'Operation Id'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should display parent instance id field on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('Parent Instance Id');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Parent Instance Id'));
+        await user.click(screen.getByText(/^more filters$/i));
 
         expect(
           screen.getByTestId('filter-parent-instance-id')
         ).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('Parent Instance Id');
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'Parent Instance Id'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should display error message field on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('Error Message');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Error Message'));
+        await user.click(screen.getByText(/^more filters$/i));
 
         expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('Error Message');
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'Error Message'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should display start date field on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('Start Date');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Start Date'));
+        await user.click(screen.getByText(/^more filters$/i));
 
         expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('Start Date');
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'Start Date'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should display end date field on click', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
-        displayOptionalFilter('End Date');
+
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('End Date'));
+        await user.click(screen.getByText(/^more filters$/i));
 
         expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
-        validateFieldRemovedFromDropdown('End Date');
+        expect(
+          // eslint-disable-next-line testing-library/prefer-presence-queries
+          within(screen.getByTestId('more-filters-dropdown')).queryByText(
+            'End Date'
+          )
+        ).not.toBeInTheDocument();
       });
 
       it('should hide more filters button when all optional filters are visible', async () => {
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
 
-        expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
-        displayOptionalFilter('Variable');
-        displayOptionalFilter('Instance Id(s)');
-        displayOptionalFilter('Operation Id');
-        displayOptionalFilter('Parent Instance Id');
-        displayOptionalFilter('Error Message');
-        displayOptionalFilter('Start Date');
-        displayOptionalFilter('End Date');
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Variable'));
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Instance Id(s)'));
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Operation Id'));
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Parent Instance Id'));
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Error Message'));
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('Start Date'));
+        await user.click(screen.getByText(/^more filters$/i));
+        await user.click(screen.getByText('End Date'));
 
         expect(
           screen.queryByTestId('more-filters-dropdown')
         ).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-variable'));
+        await user.click(screen.getByTestId('delete-variable'));
 
         expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
       });
@@ -1140,7 +1206,7 @@ describe('Filters', () => {
           canceled: 'true',
         } as const;
 
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(
             `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
           ),
@@ -1161,7 +1227,7 @@ describe('Filters', () => {
         expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
         expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-ids'));
+        await user.click(screen.getByTestId('delete-ids'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1190,7 +1256,7 @@ describe('Filters', () => {
           screen.queryByTestId('filter-instance-ids')
         ).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-parentInstanceId'));
+        await user.click(screen.getByTestId('delete-parentInstanceId'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1217,7 +1283,7 @@ describe('Filters', () => {
           screen.queryByTestId('filter-parent-instance-id')
         ).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-errorMessage'));
+        await user.click(screen.getByTestId('delete-errorMessage'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1243,7 +1309,7 @@ describe('Filters', () => {
           screen.queryByTestId('filter-error-message')
         ).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-startDate'));
+        await user.click(screen.getByTestId('delete-startDate'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1268,7 +1334,7 @@ describe('Filters', () => {
           screen.queryByTestId('filter-start-date')
         ).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-endDate'));
+        await user.click(screen.getByTestId('delete-endDate'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1290,7 +1356,7 @@ describe('Filters', () => {
         );
         expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-variable'));
+        await user.click(screen.getByTestId('delete-variable'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1315,7 +1381,7 @@ describe('Filters', () => {
           screen.queryByTestId('filter-variable-value')
         ).not.toBeInTheDocument();
 
-        userEvent.click(screen.getByTestId('delete-operationId'));
+        await user.click(screen.getByTestId('delete-operationId'));
 
         await waitFor(() =>
           expect(screen.getByTestId('search').textContent).toBe(
@@ -1356,7 +1422,7 @@ describe('Filters', () => {
           canceled: 'true',
         } as const;
 
-        render(<Filters />, {
+        const {user} = render(<Filters />, {
           wrapper: getWrapper(
             `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
           ),
@@ -1377,7 +1443,7 @@ describe('Filters', () => {
         expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
         expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
 
-        userEvent.click(screen.getByTitle(/reset filters/i));
+        await user.click(screen.getByTitle(/reset filters/i));
 
         await waitFor(() =>
           expect(screen.getByTestId('search')).toHaveTextContent(

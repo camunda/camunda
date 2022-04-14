@@ -10,7 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   within,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {mockServer} from 'modules/mock-server/node';
 import {
   assignApproverGroup,

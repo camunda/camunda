@@ -10,9 +10,7 @@ import {
   screen,
   within,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockUseOperationApply} from './index.setup';
 import CreateOperationDropdown from './index';
@@ -38,25 +36,31 @@ describe('CreateOperationDropdown', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show dropdown menu on click', () => {
-    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: ThemeProvider,
-    });
+  it('should show dropdown menu on click', async () => {
+    const {user} = render(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
     expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
   });
 
-  it('should show modal on retry click', () => {
-    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: ThemeProvider,
-    });
+  it('should show modal on retry click', async () => {
+    const {user} = render(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+    await user.click(screen.getByRole('button', {name: 'Retry'}));
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
     expect(screen.getByText(/About to retry 2 Instances./)).toBeInTheDocument();
@@ -79,14 +83,17 @@ describe('CreateOperationDropdown', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show modal on cancel click', () => {
-    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: ThemeProvider,
-    });
+  it('should show modal on cancel click', async () => {
+    const {user} = render(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
     expect(
@@ -112,14 +119,17 @@ describe('CreateOperationDropdown', () => {
   });
 
   it('should close modal on apply batch operations', async () => {
-    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: ThemeProvider,
-    });
+    const {user} = render(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    userEvent.click(
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(
       within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
     );
 
@@ -127,14 +137,17 @@ describe('CreateOperationDropdown', () => {
   });
 
   it('should close modal on cancel batch operations', async () => {
-    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: ThemeProvider,
-    });
+    const {user} = render(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    userEvent.click(
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(
       within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
     );
 
@@ -142,14 +155,17 @@ describe('CreateOperationDropdown', () => {
   });
 
   it('should close modal on close button click', async () => {
-    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: ThemeProvider,
-    });
+    const {user} = render(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
-    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    userEvent.click(
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(
       within(screen.getByTestId('modal')).getByRole('button', {
         name: 'Exit Modal',
       })

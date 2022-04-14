@@ -10,8 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   waitFor,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
@@ -239,15 +238,15 @@ describe('ListPanel', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    render(<ListPanel />, {
+    const {user} = render(<ListPanel />, {
       wrapper: createWrapper(),
     });
 
     expect(
       screen.queryByTitle(/has scheduled operations/i)
     ).not.toBeInTheDocument();
-    userEvent.click(screen.getByTitle('Cancel Instance 1'));
-    userEvent.click(screen.getByTitle('Apply'));
+    await user.click(screen.getByTitle('Cancel Instance 1'));
+    await user.click(screen.getByTitle('Apply'));
     expect(
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
@@ -288,7 +287,7 @@ describe('ListPanel', () => {
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
-      render(<ListPanel />, {
+      const {user} = render(<ListPanel />, {
         wrapper: createWrapper(),
       });
 
@@ -297,10 +296,10 @@ describe('ListPanel', () => {
         expect(processInstancesStore.state.status).toBe('fetched')
       );
 
-      userEvent.click(screen.getByLabelText(/select all instances/i));
-      userEvent.click(screen.getByText(/apply operation on/i));
-      userEvent.click(screen.getByText(/cancel/i));
-      userEvent.click(screen.getByText(/^apply$/i));
+      await user.click(screen.getByLabelText(/select all instances/i));
+      await user.click(screen.getByText(/apply operation on/i));
+      await user.click(screen.getByText(/cancel/i));
+      await user.click(screen.getByText(/^apply$/i));
       expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
       mockServer.use(
@@ -336,7 +335,7 @@ describe('ListPanel', () => {
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
-      render(<ListPanel />, {
+      const {user} = render(<ListPanel />, {
         wrapper: createWrapper(),
       });
 
@@ -344,10 +343,10 @@ describe('ListPanel', () => {
         expect(processInstancesStore.state.status).toBe('fetched')
       );
 
-      userEvent.click(screen.getByLabelText(/select all instances/i));
-      userEvent.click(screen.getByText(/apply operation on/i));
-      userEvent.click(screen.getByText(/cancel/i));
-      userEvent.click(screen.getByText(/^apply$/i));
+      await user.click(screen.getByLabelText(/select all instances/i));
+      await user.click(screen.getByText(/apply operation on/i));
+      await user.click(screen.getByText(/cancel/i));
+      await user.click(screen.getByText(/^apply$/i));
       expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
       await waitFor(() =>
         expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
@@ -373,7 +372,7 @@ describe('ListPanel', () => {
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
-      render(<ListPanel />, {
+      const {user} = render(<ListPanel />, {
         wrapper: createWrapper(),
       });
 
@@ -381,10 +380,10 @@ describe('ListPanel', () => {
         expect(processInstancesStore.state.status).toBe('fetched')
       );
 
-      userEvent.click(screen.getByLabelText(/select all instances/i));
-      userEvent.click(screen.getByText(/apply operation on/i));
-      userEvent.click(screen.getByText(/cancel/i));
-      userEvent.click(screen.getByText(/^apply$/i));
+      await user.click(screen.getByLabelText(/select all instances/i));
+      await user.click(screen.getByText(/apply operation on/i));
+      await user.click(screen.getByText(/cancel/i));
+      await user.click(screen.getByText(/^apply$/i));
       expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
       await waitFor(() =>
@@ -558,7 +557,7 @@ describe('ListPanel', () => {
       processInstancesStore.init(true);
       await processInstancesStore.fetchProcessInstancesFromFilters();
 
-      render(<ListPanel />, {
+      const {user} = render(<ListPanel />, {
         wrapper: createWrapper('/processes?incidents=true&active=true'),
       });
 
@@ -571,7 +570,7 @@ describe('ListPanel', () => {
         )
       );
 
-      userEvent.click(screen.getByText(/go to big var/i));
+      await user.click(screen.getByText(/go to big var/i));
       processInstancesStore.fetchProcessInstancesFromFilters();
 
       await waitFor(() =>

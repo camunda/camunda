@@ -10,7 +10,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Processes} from './index';
@@ -24,7 +24,6 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import userEvent from '@testing-library/user-event';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
@@ -135,7 +134,7 @@ describe('Instances', () => {
       )
     );
 
-    render(<Processes />, {
+    const {user} = render(<Processes />, {
       wrapper: getWrapper('/processes?active=true&incidents=true'),
     });
 
@@ -147,7 +146,7 @@ describe('Instances', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('checkbox', {
         name: /select instance 2251799813685594/i,
       })
@@ -159,7 +158,7 @@ describe('Instances', () => {
       selectionMode: 'INCLUDE',
     });
 
-    userEvent.click(screen.getByText(/go to active/i));
+    await user.click(screen.getByText(/go to active/i));
 
     await waitFor(() =>
       expect(processInstancesSelectionStore.state).toEqual({
@@ -192,7 +191,7 @@ describe('Instances', () => {
       )
     );
 
-    render(<Processes />, {
+    const {user} = render(<Processes />, {
       wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
     });
 
@@ -207,7 +206,7 @@ describe('Instances', () => {
       firstProcessStatisticsResponse
     );
 
-    userEvent.click(screen.getByText(/go to event based/i));
+    await user.click(screen.getByText(/go to event based/i));
 
     await waitFor(() =>
       expect(processInstancesDiagramStore.state.status).toBe('fetching')
@@ -230,7 +229,7 @@ describe('Instances', () => {
       )
     );
 
-    userEvent.click(screen.getByText(/go to no filters/i));
+    await user.click(screen.getByText(/go to no filters/i));
 
     await waitFor(() =>
       expect(processStatisticsStore.state.statistics).toEqual([])

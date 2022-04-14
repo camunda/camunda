@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';

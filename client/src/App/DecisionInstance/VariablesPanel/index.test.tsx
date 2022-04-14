@@ -9,8 +9,7 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablesPanel} from './index';
 import {mockServer} from 'modules/mock-server/node';
@@ -59,13 +58,13 @@ describe('<VariablesPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<VariablesPanel />, {wrapper: ThemeProvider});
+    const {user} = render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('inputs-skeleton')
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /result/i,
       })
@@ -73,7 +72,7 @@ describe('<VariablesPanel />', () => {
 
     expect(screen.getByTestId('results-json-viewer')).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /inputs and outputs/i,
       })
@@ -102,13 +101,13 @@ describe('<VariablesPanel />', () => {
       decisionInstanceTab: 'result',
     });
 
-    render(<VariablesPanel />, {wrapper: ThemeProvider});
+    const {user} = render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     expect(
       await screen.findByTestId('results-json-viewer')
     ).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /inputs and outputs/i,
       })

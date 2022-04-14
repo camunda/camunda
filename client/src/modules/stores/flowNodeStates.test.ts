@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {processInstanceDetailsStore} from './processInstanceDetails';

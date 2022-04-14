@@ -9,7 +9,7 @@ import {processInstanceDetailsStore} from './processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 
 const currentInstanceMock = createInstance();

@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {decisionInstancesStore} from './decisionInstances';
 

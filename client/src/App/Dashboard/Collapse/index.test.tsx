@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Collapse} from './index';
 
@@ -32,12 +31,12 @@ describe('<Collapse />', () => {
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
 
-  it('should uncollapse and collapse', () => {
+  it('should uncollapse and collapse', async () => {
     const mockContent = 'mock-content';
     const mockHeader = 'mock-header';
     const mockButtonTitle = 'button-title';
 
-    render(
+    const {user} = render(
       <Collapse
         content={mockContent}
         header={mockHeader}
@@ -46,11 +45,11 @@ describe('<Collapse />', () => {
       {wrapper: ThemeProvider}
     );
 
-    userEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
+    await user.click(screen.getByRole('button', {name: mockButtonTitle}));
 
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
+    await user.click(screen.getByRole('button', {name: mockButtonTitle}));
 
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });

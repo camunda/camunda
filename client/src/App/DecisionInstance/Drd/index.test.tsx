@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockDrdData} from 'modules/mocks/mockDrdData';

@@ -11,7 +11,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 
 import {FlowNodeInstanceLog} from './index';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';

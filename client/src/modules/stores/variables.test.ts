@@ -10,7 +10,7 @@ import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
 
 jest.mock('modules/constants/variables', () => ({

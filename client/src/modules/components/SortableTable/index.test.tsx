@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {SortableTable} from './';
@@ -249,8 +248,8 @@ describe('SortableTable', () => {
     });
   });
 
-  it('should select all rows', () => {
-    render(
+  it('should select all rows', async () => {
+    const {user} = render(
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
@@ -260,7 +259,7 @@ describe('SortableTable', () => {
     expect(
       screen.getByRole('checkbox', {name: 'Select all instances'})
     ).not.toBeChecked();
-    userEvent.click(
+    await user.click(
       screen.getByRole('checkbox', {name: 'Select all instances'})
     );
 
@@ -270,8 +269,8 @@ describe('SortableTable', () => {
     expect(mockSelectableProps.onSelectAll).toHaveBeenCalledTimes(1);
   });
 
-  it('should select one row', () => {
-    render(
+  it('should select one row', async () => {
+    const {user} = render(
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
@@ -284,10 +283,10 @@ describe('SortableTable', () => {
       name: /Select instance/,
     });
 
-    userEvent.click(firstCheckbox!);
+    await user.click(firstCheckbox!);
     expect(firstRow?.onSelect).toHaveBeenCalledTimes(1);
 
-    userEvent.click(secondCheckbox!);
+    await user.click(secondCheckbox!);
     expect(secondRow?.onSelect).toHaveBeenCalledTimes(1);
 
     expect(firstRow?.checkIsSelected).toHaveBeenCalledTimes(1);

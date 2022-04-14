@@ -6,7 +6,7 @@
  */
 
 import {rest} from 'msw';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -20,7 +20,6 @@ import {
 } from 'modules/testUtils';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import userEvent from '@testing-library/user-event';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -57,7 +56,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 const renderPopover = () => {
   const {container} = render(<svg />);
 
-  render(
+  return render(
     <PopoverOverlay selectedFlowNodeRef={container.querySelector('svg')} />,
     {
       wrapper: Wrapper,
@@ -199,7 +198,7 @@ describe('PopoverOverlay', () => {
       flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
     });
 
-    renderPopover();
+    const {user} = renderPopover();
 
     expect(
       await screen.findByText(/Flow Node Instance Id/)
@@ -208,7 +207,7 @@ describe('PopoverOverlay', () => {
     const [firstViewLink] = screen.getAllByText(/View/);
     expect(firstViewLink).toBeInTheDocument();
 
-    userEvent.click(firstViewLink!);
+    await user.click(firstViewLink!);
 
     expect(
       screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
@@ -370,13 +369,13 @@ describe('PopoverOverlay', () => {
 
     flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
 
-    renderPopover();
+    const {user} = renderPopover();
 
     expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
     expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByText(
         `${instanceMetadata!.calledDecisionDefinitionName} - ${
           instanceMetadata!.calledDecisionInstanceId
@@ -411,7 +410,7 @@ describe('PopoverOverlay', () => {
 
     flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
 
-    renderPopover();
+    const {user} = renderPopover();
 
     expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
     expect(screen.getByText(/incident/i)).toBeInTheDocument();
@@ -425,7 +424,7 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/root cause decision/i)).toBeInTheDocument();
     expect(screen.queryByText(/root cause instance/i)).not.toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByText(
         `${rootCauseDecision!.decisionName!} - ${rootCauseDecision!.instanceId}`
       )

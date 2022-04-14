@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';

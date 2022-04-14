@@ -8,7 +8,7 @@
 import {IncidentsBanner} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';

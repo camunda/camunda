@@ -10,7 +10,7 @@ import {
   screen,
   within,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -18,7 +18,6 @@ import {InstancesTable} from './index';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {Routes, Route, MemoryRouter} from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
@@ -207,13 +206,15 @@ describe('<InstancesTable />', () => {
       )
     );
 
-    render(<InstancesTable />, {wrapper: createWrapper('/decisions')});
+    const {user} = render(<InstancesTable />, {
+      wrapper: createWrapper('/decisions'),
+    });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('link', {
         name: /view decision instance 2251799813689541/i,
       })
@@ -244,13 +245,15 @@ describe('<InstancesTable />', () => {
       )
     );
 
-    render(<InstancesTable />, {wrapper: createWrapper('/decisions')});
+    const {user} = render(<InstancesTable />, {
+      wrapper: createWrapper('/decisions'),
+    });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('link', {
         name: /view process instance 2251799813689544/i,
       })
@@ -268,7 +271,7 @@ describe('<InstancesTable />', () => {
       )
     );
 
-    render(<InstancesTable />, {wrapper: createWrapper()});
+    const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
@@ -280,7 +283,7 @@ describe('<InstancesTable />', () => {
       )
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Sort by Decision'}));
+    await user.click(screen.getByRole('button', {name: 'Sort by Decision'}));
 
     expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
 

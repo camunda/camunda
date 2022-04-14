@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import FlowNodeIcon from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {TYPE, MULTI_INSTANCE_TYPE} from 'modules/constants';

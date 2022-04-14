@@ -5,11 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-
 import Modal from './index';
 
 const HeaderContent = () => <div>Header Content</div>;
@@ -52,26 +49,21 @@ describe('Modal', () => {
     expect(screen.getByText('Some Primary Button')).toBeInTheDocument();
   });
 
-  it('should call on modal close', () => {
-    render(ModalComponent, {wrapper: ThemeProvider});
+  it('should call on modal close', async () => {
+    const {user} = render(ModalComponent, {wrapper: ThemeProvider});
 
-    userEvent.click(screen.getByTestId('cross-button'));
+    await user.click(screen.getByTestId('cross-button'));
 
     expect(onModalClose).toBeCalled();
   });
 
-  it('should respond to key presses', () => {
-    render(ModalComponent, {wrapper: ThemeProvider});
+  it('should respond to key presses', async () => {
+    const {user} = render(ModalComponent, {wrapper: ThemeProvider});
 
-    //@ts-ignore
-    const espcapeKeKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 27});
-    //@ts-ignore
-    const enterKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 13});
-
-    document.dispatchEvent(espcapeKeKeyPressEvent);
+    await user.keyboard('{Escape}');
     expect(onModalClose).toBeCalled();
 
-    document.dispatchEvent(enterKeyPressEvent);
+    await user.keyboard('{Enter}');
     expect(primaryButtonClickHandler).toBeCalled();
   });
 });

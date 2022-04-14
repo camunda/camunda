@@ -10,7 +10,7 @@ import {processInstancesDiagramStore} from './processInstancesDiagram';
 import {mockProcessXML, mockProcessStatistics} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
 import {processesStore} from './processes';
 

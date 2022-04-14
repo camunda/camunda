@@ -12,8 +12,7 @@ import {
   within,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -115,6 +114,7 @@ describe('Variables', () => {
     });
 
     it('should display spinner on second variable fetch', async () => {
+      processInstanceDetailsStore.setProcessInstance(instanceMock);
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/variables',
@@ -136,15 +136,17 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      const variableList = variablesStore.fetchVariables({
+      variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
         payload: {pageSize: 10, scopeId: '1'},
       });
 
       expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
-      await variableList;
-      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByTestId('variables-spinner')
+      );
     });
   });
 
@@ -237,13 +239,13 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
       expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
-      userEvent.click(screen.getByTitle(/exit edit mode/i));
+      await user.click(screen.getByTitle(/exit edit mode/i));
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
@@ -262,17 +264,17 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      userEvent.type(screen.getByTestId('add-variable-name'), 'test');
+      await user.type(screen.getByTestId('add-variable-name'), 'test');
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      userEvent.type(screen.getByTestId('add-variable-value'), '    ');
+      await user.type(screen.getByTestId('add-variable-value'), '    ');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(screen.queryByTitle('Invalid input text')).not.toBeInTheDocument();
@@ -295,13 +297,16 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
+
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(screen.getByTestId('add-variable-value'), '123', {});
+
+      await user.type(screen.getByTestId('add-variable-value'), '123');
+
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
         screen.queryByText('Name has to be filled')
@@ -310,58 +315,57 @@ describe('Variables', () => {
         await screen.findByText('Name has to be filled')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('add-variable-value'));
-      userEvent.type(screen.getByTestId('add-variable-value'), 'test');
+      await user.dblClick(screen.getByTestId('add-variable-value'));
+      await user.type(screen.getByTestId('add-variable-value'), 'test');
+
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
       expect(screen.getByText('Name has to be filled')).toBeInTheDocument();
       expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
       expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('add-variable-name'), '   ');
+      await user.type(screen.getByTestId('add-variable-name'), '   ');
 
       expect(screen.getByText('Invalid input text')).toBeInTheDocument();
       expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('add-variable-name'), ' test');
+      await user.type(screen.getByTestId('add-variable-name'), ' test');
 
       expect(screen.getByText('Invalid input text')).toBeInTheDocument();
       expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('add-variable-value'));
-      userEvent.type(screen.getByTestId('add-variable-value'), '"valid value"');
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Invalid input text')
+      await user.dblClick(screen.getByTestId('add-variable-value'));
+      await user.type(
+        screen.getByTestId('add-variable-value'),
+        '"valid value"'
       );
 
+      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
       expect(screen.getByText('Name is invalid')).toBeInTheDocument();
     });
 
     it('should not allow to add duplicate variables', async () => {
       jest.useFakeTimers();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(
+      await user.type(
         screen.getByTestId('add-variable-name'),
         mockVariables[0].name
       );
@@ -376,18 +380,15 @@ describe('Variables', () => {
       ).toBeInTheDocument();
       expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('add-variable-value'));
-      userEvent.type(screen.getByTestId('add-variable-value'), '123');
+      await user.type(screen.getByTestId('add-variable-value'), '123');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Invalid input text')
-      );
+      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
       expect(screen.getByText('Name should be unique')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('add-variable-name'));
-      userEvent.type(screen.getByTestId('add-variable-name'), 'someOtherName');
+      await user.dblClick(screen.getByTestId('add-variable-name'));
+      await user.type(screen.getByTestId('add-variable-name'), 'someOtherName');
 
       await waitFor(() =>
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
@@ -418,34 +419,26 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(screen.getByTestId('add-variable-name'), '"invalid"');
-      userEvent.type(screen.getByTestId('add-variable-value'), '123');
+      await user.type(screen.getByTestId('add-variable-name'), '"invalid"');
+      await user.type(screen.getByTestId('add-variable-value'), '123');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
+      expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
-      expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
-
-      jest.runOnlyPendingTimers();
-
-      expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
-
-      userEvent.clear(screen.getByTestId('add-variable-name'));
-      userEvent.type(screen.getByTestId('add-variable-name'), 'someOtherName');
-
-      jest.runOnlyPendingTimers();
+      await user.clear(screen.getByTestId('add-variable-name'));
+      await user.type(screen.getByTestId('add-variable-name'), 'someOtherName');
 
       await waitFor(() =>
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
 
       expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
-
       jest.clearAllTimers();
       jest.useRealTimers();
     });
@@ -461,13 +454,13 @@ describe('Variables', () => {
       );
       variablesStore.fetchVariables('1');
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
 
       const withinVariable = within(screen.getByTestId('clientNo'));
-      userEvent.click(withinVariable.getByTestId('edit-variable-button'));
+      await user.click(withinVariable.getByTestId('edit-variable-button'));
       expect(
         screen.queryByTitle('Name should be unique')
       ).not.toBeInTheDocument();
@@ -573,7 +566,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(
@@ -595,7 +588,7 @@ describe('Variables', () => {
         withinFirstVariable.queryByTitle(/save variable/i)
       ).not.toBeInTheDocument();
 
-      userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
+      await user.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
       expect(
         withinFirstVariable.getByTestId('edit-variable-value')
@@ -623,7 +616,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(
@@ -636,19 +629,14 @@ describe('Variables', () => {
         screen.getByTestId(firstVariable!.name)
       );
 
-      userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
+      await user.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
       expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
     });
 
     it('should validate when editing variables', async () => {
       jest.useFakeTimers();
-
-      const originalConsoleError = global.console.error;
-      global.console.error = jest.fn();
-
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/variables',
@@ -661,7 +649,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(
@@ -674,32 +662,23 @@ describe('Variables', () => {
         screen.getByTestId(firstVariable!.name)
       );
 
-      userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
-
-      const invalidJSONObject = "{invalidKey: 'value'}";
-
-      userEvent.clear(screen.getByTestId('edit-variable-value'));
-      userEvent.type(
+      await user.click(withinFirstVariable.getByTestId('edit-variable-button'));
+      await user.type(
         screen.getByTestId('edit-variable-value'),
-        invalidJSONObject
+        "{{invalidKey: 'value'}}"
       );
 
-      expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
-
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
-
-      jest.runOnlyPendingTimers();
       expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('edit-variable-value'));
-      userEvent.type(screen.getByTestId('edit-variable-value'), '123');
+      await user.clear(screen.getByTestId('edit-variable-value'));
+      await user.type(screen.getByTestId('edit-variable-value'), '123');
 
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Invalid input text')
+      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled();
-
-      global.console.error = originalConsoleError;
       jest.clearAllTimers();
       jest.useRealTimers();
     });
@@ -741,7 +720,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByText('"value-preview"')).toBeInTheDocument();
@@ -761,7 +740,7 @@ describe('Variables', () => {
         )
       );
 
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
       );
       expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
@@ -811,7 +790,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByText('"value-preview"')).toBeInTheDocument();
@@ -821,7 +800,7 @@ describe('Variables', () => {
         )
       );
 
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
       );
       expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
@@ -864,12 +843,12 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
-      userEvent.click(
+      await user.click(
         within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
       );
 
@@ -922,7 +901,9 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.getByText(/add variable/i)).toBeDisabled();
+      await waitFor(() =>
+        expect(screen.getByText(/add variable/i)).toBeDisabled()
+      );
     });
 
     it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
@@ -940,23 +921,23 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByTitle(/add variable/i));
+      await user.click(screen.getByTitle(/add variable/i));
       expect(screen.queryByText(/add variable/i)).not.toBeInTheDocument();
 
-      userEvent.click(screen.getByTitle(/exit edit mode/i));
+      await user.click(screen.getByTitle(/exit edit mode/i));
       expect(screen.getByText(/add variable/i)).toBeEnabled();
 
       const [firstEditVariableButton] = screen.getAllByTestId(
         'edit-variable-button'
       );
       expect(firstEditVariableButton).toBeInTheDocument();
-      userEvent.click(firstEditVariableButton!);
+      await user.click(firstEditVariableButton!);
       expect(screen.getByText(/add variable/i)).toBeDisabled();
 
-      userEvent.click(screen.getByTitle(/exit edit mode/i));
+      await user.click(screen.getByTitle(/exit edit mode/i));
       expect(screen.getByText(/add variable/i)).toBeEnabled();
     });
 
@@ -1055,11 +1036,11 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    userEvent.click(screen.getByTitle(/add variable/i));
-    userEvent.click(screen.getByTitle(/open json editor modal/i));
+    await user.click(screen.getByTitle(/add variable/i));
+    await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
       within(screen.getByTestId('modal')).getByTitle(/close/i)
@@ -1086,11 +1067,11 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    userEvent.click(screen.getByTitle(/enter edit mode/i));
-    userEvent.click(screen.getByTitle(/open json editor modal/i));
+    await user.click(screen.getByTitle(/enter edit mode/i));
+    await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
       within(screen.getByTestId('modal')).getByTitle(/close/i)

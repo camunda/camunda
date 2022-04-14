@@ -9,9 +9,7 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Dropdown from './index';
 import Option from './Option';
@@ -26,8 +24,8 @@ describe('Dropdown', () => {
     mockOnOpen.mockClear();
   });
 
-  it('should show/hide dropdown option', () => {
-    render(
+  it('should show/hide dropdown option', async () => {
+    const {user} = render(
       <Dropdown placement={'top'} label={stringLabel} onOpen={mockOnOpen}>
         <Option
           disabled={false}
@@ -41,7 +39,7 @@ describe('Dropdown', () => {
     expect(
       screen.queryByRole('button', {name: 'Create New Selection'})
     ).not.toBeInTheDocument();
-    userEvent.click(screen.getByTestId('dropdown-toggle'));
+    await user.click(screen.getByTestId('dropdown-toggle'));
     expect(mockOnOpen).toHaveBeenCalledTimes(1);
 
     expect(
@@ -81,7 +79,7 @@ describe('Dropdown', () => {
   });
 
   it('should close the dropdown when clicking anywhere', async () => {
-    render(
+    const {user} = render(
       <>
         <Dropdown placement={'top'} label={stringLabel} onOpen={mockOnOpen}>
           <Option
@@ -95,13 +93,13 @@ describe('Dropdown', () => {
       {wrapper: ThemeProvider}
     );
 
-    userEvent.click(screen.getByTestId('dropdown-toggle'));
+    await user.click(screen.getByTestId('dropdown-toggle'));
 
     expect(
       screen.getByRole('button', {name: 'Create New Selection'})
     ).toBeInTheDocument();
 
-    userEvent.click(screen.getByText('somewhere else'));
+    await user.click(screen.getByText('somewhere else'));
 
     await waitForElementToBeRemoved(
       screen.queryByRole('button', {name: 'Create New Selection'})

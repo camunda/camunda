@@ -5,17 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import Checkbox from './index';
 
 describe('<Checkbox />', () => {
-  it('should toggle checkbox', () => {
+  it('should toggle checkbox', async () => {
     const label = 'A checkbox label';
     const MOCK_ON_CHANGE = jest.fn();
-    const {rerender} = render(
+    const {rerender, user} = render(
       <Checkbox onChange={MOCK_ON_CHANGE} isChecked={false} label={label} />,
       {
         wrapper: ThemeProvider,
@@ -24,7 +23,7 @@ describe('<Checkbox />', () => {
 
     expect(screen.getByRole('checkbox', {name: label})).not.toBeChecked();
 
-    userEvent.click(screen.getByRole('checkbox', {name: label}));
+    await user.click(screen.getByRole('checkbox', {name: label}));
 
     expect(MOCK_ON_CHANGE).toHaveBeenCalledWith(expect.anything(), true);
 
@@ -32,7 +31,7 @@ describe('<Checkbox />', () => {
       <Checkbox onChange={MOCK_ON_CHANGE} isChecked={true} label={label} />
     );
 
-    userEvent.click(screen.getByRole('checkbox', {name: label}));
+    await user.click(screen.getByRole('checkbox', {name: label}));
 
     expect(MOCK_ON_CHANGE).toHaveBeenNthCalledWith(2, expect.anything(), false);
   });

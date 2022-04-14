@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {ProgressBar} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 

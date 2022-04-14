@@ -12,11 +12,10 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import userEvent from '@testing-library/user-event';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
@@ -153,10 +152,10 @@ describe('OperationsEntry', () => {
     expect(screen.queryByText('3 Instances')).not.toBeInTheDocument();
   });
 
-  it('should filter by Operation and expand Filters Panel', () => {
+  it('should filter by Operation and expand Filters Panel', async () => {
     panelStatesStore.toggleFiltersPanel();
 
-    render(
+    const {user} = render(
       <OperationsEntry
         {...mockProps}
         operation={{
@@ -169,7 +168,7 @@ describe('OperationsEntry', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    userEvent.click(screen.getByText('3 Instances'));
+    await user.click(screen.getByText('3 Instances'));
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/
     );
@@ -177,10 +176,10 @@ describe('OperationsEntry', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
-  it('should not remove optional operation id filter when operation filter is applied twice', () => {
+  it('should not remove optional operation id filter when operation filter is applied twice', async () => {
     panelStatesStore.toggleFiltersPanel();
 
-    render(
+    const {user} = render(
       <OperationsEntry
         {...mockProps}
         operation={{
@@ -195,13 +194,13 @@ describe('OperationsEntry', () => {
       []
     );
 
-    userEvent.click(screen.getByText('3 Instances'));
+    await user.click(screen.getByText('3 Instances'));
 
     expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual([
       'operationId',
     ]);
 
-    userEvent.click(screen.getByText('3 Instances'));
+    await user.click(screen.getByText('3 Instances'));
     expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual([
       'operationId',
     ]);

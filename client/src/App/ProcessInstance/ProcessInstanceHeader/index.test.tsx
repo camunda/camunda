@@ -10,8 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   waitFor,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+} from 'modules/testing-library';
 import {getProcessName} from 'modules/utils/instance';
 import {ProcessInstanceHeader} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -176,7 +175,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
@@ -191,7 +190,7 @@ describe('InstanceHeader', () => {
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    userEvent.click(await screen.findByRole('link', {name: /view all/i}));
+    await user.click(await screen.findByRole('link', {name: /view all/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -266,7 +265,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
@@ -276,8 +275,8 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
@@ -346,7 +345,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.text(mockProcessXML))
       )
     );
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
@@ -355,8 +354,8 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    userEvent.click(screen.getByRole('button', {name: /Apply/}));
+    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    await user.click(screen.getByRole('button', {name: /Apply/}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
@@ -444,7 +443,7 @@ describe('InstanceHeader', () => {
     );
     const onPollingFailure = jest.fn();
 
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     processInstanceDetailsDiagramStore.init();
 
@@ -459,8 +458,14 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       /^\/processes\/1$/
     );
-    userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
-    expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
+
+    await user.pointer({
+      keys: '[MouseLeft]',
+      target: screen.getByRole('button', {name: /Delete Instance/i}),
+    });
+    await waitFor(() =>
+      expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument()
+    );
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -468,7 +473,10 @@ describe('InstanceHeader', () => {
       )
     );
 
-    userEvent.click(screen.getByTestId('delete-button'));
+    await user.pointer({
+      keys: '[MouseLeft]',
+      target: screen.getByTestId('delete-button'),
+    });
     await waitForElementToBeRemoved(
       screen.getByText(/About to delete Instance/)
     );

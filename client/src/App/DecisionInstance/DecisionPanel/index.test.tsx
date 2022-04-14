@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {
   invoiceClassification,
   assignApproverGroup,

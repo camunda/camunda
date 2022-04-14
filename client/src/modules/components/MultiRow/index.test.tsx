@@ -7,7 +7,7 @@
 
 import React from 'react';
 import MultiRow from './index';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 
 const MOCK_CONTENT = 'Row';
 const DummyComponent: React.FC = () => <div>{MOCK_CONTENT}</div>;

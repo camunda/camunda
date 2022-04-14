@@ -5,9 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+import {render, screen} from 'modules/testing-library';
 import {ErrorMessageModal} from './index';
 import {mockProps, mockHiddenModalProps} from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -27,16 +25,20 @@ it('should hide modal', () => {
   expect(screen.queryByText('some modal content')).not.toBeInTheDocument();
 });
 
-it('should close modal on modal close click', () => {
-  render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
+it('should close modal on modal close click', async () => {
+  const {user} = render(<ErrorMessageModal {...mockProps} />, {
+    wrapper: ThemeProvider,
+  });
 
-  userEvent.click(screen.getByText('Close'));
+  await user.click(screen.getByText('Close'));
   expect(mockProps.onModalClose).toBeCalled();
 });
 
-it('should close modal on close button click', () => {
-  render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
+it('should close modal on close button click', async () => {
+  const {user} = render(<ErrorMessageModal {...mockProps} />, {
+    wrapper: ThemeProvider,
+  });
 
-  userEvent.click(screen.getByTestId('cross-button'));
+  await user.click(screen.getByTestId('cross-button'));
   expect(mockProps.onModalClose).toBeCalled();
 });

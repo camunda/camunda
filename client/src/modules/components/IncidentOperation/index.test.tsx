@@ -12,9 +12,7 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+} from 'modules/testing-library';
 import {operationsStore} from 'modules/stores/operations';
 import {mockOperationCreated, mockProps} from './index.setup';
 import {rest} from 'msw';
@@ -56,7 +54,7 @@ describe('IncidentOperation', () => {
       )
     );
 
-    render(
+    const {user} = render(
       <IncidentOperation
         incident={createIncident()}
         instanceId={'instance_1'}
@@ -67,7 +65,7 @@ describe('IncidentOperation', () => {
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+    await user.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Retry Incident'})).toBeDisabled();
@@ -80,7 +78,7 @@ describe('IncidentOperation', () => {
       )
     );
 
-    render(
+    const {user} = render(
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {
         wrapper: Wrapper,
@@ -88,7 +86,7 @@ describe('IncidentOperation', () => {
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+    await user.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Retry Incident'})).toBeDisabled();
@@ -105,7 +103,7 @@ describe('IncidentOperation', () => {
       )
     );
 
-    render(
+    const {user} = render(
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {
         wrapper: Wrapper,
@@ -113,7 +111,7 @@ describe('IncidentOperation', () => {
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+    await user.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Retry Incident'})).toBeDisabled();

@@ -10,7 +10,7 @@ import {processInstanceDetailsStore} from './processInstanceDetails';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {createInstance, createSequenceFlows} from 'modules/testUtils';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 
 describe('stores/sequenceFlows', () => {
   const mockSequenceFlows = createSequenceFlows();

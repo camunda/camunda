@@ -10,7 +10,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {rest} from 'msw';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {Operations} from './index';
@@ -19,7 +19,6 @@ import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const instanceMock: ProcessInstanceEntity = {
@@ -225,7 +224,7 @@ describe('Operations', () => {
   });
 
   it('should not display notification and redirect if delete operation is performed on instances page', async () => {
-    render(
+    const {user} = render(
       <Operations
         instance={{
           ...instanceMock,
@@ -239,7 +238,7 @@ describe('Operations', () => {
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-    userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
+    await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
     mockServer.use(
@@ -248,7 +247,7 @@ describe('Operations', () => {
       )
     );
 
-    userEvent.click(screen.getByTestId('delete-button'));
+    await user.click(screen.getByTestId('delete-button'));
     await waitForElementToBeRemoved(
       screen.getByText(/About to delete Instance/)
     );
@@ -262,7 +261,7 @@ describe('Operations', () => {
       const modalText =
         'About to cancel Instance instance_1. In case there are called instances, these will be canceled too.';
 
-      render(
+      const {user} = render(
         <Operations
           instance={{
             ...instanceMock,
@@ -272,7 +271,7 @@ describe('Operations', () => {
         {wrapper: Wrapper}
       );
 
-      userEvent.click(
+      await user.click(
         screen.getByRole('button', {name: 'Cancel Instance instance_1'})
       );
 
@@ -280,7 +279,7 @@ describe('Operations', () => {
       expect(screen.getByRole('button', {name: 'Apply'})).toBeInTheDocument();
       expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
 
-      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
       await waitForElementToBeRemoved(screen.getByText(modalText));
     });
@@ -291,7 +290,7 @@ describe('Operations', () => {
       const modalText =
         /To cancel this instance, the root instance.*needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically./;
 
-      render(
+      const {user} = render(
         <Operations
           instance={{
             ...instanceMock,
@@ -303,7 +302,7 @@ describe('Operations', () => {
         {wrapper: Wrapper}
       );
 
-      userEvent.click(
+      await user.click(
         screen.getByRole('button', {name: 'Cancel Instance instance_1'})
       );
 
@@ -315,15 +314,15 @@ describe('Operations', () => {
         screen.queryByRole('button', {name: 'Apply'})
       ).not.toBeInTheDocument();
 
-      userEvent.click(screen.getByRole('button', {name: 'Close'}));
+      await user.click(screen.getByRole('button', {name: 'Close'}));
 
       await waitForElementToBeRemoved(screen.getByText(modalText));
     });
 
-    it('should redirect to linked parent instance', () => {
+    it('should redirect to linked parent instance', async () => {
       const rootInstanceId = '6755399441058622';
 
-      render(
+      const {user} = render(
         <Operations
           instance={{
             ...instanceMock,
@@ -336,11 +335,11 @@ describe('Operations', () => {
         }
       );
 
-      userEvent.click(
+      await user.click(
         screen.getByRole('button', {name: 'Cancel Instance instance_1'})
       );
 
-      userEvent.click(
+      await user.click(
         screen.getByRole('link', {
           name: `View root instance ${rootInstanceId}`,
         })

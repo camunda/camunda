@@ -7,7 +7,7 @@
 
 import useOperationApply from './useOperationApply';
 import {renderHook} from '@testing-library/react-hooks';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {operationsStore} from 'modules/stores/operations';
 import {processInstancesStore} from 'modules/stores/processInstances';

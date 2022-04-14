@@ -11,7 +11,7 @@ import {
   waitForElementToBeRemoved,
   screen,
   waitFor,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
 import {mockSequenceFlows} from './TopPanel/index.setup';

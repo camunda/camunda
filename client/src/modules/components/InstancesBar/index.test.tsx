@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, within} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import InstancesBar from './index';
 

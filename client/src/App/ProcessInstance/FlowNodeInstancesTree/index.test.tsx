@@ -5,9 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
@@ -121,7 +119,7 @@ describe('<FlowNodeInstancesTree />', () => {
         expect(flowNodeInstanceStore.state.status).toBe('fetched');
       });
 
-      render(
+      const {user} = render(
         <FlowNodeInstancesTree
           treeDepth={1}
           flowNodeInstance={mockFlowNodeInstance}
@@ -138,7 +136,7 @@ describe('<FlowNodeInstancesTree />', () => {
       ).not.toBeInTheDocument();
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-      userEvent.click(
+      await user.click(
         screen.getByLabelText('Unfold Filter-Map Sub Process (Multi Instance)')
       );
 
@@ -150,7 +148,7 @@ describe('<FlowNodeInstancesTree />', () => {
 
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-      userEvent.click(
+      await user.click(
         await screen.findByLabelText('Unfold Filter-Map Sub Process')
       );
 
@@ -162,7 +160,7 @@ describe('<FlowNodeInstancesTree />', () => {
         screen.getByLabelText('Fold Filter-Map Sub Process')
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Fold Filter-Map Sub Process'));
+      await user.click(screen.getByLabelText('Fold Filter-Map Sub Process'));
 
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
     });
@@ -269,7 +267,7 @@ describe('<FlowNodeInstancesTree />', () => {
         expect(flowNodeInstanceStore.state.status).toBe('fetched');
       });
 
-      render(
+      const {user} = render(
         <FlowNodeInstancesTree
           treeDepth={1}
           flowNodeInstance={mockFlowNodeInstance}
@@ -286,7 +284,7 @@ describe('<FlowNodeInstancesTree />', () => {
       ).not.toBeInTheDocument();
       expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Unfold Event Subprocess'));
+      await user.click(screen.getByLabelText('Unfold Event Subprocess'));
 
       expect(
         await screen.findByLabelText('Fold Event Subprocess')
@@ -294,7 +292,7 @@ describe('<FlowNodeInstancesTree />', () => {
 
       expect(screen.getByText('Interrupting timer')).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Fold Event Subprocess'));
+      await user.click(screen.getByLabelText('Fold Event Subprocess'));
 
       expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
     });

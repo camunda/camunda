@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';

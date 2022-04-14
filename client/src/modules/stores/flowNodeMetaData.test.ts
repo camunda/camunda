@@ -10,7 +10,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 

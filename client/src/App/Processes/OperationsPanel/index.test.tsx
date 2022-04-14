@@ -10,7 +10,7 @@ import {
   screen,
   within,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationsPanel} from './index';
 import * as CONSTANTS from './constants';

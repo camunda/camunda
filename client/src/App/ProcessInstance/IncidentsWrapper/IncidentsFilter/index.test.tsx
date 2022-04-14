@@ -6,8 +6,7 @@
  */
 
 import {IncidentsFilter} from './index';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 
 import {mockIncidents, mockIncidentsWithManyErrors} from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -72,14 +71,14 @@ describe('IncidentsFilter', () => {
     );
     await fetchIncidents('1');
 
-    render(<IncidentsFilter />, {
+    const {user} = render(<IncidentsFilter />, {
       wrapper: ThemeProvider,
     });
     expect(
       screen.queryByRole('button', {name: 'error type 6 1'})
     ).not.toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: /^1 more/}));
+    await user.click(screen.getByRole('button', {name: /^1 more/}));
 
     expect(
       screen.getByRole('button', {name: 'error type 6 1'})
@@ -94,7 +93,7 @@ describe('IncidentsFilter', () => {
     );
     await fetchIncidents('1');
 
-    render(<IncidentsFilter />, {
+    const {user} = render(<IncidentsFilter />, {
       wrapper: ThemeProvider,
     });
 
@@ -106,7 +105,7 @@ describe('IncidentsFilter', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
 
-    userEvent.click(screen.getByRole('button', {name: 'Condition error 2'}));
+    await user.click(screen.getByRole('button', {name: 'Condition error 2'}));
 
     expect(
       screen.getByRole('button', {
@@ -116,7 +115,7 @@ describe('IncidentsFilter', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeEnabled();
 
-    userEvent.click(screen.getByRole('button', {name: 'Clear All'}));
+    await user.click(screen.getByRole('button', {name: 'Clear All'}));
 
     expect(
       screen.getByRole('button', {

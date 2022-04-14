@@ -52,8 +52,7 @@ const Variables: React.FC = observer(() => {
 
   const isAddMode = initialValues?.name === '' && initialValues?.value === '';
 
-  const isVariableHeaderVisible =
-    isAddMode || variablesStore.displayStatus === 'variables';
+  const isVariableHeaderVisible = isAddMode || displayStatus === 'variables';
 
   return (
     <>

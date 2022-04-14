@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {rest} from 'msw';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockServer} from 'modules/mock-server/node';
@@ -13,7 +13,6 @@ import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionInstance} from './';
-import userEvent from '@testing-library/user-event';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
@@ -68,19 +67,19 @@ describe('<DecisionInstance />', () => {
     );
   });
 
-  it('should close DRD panel', () => {
+  it('should close DRD panel', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
         res(ctx.json(invoiceClassification))
       )
     );
 
-    render(<DecisionInstance />, {wrapper: Wrapper});
+    const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('drd-panel')).toBeInTheDocument();
     expect(screen.getByTestId('drd')).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Close DRD Panel',
       })
@@ -95,16 +94,16 @@ describe('<DecisionInstance />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should maximize DRD panel and hide other panels', () => {
+  it('should maximize DRD panel and hide other panels', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
         res(ctx.json(invoiceClassification))
       )
     );
 
-    render(<DecisionInstance />, {wrapper: Wrapper});
+    const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Maximize DRD Panel',
       })
@@ -121,21 +120,21 @@ describe('<DecisionInstance />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should minimize DRD panel', () => {
+  it('should minimize DRD panel', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
         res(ctx.json(invoiceClassification))
       )
     );
 
-    render(<DecisionInstance />, {wrapper: Wrapper});
+    const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Maximize DRD Panel',
       })
     );
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Minimize DRD Panel',
       })
@@ -157,9 +156,9 @@ describe('<DecisionInstance />', () => {
       )
     );
 
-    render(<DecisionInstance />, {wrapper: Wrapper});
+    const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Close DRD Panel',
       })
@@ -174,7 +173,7 @@ describe('<DecisionInstance />', () => {
       ).toBeEnabled()
     );
 
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('decision-instance-header')).getByRole(
         'button',
         {name: /open decision requirements diagram/i}
@@ -190,16 +189,16 @@ describe('<DecisionInstance />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should persist panel state', () => {
+  it('should persist panel state', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
         res(ctx.json(invoiceClassification))
       )
     );
 
-    const {unmount} = render(<DecisionInstance />, {wrapper: Wrapper});
+    const {unmount, user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
-    userEvent.click(
+    await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Close DRD Panel',
       })

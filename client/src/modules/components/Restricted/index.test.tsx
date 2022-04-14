@@ -6,7 +6,7 @@
  */
 
 import {Restricted} from './index';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 
 describe('Restricted', () => {

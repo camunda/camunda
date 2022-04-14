@@ -6,8 +6,7 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, within, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, within, screen} from 'modules/testing-library';
 import {InstancesByProcess} from './index';
 import {
   mockWithSingleVersion,
@@ -120,7 +119,7 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    render(<InstancesByProcess />, {
+    const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
 
@@ -135,7 +134,7 @@ describe('InstancesByProcess', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    userEvent.click(processLink);
+    await user.click(processLink);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?process=orderProcess&version=all&active=true&incidents=true$/
     );
@@ -156,7 +155,7 @@ describe('InstancesByProcess', () => {
     );
 
     expect(expandButton).toBeInTheDocument();
-    userEvent.click(expandButton);
+    await user.click(expandButton);
 
     const firstVersion = screen.getByTitle(
       'View 42 Instances in Version 1 of Process First Version'
@@ -174,7 +173,7 @@ describe('InstancesByProcess', () => {
       )
     ).toBeInTheDocument();
 
-    userEvent.click(firstVersion);
+    await user.click(firstVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?process=mockProcess&version=1&active=true&incidents=true$/
     );
@@ -196,7 +195,7 @@ describe('InstancesByProcess', () => {
       )
     ).toBeInTheDocument();
 
-    userEvent.click(secondVersion);
+    await user.click(secondVersion);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?process=mockProcess&version=2&active=true&incidents=true$/
     );
@@ -209,7 +208,7 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    render(<InstancesByProcess />, {
+    const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
 
@@ -229,7 +228,7 @@ describe('InstancesByProcess', () => {
       'View 138 Instances in 1 Version of Process loanProcess'
     );
     expect(processLink).toBeInTheDocument();
-    userEvent.click(processLink);
+    await user.click(processLink);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?process=loanProcess&version=1&active=true&incidents=true$/
     );
@@ -289,7 +288,7 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    render(<InstancesByProcess />, {
+    const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
@@ -301,16 +300,16 @@ describe('InstancesByProcess', () => {
       'Order process – 201 Instances in 2 Versions'
     );
 
-    userEvent.click(processLink);
+    await user.click(processLink);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=orderProcess&version=all&active=true&incidents=true$/
     );
 
-    userEvent.click(
+    await user.click(
       withinIncident.getByTitle('Expand 201 Instances of Process Order process')
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByTitle(
         'View 42 Instances in Version 1 of Process First Version'
       )

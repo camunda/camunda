@@ -10,8 +10,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createIncident, mockCallActivityProcessXML} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {render, screen, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, within} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {mockServer} from 'modules/mock-server/node';
@@ -263,9 +262,9 @@ describe('IncidentsTable', () => {
     expect(withinSecondRow.getByText('More...')).toBeInTheDocument();
   });
 
-  it('should open an modal when clicking on the more button', () => {
+  it('should open an modal when clicking on the more button', async () => {
     incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
 
     let withinSecondRow = within(
       screen.getByTestId(`tr-incident-${incidentsMock[1].id}`)
@@ -275,7 +274,7 @@ describe('IncidentsTable', () => {
 
     expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
 
-    userEvent.click(withinSecondRow.getByText('More...'));
+    await user.click(withinSecondRow.getByText('More...'));
 
     const modal = screen.getByTestId('modal');
     expect(
@@ -322,7 +321,7 @@ describe('IncidentsTable', () => {
   });
 
   describe('Selection', () => {
-    it('should deselect selected incident', () => {
+    it('should deselect selected incident', async () => {
       const incidents = [createIncident()] as const;
 
       incidentsStore.setIncidents({incidents, count: 1});
@@ -331,14 +330,14 @@ describe('IncidentsTable', () => {
         isMultiInstance: false,
       });
 
-      render(<IncidentsTable />, {wrapper: Wrapper});
+      const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
       expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
 
-      userEvent.click(screen.getByRole('row', {selected: true}));
+      await user.click(screen.getByRole('row', {selected: true}));
       expect(screen.getByRole('row', {selected: false})).toBeInTheDocument();
     });
 
-    it('should select single incident when multiple incidents are selected', () => {
+    it('should select single incident when multiple incidents are selected', async () => {
       const incidents = [
         createIncident({flowNodeId: 'myTask'}),
         createIncident({flowNodeId: 'myTask'}),
@@ -350,7 +349,7 @@ describe('IncidentsTable', () => {
         isMultiInstance: false,
       });
 
-      render(<IncidentsTable />, {wrapper: Wrapper});
+      const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
       expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);
 
       const [firstRow] = screen.getAllByRole('row', {
@@ -358,7 +357,7 @@ describe('IncidentsTable', () => {
       });
 
       expect(firstRow).toBeInTheDocument();
-      userEvent.click(firstRow!);
+      await user.click(firstRow!);
 
       expect(
         screen.getByRole('row', {

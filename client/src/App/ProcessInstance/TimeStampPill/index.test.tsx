@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';

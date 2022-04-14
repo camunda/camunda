@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 
 import SortIcon from './index';
 import {SORT_ORDER} from 'modules/constants';

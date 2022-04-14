@@ -9,8 +9,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Header} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -84,26 +83,26 @@ describe('Header', () => {
       },
     });
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: createWrapper(),
     });
 
     expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
 
-    userEvent.click(await screen.findByText('Operate'));
+    await user.click(await screen.findByText('Operate'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(await screen.findByText('Processes'));
+    await user.click(await screen.findByText('Processes'));
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?active=true&incidents=true&completed=true$/
     );
 
-    userEvent.click(await screen.findByText('Dashboard'));
+    await user.click(await screen.findByText('Dashboard'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    userEvent.click(await screen.findByText('Decisions'));
+    await user.click(await screen.findByText('Decisions'));
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/
     );
@@ -117,31 +116,31 @@ describe('Header', () => {
         completed: true,
       },
     });
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
     });
 
     expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
 
-    userEvent.click(await screen.findByText('Operate'));
+    await user.click(await screen.findByText('Operate'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com$/
     );
 
-    userEvent.click(await screen.findByText('Processes'));
+    await user.click(await screen.findByText('Processes'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true$/
     );
 
-    userEvent.click(await screen.findByText('Dashboard'));
+    await user.click(await screen.findByText('Dashboard'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com$/
     );
 
-    userEvent.click(await screen.findByText('Decisions'));
+    await user.click(await screen.findByText('Decisions'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&evaluated=true&failed=true$/

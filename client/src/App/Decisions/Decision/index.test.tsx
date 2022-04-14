@@ -6,7 +6,7 @@
  */
 
 import {rest} from 'msw';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {mockServer} from 'modules/mock-server/node';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';

@@ -5,18 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-
 import DiagramControls from './index';
 
 describe('<DiagramControls />', () => {
-  it('should render diagram controls', () => {
+  it('should render diagram controls', async () => {
     const handleZoomIn = jest.fn(),
       handleZoomOut = jest.fn(),
       handleZoomReset = jest.fn();
-    render(
+    const {user} = render(
       <DiagramControls
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
@@ -25,21 +23,21 @@ describe('<DiagramControls />', () => {
       {wrapper: ThemeProvider}
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Reset diagram zoom'}));
+    await user.click(screen.getByRole('button', {name: 'Reset diagram zoom'}));
 
     expect(handleZoomReset).toHaveBeenCalled();
     expect(handleZoomIn).not.toHaveBeenCalled();
     expect(handleZoomOut).not.toHaveBeenCalled();
 
     handleZoomReset.mockClear();
-    userEvent.click(screen.getByRole('button', {name: 'Zoom in diagram'}));
+    await user.click(screen.getByRole('button', {name: 'Zoom in diagram'}));
 
     expect(handleZoomIn).toHaveBeenCalled();
     expect(handleZoomReset).not.toHaveBeenCalled();
     expect(handleZoomOut).not.toHaveBeenCalled();
 
     handleZoomIn.mockClear();
-    userEvent.click(screen.getByRole('button', {name: 'Zoom out diagram'}));
+    await user.click(screen.getByRole('button', {name: 'Zoom out diagram'}));
 
     expect(handleZoomOut).toHaveBeenCalled();
     expect(handleZoomReset).not.toHaveBeenCalled();

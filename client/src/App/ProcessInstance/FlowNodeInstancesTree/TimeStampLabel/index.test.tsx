@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {TimeStampLabel} from './index';

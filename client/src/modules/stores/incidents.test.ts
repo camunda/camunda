@@ -9,7 +9,7 @@ import {incidentsStore} from './incidents';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
 import {mockIncidents} from 'modules/mocks/incidents';
 

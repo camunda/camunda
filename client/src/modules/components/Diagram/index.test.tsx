@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {observer} from 'mobx-react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';

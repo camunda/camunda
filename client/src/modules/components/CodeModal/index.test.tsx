@@ -5,9 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import CodeModal from './index';
 
@@ -91,9 +89,9 @@ describe('CodeModal', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should close modal', () => {
+  it('should close modal', async () => {
     const mockHandleCloseModal = jest.fn();
-    render(
+    const {user} = render(
       <CodeModal
         handleModalClose={mockHandleCloseModal}
         headline="Some Headline"
@@ -106,10 +104,10 @@ describe('CodeModal', () => {
       }
     );
 
-    userEvent.click(screen.getByRole('button', {name: /exit modal/i}));
+    await user.click(screen.getByRole('button', {name: /exit modal/i}));
     expect(mockHandleCloseModal).toHaveBeenCalledTimes(1);
 
-    userEvent.click(screen.getByRole('button', {name: /close modal/i}));
+    await user.click(screen.getByRole('button', {name: /close modal/i}));
     expect(mockHandleCloseModal).toHaveBeenCalledTimes(2);
   });
 

@@ -14,7 +14,7 @@ import {
   mockProcessXML,
   mockCallActivityProcessXML,
 } from 'modules/testUtils';
-import {waitFor} from '@testing-library/react';
+import {waitFor} from 'modules/testing-library';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import Pill from './index';
 import {PILL_TYPE} from 'modules/constants';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';

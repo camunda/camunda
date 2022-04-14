@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Breadcrumb} from './index';
 import {createInstance} from 'modules/testUtils';
@@ -84,7 +83,7 @@ describe('User', () => {
   it('should navigate to instance detail on click', async () => {
     await processInstanceDetailsStore.fetchProcessInstance();
 
-    render(<Breadcrumb />, {
+    const {user} = render(<Breadcrumb />, {
       wrapper: createWrapper('/processes/123'),
     });
 
@@ -92,7 +91,7 @@ describe('User', () => {
       /^\/processes\/123$/
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('link', {
         name: /View Process Parent Process Name - Instance 546546543276/,
       })
@@ -101,7 +100,7 @@ describe('User', () => {
       /^\/processes\/546546543276$/
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('link', {
         name: /View Process 1st level Child Process Name - Instance 968765314354/,
       })
@@ -110,7 +109,7 @@ describe('User', () => {
       /^\/processes\/968765314354$/
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('link', {
         name: /View Process 2nd level Child Process Name - Instance 2251799813685447/,
       })

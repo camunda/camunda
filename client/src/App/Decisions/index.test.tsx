@@ -10,7 +10,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {mockServer} from 'modules/mock-server/node';

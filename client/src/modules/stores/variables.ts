@@ -305,8 +305,7 @@ class Variables extends NetworkReconnectionHandler {
     const {metaData} = flowNodeMetaDataStore.state;
 
     return (
-      (selection && selection.flowNodeInstanceId) ||
-      (metaData && metaData.flowNodeInstanceId)
+      selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null
     );
   }
 

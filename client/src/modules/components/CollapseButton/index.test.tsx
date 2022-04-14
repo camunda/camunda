@@ -5,20 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import CollapseButton from './index';
 
 describe('<CollapseButton />', () => {
-  it('should handle click events', () => {
+  it('should handle click events', async () => {
     const onClick = jest.fn();
-    render(<CollapseButton onClick={onClick} direction="UP" />, {
+    const {user} = render(<CollapseButton onClick={onClick} direction="UP" />, {
       wrapper: ThemeProvider,
     });
 
-    userEvent.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button'));
 
     expect(onClick).toHaveBeenCalled();
   });
