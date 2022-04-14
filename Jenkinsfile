@@ -134,21 +134,6 @@ pipeline {
             }
           }
         }
-
-        stage('Chromatic') {
-          environment {
-            NODE_ENV = "production"
-            CHROMATIC_PROJECT_TOKEN = credentials('chromatic-token')
-          }
-          steps {
-            container('node') {
-              sh '''
-                cd ./client
-                yarn chromatic
-              '''
-            }
-          }
-        }
       }
     }
     stage('Install GCR login helper') {

@@ -34,7 +34,7 @@ spec:
           cpu: 8
           memory: 27Gi
     - name: node
-      image: node:14.19.1-alpine
+      image: node:16.13.2-alpine
       command: ["cat"]
       tty: true
       env:
