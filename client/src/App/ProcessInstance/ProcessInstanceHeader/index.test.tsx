@@ -459,10 +459,7 @@ describe('InstanceHeader', () => {
       /^\/processes\/1$/
     );
 
-    await user.pointer({
-      keys: '[MouseLeft]',
-      target: screen.getByRole('button', {name: /Delete Instance/i}),
-    });
+    await user.click(screen.getByRole('button', {name: /Delete Instance/i}));
     await waitFor(() =>
       expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument()
     );
@@ -473,10 +470,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    await user.pointer({
-      keys: '[MouseLeft]',
-      target: screen.getByTestId('delete-button'),
-    });
+    await user.click(screen.getByTestId('delete-button'));
     await waitForElementToBeRemoved(
       screen.getByText(/About to delete Instance/)
     );
