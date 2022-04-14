@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
@@ -120,17 +121,11 @@ public class CustomerOnboardingDataImportService {
                 if (rawProcessInstanceFromDump.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
                   processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
                 }
-                if (processInstanceDtos.size() % batchSize == 0) {
-                  addProcessInstancesToElasticSearch(processInstanceDtos);
-                  processInstanceDtos.clear();
-                }
               } else {
                 log.error("Process instance not loaded correctly. Please check your json file.");
               }
             }
-            if (!processInstanceDtos.isEmpty()) {
-              addProcessInstancesToElasticSearch(processInstanceDtos);
-            }
+            loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
           }
         } else {
           log.error(
@@ -144,7 +139,27 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  private void addProcessInstancesToElasticSearch(List<ProcessInstanceDto> processInstanceDtos) {
+  private void loadProcessInstancesToElasticSearch(List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
+    List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
+    Optional<OffsetDateTime> minimumStartDate = rawProcessInstanceDtos.stream()
+      .map(ProcessInstanceDto::getStartDate)
+      .min(OffsetDateTime::compareTo);
+    for (ProcessInstanceDto rawProcessInstance : rawProcessInstanceDtos) {
+      if (minimumStartDate.isPresent()) {
+        ProcessInstanceDto processInstanceDto = modifyProcessInstanceDates(rawProcessInstance, minimumStartDate.get());
+        processInstanceDtos.add(processInstanceDto);
+        if (processInstanceDtos.size() % batchSize == 0) {
+          insertProcessInstancesToElasticSearch(processInstanceDtos);
+          processInstanceDtos.clear();
+        }
+      }
+    }
+    if (!processInstanceDtos.isEmpty()) {
+      insertProcessInstancesToElasticSearch(processInstanceDtos);
+    }
+  }
+
+  private void insertProcessInstancesToElasticSearch(List<ProcessInstanceDto> processInstanceDtos) {
     List<ProcessInstanceDto> completedProcessInstances = processInstanceDtos.stream()
       .filter(processInstanceDto -> processInstanceDto.getEndDate() != null)
       .collect(
@@ -169,5 +184,23 @@ public class CustomerOnboardingDataImportService {
         configurationService.getSkipDataAfterNestedDocLimitReached()
       );
     }
+  }
+
+  private ProcessInstanceDto modifyProcessInstanceDates(final ProcessInstanceDto processInstanceDto,
+                                                        final OffsetDateTime minimumStartDate) {
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    long offset = ChronoUnit.SECONDS.between(minimumStartDate, now);
+    Optional.ofNullable(processInstanceDto.getStartDate())
+      .ifPresent(startDate -> processInstanceDto.setStartDate(startDate.plusSeconds(offset)));
+    Optional.ofNullable(processInstanceDto.getEndDate())
+      .ifPresent(endDate -> processInstanceDto.setEndDate(endDate.plusSeconds(offset)));
+
+    processInstanceDto.getFlowNodeInstances().forEach(flowNodeInstanceDto -> {
+      Optional.ofNullable(flowNodeInstanceDto.getStartDate())
+        .ifPresent(startDate -> flowNodeInstanceDto.setStartDate(startDate.plusSeconds(offset)));
+      Optional.ofNullable(flowNodeInstanceDto.getEndDate())
+        .ifPresent(endDate -> flowNodeInstanceDto.setEndDate(endDate.plusSeconds(offset)));
+    });
+    return processInstanceDto;
   }
 }

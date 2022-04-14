@@ -7,14 +7,19 @@ package org.camunda.optimize.service.importing;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
@@ -155,6 +160,51 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
     assertThat(processDefinitionDocuments).isEmpty();
     assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
     logCapturer.assertContains("Process definition could not be loaded. Please validate your json file.");
+  }
+
+  @Test
+  public void verifyProcessDatesAreUpToDate() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final OffsetDateTime instanceStartDate = OffsetDateTime.parse("2022-02-04T21:24:14+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime instanceEndDate = OffsetDateTime.parse("2022-02-04T21:25:18+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime flowNodeStartDate = OffsetDateTime.parse("2022-02-04T21:24:15+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime flowNodeEndDate = OffsetDateTime.parse("2022-02-04T21:24:16+01:00", ISO_OFFSET_DATE_TIME);
+    final long offset = ChronoUnit.SECONDS.between(instanceStartDate, now);
+    final OffsetDateTime newStartDate = instanceStartDate.plusSeconds(offset);
+    final OffsetDateTime newEndDate = instanceEndDate.plusSeconds(offset);
+    final OffsetDateTime newFlowNodeStartDate = flowNodeStartDate.plusSeconds(offset);
+    final OffsetDateTime newFlowNodeEndDate = flowNodeEndDate.plusSeconds(offset);
+    embeddedOptimizeExtension.getConfigurationService().setCustomerOnboardingImport(true);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // when
+    addDataToOptimize(
+      "customer_onboarding_process_instance_date_modification.json",
+      CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME
+    );
+
+    // then
+    List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
+      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        PROCESS_DEFINITION_INDEX_NAME,
+        ProcessDefinitionOptimizeDto.class
+      );
+    assertThat(processDefinitionDocuments).hasSize(1);
+    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isTrue();
+    List<ProcessInstanceDto> processInstanceDto = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName(), ProcessInstanceDto.class);
+
+    assertThat(processInstanceDto)
+      .singleElement()
+      .satisfies(instance -> {
+        assertThat(instance.getFlowNodeInstances()).singleElement().satisfies(flowNode ->  {
+          assertThat(flowNode.getStartDate()).isEqualTo(newFlowNodeStartDate);
+          assertThat(flowNode.getEndDate()).isEqualTo(newFlowNodeEndDate);
+        });
+        assertThat(instance.getStartDate()).isEqualTo(newStartDate);
+        assertThat(instance.getEndDate()).isEqualTo(newEndDate);
+      });
   }
 
   protected boolean indexExist(final String indexName) {
