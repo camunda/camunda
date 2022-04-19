@@ -355,7 +355,7 @@ pipeline {
             }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
-                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
                 TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
                 ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
@@ -417,7 +417,7 @@ pipeline {
                     when { branch mainBranchName }
 
                     environment {
-                        VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                        VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
                     }
 
                     steps {
