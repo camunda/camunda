@@ -35,4 +35,6 @@ public interface BpmnBehaviors {
   BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior();
 
   BpmnJobBehavior jobBehavior();
+
+  OutputCollectionBehavior outputCollectionBehavior();
 }

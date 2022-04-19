@@ -39,6 +39,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnJobBehavior jobBehavior;
 
+  private final OutputCollectionBehavior outputCollectionBehavior;
+
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
       final SideEffects sideEffects,
@@ -105,6 +107,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             incidentBehavior,
             jobMetrics);
+
+    outputCollectionBehavior = new OutputCollectionBehavior(stateBehavior, expressionBehavior());
   }
 
   @Override
@@ -165,5 +169,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnJobBehavior jobBehavior() {
     return jobBehavior;
+  }
+
+  @Override
+  public OutputCollectionBehavior outputCollectionBehavior() {
+    return outputCollectionBehavior;
   }
 }

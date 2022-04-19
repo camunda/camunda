@@ -56,8 +56,7 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    outputCollectionBehavior =
-        new OutputCollectionBehavior(stateBehavior, bpmnBehaviors.expressionBehavior());
+    outputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
   }
 
   @Override
