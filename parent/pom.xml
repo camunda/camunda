@@ -78,7 +78,7 @@
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.20.0</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
-    <version.micrometer>1.8.4</version.micrometer>
+    <version.micrometer>1.8.5</version.micrometer>
     <version.rocksdbjni>7.0.4</version.rocksdbjni>
     <version.sbe>1.25.2</version.sbe>
     <version.scala-parser>2.1.1</version.scala-parser>
@@ -89,13 +89,13 @@
     <version.wiremock>2.33.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.17.0</version.testcontainers>
+    <version.testcontainers>1.17.1</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
     <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>5.0.1</version.rest-assured>
-    <version.spring>5.3.18</version.spring>
+    <version.spring>5.3.19</version.spring>
     <version.spring-boot>2.6.6</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.2</version.config>
@@ -110,7 +110,7 @@
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.143</version.classgraph>
+    <version.classgraph>4.8.146</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
