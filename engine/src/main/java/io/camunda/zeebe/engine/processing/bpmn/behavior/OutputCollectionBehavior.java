@@ -28,7 +28,7 @@ public final class OutputCollectionBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final ExpressionProcessor expressionProcessor;
 
-  public OutputCollectionBehavior(
+  OutputCollectionBehavior(
       final BpmnStateBehavior stateBehavior, final ExpressionProcessor expressionProcessor) {
     this.stateBehavior = stateBehavior;
     this.expressionProcessor = expressionProcessor;
