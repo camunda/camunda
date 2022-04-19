@@ -42,7 +42,7 @@ public final class MultiInstanceBodyProcessor
       new UnsafeBuffer(new byte[Long.BYTES + 1]);
   private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
 
-  private final MsgPackWriter variableWriter = new MsgPackWriter();
+  private final MsgPackWriter loopCounterWriter = new MsgPackWriter();
 
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -330,10 +330,10 @@ public final class MultiInstanceBodyProcessor
   }
 
   private DirectBuffer wrapLoopCounter(final int loopCounter) {
-    variableWriter.wrap(loopCounterVariableBuffer, 0);
+    loopCounterWriter.wrap(loopCounterVariableBuffer, 0);
 
-    variableWriter.writeInteger(loopCounter);
-    final var length = variableWriter.getOffset();
+    loopCounterWriter.writeInteger(loopCounter);
+    final var length = loopCounterWriter.getOffset();
 
     loopCounterVariableView.wrap(loopCounterVariableBuffer, 0, length);
     return loopCounterVariableView;
