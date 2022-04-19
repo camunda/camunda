@@ -15240,10 +15240,10 @@ test-exclude@^6.0.0:
     glob "^7.1.4"
     minimatch "^3.0.4"
 
-testcafe-browser-provider-browserstack@^1.13.1:
-  version "1.13.1"
-  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.13.1.tgz#70baadd0fc9b123b73ec3a771ccf451f1c60952a"
-  integrity sha512-fYQJG522cTyefz5NMzKsOlX8wY/1wLx4W6hfZnI7Ntpqt8gM576jyjNUWua2hYdlimM3xKT1/sbkvT83qIFYiQ==
+testcafe-browser-provider-browserstack@^1.13.2:
+  version "1.13.2"
+  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.13.2.tgz#2dd324ffe288192ddcea6f43deda8fefa26b4716"
+  integrity sha512-yB86XfHHVdLha9T0ILi/PV0viajIb5YglPwu6PAjA5iX6qipH6NcuuUcMoJf1AclSqHoryHT4G1s2IRkiQMSZw==
   dependencies:
     browserstack-local "^1.3.6"
     dedent "^0.7.0"
