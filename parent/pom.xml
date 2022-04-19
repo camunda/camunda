@@ -80,7 +80,7 @@
     <version.protobuf-common>2.8.3</version.protobuf-common>
     <version.micrometer>1.8.5</version.micrometer>
     <version.rocksdbjni>7.0.4</version.rocksdbjni>
-    <version.sbe>1.25.2</version.sbe>
+    <version.sbe>1.25.3</version.sbe>
     <version.scala-parser>2.1.1</version.scala-parser>
     <version.scala>2.13.8</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
@@ -110,7 +110,7 @@
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.143</version.classgraph>
+    <version.classgraph>4.8.146</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -1825,7 +1825,7 @@
             leave this as 1.1; we add this dependency to ensure that plugins work well with the
             go-offline goal. you can read more about why here: https://issues.apache.org/jira/browse/MNG-6965
             -->
-          <version>1.1</version>
+          <version>2.1</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
