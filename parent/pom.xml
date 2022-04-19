@@ -78,7 +78,7 @@
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.20.0</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
-    <version.micrometer>1.8.4</version.micrometer>
+    <version.micrometer>1.8.5</version.micrometer>
     <version.rocksdbjni>7.0.4</version.rocksdbjni>
     <version.sbe>1.25.2</version.sbe>
     <version.scala-parser>2.1.1</version.scala-parser>
