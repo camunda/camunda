@@ -19,14 +19,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ProcessMessageStartEventMessageNameValidatorTest {
 
   private static final String TEST_EXPRESSION = "expression";
@@ -47,7 +47,7 @@ public class ProcessMessageStartEventMessageNameValidatorTest {
 
   ProcessMessageStartEventMessageNameValidator sutValidator;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     when(mockExpressionLanguage.parseExpression(TEST_EXPRESSION)).thenReturn(mockExpression);
 
