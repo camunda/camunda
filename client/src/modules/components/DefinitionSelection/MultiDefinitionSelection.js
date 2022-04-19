@@ -8,7 +8,7 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {MultiSelect} from 'components';
+import {MultiSelect, Labeled} from 'components';
 import {getRandomId, getCollection} from 'services';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
@@ -60,31 +60,34 @@ export function MultiDefinitionSelection({
   }
 
   return (
-    <MultiSelect
-      values={selectedDefinitions.map((definition) => ({
-        value: definition.key,
-        label: definition.name,
-      }))}
-      placeholder={t('common.select')}
-      disabled={selectedDefinitions.length >= 10}
-      onAdd={(value) => {
-        update([...selectedDefinitions, availableDefinitions.find(({key}) => key === value)]);
-      }}
-      onRemove={(value) => {
-        update(selectedDefinitions.filter(({key}) => key !== value));
-      }}
-      onClear={() => update([])}
-    >
-      {availableDefinitions
-        .filter((def) => !selectedDefinitions.some(({key}) => key === def.key))
-        .map(({name, key}) => {
-          return (
-            <MultiSelect.Option key={key} value={key} label={name || key}>
-              {name || key}
-            </MultiSelect.Option>
-          );
-        })}
-    </MultiSelect>
+    <Labeled className="entry" label={t('common.definitionSelection.select.multiProcess')}>
+      <MultiSelect
+        values={selectedDefinitions.map((definition) => ({
+          value: definition.key,
+          label: definition.name,
+        }))}
+        placeholder={t('common.select')}
+        disabled={selectedDefinitions.length >= 10}
+        onAdd={(value) => {
+          update([...selectedDefinitions, availableDefinitions.find(({key}) => key === value)]);
+        }}
+        onRemove={(value) => {
+          update(selectedDefinitions.filter(({key}) => key !== value));
+        }}
+        onClear={() => update([])}
+        persistMenu={false}
+      >
+        {availableDefinitions
+          .filter((def) => !selectedDefinitions.some(({key}) => key === def.key))
+          .map(({name, key}) => {
+            return (
+              <MultiSelect.Option key={key} value={key} label={name || key}>
+                {name || key}
+              </MultiSelect.Option>
+            );
+          })}
+      </MultiSelect>
+    </Labeled>
   );
 }
 

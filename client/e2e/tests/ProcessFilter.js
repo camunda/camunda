@@ -485,6 +485,7 @@ test('multi definition filters', async (t) => {
   await t.click(Filter.removeButtonFor('All included processes'));
   await t.click(Filter.multiSelect);
   await t.click(Filter.multiSelectOption('Hiring Demo 5 Tenants'));
+  await t.click(Filter.multiSelect);
   await t.click(Filter.multiSelectOption('Book Request One Tenant'));
 
   await t.click(Report.primaryModalButton);

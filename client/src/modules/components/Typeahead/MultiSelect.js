@@ -33,6 +33,7 @@ export default function MultiSelect({
   loading,
   disabled,
   children,
+  persistMenu = true,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -68,6 +69,13 @@ export default function MultiSelect({
   }
 
   function selectOption({props: {value}}) {
+    if (query) {
+      setQuery('');
+      onSearch('');
+    }
+    if (!persistMenu) {
+      hideList();
+    }
     onAdd(value);
   }
 
@@ -81,6 +89,7 @@ export default function MultiSelect({
   function onChange({target: {value}}) {
     setQuery(value);
     onSearch(value);
+    showList();
   }
 
   function handleKeyPress(evt) {
@@ -122,7 +131,7 @@ export default function MultiSelect({
         async={async}
         open={open}
         onClose={hideList}
-        onOpen={open}
+        onOpen={showList}
         filter={query}
         onSelect={selectOption}
         input={input.current}
