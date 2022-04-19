@@ -20,7 +20,6 @@ services:
       - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
       - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
       - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=1
-      - CAMUNDA_OPTIMIZE_SHARING_ENABLED=false
       - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
     networks:
       - optimize
