@@ -71,7 +71,7 @@ public class ProcessMessageStartEventMessageNameValidatorTest {
   }
 
   @Test
-  public void shoulAddErrorIfEvaluationFailed() {
+  public void shouldAddErrorIfEvaluationFailed() {
     // given
     when(mockResult.isFailure()).thenReturn(true);
     when(mockResult.getFailureMessage()).thenReturn("Test failure message");
@@ -87,7 +87,7 @@ public class ProcessMessageStartEventMessageNameValidatorTest {
   }
 
   @Test
-  public void shoulAddErrorIfEvaluationDoesNotReturnString() {
+  public void shouldAddErrorIfEvaluationDoesNotReturnString() {
     // given
     when(mockResult.isFailure()).thenReturn(false);
     when(mockResult.getType()).thenReturn(ResultType.NUMBER);
