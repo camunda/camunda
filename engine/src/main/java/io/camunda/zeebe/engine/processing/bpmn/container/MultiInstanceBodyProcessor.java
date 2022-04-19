@@ -42,16 +42,14 @@ public final class MultiInstanceBodyProcessor
       new UnsafeBuffer(new byte[Long.BYTES + 1]);
   private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
 
-  private final MsgPackReader variableReader = new MsgPackReader();
   private final MsgPackWriter variableWriter = new MsgPackWriter();
-  private final ExpandableArrayBuffer variableBuffer = new ExpandableArrayBuffer();
-  private final DirectBuffer resultBuffer = new UnsafeBuffer(0, 0);
 
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final OutputCollectionBehavior outputCollectionBehavior;
 
   public MultiInstanceBodyProcessor(final BpmnBehaviors bpmnBehaviors) {
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
@@ -59,6 +57,8 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    outputCollectionBehavior =
+        new OutputCollectionBehavior(stateBehavior, bpmnBehaviors.expressionBehavior());
   }
 
   @Override
@@ -150,7 +150,8 @@ public final class MultiInstanceBodyProcessor
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
-    final var updatedOrFailure = updateOutputCollection(element, childContext, flowScopeContext);
+    final var updatedOrFailure =
+        outputCollectionBehavior.updateOutputCollection(element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
       return updatedOrFailure;
     }
@@ -247,7 +248,8 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(
             variableName ->
-                initializeOutputCollection(activated, variableName, inputCollection.size()));
+                outputCollectionBehavior.initializeOutputCollection(
+                    activated, variableName, inputCollection.size()));
 
     if (inputCollection.isEmpty()) {
       // complete the multi-instance body immediately
@@ -337,90 +339,6 @@ public final class MultiInstanceBodyProcessor
     return loopCounterVariableView;
   }
 
-  private void initializeOutputCollection(
-      final BpmnElementContext context, final DirectBuffer variableName, final int size) {
-
-    variableWriter.wrap(variableBuffer, 0);
-
-    // initialize the array with nil
-    variableWriter.writeArrayHeader(size);
-    for (var i = 0; i < size; i++) {
-      variableWriter.writeNil();
-    }
-
-    final var length = variableWriter.getOffset();
-
-    stateBehavior.setLocalVariable(context, variableName, variableBuffer, 0, length);
-  }
-
-  private Either<Failure, Void> updateOutputCollection(
-      final ExecutableMultiInstanceBody element,
-      final BpmnElementContext childContext,
-      final BpmnElementContext flowScopeContext) {
-
-    return element
-        .getLoopCharacteristics()
-        .getOutputCollection()
-        .map(
-            variableName ->
-                updateOutputCollection(element, childContext, flowScopeContext, variableName))
-        .orElse(Either.right(null));
-  }
-
-  private Either<Failure, Void> updateOutputCollection(
-      final ExecutableMultiInstanceBody element,
-      final BpmnElementContext childContext,
-      final BpmnElementContext flowScopeContext,
-      final DirectBuffer variableName) {
-
-    final var loopCounter =
-        stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
-
-    return readOutputElementVariable(element, childContext)
-        .map(
-            elementVariable -> {
-              // we need to read the output element variable before the current collection
-              // is read, because readOutputElementVariable(Context) uses the same
-              // buffer as getVariableLocal this could also be avoided by cloning the current
-              // collection, but that is slower.
-              final var currentCollection =
-                  stateBehavior.getLocalVariable(flowScopeContext, variableName);
-              final var updatedCollection =
-                  insertAt(currentCollection, loopCounter, elementVariable);
-              stateBehavior.setLocalVariable(flowScopeContext, variableName, updatedCollection);
-
-              return null;
-            });
-  }
-
-  private Either<Failure, DirectBuffer> readOutputElementVariable(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-    final var expression = element.getLoopCharacteristics().getOutputElement().orElseThrow();
-    return expressionBehavior.evaluateAnyExpression(expression, context.getElementInstanceKey());
-  }
-
-  private DirectBuffer insertAt(
-      final DirectBuffer array, final int index, final DirectBuffer element) {
-
-    variableReader.wrap(array, 0, array.capacity());
-    variableReader.readArrayHeader();
-    variableReader.skipValues((long) index - 1L);
-
-    final var offsetBefore = variableReader.getOffset();
-    variableReader.skipValue();
-    final var offsetAfter = variableReader.getOffset();
-
-    variableWriter.wrap(variableBuffer, 0);
-    variableWriter.writeRaw(array, 0, offsetBefore);
-    variableWriter.writeRaw(element);
-    variableWriter.writeRaw(array, offsetAfter, array.capacity() - offsetAfter);
-
-    final var length = variableWriter.getOffset();
-
-    resultBuffer.wrap(variableBuffer, 0, length);
-    return resultBuffer;
-  }
-
   private Either<Failure, Boolean> satisfiesCompletionCondition(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     final Optional<Expression> completionCondition =
@@ -431,5 +349,106 @@ public final class MultiInstanceBodyProcessor
           completionCondition.get(), context.getElementInstanceKey());
     }
     return Either.right(false);
+  }
+
+  private static final class OutputCollectionBehavior {
+
+    private final MsgPackReader variableReader = new MsgPackReader();
+    private final MsgPackWriter variableWriter = new MsgPackWriter();
+    private final ExpandableArrayBuffer variableBuffer = new ExpandableArrayBuffer();
+    private final DirectBuffer resultBuffer = new UnsafeBuffer(0, 0);
+
+    private final BpmnStateBehavior stateBehavior;
+    private final ExpressionProcessor expressionProcessor;
+
+    private OutputCollectionBehavior(
+        final BpmnStateBehavior stateBehavior, final ExpressionProcessor expressionProcessor) {
+      this.stateBehavior = stateBehavior;
+      this.expressionProcessor = expressionProcessor;
+    }
+
+    private void initializeOutputCollection(
+        final BpmnElementContext context, final DirectBuffer variableName, final int size) {
+
+      variableWriter.wrap(variableBuffer, 0);
+
+      // initialize the array with nil
+      variableWriter.writeArrayHeader(size);
+      for (var i = 0; i < size; i++) {
+        variableWriter.writeNil();
+      }
+
+      final var length = variableWriter.getOffset();
+
+      stateBehavior.setLocalVariable(context, variableName, variableBuffer, 0, length);
+    }
+
+    private Either<Failure, Void> updateOutputCollection(
+        final ExecutableMultiInstanceBody element,
+        final BpmnElementContext childContext,
+        final BpmnElementContext flowScopeContext) {
+
+      return element
+          .getLoopCharacteristics()
+          .getOutputCollection()
+          .map(
+              variableName ->
+                  updateOutputCollection(element, childContext, flowScopeContext, variableName))
+          .orElse(Either.right(null));
+    }
+
+    private Either<Failure, Void> updateOutputCollection(
+        final ExecutableMultiInstanceBody element,
+        final BpmnElementContext childContext,
+        final BpmnElementContext flowScopeContext,
+        final DirectBuffer variableName) {
+
+      final var loopCounter =
+          stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
+
+      return readOutputElementVariable(element, childContext)
+          .map(
+              elementVariable -> {
+                // we need to read the output element variable before the current collection
+                // is read, because readOutputElementVariable(Context) uses the same
+                // buffer as getVariableLocal this could also be avoided by cloning the current
+                // collection, but that is slower.
+                final var currentCollection =
+                    stateBehavior.getLocalVariable(flowScopeContext, variableName);
+                final var updatedCollection =
+                    insertAt(currentCollection, loopCounter, elementVariable);
+                stateBehavior.setLocalVariable(flowScopeContext, variableName, updatedCollection);
+
+                return null;
+              });
+    }
+
+    private Either<Failure, DirectBuffer> readOutputElementVariable(
+        final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+      final var expression = element.getLoopCharacteristics().getOutputElement().orElseThrow();
+      return expressionProcessor.evaluateAnyExpression(expression, context.getElementInstanceKey());
+    }
+
+    private DirectBuffer insertAt(
+        final DirectBuffer array, final int index, final DirectBuffer element) {
+
+      variableReader.wrap(array, 0, array.capacity());
+      variableReader.readArrayHeader();
+      variableReader.skipValues((long) index - 1L);
+
+      final var offsetBefore = variableReader.getOffset();
+      variableReader.skipValue();
+      final var offsetAfter = variableReader.getOffset();
+
+      variableWriter.wrap(variableBuffer, 0);
+      variableWriter.writeRaw(array, 0, offsetBefore);
+      variableWriter.writeRaw(element);
+      variableWriter.writeRaw(array, offsetAfter, array.capacity() - offsetAfter);
+
+      final var length = variableWriter.getOffset();
+
+      resultBuffer.wrap(variableBuffer, 0, length);
+      return resultBuffer;
+    }
   }
 }
