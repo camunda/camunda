@@ -34,7 +34,7 @@ public class ElasticsearchExporterJobRecordIT
     esClient = createElasticsearchClient(configuration);
 
     exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
+    startBroker();
   }
 
   @After

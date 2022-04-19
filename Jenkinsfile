@@ -89,7 +89,7 @@ pipeline {
 
         stage('Build Distribution') {
             environment {
-                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {

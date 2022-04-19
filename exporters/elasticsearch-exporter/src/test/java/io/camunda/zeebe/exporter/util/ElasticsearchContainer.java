@@ -44,6 +44,9 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
 
   public ElasticsearchContainer(final String version) {
     super(DEFAULT_IMAGE + ":" + version);
+
+    // disable xpack by default to disable all these security warnings
+    withEnv("xpack.security.enabled", "false");
   }
 
   @Override

@@ -19,33 +19,36 @@ import io.camunda.zeebe.exporter.dto.GetSettingsForIndicesResponse.IndexSettings
 import io.camunda.zeebe.exporter.util.ElasticsearchContainer;
 import io.camunda.zeebe.exporter.util.ElasticsearchNode;
 import io.camunda.zeebe.exporter.util.it.ExporterIntegrationRule;
+import io.camunda.zeebe.exporter.util.it.NonStartableBrokerRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
+import org.elasticsearch.client.ResponseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
 public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  protected final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
-
   protected ElasticsearchNode<ElasticsearchContainer> elastic;
   protected ElasticsearchExporterConfiguration configuration;
   protected ElasticsearchExporterFaultToleranceIT.ElasticsearchTestClient esClient;
+
+  private final ExporterIntegrationRule exporterIntegrationRule = new ExporterIntegrationRule();
+  protected final NonStartableBrokerRule exporterBrokerRule = exporterIntegrationRule;
 
   @Before
   public void setUp() {
@@ -59,9 +62,38 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
       esClient = null;
     }
 
-    exporterBrokerRule.stop();
+    exporterIntegrationRule.stop();
     elastic.stop();
     configuration = null;
+  }
+
+  /**
+   * Starts the broker AND waits for all index templates to be present in Elastic before continuing.
+   */
+  protected void startBroker() {
+    startBrokerWithoutWaitingForIndexTemplates();
+    awaitIndexTemplatesCreation();
+  }
+
+  protected void startBrokerWithoutWaitingForIndexTemplates() {
+    exporterIntegrationRule.start();
+  }
+
+  protected void awaitIndexTemplatesCreation() {
+    final var expectedIndexTemplatesCount =
+        ValueTypeMapping.getAcceptedValueTypes().stream()
+            .filter(configuration::shouldIndexValueType)
+            .count();
+
+    // force exporting to ensure that we create the index templates, then wait for them to have been
+    // created
+    exporterBrokerRule.publishMessage("dummy", "");
+    Awaitility.await("until all indices have been created")
+        .atMost(Duration.ofMinutes(2))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> esClient.getIndexTemplateCount(configuration.index.prefix),
+            size -> size >= expectedIndexTemplatesCount);
   }
 
   protected void assertIndexSettings() {
@@ -175,14 +207,14 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     return configuration;
   }
 
-  protected static class ElasticsearchTestClient extends ElasticsearchClient {
+  public static class ElasticsearchTestClient extends ElasticsearchClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     ElasticsearchTestClient(final ElasticsearchExporterConfiguration configuration) {
       super(configuration);
     }
 
-    GetSettingsForIndicesResponse getSettingsForIndices() {
+    public GetSettingsForIndicesResponse getSettingsForIndices() {
       final var request = new Request("GET", "/_all/_settings");
       try {
         final var response = client.performRequest(request);
@@ -199,7 +231,27 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
       }
     }
 
-    Map<String, Object> getDocument(final Record<?> record) {
+    public int getIndexTemplateCount(final String indexPrefix) {
+      final var request = new Request("GET", "/_index_template/" + indexPrefix + "*");
+      try {
+        final var response = client.performRequest(request);
+        final Map<String, List<Object>> indexTemplates =
+            MAPPER.readValue(response.getEntity().getContent(), new TypeReference<>() {});
+        return indexTemplates.getOrDefault("index_templates", new ArrayList<>()).size();
+      } catch (final ResponseException e) {
+        // you might get a 404 if there are no templates matching the pattern yet, but the response
+        // will be valid and of the same format
+        if (e.getResponse().getStatusLine().getStatusCode() == 404) {
+          return 0;
+        }
+
+        throw new ElasticsearchExporterException("Failed to get index template count", e);
+      } catch (final Exception e) {
+        throw new ElasticsearchExporterException("Failed to get index template count", e);
+      }
+    }
+
+    public Map<String, Object> getDocument(final Record<?> record) {
       final var request =
           new Request("GET", "/" + indexFor(record) + "/" + typeFor() + "/" + idFor(record));
       request.addParameter("routing", String.valueOf(record.getPartitionId()));

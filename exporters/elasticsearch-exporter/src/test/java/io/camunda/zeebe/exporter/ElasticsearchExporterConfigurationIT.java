@@ -33,7 +33,7 @@ public class ElasticsearchExporterConfigurationIT
 
     // when
     exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
+    startBroker();
     exporterBrokerRule.publishMessage("message", "123");
 
     // then
@@ -60,7 +60,7 @@ public class ElasticsearchExporterConfigurationIT
     exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
 
     // then
-    assertThatThrownBy(() -> exporterBrokerRule.start())
+    assertThatThrownBy(this::startBroker)
         .isInstanceOf(IllegalStateException.class)
         .getRootCause()
         .isInstanceOf(ExporterException.class)
@@ -83,7 +83,7 @@ public class ElasticsearchExporterConfigurationIT
     exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
 
     // then
-    assertThatThrownBy(() -> exporterBrokerRule.start())
+    assertThatThrownBy(this::startBroker)
         .isInstanceOf(IllegalStateException.class)
         .getRootCause()
         .isInstanceOf(ExporterException.class)
