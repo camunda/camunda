@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLoopCharacteristics;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -36,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class OutputCollectionBehaviorTest {
 
   @Test // regression test for #9143
-  void shouldRaiseIncidentWhenOverwritingOutputCollectionWithLessElements() {
+  void shouldReturnFailureWhenWritingToOutputCollectionOutOfBounds() {
     // given
     final var collectionWithSize1 = createCollection(1);
     final var elementToAdd = wrapString("element to add");
@@ -45,6 +46,7 @@ public class OutputCollectionBehaviorTest {
     final var outputElementName = wrapString("OUTPUT_ELEMENT");
     final var loopCharacteristics =
         createLoopCharacteristics(outputElementName, outputElementsExpression);
+    final var flowScopeContextKey = 12345L;
 
     final var mockStateBehavior = mock(BpmnStateBehavior.class, Answers.RETURNS_DEEP_STUBS);
     when(mockStateBehavior.getLocalVariable(any(), eq(outputElementName)))
@@ -61,16 +63,24 @@ public class OutputCollectionBehaviorTest {
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(indexThatIsOutOfBounds);
 
+    final var mockFlowScopeContext = mock(BpmnElementContext.class);
+    when(mockFlowScopeContext.getFlowScopeKey()).thenReturn(flowScopeContextKey);
+
     final var sut = new OutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
 
     // when
-    final var result = sut.updateOutputCollection(mockElement, mockChildContext, null);
+    final var result =
+        sut.updateOutputCollection(mockElement, mockChildContext, mockFlowScopeContext);
 
     // then
     assertThat(result.isLeft()).isTrue();
 
-    // final var failure = result.getLeft();
-    // TODO ass assertions on failure
+    final var failure = result.getLeft();
+    assertThat(failure.getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+    assertThat(failure.getMessage())
+        .isEqualTo(
+            "Unable to update item in output collection 'OUTPUT_ELEMENT' at position 2 because the size of the collection is: 1. This happens when multiple BPMN elements write to the same variable.");
+    assertThat(failure.getVariableScopeKey()).isEqualTo(flowScopeContextKey);
   }
 
   private ExecutableLoopCharacteristics createLoopCharacteristics(
