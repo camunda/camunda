@@ -11,6 +11,6 @@ import java.util.List;
 
 public interface AlertRecipientValidator {
 
-  List<String> getValidatedRecipientEmailList(List<String> emailAddresses) throws OptimizeValidationException;
+  void validateAlertRecipientEmailAddresses(List<String> emailAddresses) throws OptimizeValidationException;
 
 }

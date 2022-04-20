@@ -28,12 +28,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
@@ -83,33 +80,6 @@ public class CCSaaSUserClient {
       }
     } catch (IOException e) {
       throw new OptimizeRuntimeException("There was a problem fetching Cloud users.", e);
-    }
-  }
-
-  public Optional<CloudUserDto> getCloudUserForId(final String userId) {
-    log.info("Fetching Cloud user with ID: " + userId);
-    try {
-      final HttpGet request = new HttpGet(String.format(
-        "%s/external/organizations/%s/members/%s",
-        getCloudUsersConfiguration().getUsersUrl(),
-        getCloudAuthConfiguration().getOrganizationId(),
-        URLEncoder.encode(userId, StandardCharsets.UTF_8.name())
-      ));
-      try (final CloseableHttpResponse response = performRequest(request)) {
-        if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
-          return Optional.of(objectMapper.readValue(response.getEntity().getContent(), CloudUserDto.class));
-        } else if (response.getStatusLine().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
-          log.info("Cloud user with ID: {} does not exist", userId);
-        } else {
-          final String errorMessage = String.format(
-            "Error fetching Cloud user. Response: %s", response.getStatusLine().getStatusCode());
-          log.info(errorMessage);
-          throw new OptimizeRuntimeException(errorMessage);
-        }
-        return Optional.empty();
-      }
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("There was a problem fetching Cloud user with ID: " + userId, e);
     }
   }
 

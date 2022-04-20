@@ -8,8 +8,6 @@ package org.camunda.optimize.service.alert;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
-import org.camunda.optimize.rest.cloud.CCSaaSUserClient;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.CCSaaSUserIdentityCache;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
@@ -18,8 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Conditional(CCSaaSCondition.class)
@@ -28,28 +24,16 @@ import java.util.stream.Collectors;
 public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
 
   private final CCSaaSUserIdentityCache userIdentityCacheService;
-  private final CCSaaSUserClient userClient;
 
   @Override
-  public List<String> getValidatedRecipientEmailList(final List<String> emails) {
+  public void validateAlertRecipientEmailAddresses(final List<String> emails) {
     final List<String> cachedUserEmails = userIdentityCacheService.getUsersByEmail(emails)
       .stream().map(UserDto::getEmail).collect(Collectors.toList());
     final Collection<String> uncachedUserEmails = CollectionUtils.subtract(emails, cachedUserEmails);
-
-    // If the user has supplied an ID rather than an email address, we can still fetch it directly
-    final Map<String, String> fetchedEmailsByUserId = uncachedUserEmails.stream()
-      .map(userClient::getCloudUserForId)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toMap(CloudUserDto::getUserId, CloudUserDto::getEmail));
-    if (uncachedUserEmails.size() > fetchedEmailsByUserId.size()) {
+    if (uncachedUserEmails.size() > emails.size()) {
       throw new OptimizeValidationException(
-        "Users with the following email addresses are not available for receiving alerts: "
-          + CollectionUtils.subtract(uncachedUserEmails, fetchedEmailsByUserId.values()));
+        "Users with the following email addresses are not available for receiving alerts: " + uncachedUserEmails);
     }
-    return emails.stream()
-      .map(emailAddress -> fetchedEmailsByUserId.getOrDefault(emailAddress, emailAddress))
-      .collect(Collectors.toList());
   }
 
 }

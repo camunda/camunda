@@ -395,9 +395,7 @@ public class AlertService implements ReportReferencingService {
 
     final boolean emailsDefined = CollectionUtils.isNotEmpty(toCreate.getEmails());
     if (emailsDefined) {
-      final List<String> validatedRecipients =
-        alertRecipientValidator.getValidatedRecipientEmailList(toCreate.getEmails());
-      toCreate.setEmails(validatedRecipients);
+      alertRecipientValidator.validateAlertRecipientEmailAddresses(toCreate.getEmails());
     }
     final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
     if (!emailsDefined && !webhookDefined) {

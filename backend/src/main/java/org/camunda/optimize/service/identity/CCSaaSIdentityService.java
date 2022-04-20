@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.rest.cloud.CCSaaSUserClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
@@ -24,27 +23,14 @@ import java.util.Optional;
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSIdentityService extends AbstractCachedIdentityService {
 
-  private final CCSaaSUserClient userClient;
-
   public CCSaaSIdentityService(final ConfigurationService configurationService,
-                               final UserIdentityCache syncedIdentityCache,
-                               final CCSaaSUserClient userClient) {
+                               final UserIdentityCache syncedIdentityCache) {
     super(configurationService, syncedIdentityCache);
-    this.userClient = userClient;
   }
 
   @Override
   public Optional<UserDto> getUserById(final String userId) {
-    return syncedIdentityCache.getUserIdentityById(userId)
-      .or(() -> {
-        try {
-          return userClient.getCloudUserForId(userId)
-            .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail()));
-        } catch (Exception exception) {
-          log.warn("Failed fetching Cloud user with id {}: ", userId, exception);
-          return Optional.empty();
-        }
-      });
+    return syncedIdentityCache.getUserIdentityById(userId);
   }
 
   @Override
