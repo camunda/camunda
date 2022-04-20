@@ -120,7 +120,7 @@ public final class OutputCollectionBehavior {
           new Failure(
               "Unable to update item in output collection '%s' at position %d because the size of the collection is: %d. This happens when multiple BPMN elements write to the same variable."
                   .formatted(bufferAsString(variableName), index, size),
-              ErrorType.IO_MAPPING_ERROR,
+              ErrorType.EXTRACT_VALUE_ERROR,
               variableScopeKey));
     }
     outputCollectionReader.skipValues((long) index - 1L);
