@@ -65,7 +65,7 @@ public class OutputCollectionBehaviorTest {
         .thenReturn(indexThatIsOutOfBounds);
 
     final var mockFlowScopeContext = mock(BpmnElementContext.class);
-    when(mockFlowScopeContext.getFlowScopeKey()).thenReturn(flowScopeContextKey);
+    when(mockFlowScopeContext.getElementInstanceKey()).thenReturn(flowScopeContextKey);
 
     final var sut = new OutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
 
@@ -112,7 +112,7 @@ public class OutputCollectionBehaviorTest {
         .thenReturn(index);
 
     final var mockFlowScopeContext = mock(BpmnElementContext.class);
-    when(mockFlowScopeContext.getFlowScopeKey()).thenReturn(flowScopeContextKey);
+    when(mockFlowScopeContext.getElementInstanceKey()).thenReturn(flowScopeContextKey);
 
     final var sut = new OutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
 

@@ -628,14 +628,14 @@ public final class MultiInstanceIncidentTest {
         .isTrue();
   }
 
+  /**
+   * This test covers the scenario where a multi instance cannot be completed, because updating the
+   * output collection fails due to an index out of bounds. The index out of bounds is caused
+   * because a) the output collection is initialized with the cardinality of the multi instance when
+   * the multi instance is activated, and b) the collection is modified and shrunk to a smaller
+   * size.
+   */
   @Test // regression test for #9143
-  /*
-   This test covers the scenario where a multi instance cannot be completed, because updating the
-   output collection fails due to an index out of bounds. The index out of bounds is caused
-   because a) the output collection is initialized with the cardinality of the multi instance when
-   the multi instance is activated, and b) the collection is modified and shrunk to a smaller
-   size.
-  */
   public void shouldCreateIncidentIfOutputElementCannotBeReplacedInOutputCollection() {
     // given
     final var processId = "index-out-of-bounds-in-output-collection";
@@ -644,7 +644,7 @@ public final class MultiInstanceIncidentTest {
     final var outputCollectionName = "outputItems";
 
     final var process =
-        createProcessThatCausesIndexOutOfBoundsAccessToOutputCollection(
+        createProcessThatModifiesOutputCollection(
             processId, collectionWithThreeElements, collectionWithNoElements, outputCollectionName);
 
     ENGINE.deployment().withXmlResource(process).deploy();
@@ -674,7 +674,7 @@ public final class MultiInstanceIncidentTest {
     final var outputCollectionName = "outputItems";
 
     final var process =
-        createProcessThatCausesIndexOutOfBoundsAccessToOutputCollection(
+        createProcessThatModifiesOutputCollection(
             processId, collectionWithOneElement, collectionWithNoElements, outputCollectionName);
 
     ENGINE.deployment().withXmlResource(process).deploy();
@@ -703,15 +703,87 @@ public final class MultiInstanceIncidentTest {
         .isTrue();
   }
 
-  private BpmnModelInstance createProcessThatCausesIndexOutOfBoundsAccessToOutputCollection(
+  /**
+   * This test covers the scenario where a multi instance cannot be completed, because updating the
+   * output collection fails because the output collection is not an array.
+   */
+  @Test
+  public void shouldCreateIncidentIfOutputCollectionHasWrongType() {
+    // given
+    final var processId = "output-collection-is-overwritten-by-string";
+    final var collectionWithThreeElements = "=[1,2,3]";
+    final var overwriteWithString = "=\"String overwrite\"";
+    final var outputCollectionName = "outputItems";
+
+    final var process =
+        createProcessThatModifiesOutputCollection(
+            processId, collectionWithThreeElements, overwriteWithString, outputCollectionName);
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Unable to update item in output collection 'outputItems' because the type of the variable is: STRING. This happens when multiple BPMN elements write to the same variable.")
+        .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldResolveIncidentRaisedByOutputCollectionHasWrongType() {
+    // given
+    final var processId = "output-collection-is-overwritten-by-string";
+    final var collectionWithOneElement = "=[1]";
+    final var overwriteWithString = "=\"String overwrite\"";
+    final var outputCollectionName = "outputItems";
+
+    final var process =
+        createProcessThatModifiesOutputCollection(
+            processId, collectionWithOneElement, overwriteWithString, outputCollectionName);
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    // when
+    ENGINE
+        .variables()
+        .ofScope(incidentEvent.getValue().getVariableScopeKey())
+        .withDocument(Maps.of(entry(outputCollectionName, List.of(1))))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
+
+    // then the process is able to complete
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .exists())
+        .describedAs("the process has completed")
+        .isTrue();
+  }
+
+  private BpmnModelInstance createProcessThatModifiesOutputCollection(
       final String processId,
-      final String collectionWithThreeElements,
-      final String collectionWithNoElements,
+      final String initialValueForCollection,
+      final String overwrittenValue,
       final String outputCollectionName) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .zeebeOutput(
-            collectionWithThreeElements, // initializes input collection with three elements
+            initialValueForCollection, // initializes input collection
             INPUT_COLLECTION)
         .subProcess()
         .multiInstance(
@@ -720,13 +792,12 @@ public final class MultiInstanceIncidentTest {
                     .zeebeInputCollectionExpression(INPUT_COLLECTION)
                     .zeebeInputElement(INPUT_ELEMENT)
                     .zeebeOutputCollection(
-                        outputCollectionName) // initialize output collection with three elements
+                        outputCollectionName) // initialize output collection with size in input
+                    // collection
                     .zeebeOutputElementExpression(INPUT_ELEMENT))
         .embeddedSubProcess()
         .startEvent()
-        .zeebeOutput(
-            collectionWithNoElements,
-            outputCollectionName) // overwrite output collection with empty list
+        .zeebeOutput(overwrittenValue, outputCollectionName) // overwrite output collection
         .endEvent()
         .subProcessDone()
         .endEvent()
