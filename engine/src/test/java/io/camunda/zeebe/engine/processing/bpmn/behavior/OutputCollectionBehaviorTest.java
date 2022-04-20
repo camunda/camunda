@@ -76,7 +76,7 @@ public class OutputCollectionBehaviorTest {
     assertThat(result.isLeft()).isTrue();
 
     final var failure = result.getLeft();
-    assertThat(failure.getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+    assertThat(failure.getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
     assertThat(failure.getMessage())
         .isEqualTo(
             "Unable to update item in output collection 'OUTPUT_ELEMENT' at position 2 because the size of the collection is: 1. This happens when multiple BPMN elements write to the same variable.");
