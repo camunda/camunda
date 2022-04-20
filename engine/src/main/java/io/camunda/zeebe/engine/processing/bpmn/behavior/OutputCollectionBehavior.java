@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -74,7 +77,7 @@ public final class OutputCollectionBehavior {
         stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
 
     return readOutputElementVariable(element, childContext)
-        .map(
+        .flatMap(
             elementVariable -> {
               // we need to read the output element variable before the current collection
               // is read, because readOutputElementVariable(Context) uses the same
@@ -82,11 +85,18 @@ public final class OutputCollectionBehavior {
               // collection, but that is slower.
               final var currentCollection =
                   stateBehavior.getLocalVariable(flowScopeContext, variableName);
-              final var updatedCollection =
-                  replaceAt(currentCollection, loopCounter, elementVariable);
-              stateBehavior.setLocalVariable(flowScopeContext, variableName, updatedCollection);
-
-              return null;
+              return replaceAt(
+                      currentCollection,
+                      loopCounter,
+                      elementVariable,
+                      flowScopeContext.getFlowScopeKey(),
+                      variableName)
+                  .map(
+                      updatedCollection -> {
+                        stateBehavior.setLocalVariable(
+                            flowScopeContext, variableName, updatedCollection);
+                        return null;
+                      });
             });
   }
 
@@ -96,11 +106,23 @@ public final class OutputCollectionBehavior {
     return expressionProcessor.evaluateAnyExpression(expression, context.getElementInstanceKey());
   }
 
-  private DirectBuffer replaceAt(
-      final DirectBuffer array, final int index, final DirectBuffer element) {
+  private Either<Failure, DirectBuffer> replaceAt(
+      final DirectBuffer array,
+      final int index,
+      final DirectBuffer element,
+      final long variableScopeKey,
+      final DirectBuffer variableName) {
 
     outputCollectionReader.wrap(array, 0, array.capacity());
-    outputCollectionReader.readArrayHeader();
+    final int size = outputCollectionReader.readArrayHeader();
+    if (index > size) {
+      return Either.left(
+          new Failure(
+              "Unable to update item in output collection '%s' at position %d because the size of the collection is: %d. This happens when multiple BPMN elements write to the same variable."
+                  .formatted(bufferAsString(variableName), index, size),
+              ErrorType.IO_MAPPING_ERROR,
+              variableScopeKey));
+    }
     outputCollectionReader.skipValues((long) index - 1L);
 
     final var offsetBefore = outputCollectionReader.getOffset();
@@ -115,6 +137,6 @@ public final class OutputCollectionBehavior {
     final var length = outputCollectionWriter.getOffset();
 
     updatedOutputCollectionBuffer.wrap(outputCollectionBuffer, 0, length);
-    return updatedOutputCollectionBuffer;
+    return Either.right(updatedOutputCollectionBuffer);
   }
 }
