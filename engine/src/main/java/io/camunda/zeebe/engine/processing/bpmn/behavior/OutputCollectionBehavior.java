@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -114,7 +115,17 @@ public final class OutputCollectionBehavior {
       final DirectBuffer variableName) {
 
     outputCollectionReader.wrap(array, 0, array.capacity());
-    final int size = outputCollectionReader.readArrayHeader();
+    final var token = outputCollectionReader.readToken();
+    if (token.getType() != MsgPackType.ARRAY) {
+      return Either.left(
+          new Failure(
+              "Unable to update item in output collection '%s' because the type of the variable is: %s. This happens when multiple BPMN elements write to the same variable."
+                  .formatted(bufferAsString(variableName), token.getType()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              variableScopeKey));
+    }
+
+    final int size = token.getSize();
     if (index > size) {
       return Either.left(
           new Failure(
