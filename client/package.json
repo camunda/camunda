@@ -6,7 +6,7 @@
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@ibm/plex": "^6.0.0",
-    "bpmn-js": "8.10.0",
+    "bpmn-js": "9.0.3",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.3",
     "chart.js": "^3.5.1",
     "chartjs-plugin-datalabels": "^2.0.0",
@@ -98,7 +98,8 @@
     "testcafe-browser-provider-browserstack": "^1.13.2",
     "tree-kill": "^1.2.2",
     "ws": "^8.5.0",
-    "xml2js": "^0.4.23"
+    "xml2js": "^0.4.23",
+    "old-bpmn-js": "npm:bpmn-js@8.10"
   },
   "resolutions": {
     "react-scripts/**/dot-prop": "^5.1.1",

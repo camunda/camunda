@@ -66,7 +66,7 @@ function generateHeatmap(viewer, data, noSequenceHighlight) {
 }
 
 function getDimensions(viewer) {
-  const dimensions = viewer.get('canvas').getDefaultLayer().getBBox();
+  const dimensions = viewer.get('canvas').getActiveLayer().getBBox();
 
   return {
     width: dimensions.width + 2 * EDGE_BUFFER,

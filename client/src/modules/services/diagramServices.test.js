@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 
-import Viewer from 'bpmn-js/dist/bpmn-viewer.production.min';
+import Viewer from 'old-bpmn-js/dist/bpmn-viewer.production.min';
 
 import {getDiagramElementsBetween} from './diagramServices';
 

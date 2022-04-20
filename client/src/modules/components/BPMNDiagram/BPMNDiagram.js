@@ -103,7 +103,7 @@ export default themed(
             conf.disableNavigation === this.props.disableNavigation
         );
 
-        const additionalModules = [];
+        const additionalModules = [{drilldownOverlayBehavior: ['value', null]}];
         const available = availableViewers[idx];
 
         if (!this.props.allowModeling && available) {

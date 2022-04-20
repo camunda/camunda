@@ -9,7 +9,7 @@ import fs from 'fs';
 
 import React from 'react';
 import {mount} from 'enzyme';
-import Viewer from 'bpmn-js/dist/bpmn-viewer.production.min';
+import Viewer from 'old-bpmn-js/dist/bpmn-viewer.production.min';
 
 import PartHighlight from './PartHighlight';
 import {getDiagramElementsBetween} from 'services';

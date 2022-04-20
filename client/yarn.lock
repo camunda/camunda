@@ -4105,14 +4105,14 @@ bpmn-js-disable-collapsed-subprocess@^0.1.3:
   dependencies:
     min-dash "^3.5.2"
 
-bpmn-js@8.10.0:
-  version "8.10.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.10.0.tgz#e8500a0610abc691b47334afbad355df34533bf7"
-  integrity sha512-NozeOi01qL0ZdVq8+5hWZcikyEvgrP1yzCBqlhSufJdHFsnEMBCwn2bJJ0B/6JgX+IBwy1sk/Uw+Ds8rQ8vfrw==
+bpmn-js@9.0.3:
+  version "9.0.3"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.0.3.tgz#6345cddd7704b10c1163b063a0d16a1c64e028d8"
+  integrity sha512-Frr0skhc3l5Sw3xj9lPkYm2gotxA2sdqNDh1uWb2P/u8jol0VaJFldlQI0aVwWmoo1ze3VVNJ0qYZs5HdDqt9g==
   dependencies:
     bpmn-moddle "^7.1.2"
     css.escape "^1.5.1"
-    diagram-js "^7.8.2"
+    diagram-js "^8.2.0"
     diagram-js-direct-editing "^1.6.3"
     ids "^1.0.0"
     inherits "^2.0.4"
@@ -5806,6 +5806,21 @@ diagram-js@^7.8.2:
   version "7.8.2"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-7.8.2.tgz#0cccd23897d0401d715a02f362a03237a804b79c"
   integrity sha512-+lzXUccgEYf9T5/1t2Y4MZyYirw47x8VEPyQ2RmDcZKO3m2iwEgyyFTOR7u6RuiVjusq7AnzgS+MVW0FhLd68A==
+  dependencies:
+    css.escape "^1.5.1"
+    didi "^5.2.1"
+    hammerjs "^2.0.1"
+    inherits "^2.0.4"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
+    object-refs "^0.3.0"
+    path-intersection "^2.2.1"
+    tiny-svg "^2.2.2"
+
+diagram-js@^8.2.0:
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-8.2.1.tgz#ec9acbd5b5bbb3323ce5df424a2bbf830e3e1e3f"
+  integrity sha512-R9D4CtRPCXFllGE4P/UTcK3fgYG/0WQfb87Pl7frdfnAbCbjZAM2vU0qgZaBhfU0cmW2OhdDPmEtz89brrOZDA==
   dependencies:
     css.escape "^1.5.1"
     didi "^5.2.1"
@@ -11350,6 +11365,22 @@ obuf@^1.0.0, obuf@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/obuf/-/obuf-1.1.2.tgz#09bea3343d41859ebd446292d11c9d4db619084e"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
+
+"old-bpmn-js@npm:bpmn-js@8.10":
+  version "8.10.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.10.0.tgz#e8500a0610abc691b47334afbad355df34533bf7"
+  integrity sha512-NozeOi01qL0ZdVq8+5hWZcikyEvgrP1yzCBqlhSufJdHFsnEMBCwn2bJJ0B/6JgX+IBwy1sk/Uw+Ds8rQ8vfrw==
+  dependencies:
+    bpmn-moddle "^7.1.2"
+    css.escape "^1.5.1"
+    diagram-js "^7.8.2"
+    diagram-js-direct-editing "^1.6.3"
+    ids "^1.0.0"
+    inherits "^2.0.4"
+    min-dash "^3.5.2"
+    min-dom "^3.1.3"
+    object-refs "^0.3.0"
+    tiny-svg "^2.2.2"
 
 omggif@^1.0.10, omggif@^1.0.9:
   version "1.0.10"
