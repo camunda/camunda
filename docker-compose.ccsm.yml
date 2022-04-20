@@ -3,7 +3,7 @@ version: "3.6"
 services:
   optimize:
     container_name: optimize
-    image: registry.camunda.cloud/optimize-ee/optimize:3.7.0
+    image: registry.camunda.cloud/optimize-ee/optimize:latest
     ports:
       - "8090:8090"
     environment:
