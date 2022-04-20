@@ -90,7 +90,7 @@ public final class OutputCollectionBehavior {
                       currentCollection,
                       loopCounter,
                       elementVariable,
-                      flowScopeContext.getFlowScopeKey(),
+                      flowScopeContext.getElementInstanceKey(),
                       variableName)
                   .map(
                       updatedCollection -> {
