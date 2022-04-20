@@ -1,0 +1,75 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: optimize
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/auth-response-headers: X-Vouch-User,X-Vouch-IdP-Claims-preferred_username
+    nginx.ingress.kubernetes.io/auth-signin: |-
+      {{ .Values.ingress.vouchUrl }}/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
+    nginx.ingress.kubernetes.io/auth-snippet: |-
+      auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+      auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+      auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+    nginx.ingress.kubernetes.io/auth-url: "{{ .Values.ingress.vouchUrl }}/validate"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/server-snippet: |-
+      location @error400 { return 302 {{ .Values.ingress.vouchUrl }}/v1/logout; }
+    nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
+    nginx.ingress.kubernetes.io/session-cookie-conditional-samesite-none: "true"
+spec:
+  tls:
+  - hosts:
+    - {{ include "ingress.domain" $ | quote }}
+    secretName: optimize-tls
+  rules:
+  - host: {{ include "ingress.domain" $ | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: optimize
+            port:
+              number: 8090
+      - path: /camunda
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: optimize
+            port:
+              number: 8080
+      - path: /engine-rest
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: optimize
+            port:
+              number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: optimize-external
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+    kubernetes.io/ingress.class: nginx
+spec:
+  tls:
+    - hosts:
+        - {{ include "ingress.domain" $ | quote }}
+      secretName: optimize-tls
+  rules:
+    - host: {{ include "ingress.domain" $ | quote }}
+      http:
+        paths:
+          - path: /external
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: optimize
+                port:
+                  number: 8090

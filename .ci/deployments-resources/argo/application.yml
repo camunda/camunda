@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  destination:
+    name: camunda-ci
+  ignoreDifferences:
+    - jsonPointers:
+        - /data/tls.crt
+        - /data/tls.key
+        - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
+      kind: Secret
+      name: optimize-tls
+  project: optimize-previews
+  source:
+    helm:
+      parameters: []
+    path: .ci/deployments-resources/helm-charts/optimize-onpremise
+    repoURL: https://github.com/camunda/camunda-optimize.git
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

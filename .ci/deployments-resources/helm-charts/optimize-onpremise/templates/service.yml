@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: optimize
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: cambpm
+      port: 8080
+      targetPort: cambpm-http
+    - name: optimize
+      port: 8090
+      targetPort: optimize-http
+  selector:
+    app: {{ .Values.global.labels.app }}
