@@ -83,7 +83,7 @@ public final class OutputCollectionBehavior {
               final var currentCollection =
                   stateBehavior.getLocalVariable(flowScopeContext, variableName);
               final var updatedCollection =
-                  insertAt(currentCollection, loopCounter, elementVariable);
+                  replaceAt(currentCollection, loopCounter, elementVariable);
               stateBehavior.setLocalVariable(flowScopeContext, variableName, updatedCollection);
 
               return null;
@@ -96,7 +96,7 @@ public final class OutputCollectionBehavior {
     return expressionProcessor.evaluateAnyExpression(expression, context.getElementInstanceKey());
   }
 
-  private DirectBuffer insertAt(
+  private DirectBuffer replaceAt(
       final DirectBuffer array, final int index, final DirectBuffer element) {
 
     outputCollectionReader.wrap(array, 0, array.capacity());
