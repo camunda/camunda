@@ -10,6 +10,7 @@ git:
 
 replicaCount: 1
 
+# this Chart serves 2 environments: stage and persistent, default: stage
 env: stage
 
 ingress:
@@ -23,16 +24,46 @@ optimize:
   image:
     repository: registry.camunda.cloud/optimize-ee/optimize
     tag: latest
+  env:
+    # should be set to "elasticsearch-es-http:9200" for persistent env
+    elasticsearchUrl: "localhost:9300"
+  resources:
+    limits:
+      cpu: 4
+      memory: 3Gi
+    requests:
+      cpu: 4
+      memory: 3Gi
 
 cambpm:
   image:
     repository: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee
     tag: latest
+  env:
+    # should be set to "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Ddb.username=$DB_USERNAME -Ddb.password=$DB_PASSWORD"
+    # for persistent env
+    javaOpts: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
+    # Should be set to "optimize-persistent-postgres.optimize-persistent:5432" for persistent env
+    postgresUrl: stage-postgres.optimize:5432
+  resources:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
 
 elasticsearch:
   image:
     repository: docker.elastic.co/elasticsearch/elasticsearch
     tag: latest
+  resources:
+    limits:
+      cpu: 4
+      memory: 10Gi
+    requests:
+      cpu: 4
+      memory: 10Gi
 
 nameOverride: ""
 fullnameOverride: ""
