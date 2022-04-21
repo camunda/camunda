@@ -20,7 +20,7 @@ inputs:
       Example: deployment_id="foo" --> namespace "operate-foo"
     required: false
     default: ${{ github.branch }}
-  
+
   deployment_ref:
     description: >-
       When step='stop', this is supposed to contain the branch name that will be used to lookup the actual Argo CD deployment name.
@@ -110,7 +110,7 @@ runs:
       argocd app create
       --dest-namespace operate-${APP_NAME}
       --file .ci/preview-environments/argo/application.yml
-      --helm-set ccsm-helm.operate.image.tag=${{ inputs.docker_tag }}
+      --helm-set camunda-platform.operate.image.tag=${{ inputs.docker_tag }}
       --helm-set git.branch=${{ inputs.revision }}
       --helm-set global.labels.app=${{ env.APP_NAME }}
       --name ${{ env.APP_NAME }}

@@ -20,11 +20,11 @@ git:
   repoUrl: https://github.com/camunda-cloud/operate
 
 
-# Configuration of the ccsm-helm chart, in particular we disable some features that
+# Configuration of the camunda-platform chart, in particular we disable some features that
 # we don't want to deploy. We also change the `fullNameOverride` and `zeebeClusterName`
 # to simpler values, so we don't duplicate
 # the ReleaseName everwhere (as that's already reflected in the Namespace).
-ccsm-helm:
+camunda-platform:
   operate:
     fullnameOverride: operate
     # Defines the image repo and tag to be deployed. Tag is usually overridden to a specific tag produced by CI.
@@ -38,6 +38,10 @@ ccsm-helm:
       value: dev-data
 
   tasklist:
+    enabled: false
+
+  # identity needs to be disabled explicitly
+  identity:
     enabled: false
 
   zeebe:
@@ -67,6 +71,7 @@ ccsm-helm:
     image:
       tag: 8.0.0
     fullnameOverride: zeebe-gateway
+    replicas: 1
 
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
@@ -76,6 +81,8 @@ ccsm-helm:
     # Defines the version of ElasticSearch to use
     imageTag: 7.16.2
     replicas: 1
+    # This is needed to disable the creation of poddisruptionbudget resource coming from ES chart (supported in k8s 1.21)
+    maxUnavailable: ""
     minimumMasterNodes: 1
     extraEnvs:
     - name: xpack.security.enabled
@@ -102,10 +109,16 @@ ccsm-helm:
         requests:
           storage: 2Gi
 
-# Configuration of global values as required by the ccsm-helm chart and to comply
+# Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
 global:
   zeebeClusterName: zeebe
+  # identity should be explicitly disabled in global as well
+  identity:
+    # Identity.auth configuration, to configure Identity authentication setup
+    auth:
+      # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
+      enabled: false
   labels:
     camunda.cloud/source: argocd
     camunda.cloud/managed-by: Helm
