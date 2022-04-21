@@ -59,11 +59,11 @@ final class ExternalJarClassLoaderTest {
 
   @Test
   void shouldLoadResourceFiles(final @TempDir File tempDir) throws Exception {
-    final String testResourceValue = "test-value";
-    final String resourceName = "test-resource.txt";
-    final File jarFile = new File(tempDir, "with-resource.jar");
-    try (final FileOutputStream fileOutputStream = new FileOutputStream(jarFile)) {
-      try (final JarOutputStream jarOutputStream = new JarOutputStream(fileOutputStream)) {
+    final var testResourceValue = "test-value";
+    final var resourceName = "test-resource.txt";
+    final var jarFile = new File(tempDir, "with-resource.jar");
+    try (final var fileOutputStream = new FileOutputStream(jarFile)) {
+      try (final var jarOutputStream = new JarOutputStream(fileOutputStream)) {
         jarOutputStream.putNextEntry(new JarEntry(resourceName));
         jarOutputStream.write(testResourceValue.getBytes(StandardCharsets.UTF_8));
         jarOutputStream.closeEntry();
@@ -72,7 +72,7 @@ final class ExternalJarClassLoaderTest {
     final var classLoader = ExternalJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final String storedValue =
+    final var storedValue =
         new String(classLoader.getResourceAsStream(resourceName).readAllBytes());
 
     // then
