@@ -40,7 +40,7 @@
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
     <plugin.version.flatten>1.2.7</plugin.version.flatten>
-    <plugin.version.javadoc>3.3.2</plugin.version.javadoc>
+    <plugin.version.javadoc>3.4.0</plugin.version.javadoc>
   </properties>
 
   <dependencyManagement>
