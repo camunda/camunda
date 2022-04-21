@@ -205,6 +205,6 @@ jobs:
           cache: 'maven'
       - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
-      - run: cd clients/go
       - run: go test -mod=vendor -v ./...
+        working-directory: clients/go
 
