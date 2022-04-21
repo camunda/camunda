@@ -311,14 +311,13 @@ public final class CatchEventBehavior {
         subscription -> {
           final var elementId = subscription.getRecord().getElementIdBuffer();
           if (elementIdFilter.test(elementId)) {
-            return unsubscribeFromMessageEvent(subscription, sideEffects);
-          } else {
-            return true;
+            unsubscribeFromMessageEvent(subscription, sideEffects);
           }
+          return true;
         });
   }
 
-  private boolean unsubscribeFromMessageEvent(
+  private void unsubscribeFromMessageEvent(
       final ProcessMessageSubscription subscription, final SideEffects sideEffects) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getRecord().getMessageNameBuffer());
@@ -332,8 +331,6 @@ public final class CatchEventBehavior {
         () ->
             sendCloseMessageSubscriptionCommand(
                 subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
-
-    return true;
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
