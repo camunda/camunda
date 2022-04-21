@@ -44,3 +44,5 @@ Documentation:
 * [ ] The documentation is updated (e.g. BPMN reference, configuration, examples, get-started guides, etc.)
 * [ ] New content is added to the [release announcement](https://drive.google.com/drive/u/0/folders/1DTIeswnEEq-NggJ25rm2BsDjcCQpDape)
 * [ ] If the PR changes how BPMN processes are validated (e.g. support new BPMN element) then the Camunda modeling team should be informed to adjust the BPMN linting.
+
+Please refer to our [review guidelines](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-review-guidelines).

@@ -1,52 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "7.4.5"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "singlestat",
-      "name": "Singlestat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -63,8 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": null,
-  "iteration": 1649313464318,
+  "iteration": 1650543315781,
   "links": [],
   "panels": [
     {
@@ -538,6 +489,122 @@
       }
     },
     {
+      "datasource": null,
+      "description": "Shows the reason for the last pod restart",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": null,
+            "filterable": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 9,
+        "x": 0,
+        "y": 12
+      },
+      "id": 272,
+      "options": {
+        "showHeader": true
+      },
+      "pluginVersion": "7.4.5",
+      "targets": [
+        {
+          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"$namespace\", container=\"zeebe\"}",
+          "interval": "",
+          "legendFormat": "{{ pod }}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Last Terminated Reason",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "includeTimeField": false,
+            "mode": "reduceFields",
+            "reducers": [
+              "lastNotNull"
+            ]
+          }
+        },
+        {
+          "id": "labelsToFields",
+          "options": {}
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": 0
+                  }
+                },
+                "fieldName": "Value"
+              }
+            ],
+            "match": "all",
+            "type": "exclude"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Value": true,
+              "__name__": true,
+              "container": true,
+              "endpoint": true,
+              "instance": true,
+              "job": true,
+              "namespace": true,
+              "reducer": true,
+              "service": true
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
       "cacheTimeout": null,
       "datasource": "${DS_PROMETHEUS}",
       "fieldConfig": {
@@ -565,9 +632,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 24,
-        "x": 0,
+        "h": 5,
+        "w": 15,
+        "x": 9,
         "y": 12
       },
       "id": 190,
@@ -626,7 +693,7 @@
         "h": 6,
         "w": 7,
         "x": 0,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 58,
@@ -758,7 +825,7 @@
         "h": 2,
         "w": 9,
         "x": 7,
-        "y": 15
+        "y": 17
       },
       "id": 232,
       "links": [],
@@ -811,7 +878,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 270,
@@ -926,7 +993,7 @@
         "h": 2,
         "w": 9,
         "x": 7,
-        "y": 17
+        "y": 19
       },
       "id": 118,
       "interval": null,
@@ -1018,7 +1085,7 @@
         "h": 2,
         "w": 9,
         "x": 7,
-        "y": 19
+        "y": 21
       },
       "id": 117,
       "interval": null,
@@ -1100,7 +1167,7 @@
         "h": 6,
         "w": 7,
         "x": 0,
-        "y": 21
+        "y": 23
       },
       "hiddenSeries": false,
       "id": 64,
@@ -1206,7 +1273,7 @@
         "h": 6,
         "w": 9,
         "x": 7,
-        "y": 21
+        "y": 23
       },
       "hiddenSeries": false,
       "id": 62,
@@ -1305,7 +1372,7 @@
         "h": 6,
         "w": 8,
         "x": 16,
-        "y": 21
+        "y": 23
       },
       "hiddenSeries": false,
       "id": 33,
@@ -1436,7 +1503,7 @@
         "h": 7,
         "w": 11,
         "x": 0,
-        "y": 27
+        "y": 29
       },
       "height": "400",
       "hiddenSeries": false,
@@ -1556,7 +1623,7 @@
         "h": 7,
         "w": 13,
         "x": 11,
-        "y": 27
+        "y": 29
       },
       "hiddenSeries": false,
       "id": 39,
@@ -1671,7 +1738,11 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role, namespace)",
         "description": null,
@@ -1698,7 +1769,11 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
         "description": null,
@@ -1725,7 +1800,11 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
         "description": null,
@@ -1783,5 +1862,5 @@
   "timezone": "",
   "title": "Zeebe Overview",
   "uid": "NzsO1mUnk",
-  "version": 9
+  "version": 11
 }
