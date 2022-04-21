@@ -57,6 +57,10 @@ final class ProcessMessageStartEventMessageNameValidator
       return;
     }
     final String nameExpression = message.getName();
+    if (nameExpression == null) {
+      // no need to add an error, this case was already handled by MessageValidator
+      return;
+    }
     final Expression parseResult = expressionLanguage.parseExpression(nameExpression);
 
     final EvaluationResult evaluationResult =
