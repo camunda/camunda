@@ -19,6 +19,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -145,6 +146,37 @@ public class SharingReader {
     return extractDashboardShareFromResponse(dashboardId, searchResponse);
   }
 
+  public Map<String, ReportShareRestDto> findShareForReports(List<String> reports) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder = boolQueryBuilder
+      .must(QueryBuilders.termsQuery(ReportShareIndex.REPORT_ID, reports));
+    return findReportSharesByQuery(boolQueryBuilder);
+  }
+
+  public Map<String, DashboardShareRestDto> findShareForDashboards(List<String> dashboards) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder = boolQueryBuilder
+      .must(QueryBuilders.termsQuery(DashboardShareIndex.DASHBOARD_ID, dashboards));
+    return findDashboardSharesByQuery(boolQueryBuilder);
+  }
+
+  public long getReportShareCount() {
+    return getShareCount(REPORT_SHARE_INDEX_NAME);
+  }
+
+  public long getDashboardShareCount() {
+    return getShareCount(DASHBOARD_SHARE_INDEX_NAME);
+  }
+
+  private long getShareCount(final String indexName) {
+    final CountRequest countRequest = new CountRequest(indexName);
+    try {
+      return esClient.count(countRequest).getCount();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(String.format("Was not able to retrieve count for type: %s", indexName), e);
+    }
+  }
+
   private Optional<DashboardShareRestDto> extractDashboardShareFromResponse(String dashboardId,
                                                                             SearchResponse searchResponse) {
     Optional<DashboardShareRestDto> result = Optional.empty();
@@ -211,20 +243,6 @@ public class SharingReader {
       ReportShareRestDto::getReportId,
       Function.identity()
     ));
-  }
-
-  public Map<String, ReportShareRestDto> findShareForReports(List<String> reports) {
-    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder = boolQueryBuilder
-      .must(QueryBuilders.termsQuery(ReportShareIndex.REPORT_ID, reports));
-    return findReportSharesByQuery(boolQueryBuilder);
-  }
-
-  public Map<String, DashboardShareRestDto> findShareForDashboards(List<String> dashboards) {
-    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder = boolQueryBuilder
-      .must(QueryBuilders.termsQuery(DashboardShareIndex.DASHBOARD_ID, dashboards));
-    return findDashboardSharesByQuery(boolQueryBuilder);
   }
 
   private Map<String, DashboardShareRestDto> findDashboardSharesByQuery(BoolQueryBuilder query) {

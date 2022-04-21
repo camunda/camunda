@@ -10,7 +10,9 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
+import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatMetrics;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
@@ -23,14 +25,19 @@ public class MixpanelDataService {
   private final ReportReader reportReader;
   private final DashboardReader dashboardReader;
   private final AlertReader alertReader;
+  private final SharingReader sharingReader;
 
   public MixpanelHeartbeatProperties getMixpanelHeartbeatProperties() {
     final MixpanelConfiguration.TrackingProperties mixpanelProperties = getMixpanelProperties();
     return new MixpanelHeartbeatProperties(
-      reportReader.getReportCount(ReportType.PROCESS),
-      reportReader.getReportCount(ReportType.DECISION),
-      dashboardReader.getDashboardCount(),
-      alertReader.getAlertCount(),
+      new MixpanelHeartbeatMetrics(
+        reportReader.getReportCount(ReportType.PROCESS),
+        reportReader.getReportCount(ReportType.DECISION),
+        dashboardReader.getDashboardCount(),
+        sharingReader.getReportShareCount(),
+        sharingReader.getDashboardShareCount(),
+        alertReader.getAlertCount()
+      ),
       mixpanelProperties.getStage(),
       mixpanelProperties.getOrganizationId(),
       mixpanelProperties.getClusterId()

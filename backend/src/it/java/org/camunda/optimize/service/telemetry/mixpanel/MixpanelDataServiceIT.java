@@ -7,9 +7,12 @@ package org.camunda.optimize.service.telemetry.mixpanel;
 
 import lombok.NonNull;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
+import org.camunda.optimize.test.optimize.SharingClient;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +35,14 @@ public class MixpanelDataServiceIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     final String reportInCollectionId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     reportClient.createEmptySingleDecisionReport();
-    dashboardClient.createEmptyDashboard();
+    final String dashboardId = dashboardClient.createEmptyDashboard();
     alertClient.createAlertForReport(reportInCollectionId);
+    final ReportShareRestDto reportShare = new ReportShareRestDto();
+    reportShare.setReportId(reportInCollectionId);
+    sharingClient.createReportShareResponse(reportShare);
+    final DashboardShareRestDto dashboardShare = new DashboardShareRestDto();
+    dashboardShare.setDashboardId(dashboardId);
+    sharingClient.createDashboardShareResponse(dashboardShare);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -52,6 +61,8 @@ public class MixpanelDataServiceIT extends AbstractIT {
     assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getDashboardCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getReportShareCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getDashboardShareCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getAlertCount()).isEqualTo(1);
   }
 

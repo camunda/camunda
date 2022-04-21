@@ -14,6 +14,8 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import static org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent.HEARTBEAT;
+
 @Component
 @Conditional(CCSaaSCondition.class)
 @AllArgsConstructor
@@ -24,7 +26,7 @@ public class MixpanelReportingService implements TelemetryReportingService {
   @Override
   public void sendTelemetryData() {
     mixpanelClient.importEvent(
-      new MixpanelEvent(EventReportingEvent.HEARTBEAT, mixpanelDataService.getMixpanelHeartbeatProperties())
+      new MixpanelEvent(HEARTBEAT, mixpanelDataService.getMixpanelHeartbeatProperties())
     );
   }
 
