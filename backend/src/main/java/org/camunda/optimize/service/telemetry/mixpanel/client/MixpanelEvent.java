@@ -19,7 +19,7 @@ public class MixpanelEvent {
   private String event;
   private MixpanelEventProperties properties;
 
-  public MixpanelEvent(final MixpanelEventName eventName, final MixpanelEventProperties properties) {
+  public MixpanelEvent(final EventReportingEvent eventName, final MixpanelEventProperties properties) {
     this.event = EVENT_NAME_PREFIX + eventName;
     this.properties = properties;
   }

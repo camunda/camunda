@@ -10,7 +10,7 @@ import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.service.telemetry.mixpanel.MixpanelReportingService;
-import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventName;
+import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -21,21 +21,22 @@ import java.util.Optional;
 @Conditional(CCSaaSCondition.class)
 @AllArgsConstructor
 public class MixpanelNotificationService implements NotificationService {
+
   private final MixpanelReportingService mixpanelReportingService;
 
   @Override
   public void notify(@NonNull final AlertNotificationDto notification) {
-    final MixpanelEventName eventName;
+    final EventReportingEvent eventName;
     switch (Optional.ofNullable(notification.getType()).orElse(AlertNotificationType.NEW)) {
       default:
       case NEW:
-        eventName = MixpanelEventName.ALERT_NEW_TRIGGERED;
+        eventName = EventReportingEvent.ALERT_NEW_TRIGGERED;
         break;
       case REMINDER:
-        eventName = MixpanelEventName.ALERT_REMINDER_TRIGGERED;
+        eventName = EventReportingEvent.ALERT_REMINDER_TRIGGERED;
         break;
       case RESOLVED:
-        eventName = MixpanelEventName.ALERT_RESOLVED_TRIGGERED;
+        eventName = EventReportingEvent.ALERT_RESOLVED_TRIGGERED;
         break;
     }
     mixpanelReportingService.sendEntityEvent(eventName, notification.getAlert().getId());

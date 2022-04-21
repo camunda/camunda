@@ -22,6 +22,8 @@ import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
+import org.camunda.optimize.service.telemetry.EventReportingService;
+import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
 import org.springframework.stereotype.Component;
 
 import javax.validation.Valid;
@@ -56,6 +58,7 @@ public class SharingRestService {
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
   private final DashboardRestMapper dashboardRestMapper;
+  private final EventReportingService eventReportingService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
@@ -65,7 +68,9 @@ public class SharingRestService {
                                             ReportShareRestDto createSharingDto) {
     if (settingsService.getSettings().getSharingEnabled().orElse(false)) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-      return sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
+      final IdResponseDto shareId = sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
+      eventReportingService.sendEntityEvent(EventReportingEvent.REPORT_SHARE_ENABLED, shareId.getId());
+      return shareId;
     } else {
       throw new SharingNotAllowedException("Sharing of reports is disabled per Optimize configuration");
     }
@@ -79,7 +84,9 @@ public class SharingRestService {
                                                DashboardShareRestDto createSharingDto) {
     if (settingsService.getSettings().getSharingEnabled().orElse(false)) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-      return sharingService.createNewDashboardShare(createSharingDto, userId);
+      final IdResponseDto dashboardShare = sharingService.createNewDashboardShare(createSharingDto, userId);
+      eventReportingService.sendEntityEvent(EventReportingEvent.DASHBOARD_SHARE_ENABLED, dashboardShare.getId());
+      return dashboardShare;
     } else {
       throw new SharingNotAllowedException("Sharing of dashboards is disabled per Optimize configuration");
     }
@@ -90,6 +97,7 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteReportShare(@PathParam("shareId") String reportShareId) {
     sharingService.deleteReportShare(reportShareId);
+    eventReportingService.sendEntityEvent(EventReportingEvent.REPORT_SHARE_DISABLED, reportShareId);
   }
 
   @DELETE
@@ -97,6 +105,7 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboardShare(@PathParam("shareId") String dashboardShareId) {
     sharingService.deleteDashboardShare(dashboardShareId);
+    eventReportingService.sendEntityEvent(EventReportingEvent.DASHBOARD_SHARE_DISABLED, dashboardShareId);
   }
 
   @GET

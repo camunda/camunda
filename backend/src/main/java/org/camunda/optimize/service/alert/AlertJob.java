@@ -141,7 +141,6 @@ public class AlertJob implements Job {
     );
   }
 
-
   private void fanoutNotification(final AlertNotificationDto notification) {
     for (NotificationService notificationService : notificationServices) {
       try {

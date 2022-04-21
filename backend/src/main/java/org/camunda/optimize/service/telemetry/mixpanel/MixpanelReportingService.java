@@ -7,9 +7,9 @@ package org.camunda.optimize.service.telemetry.mixpanel;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.telemetry.TelemetryReportingService;
+import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelClient;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEvent;
-import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventName;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -24,14 +24,13 @@ public class MixpanelReportingService implements TelemetryReportingService {
   @Override
   public void sendTelemetryData() {
     mixpanelClient.importEvent(
-      new MixpanelEvent(MixpanelEventName.HEARTBEAT, mixpanelDataService.getMixpanelHeartbeatProperties())
+      new MixpanelEvent(EventReportingEvent.HEARTBEAT, mixpanelDataService.getMixpanelHeartbeatProperties())
     );
   }
 
-  public void sendEntityEvent(final MixpanelEventName eventName, final String entityId) {
+  public void sendEntityEvent(final EventReportingEvent event, final String entityId) {
     mixpanelClient.importEvent(
-      new MixpanelEvent(eventName, mixpanelDataService.getMixpanelEntityEventProperties(entityId))
+      new MixpanelEvent(event, mixpanelDataService.getMixpanelEntityEventProperties(entityId))
     );
   }
-
 }

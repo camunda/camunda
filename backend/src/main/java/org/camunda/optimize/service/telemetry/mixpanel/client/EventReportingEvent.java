@@ -7,11 +7,17 @@ package org.camunda.optimize.service.telemetry.mixpanel.client;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum MixpanelEventName {
+public enum EventReportingEvent {
   HEARTBEAT,
+
   ALERT_NEW_TRIGGERED,
   ALERT_REMINDER_TRIGGERED,
   ALERT_RESOLVED_TRIGGERED,
+
+  REPORT_SHARE_ENABLED,
+  REPORT_SHARE_DISABLED,
+  DASHBOARD_SHARE_ENABLED,
+  DASHBOARD_SHARE_DISABLED,
   ;
 
   @JsonValue

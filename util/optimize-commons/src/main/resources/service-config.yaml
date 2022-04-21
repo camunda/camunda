@@ -589,7 +589,7 @@ analytics:
   osano:
     scriptUrl: ${CAMUNDA_OPTIMIZE_ANALYTICS_OSANO_SCRIPT_URL:}
   mixpanel:
-    apiHost: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_API_HOST:https://api.mixpanel.com}
+    apiHost: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
     importPath: '/import'
     token: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_TOKEN:}
     projectId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_PROJECT_ID:}

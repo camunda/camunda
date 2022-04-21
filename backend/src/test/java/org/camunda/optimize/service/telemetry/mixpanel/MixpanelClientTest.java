@@ -20,7 +20,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelClient;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEvent;
-import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventName;
+import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventProperties;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -89,7 +89,7 @@ public class MixpanelClientTest {
     );
 
     // when
-    mixpanelClient.importEvent(new MixpanelEvent(MixpanelEventName.HEARTBEAT, mixpanelEventProperties));
+    mixpanelClient.importEvent(new MixpanelEvent(EventReportingEvent.HEARTBEAT, mixpanelEventProperties));
     ArgumentCaptor<HttpPost> requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
     verify(httpClient, times(1)).execute(requestCaptor.capture());
 
@@ -110,7 +110,7 @@ public class MixpanelClientTest {
         assertThat(plainCredentials.split(":")).containsExactly(username, secret);
       });
     final MixpanelEvent recordedMixpanelEvent = readMixpanelEventFromRequest(requestCaptor);
-    assertThat(recordedMixpanelEvent.getEvent()).isEqualTo(MixpanelEvent.EVENT_NAME_PREFIX + MixpanelEventName.HEARTBEAT);
+    assertThat(recordedMixpanelEvent.getEvent()).isEqualTo(MixpanelEvent.EVENT_NAME_PREFIX + EventReportingEvent.HEARTBEAT);
     assertThat(recordedMixpanelEvent.getProperties()).isEqualTo(mixpanelEventProperties);
   }
 
@@ -128,7 +128,7 @@ public class MixpanelClientTest {
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
     // when
-    final MixpanelEvent event = new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties());
+    final MixpanelEvent event = new MixpanelEvent(EventReportingEvent.HEARTBEAT, new MixpanelEventProperties());
     assertThatThrownBy(() -> mixpanelClient.importEvent(event))
       //then
       .isInstanceOf(OptimizeRuntimeException.class)
@@ -151,7 +151,7 @@ public class MixpanelClientTest {
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
     // when
-    final MixpanelEvent event = new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties());
+    final MixpanelEvent event = new MixpanelEvent(EventReportingEvent.HEARTBEAT, new MixpanelEventProperties());
     assertThatThrownBy(() -> mixpanelClient.importEvent(event))
       //then
       .isInstanceOf(OptimizeRuntimeException.class)
@@ -174,7 +174,7 @@ public class MixpanelClientTest {
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
     // when
-    mixpanelClient.importEvent(new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties()));
+    mixpanelClient.importEvent(new MixpanelEvent(EventReportingEvent.HEARTBEAT, new MixpanelEventProperties()));
 
     // then
     logCapturer.assertContains("Could not parse response from Mixpanel.");
