@@ -56,6 +56,7 @@ export default class AddUserModal extends React.Component {
                 users={users}
                 collectionUsers={existingUsers}
                 onChange={(users) => this.setState({users})}
+                optionsOnly={optimizeProfile === 'cloud'}
               />
             </Form.Group>
             {t('home.roles.userRole')}

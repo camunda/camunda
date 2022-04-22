@@ -10,6 +10,7 @@ import React from 'react';
 import {Modal, Button, UserTypeahead, Labeled} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
+import {getOptimizeProfile} from 'config';
 import {t} from 'translation';
 
 import {getUsers, updateUsers} from './service';
@@ -21,10 +22,12 @@ export class UsersModal extends React.Component {
     loading: false,
     users: null,
     deleting: null,
+    optimizeProfile: null,
   };
 
-  componentDidMount() {
+  async componentDidMount() {
     this.props.mightFail(getUsers(this.props.id), (users) => this.setState({users}), showError);
+    this.setState({optimizeProfile: await getOptimizeProfile()});
   }
 
   onConfirm = () => {
@@ -46,7 +49,7 @@ export class UsersModal extends React.Component {
 
   render() {
     const {id} = this.props;
-    const {loading, users} = this.state;
+    const {loading, users, optimizeProfile} = this.state;
     const isValid = users && users.length > 0;
 
     return (
@@ -55,7 +58,13 @@ export class UsersModal extends React.Component {
         <Modal.Content>
           <p className="description">{t('events.permissions.description')}</p>
           <Labeled className="userTypeahead" label={t('home.userTitle')}>
-            {users && <UserTypeahead users={users} onChange={(users) => this.setState({users})} />}
+            {users && (
+              <UserTypeahead
+                users={users}
+                onChange={(users) => this.setState({users})}
+                optionsOnly={optimizeProfile === 'cloud'}
+              />
+            )}
           </Labeled>
         </Modal.Content>
         <Modal.Actions>
