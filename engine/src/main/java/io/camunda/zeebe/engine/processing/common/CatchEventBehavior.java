@@ -24,9 +24,9 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -59,7 +59,8 @@ public final class CatchEventBehavior {
   private final KeyGenerator keyGenerator;
 
   public CatchEventBehavior(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
       final StateWriter stateWriter,
@@ -74,8 +75,7 @@ public final class CatchEventBehavior {
     processMessageSubscriptionState = zeebeState.getProcessMessageSubscriptionState();
     processState = zeebeState.getProcessState();
 
-    keyGenerator = zeebeState.getKeyGenerator();
-
+    this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
   }
 
