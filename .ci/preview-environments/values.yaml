@@ -36,6 +36,13 @@ camunda-platform:
       value: "-XX:MaxRAMFraction=1"
     - name: SPRING_PROFILES_ACTIVE
       value: dev-data
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
 
   tasklist:
     enabled: false
@@ -52,10 +59,8 @@ camunda-platform:
     image:
       tag: 8.0.0
     partitionCount: 1
-    persistence:
-      # Defines whether persistence should be enabled for the `zeebe` StatefulSet.
-      # Depends on https://github.com/camunda/camunda-cloud-helm/issues/232
-      enabled: false
+    # Disable the creation of persistent volumes.
+    persistenceType: local
     # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
     pvcSize: 2Gi
     replicationFactor: 1
