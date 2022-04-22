@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util.health;
 
+import java.util.Objects;
+
 /**
  * A health issue contains information about the cause for unhealthy/dead components. It can either
  * be a string message, a {@link Throwable} or another {@link HealthReport}.
@@ -35,6 +37,46 @@ public final class HealthIssue {
     return new HealthIssue(null, null, cause);
   }
 
+  public String getMessage() {
+    return message;
+  }
+
+  public Throwable getThrowable() {
+    return throwable;
+  }
+
+  public HealthReport getCause() {
+    return cause;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = message != null ? message.hashCode() : 0;
+    result = 31 * result + (throwable != null ? throwable.hashCode() : 0);
+    result = 31 * result + (cause != null ? cause.hashCode() : 0);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final HealthIssue that = (HealthIssue) o;
+
+    if (!Objects.equals(message, that.message)) {
+      return false;
+    }
+    if (!Objects.equals(throwable, that.throwable)) {
+      return false;
+    }
+    return Objects.equals(cause, that.cause);
+  }
+
   @Override
   public String toString() {
     if (cause != null) {
@@ -47,17 +89,5 @@ public final class HealthIssue {
       return throwable.toString();
     }
     return "unknown";
-  }
-
-  public String getMessage() {
-    return message;
-  }
-
-  public Throwable getThrowable() {
-    return throwable;
-  }
-
-  public HealthReport getCause() {
-    return cause;
   }
 }
