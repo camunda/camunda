@@ -105,7 +105,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     final var previousReport = healthReport;
     healthReport = calculateStatus();
 
-    if (previousReport == healthReport) {
+    if (previousReport.equals(healthReport)) {
       return;
     }
 
