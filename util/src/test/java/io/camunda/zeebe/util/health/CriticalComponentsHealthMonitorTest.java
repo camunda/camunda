@@ -173,7 +173,7 @@ public class CriticalComponentsHealthMonitorTest {
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthReport().getIssue().getCause().getIssue()).isEqualTo(issue);
+    assertThat(monitor.getHealthReport().getIssue().cause().getIssue()).isEqualTo(issue);
   }
 
   private void waitUntilAllDone() {
