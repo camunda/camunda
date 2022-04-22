@@ -321,12 +321,6 @@ public final class CancelProcessInstanceTest {
             .withIntent(ProcessInstanceIntent.TERMINATE_ELEMENT)
             .getFirst();
 
-    final Record<JobRecordValue> jobCancelCmd =
-        RecordingExporter.jobRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .onlyCommands()
-            .withIntent(JobIntent.CANCEL)
-            .getFirst();
     final Record<JobRecordValue> jobCanceledEvent =
         RecordingExporter.jobRecords()
             .withProcessInstanceKey(processInstanceKey)
@@ -334,8 +328,8 @@ public final class CancelProcessInstanceTest {
             .getFirst();
 
     assertThat(jobCanceledEvent.getKey()).isEqualTo(jobCreatedEvent.getKey());
-    assertThat(jobCancelCmd.getSourceRecordPosition()).isEqualTo(terminateActivity.getPosition());
-    assertThat(jobCanceledEvent.getSourceRecordPosition()).isEqualTo(jobCancelCmd.getPosition());
+    assertThat(jobCanceledEvent.getSourceRecordPosition())
+        .isEqualTo(terminateActivity.getPosition());
 
     final JobRecordValue jobCanceledEventValue = jobCanceledEvent.getValue();
     assertThat(jobCanceledEventValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);
