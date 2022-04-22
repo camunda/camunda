@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
@@ -48,6 +50,7 @@ public final class CatchEventBehavior {
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
+  private final ProcessState processState;
 
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
@@ -69,6 +72,7 @@ public final class CatchEventBehavior {
 
     timerInstanceState = zeebeState.getTimerState();
     processMessageSubscriptionState = zeebeState.getProcessMessageSubscriptionState();
+    processState = zeebeState.getProcessState();
 
     keyGenerator = zeebeState.getKeyGenerator();
 
@@ -90,6 +94,33 @@ public final class CatchEventBehavior {
   }
 
   /**
+   * Unsubscribe from all event subprocesses in the scope of the context. Ignores other event
+   * subscriptions in the scope.
+   *
+   * @param context the context to subscript from
+   * @param commandWriter the writer for unsubscribe commands
+   * @param sideEffects the side effects for unsubscribe actions
+   */
+  public void unsubscribeFromEventSubprocesses(
+      final BpmnElementContext context,
+      final TypedCommandWriter commandWriter,
+      final SideEffects sideEffects) {
+    unsubscribeFromEvents(
+        context, commandWriter, sideEffects, elementId -> isEventSubprocess(context, elementId));
+  }
+
+  private boolean isEventSubprocess(
+      final BpmnElementContext context, final DirectBuffer elementId) {
+
+    final var element =
+        processState.getFlowElement(
+            context.getProcessDefinitionKey(), elementId, ExecutableFlowElement.class);
+
+    return element.getElementType() == BpmnElementType.START_EVENT
+        && element.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS;
+  }
+
+  /**
    * Unsubscribe from all events in the scope of the context that matches the given filter. Ignore
    * other event subscriptions that don't match the filter.
    *
@@ -98,7 +129,7 @@ public final class CatchEventBehavior {
    * @param sideEffects the side effects for unsubscribe actions
    * @param elementIdFilter the filter for events to unsubscribe
    */
-  public void unsubscribeFromEvents(
+  private void unsubscribeFromEvents(
       final BpmnElementContext context,
       final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
