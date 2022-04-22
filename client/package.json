@@ -94,7 +94,7 @@
     "react-scripts": "4.0.3",
     "sass": "^1.49.9",
     "shelljs": "^0.8.5",
-    "testcafe": "^1.18.3",
+    "testcafe": "^1.18.6",
     "testcafe-browser-provider-browserstack": "^1.13.2",
     "tree-kill": "^1.2.2",
     "ws": "^8.5.0",

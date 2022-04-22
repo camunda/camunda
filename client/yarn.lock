@@ -3240,10 +3240,10 @@ acorn-globals@^6.0.0:
     acorn "^7.1.1"
     acorn-walk "^7.1.1"
 
-acorn-hammerhead@0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/acorn-hammerhead/-/acorn-hammerhead-0.5.0.tgz#94ca6ecef5c6e65a0f813580a9b130fd2775300c"
-  integrity sha512-TI9TFfJBfduhcM2GggayNhdYvdJ3UgS/Bu3sB7FB2AUmNCmCJ+TSOT6GXu+bodG5/xL74D5zE4XRaqyjgjsYVQ==
+acorn-hammerhead@0.6.1:
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/acorn-hammerhead/-/acorn-hammerhead-0.6.1.tgz#f8f27c58ceaf90fbdb77a92f4331a678271194f2"
+  integrity sha512-ZWG/nXPvFiveXhJq/PxuS+4LI1BqtEOviGXWjlTvI+64kwzaddYNaE0UzLorTX7kyxrFtxjJ4w1LmKN5yEzOCg==
   dependencies:
     "@types/estree" "0.0.46"
 
@@ -3705,10 +3705,10 @@ async-limiter@~1.0.0:
   resolved "https://registry.yarnpkg.com/async-limiter/-/async-limiter-1.0.1.tgz#dd379e94f0db8310b08291f9d64c3209766617fd"
   integrity sha512-csOlWGAcRFJaI6m+F2WKdnMKr4HhdhFVBk0H/QbJFMCr+uO2kwohwXQPxw/9OCxp05r5ghVBFSyioixx3gfkNQ==
 
-async@0.2.6:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/async/-/async-0.2.6.tgz#ad3f373d9249ae324881565582bc90e152abbd68"
-  integrity sha1-rT83PZJJrjJIgVZVgryQ4VKrvWg=
+async@3.2.3:
+  version "3.2.3"
+  resolved "https://registry.yarnpkg.com/async/-/async-3.2.3.tgz#ac53dafd3f4720ee9e8a160628f18ea91df196c9"
+  integrity sha512-spZRyzKL5l5BZQrr/6m/SqFdBN0q3OCI0f9rjfBzCMBIP4p75P620rR3gTmaksNOhmzgdxcaxdNfMy6anrbM0g==
 
 async@^2.0.0, async@^2.6.2:
   version "2.6.3"
@@ -3972,7 +3972,7 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
   integrity sha1-ibTRmasr7kneFk6gK4nORi1xt2c=
 
-base64-js@^1.0.2, base64-js@^1.1.2:
+base64-js@^1.0.2:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.3.1.tgz#58ece8cb75dd07e71ed08c736abc5fac4dbf8df1"
   integrity sha512-mLQ4i2QO1ytvGWFWmcngKO//JXAQueZvwEKtjgQFM4jIK0kU+ytMfplL8j+n5mspOfjHwoAg+9yhb7BwAHm36g==
@@ -4165,13 +4165,6 @@ brorand@^1.0.1, brorand@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/brorand/-/brorand-1.1.0.tgz#12c25efe40a45e3c323eb8675a0a0ce57b22371f"
   integrity sha1-EsJe/kCkXjwyPrhnWgoM5XsiNx8=
-
-brotli@^1.3.1:
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/brotli/-/brotli-1.3.2.tgz#525a9cad4fcba96475d7d388f6aecb13eed52f46"
-  integrity sha1-UlqcrU/LqWR119OI9q7LE+7VL0Y=
-  dependencies:
-    base64-js "^1.1.2"
 
 browser-process-hrtime@^0.1.2:
   version "0.1.3"
@@ -10169,10 +10162,10 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
   integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
 
-log-update-async-hook@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/log-update-async-hook/-/log-update-async-hook-2.0.2.tgz#6eba89dbe67fa12d0b20ac47df7942947af1fcd1"
-  integrity sha512-HQwkKFTZeUOrDi1Duf2CSUa/pSpcaCHKLdx3D/Z16DsipzByOBffcg5y0JZA1q0n80dYgLXe2hFM9JGNgBsTDw==
+log-update-async-hook@^2.0.6:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/log-update-async-hook/-/log-update-async-hook-2.0.6.tgz#33fa4414e73799920edaa64f2f931d2b6f627f68"
+  integrity sha512-UIFPlCpCxrSVL38TXzk34JhhDnvvhsjzuyqooCYy9TtTaVdBLNsuJiTWX9unO/wzBF7RwY1WTCmEmBSI3iPDCA==
   dependencies:
     ansi-escapes "^2.0.0"
     async-exit-hook "^1.1.2"
@@ -12827,6 +12820,11 @@ psl@^1.1.28:
   resolved "https://registry.yarnpkg.com/psl/-/psl-1.4.0.tgz#5dd26156cdb69fa1fdb8ab1991667d3f80ced7c2"
   integrity sha512-HZzqCGPecFLyoRj5HLfuDSKYTJkAfB5thKBIkRHtGjWwY7p1dAyveIbXIq4tO0KYfDF2tHqPUgY9SDnGm00uFw==
 
+psl@^1.1.33:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/psl/-/psl-1.8.0.tgz#9326f8bcfb013adcc005fdff056acce020e51c24"
+  integrity sha512-RIdOzyoavK+hA18OGGWDqUTsCLhtA7IcZ/6NCs4fFJaHBDab+pDDmDIByWFRQJq2Cd7r1OoQxBGKOaztq+hjIQ==
+
 public-encrypt@^4.0.0:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/public-encrypt/-/public-encrypt-4.0.3.tgz#4fcc9d77a07e48ba7527e7cbe0de33d0701331e0"
@@ -12869,7 +12867,7 @@ punycode@1.3.2:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.3.2.tgz#9653a036fb7c1ee42342f2325cceefea3926c48d"
   integrity sha1-llOgNvt8HuQjQvIyXM7v6jkmxI0=
 
-punycode@^1.2.4, punycode@^1.4.1:
+punycode@^1.2.4:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.4.1.tgz#c0d5a63b2718800ad8e1eb0fa5269c84dd41845e"
   integrity sha1-wNWmOycYgArY4esPpSachN1BhF4=
@@ -15258,10 +15256,10 @@ testcafe-browser-provider-browserstack@^1.13.2:
     request-promise "^4.2.4"
     tmp "0.0.31"
 
-testcafe-browser-tools@2.0.22:
-  version "2.0.22"
-  resolved "https://registry.yarnpkg.com/testcafe-browser-tools/-/testcafe-browser-tools-2.0.22.tgz#86a05155e50076c6ae2c317368cef055cd84dc37"
-  integrity sha512-ABzKV3h+yrbxC0WfqqCjWP+/XFBH66VY8Nuz3IqDu4/9mbrn2sJpcEdcoxLVRVkIxcLUgCejF38Rorumh9iHvw==
+testcafe-browser-tools@2.0.23:
+  version "2.0.23"
+  resolved "https://registry.yarnpkg.com/testcafe-browser-tools/-/testcafe-browser-tools-2.0.23.tgz#9c1957d373b14d7917bb98084f79c9087ed08cdc"
+  integrity sha512-Ewk2I0DIiF9j/8DqDPhRbWuEIa4nxWhJ45DzS/fiftpLuljZshV/omc6M9O3MjrBp6d4uTI45AbhMVE2APvs+Q==
   dependencies:
     array-find "^1.0.0"
     debug "^4.3.1"
@@ -15281,15 +15279,14 @@ testcafe-browser-tools@2.0.22:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@24.5.13, testcafe-hammerhead@>=19.4.0:
-  version "24.5.13"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.5.13.tgz#7eeca7f8f68b2d20ad93214ee0e93b49fb140e0b"
-  integrity sha512-81P9to2pXBCOy+jnyEaPcjrfKk3wOv7JmZSX3KQp0MxF12X9u6Tg0JEeTMYvnEfCeNhLRYDipAZvI+t9nfx0KA==
+testcafe-hammerhead@24.5.18, testcafe-hammerhead@>=19.4.0:
+  version "24.5.18"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.5.18.tgz#5096fa59a955651a3b594f3df5bfefff72fe1277"
+  integrity sha512-ae7ikqW4SzKY81BDaCc5eVyTmiiqbq8qGpr484GyVobRb4stPUKCDVyYm05t7BiO60Lhhh9Fm0w5o3oNHqQxQg==
   dependencies:
-    acorn-hammerhead "0.5.0"
+    acorn-hammerhead "0.6.1"
     asar "^2.0.1"
     bowser "1.6.0"
-    brotli "^1.3.1"
     crypto-md5 "^1.0.0"
     css "2.2.3"
     debug "4.3.1"
@@ -15308,16 +15305,16 @@ testcafe-hammerhead@24.5.13, testcafe-hammerhead@>=19.4.0:
     pinkie "2.0.4"
     read-file-relative "^1.2.0"
     semver "5.5.0"
-    tough-cookie "2.3.3"
+    tough-cookie "4.0.0"
     tunnel-agent "0.6.0"
     webauth "^1.1.0"
 
-testcafe-legacy-api@5.1.2:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/testcafe-legacy-api/-/testcafe-legacy-api-5.1.2.tgz#a030719a43684f03fea723b4bea2e0b5fead2dde"
-  integrity sha512-vc9A4rFUdijlBFnNOVMk0hFfxnrAmtA7FMz1P/LtvNyui5JfkLmbyIQcJbxR2rjTINp0owZ2c+xQvYms/us7Fw==
+testcafe-legacy-api@5.1.4:
+  version "5.1.4"
+  resolved "https://registry.yarnpkg.com/testcafe-legacy-api/-/testcafe-legacy-api-5.1.4.tgz#de913a79869abf9c5ff117eeb9adbef78519f4ff"
+  integrity sha512-CWjwGlRZdSuoWDIRBHKetpmDffR+/LKS6+69n8VM4mkLKgUwsP8p3MERHdx0obBn8wZ0LSyrYj8SCtv5f7oWZg==
   dependencies:
-    async "0.2.6"
+    async "3.2.3"
     dedent "^0.6.0"
     highlight-es "^1.0.0"
     is-jquery-obj "^0.1.0"
@@ -15373,10 +15370,10 @@ testcafe-reporter-xunit@^2.2.1:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.2.1.tgz#674b6551bec88829d4ed08af43e7838793cf714e"
   integrity sha512-ge1msi8RyNVyK0QrsmC79zedV7jHasKpBPeOUZd/ORpbYLeYDnprjIeOuIukw0knnTieeYsOK29/ZD+UI7/tdw==
 
-testcafe@^1.18.3:
-  version "1.18.3"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.18.3.tgz#6a03697d724d01cc31ac29c4ad1f52a30f604cf9"
-  integrity sha512-cBWPBmY20xI9iWQzS9s2t3oIYhXl5gJzM6CTQjLXt5CMAEvWThsOzLWWnNoA2nk4CLBexZ0S5SkrYOk/SGVSaw==
+testcafe@^1.18.6:
+  version "1.18.6"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.18.6.tgz#855c692c799390a18b0d0af87e5148ac79444a59"
+  integrity sha512-5X/Chn5zbHy8TftyB/iXfKOizrYM8vrNLSjjyRQCW2IpYh//7EUJ0MZmBKRcXye9//eLaOoUBs/FDvAW55j4Lw==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -15430,7 +15427,7 @@ testcafe@^1.18.3:
     is-stream "^2.0.0"
     json5 "^2.1.0"
     lodash "^4.17.13"
-    log-update-async-hook "^2.0.2"
+    log-update-async-hook "^2.0.6"
     make-dir "^3.0.0"
     mime-db "^1.41.0"
     moment "^2.10.3"
@@ -15453,9 +15450,9 @@ testcafe@^1.18.3:
     semver "^5.6.0"
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
-    testcafe-browser-tools "2.0.22"
-    testcafe-hammerhead "24.5.13"
-    testcafe-legacy-api "5.1.2"
+    testcafe-browser-tools "2.0.23"
+    testcafe-hammerhead "24.5.18"
+    testcafe-legacy-api "5.1.4"
     testcafe-reporter-dashboard "0.2.5"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
@@ -15624,12 +15621,14 @@ toidentifier@1.0.0:
   resolved "https://registry.yarnpkg.com/toidentifier/-/toidentifier-1.0.0.tgz#7e1be3470f1e77948bc43d94a3c8f4d7752ba553"
   integrity sha512-yaOH/Pk/VEhBWWTlhI+qXxDFXlejDGcQipMlyxda9nthulaxLZUNcUqFxokp0vcYnvteJln5FNQDRrxj3YcbVw==
 
-tough-cookie@2.3.3:
-  version "2.3.3"
-  resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-2.3.3.tgz#0b618a5565b6dea90bf3425d04d55edc475a7561"
-  integrity sha1-C2GKVWW23qkL80JdBNVe3EdadWE=
+tough-cookie@4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-4.0.0.tgz#d822234eeca882f991f0f908824ad2622ddbece4"
+  integrity sha512-tHdtEpQCMrc1YLrMaqXXcj6AxhYi/xgit6mZu1+EDWUn+qhUf8wMQoFIy9NXuq23zAwtcB0t/MjACGR18pcRbg==
   dependencies:
-    punycode "^1.4.1"
+    psl "^1.1.33"
+    punycode "^2.1.1"
+    universalify "^0.1.2"
 
 tough-cookie@^2.3.3, tough-cookie@^2.3.4, tough-cookie@~2.5.0:
   version "2.5.0"
@@ -15972,7 +15971,7 @@ unist-util-visit@^4.0.0:
     unist-util-is "^5.0.0"
     unist-util-visit-parents "^5.0.0"
 
-universalify@^0.1.0:
+universalify@^0.1.0, universalify@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/universalify/-/universalify-0.1.2.tgz#b646f69be3942dabcecc9d6639c80dc105efaa66"
   integrity sha512-rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==
