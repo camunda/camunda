@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: { }
+
+jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/test.yml
+  deploy-snapshots:
+    name: Deploy snapshot artifacts
+    needs: [ tests ]
+    runs-on: ubuntu-latest
+    if: github.repository == 'camunda/zeebe'
+    concurrency: deploy-snapshots
+    steps:
+      - uses: actions/checkout@v3
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/common/github.com/actions/camunda/zeebe ARTIFACTS_USR;
+            secret/data/common/github.com/actions/camunda/zeebe ARTIFACTS_PSW;
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+          server-id: camunda-nexus
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+      - run: mvn -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+        env:
+          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}

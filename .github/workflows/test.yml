@@ -3,13 +3,13 @@ name: Tests
 on:
   push:
     branches:
-      - main
       - stable/*
       - release/*
       - trying
       - staging
   pull_request: {}
   workflow_dispatch: {}
+  workflow_call: {}
 
 jobs:
   integration-tests:
