@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -54,7 +53,6 @@ public final class BpmnJobBehavior {
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
   private final JobState jobState;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
@@ -73,7 +71,6 @@ public final class BpmnJobBehavior {
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
     stateWriter = writers.state();
-    commandWriter = writers.command();
     this.stateBehavior = stateBehavior;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
@@ -175,17 +172,17 @@ public final class BpmnJobBehavior {
     final var elementInstance = stateBehavior.getElementInstance(context);
     final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
-      writeJobCancelCommand(jobKey);
+      writeJobCanceled(jobKey);
       incidentBehavior.resolveJobIncident(jobKey);
     }
   }
 
-  private void writeJobCancelCommand(final long jobKey) {
+  private void writeJobCanceled(final long jobKey) {
     final State state = jobState.getState(jobKey);
 
     if (CANCELABLE_STATES.contains(state)) {
       final JobRecord job = jobState.getJob(jobKey);
-      commandWriter.appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+      stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
     }
   }
 
