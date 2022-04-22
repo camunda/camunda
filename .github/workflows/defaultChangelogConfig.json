@@ -16,5 +16,22 @@
       "title": "🧹 Chore",
       "types": ["chore", "ci", "build", "test", "refactor", "style", "docs"]
     }
-  ]
+  ],
+  "bumpLabels": [
+    {
+      "title": "major",
+      "types": ["breaking"]
+    },
+    {
+      "title": "minor",
+      "types": ["feat"]
+    },
+    {
+      "title": "patch",
+      "types": []
+    }
+  ],
+  "issuesUrl": "",
+  "sortOrder": "desc",
+  "emptyMessage": "No changes"
 }
