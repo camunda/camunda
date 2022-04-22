@@ -460,10 +460,6 @@ public class ActorTask {
     return stateCount.get();
   }
 
-  public ActorThreadGroup getActorThreadGroup() {
-    return actorThreadGroup;
-  }
-
   public String getName() {
     return actor.getName();
   }
@@ -511,15 +507,6 @@ public class ActorTask {
   public void onSubscriptionCancelled(final ActorSubscription subscription) {
     if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
       removeSubscription(subscription);
-    }
-  }
-
-  public void setUpdatedSchedulingHints(final int hints) {
-    if (SchedulingHints.isCpuBound(hints)) {
-      priority = SchedulingHints.getPriority(hints);
-      actorThreadGroup = actorExecutor.getCpuBoundThreads();
-    } else {
-      actorThreadGroup = actorExecutor.getIoBoundThreads();
     }
   }
 
