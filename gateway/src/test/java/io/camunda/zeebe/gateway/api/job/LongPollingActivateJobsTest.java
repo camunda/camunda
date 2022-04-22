@@ -978,14 +978,9 @@ public final class LongPollingActivateJobsTest {
       final Consumer<BrokerActivateJobsRequest> notification) {
     brokerClient.registerHandler(
         BrokerActivateJobsRequest.class,
-        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<?>>() {
-
-          @Override
-          public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
-              throws Exception {
-            notification.accept(request);
-            return activateJobsStub.handle(request);
-          }
+        (BrokerActivateJobsRequest request) -> {
+          notification.accept(request);
+          return activateJobsStub.handle(request);
         });
   }
 
