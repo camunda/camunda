@@ -29,9 +29,11 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -44,6 +46,8 @@ public final class BpmnJobBehavior {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
+  private static final Set<State> CANCELABLE_STATES =
+      EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED);
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder();
@@ -179,7 +183,7 @@ public final class BpmnJobBehavior {
   private void writeJobCancelCommand(final long jobKey) {
     final State state = jobState.getState(jobKey);
 
-    if (state == State.ACTIVATABLE || state == State.ACTIVATED || state == State.FAILED) {
+    if (CANCELABLE_STATES.contains(state)) {
       final JobRecord job = jobState.getJob(jobKey);
       commandWriter.appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
     }
