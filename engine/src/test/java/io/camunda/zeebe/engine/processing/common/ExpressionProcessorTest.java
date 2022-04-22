@@ -9,9 +9,10 @@ package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.stream.Stream;
@@ -26,7 +27,8 @@ class ExpressionProcessorTest {
 
   private static final ExpressionLanguage EXPRESSION_LANGUAGE =
       ExpressionLanguageFactory.createExpressionLanguage();
-  private static final VariablesLookup EMPTY_LOOKUP = (x, y) -> null;
+  private static final EvaluationContext EMPTY_LOOKUP = x -> null;
+  private static final EvaluationContextLookup DEFAULT_CONTEXT_LOOKUP = scope -> EMPTY_LOOKUP;
 
   @Nested
   @TestInstance(Lifecycle.PER_CLASS)
@@ -35,7 +37,7 @@ class ExpressionProcessorTest {
     @ParameterizedTest
     @MethodSource("arrayOfStringsExpressions")
     void testSuccessfulEvaluations(final String expression, final List<String> expected) {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, EMPTY_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression(expression);
       assertThat(processor.evaluateArrayOfStringsExpression(parsedExpression, -1L))
           .isRight()
@@ -46,7 +48,7 @@ class ExpressionProcessorTest {
     @ParameterizedTest
     @MethodSource("notArrayOfStringsExpressions")
     void testFailingEvaluations(final String expression, final String message) {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, EMPTY_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression(expression);
       assertThat(processor.evaluateArrayOfStringsExpression(parsedExpression, -1L))
           .isLeft()

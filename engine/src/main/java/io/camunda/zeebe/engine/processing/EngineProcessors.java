@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
@@ -69,7 +70,8 @@ public final class EngineProcessors {
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
+            ExpressionLanguageFactory.createExpressionLanguage(),
+            new VariableStateEvaluationContextLookup(variablesState));
 
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
     final CatchEventBehavior catchEventBehavior =
