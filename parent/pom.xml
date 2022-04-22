@@ -143,7 +143,6 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.22.1</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M6</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
@@ -1415,28 +1414,6 @@
           <version>${plugin.version.versions}</version>
         </plugin>
 
-        <!-- Google code format plugin -->
-        <plugin>
-          <groupId>com.diffplug.spotless</groupId>
-          <artifactId>spotless-maven-plugin</artifactId>
-          <version>${plugin.version.spotless}</version>
-          <configuration>
-            <java>
-              <googleJavaFormat>
-                <version>${plugin.version.google-java-format}</version>
-                <style>GOOGLE</style>
-              </googleJavaFormat>
-            </java>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>com.google.googlejavaformat</groupId>
-              <artifactId>google-java-format</artifactId>
-              <version>${plugin.version.google-java-format}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-
         <!-- protobuf generation -->
         <plugin>
           <groupId>org.xolstice.maven.plugins</groupId>
@@ -1641,6 +1618,28 @@
           <flattenMode>ossrh</flattenMode>
         </configuration>
       </plugin>
+
+      <!-- Google code format plugin -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>${plugin.version.google-java-format}</version>
+              <style>GOOGLE</style>
+            </googleJavaFormat>
+          </java>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>com.google.googlejavaformat</groupId>
+            <artifactId>google-java-format</artifactId>
+            <version>${plugin.version.google-java-format}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
     </plugins>
     <extensions>
       <extension>
