@@ -110,7 +110,6 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       final var isBoundaryElementId = instance.isBoundaryElementId(elementId);
 
       if (isInterruptingElementId) {
-        // only accept boundary events after an interrupting event is triggered
         instance.setInterrupted(true);
       }
       if (isBoundaryElementId && isInterruptingElementId) {
@@ -168,6 +167,12 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     return canTriggerEvent(instance, elementId);
   }
 
+  /**
+   * An event scope can be triggered if no interrupting event was triggered (i.e. it is not
+   * interrupted). If an interrupting event was triggered then no other event can be triggered,
+   * except for boundary events. If an interrupting boundary event was triggered then no other
+   * events, including boundary events, can be triggered (i.e. it is not accepting any events).
+   */
   private boolean canTriggerEvent(final EventScopeInstance instance, final DirectBuffer elementId) {
     return instance != null
         && instance.isAccepting()
