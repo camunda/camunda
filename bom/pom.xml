@@ -41,6 +41,7 @@
 
     <plugin.version.flatten>1.2.7</plugin.version.flatten>
     <plugin.version.javadoc>3.4.0</plugin.version.javadoc>
+    <plugin.version.spotless>2.22.1</plugin.version.spotless>
   </properties>
 
   <dependencyManagement>
@@ -104,6 +105,15 @@
   </repositories>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${plugin.version.spotless}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
     <plugins>
       <plugin>
@@ -138,11 +148,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>com.diffplug.spotless</groupId>
-        <artifactId>spotless-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
