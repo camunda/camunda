@@ -105,26 +105,15 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     final var previousReport = healthReport;
     healthReport = calculateStatus();
 
-    if (previousReport == healthReport) {
+    if (previousReport.equals(healthReport)) {
       return;
     }
 
     switch (healthReport.getStatus()) {
-      case HEALTHY:
-        failureListeners.forEach(FailureListener::onRecovered);
-        break;
-
-      case UNHEALTHY:
-        failureListeners.forEach((l) -> l.onFailure(healthReport));
-        break;
-
-      case DEAD:
-        failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
-        break;
-
-      default:
-        log.warn("Unknown health status {}", healthReport);
-        break;
+      case HEALTHY -> failureListeners.forEach(FailureListener::onRecovered);
+      case UNHEALTHY -> failureListeners.forEach(l -> l.onFailure(healthReport));
+      case DEAD -> failureListeners.forEach(l -> l.onUnrecoverableFailure(healthReport));
+      default -> log.warn("Unknown health status {}", healthReport);
     }
 
     logComponentStatus(healthReport);
