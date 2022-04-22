@@ -556,7 +556,7 @@ public final class LongPollingActivateJobsTest {
             // ensure that all requests are submitted to
             // the actor jobs queue before executing those
             allRequestsSubmittedLatch.await();
-          } catch (InterruptedException e) {
+          } catch (final InterruptedException e) {
             // ignore
           }
         });
@@ -908,7 +908,7 @@ public final class LongPollingActivateJobsTest {
 
           @Override
           public Either<Exception, Boolean> tryToSendActivatedJobs(
-              ActivateJobsResponse grpcResponse) {
+              final ActivateJobsResponse grpcResponse) {
             activatedJobRef.set(grpcResponse.getJobs(0));
             super.tryToSendActivatedJobs(grpcResponse);
             return Either.right(false);
