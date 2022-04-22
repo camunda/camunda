@@ -47,7 +47,7 @@ public final class BpmnJobBehavior {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
-      EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED);
+      EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder();
