@@ -32,7 +32,7 @@
     "react-table": "^7.7.0",
     "table-js": "^7.2.0",
     "use-deep-compare-effect": "^1.8.1",
-    "mixpanel-browser": "^2.43.0"
+    "mixpanel-browser": "^2.45.0"
   },
   "scripts": {
     "start": "react-scripts start",
