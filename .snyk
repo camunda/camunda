@@ -1,0 +1,10 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.22.1
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JAVA-IONETTY-1042268:
+    - '*':
+        reason: Zeebe actually enables hostname verification
+        expires: 2025-01-01T00:00:00.000Z
+        created: 2022-04-22T08:30:43.721Z
+patch: {}
