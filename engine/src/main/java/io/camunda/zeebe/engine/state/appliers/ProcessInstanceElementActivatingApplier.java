@@ -251,6 +251,7 @@ final class ProcessInstanceElementActivatingApplier
             eventSupplier.getBoundaryElementIds());
       }
     } else if (flowElement instanceof ExecutableJobWorkerElement) {
+      // job worker elements without events (e.g. message throw events)
       eventScopeInstanceState.createInstance(
           elementInstanceKey, Collections.emptySet(), Collections.emptySet());
     }
