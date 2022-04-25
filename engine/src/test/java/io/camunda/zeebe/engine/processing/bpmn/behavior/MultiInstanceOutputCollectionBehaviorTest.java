@@ -35,7 +35,7 @@ import org.mockito.Answers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class OutputCollectionBehaviorTest {
+public class MultiInstanceOutputCollectionBehaviorTest {
 
   @Test // regression test for #9143
   void shouldReturnFailureWhenWritingToOutputCollectionOutOfBounds() {
@@ -67,7 +67,8 @@ public class OutputCollectionBehaviorTest {
     final var mockFlowScopeContext = mock(BpmnElementContext.class);
     when(mockFlowScopeContext.getElementInstanceKey()).thenReturn(flowScopeContextKey);
 
-    final var sut = new OutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
+    final var sut =
+        new MultiInstanceOutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
 
     // when
     final var result =
@@ -114,7 +115,8 @@ public class OutputCollectionBehaviorTest {
     final var mockFlowScopeContext = mock(BpmnElementContext.class);
     when(mockFlowScopeContext.getElementInstanceKey()).thenReturn(flowScopeContextKey);
 
-    final var sut = new OutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
+    final var sut =
+        new MultiInstanceOutputCollectionBehavior(mockStateBehavior, mockExpressionProcessor);
 
     // when
     final var result =
