@@ -40,7 +40,9 @@ jobs:
         if: failure()
         with:
           name: Integration test results
-          path: "**/target/failsafe-reports/"
+          path: |
+            **/target/failsafe-reports/
+            **/hs_err_*.log
           retention-days: 7
   exporter-tests:
     name: Exporter tests
@@ -67,7 +69,9 @@ jobs:
         if: failure()
         with:
           name: Exporter test results
-          path: "**/target/failsafe-reports/"
+          path: |
+            **/target/failsafe-reports/
+            **/hs_err_*.log
           retention-days: 7
   project-list:
     # Builds a list of projects where unit tests can be run on hosted runners
@@ -118,7 +122,9 @@ jobs:
         if: failure()
         with:
           name: Unit test results for ${{ matrix.project }}
-          path: "**/target/surefire-reports/"
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
           retention-days: 7
   slow-unit-tests:
     name: Slow unit tests
@@ -148,7 +154,9 @@ jobs:
         if: failure()
         with:
           name: Slow unit test results
-          path: "**/target/surefire-reports/"
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
           retention-days: 7
   smoke-tests:
     # This name is hard-referenced from bors.toml
@@ -188,7 +196,9 @@ jobs:
         if: failure()
         with:
           name: Smoke test results for ${{ matrix.os }}
-          path: "**/target/failsafe-reports/"
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
           retention-days: 7
   go-client:
     name: Go client tests
