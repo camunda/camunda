@@ -636,10 +636,10 @@ public final class MultiInstanceIncidentTest {
    * size.
    */
   @Test // regression test for #9143
-  public void shouldCreateIncidentIfOutputElementCannotBeReplacedInOutputCollection() {
+  public void shouldCreateAndResolveIncidentIfOutputElementCannotBeReplacedInOutputCollection() {
     // given
     final var processId = "index-out-of-bounds-in-output-collection";
-    final var collectionWithThreeElements = "=[1,2,3]";
+    final var collectionWithThreeElements = "=[1]";
     final var collectionWithNoElements = "=[]";
     final var outputCollectionName = "outputItems";
 
@@ -649,10 +649,10 @@ public final class MultiInstanceIncidentTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    // when
+    // when (raise incident)
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    // then
+    // then (incident is raised)
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -661,30 +661,10 @@ public final class MultiInstanceIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Unable to update item in output collection 'outputItems' at position 1 because the size of the collection is: 0. This happens when multiple BPMN elements write to the same variable.")
+            "Unable to update an item in output collection 'outputItems' at position 1 because the size of the collection is: 0. This may happen when multiple BPMN elements write to the same variable.")
         .hasProcessInstanceKey(processInstanceKey);
-  }
 
-  @Test
-  public void shouldResolveIncidentRaisedByOutputElementCannotBeReplacedInOutputCollection() {
-    // given
-    final var processId = "index-out-of-bounds-in-output-collection";
-    final var collectionWithOneElement = "=[1]";
-    final var collectionWithNoElements = "=[]";
-    final var outputCollectionName = "outputItems";
-
-    final var process =
-        createProcessThatModifiesOutputCollection(
-            processId, collectionWithOneElement, collectionWithNoElements, outputCollectionName);
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    // when
+    // when (resolve incident)
     ENGINE
         .variables()
         .ofScope(incidentEvent.getValue().getVariableScopeKey())
@@ -692,7 +672,7 @@ public final class MultiInstanceIncidentTest {
         .update();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
-    // then the process is able to complete
+    // then (incident is resolved)
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementType(BpmnElementType.PROCESS)
@@ -701,6 +681,13 @@ public final class MultiInstanceIncidentTest {
                 .exists())
         .describedAs("the process has completed")
         .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName(outputCollectionName)
+                .withValue("[1]")
+                .exists())
+        .isTrue();
   }
 
   /**
@@ -708,10 +695,10 @@ public final class MultiInstanceIncidentTest {
    * output collection fails because the output collection is not an array.
    */
   @Test
-  public void shouldCreateIncidentIfOutputCollectionHasWrongType() {
+  public void shouldCreateAndResolveIncidentIfOutputCollectionHasWrongType() {
     // given
     final var processId = "output-collection-is-overwritten-by-string";
-    final var collectionWithThreeElements = "=[1,2,3]";
+    final var collectionWithThreeElements = "=[1]";
     final var overwriteWithString = "=\"String overwrite\"";
     final var outputCollectionName = "outputItems";
 
@@ -721,10 +708,10 @@ public final class MultiInstanceIncidentTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    // when
+    // when (raise incident)
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    // then
+    // then (incident is raised)
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -733,30 +720,10 @@ public final class MultiInstanceIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Unable to update item in output collection 'outputItems' because the type of the variable is: STRING. This happens when multiple BPMN elements write to the same variable.")
+            "Unable to update an item in output collection 'outputItems' because the type of the output collection is: STRING. This may happen when multiple BPMN elements write to the same variable.")
         .hasProcessInstanceKey(processInstanceKey);
-  }
 
-  @Test
-  public void shouldResolveIncidentRaisedByOutputCollectionHasWrongType() {
-    // given
-    final var processId = "output-collection-is-overwritten-by-string";
-    final var collectionWithOneElement = "=[1]";
-    final var overwriteWithString = "=\"String overwrite\"";
-    final var outputCollectionName = "outputItems";
-
-    final var process =
-        createProcessThatModifiesOutputCollection(
-            processId, collectionWithOneElement, overwriteWithString, outputCollectionName);
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    // when
+    // when (resolve incident)
     ENGINE
         .variables()
         .ofScope(incidentEvent.getValue().getVariableScopeKey())
@@ -764,7 +731,7 @@ public final class MultiInstanceIncidentTest {
         .update();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
-    // then the process is able to complete
+    // then (incident is resolved)
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementType(BpmnElementType.PROCESS)
@@ -772,6 +739,14 @@ public final class MultiInstanceIncidentTest {
                 .limitToProcessInstanceCompleted()
                 .exists())
         .describedAs("the process has completed")
+        .isTrue();
+
+    org.assertj.core.api.Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName(outputCollectionName)
+                .withValue("[1]")
+                .exists())
         .isTrue();
   }
 

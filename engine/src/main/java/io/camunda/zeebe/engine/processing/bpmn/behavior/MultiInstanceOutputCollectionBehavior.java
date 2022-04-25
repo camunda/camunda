@@ -14,10 +14,12 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackToken;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -116,24 +118,13 @@ public final class MultiInstanceOutputCollectionBehavior {
 
     outputCollectionReader.wrap(array, 0, array.capacity());
     final var token = outputCollectionReader.readToken();
-    if (token.getType() != MsgPackType.ARRAY) {
-      return Either.left(
-          new Failure(
-              "Unable to update item in output collection '%s' because the type of the variable is: %s. This happens when multiple BPMN elements write to the same variable."
-                  .formatted(bufferAsString(variableName), token.getType()),
-              ErrorType.EXTRACT_VALUE_ERROR,
-              variableScopeKey));
+
+    final var optValidationFailure =
+        validateIsCollectionAndHasAppropriateSIze(index, variableScopeKey, variableName, token);
+    if (optValidationFailure.isPresent()) {
+      return Either.left(optValidationFailure.get());
     }
 
-    final int size = token.getSize();
-    if (index > size) {
-      return Either.left(
-          new Failure(
-              "Unable to update item in output collection '%s' at position %d because the size of the collection is: %d. This happens when multiple BPMN elements write to the same variable."
-                  .formatted(bufferAsString(variableName), index, size),
-              ErrorType.EXTRACT_VALUE_ERROR,
-              variableScopeKey));
-    }
     outputCollectionReader.skipValues((long) index - 1L);
 
     final var offsetBefore = outputCollectionReader.getOffset();
@@ -149,5 +140,31 @@ public final class MultiInstanceOutputCollectionBehavior {
 
     updatedOutputCollectionBuffer.wrap(outputCollectionBuffer, 0, length);
     return Either.right(updatedOutputCollectionBuffer);
+  }
+
+  private Optional<Failure> validateIsCollectionAndHasAppropriateSIze(
+      final int index,
+      final long variableScopeKey,
+      final DirectBuffer variableName,
+      final MsgPackToken token) {
+    if (token.getType() != MsgPackType.ARRAY) {
+      return Optional.of(
+          new Failure(
+              "Unable to update an item in output collection '%s' because the type of the output collection is: %s. This may happen when multiple BPMN elements write to the same variable."
+                  .formatted(bufferAsString(variableName), token.getType()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              variableScopeKey));
+    }
+
+    final int size = token.getSize();
+    if (index > size) {
+      return Optional.of(
+          new Failure(
+              "Unable to update an item in output collection '%s' at position %d because the size of the collection is: %d. This may happen when multiple BPMN elements write to the same variable."
+                  .formatted(bufferAsString(variableName), index, size),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              variableScopeKey));
+    }
+    return Optional.empty();
   }
 }
