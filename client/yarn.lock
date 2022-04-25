@@ -1517,10 +1517,10 @@
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.2.tgz#30aa825f11d438671d585bd44e7fd564535fc210"
   integrity sha512-82cpyJyKRoQoRi+14ibCeGPu0CwypgtBAdBhq1WfvagpCZNKqwXbKwXllYSMG91DhmG4jt9gN8eP6lGOtozuaw==
 
-"@grpc/grpc-js@^1.4.4":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.5.0.tgz#fa0ca3170d7544aa89db6f64f7b4778603d0a786"
-  integrity sha512-PDLazk94MFV5hFn/+aSrVj3d5UsOK9HU1xa0ywachvDh1jymBU/Cb+4nGa2NjpfcBoXlHioBC/qIB/XzELednw==
+"@grpc/grpc-js@^1.5.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.6.7.tgz#4c4fa998ff719fe859ac19fe977fdef097bb99aa"
+  integrity sha512-eBM03pu9hd3VqDQG+kHahiG1x80RGkkqqRb1Pchcwqej/KkAH95gAvKs6laqaHCycYaPK+TKuNQnOz9UXYA8qw==
   dependencies:
     "@grpc/proto-loader" "^0.6.4"
     "@types/node" ">=12.12.47"
@@ -1535,6 +1535,17 @@
     long "^4.0.0"
     protobufjs "^6.10.0"
     yargs "^16.1.1"
+
+"@grpc/proto-loader@^0.6.9":
+  version "0.6.9"
+  resolved "https://registry.yarnpkg.com/@grpc/proto-loader/-/proto-loader-0.6.9.tgz#4014eef366da733f8e04a9ddd7376fe8a58547b7"
+  integrity sha512-UlcCS8VbsU9d3XTXGiEVFonN7hXk+oMXZtoHHG2oSA1/GcDP1q6OUgs20PzHDGizzyi8ufGSUDlk3O2NyY7leg==
+  dependencies:
+    "@types/long" "^4.0.1"
+    lodash.camelcase "^4.3.0"
+    long "^4.0.0"
+    protobufjs "^6.10.0"
+    yargs "^16.2.0"
 
 "@hapi/address@2.x.x":
   version "2.1.4"
@@ -17995,13 +18006,13 @@ yocto-queue@^0.1.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zeebe-node@2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-2.4.0.tgz#0077135b25644d1d8ddee8ae185ed595493b847e"
-  integrity sha512-0xdSJKQASbiSfet+X/+NRR7mucWyGKDvtTUgKi0+JXelHE34uMGn+b3Gi0fFHHieEmv2wlfPZHNH4DAEIeZctQ==
+zeebe-node@8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.0.0.tgz#432889113ba6751b97ffca9059d0f81f795fe68b"
+  integrity sha512-051h3uY8/oRV7UUngCBykhM9PyxoFTTpTJcHJyOGUizcQ/dJUN3zHpbBkJ4A5TvqUdIBdw4288DIxQU1dXN+lA==
   dependencies:
-    "@grpc/grpc-js" "^1.4.4"
-    "@grpc/proto-loader" "^0.6.4"
+    "@grpc/grpc-js" "^1.5.7"
+    "@grpc/proto-loader" "^0.6.9"
     chalk "^2.4.2"
     console-stamp "^3.0.2"
     dayjs "^1.8.15"
