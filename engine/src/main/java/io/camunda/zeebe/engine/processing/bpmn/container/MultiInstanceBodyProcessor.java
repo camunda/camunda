@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.OutputCollectionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -48,7 +48,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final OutputCollectionBehavior outputCollectionBehavior;
+  private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
 
   public MultiInstanceBodyProcessor(final BpmnBehaviors bpmnBehaviors) {
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
@@ -56,7 +56,7 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    outputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
+    multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
   }
 
   @Override
@@ -149,7 +149,8 @@ public final class MultiInstanceBodyProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     final var updatedOrFailure =
-        outputCollectionBehavior.updateOutputCollection(element, childContext, flowScopeContext);
+        multiInstanceOutputCollectionBehavior.updateOutputCollection(
+            element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
       return updatedOrFailure;
     }
@@ -246,7 +247,7 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(
             variableName ->
-                outputCollectionBehavior.initializeOutputCollection(
+                multiInstanceOutputCollectionBehavior.initializeOutputCollection(
                     activated, variableName, inputCollection.size()));
 
     if (inputCollection.isEmpty()) {

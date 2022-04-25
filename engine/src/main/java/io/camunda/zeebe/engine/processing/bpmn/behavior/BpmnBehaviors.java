@@ -34,5 +34,5 @@ public interface BpmnBehaviors {
 
   BpmnJobBehavior jobBehavior();
 
-  OutputCollectionBehavior outputCollectionBehavior();
+  MultiInstanceOutputCollectionBehavior outputCollectionBehavior();
 }

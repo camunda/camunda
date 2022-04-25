@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class OutputCollectionBehavior {
+public final class MultiInstanceOutputCollectionBehavior {
 
   private final MsgPackReader outputCollectionReader = new MsgPackReader();
   private final MsgPackWriter outputCollectionWriter = new MsgPackWriter();
@@ -32,7 +32,7 @@ public final class OutputCollectionBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final ExpressionProcessor expressionProcessor;
 
-  OutputCollectionBehavior(
+  MultiInstanceOutputCollectionBehavior(
       final BpmnStateBehavior stateBehavior, final ExpressionProcessor expressionProcessor) {
     this.stateBehavior = stateBehavior;
     this.expressionProcessor = expressionProcessor;
