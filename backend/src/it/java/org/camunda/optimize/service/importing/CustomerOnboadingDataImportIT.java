@@ -72,12 +72,14 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(new ProcessInstanceIndex(processDefinitionDocuments.get(0)
-                                                     .getKey()).getIndexName())).isTrue();
+    assertThat(indexExist(new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName())).isTrue();
     assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
       new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName(),
       ProcessDefinitionOptimizeDto.class
     )).hasSize(3);
+    List<ProcessInstanceDto> processInstanceDtos = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName(), ProcessInstanceDto.class);
+    assertThat(processInstanceDtos).anyMatch(processInstanceDto -> processInstanceDto.getIncidents() != null);
   }
 
   @Test

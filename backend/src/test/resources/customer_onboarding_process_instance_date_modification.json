@@ -1,1 +1,40 @@
-{"_index": "optimize-process-instance-customer_onboarding_en_v8", "_type": "_doc", "_id": "f5502a7c-92aa-11ec-bd87-0242ac120002", "_score": 1.0, "_ignored": ["variables.value.date", "variables.value.long", "variables.value.double"], "_source": {"processDefinitionKey": "customer_onboarding_en", "processDefinitionVersion": "1", "processDefinitionId": "customer_onboarding_en:1:535de296-92aa-11ec-bd87-0242ac120002", "processInstanceId": "f5502a7c-92aa-11ec-bd87-0242ac120002", "businessKey": "A-06478", "startDate": "2022-02-04T21:24:14.000+0100", "endDate": "2022-02-04T21:25:18.000+0100", "duration": null, "state": "COMPLETED", "flowNodeInstances": [{ "flowNodeInstanceId": "04b869d0-92ab-11ec-bd87-0242ac120002", "flowNodeId": "UserTask_DecideOnApplication", "flowNodeType": "userTask", "processInstanceId": "f5502a7c-92aa-11ec-bd87-0242ac120002", "totalDurationInMs": 147600001, "startDate": "2022-02-04T21:24:15.000+0100", "endDate": "2022-02-04T21:24:16.000+0100", "canceled": true, "definitionKey": "customer_onboarding_en", "definitionVersion": "2", "tenantId": null, "userTaskInstanceId": "04b890e3-92ab-11ec-bd87-0242ac120002", "dueDate": "2022-02-17T10:24:14.269+0100", "deleteReason": "deleted", "assignee": null, "candidateGroups": [ "clerk" ], "assigneeOperations": [], "candidateGroupOperations": [ { "id": "04b890e5-92ab-11ec-bd87-0242ac120002", "groupId": "clerk", "operationType": "add", "timestamp": "2022-02-16T10:24:14.26+0100" } ], "idleDurationInMs": 147600001, "workDurationInMs": 0 } ], "variables": [ { "id": "f5502a89-92aa-11ec-bd87-0242ac120002", "name": "category", "type": "String", "value": [ "Premium Package" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicant.name", "name": "application.applicant.name", "type": "String", "value": [ "Coleman Taylor" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002", "name": "application", "type": "Object", "value": [ "{\n \"applicationNumber\" : \"A-5228614\",\n \"applicant\" : {\n \"name\" : \"Coleman Taylor\",\n \"email\" : \"colemantaylor@hotmail.com\",\n \"birthday\" : 162173549941,\n \"gender\" : \"male\",\n \"age\" : 47,\n \"score\" : 82\n },\n \"employment\" : \"Salaried\",\n \"category\" : \"Premium Package\",\n \"product\" : \"super cool product\",\n \"corporation\" : \"Camundanzia\",\n \"contractNumber\" : null,\n \"priceIndicationInCent\" : 32000,\n \"premiumInCent\" : 0,\n \"premium\" : \"0,00 €\",\n \"priceIndication\" : \"320,00 €\"\n}" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicant.birthday", "name": "application.applicant.birthday", "type": "Double", "value": [ "1.62173549941E11" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicant.score", "name": "application.applicant.score", "type": "Double", "value": [ "82.0" ], "version": 1 }, { "id": "f5513c14-92aa-11ec-bd87-0242ac120002", "name": "riskLevel", "type": "String", "value": [ "yellow" ], "version": 1 }, { "id": "f5513c10-92aa-11ec-bd87-0242ac120002", "name": "risks", "type": "String", "value": [ "Too Low Income" ], "version": 1 }, { "id": "f5502a83-92aa-11ec-bd87-0242ac120002", "name": "corporation", "type": "String", "value": [ "Camundanzia" ], "version": 1 }, { "id": "f706dbf2-92aa-11ec-bd87-0242ac120002", "name": "uiBaseUrl", "type": "String", "value": [ "\"camunda.com\"" ], "version": 4 }, { "id": "f706b4dc-92aa-11ec-bd87-0242ac120002", "name": "requestedDocumentDescription", "type": "String", "value": [ "\"very important document\"" ], "version": 8 }, { "id": "f706b4da-92aa-11ec-bd87-0242ac120002", "name": "approved", "type": "Boolean", "value": [ "true" ], "version": 4 }, { "id": "f5502a87-92aa-11ec-bd87-0242ac120002", "name": "applicantName", "type": "String", "value": [ "Coleman Taylor" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.product", "name": "application.product", "type": "String", "value": [ "super cool product" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicant.gender", "name": "application.applicant.gender", "type": "String", "value": [ "male" ], "version": 1 }, { "id": "f5509fbf-92aa-11ec-bd87-0242ac120002", "name": "score", "type": "Integer", "value": [ "82" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.premiumInCent", "name": "application.premiumInCent", "type": "Double", "value": [ "0.0" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.employment", "name": "application.employment", "type": "String", "value": [ "Salaried" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.priceIndicationInCent", "name": "application.priceIndicationInCent", "type": "Double", "value": [ "32000.0" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicant.email", "name": "application.applicant.email", "type": "String", "value": [ "colemantaylor@hotmail.com" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.premium", "name": "application.premium", "type": "String", "value": [ "0,00 €" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicationNumber", "name": "application.applicationNumber", "type": "String", "value": [ "A-5228614" ], "version": 1 }, { "id": "f551d860-92aa-11ec-bd87-0242ac120002", "name": "documentReferenceId", "type": "String", "value": [ "\"123456\"" ], "version": 8 }, { "id": "f5513c10-92aa-11ec-bd87-0242ac120002_risks._listSize", "name": "risks._listSize", "type": "Long", "value": [ "1" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.corporation", "name": "application.corporation", "type": "String", "value": [ "Camundanzia" ], "version": 1 }, { "id": "f5502a85-92aa-11ec-bd87-0242ac120002", "name": "applicationNumber", "type": "String", "value": [ "A-5228614" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.category", "name": "application.category", "type": "String", "value": [ "Premium Package" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.applicant.age", "name": "application.applicant.age", "type": "Double", "value": [ "47.0" ], "version": 1 }, { "id": "f5502a7e-92aa-11ec-bd87-0242ac120002_application.priceIndication", "name": "application.priceIndication", "type": "String", "value": [ "320,00 €" ], "version": 1 } ], "incidents": [], "dataSource": { "type": "engine", "name": "camunda-bpm" }, "tenantId": null }}
+[ {
+  "processDefinitionKey" : "customer_onboarding_en",
+  "processDefinitionVersion" : "1",
+  "processDefinitionId" : "customer_onboarding_en:1:535de296-92aa-11ec-bd87-0242ac120002",
+  "processInstanceId" : "77859011-92aa-11ec-bd87-0242ac120002",
+  "businessKey" : "A-01507",
+  "startDate" : "2022-02-04T21:24:14.000+0100",
+  "endDate" : "2022-02-04T21:25:18.000+0100",
+  "duration" : 3,
+  "state" : "COMPLETED",
+  "flowNodeInstances" : [ {
+    "flowNodeInstanceId" : "ServiceTask_0tixwo5:77860453-92aa-11ec-bd87-0242ac120002",
+    "flowNodeId" : "ServiceTask_0tixwo5",
+    "flowNodeType" : "serviceTask",
+    "processInstanceId" : "77859011-92aa-11ec-bd87-0242ac120002",
+    "totalDurationInMs" : 0,
+    "startDate" : "2022-02-04T21:24:15.000+0100",
+    "endDate" : "2022-02-04T21:24:16.000+0100",
+    "canceled" : false,
+    "definitionKey" : "customer_onboarding_en",
+    "definitionVersion" : "2",
+    "tenantId" : null,
+    "userTaskInstanceId" : null,
+    "dueDate" : null,
+    "deleteReason" : null,
+    "assignee" : null,
+    "candidateGroups" : [ ],
+    "assigneeOperations" : [ ],
+    "candidateGroupOperations" : [ ],
+    "idleDurationInMs" : null,
+    "workDurationInMs" : null
+  }],
+  "incidents" : [ ],
+  "dataSource" : {
+    "type" : "engine",
+    "name" : "camunda-bpm"
+  },
+  "tenantId" : null
+}
+]

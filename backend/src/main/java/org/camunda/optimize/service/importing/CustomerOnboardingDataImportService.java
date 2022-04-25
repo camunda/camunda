@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.importing;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ElasticDumpEntryDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -22,8 +22,10 @@ import org.springframework.stereotype.Component;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -43,12 +45,12 @@ public class CustomerOnboardingDataImportService {
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private static final String CUSTOMER_ONBOARDING_DEFINITION = "customer_onboarding_definition.json";
-  private static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_process_instances.json";
+  private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 5000;
 
   @PostConstruct
   public void importData() {
-    importData(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION, BATCH_SIZE);
+    importData(PROCESSED_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION, BATCH_SIZE);
   }
 
   public void importData(final String processInstances, final String processDefinition, final int batchSize) {
@@ -57,8 +59,7 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  private void importCustomerOnboardingDefinition(final String processDefinition, final String pathToProcessInstances
-    , final int batchSize) {
+  private void importCustomerOnboardingDefinition(final String processDefinition, final String pathToProcessInstances, final int batchSize) {
     try {
       if (processDefinition != null) {
         InputStream customerOnboardingDefinition = this.getClass()
@@ -75,7 +76,7 @@ public class CustomerOnboardingDataImportService {
               Optional<String> processDefinitionKey = Optional.ofNullable(processDefinitionDto.getKey());
               if (processDefinitionKey.isPresent()) {
                 processDefinitionWriter.importProcessDefinitions(List.of(processDefinitionDto));
-                addProcessInstanceCopiesToElasticSearch(pathToProcessInstances, batchSize);
+                readProcessInstanceJson(pathToProcessInstances, batchSize);
               } else {
                 log.error("Process definition data are invalid. Please cheeck your json file.");
               }
@@ -96,47 +97,34 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  private void addProcessInstanceCopiesToElasticSearch(final String pathToProcessInstances, final int batchSize) {
+  private ProcessInstanceDto readProcessInstanceJson(final String pathToProcessInstances, final int batchSize) {
+    ProcessInstanceDto processInstanceDto = null;
+    List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     try {
-      if (pathToProcessInstances != null) {
-        InputStream customerOnboardingProcessInstances = this.getClass()
-          .getClassLoader()
-          .getResourceAsStream(pathToProcessInstances);
-        if (customerOnboardingProcessInstances != null) {
-          String customerOnboardingProcessInstancesAsString = IOUtils.toString(
-            customerOnboardingProcessInstances,
-            StandardCharsets.UTF_8
-          );
-          if (customerOnboardingProcessInstancesAsString != null) {
-            String[] processInstances = customerOnboardingProcessInstancesAsString.split("\\r?\\n");
-            List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
-            for (String processInstance : processInstances) {
-              ElasticDumpEntryDto elasticDumpEntryDto = objectMapper.readValue(
-                processInstance,
-                ElasticDumpEntryDto.class
-              );
-              ProcessInstanceDto rawProcessInstanceFromDump = elasticDumpEntryDto.getProcessInstanceDto();
-              if (rawProcessInstanceFromDump != null) {
-                Optional<Long> processInstanceDuration = Optional.ofNullable(rawProcessInstanceFromDump.getDuration());
-                if (rawProcessInstanceFromDump.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
-                  processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
-                }
-              } else {
-                log.error("Process instance not loaded correctly. Please check your json file.");
-              }
+      ClassLoader classLoader = CustomerOnboardingDataImportService.class.getClassLoader();
+      URL resource = classLoader.getResource(pathToProcessInstances);
+      if (resource != null) {
+        File file = new File(resource.getFile());
+        List<ProcessInstanceDto> rawProcessInstanceDtos = objectMapper.readValue(file, new TypeReference<List<ProcessInstanceDto>>(){});
+        for (ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
+          if (processInstance != null) {
+            Optional<Long> processInstanceDuration = Optional.ofNullable(processInstance.getDuration());
+            if (processInstance.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
+              processInstanceDtos.add(processInstance);
             }
-            loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
+          } else {
+            log.error("Process instance not loaded correctly. Please check your json file.");
           }
-        } else {
-          log.error(
-            "Could not load customer onboarding process instances. Please validate the process instance json file.");
         }
-      } else {
-        log.error("Process instance file cannot be null.");
+        loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
+
+        } else {
+          log.error("Could not load customer onboarding process instances. Please validate the process instance json file.");
       }
     } catch (IOException e) {
-      log.error("Unable to add customer onboarding process instances to elasticsearch", e);
+      log.error("Could not load customer onboarding process instances. Please validate the process instance json file.");
     }
+    return processInstanceDto;
   }
 
   private void loadProcessInstancesToElasticSearch(List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
