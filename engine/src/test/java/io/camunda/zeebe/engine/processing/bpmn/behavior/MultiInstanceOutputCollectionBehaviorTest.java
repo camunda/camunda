@@ -36,6 +36,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class MultiInstanceOutputCollectionBehaviorTest {
+  /*
+   * Note: this test class caused some controversy between the author and the reviewer. The reviewer
+   * feared that it will too costly to maintain and doesn't provide much value in return. The author
+   * felt it will be alright. We didn't manage to come to an agreement, so we leave it to you, future
+   * developer. If you had to maintain the test and feel it was too cumbersome and didn't add value,
+   * feel free to remove this test. If you felt maintaining it was ok, and the test does have value,
+   * feel free to remove this comment.
+   */
 
   @Test // regression test for #9143
   void shouldReturnFailureWhenWritingToOutputCollectionOutOfBounds() {
@@ -81,7 +89,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     assertThat(failure.getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
     assertThat(failure.getMessage())
         .isEqualTo(
-            "Unable to update item in output collection 'OUTPUT_COLLECTION' at position 2 because the size of the collection is: 1. This happens when multiple BPMN elements write to the same variable.");
+            "Unable to update an item in output collection 'OUTPUT_COLLECTION' at position 2 because the size of the collection is: 1. This may happen when multiple BPMN elements write to the same variable.");
     assertThat(failure.getVariableScopeKey()).isEqualTo(flowScopeContextKey);
   }
 
@@ -129,7 +137,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     assertThat(failure.getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
     assertThat(failure.getMessage())
         .isEqualTo(
-            "Unable to update item in output collection 'OUTPUT_COLLECTION' because the type of the variable is: STRING. This happens when multiple BPMN elements write to the same variable.");
+            "Unable to update an item in output collection 'OUTPUT_COLLECTION' because the type of the output collection is: STRING. This may happen when multiple BPMN elements write to the same variable.");
     assertThat(failure.getVariableScopeKey()).isEqualTo(flowScopeContextKey);
   }
 
