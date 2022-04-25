@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {observer} from 'mobx-react';
 import {User} from './User';
 import {NavElement} from './NavElement';
 import {Menu, LeftSeparator, RightSeparator} from './styled';
@@ -15,7 +14,7 @@ import {tracking} from 'modules/tracking';
 import {LicenseNote} from './LicenseNote';
 import {useLocation} from 'react-router-dom';
 
-const Header: React.FC = observer(() => {
+const Header: React.FC = () => {
   const location = useLocation();
 
   return (
@@ -86,6 +85,6 @@ const Header: React.FC = observer(() => {
       </div>
     </CmHeader>
   );
-});
+};
 
 export {Header};

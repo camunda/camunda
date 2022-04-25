@@ -201,4 +201,72 @@ describe('Header', () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe('active links', () => {
+    it('should display processes as active when on processes page', async () => {
+      render(<Header />, {
+        wrapper: createWrapper('/processes'),
+      });
+
+      expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
+
+      expect(screen.getByTitle('View Processes')).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+    });
+
+    it('should not display processes as active when on process detail page', async () => {
+      render(<Header />, {
+        wrapper: createWrapper('/processes/1'),
+      });
+
+      expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
+
+      expect(screen.getByTitle('View Processes')).not.toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+    });
+
+    it('should display decisions as active when on decisions page', async () => {
+      render(<Header />, {
+        wrapper: createWrapper('/decisions'),
+      });
+
+      expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
+
+      expect(screen.getByTitle('View Decisions')).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+    });
+
+    it('should not display decisions as active when on decision detail page', async () => {
+      render(<Header />, {
+        wrapper: createWrapper('/decisions/1'),
+      });
+
+      expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
+
+      expect(screen.getByTitle('View Decisions')).not.toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+    });
+
+    it('should display dashboard as active when on dashboard page', async () => {
+      render(<Header />, {
+        wrapper: createWrapper('/'),
+      });
+
+      expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
+
+      const [logoNavLink, dashboardNavLink] =
+        screen.getAllByTitle('View Dashboard');
+
+      expect(logoNavLink).toHaveAttribute('aria-current', 'page');
+      expect(dashboardNavLink).toHaveAttribute('aria-current', 'page');
+    });
+  });
 });

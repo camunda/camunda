@@ -23,6 +23,7 @@ const NavElement: React.FC<Props> = ({title, to, icon, label, onClick}) => (
       className={({isActive}) => (isActive ? 'active' : '')}
       title={title}
       to={to}
+      end
       onClick={onClick}
     >
       {icon}
