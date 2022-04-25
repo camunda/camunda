@@ -73,13 +73,7 @@ export function RenameVariablesModal({
     variables?.filter(({name}) => name.toLowerCase().includes(query.toLowerCase())) || [];
 
   return (
-    <Modal
-      open
-      size="max"
-      onClose={onClose}
-      onConfirm={updateVariableNames}
-      className="RenameVariablesModal"
-    >
+    <Modal open size="max" onClose={onClose} className="RenameVariablesModal">
       <Modal.Header>{t('report.definition.variables.rename')}</Modal.Header>
       <Modal.Content>
         <div className="header">

@@ -128,13 +128,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   }
 
   return (
-    <Modal
-      open
-      onClose={onClose}
-      onConfirm={createCollection}
-      size="large"
-      className="SourcesModal"
-    >
+    <Modal open onClose={onClose} size="large" className="SourcesModal">
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
       <Modal.Content>
         <div className="header">

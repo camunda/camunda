@@ -160,7 +160,7 @@ export default withErrorHandling(
       } = source;
 
       return (
-        <Modal open onClose={onClose} onConfirm={this.updateSources} className="EventsSourceModal">
+        <Modal open onClose={onClose} className="EventsSourceModal">
           <Modal.Header>
             {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>
