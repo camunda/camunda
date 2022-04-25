@@ -12,123 +12,9 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  integration-tests:
-    name: Integration tests
-    runs-on: "n1-standard-32-netssd-preempt"
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - uses: stCarolas/setup-maven@v4.3
-        with:
-          maven-version: 3.8.5
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
-      - run: >
-          mvn -B -T2 --no-snapshot-updates
-          -D junitThreadCount=12
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests
-          -pl !:zeebe-elasticsearch-exporter
-          verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: Integration test results
-          path: |
-            **/target/failsafe-reports/
-            **/hs_err_*.log
-          retention-days: 7
-  exporter-tests:
-    name: Exporter tests
-    runs-on: "n1-standard-8-netssd-preempt"
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - uses: stCarolas/setup-maven@v4.3
-        with:
-          maven-version: 3.8.5
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
-      - run: >
-          mvn -B --no-snapshot-updates
-          -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
-          -pl :zeebe-elasticsearch-exporter
-          verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: Exporter test results
-          path: |
-            **/target/failsafe-reports/
-            **/hs_err_*.log
-          retention-days: 7
-  project-list:
-    # Builds a list of projects where unit tests can be run on hosted runners
-    name: List projects
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: sudo apt-get -y install jq
-      - uses: actions/setup-java@v3.1.1
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - name: Get Project List
-        id: list-projects
-        # Build a json array of module names that can be used for the matrix in `unit-tests`
-        run: >
-          echo "::set-output name=projects::$(mvn -pl !:zeebe-workflow-engine,!:zeebe-logstreams -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q |  jq -cnR [inputs])"
-    outputs:
-      projects: ${{ steps.list-projects.outputs.projects }}
-  unit-tests:
-    name: Unit tests
-    needs: project-list
-    strategy:
-      fail-fast: false
-      matrix:
-        project: ${{ fromJson(needs.project-list.outputs.projects) }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - run: >
-          mvn -B -T1C
-          -D skipTests -D skipChecks
-          -am -pl :${{ matrix.project }}
-          install
-      - run: >
-          mvn -B --no-snapshot-updates
-          -D skipITs -D skipChecks
-          -pl :${{ matrix.project }}
-          verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: Unit test results for ${{ matrix.project }}
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
   slow-unit-tests:
     name: Slow unit tests
-    runs-on: ["n1-standard-8-netssd-preempt"]
+    runs-on: n1-standard-8-netssd-preempt
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3.1.1
@@ -136,6 +22,28 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+      - run: |
+          ls -lah /home/runner
+          ls -lah /home/runner/.m2
+          cat /home/runner/.m2/settings.xml
+          cat <<EOF > /home/runner/.m2/settings.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <interactiveMode>false</interactiveMode>
+            <mirrors>
+              <mirror>
+                <id>camunda-nexus</id>
+                <mirrorOf>*</mirrorOf>
+                <name>Camunda Nexus</name>
+                <url>http://repository-ci-camunda-cloud.nexus:8081/content/groups/internal/</url>
+              </mirror>
+            </mirrors>
+          </settings>
+          EOF
+          cat /home/runner/.m2/settings.xml
+          #ls -lah ~/.m2/repository
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
@@ -144,77 +52,8 @@ jobs:
           -D skipTests -D skipChecks
           -am -pl :zeebe-workflow-engine,:zeebe-logstreams
           install
-      - run: >
-          mvn -B --no-snapshot-updates
-          -D skipITs -D skipChecks
-          -pl :zeebe-workflow-engine,:zeebe-logstreams
-          verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: Slow unit test results
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
-  smoke-tests:
-    # This name is hard-referenced from bors.toml
-    # Remember to update that if this name, or the matrix.os changes
-    name: Smoke tests on ${{ matrix.os }}
-    timeout-minutes: 20
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
-    env:
-      JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3.1.1
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-      - name: Build relevant modules
-        run: >
-          mvn -B -T1C
-          -D skipTests -D skipChecks "-D maven.javadoc.skip=true"
-          -am -pl qa/integration-tests
-          install
-      - name: Run smoke test
-        run: >
-          mvn -B --no-snapshot-updates
-          -DskipUTs -DskipChecks
-          -pl qa/integration-tests
-          -P smoke-test
-          verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: Smoke test results for ${{ matrix.os }}
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
-  go-client:
-    name: Go client tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: "1.15"
-      - uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
-      - run: go test -mod=vendor -v ./...
-        working-directory: clients/go
-
+      # - run: >
+      #     mvn -B --no-snapshot-updates
+      #     -D skipITs -D skipChecks
+      #     -pl :zeebe-workflow-engine,:zeebe-logstreams
+      #     verify
