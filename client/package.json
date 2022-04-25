@@ -83,7 +83,7 @@
     "http-proxy-middleware": "2.0.4",
     "husky": "7.0.4",
     "jest-styled-components": "7.0.8",
-    "lint-staged": "12.3.7",
+    "lint-staged": "12.4.0",
     "msw": "0.39.2",
     "node-fetch": "2.6.7",
     "prettier": "2.6.2",
