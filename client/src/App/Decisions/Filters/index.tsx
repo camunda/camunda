@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {Locations} from 'modules/routes';
 import {
   DecisionInstanceFilters,
@@ -14,6 +14,7 @@ import {
 } from 'modules/utils/filter';
 import {Field, Form} from 'react-final-form';
 import {useLocation, useNavigate} from 'react-router-dom';
+import {Location} from 'history';
 import {CollapsablePanel} from './CollapsablePanel';
 import {
   FormElement,
@@ -28,10 +29,6 @@ import {
   DeleteIcon,
 } from './styled';
 import {observer} from 'mobx-react';
-import {
-  decisionInstancesVisibleFiltersStore,
-  OptionalFilter,
-} from 'modules/stores/decisionInstancesVisibleFilters';
 import {Button} from 'modules/components/Button';
 import {isEqual} from 'lodash';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
@@ -48,7 +45,17 @@ import {
 } from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
-import {storeStateLocally} from 'modules/utils/localStorage';
+
+type OptionalFilter = keyof Pick<
+  DecisionInstanceFilters,
+  'decisionInstanceIds' | 'processInstanceId' | 'evaluationDate'
+>;
+
+const optionalFilters: Array<OptionalFilter> = [
+  'decisionInstanceIds',
+  'processInstanceId',
+  'evaluationDate',
+];
 
 const OPTIONAL_FILTER_FIELDS: Record<
   OptionalFilter,
@@ -88,36 +95,41 @@ const OPTIONAL_FILTER_FIELDS: Record<
   },
 };
 
+const initialValues: DecisionInstanceFilters = {
+  evaluated: true,
+  failed: true,
+};
+
+type LocationType = Omit<Location, 'state'> & {
+  state: {hideOptionalFilters?: boolean};
+};
+
 const Filters: React.FC = observer(() => {
-  const location = useLocation();
+  const location = useLocation() as LocationType;
   const navigate = useNavigate();
-  const {
-    possibleOptionalFilters,
-    state: {visibleFilters},
-  } = decisionInstancesVisibleFiltersStore;
-  const unselectedOptionalFilters = possibleOptionalFilters.filter(
+
+  const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+
+  const unselectedOptionalFilters = optionalFilters.filter(
     (filter) => !visibleFilters.includes(filter)
   );
-  const initialValues: DecisionInstanceFilters = {
-    evaluated: true,
-    failed: true,
-  };
 
   useEffect(() => {
-    const decisionsFilters = getDecisionInstanceFilters(location.search);
-    storeStateLocally({
-      decisionsFilters,
-    });
+    if (location.state?.hideOptionalFilters) {
+      setVisibleFilters([]);
+    }
+  }, [location.state]);
 
-    const {possibleOptionalFilters} = decisionInstancesVisibleFiltersStore;
-
+  useEffect(() => {
     const params = Array.from(
       new URLSearchParams(location.search).keys()
     ).filter((param) =>
-      (possibleOptionalFilters as string[]).includes(param)
+      (optionalFilters as string[]).includes(param)
     ) as OptionalFilter[];
 
-    decisionInstancesVisibleFiltersStore.addVisibleFilters(params);
+    setVisibleFilters((currentVisibleFilters) => {
+      return Array.from(new Set([...currentVisibleFilters, ...params]));
+    });
   }, [location.search]);
 
   return (
@@ -174,8 +186,10 @@ const Filters: React.FC = observer(() => {
                       options: unselectedOptionalFilters.map((filter) => ({
                         label: OPTIONAL_FILTER_FIELDS[filter].label,
                         handler: () => {
-                          decisionInstancesVisibleFiltersStore.addVisibleFilters(
-                            [filter]
+                          setVisibleFilters(
+                            Array.from(
+                              new Set([...visibleFilters, ...[filter]])
+                            )
                           );
                         },
                       })),
@@ -190,7 +204,12 @@ const Filters: React.FC = observer(() => {
                       icon="delete"
                       data-testid={`delete-${filter}`}
                       onClick={() => {
-                        decisionInstancesVisibleFiltersStore.hideFilter(filter);
+                        setVisibleFilters(
+                          visibleFilters.filter(
+                            (visibleFilter) => visibleFilter !== filter
+                          )
+                        );
+
                         form.change(filter, undefined);
                         form.submit();
                       }}
@@ -228,7 +247,7 @@ const Filters: React.FC = observer(() => {
                 onClick={() => {
                   form.reset();
                   navigate(Locations.decisions(location, initialValues));
-                  decisionInstancesVisibleFiltersStore.reset();
+                  setVisibleFilters([]);
                 }}
               >
                 Reset Filters

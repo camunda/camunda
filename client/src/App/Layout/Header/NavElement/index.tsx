@@ -10,13 +10,21 @@ import {NavLink} from 'react-router-dom';
 
 type Props = {
   to: React.ComponentProps<typeof NavLink>['to'];
+  state?: React.ComponentProps<typeof NavLink>['state'];
   icon?: React.ReactNode;
   title: string;
   label: string;
   onClick?: () => void;
 };
 
-const NavElement: React.FC<Props> = ({title, to, icon, label, onClick}) => (
+const NavElement: React.FC<Props> = ({
+  title,
+  to,
+  icon,
+  label,
+  onClick,
+  state,
+}) => (
   <Container>
     <Link
       caseSensitive
@@ -25,6 +33,7 @@ const NavElement: React.FC<Props> = ({title, to, icon, label, onClick}) => (
       to={to}
       end
       onClick={onClick}
+      state={state}
     >
       {icon}
       <Label>{label}</Label>

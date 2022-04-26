@@ -9,10 +9,8 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {Header} from 'App/Layout/Header';
 import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
-import {decisionInstancesVisibleFiltersStore} from 'modules/stores/decisionInstancesVisibleFilters';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {getStateLocally} from 'modules/utils/localStorage';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
@@ -52,7 +50,6 @@ describe('<Filters />', () => {
       )
     );
     await groupedDecisionsStore.fetchDecisions();
-    decisionInstancesVisibleFiltersStore.reset();
     jest.useFakeTimers();
   });
 
@@ -150,15 +147,9 @@ describe('<Filters />', () => {
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
-
-    expect(getStateLocally().decisionsFilters).toEqual({
-      ...MOCK_FILTERS_PARAMS,
-      evaluated: Boolean(MOCK_FILTERS_PARAMS.evaluated),
-      failed: Boolean(MOCK_FILTERS_PARAMS.failed),
-    });
   });
 
-  it('should persist enabled filters on session', async () => {
+  it('should remove enabled filters on unmount', async () => {
     const {unmount, user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -187,34 +178,12 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.getByLabelText(/decision instance id\(s\)/i)
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
-  });
-
-  it('should persist enabled filters from URL on session', () => {
-    const {unmount} = render(<Filters />, {
-      wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
-    });
-
+      screen.queryByLabelText(/decision instance id\(s\)/i)
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByLabelText(/decision instance id\(s\)/i)
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
-
-    unmount();
-
-    render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(
-      screen.getByLabelText(/decision instance id\(s\)/i)
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+      screen.queryByLabelText(/process instance id/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
 
   it('should hide optional filters', async () => {
@@ -421,7 +390,7 @@ describe('<Filters />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should persist applied filters on navigation', async () => {
+  it('should reset applied filters on navigation', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -449,7 +418,7 @@ describe('<Filters />', () => {
     await user.click(screen.getByText('Decisions'));
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?processInstanceId=2251799813729387$/
+      /^\?evaluated=true&failed=true$/
     );
   });
 });

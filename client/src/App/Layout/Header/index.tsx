@@ -60,6 +60,7 @@ const Header: React.FC = () => {
             to={Locations.decisions(location)}
             title="View Decisions"
             label="Decisions"
+            state={{hideOptionalFilters: true}}
             onClick={() => {
               tracking.track({
                 eventName: 'navigation',

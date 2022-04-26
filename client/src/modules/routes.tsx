@@ -86,17 +86,8 @@ const Locations = {
       getPersistentQueryParams(location.search)
     );
 
-    const storage = getStateLocally();
-
     if (filters !== undefined) {
       Object.entries(filters).forEach(([key, value]) => {
-        params.set(key, value as string);
-      });
-    } else if (
-      storage.decisionsFilters !== undefined &&
-      storage.decisionsFilters !== null
-    ) {
-      Object.entries(storage.decisionsFilters).forEach(([key, value]) => {
         params.set(key, value as string);
       });
     } else {
