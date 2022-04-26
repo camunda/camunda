@@ -17,7 +17,7 @@ jobs:
     runs-on: "n1-standard-32-netssd-preempt"
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
+      - uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -40,14 +40,16 @@ jobs:
         if: failure()
         with:
           name: Integration test results
-          path: "**/target/failsafe-reports/"
+          path: |
+            **/target/failsafe-reports/
+            **/hs_err_*.log
           retention-days: 7
   exporter-tests:
     name: Exporter tests
     runs-on: "n1-standard-8-netssd-preempt"
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
+      - uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -67,7 +69,9 @@ jobs:
         if: failure()
         with:
           name: Exporter test results
-          path: "**/target/failsafe-reports/"
+          path: |
+            **/target/failsafe-reports/
+            **/hs_err_*.log
           retention-days: 7
   project-list:
     # Builds a list of projects where unit tests can be run on hosted runners
@@ -76,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: sudo apt-get -y install jq
-      - uses: actions/setup-java@v3.1.1
+      - uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -98,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
+      - uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -118,14 +122,16 @@ jobs:
         if: failure()
         with:
           name: Unit test results for ${{ matrix.project }}
-          path: "**/target/surefire-reports/"
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
           retention-days: 7
   slow-unit-tests:
     name: Slow unit tests
     runs-on: ["n1-standard-8-netssd-preempt"]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
+      - uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -148,7 +154,9 @@ jobs:
         if: failure()
         with:
           name: Slow unit test results
-          path: "**/target/surefire-reports/"
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
           retention-days: 7
   smoke-tests:
     # This name is hard-referenced from bors.toml
@@ -165,7 +173,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 17
-        uses: actions/setup-java@v3.1.1
+        uses: actions/setup-java@v3.2.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -188,6 +196,25 @@ jobs:
         if: failure()
         with:
           name: Smoke test results for ${{ matrix.os }}
-          path: "**/target/failsafe-reports/"
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
           retention-days: 7
+  go-client:
+    name: Go client tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.15"
+      - uses: actions/setup-java@v3.2.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - run: mvn -T1C -B -DskipChecks -DskipTests install
+      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
+      - run: go test -mod=vendor -v ./...
+        working-directory: clients/go
 

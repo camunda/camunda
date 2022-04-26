@@ -1,17 +1,13 @@
 name: Assign new issues to the default project
 on:
   issues:
-    types: [ opened, reopened ]
+    types: [ opened, reopened, transferred ]
 jobs:
   assign:
     name: Assign to project
     runs-on: ubuntu-latest
     steps:
-      - name: Assign to project
-        uses: zeebe-io/project-action@0.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PROJECT_ADMIN_TOKEN }}
+      - uses: actions/add-to-project@v0.0.3
         with:
-          project_type: "org"
-          project_owner: "camunda"
-          project_name: "Zeebe"
+          project-url: https://github.com/orgs/camunda/projects/18
+          github-token: ${{ secrets.PROJECT_ADMIN_TOKEN }}

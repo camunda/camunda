@@ -38,13 +38,13 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.15.0</version.agrona>
+    <version.agrona>1.15.1</version.agrona>
     <version.animal-sniffer>1.21</version.animal-sniffer>
     <version.assertj>3.22.0</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.17.0</version.camunda>
-    <version.checkstyle>10.1</version.checkstyle>
+    <version.checkstyle>10.2</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -52,7 +52,7 @@
     <version.commons-text>1.9</version.commons-text>
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
-    <version.error-prone>2.12.1</version.error-prone>
+    <version.error-prone>2.13.1</version.error-prone>
     <version.grpc>1.45.1</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
@@ -69,18 +69,18 @@
     <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.17.2</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>4.4.0</version.mockito>
-    <version.mockito-jupiter>4.4.0</version.mockito-jupiter>
+    <version.mockito>4.5.1</version.mockito>
+    <version.mockito-jupiter>4.5.1</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.1</version.msgpack>
     <version.netty>4.1.76.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
-    <version.protobuf>3.20.0</version.protobuf>
+    <version.protobuf>3.20.1</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
-    <version.micrometer>1.8.4</version.micrometer>
-    <version.rocksdbjni>7.0.4</version.rocksdbjni>
-    <version.sbe>1.25.2</version.sbe>
+    <version.micrometer>1.8.5</version.micrometer>
+    <version.rocksdbjni>7.1.2</version.rocksdbjni>
+    <version.sbe>1.25.3</version.sbe>
     <version.scala-parser>2.1.1</version.scala-parser>
     <version.scala>2.13.8</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
@@ -89,14 +89,14 @@
     <version.wiremock>2.33.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.17.0</version.testcontainers>
+    <version.testcontainers>1.17.1</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
     <version.feel-scala>1.14.2</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>5.0.1</version.rest-assured>
-    <version.spring>5.3.18</version.spring>
-    <version.spring-boot>2.6.6</version.spring-boot>
+    <version.spring>5.3.19</version.spring>
+    <version.spring-boot>2.6.7</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.2</version.config>
     <version.kryo>5.3.0</version.kryo>
@@ -110,7 +110,7 @@
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.143</version.classgraph>
+    <version.classgraph>4.8.146</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -119,7 +119,7 @@
     <version.easy-random>5.0.0</version.easy-random>
 
     <!-- maven plugins -->
-    <plugin.version.antrun>3.0.0</plugin.version.antrun>
+    <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
@@ -143,7 +143,6 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.22.1</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M6</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
@@ -1415,28 +1414,6 @@
           <version>${plugin.version.versions}</version>
         </plugin>
 
-        <!-- Google code format plugin -->
-        <plugin>
-          <groupId>com.diffplug.spotless</groupId>
-          <artifactId>spotless-maven-plugin</artifactId>
-          <version>${plugin.version.spotless}</version>
-          <configuration>
-            <java>
-              <googleJavaFormat>
-                <version>${plugin.version.google-java-format}</version>
-                <style>GOOGLE</style>
-              </googleJavaFormat>
-            </java>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>com.google.googlejavaformat</groupId>
-              <artifactId>google-java-format</artifactId>
-              <version>${plugin.version.google-java-format}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-
         <!-- protobuf generation -->
         <plugin>
           <groupId>org.xolstice.maven.plugins</groupId>
@@ -1641,6 +1618,28 @@
           <flattenMode>ossrh</flattenMode>
         </configuration>
       </plugin>
+
+      <!-- Google code format plugin -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>${plugin.version.google-java-format}</version>
+              <style>GOOGLE</style>
+            </googleJavaFormat>
+          </java>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>com.google.googlejavaformat</groupId>
+            <artifactId>google-java-format</artifactId>
+            <version>${plugin.version.google-java-format}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
     </plugins>
     <extensions>
       <extension>

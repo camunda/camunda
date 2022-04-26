@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
@@ -51,7 +51,7 @@ public class ProcessValidationUtil {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage();
-    final VariablesLookup emptyLookup = (name, scopeKey) -> null;
+    final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(

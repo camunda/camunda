@@ -40,7 +40,7 @@ public final class TimerInstanceStateTest {
 
     // when
     final List<TimerInstance> timers = new ArrayList<>();
-    state.findTimersWithDueDateBefore(1000L, timers::add);
+    state.processTimersWithDueDateBefore(1000L, timers::add);
 
     // then
     Assertions.assertThat(timers).hasSize(1);
@@ -65,7 +65,7 @@ public final class TimerInstanceStateTest {
 
     // then
     final List<TimerInstance> timers = new ArrayList<>();
-    state.findTimersWithDueDateBefore(2000L, timers::add);
+    state.processTimersWithDueDateBefore(2000L, timers::add);
 
     Assertions.assertThat(timers).hasSize(1);
     Assertions.assertThat(timers.get(0).getElementInstanceKey()).isEqualTo(2L);
@@ -105,7 +105,7 @@ public final class TimerInstanceStateTest {
 
     // when
     final List<Long> keys = new ArrayList<>();
-    state.findTimersWithDueDateBefore(2000L, t -> keys.add(t.getElementInstanceKey()));
+    state.processTimersWithDueDateBefore(2000L, t -> keys.add(t.getElementInstanceKey()));
 
     // then
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
@@ -119,7 +119,7 @@ public final class TimerInstanceStateTest {
     createTimerInstance(3, 3, 3000L);
 
     // when
-    final long nextDueDate = state.findTimersWithDueDateBefore(2000L, t -> true);
+    final long nextDueDate = state.processTimersWithDueDateBefore(2000L, t -> true);
 
     // then
     assertThat(nextDueDate).isEqualTo(3000L);
@@ -129,7 +129,7 @@ public final class TimerInstanceStateTest {
   public void shouldReturnNegativeDueDateIfEmpty() {
 
     // when
-    final long nextDueDate = state.findTimersWithDueDateBefore(2000L, t -> true);
+    final long nextDueDate = state.processTimersWithDueDateBefore(2000L, t -> true);
 
     // then
     assertThat(nextDueDate).isEqualTo(-1L);
@@ -143,7 +143,7 @@ public final class TimerInstanceStateTest {
     createTimerInstance(3, 3, 3000L);
 
     // when
-    final long nextDueDate = state.findTimersWithDueDateBefore(3000L, t -> true);
+    final long nextDueDate = state.processTimersWithDueDateBefore(3000L, t -> true);
 
     // then
     assertThat(nextDueDate).isEqualTo(-1L);
@@ -158,7 +158,7 @@ public final class TimerInstanceStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     final long nextDueDate =
-        state.findTimersWithDueDateBefore(
+        state.processTimersWithDueDateBefore(
             2000L,
             t -> {
               keys.add(t.getElementInstanceKey());

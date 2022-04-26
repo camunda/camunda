@@ -11,7 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.util.jar.ExternalService.Service;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
@@ -51,5 +55,27 @@ final class ExternalJarClassLoaderTest {
     assertThat(classLoader.getParent())
         .isEqualTo(getClass().getClassLoader())
         .isEqualTo(ClassLoader.getSystemClassLoader());
+  }
+
+  @Test
+  void shouldLoadResourceFiles(final @TempDir File tempDir) throws Exception {
+    final var testResourceValue = "test-value";
+    final var resourceName = "test-resource.txt";
+    final var jarFile = new File(tempDir, "with-resource.jar");
+    try (final var fileOutputStream = new FileOutputStream(jarFile)) {
+      try (final var jarOutputStream = new JarOutputStream(fileOutputStream)) {
+        jarOutputStream.putNextEntry(new JarEntry(resourceName));
+        jarOutputStream.write(testResourceValue.getBytes(StandardCharsets.UTF_8));
+        jarOutputStream.closeEntry();
+      }
+    }
+    final var classLoader = ExternalJarClassLoader.ofPath(jarFile.toPath());
+
+    // when
+    final var storedValue =
+        new String(classLoader.getResourceAsStream(resourceName).readAllBytes());
+
+    // then
+    assertThat(storedValue).isEqualTo(testResourceValue);
   }
 }
