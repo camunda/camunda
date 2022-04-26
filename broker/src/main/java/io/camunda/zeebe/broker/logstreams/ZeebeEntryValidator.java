@@ -5,11 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.broker.logstreams;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
+import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ZeebeEntryValidator implements EntryValidator {

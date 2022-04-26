@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,10 +22,13 @@ import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.dispatcher.Dispatchers;
 import io.camunda.zeebe.dispatcher.Subscription;
 import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.logstreams.impl.log.LogStorageAppender;
+import io.camunda.zeebe.logstreams.impl.log.LogStreamReaderImpl;
+import io.camunda.zeebe.logstreams.impl.log.LogStreamWriterImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.camunda.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
