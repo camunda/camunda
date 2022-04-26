@@ -28,7 +28,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
         new DueDateChecker(
             TIMER_RESOLUTION,
             typedCommandWriter ->
-                timerInstanceState.findTimersWithDueDateBefore(
+                timerInstanceState.processTimersWithDueDateBefore(
                     ActorClock.currentTimeMillis(),
                     timer -> {
                       timerRecord.reset();
@@ -44,7 +44,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
                       typedCommandWriter.appendFollowUpCommand(
                           timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 
-                      return typedCommandWriter.flush() > 0;
+                      return typedCommandWriter.flush() > 0; // means the write was successful
                     }));
   }
 
