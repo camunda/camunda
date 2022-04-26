@@ -11,9 +11,8 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 
-public record AtomixAppendListenerAdapter(
-    LogStorage.AppendListener delegate) implements
-    AppendListener {
+public record AtomixAppendListenerAdapter(LogStorage.AppendListener delegate)
+    implements AppendListener {
 
   @Override
   public void onWrite(final IndexedRaftLogEntry indexed) {
