@@ -81,7 +81,7 @@ public class EmailNotificationServiceTest {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text");
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text&utm_medium=email");
   }
 
   @Test
@@ -97,7 +97,7 @@ public class EmailNotificationServiceTest {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text");
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text&utm_medium=email");
   }
 
   @Test
@@ -112,7 +112,7 @@ public class EmailNotificationServiceTest {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text");
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text&utm_medium=email");
   }
 
   @Test

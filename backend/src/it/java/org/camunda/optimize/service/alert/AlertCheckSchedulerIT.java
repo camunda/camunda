@@ -164,7 +164,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
       .contains(branding)
       .contains(simpleAlert.getName())
       .contains(String.format(
-        "http://localhost:%d/#/collection/%s/report/%s/",
+        "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
         getOptimizeHttpPort(),
         collectionId,
         reportId
@@ -228,7 +228,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     assertThat(content)
       .contains(branding)
       .contains(String.format(
-        "http://test.de:8090/#/collection/%s/report/%s/",
+        "http://test.de:8090/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
         collectionId,
         reportId
       ));
