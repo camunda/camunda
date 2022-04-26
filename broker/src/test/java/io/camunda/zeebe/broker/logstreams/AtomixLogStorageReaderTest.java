@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.storage.atomix;
+package io.camunda.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,6 +15,8 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import java.io.File;
 import java.nio.ByteBuffer;
 import org.agrona.CloseHelper;
