@@ -22,29 +22,21 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public class LogStreamBatchReaderTest {
 
   private static final DirectBuffer EVENT_VALUE = BufferUtil.wrapString("test");
   private static final int LOG_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(4);
 
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final LogStreamRule logStreamRule =
-      LogStreamRule.startByDefault(
-          temporaryFolder,
-          builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE),
-          builder -> builder);
+      LogStreamRule.startByDefault(builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE));
 
   private final LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
   @Rule
   public final RuleChain ruleChain =
-      RuleChain.outerRule(temporaryFolder)
-          .around(logStreamRule)
-          .around(readerRule)
-          .around(writerRule);
+      RuleChain.outerRule(logStreamRule).around(readerRule).around(writerRule);
 
   private LogStreamBatchReader batchReader;
 

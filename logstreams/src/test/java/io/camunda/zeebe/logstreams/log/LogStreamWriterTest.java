@@ -28,7 +28,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public final class LogStreamWriterTest {
   private static final DirectBuffer EVENT_VALUE = wrapString("value");
@@ -40,17 +39,13 @@ public final class LogStreamWriterTest {
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
-  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
+  public final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   public final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
   public final LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(temporaryFolder)
-          .around(logStreamRule)
-          .around(writerRule)
-          .around(readerRule);
+      RuleChain.outerRule(logStreamRule).around(writerRule).around(readerRule);
 
   private LogStreamRecordWriter writer;
 

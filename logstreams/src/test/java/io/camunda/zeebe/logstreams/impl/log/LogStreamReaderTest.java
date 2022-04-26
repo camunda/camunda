@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public final class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
@@ -34,18 +33,14 @@ public final class LogStreamReaderTest {
 
   @Rule public final ExpectedException expectedException = ExpectedException.none();
 
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final LogStreamRule logStreamRule =
-      LogStreamRule.startByDefault(
-          temporaryFolder,
-          builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE),
-          builder -> builder);
+      LogStreamRule.startByDefault(builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE));
   private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
   @Rule
   public final RuleChain ruleChain =
-      RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(readerRule).around(writer);
+      RuleChain.outerRule(logStreamRule).around(readerRule).around(writer);
 
   private final Random random = new Random();
 
