@@ -1,0 +1,171 @@
+global:
+  image:
+    tag: medic-cw-17-ca986be3cb-benchmark
+    pullPolicy: Always
+
+zeebe:
+  # Image configuration to configure the zeebe image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: gcr.io/zeebe-io/zeebe
+  # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  # PartitionCount defines how many zeebe partitions are set up in the cluster
+  partitionCount: "3"
+  # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+
+  # CpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: 4
+  # IoThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: 4
+
+  # PodSecurityContext defines the security options the broker and gateway container should be run with
+  podSecurityContext:
+    capabilities:
+      add: ["NET_ADMIN"]
+
+  # JavaOpts can be used to set java options for the zeebe brokers
+  JavaOpts: >-
+    -XX:MaxRAMPercentage=25.0
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/zeebe/data
+    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+    -Xlog:gc*:file=/usr/local/zeebe/data/gc.log:time:filecount=7,filesize=8M
+
+  # Environment variables
+  env:
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
+      value: "true"
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
+    - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
+      value: "0.8"
+    - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
+      value: "0.9"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS
+      value: "true"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS
+      value: "true"
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
+  resources:
+    limits:
+      cpu: 5
+      memory: 4Gi
+    requests:
+      cpu: 5
+      memory: 4Gi
+
+  # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+  pvcAccessMode: ["ReadWriteOnce"]
+  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: 128Gi
+  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  pvcStorageClassName: ssd
+
+zeebe-gateway:
+  # Replicas defines how many standalone gateways are deployed
+  replicas: 3
+  # Image configuration to configure the zeebe-gateway image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: gcr.io/zeebe-io/zeebe
+  # LogLevel defines the log level which is used by the gateway
+  logLevel: debug
+
+  # Env can be used to set extra environment variables in each gateway container
+  env:
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
+    - name: ZEEBE_GATEWAY_MONITORING_ENABLED
+      value: "true"
+    - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
+      value: "1"
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    limits:
+      cpu: 1
+      memory: 512Mi
+    requests:
+      cpu: 1
+      memory: 512Mi
+
+# RetentionPolicy configuration to configure the elasticsearch index retention policies
+retentionPolicy:
+  # RetentionPolicy.enabled if true, elasticsearch curator cronjob and configuration will be deployed.
+  enabled: true
+  # RetentionPolicy.schedule defines how often/when the curator should run
+  schedule: "*/15 * * * *"
+  # RetentionPolicy.zeebeIndexTTL defines after how many days a zeebe index can be deleted
+  zeebeIndexTTL: 1
+  # RetentionPolicy.zeebeIndexMaxSize can be set to configure the maximum allowed zeebe index size in gigabytes.
+  # After reaching that size, curator will delete that corresponding index on the next run.
+  # To benefit from that configuration the schedule needs to be configured small enough, like every 15 minutes.
+  zeebeIndexMaxSize: 10
+  # RetentionPolicy.operateIndexTTL defines after how many days an operate index can be deleted
+  operateIndexTTL: 30
+  # RetentionPolicy.tasklistIndexTTL defines after how many days a tasklist index can be deleted
+  tasklistIndexTTL: 30
+
+operate:
+  enabled: false
+
+tasklist:
+  enabled: false
+
+identity:
+  enabled: false
+
+# ELASTIC
+elasticsearch:
+  enabled: true
+  imageTag: 7.16.2
+
+  replicas: 3
+  minimumMasterNodes: 2
+
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "ssd"
+    resources:
+      requests:
+        storage: 50Gi
+
+  esJavaOpts: "-Xmx4g -Xms4g"
+
+  resources:
+    requests:
+      cpu: 3
+      memory: 8Gi
+    limits:
+      cpu: 3
+      memory: 8Gi
+
+# PrometheusServiceMonitor configuration for the prometheus service monitor
+prometheusServiceMonitor:
+  # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
+  enabled: true
