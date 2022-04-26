@@ -84,7 +84,7 @@
     "http-proxy-middleware": "^2.0.6",
     "husky": "^7.0.4",
     "jest-enzyme": "^7.1.2",
-    "jest-junit": "^13.0.0",
+    "jest-junit": "^13.2.0",
     "license-checker": "^25.0.1",
     "lint-staged": "^12.4.0",
     "mock-socket": "^9.1.3",
