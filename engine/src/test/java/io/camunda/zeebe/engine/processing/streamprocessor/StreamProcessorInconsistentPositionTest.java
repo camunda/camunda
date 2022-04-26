@@ -14,11 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.util.ListLogStorage;
 import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;
 import io.camunda.zeebe.engine.util.TestStreams;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
