@@ -24,7 +24,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
-import io.camunda.operate.zeebeimport.v8_0.processors.IncidentZeebeRecordProcessor;
+import io.camunda.operate.zeebeimport.v8_1.processors.IncidentZeebeRecordProcessor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
@@ -60,7 +60,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   @InjectMocks
-  private io.camunda.operate.zeebeimport.v8_0.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
+  private io.camunda.operate.zeebeimport.v8_1.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
 
   @Before
   public void before() {

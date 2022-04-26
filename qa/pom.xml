@@ -12,8 +12,8 @@
     <license.header>${project.baseUri}/../../license/license-header</license.header>
 
     <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
-    <version.zeebe.old>1.3.0</version.zeebe.old>
-    <version.zeebe.docker.current>8.0.0</version.zeebe.docker.current>
+    <version.zeebe.old>8.0.0</version.zeebe.old>
+    <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
 
   </properties>
 
