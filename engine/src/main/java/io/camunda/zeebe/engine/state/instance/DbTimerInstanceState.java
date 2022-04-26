@@ -31,7 +31,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   private final ColumnFamily<
           DbCompositeKey<DbLong, DbCompositeKey<DbForeignKey<DbLong>, DbLong>>, DbNil>
       dueDateColumnFamily;
-  private final DbLong dueDateKey;
+  private final DbLong dueDate;
   private final DbCompositeKey<DbLong, DbCompositeKey<DbForeignKey<DbLong>, DbLong>>
       dueDateCompositeKey;
 
@@ -52,8 +52,8 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.TIMERS, transactionContext, elementAndTimerKey, timerInstance);
 
-    dueDateKey = new DbLong();
-    dueDateCompositeKey = new DbCompositeKey<>(dueDateKey, elementAndTimerKey);
+    dueDate = new DbLong();
+    dueDateCompositeKey = new DbCompositeKey<>(dueDate, elementAndTimerKey);
     dueDateColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.TIMER_DUE_DATES,
@@ -69,7 +69,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
     timerInstanceColumnFamily.insert(elementAndTimerKey, timer);
 
-    dueDateKey.wrapLong(timer.getDueDate());
+    dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.insert(dueDateCompositeKey, DbNil.INSTANCE);
   }
 
@@ -79,12 +79,12 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     timerKey.wrapLong(timer.getKey());
     timerInstanceColumnFamily.deleteExisting(elementAndTimerKey);
 
-    dueDateKey.wrapLong(timer.getDueDate());
+    dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.deleteExisting(dueDateCompositeKey);
   }
 
   @Override
-  public long findTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
+  public long processTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
     dueDateColumnFamily.whileTrue(
