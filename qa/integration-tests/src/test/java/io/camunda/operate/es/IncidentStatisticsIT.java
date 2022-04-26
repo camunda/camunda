@@ -31,6 +31,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStati
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
+import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,6 +53,8 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+
+  private Random random = new Random();
   
   @Test
   public void testAbsentProcessDoesntThrowExceptions() throws Exception {
@@ -350,6 +353,18 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       final FlowNodeInstanceForListViewEntity activityInstance = TestUtil
           .createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
       entities.add(activityInstance);
+    }
+    int pendingIncidentsCount = random.nextInt(5) + 1;
+    for (int i = 0; i < pendingIncidentsCount; i++) {
+      final FlowNodeInstanceForListViewEntity activityInstance = TestUtil
+          .createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
+      createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
+      entities.add(activityInstance);
+      IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
+      incidentEntity.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
+      incidentEntity.setProcessInstanceKey(processInstance.getProcessInstanceKey());
+      incidentEntity.setPending(true);
+      entities.add(incidentEntity);
     }
     return entities;
   }

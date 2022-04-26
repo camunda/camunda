@@ -27,10 +27,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -80,10 +78,7 @@ public class ProcessInstanceReader extends AbstractReader {
   @Autowired
   private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private IncidentTemplate incidentTemplate;
-
-  @Autowired
+   @Autowired
   private OperationReader operationReader;
 
   /**

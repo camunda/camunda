@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.schema.templates;
 
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.entities.IncidentState;
@@ -15,8 +16,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
 
-  public static QueryBuilder ACTIVE_INCIDENT_QUERY = termQuery(IncidentTemplate.STATE,
-      IncidentState.ACTIVE);
+  public static QueryBuilder ACTIVE_INCIDENT_QUERY = joinWithAnd(termQuery(IncidentTemplate.STATE,
+      IncidentState.ACTIVE), termQuery(IncidentTemplate.PENDING, false));
 
   public static final String INDEX_NAME = "incident";
 
