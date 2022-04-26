@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.7",
-    "ansi-html": "^0.0.8",
+    "ansi-html": "^0.0.9",
     "chalk": "^4.1.2",
     "date-fns": "^2.28.0",
     "enzyme": "3.11.0",
