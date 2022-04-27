@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -39,5 +40,10 @@ public class ExecutableEventBasedGateway extends ExecutableFlowNode
   @Override
   public Collection<DirectBuffer> getInterruptingElementIds() {
     return eventIds;
+  }
+
+  @Override
+  public Collection<DirectBuffer> getBoundaryElementIds() {
+    return Collections.emptySet();
   }
 }

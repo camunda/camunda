@@ -239,18 +239,21 @@ final class ProcessInstanceElementActivatingApplier
             elementRecord.getElementIdBuffer(),
             flowElementClass);
 
-    if (flowElement instanceof ExecutableCatchEventSupplier) {
-      final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
+    if (flowElement instanceof final ExecutableCatchEventSupplier eventSupplier) {
 
       final var hasEvents = !eventSupplier.getEvents().isEmpty();
       if (hasEvents
           || flowElement instanceof ExecutableJobWorkerElement
           || flowElement instanceof ExecutableCallActivity) {
         eventScopeInstanceState.createInstance(
-            elementInstanceKey, eventSupplier.getInterruptingElementIds());
+            elementInstanceKey,
+            eventSupplier.getInterruptingElementIds(),
+            eventSupplier.getBoundaryElementIds());
       }
     } else if (flowElement instanceof ExecutableJobWorkerElement) {
-      eventScopeInstanceState.createInstance(elementInstanceKey, Collections.emptyList());
+      // job worker elements without events (e.g. message throw events)
+      eventScopeInstanceState.createInstance(
+          elementInstanceKey, Collections.emptySet(), Collections.emptySet());
     }
   }
 }
