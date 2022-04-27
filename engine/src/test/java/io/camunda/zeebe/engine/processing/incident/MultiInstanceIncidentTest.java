@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.client.IncidentClient.ResolveIncidentClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -625,6 +626,157 @@ public final class MultiInstanceIncidentTest {
                 .exists())
         .describedAs("the process has completed")
         .isTrue();
+  }
+
+  /**
+   * This test covers the scenario where a multi instance cannot be completed, because updating the
+   * output collection fails due to an index out of bounds. The index out of bounds is caused
+   * because a) the output collection is initialized with the cardinality of the multi instance when
+   * the multi instance is activated, and b) the collection is modified and shrunk to a smaller
+   * size.
+   */
+  @Test // regression test for #9143
+  public void shouldCreateAndResolveIncidentIfOutputElementCannotBeReplacedInOutputCollection() {
+    // given
+    final var processId = "index-out-of-bounds-in-output-collection";
+    final var collectionWithThreeElements = "=[1]";
+    final var collectionWithNoElements = "=[]";
+    final var outputCollectionName = "outputItems";
+
+    final var process =
+        createProcessThatModifiesOutputCollection(
+            processId, collectionWithThreeElements, collectionWithNoElements, outputCollectionName);
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when (raise incident)
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then (incident is raised)
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Unable to update an item in output collection 'outputItems' at position 1 because the size of the collection is: 0. This may happen when multiple BPMN elements write to the same variable.")
+        .hasProcessInstanceKey(processInstanceKey);
+
+    // when (resolve incident)
+    ENGINE
+        .variables()
+        .ofScope(incidentEvent.getValue().getVariableScopeKey())
+        .withDocument(Maps.of(entry(outputCollectionName, List.of(1))))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
+
+    // then (incident is resolved)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .exists())
+        .describedAs("the process has completed")
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName(outputCollectionName)
+                .withValue("[1]")
+                .exists())
+        .isTrue();
+  }
+
+  /**
+   * This test covers the scenario where a multi instance cannot be completed, because updating the
+   * output collection fails because the output collection is not an array.
+   */
+  @Test
+  public void shouldCreateAndResolveIncidentIfOutputCollectionHasWrongType() {
+    // given
+    final var processId = "output-collection-is-overwritten-by-string";
+    final var collectionWithThreeElements = "=[1]";
+    final var overwriteWithString = "=\"String overwrite\"";
+    final var outputCollectionName = "outputItems";
+
+    final var process =
+        createProcessThatModifiesOutputCollection(
+            processId, collectionWithThreeElements, overwriteWithString, outputCollectionName);
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when (raise incident)
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then (incident is raised)
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Unable to update an item in output collection 'outputItems' because the type of the output collection is: STRING. This may happen when multiple BPMN elements write to the same variable.")
+        .hasProcessInstanceKey(processInstanceKey);
+
+    // when (resolve incident)
+    ENGINE
+        .variables()
+        .ofScope(incidentEvent.getValue().getVariableScopeKey())
+        .withDocument(Maps.of(entry(outputCollectionName, List.of(1))))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
+
+    // then (incident is resolved)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .exists())
+        .describedAs("the process has completed")
+        .isTrue();
+
+    org.assertj.core.api.Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName(outputCollectionName)
+                .withValue("[1]")
+                .exists())
+        .isTrue();
+  }
+
+  private BpmnModelInstance createProcessThatModifiesOutputCollection(
+      final String processId,
+      final String initialValueForCollection,
+      final String overwrittenValue,
+      final String outputCollectionName) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .zeebeOutput(
+            initialValueForCollection, // initializes input collection
+            INPUT_COLLECTION)
+        .subProcess()
+        .multiInstance(
+            mi ->
+                mi.parallel()
+                    .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                    .zeebeInputElement(INPUT_ELEMENT)
+                    .zeebeOutputCollection(
+                        outputCollectionName) // initialize output collection with size in input
+                    // collection
+                    .zeebeOutputElementExpression(INPUT_ELEMENT))
+        .embeddedSubProcess()
+        .startEvent()
+        .zeebeOutput(overwrittenValue, outputCollectionName) // overwrite output collection
+        .endEvent()
+        .subProcessDone()
+        .endEvent()
+        .done();
   }
 
   private static void completeNthJob(final long processInstanceKey, final int n) {
