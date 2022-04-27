@@ -23,15 +23,19 @@ jobs:
           java-version: '17'
           cache: 'maven'
       - run: |
-          ls -lah /home/runner
-          ls -lah /home/runner/.m2
-          cat /home/runner/.m2/settings.xml
           cat <<EOF > /home/runner/.m2/settings.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
             <interactiveMode>false</interactiveMode>
+            <servers>
+              <server>
+                <id>camunda-nexus</id>
+                <username>ci-zeebe</username>
+                <password>\${env.NEXUS_PASSWORD}</password>
+              </server>
+            </servers>
             <mirrors>
               <mirror>
                 <id>camunda-nexus</id>
@@ -42,8 +46,16 @@ jobs:
             </mirrors>
           </settings>
           EOF
-          cat /home/runner/.m2/settings.xml
-          #ls -lah ~/.m2/repository
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@v2.4.0
+        with:
+          url: https://dev.vault.int.camunda.com
+          method: kubernetes
+          path: kubernetes-camunda-ci
+          role: gha-runner-camunda-agent
+          secrets: |
+            secret/data/k8s-camunda-ci/gha-runner-camunda/agent NEXUS_PASSWORD;
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
