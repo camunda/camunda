@@ -44,7 +44,7 @@
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.17.0</version.camunda>
-    <version.checkstyle>10.1</version.checkstyle>
+    <version.checkstyle>10.2</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -53,7 +53,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.13.1</version.error-prone>
-    <version.grpc>1.45.1</version.grpc>
+    <version.grpc>1.46.0</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -76,7 +76,7 @@
     <version.netty>4.1.76.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
-    <version.protobuf>3.20.0</version.protobuf>
+    <version.protobuf>3.20.1</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
     <version.micrometer>1.8.5</version.micrometer>
     <version.rocksdbjni>7.1.2</version.rocksdbjni>
@@ -119,7 +119,7 @@
     <version.easy-random>5.0.0</version.easy-random>
 
     <!-- maven plugins -->
-    <plugin.version.antrun>3.0.0</plugin.version.antrun>
+    <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
@@ -715,6 +715,7 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${version.spotbugs}</version>
+        <scope>provided</scope>
       </dependency>
 
       <!-- for dependency convergence -->
@@ -993,12 +994,14 @@
         <groupId>com.google.code.findbugs</groupId>
         <artifactId>jsr305</artifactId>
         <version>${version.jsr305}</version>
+        <scope>provided</scope>
       </dependency>
 
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
         <artifactId>annotations</artifactId>
         <version>${version.findbugs-annotations}</version>
+        <scope>provided</scope>
       </dependency>
 
       <dependency>

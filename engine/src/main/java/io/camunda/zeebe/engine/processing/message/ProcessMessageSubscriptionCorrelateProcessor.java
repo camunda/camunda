@@ -97,7 +97,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-      final var canTriggerElement = eventHandle.canTriggerElement(elementInstance);
+      final var canTriggerElement =
+          eventHandle.canTriggerElement(
+              elementInstance, subscription.getRecord().getElementIdBuffer());
 
       if (!canTriggerElement) {
         rejectCommand(command, RejectionType.INVALID_STATE, NO_EVENT_OCCURRED_MESSAGE);

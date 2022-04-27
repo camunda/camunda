@@ -12,7 +12,12 @@ import java.util.function.Consumer;
 
 public interface TimerInstanceState {
 
-  long findTimersWithDueDateBefore(long timestamp, TimerVisitor consumer);
+  /**
+   * Finds timers with due date before {@code timestamp}, and presents them to the {@code consumer}
+   *
+   * @return due date of the next scheduled timer (or {@code -1} if no succeeding timer exists)
+   */
+  long processTimersWithDueDateBefore(long timestamp, TimerVisitor consumer);
 
   /**
    * NOTE: the timer instance given to the consumer is shared and will be mutated on the next
@@ -24,6 +29,11 @@ public interface TimerInstanceState {
 
   @FunctionalInterface
   interface TimerVisitor {
+
+    /**
+     * @return {@code true} if the timer was processed, or {@code false} if the timer could not be
+     *     processed and needs to be revisited later on
+     */
     boolean visit(TimerInstance timer);
   }
 }

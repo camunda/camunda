@@ -18,20 +18,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Set up JDK 17
-        uses: actions/setup-java@v3.1.1
+        uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with:
           languages: java
           queries: +security-and-quality
       - name: Build
         run: mvn -B -T1C -DskipTests -DskipChecks install
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v2
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.1.1
+      - uses: actions/setup-java@v3.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
