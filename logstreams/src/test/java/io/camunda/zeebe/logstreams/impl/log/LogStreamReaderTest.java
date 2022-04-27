@@ -24,14 +24,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public final class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
   private static final int LOG_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(4);
-
-  @Rule public final ExpectedException expectedException = ExpectedException.none();
 
   private final LogStreamRule logStreamRule =
       LogStreamRule.startByDefault(builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE));

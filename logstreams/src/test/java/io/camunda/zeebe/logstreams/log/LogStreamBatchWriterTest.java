@@ -30,7 +30,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public final class LogStreamBatchWriterTest {
@@ -42,8 +41,6 @@ public final class LogStreamBatchWriterTest {
   /** used by some test to write to the logstream in an actor thread. */
   @Rule
   public final ControlledActorSchedulerRule writerScheduler = new ControlledActorSchedulerRule();
-
-  @Rule public ExpectedException expectedException = ExpectedException.none();
 
   public final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   public final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
