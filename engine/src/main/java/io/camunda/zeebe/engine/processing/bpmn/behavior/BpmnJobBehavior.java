@@ -183,6 +183,7 @@ public final class BpmnJobBehavior {
     if (CANCELABLE_STATES.contains(state)) {
       final JobRecord job = jobState.getJob(jobKey);
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
+      jobMetrics.jobCanceled(job.getType());
     }
   }
 
