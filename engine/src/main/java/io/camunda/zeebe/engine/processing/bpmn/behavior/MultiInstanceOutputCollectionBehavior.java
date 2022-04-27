@@ -150,8 +150,9 @@ public final class MultiInstanceOutputCollectionBehavior {
     if (token.getType() != MsgPackType.ARRAY) {
       return Optional.of(
           new Failure(
-              "Unable to update an item in output collection '%s' because the type of the output collection is: %s. This may happen when multiple BPMN elements write to the same variable."
-                  .formatted(bufferAsString(variableName), token.getType()),
+              String.format(
+                  "Unable to update an item in output collection '%s' because the type of the output collection is: %s. This may happen when multiple BPMN elements write to the same variable.",
+                  bufferAsString(variableName), token.getType()),
               ErrorType.EXTRACT_VALUE_ERROR,
               variableScopeKey));
     }
@@ -160,8 +161,9 @@ public final class MultiInstanceOutputCollectionBehavior {
     if (index > size) {
       return Optional.of(
           new Failure(
-              "Unable to update an item in output collection '%s' at position %d because the size of the collection is: %d. This may happen when multiple BPMN elements write to the same variable."
-                  .formatted(bufferAsString(variableName), index, size),
+              String.format(
+                  "Unable to update an item in output collection '%s' at position %d because the size of the collection is: %d. This may happen when multiple BPMN elements write to the same variable.",
+                  bufferAsString(variableName), index, size),
               ErrorType.EXTRACT_VALUE_ERROR,
               variableScopeKey));
     }
