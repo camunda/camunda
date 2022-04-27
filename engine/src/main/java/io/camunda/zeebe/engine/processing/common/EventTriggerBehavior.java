@@ -59,9 +59,9 @@ public class EventTriggerBehavior {
         new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
   }
 
-  private void unsubscribeFromEventSubprocesses(final BpmnElementContext context) {
+  private void unsubscribeEventSubprocesses(final BpmnElementContext context) {
     final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehavior.unsubscribeFromEventSubprocesses(context, commandWriter, sideEffectQueue);
+    catchEventBehavior.unsubscribeEventSubprocesses(context, commandWriter, sideEffectQueue);
 
     // side effect can immediately executed, since on restart we not reprocess anymore the commands
     sideEffectQueue.flush();
@@ -98,7 +98,7 @@ public class EventTriggerBehavior {
     }
 
     if (startEvent.interrupting()) {
-      unsubscribeFromEventSubprocesses(flowScopeContext);
+      unsubscribeEventSubprocesses(flowScopeContext);
 
       final var noActiveChildInstances = terminateChildInstances(flowScopeContext);
       if (!noActiveChildInstances) {
