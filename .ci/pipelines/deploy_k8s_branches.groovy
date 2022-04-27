@@ -130,32 +130,16 @@ pipeline {
     }
     stage('Deploy to K8s') {
       steps {
-        container('gcloud') {
-          dir('optimize') {
-            setBuildEnvVars()
-          }
-          dir('infra-core') {
-            sh("""
-              sed -i \
-                -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" \
-                -e "s/@ES_VERSION@/$ES_VERSION/g" \
-                ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
-            """)
-
-            sh("""
-              ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/infra-core/camunda-ci/deployments/optimize-branch \
-              ${WORKSPACE}/optimize/.ci/branch-deployment \
-              ${params.BRANCH} \
-              optimize
-            """)
-          }
+        dir('optimize') {
+          setBuildEnvVars()
         }
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'infra-core/rendered-templates/**/*'
-        }
+        build job: '/deploy-branch-to-k8s-gha',
+                parameters: [
+                  string(name: 'BRANCH', value: params.BRANCH),
+                  string(name: 'CAMBPM_VERSION', value: env.CAMBPM_VERSION),
+                  string(name: 'ES_VERSION', value: env.ES_VERSION),
+                  string(name: 'REF', value: params.BRANCH),
+                ]
       }
     }
     stage('Ingest Event Data') {
@@ -163,8 +147,8 @@ pipeline {
         container('gcloud') {
           dir('optimize') {
             sh("""
-              kubectl -n optimize-stage rollout status deployment/stage-optimize-camunda-cloud --watch=true
-              kubectl -n optimize-stage port-forward deployment/stage-optimize-camunda-cloud 8090:8090 &
+              kubectl -n optimize-stage rollout status deployment/optimize --watch=true
+              kubectl -n optimize-stage port-forward deployment/optimize 8090:8090 &
               while ! nc -z -w 3 localhost 8090; do
                 sleep 5
               done
