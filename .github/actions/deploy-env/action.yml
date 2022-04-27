@@ -127,6 +127,7 @@ runs:
         --name ${{ env.APP_NAME }}
         --revision ${{ inputs.revision }}
         --upsert
+        
         argocd app sync ${{ env.APP_NAME }} --async --force || true
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
