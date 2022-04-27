@@ -101,7 +101,7 @@ public final class CatchEventBehavior {
    * @param commandWriter the writer for unsubscribe commands
    * @param sideEffects the side effects for unsubscribe actions
    */
-  public void unsubscribeFromEventSubprocesses(
+  public void unsubscribeEventSubprocesses(
       final BpmnElementContext context,
       final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
