@@ -342,10 +342,10 @@ public final class JobFailIncidentTest {
             .withIntent(ProcessInstanceIntent.TERMINATE_ELEMENT)
             .getFirst();
 
-    final Record<JobRecordValue> jobCancelCommand =
+    final Record<JobRecordValue> jobCancelled =
         RecordingExporter.jobRecords()
             .withProcessInstanceKey(processInstanceKey)
-            .withIntent(JobIntent.CANCEL)
+            .withIntent(JobIntent.CANCELED)
             .getFirst();
 
     final Record<IncidentRecordValue> resolvedIncidentEvent =
@@ -357,7 +357,7 @@ public final class JobFailIncidentTest {
     assertThat(resolvedIncidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
     assertThat(resolvedIncidentEvent.getSourceRecordPosition())
         .isEqualTo(terminateTaskCommand.getPosition());
-    assertThat(jobCancelCommand.getSourceRecordPosition())
+    assertThat(jobCancelled.getSourceRecordPosition())
         .isEqualTo(terminateTaskCommand.getPosition());
 
     assertThat(resolvedIncidentEvent.getValue())
