@@ -23,7 +23,6 @@ import {Locations} from 'modules/routes';
 import truncate from 'lodash/truncate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {useLocation} from 'react-router-dom';
 
 function truncateErrorMessage(errorMessage: string) {
   return truncate(errorMessage, {
@@ -34,8 +33,6 @@ function truncateErrorMessage(errorMessage: string) {
 }
 
 const IncidentsByError = observer(() => {
-  const location = useLocation();
-
   useEffect(() => {
     incidentsByErrorStore.init();
     return () => {
@@ -58,7 +55,7 @@ const IncidentsByError = observer(() => {
           return (
             <Styled.VersionLi key={item.processId}>
               <PanelListItem
-                to={Locations.processes(location, {
+                to={Locations.processes({
                   process: item.bpmnProcessId,
                   version: item.version,
                   errorMessage: truncateErrorMessage(errorMessage),
@@ -96,7 +93,7 @@ const IncidentsByError = observer(() => {
 
     return (
       <PanelListItem
-        to={Locations.processes(location, {
+        to={Locations.processes({
           errorMessage: truncateErrorMessage(errorMessage),
           incidents: true,
         })}

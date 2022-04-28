@@ -10,7 +10,7 @@ import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {ProgressBar} from './ProgressBar';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useLoadingProgress} from './useLoadingProgress';
@@ -38,7 +38,6 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     operationsFinishedCount,
   } = operation;
   const navigate = useNavigate();
-  const location = useLocation();
 
   const {fakeProgressPercentage, isComplete} = useLoadingProgress({
     totalCount: operationsTotalCount,
@@ -51,7 +50,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     processInstancesVisibleFiltersStore.reset();
     processInstancesVisibleFiltersStore.addVisibleFilters(['operationId']);
     navigate(
-      Locations.processes(location, {
+      Locations.processes({
         active: true,
         incidents: true,
         completed: true,

@@ -5,13 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {To, Location} from 'react-router-dom';
+import {To} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {
   DecisionInstanceFilters,
   ProcessInstanceFilters,
 } from 'modules/utils/filter';
-import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 type RouterState = {
   referrer?: string;
@@ -39,22 +38,8 @@ const Paths = {
 } as const;
 
 const Locations = {
-  login(location: Location): To {
-    return {
-      pathname: Paths.login(),
-      search: getPersistentQueryParams(location.search),
-    };
-  },
-  dashboard(location: Location): To {
-    return {
-      pathname: Paths.dashboard(),
-      search: getPersistentQueryParams(location.search),
-    };
-  },
-  processes(location: Location, filters?: ProcessInstanceFilters): To {
-    const params = new URLSearchParams(
-      getPersistentQueryParams(location.search)
-    );
+  processes(filters?: ProcessInstanceFilters): To {
+    const params = new URLSearchParams();
     const storage = getStateLocally();
 
     if (filters !== undefined) {
@@ -75,16 +60,8 @@ const Locations = {
       search: params.toString(),
     };
   },
-  processInstance(location: Location, id: string): To {
-    return {
-      pathname: Paths.processInstance(id),
-      search: getPersistentQueryParams(location.search),
-    };
-  },
-  decisions(location: Location, filters?: DecisionInstanceFilters): To {
-    const params = new URLSearchParams(
-      getPersistentQueryParams(location.search)
-    );
+  decisions(filters?: DecisionInstanceFilters): To {
+    const params = new URLSearchParams();
 
     if (filters !== undefined) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -98,12 +75,6 @@ const Locations = {
     return {
       pathname: Paths.decisions(),
       search: params.toString(),
-    };
-  },
-  decisionInstance(location: Location, id: string): To {
-    return {
-      pathname: Paths.decisionInstance(id),
-      search: getPersistentQueryParams(location.search),
     };
   },
 } as const;

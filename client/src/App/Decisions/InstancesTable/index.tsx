@@ -14,7 +14,7 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {SortableTable} from 'modules/components/SortableTable';
 import {Link} from 'modules/components/Link';
-import {Locations} from 'modules/routes';
+import {Paths} from 'modules/routes';
 import {formatDate} from 'modules/utils/date';
 import {useFilters} from 'modules/hooks/useFilters';
 
@@ -177,7 +177,7 @@ const InstancesTable: React.FC = observer(() => {
                 {
                   cellContent: (
                     <Link
-                      to={Locations.decisionInstance(location, id)}
+                      to={Paths.decisionInstance(id)}
                       title={`View decision instance ${id}`}
                       onClick={() => {
                         tracking.track({
@@ -200,10 +200,7 @@ const InstancesTable: React.FC = observer(() => {
                   cellContent:
                     processInstanceId !== null ? (
                       <Link
-                        to={Locations.processInstance(
-                          location,
-                          processInstanceId
-                        )}
+                        to={Paths.processInstance(processInstanceId)}
                         title={`View process instance ${processInstanceId}`}
                         onClick={() => {
                           tracking.track({

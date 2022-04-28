@@ -117,32 +117,6 @@ describe('<Login />', () => {
     );
   });
 
-  it('should redirect to the previous page with gse url', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
-    );
-
-    const {user} = render(<Login />, {
-      wrapper: createWrapper('/login', {
-        pathname: '/processes',
-        search: '?gseUrl=https://www.testUrl.com',
-      }),
-    });
-
-    await user.click(screen.getByText(/emulate auth check/i));
-
-    await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.type(screen.getByLabelText(/password/i), 'demo');
-    await user.click(screen.getByRole('button', {name: /log in/i}));
-
-    await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/)
-    );
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https:\/\/www.testUrl.com$/
-    );
-  });
-
   it('should disable the login button when any field is empty', async () => {
     const {user} = render(<Login />, {
       wrapper: createWrapper(),

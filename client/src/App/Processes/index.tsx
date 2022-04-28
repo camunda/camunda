@@ -44,14 +44,12 @@ const Processes: React.FC = observer(() => {
   const {status: processesStatus} = processesStore.state;
   const isSingleProcessSelected = processId !== undefined;
   const filtersJSON = JSON.stringify(filters);
-  const searchParams = new URLSearchParams(location.search);
-  const gseUrl = searchParams.get('gseUrl');
 
   const notifications = useNotifications();
 
   useEffect(() => {
     processInstancesSelectionStore.init();
-    processInstancesStore.init(gseUrl !== null);
+    processInstancesStore.init();
     processStatisticsStore.init();
     processesStore.fetchProcesses();
 
@@ -64,7 +62,7 @@ const Processes: React.FC = observer(() => {
       processInstancesStore.reset();
       processesStore.reset();
     };
-  }, [gseUrl]);
+  }, []);
 
   useEffect(() => {
     processInstancesSelectionStore.resetState();

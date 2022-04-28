@@ -108,45 +108,6 @@ describe('Header', () => {
     );
   });
 
-  it('should preserve persistent params', async () => {
-    storeStateLocally({
-      filters: {
-        active: true,
-        incidents: true,
-        completed: true,
-      },
-    });
-    const {user} = render(<Header />, {
-      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
-    });
-
-    expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
-
-    await user.click(await screen.findByText('Operate'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com$/
-    );
-
-    await user.click(await screen.findByText('Processes'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true$/
-    );
-
-    await user.click(await screen.findByText('Dashboard'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com$/
-    );
-
-    await user.click(await screen.findByText('Decisions'));
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&evaluated=true&failed=true$/
-    );
-  });
-
   describe('license note', () => {
     afterEach(() => {
       window.clientConfig = undefined;

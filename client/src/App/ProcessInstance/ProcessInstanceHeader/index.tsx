@@ -16,16 +16,14 @@ import * as Styled from './styled';
 import {variablesStore} from 'modules/stores/variables';
 import {useNotifications} from 'modules/notifications';
 import {Link} from 'modules/components/Link';
-import {Locations} from 'modules/routes';
+import {Locations, Paths} from 'modules/routes';
 import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {useLocation} from 'react-router-dom';
 
 const ProcessInstanceHeader = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
   const notifications = useNotifications();
-  const location = useLocation();
 
   if (
     processInstance === null ||
@@ -71,7 +69,7 @@ const ProcessInstanceHeader = observer(() => {
             <Styled.Td>
               {parentInstanceId !== null ? (
                 <Link
-                  to={Locations.processInstance(location, parentInstanceId)}
+                  to={Paths.processInstance(parentInstanceId)}
                   title={`View parent instance ${parentInstanceId}`}
                   onClick={() => {
                     tracking.track({
@@ -89,7 +87,7 @@ const ProcessInstanceHeader = observer(() => {
             <Styled.Td>
               {processInstanceDetailsDiagramStore.hasCalledProcessInstances ? (
                 <Link
-                  to={Locations.processes(location, {
+                  to={Locations.processes({
                     parentInstanceId: id,
                     active: true,
                     incidents: true,

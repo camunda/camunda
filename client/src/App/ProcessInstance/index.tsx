@@ -53,7 +53,7 @@ const ProcessInstance: React.FC = () => {
         id: processInstanceId,
         onRefetchFailure: () => {
           navigate(
-            Locations.processes(location, {
+            Locations.processes({
               active: true,
               incidents: true,
             })
@@ -63,7 +63,7 @@ const ProcessInstance: React.FC = () => {
           });
         },
         onPollingFailure: () => {
-          navigate(Locations.processes(location));
+          navigate(Locations.processes());
           notifications?.displayNotification('success', {
             headline: 'Instance deleted',
           });

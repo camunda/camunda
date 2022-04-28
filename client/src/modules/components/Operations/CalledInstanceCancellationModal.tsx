@@ -7,8 +7,7 @@
 
 import Modal, {SIZES} from 'modules/components/Modal';
 import {Link} from 'modules/components/Link';
-import {Locations} from 'modules/routes';
-import {useLocation} from 'react-router-dom';
+import {Paths} from 'modules/routes';
 
 type Props = {
   onModalClose: () => void;
@@ -21,8 +20,6 @@ const CalledInstanceCancellationModal: React.FC<Props> = ({
   isVisible,
   rootInstanceId,
 }) => {
-  const location = useLocation();
-
   return (
     <Modal onModalClose={onModalClose} isVisible={isVisible} size={SIZES.SMALL}>
       <Modal.Header>Cancel Instance</Modal.Header>
@@ -30,7 +27,7 @@ const CalledInstanceCancellationModal: React.FC<Props> = ({
         <Modal.BodyText>
           To cancel this instance, the root instance{' '}
           <Link
-            to={Locations.processInstance(location, rootInstanceId)}
+            to={Paths.processInstance(rootInstanceId)}
             title={`View root instance ${rootInstanceId}`}
           >
             {rootInstanceId}

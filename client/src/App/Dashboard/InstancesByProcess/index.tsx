@@ -24,11 +24,8 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/routes';
-import {useLocation} from 'react-router-dom';
 
 const InstancesByProcess = observer(() => {
-  const location = useLocation();
-
   useEffect(() => {
     processInstancesByNameStore.init();
     return () => {
@@ -45,7 +42,7 @@ const InstancesByProcess = observer(() => {
           return (
             <Styled.VersionLi key={item.processId}>
               <PanelListItem
-                to={Locations.processes(location, {
+                to={Locations.processes({
                   process: item.bpmnProcessId,
                   version: item.version,
                   active: true,
@@ -97,7 +94,7 @@ const InstancesByProcess = observer(() => {
 
     return (
       <PanelListItem
-        to={Locations.processes(location, {
+        to={Locations.processes({
           process: item.bpmnProcessId,
           version:
             item.processes.length === 1 ? item.processes[0].version : 'all',

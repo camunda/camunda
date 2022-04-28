@@ -45,7 +45,6 @@ type State = {
     | 'fetching-next'
     | 'fetching-prev'
     | 'fetched'
-    | 'refetching'
     | 'error';
 };
 
@@ -67,11 +66,8 @@ class ProcessInstances extends NetworkReconnectionHandler {
   fetchInstancesDisposer: null | IReactionDisposer = null;
   completedOperationActionsDisposer: null | IReactionDisposer = null;
   instancesPollingDisposer: null | IReactionDisposer = null;
-  retryInstanceFetchTimeout: NodeJS.Timeout | null = null;
   refreshInstanceTimeout: number | undefined;
   completedOperationsHandlers: Array<() => void> = [];
-  shouldRetryOnEmptyResponse: boolean = false;
-  retryCount: number = 0;
   pollingAbortController: AbortController | undefined;
 
   constructor() {
@@ -83,7 +79,6 @@ class ProcessInstances extends NetworkReconnectionHandler {
       startFetchingNext: action,
       startFetchingPrev: action,
       handleFetchSuccess: action,
-      handleRefetch: action,
       handleFetchError: action,
       setProcessInstances: action,
       markProcessInstancesWithActiveOperations: action,
@@ -101,9 +96,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
     this.completedOperationsHandlers.push(handler);
   }
 
-  init(shouldRetryOnEmptyResponse: boolean = false) {
-    this.shouldRetryOnEmptyResponse = shouldRetryOnEmptyResponse;
-
+  init() {
     this.instancesPollingDisposer = autorun(() => {
       if (this.processInstanceIdsWithActiveOperations.length > 0) {
         if (this.intervalId === null) {
@@ -226,7 +219,6 @@ class ProcessInstances extends NetworkReconnectionHandler {
   };
 
   fetchProcessInstancesFromFilters = this.retryOnConnectionLost(async () => {
-    this.resetRetryInstancesFetch();
     this.startFetching();
     this.fetchInstances({
       fetchType: 'initial',
@@ -269,11 +261,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
 
         this.setLatestFetchDetails(fetchType, processInstances.length);
 
-        if (this.shouldRefetchInstances) {
-          this.handleRefetch();
-        } else {
-          this.handleFetchSuccess();
-        }
+        this.handleFetchSuccess();
       } else {
         this.handleFetchError();
       }
@@ -281,13 +269,6 @@ class ProcessInstances extends NetworkReconnectionHandler {
       this.handleFetchError(error);
     }
   };
-
-  get shouldRefetchInstances() {
-    return (
-      this.shouldRetryOnEmptyResponse &&
-      this.state.processInstances.length === 0
-    );
-  }
 
   refreshAllInstances = async () => {
     try {
@@ -334,44 +315,8 @@ class ProcessInstances extends NetworkReconnectionHandler {
     this.state.status = 'fetching-prev';
   };
 
-  resetRetryInstancesFetch = () => {
-    if (this.retryInstanceFetchTimeout !== null) {
-      clearTimeout(this.retryInstanceFetchTimeout);
-    }
-
-    this.retryCount = 0;
-  };
-
   handleFetchSuccess = () => {
     this.state.status = 'fetched';
-  };
-
-  handleRefetch = () => {
-    if (this.retryCount < 3) {
-      this.retryCount += 1;
-
-      this.retryInstanceFetchTimeout = setTimeout(() => {
-        this.fetchInstances({
-          fetchType: 'initial',
-          payload: {
-            query: getProcessInstancesRequestFilters(),
-            sorting: this.getSorting(),
-            pageSize: MAX_INSTANCES_PER_REQUEST,
-            searchBefore: undefined,
-            searchAfter: undefined,
-          },
-        });
-      }, 5000);
-
-      if (this.state.status === 'first-fetch') {
-        return;
-      }
-
-      this.state.status = 'refetching';
-    } else {
-      this.resetRetryInstancesFetch();
-      this.handleFetchSuccess();
-    }
   };
 
   handleFetchError = (error?: unknown) => {
@@ -529,7 +474,6 @@ class ProcessInstances extends NetworkReconnectionHandler {
     this.completedOperationActionsDisposer?.();
     this.instancesPollingDisposer?.();
     this.completedOperationsHandlers = [];
-    this.resetRetryInstancesFetch();
     window.clearTimeout(this.refreshInstanceTimeout);
   }
 }

@@ -8,8 +8,8 @@
 import {useEffect, useRef, useState} from 'react';
 import {autorun} from 'mobx';
 import {observer} from 'mobx-react';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {Locations} from 'modules/routes';
+import {useNavigate} from 'react-router-dom';
+import {Paths} from 'modules/routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
@@ -29,7 +29,6 @@ const Drd: React.FC = observer(() => {
   const drdViewer = useRef<DrdViewer | null>(null);
   const drdViewerRef = useRef<HTMLDivElement | null>(null);
   const [definitionsName, setDefinitionsName] = useState<string | null>(null);
-  const location = useLocation();
   const navigate = useNavigate();
 
   const handleDecisionSelection = (decisionId: string) => {
@@ -43,7 +42,7 @@ const Drd: React.FC = observer(() => {
       decisionInstances[decisionInstances.length - 1]?.decisionInstanceId;
 
     if (decisionInstanceId !== undefined) {
-      navigate(Locations.decisionInstance(location, decisionInstanceId));
+      navigate(Paths.decisionInstance(decisionInstanceId));
     }
   };
 

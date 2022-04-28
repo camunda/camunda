@@ -17,7 +17,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 
 import {useFilters} from 'modules/hooks/useFilters';
 import {useNotifications} from 'modules/notifications';
-import {Locations} from 'modules/routes';
+import {Paths} from 'modules/routes';
 import {tracking} from 'modules/tracking';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getProcessName} from 'modules/utils/instance';
@@ -93,7 +93,7 @@ const List: React.FC = observer(() => {
     if (['initial', 'first-fetch'].includes(status)) {
       return 'skeleton';
     }
-    if (status === 'fetching' || status === 'refetching') {
+    if (status === 'fetching') {
       return 'loading';
     }
     if (status === 'error') {
@@ -193,7 +193,7 @@ const List: React.FC = observer(() => {
             {
               cellContent: (
                 <Link
-                  to={Locations.processInstance(location, instance.id)}
+                  to={Paths.processInstance(instance.id)}
                   title={`View instance ${instance.id}`}
                   onClick={() => {
                     tracking.track({
@@ -220,10 +220,7 @@ const List: React.FC = observer(() => {
               cellContent:
                 instance.parentInstanceId !== null ? (
                   <Link
-                    to={Locations.processInstance(
-                      location,
-                      instance.parentInstanceId
-                    )}
+                    to={Paths.processInstance(instance.parentInstanceId)}
                     title={`View parent instance ${instance.parentInstanceId}`}
                     onClick={() => {
                       tracking.track({

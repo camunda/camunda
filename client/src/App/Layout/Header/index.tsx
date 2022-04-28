@@ -8,21 +8,18 @@
 import {User} from './User';
 import {NavElement} from './NavElement';
 import {Menu, LeftSeparator, RightSeparator} from './styled';
-import {Locations} from 'modules/routes';
+import {Locations, Paths} from 'modules/routes';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
 import {tracking} from 'modules/tracking';
 import {LicenseNote} from './LicenseNote';
-import {useLocation} from 'react-router-dom';
 
 const Header: React.FC = () => {
-  const location = useLocation();
-
   return (
     <CmHeader>
       <nav slot="left">
         <Menu>
           <NavElement
-            to={Locations.dashboard(location)}
+            to={Paths.dashboard()}
             title="View Dashboard"
             label="Operate"
             icon={<CmLogo />}
@@ -35,7 +32,7 @@ const Header: React.FC = () => {
           />
           <LeftSeparator />
           <NavElement
-            to={Locations.dashboard(location)}
+            to={Paths.dashboard()}
             title="View Dashboard"
             label="Dashboard"
             onClick={() => {
@@ -46,7 +43,7 @@ const Header: React.FC = () => {
             }}
           />
           <NavElement
-            to={Locations.processes(location)}
+            to={Locations.processes()}
             title="View Processes"
             label="Processes"
             onClick={() => {
@@ -57,7 +54,7 @@ const Header: React.FC = () => {
             }}
           />
           <NavElement
-            to={Locations.decisions(location)}
+            to={Locations.decisions()}
             title="View Decisions"
             label="Decisions"
             state={{hideOptionalFilters: true}}

@@ -280,43 +280,4 @@ describe('InstancesByProcess', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
-
-  it('should not erase persistent params', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithMultipleVersions))
-      )
-    );
-
-    const {user} = render(<InstancesByProcess />, {
-      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
-    });
-
-    const withinIncident = within(
-      await screen.findByTestId('incident-byProcess-0')
-    );
-
-    const processLink = withinIncident.getByText(
-      'Order process – 201 Instances in 2 Versions'
-    );
-
-    await user.click(processLink);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=orderProcess&version=all&active=true&incidents=true$/
-    );
-
-    await user.click(
-      withinIncident.getByTitle('Expand 201 Instances of Process Order process')
-    );
-
-    await user.click(
-      screen.getByTitle(
-        'View 42 Instances in Version 1 of Process First Version'
-      )
-    );
-
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&active=true&incidents=true$/
-    );
-  });
 });

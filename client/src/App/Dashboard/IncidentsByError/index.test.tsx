@@ -220,46 +220,6 @@ describe('IncidentsByError', () => {
     jest.useRealTimers();
   });
 
-  it('should not erase persistent params', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
-
-    const {user} = render(<IncidentsByError />, {
-      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
-    });
-
-    const withinIncident = within(
-      await screen.findByTestId('incident-byError-0')
-    );
-
-    const expandButton = withinIncident.getByTitle(
-      "Expand 36 Instances with error JSON path '$.paid' has no result."
-    );
-
-    await user.click(
-      withinIncident.getByTitle(
-        "View 36 Instances with error JSON path '$.paid' has no result."
-      )
-    );
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
-    );
-
-    await user.click(expandButton);
-
-    const firstVersion = withinIncident.getByTitle(
-      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
-    );
-
-    await user.click(firstVersion);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
-    );
-  });
-
   it('should truncate the error message search param', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>

@@ -246,7 +246,7 @@ const Filters: React.FC = observer(() => {
                 type="reset"
                 onClick={() => {
                   form.reset();
-                  navigate(Locations.decisions(location, initialValues));
+                  navigate(Locations.decisions(initialValues));
                   setVisibleFilters([]);
                 }}
               >

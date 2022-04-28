@@ -31,9 +31,8 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';
-import {Locations} from 'modules/routes';
+import {Paths} from 'modules/routes';
 import {Link} from 'modules/components/Link';
-import {useLocation} from 'react-router-dom';
 
 type Props = {
   selectedFlowNodeRef: SVGGraphicsElement | null;
@@ -47,7 +46,6 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
   const {metaData} = flowNodeMetaDataStore.state;
   const processInstanceId =
     processInstanceDetailsStore.state.processInstance?.id;
-  const location = useLocation();
 
   const {styles, attributes} = usePopper(
     selectedFlowNodeRef,
@@ -168,10 +166,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                       <SummaryDataValue>
                         {calledProcessInstanceId ? (
                           <Link
-                            to={Locations.processInstance(
-                              location,
-                              calledProcessInstanceId
-                            )}
+                            to={Paths.processInstance(calledProcessInstanceId)}
                             title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
                           >
                             {`${calledProcessDefinitionName} - ${calledProcessInstanceId}`}
@@ -189,10 +184,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                     <SummaryDataValue>
                       {calledDecisionInstanceId ? (
                         <Link
-                          to={Locations.decisionInstance(
-                            location,
-                            calledDecisionInstanceId
-                          )}
+                          to={Paths.decisionInstance(calledDecisionInstanceId)}
                           title={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
                         >
                           {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
@@ -244,8 +236,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                             'Current Instance'
                           ) : (
                             <Link
-                              to={Locations.processInstance(
-                                location,
+                              to={Paths.processInstance(
                                 rootCauseInstance.instanceId
                               )}
                               title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
@@ -261,8 +252,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                         <SummaryDataKey>Root Cause Decision</SummaryDataKey>
                         <SummaryDataValue>
                           <Link
-                            to={Locations.decisionInstance(
-                              location,
+                            to={Paths.decisionInstance(
                               rootCauseDecision.instanceId
                             )}
                             title={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}

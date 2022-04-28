@@ -20,11 +20,9 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {useLocation} from 'react-router-dom';
 
 const MetricPanel = observer(() => {
   const {running, active, withIncidents, status} = statisticsStore.state;
-  const location = useLocation();
 
   useEffect(() => {
     statisticsStore.init();
@@ -54,7 +52,6 @@ const MetricPanel = observer(() => {
           });
         }}
         to={Locations.processes(
-          location,
           running === 0
             ? {
                 completed: true,
@@ -94,7 +91,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-instances-with-incidents',
             });
           }}
-          to={Locations.processes(location, {
+          to={Locations.processes({
             incidents: true,
           })}
         >
@@ -109,7 +106,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-active-instances',
             });
           }}
-          to={Locations.processes(location, {
+          to={Locations.processes({
             active: true,
           })}
         >

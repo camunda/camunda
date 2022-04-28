@@ -103,35 +103,6 @@ describe('<MetricPanel />', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
-  it('should not erase pesistent params', async () => {
-    const {user} = render(<MetricPanel />, {
-      wrapper: createWrapper('/?gseUrl=https://www.testUrl.com'),
-    });
-
-    await user.click(screen.getByText('Process Instances with Incident'));
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true$/
-    );
-
-    await user.click(screen.getByText('Active Process Instances'));
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true$/
-    );
-
-    await user.click(
-      await screen.findByText('1087 Running Process Instances in total')
-    );
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true&active=true$/
-    );
-  });
-
   it('should go to the correct page when clicking on active process instances', async () => {
     const {user} = render(<MetricPanel />, {
       wrapper: createWrapper(),

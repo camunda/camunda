@@ -16,7 +16,6 @@ import {Decisions} from './Decisions';
 import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {Paths} from 'modules/routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
@@ -33,7 +32,6 @@ const App: React.FC = () => {
         <NetworkStatusWatcher />
         <CommonUiContext />
         <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
-          <GettingStartedExperience />
           <RedirectDeprecatedRoutes />
           <SessionWatcher />
           <TrackPagination />
