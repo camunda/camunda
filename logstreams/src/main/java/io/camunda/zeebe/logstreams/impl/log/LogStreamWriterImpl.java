@@ -39,7 +39,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
 
-  LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
+  public LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
     this.logWriteBuffer = logWriteBuffer;
     this.partitionId = partitionId;
 

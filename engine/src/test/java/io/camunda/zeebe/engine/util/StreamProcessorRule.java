@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;

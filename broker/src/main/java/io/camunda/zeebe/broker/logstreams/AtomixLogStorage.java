@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.storage.atomix;
+package io.camunda.zeebe.broker.logstreams;
 
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -49,7 +49,7 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
       final long highestPosition,
       final ByteBuffer buffer,
       final AppendListener listener) {
-    final var adapter = new AtomixAppendListenerAdapter(listener);
+    final var adapter = new AtomixAppendListenerAdapter(lowestPosition, highestPosition, listener);
     logAppender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
   }
 

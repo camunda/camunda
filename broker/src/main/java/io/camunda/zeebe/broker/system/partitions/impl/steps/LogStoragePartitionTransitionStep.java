@@ -13,10 +13,10 @@ import static io.camunda.zeebe.util.Either.right;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
-import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -127,6 +127,14 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     }
   }
 
+  public static final class LogStorageTermMissmatchException
+      extends RecoverablePartitionTransitionException {
+    private LogStorageTermMissmatchException(
+        final long expectedTerm, final long actualTerm, final int partitionId) {
+      super(String.format(WRONG_TERM_ERROR_MSG, expectedTerm, actualTerm, partitionId));
+    }
+  }
+
   private static class LogAppenderForReadOnlyStorage implements ZeebeLogAppender {
     @Override
     public void appendEntry(
@@ -138,14 +146,6 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           String.format(
               "Expect to append entry (positions %d - %d), but was in Follower role. Followers must not append entries to the log storage",
               lowestPosition, highestPosition));
-    }
-  }
-
-  public static final class LogStorageTermMissmatchException
-      extends RecoverablePartitionTransitionException {
-    private LogStorageTermMissmatchException(
-        final long expectedTerm, final long actualTerm, final int partitionId) {
-      super(String.format(WRONG_TERM_ERROR_MSG, expectedTerm, actualTerm, partitionId));
     }
   }
 }
