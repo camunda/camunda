@@ -49,7 +49,7 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
       final long highestPosition,
       final ByteBuffer buffer,
       final AppendListener listener) {
-    final var adapter = new AtomixAppendListenerAdapter(listener);
+    final var adapter = new AtomixAppendListenerAdapter(lowestPosition, highestPosition, listener);
     logAppender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
   }
 

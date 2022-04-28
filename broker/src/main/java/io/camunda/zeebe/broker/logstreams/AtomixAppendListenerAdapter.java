@@ -7,14 +7,24 @@
  */
 package io.camunda.zeebe.broker.logstreams;
 
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import java.util.NoSuchElementException;
 
 public final class AtomixAppendListenerAdapter implements AppendListener {
   private final LogStorage.AppendListener delegate;
+  private final long highestPosition;
+  private final long lowestPosition;
 
-  public AtomixAppendListenerAdapter(final LogStorage.AppendListener delegate) {
+  public AtomixAppendListenerAdapter(
+      final long lowestPosition,
+      final long highestPosition,
+      final LogStorage.AppendListener delegate) {
+    this.lowestPosition = lowestPosition;
+    this.highestPosition = highestPosition;
     this.delegate = delegate;
   }
 
@@ -25,6 +35,17 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
 
   @Override
   public void onWriteError(final Throwable error) {
+    if (error instanceof NoSuchElementException || error instanceof NoLeader) {
+      // Not a failure. It is probably during transition to follower.
+      Broker.LOG.debug(
+          "Expected to append block: [lowestPos: {} , highestPos: {}], but failed with {}. This can happen during a leader change.",
+          lowestPosition,
+          highestPosition,
+          error.getMessage(),
+          error);
+      return;
+    }
+
     delegate.onWriteError(error);
   }
 
