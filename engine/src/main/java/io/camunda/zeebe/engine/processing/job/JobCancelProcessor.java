@@ -34,6 +34,8 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
     final long jobKey = command.getKey();
     final JobRecord job = jobState.getJob(jobKey);
     if (job != null) {
+      // Note that this logic is duplicated in BpmnJobBehavior, if you change this please change
+      // it there as well.
       commandControl.accept(JobIntent.CANCELED, job);
       jobMetrics.jobCanceled(job.getType());
     } else {
