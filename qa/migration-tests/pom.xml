@@ -14,6 +14,7 @@
 
 	<modules>
 		<module>test-fixture-100</module>
+		<module>test-fixture-800</module>
 		<module>migration-test</module>
 	</modules>
 

@@ -27,13 +27,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-130</artifactId>
+      <artifactId>tasklist-importer-800</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-800</artifactId>
+      <artifactId>tasklist-importer-810</artifactId>
       <version>${project.version}</version>
     </dependency>
 
