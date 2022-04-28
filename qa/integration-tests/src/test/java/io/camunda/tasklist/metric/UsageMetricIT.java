@@ -64,6 +64,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   public void before() {
     super.before();
     taskMutationResolver.setZeebeClient(super.getClient());
+    clearMetrics();
   }
 
   @Test

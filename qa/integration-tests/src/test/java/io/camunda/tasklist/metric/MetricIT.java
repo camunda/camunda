@@ -49,6 +49,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
   public void before() {
     super.before();
     taskMutationResolver.setZeebeClient(super.getClient());
+    clearMetrics();
   }
 
   @Test
