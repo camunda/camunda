@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -46,11 +47,13 @@ class DueDateTimerCheckerTest {
       // given
       final var mockTypedCommandWriter = mock(TypedCommandWriter.class);
       when(mockTypedCommandWriter.flush()).thenReturn(1L);
-      final var timerKey = 42L;
+
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
+      final var timerKey = 42L;
       when(mockTimer.getKey()).thenReturn(timerKey);
 
       final var testActorClock = new TestActorClock();
+
       final var testTimerInstanceState =
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
@@ -80,15 +83,22 @@ class DueDateTimerCheckerTest {
 
     private static final int TIME_TO_YIELD = 100;
 
+    private TimerInstance mockTimer;
+    private TimerVisitor mockDelegate;
+    private final TestActorClock testActorClock = new TestActorClock();
+
+    @BeforeEach
+    void setUpMocks() {
+      // given
+      mockTimer = mock(TimerInstance.class);
+
+      mockDelegate = mock(TimerVisitor.class);
+      when(mockDelegate.visit(any())).thenReturn(true);
+    }
+
     @Test
     void shouldForwardCallToDelegateWhenTimeToYieldIsNotYetReached() {
       // given
-      final var mockTimer = mock(TimerInstance.class);
-
-      final var mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(any())).thenReturn(true);
-
-      final var testActorClock = new TestActorClock();
       testActorClock.setTime(TIME_TO_YIELD - 50);
 
       final var sut = new YieldingDecorator(testActorClock, TIME_TO_YIELD, mockDelegate);
@@ -104,12 +114,6 @@ class DueDateTimerCheckerTest {
     @Test
     void shouldNotForwardCallToDelegateWhenTimeToYieldIsReached() {
       // given
-      final var mockTimer = mock(TimerInstance.class);
-
-      final var mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(any())).thenReturn(true);
-
-      final var testActorClock = new TestActorClock();
       testActorClock.setTime(TIME_TO_YIELD);
 
       final var sut = new YieldingDecorator(testActorClock, TIME_TO_YIELD, mockDelegate);
@@ -125,12 +129,6 @@ class DueDateTimerCheckerTest {
     @Test
     void shouldNotForwardCallToDelegateWhenTimeToYieldHasPassed() {
       // given
-      final var mockTimer = mock(TimerInstance.class);
-
-      final var mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(any())).thenReturn(true);
-
-      final var testActorClock = new TestActorClock();
       testActorClock.setTime(TIME_TO_YIELD + 50);
 
       final var sut = new YieldingDecorator(testActorClock, TIME_TO_YIELD, mockDelegate);
