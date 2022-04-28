@@ -58,10 +58,11 @@ public final class EventHandle {
     this.eventTriggerBehavior = eventTriggerBehavior;
   }
 
-  public boolean canTriggerElement(final ElementInstance eventScopeInstance) {
+  public boolean canTriggerElement(
+      final ElementInstance eventScopeInstance, final DirectBuffer elementId) {
     return eventScopeInstance != null
         && eventScopeInstance.isActive()
-        && eventScopeInstanceState.isAcceptingEvent(eventScopeInstance.getKey());
+        && eventScopeInstanceState.canTriggerEvent(eventScopeInstance.getKey(), elementId);
   }
 
   /**

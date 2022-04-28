@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -386,5 +387,90 @@ public final class BoundaryEventTest {
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
         .hasVariableScopeKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldTriggerMultipleNonInterruptingBoundaryEvents() {
+    // given
+    final var boundaryEventId1 = "boundary-event-1";
+    final var boundaryEventId2 = "boundary-event-2";
+    final var boundaryEventMessageName1 = "boundary-message-1";
+    final var boundaryEventMessageName2 = "boundary-message-2";
+    final var messageCorrelationKey = "key-1";
+    final var jobType = "waiting";
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(jobType))
+            .endEvent()
+            // first non-interrupting boundary event
+            .moveToActivity("task")
+            .boundaryEvent(boundaryEventId1)
+            .cancelActivity(false)
+            .message(m -> m.name(boundaryEventMessageName1).zeebeCorrelationKeyExpression("key"))
+            .endEvent()
+            // second non-interrupting boundary event
+            .moveToActivity("task")
+            .boundaryEvent(boundaryEventId2)
+            .cancelActivity(false)
+            .message(m -> m.name(boundaryEventMessageName2).zeebeCorrelationKeyExpression("key"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", messageCorrelationKey)
+            .create();
+
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(r -> r.getValue().getMessageName())
+        .contains(boundaryEventMessageName1, boundaryEventMessageName2);
+
+    // when
+    ENGINE
+        .message()
+        .withName(boundaryEventMessageName1)
+        .withCorrelationKey(messageCorrelationKey)
+        .publish();
+
+    ENGINE
+        .message()
+        .withName(boundaryEventMessageName1)
+        .withCorrelationKey(messageCorrelationKey)
+        .publish();
+
+    ENGINE
+        .message()
+        .withName(boundaryEventMessageName2)
+        .withCorrelationKey(messageCorrelationKey)
+        .publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.BOUNDARY_EVENT)
+                .limit(3))
+        .describedAs("Await until all boundary events are triggered")
+        .hasSize(3);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.BOUNDARY_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsExactlyInAnyOrder(boundaryEventId1, boundaryEventId1, boundaryEventId2);
   }
 }
