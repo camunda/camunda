@@ -23,6 +23,7 @@ import java.util.function.Function;
 public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
   private static final long TIMER_RESOLUTION = Duration.ofMillis(100).toMillis();
+  private static final double GIVE_YIELD_FACTOR = 0.5;
   private final DueDateChecker dueDateChecker;
 
   public DueDateTimerChecker(final TimerInstanceState timerInstanceState) {
@@ -76,8 +77,15 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
     @Override
     public Long apply(final TypedCommandWriter typedCommandWriter) {
-      return timerInstanceState.processTimersWithDueDateBefore(
-          actorClock.getTimeMillis(), new WriteTriggerTimerCommandVisitor(typedCommandWriter));
+      final var now = actorClock.getTimeMillis();
+
+      final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR);
+
+      final var timerVisitor =
+          new YieldingDecorator(
+              actorClock, yieldAfter, new WriteTriggerTimerCommandVisitor(typedCommandWriter));
+
+      return timerInstanceState.processTimersWithDueDateBefore(now, timerVisitor);
     }
   }
 
@@ -106,6 +114,28 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
       typedCommandWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 
       return typedCommandWriter.flush() > 0; // means the write was successful
+    }
+  }
+
+  protected static final class YieldingDecorator implements TimerVisitor {
+
+    private final TimerVisitor delegate;
+    private final ActorClock actorClock;
+    private final long giveYieldAfter;
+
+    public YieldingDecorator(
+        final ActorClock actorClock, final long giveYieldAfter, final TimerVisitor delegate) {
+      this.delegate = delegate;
+      this.actorClock = actorClock;
+      this.giveYieldAfter = giveYieldAfter;
+    }
+
+    @Override
+    public boolean visit(final TimerInstance timer) {
+      if (actorClock.getTimeMillis() >= giveYieldAfter) {
+        return false;
+      }
+      return delegate.visit(timer);
     }
   }
 }
