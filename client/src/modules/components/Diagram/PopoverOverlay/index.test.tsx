@@ -6,7 +6,11 @@
  */
 
 import {rest} from 'msw';
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -246,6 +250,11 @@ describe('PopoverOverlay', () => {
     expect(
       screen.getByText(/"calledProcessInstanceId": "229843728748927482"/)
     ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Close Modal'}));
+    await waitForElementToBeRemoved(
+      screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
+    );
   });
 
   it('should render metadata for multi instance flow nodes', async () => {

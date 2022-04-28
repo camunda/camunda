@@ -13,7 +13,9 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {LocationLog} from 'modules/utils/LocationLog';
 
+jest.unmock('modules/utils/date/formatDate');
 jest.mock('modules/components/IncidentOperation', () => {
   return {
     IncidentOperation: () => {
@@ -46,7 +48,15 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route
+            path="/processes/:processInstanceId"
+            element={
+              <>
+                {children}
+                <LocationLog />
+              </>
+            }
+          />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>
@@ -273,6 +283,135 @@ describe('IncidentsFilter', () => {
       await user.click(screen.getByText(/^Clear All/));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
+    });
+  });
+
+  describe('Sorting', () => {
+    beforeEach(() => {
+      incidentsStore.setIncidentBarOpen(true);
+    });
+
+    it('should sort by incident type', async () => {
+      const {user} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      let [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/Extract value errortype/);
+      expect(secondRow).toHaveTextContent(/Condition errortype/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by errortype/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=errorType%2Basc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/Condition errortype/);
+      expect(secondRow).toHaveTextContent(/Extract value errortype/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by errortype/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=errorType%2Bdesc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/Extract value errortype/);
+      expect(secondRow).toHaveTextContent(/Condition errortype/);
+    });
+
+    it('should sort by flow node', async () => {
+      const {user} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      let [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
+      expect(secondRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by flownodename/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=flowNodeName%2Bdesc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+      expect(secondRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by flowNodeName/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=flowNodeName%2Basc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
+      expect(secondRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+    });
+
+    it('should sort by creation time', async () => {
+      const {user} = render(
+        <IncidentsWrapper setIsInTransition={jest.fn()} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      let [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
+      expect(secondRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by creationTime/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=creationTime%2Bdesc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/2022-03-01 14:26:19/);
+      expect(secondRow).toHaveTextContent(/2019-03-01 14:26:19/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by creationTime/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=creationTime%2Basc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/2019-03-01 14:26:19/);
+      expect(secondRow).toHaveTextContent(/2022-03-01 14:26:19/);
     });
   });
 });

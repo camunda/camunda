@@ -13,26 +13,23 @@ const setup = async () => {
     'withoutIncidentsProcess_v_1.bpmn',
     'onlyIncidentsProcess_v_1.bpmn',
     'orderProcess_v_1.bpmn',
+    'processWithAnIncident.bpmn',
   ]);
+
   await deploy([
     'withoutInstancesProcess_v_2.bpmn',
     'withoutIncidentsProcess_v_2.bpmn',
     'onlyIncidentsProcess_v_2.bpmn',
   ]);
 
-  await createInstances('withoutIncidentsProcess', 1, 4);
-  await createInstances('withoutIncidentsProcess', 2, 8);
-
-  await createInstances('onlyIncidentsProcess', 1, 10);
-  await createInstances('onlyIncidentsProcess', 2, 5);
-
-  await deploy(['orderProcess_v_1.bpmn']);
-
-  await createInstances('orderProcess', 1, 10);
-
-  await deploy(['processWithAnIncident.bpmn']);
-
-  await createSingleInstance('processWithAnIncident', 1);
+  await Promise.all([
+    createInstances('withoutIncidentsProcess', 1, 4),
+    createInstances('withoutIncidentsProcess', 2, 8),
+    createInstances('onlyIncidentsProcess', 1, 10),
+    createInstances('onlyIncidentsProcess', 2, 5),
+    createInstances('orderProcess', 1, 10),
+    createSingleInstance('processWithAnIncident', 1),
+  ]);
 };
 
 export {setup};

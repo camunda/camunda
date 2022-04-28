@@ -515,12 +515,13 @@ function updateDecisionsFiltersSearchString(
   );
 }
 
-function getSortParams(): {
+function getSortParams(search?: string): {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 } | null {
-  const params = new URLSearchParams(getSearchString());
+  const params = new URLSearchParams(search ?? getSearchString());
   const sort = params.get('sort');
+
   const PARAM_PATTERN = /^\w{1,}\+(asc|desc)/;
 
   if (sort !== null && PARAM_PATTERN.test(sort)) {

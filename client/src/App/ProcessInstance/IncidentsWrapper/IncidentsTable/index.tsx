@@ -24,6 +24,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/routes';
+import {useLocation} from 'react-router-dom';
 
 const {THead, TBody, TR, TD} = Table;
 
@@ -32,7 +33,8 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [modalContent, setModalContent] = useState<string>('');
   const [modalTitle, setModalTitle] = useState<string>('');
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {sortBy, sortOrder} = getSortParams() || {
+  const location = useLocation();
+  const {sortBy, sortOrder} = getSortParams(location.search) || {
     sortBy: 'errorType',
     sortOrder: 'desc',
   };

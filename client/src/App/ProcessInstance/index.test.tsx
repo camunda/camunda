@@ -11,6 +11,7 @@ import {
   waitForElementToBeRemoved,
   screen,
   waitFor,
+  within,
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
@@ -120,6 +121,9 @@ describe('Instance', () => {
     await waitFor(() =>
       expect(screen.getByText('newVariable')).toBeInTheDocument()
     );
+    expect(
+      within(screen.getByTestId('instance-header')).getByTestId('ACTIVE-icon')
+    ).toBeInTheDocument();
 
     expect(document.title).toBe(
       PAGE_TITLE.INSTANCE(

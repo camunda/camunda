@@ -13,6 +13,7 @@ const mockIncidents = {
     createIncident({
       errorType: {name: 'Condition errortype', id: 'CONDITION_ERROR'},
       flowNodeId: 'flowNodeId_exclusiveGateway',
+      creationTime: '2022-03-01T14:26:19',
     }),
     createIncident({
       errorType: {name: 'Extract value errortype', id: 'EXTRACT_VALUE_ERROR'},
