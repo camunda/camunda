@@ -11,6 +11,7 @@ import io.prometheus.client.CollectorRegistry;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 final class MetricsTestHelper {
 
@@ -26,8 +27,10 @@ final class MetricsTestHelper {
    */
   @SafeVarargs
   static Double readMetricValue(final String name, final Entry<String, String>... labels) {
-    final List<String> labelNames = Arrays.stream(labels).map(Entry::getKey).toList();
-    final List<String> labelValues = Arrays.stream(labels).map(Entry::getValue).toList();
+    final List<String> labelNames =
+        Arrays.stream(labels).map(Entry::getKey).collect(Collectors.toList());
+    final List<String> labelValues =
+        Arrays.stream(labels).map(Entry::getValue).collect(Collectors.toList());
     return CollectorRegistry.defaultRegistry.getSampleValue(
         name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
   }
