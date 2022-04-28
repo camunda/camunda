@@ -239,8 +239,9 @@ final class ProcessInstanceElementActivatingApplier
             elementRecord.getElementIdBuffer(),
             flowElementClass);
 
-    if (flowElement instanceof final ExecutableCatchEventSupplier eventSupplier) {
+    if (flowElement instanceof ExecutableCatchEventSupplier) {
 
+      final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
       final var hasEvents = !eventSupplier.getEvents().isEmpty();
       if (hasEvents
           || flowElement instanceof ExecutableJobWorkerElement
