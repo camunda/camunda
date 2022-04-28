@@ -25,7 +25,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
   public DueDateTimerChecker(final TimerInstanceState timerInstanceState) {
     dueDateChecker =
-        new DueDateChecker(TIMER_RESOLUTION, new TriggerTimersSideEffect(timerInstanceState));
+        new DueDateChecker(
+            TIMER_RESOLUTION,
+            new TriggerTimersSideEffect(timerInstanceState, ActorClock.current()));
   }
 
   public void scheduleTimer(final long dueDate) {
@@ -63,15 +65,18 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     private final TimerRecord timerRecord = new TimerRecord();
 
     private final TimerInstanceState timerInstanceState;
+    private final ActorClock actorClock;
 
-    public TriggerTimersSideEffect(final TimerInstanceState timerInstanceState) {
+    public TriggerTimersSideEffect(
+        final TimerInstanceState timerInstanceState, final ActorClock actorClock) {
       this.timerInstanceState = timerInstanceState;
+      this.actorClock = actorClock;
     }
 
     @Override
     public Long apply(final TypedCommandWriter typedCommandWriter) {
       return timerInstanceState.processTimersWithDueDateBefore(
-          ActorClock.currentTimeMillis(),
+          actorClock.getTimeMillis(),
           timer -> {
             timerRecord.reset();
             timerRecord
