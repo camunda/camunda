@@ -138,35 +138,65 @@ describe('Instances', () => {
       wrapper: getWrapper('/processes?active=true&incidents=true'),
     });
 
-    expect(processInstancesSelectionStore.state).toEqual({
-      selectedProcessInstanceIds: [],
-      isAllChecked: false,
-      selectionMode: 'INCLUDE',
-    });
-
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    expect(
+      screen.getByLabelText(/select instance 2251799813685594/i)
+    ).not.toBeChecked();
 
     await user.click(
       await screen.findByRole('checkbox', {
         name: /select instance 2251799813685594/i,
       })
     );
-
-    expect(processInstancesSelectionStore.state).toEqual({
-      selectedProcessInstanceIds: ['2251799813685594'],
-      isAllChecked: false,
-      selectionMode: 'INCLUDE',
-    });
+    expect(
+      screen.getByLabelText(/select instance 2251799813685594/i)
+    ).toBeChecked();
 
     await user.click(screen.getByText(/go to active/i));
 
     await waitFor(() =>
-      expect(processInstancesSelectionStore.state).toEqual({
-        selectedProcessInstanceIds: [],
-        isAllChecked: false,
-        selectionMode: 'INCLUDE',
+      expect(
+        screen.getByLabelText(/select instance 2251799813685594/i)
+      ).not.toBeChecked()
+    );
+  });
+
+  it('should not reset selected instances when table is sorted', async () => {
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
+      ),
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
+      )
+    );
+
+    const {user} = render(<Processes />, {
+      wrapper: getWrapper('/processes?active=true&incidents=true'),
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    expect(
+      screen.getByLabelText(/select instance 2251799813685594/i)
+    ).not.toBeChecked();
+
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: /select instance 2251799813685594/i,
       })
     );
+    expect(
+      screen.getByLabelText(/select instance 2251799813685594/i)
+    ).toBeChecked();
+
+    await user.click(screen.getByRole('button', {name: 'Sort by Process'}));
+    await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
+
+    expect(
+      screen.getByLabelText(/select instance 2251799813685594/i)
+    ).toBeChecked();
   });
 
   it('should fetch diagram and diagram statistics', async () => {
