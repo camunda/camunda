@@ -14,16 +14,27 @@ import 'dmn-js/dist/assets/dmn-js-shared.css';
 import 'dmn-js/dist/assets/dmn-js-drd.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
-import {startMocking} from 'modules/mock-server/browser';
 import {tracking} from 'modules/tracking';
 
-if (
-  process.env.NODE_ENV === 'development' ||
-  window.location.host.match(/camunda\.cloud$/) !== null
-) {
-  startMocking();
+function enableMockingForDevEnv(): Promise<void> {
+  return new Promise((resolve) => {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      window.location.host.match(/camunda\.cloud$/) !== null
+    ) {
+      import('modules/mock-server/browser').then(({startMocking}) => {
+        startMocking();
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
 }
 
-tracking.loadAnalyticsToWillingUsers().then(() => {
+Promise.all([
+  tracking.loadAnalyticsToWillingUsers(),
+  enableMockingForDevEnv(),
+]).then(() => {
   ReactDOM.render(<App />, document.getElementById('root'));
 });
