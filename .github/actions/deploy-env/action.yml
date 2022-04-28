@@ -119,9 +119,9 @@ runs:
         argocd app create
         --dest-namespace optimize-${APP_NAME}
         --file .ci/deployments-resources/argo/application.yml
-        --helm-set optimize-onpremise.optimize.image.tag=${{ inputs.docker_tag }}
-        --helm-set optimize-onpremise.cambpm.image.tag=${{ inputs.cambpm_version }}
-        --helm-set optimize-onpremise.elasticsearch.image.tag=${{ inputs.es_version }}
+        --helm-set optimize.image.tag=${{ inputs.docker_tag }}
+        --helm-set cambpm.image.tag=${{ inputs.cambpm_version }}
+        --helm-set elasticsearch.image.tag=${{ inputs.es_version }}
         --helm-set git.branch=${{ inputs.revision }}
         --helm-set global.labels.app=${{ env.APP_NAME }}
         --name ${{ env.APP_NAME }}
