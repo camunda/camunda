@@ -169,7 +169,11 @@ public final class LogStorageAppenderTest {
     when(subscription.peekBlock(any(), anyInt(), anyBoolean()))
         .then(
             a -> {
-              final Object result = a.callRealMethod();
+              final var result = (int) a.callRealMethod();
+              if (result <= 0) {
+                return result;
+              }
+
               final BlockPeek block = a.getArgument(0);
               assertThat(LogEntryDescriptor.getPosition(block.getBuffer(), 0))
                   .isEqualTo(expectedPos.get());
