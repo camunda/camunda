@@ -8,16 +8,24 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -25,9 +33,52 @@ import org.mockito.Mockito;
 class DueDateTimerCheckerTest {
 
   @Nested
+  final class TriggerTimersSideEffectTest {
+
+    @Test
+    void shouldAbortIterationAndGiveYieldAfterSomeTimeHasPassed() {
+      /* This test verifies that the class will yield control at some point. This is related to
+       * https://github.com/camunda/zeebe/issues/8991 where one issue was that the list of due timers
+       * grew substantially to millions of entries. The algorithm iterated over each entry and blocked
+       * the execution of any other work on that thread during that time.
+       */
+
+      // given
+      final var mockTypedCommandWriter = mock(TypedCommandWriter.class);
+      when(mockTypedCommandWriter.flush()).thenReturn(1L);
+      final var timerKey = 42L;
+      final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
+      when(mockTimer.getKey()).thenReturn(timerKey);
+
+      final var testActorClock = new TestActorClock();
+      final var testTimerInstanceState =
+          new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
+              mockTimer, testActorClock);
+
+      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock);
+
+      // when
+      sut.apply(mockTypedCommandWriter);
+
+      // then
+      verify(mockTypedCommandWriter, times(4))
+          .appendFollowUpCommand(eq(timerKey), eq(TimerIntent.TRIGGER), any());
+      /*
+       * Why 4 times? The actor clock is advanced by 10 units before the timer visitor is called, and
+       * thus before a trigger event command is written.
+       *
+       * Internally, the threshold to give yield is calculated by
+       * final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR) == 50
+       *
+       * So in the fifth iteration, the mechanism will yield
+       */
+    }
+  }
+
+  @Nested
   final class YieldingDecoratorTest {
 
-    public static final int TIME_TO_YIELD = 100;
+    private static final int TIME_TO_YIELD = 100;
 
     @Test
     void shouldForwardCallToDelegateWhenTimeToYieldIsNotYetReached() {
@@ -35,7 +86,7 @@ class DueDateTimerCheckerTest {
       final var mockTimer = mock(TimerInstance.class);
 
       final var mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(Mockito.any())).thenReturn(true);
+      when(mockDelegate.visit(any())).thenReturn(true);
 
       final var testActorClock = new TestActorClock();
       testActorClock.setTime(TIME_TO_YIELD - 50);
@@ -56,7 +107,7 @@ class DueDateTimerCheckerTest {
       final var mockTimer = mock(TimerInstance.class);
 
       final var mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(Mockito.any())).thenReturn(true);
+      when(mockDelegate.visit(any())).thenReturn(true);
 
       final var testActorClock = new TestActorClock();
       testActorClock.setTime(TIME_TO_YIELD);
@@ -77,7 +128,7 @@ class DueDateTimerCheckerTest {
       final var mockTimer = mock(TimerInstance.class);
 
       final var mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(Mockito.any())).thenReturn(true);
+      when(mockDelegate.visit(any())).thenReturn(true);
 
       final var testActorClock = new TestActorClock();
       testActorClock.setTime(TIME_TO_YIELD + 50);
@@ -109,7 +160,6 @@ class DueDateTimerCheckerTest {
 
     @Override
     public long getTimeMillis() {
-      time = time + 10;
       return time;
     }
 
@@ -121,6 +171,39 @@ class DueDateTimerCheckerTest {
     @Override
     public long getNanoTime() {
       return Duration.ofMillis(getTimeMillis()).toNanos();
+    }
+  }
+
+  private final class TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers
+      implements TimerInstanceState {
+
+    private final TimerInstance timer;
+    private final TestActorClock testActorClock;
+
+    private TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
+        final TimerInstance timer, final TestActorClock testActorClock) {
+      this.timer = timer;
+      this.testActorClock = testActorClock;
+    }
+
+    @Override
+    public long processTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
+      var yield = false;
+
+      while (!yield) {
+        testActorClock.update();
+        yield = !consumer.visit(timer);
+      }
+      return 0;
+    }
+
+    @Override
+    public void forEachTimerForElementInstance(
+        final long elementInstanceKey, final Consumer<TimerInstance> action) {}
+
+    @Override
+    public TimerInstance get(final long elementInstanceKey, final long timerKey) {
+      return null;
     }
   }
 }
