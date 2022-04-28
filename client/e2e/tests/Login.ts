@@ -90,7 +90,7 @@ test('redirect to the correct URL after login', async (t) => {
 
   await t
     .navigateTo(selectedTaskURL)
-    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
@@ -100,7 +100,7 @@ test('redirect to the correct URL after login', async (t) => {
 
   await t
     .navigateTo(selectedFilterUrl)
-    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
@@ -110,7 +110,7 @@ test('redirect to the correct URL after login', async (t) => {
 
   await t
     .navigateTo(selectedTaskAndFilterURL)
-    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())

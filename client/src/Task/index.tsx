@@ -112,24 +112,6 @@ const Task: React.FC = () => {
         headline: 'Task completed',
       });
 
-      const searchParams = new URLSearchParams(location.search);
-      const gseUrl = searchParams.get('gseUrl');
-
-      if (gseUrl !== null && !notifications.isGseNotificationVisible) {
-        notifications.displayNotification('info', {
-          headline: 'To continue getting started, head back to Console',
-          isDismissable: false,
-          isGseNotification: true,
-          navigation: {
-            label: 'Open Console',
-            navigationHandler: () => {
-              window.location.href = gseUrl;
-            },
-          },
-          showCreationTime: false,
-        });
-      }
-
       navigate({
         pathname: Pages.Initial(),
         search: location.search,

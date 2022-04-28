@@ -240,57 +240,6 @@ describe('<Task />', () => {
     });
   });
 
-  it('should display gse notification on complete task', async () => {
-    mockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
-      }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
-      }),
-      graphql.mutation('CompleteTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockCompleteTask().result.data));
-      }),
-      graphql.query('GetTasks', (req, res, ctx) => {
-        const {state, assigned} = req.variables;
-
-        if (state === 'CREATED' && assigned === undefined) {
-          return res(ctx.data(mockGetAllOpenTasks(true).result.data));
-        }
-
-        return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid query',
-            },
-          ]),
-        );
-      }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
-      }),
-    );
-
-    render(<Task />, {
-      wrapper: getWrapper(['/0?gseUrl=https://www.testUrl.com']),
-    });
-
-    userEvent.click(await screen.findByText('Complete Task'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    });
-    expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
-      headline: 'To continue getting started, head back to Console',
-      isDismissable: false,
-      isGseNotification: true,
-      navigation: expect.objectContaining({
-        label: 'Open Console',
-      }),
-      showCreationTime: false,
-    });
-  });
-
   it('should show a loading spinner while loading', async () => {
     mockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {

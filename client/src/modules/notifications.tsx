@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useContext, useRef, useState} from 'react';
+import React, {useContext, useRef} from 'react';
 import {NotificationContainer} from 'modules/components/NotificationContainer';
 import {NotificationItem} from '@camunda-cloud/common-ui';
 
@@ -15,7 +15,6 @@ type Options = {
   isDismissable?: NotificationItem['userDismissable'];
   showCreationTime?: NotificationItem['showCreationTime'];
   navigation?: NotificationItem['navigation'];
-  isGseNotification?: boolean;
 };
 
 type Notification = {
@@ -30,7 +29,6 @@ type DisplayNotificationFn = (
 
 type NotificationContextType = {
   displayNotification: DisplayNotificationFn;
-  isGseNotificationVisible: boolean;
 };
 
 type ProviderProps = {
@@ -44,24 +42,11 @@ const NotificationContext = React.createContext<
 const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
   const notificationRef =
     useRef() as React.MutableRefObject<HTMLCmNotificationContainerElement>;
-  const [isGseNotificationVisible, setIsGseNotificationVisible] =
-    useState(false);
 
   const displayNotification: DisplayNotificationFn = async (
     appearance,
-    {
-      headline,
-      description,
-      isDismissable,
-      navigation,
-      isGseNotification,
-      showCreationTime,
-    },
+    {headline, description, isDismissable, navigation, showCreationTime},
   ) => {
-    if (isGseNotification) {
-      setIsGseNotificationVisible(true);
-    }
-
     return await notificationRef.current?.enqueueNotification({
       headline,
       description,
@@ -73,9 +58,7 @@ const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
   };
 
   return (
-    <NotificationContext.Provider
-      value={{displayNotification, isGseNotificationVisible}}
-    >
+    <NotificationContext.Provider value={{displayNotification}}>
       {children}
       <NotificationContainer ref={notificationRef} />
     </NotificationContext.Provider>

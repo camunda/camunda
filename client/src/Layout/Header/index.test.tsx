@@ -76,20 +76,6 @@ describe('<Header />', () => {
     expect(screen.getByTestId('search')).toHaveTextContent('');
   });
 
-  it('should navigate to home page when brand label is clicked (with gse url)', async () => {
-    render(<Header />, {
-      wrapper: createWrapper(['/?gseUrl=https://www.testUrl.com']),
-    });
-    await screen.findByText('Demo User');
-
-    fireEvent.click(screen.getByText('Tasklist'));
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      'gseUrl=https%3A%2F%2Fwww.testUrl.com',
-    );
-  });
-
   it('should handle logout', async () => {
     mockServer.use(
       rest.post('/api/login', (_, res) => res.once()),

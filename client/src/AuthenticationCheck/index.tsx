@@ -8,7 +8,6 @@
 import {Navigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {authenticationStore} from 'modules/stores/authentication';
-import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 interface Props {
   redirectPath: string;
@@ -30,7 +29,6 @@ const AuthenticationCheck: React.FC<Props> = observer(
       <Navigate
         to={{
           pathname: redirectPath,
-          search: getPersistentQueryParams(location?.search ?? ''),
         }}
         state={{
           referrer: location,
