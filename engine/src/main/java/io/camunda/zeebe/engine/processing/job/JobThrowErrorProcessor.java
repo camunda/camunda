@@ -124,8 +124,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       commandControl.reject(
           RejectionType.INVALID_STATE,
           "Expected to find active service task, but was " + serviceTaskInstance);
-    } else if (!eventScopeInstanceState.isAcceptingEvent(
-        foundCatchEvent.get().getElementInstance().getKey())) {
+    } else if (!eventScopeInstanceState.canTriggerEvent(
+        foundCatchEvent.get().getElementInstance().getKey(),
+        foundCatchEvent.get().getCatchEvent().getId())) {
       commandControl.reject(
           RejectionType.INVALID_STATE,
           "Expected to find event scope that is accepting events, but was "

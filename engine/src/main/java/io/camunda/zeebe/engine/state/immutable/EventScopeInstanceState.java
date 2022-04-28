@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.instance.EventScopeInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
+import org.agrona.DirectBuffer;
 
 public interface EventScopeInstanceState {
 
@@ -30,8 +31,11 @@ public interface EventScopeInstanceState {
   EventTrigger peekEventTrigger(long eventScopeKey);
 
   /**
+   * Checks if the event scope can be triggered for the given event.
+   *
    * @param eventScopeKey the key of the event scope the event is triggered in
-   * @return true if the event can be accepted
+   * @param elementId the element id of the event that is triggered
+   * @return {@code true} if the event can be triggered, otherwise {@code false}
    */
-  boolean isAcceptingEvent(long eventScopeKey);
+  boolean canTriggerEvent(long eventScopeKey, final DirectBuffer elementId);
 }

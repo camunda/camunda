@@ -48,38 +48,21 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
-  public void shutdownInstance(final long eventScopeKey) {
-    final EventScopeInstance instance = getInstance(eventScopeKey);
-    if (instance != null) {
-      this.eventScopeKey.wrapLong(eventScopeKey);
-      instance.setAccepting(false);
-      eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
-    }
-  }
-
-  @Override
-  public boolean createIfNotExists(
-      final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
-    this.eventScopeKey.wrapLong(eventScopeKey);
-    boolean wasCreated = false;
-
-    if (!eventScopeInstanceColumnFamily.exists(this.eventScopeKey)) {
-      createInstance(eventScopeKey, interruptingIds);
-      wasCreated = true;
-    }
-
-    return wasCreated;
-  }
-
-  @Override
   public void createInstance(
-      final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
+      final long eventScopeKey,
+      final Collection<DirectBuffer> interruptingElementIds,
+      final Collection<DirectBuffer> boundaryElementIds) {
     eventScopeInstance.reset();
 
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstance.setAccepting(true);
-    for (final DirectBuffer interruptingId : interruptingIds) {
-      eventScopeInstance.addInterrupting(interruptingId);
+    eventScopeInstance.setInterrupted(false);
+
+    for (final DirectBuffer elementId : interruptingElementIds) {
+      eventScopeInstance.addInterruptingElementId(elementId);
+    }
+    for (final DirectBuffer elementId : boundaryElementIds) {
+      eventScopeInstance.addBoundaryElementId(elementId);
     }
 
     eventScopeInstanceColumnFamily.put(this.eventScopeKey, eventScopeInstance);
@@ -122,11 +105,18 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
-    if (isAcceptingEvent(instance)) {
-      if (instance.isInterrupting(elementId)) {
-        instance.setAccepting(false);
-        eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
+    if (canTriggerEvent(instance, elementId)) {
+      final var isInterruptingElementId = instance.isInterruptingElementId(elementId);
+      final var isBoundaryElementId = instance.isBoundaryElementId(elementId);
+
+      if (isInterruptingElementId) {
+        instance.setInterrupted(true);
       }
+      if (isBoundaryElementId && isInterruptingElementId) {
+        // don't accept other events after an interrupting boundary is triggered
+        instance.setAccepting(false);
+      }
+      eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
 
       createTrigger(eventScopeKey, eventKey, elementId, variables);
     }
@@ -170,15 +160,23 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
-  public boolean isAcceptingEvent(final long eventScopeKey) {
+  public boolean canTriggerEvent(final long eventScopeKey, final DirectBuffer elementId) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
-    return isAcceptingEvent(instance);
+    return canTriggerEvent(instance, elementId);
   }
 
-  private boolean isAcceptingEvent(final EventScopeInstance instance) {
-    return instance != null && instance.isAccepting();
+  /**
+   * An event scope can be triggered if no interrupting event was triggered (i.e. it is not
+   * interrupted). If an interrupting event was triggered then no other event can be triggered,
+   * except for boundary events. If an interrupting boundary event was triggered then no other
+   * events, including boundary events, can be triggered (i.e. it is not accepting any events).
+   */
+  private boolean canTriggerEvent(final EventScopeInstance instance, final DirectBuffer elementId) {
+    return instance != null
+        && instance.isAccepting()
+        && (!instance.isInterrupted() || instance.isBoundaryElementId(elementId));
   }
 
   private void createTrigger(

@@ -20,11 +20,19 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class EventScopeInstance extends UnpackedObject implements DbValue {
 
   private final BooleanProperty acceptingProp = new BooleanProperty("accepting");
-  private final ArrayProperty<StringValue> interruptingProp =
+  private final BooleanProperty interruptedProp = new BooleanProperty("interrupted", false);
+
+  private final ArrayProperty<StringValue> interruptingElementIdsProp =
       new ArrayProperty<>("interrupting", new StringValue());
 
+  private final ArrayProperty<StringValue> boundaryElementIdsProp =
+      new ArrayProperty<>("boundaryElementIds", new StringValue());
+
   public EventScopeInstance() {
-    declareProperty(acceptingProp).declareProperty(interruptingProp);
+    declareProperty(acceptingProp)
+        .declareProperty(interruptingElementIdsProp)
+        .declareProperty(boundaryElementIdsProp)
+        .declareProperty(interruptedProp);
   }
 
   public EventScopeInstance(final EventScopeInstance other) {
@@ -45,14 +53,28 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
     return this;
   }
 
-  public EventScopeInstance addInterrupting(final DirectBuffer elementId) {
-    interruptingProp.add().wrap(elementId);
+  public boolean isInterrupted() {
+    return interruptedProp.getValue();
+  }
+
+  public EventScopeInstance setInterrupted(final boolean interrupted) {
+    interruptedProp.setValue(interrupted);
     return this;
   }
 
-  public boolean isInterrupting(final DirectBuffer elementId) {
-    for (final StringValue stringValue : interruptingProp) {
-      if (stringValue.getValue().equals(elementId)) {
+  public EventScopeInstance addInterruptingElementId(final DirectBuffer elementId) {
+    interruptingElementIdsProp.add().wrap(elementId);
+    return this;
+  }
+
+  public EventScopeInstance addBoundaryElementId(final DirectBuffer elementId) {
+    boundaryElementIdsProp.add().wrap(elementId);
+    return this;
+  }
+
+  public boolean isInterruptingElementId(final DirectBuffer elementId) {
+    for (final StringValue interruptingElementId : interruptingElementIdsProp) {
+      if (interruptingElementId.getValue().equals(elementId)) {
         return true;
       }
     }
@@ -60,9 +82,19 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
     return false;
   }
 
+  public boolean isBoundaryElementId(final DirectBuffer elementId) {
+    for (final StringValue boundaryElementId : boundaryElementIdsProp) {
+      if (boundaryElementId.getValue().equals(elementId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(acceptingProp, interruptingProp);
+    return Objects.hash(
+        acceptingProp, interruptingElementIdsProp, boundaryElementIdsProp, interruptedProp);
   }
 
   @Override
@@ -75,6 +107,8 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
     }
     final EventScopeInstance that = (EventScopeInstance) o;
     return Objects.equals(acceptingProp, that.acceptingProp)
-        && Objects.equals(interruptingProp, that.interruptingProp);
+        && Objects.equals(interruptingElementIdsProp, that.interruptingElementIdsProp)
+        && Objects.equals(boundaryElementIdsProp, that.boundaryElementIdsProp)
+        && Objects.equals(interruptedProp, that.interruptedProp);
   }
 }
