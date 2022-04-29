@@ -30,8 +30,18 @@ public final class FeatureFlagsCfg {
   //    this.enableFoo = enableFoo;
   //  }
 
-  FeatureFlags toFeatureFlags() {
-    return new FeatureFlags(/*enableFoo*/ );
+  private boolean enableYieldingDueDateChecker = DEFAULT_SETTINGS.yieldingDueDateChecker();
+
+  public boolean isEnableYieldingDueDateChecker() {
+    return enableYieldingDueDateChecker;
+  }
+
+  public void setEnableYieldingDueDateChecker(final boolean enableYieldingDueDateChecker) {
+    this.enableYieldingDueDateChecker = enableYieldingDueDateChecker;
+  }
+
+  public FeatureFlags toFeatureFlags() {
+    return new FeatureFlags(enableYieldingDueDateChecker /*, enableFoo*/);
   }
 
   @Override

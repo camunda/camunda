@@ -22,19 +22,33 @@ public final class FeatureFlags {
    *   As we gain more confidence in the efficacy of the feature flag, the
    *   default value can be set to 'true'
    *
+   * - define a default value to be used in tests
+   *
+   * - make sure that all relevant tests use the default value for tests
+   *
    * - add a field, getter and setter to FeatureFlagsCfg
    *
    * - add a description of the feature flag to
    *    - dist/src/main/config/broker.standalone.yaml.template
    *    - dist/src/main/config/broker.yaml.template
    *
+   * - add test cases to FeaturesFlagCfgTest and feature-flags-cfg.yaml
+   *
    * Be careful with parameter order in constructor calls!
    */
 
   // private final boolean foo;
 
-  public FeatureFlags(/*boolean foo*/ ) {
-    // this.foo = foo;
+  private static final boolean YIELDING_DUE_DATE_CHECKER_DEFAULT = false;
+
+  private final boolean yieldingDueDateChecker;
+
+  public FeatureFlags(final boolean yieldingDueDateChecker) {
+    this.yieldingDueDateChecker = yieldingDueDateChecker;
+  }
+
+  public boolean yieldingDueDateChecker() {
+    return yieldingDueDateChecker;
   }
 
   //  public boolean foo() {
@@ -59,6 +73,10 @@ public final class FeatureFlags {
   //  protected static final boolean FOO_DEFAULT = false;
   //
   public static FeatureFlags createDefault() {
-    return new FeatureFlags(/*FOO_DEFAULT*/ );
+    return new FeatureFlags(/*FOO_DEFAULT*/ YIELDING_DUE_DATE_CHECKER_DEFAULT);
+  }
+
+  public static FeatureFlags createDefaultForTests() {
+    return new FeatureFlags(/* YIELDING_DUE_DATE_CHECKER*/ true /*, FOO_DEFAULT*/);
   }
 }
