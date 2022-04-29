@@ -48,6 +48,19 @@ pipeline {
   }
 
   stages {
+    stage('Frontend - Build') {
+      steps {
+        container('node') {
+          sh '''
+            apk add --no-cache git
+            cd ./client
+            yarn install --frozen-lockfile
+            yarn lint
+            yarn build
+          '''
+        }
+      }
+    }
     stage('Backend - Build') {
       steps {
         container('maven') {
