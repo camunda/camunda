@@ -172,7 +172,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
     final OffsetDateTime instanceEndDate = OffsetDateTime.parse("2022-02-04T21:25:18+01:00", ISO_OFFSET_DATE_TIME);
     final OffsetDateTime flowNodeStartDate = OffsetDateTime.parse("2022-02-04T21:24:15+01:00", ISO_OFFSET_DATE_TIME);
     final OffsetDateTime flowNodeEndDate = OffsetDateTime.parse("2022-02-04T21:24:16+01:00", ISO_OFFSET_DATE_TIME);
-    final long offset = ChronoUnit.SECONDS.between(instanceStartDate, now);
+    final long offset = ChronoUnit.SECONDS.between(instanceEndDate, now);
     final OffsetDateTime newStartDate = instanceStartDate.plusSeconds(offset);
     final OffsetDateTime newEndDate = instanceEndDate.plusSeconds(offset);
     final OffsetDateTime newFlowNodeStartDate = flowNodeStartDate.plusSeconds(offset);

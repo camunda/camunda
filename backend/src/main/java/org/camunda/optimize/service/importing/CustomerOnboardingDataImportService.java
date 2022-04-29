@@ -31,8 +31,10 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -129,12 +131,13 @@ public class CustomerOnboardingDataImportService {
 
   private void loadProcessInstancesToElasticSearch(List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
     List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
-    Optional<OffsetDateTime> minimumStartDate = rawProcessInstanceDtos.stream()
-      .map(ProcessInstanceDto::getStartDate)
-      .min(OffsetDateTime::compareTo);
+    Optional<OffsetDateTime> maxOfEndAndStartDate = rawProcessInstanceDtos.stream()
+      .flatMap(instance -> Stream.of(instance.getStartDate(), instance.getEndDate()))
+      .filter(Objects::nonNull)
+      .max(OffsetDateTime::compareTo);
     for (ProcessInstanceDto rawProcessInstance : rawProcessInstanceDtos) {
-      if (minimumStartDate.isPresent()) {
-        ProcessInstanceDto processInstanceDto = modifyProcessInstanceDates(rawProcessInstance, minimumStartDate.get());
+      if (maxOfEndAndStartDate.isPresent()) {
+        ProcessInstanceDto processInstanceDto = modifyProcessInstanceDates(rawProcessInstance, maxOfEndAndStartDate.get());
         processInstanceDtos.add(processInstanceDto);
         if (processInstanceDtos.size() % batchSize == 0) {
           insertProcessInstancesToElasticSearch(processInstanceDtos);
@@ -175,9 +178,9 @@ public class CustomerOnboardingDataImportService {
   }
 
   private ProcessInstanceDto modifyProcessInstanceDates(final ProcessInstanceDto processInstanceDto,
-                                                        final OffsetDateTime minimumStartDate) {
+                                                        final OffsetDateTime maxOfEndAndStartDate) {
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    long offset = ChronoUnit.SECONDS.between(minimumStartDate, now);
+    long offset = ChronoUnit.SECONDS.between(maxOfEndAndStartDate, now);
     Optional.ofNullable(processInstanceDto.getStartDate())
       .ifPresent(startDate -> processInstanceDto.setStartDate(startDate.plusSeconds(offset)));
     Optional.ofNullable(processInstanceDto.getEndDate())

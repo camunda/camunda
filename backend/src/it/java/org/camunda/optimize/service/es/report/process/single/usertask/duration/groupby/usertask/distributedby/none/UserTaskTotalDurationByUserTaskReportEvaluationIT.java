@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
@@ -48,6 +49,11 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
       .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
       .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK)
       .build();
+  }
+
+  @Override
+  protected void setDurationFieldToNullInElasticsearch(final String processInstanceId) {
+    setUserTaskDurationToNull(processInstanceId, ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION);
   }
 
   @Override
