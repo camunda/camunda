@@ -25,8 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.admin.indices.flush.FlushRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -64,7 +62,6 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   public void before() {
     super.before();
     taskMutationResolver.setZeebeClient(super.getClient());
-    clearMetrics();
   }
 
   @Test
@@ -90,7 +87,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     insertMetricForAssignee("Angela Merkel", now);
     insertMetricForAssignee("Angela Merkel", now);
 
-    flushData();
+    elasticsearchTestRule.refreshTasklistESIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
@@ -114,7 +111,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     insertMetricForAssignee("Angela Merkel", now);
     insertMetricForAssignee("Angela Merkel", now);
 
-    flushData();
+    elasticsearchTestRule.refreshTasklistESIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.plusMinutes(5L).format(FORMATTER)); // out of range
@@ -136,7 +133,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     for (int i = 0; i <= 10_000; i++) {
       insertMetricForAssignee("Assignee " + i, now); // 10_001 different assignees
     }
-    flushData();
+    elasticsearchTestRule.refreshTasklistESIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
@@ -187,7 +184,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
 
     tester.waitFor(2000);
-    flushData();
+    elasticsearchTestRule.refreshTasklistESIndices();
     // when
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusMinutes(5L).format(FORMATTER));
@@ -200,14 +197,6 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo(expectedDto);
-  }
-
-  private void flushData() throws IOException, InterruptedException {
-    final FlushRequest flushRequest = new FlushRequest();
-    flushRequest.waitIfOngoing(true);
-    flushRequest.force(true);
-    esClient.indices().flush(flushRequest, RequestOptions.DEFAULT);
-    Thread.sleep(500);
   }
 
   private void insertMetricForAssignee(String assignee, OffsetDateTime eventTime) {
