@@ -217,7 +217,7 @@ class BpmnJS {
     const flowNode = event.element;
     if (
       isNonSelectableFlowNode(flowNode, this.#selectableFlowNodes) ||
-      this.#selectableFlowNodes === []
+      this.#selectableFlowNodes.length === 0
     ) {
       return;
     }
