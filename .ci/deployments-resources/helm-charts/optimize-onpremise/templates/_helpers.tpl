@@ -40,4 +40,6 @@ Create chart name and version as used by the chart label.
 camunda.cloud/created-by: "{{ .Values.git.repoUrl }}/blob/{{ .Values.git.branch }}/.ci/{{ .Template.Name }}"
 {{ end }}
 
-{{ define "ingress.domain" }}{{ printf "%s.%s" .Release.Name .Values.ingress.domain }}{{ end }}
+{{- define "ingress.domain" -}}
+{{- printf "%s.%s" .Release.Name .Values.ingress.domain | trimPrefix "optimize-" -}}
+{{- end -}}
