@@ -15,17 +15,8 @@
  */
 package io.camunda.zeebe.exporter.test;
 
-import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.MappingJsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -51,9 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 @ThreadSafe
 public final class ExporterTestController implements Controller {
-  private static final ObjectWriter WRITER =
-      new ObjectMapper(new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true))
-          .writerFor(new TypeReference<Record<?>>() {});
   private static final Logger LOGGER = LoggerFactory.getLogger(ExporterTestController.class);
   private static final long UNKNOWN_POSITION = -1;
 
@@ -81,12 +69,6 @@ public final class ExporterTestController implements Controller {
             LOGGER.warn(
                 "Interrupted while acquiring schedulerLock, will not schedule new tasks", e));
     return scheduledTask;
-  }
-
-  @Override
-  public <T extends RecordValue> void serializeToJson(
-      final Record<T> record, final OutputStream output) throws IOException {
-    WRITER.writeValue(output, record);
   }
 
   public void resetScheduledTasks() {

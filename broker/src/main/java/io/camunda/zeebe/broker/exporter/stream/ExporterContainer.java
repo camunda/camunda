@@ -7,11 +7,6 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.MappingJsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -22,19 +17,13 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.camunda.zeebe.util.sched.ActorControl;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.time.Duration;
 import org.slf4j.Logger;
 
 @SuppressWarnings("java:S112") // allow generic exception when calling Exporter#configure
 final class ExporterContainer implements Controller {
-  private static final ObjectWriter RECORD_WRITER =
-      new ObjectMapper(new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true))
-          .writerFor(new TypeReference<Record<? extends RecordValue>>() {});
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
   private static final String SKIP_POSITION_UPDATE_ERROR_MESSAGE =
@@ -127,12 +116,6 @@ final class ExporterContainer implements Controller {
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
     final var scheduledTimer = actor.runDelayed(delay, task);
     return scheduledTimer::cancel;
-  }
-
-  @Override
-  public <T extends RecordValue> void serializeToJson(
-      final Record<T> record, final OutputStream outputStream) throws IOException {
-    RECORD_WRITER.writeValue(outputStream, record);
   }
 
   public String getId() {
