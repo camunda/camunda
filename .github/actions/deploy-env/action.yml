@@ -124,7 +124,7 @@ runs:
         --helm-set elasticsearch.image.tag=${{ inputs.es_version }}
         --helm-set git.branch=${{ inputs.revision }}
         --helm-set global.labels.app=${{ env.APP_NAME }}
-        --name ${{ env.APP_NAME }}
+        --name optimize-${{ env.APP_NAME }}
         --revision ${{ inputs.revision }}
         --upsert
         
@@ -158,10 +158,3 @@ runs:
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ inputs.deployment_id }}.optimize.camunda.cloud
       # When tearing down the deployment, also deactivate GitHub Deployment environment
-    - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
-      if: ${{ inputs.step == 'stop' }}
-      name: Deactivate GitHub Deployment environment
-      with:
-        step: deactivate-env
-        token: "${{ github.token }}"
-        env: ${{ env.APP_NAME }}
