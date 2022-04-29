@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 
+/** Utility class to read index and component templates from the resources in a logical format. */
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
 final class TemplateReader {
   @SuppressWarnings("java:S1075") // not an actual URI
@@ -30,10 +31,16 @@ final class TemplateReader {
     this.config = config;
   }
 
+  /** Reads the shared component template from the resources. */
   Template readComponentTemplate() {
     return readTemplate(ZEEBE_RECORD_TEMPLATE_JSON);
   }
 
+  /**
+   * Reads the index template for the given value type from the resources, and replaces the alias
+   * and search patterns with the given ones. Additionally, will update the composed_of to match the
+   * configured index prefix.
+   */
   Template readIndexTemplate(
       final ValueType valueType, final String searchPattern, final String aliasName) {
     final Template template = readTemplate(findResourceForTemplate(valueType));

@@ -17,6 +17,10 @@ import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
+/**
+ * Builds {@link RestClient} instances based on a given {@link ElasticsearchExporterConfiguration}
+ * configuration.
+ */
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
 public final class RestClientFactory {
   private final ElasticsearchExporterConfiguration configuration;
@@ -25,6 +29,11 @@ public final class RestClientFactory {
     this.configuration = configuration;
   }
 
+  /**
+   * Returns a {@link RestClient} instance based on the given configuration. The URL is parsed as a
+   * comma separated list of "host:port" formatted strings. Authentication is supported only as
+   * basic auth; if there is no authentication present, then nothing is configured for it.
+   */
   public RestClient createRestClient() {
     final HttpHost[] httpHosts = parseUrl();
     final RestClientBuilder builder =

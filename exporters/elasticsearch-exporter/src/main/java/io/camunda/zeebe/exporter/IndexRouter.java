@@ -34,21 +34,31 @@ final class IndexRouter {
     this.formatter = formatter;
   }
 
-  /** Returns the name of the index for the given record. */
+  /**
+   * Returns the name of the index for the given record. This consists of the configured prefix,
+   * followed by the value type, the current broker version, and then the current date.
+   */
   String indexFor(final Record<?> record) {
     final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
     return (indexPrefixForValueType(record.getValueType()) + INDEX_DELIMITER)
         + formatter.format(timestamp);
   }
 
+  /** Returns a cluster-unique ID for the record consisting of it's "partitionId-position". */
   String idFor(final Record<?> record) {
     return record.getPartitionId() + "-" + record.getPosition();
   }
 
+  /**
+   * Returns the index template's alias name for the given value type, prefixed by {@link
+   * IndexConfiguration#prefix}, e.g. for {@link ValueType#VARIABLE}, you get
+   * "my-super-prefix-variable".
+   */
   String aliasNameForValueType(final ValueType valueType) {
     return config.prefix + ALIAS_DELIMITER + valueTypeToString(valueType);
   }
 
+  /** Returns the index for this value type, minus the current date. */
   String indexPrefixForValueType(final ValueType valueType) {
     final String version = VersionUtil.getVersionLowerCase();
     return config.prefix
@@ -58,6 +68,11 @@ final class IndexRouter {
         + version;
   }
 
+  /**
+   * Returns the search pattern for this value type, which consists of the index followed by a
+   * separator and a wildcard, without the date. This allows one to search for this pattern and get
+   * all indices regardless of their date.
+   */
   String searchPatternForValueType(final ValueType valueType) {
     return indexPrefixForValueType(valueType) + INDEX_DELIMITER + "*";
   }

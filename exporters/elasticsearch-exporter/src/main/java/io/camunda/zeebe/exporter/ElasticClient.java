@@ -27,7 +27,11 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 
-public class ElasticClient implements AutoCloseable {
+/**
+ * Thin wrapper around the actual underlying {@link RestClient} which manages all interactions with
+ * the actual Elasticsearch instance.
+ */
+final class ElasticClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final IndexRouter indexRouter;
@@ -38,7 +42,7 @@ public class ElasticClient implements AutoCloseable {
 
   private ElasticsearchMetrics metrics;
 
-  public ElasticClient(final ElasticsearchExporterConfiguration configuration) {
+  ElasticClient(final ElasticsearchExporterConfiguration configuration) {
     this(
         configuration,
         new ArrayList<>(),
