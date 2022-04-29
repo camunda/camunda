@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 
 @SuppressWarnings("java:S112") // allow generic exception when calling Exporter#configure
 final class ExporterContainer implements Controller {
+
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
+
   private static final String SKIP_POSITION_UPDATE_ERROR_MESSAGE =
       "Failed to update exporter position when skipping filtered record, can be skipped, but may indicate an issue if it occurs often";
 
