@@ -40,39 +40,6 @@ fixture('Process Instances Filters')
     await setFlyoutTestAttribute('flowNode');
   });
 
-test('Navigating in header should affect filters and url correctly', async (t) => {
-  await t.click(
-    screen.queryByRole('link', {
-      name: /view processes/i,
-    })
-  );
-
-  await t
-    .expect(await getPathname())
-    .eql('/processes')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-      })
-    );
-
-  const {
-    runningInstances,
-    active,
-    incidents,
-    finishedInstances,
-    completed,
-    canceled,
-  } = ProcessesPage.Filters;
-
-  await validateCheckedState({
-    checked: [runningInstances.field, active.field, incidents.field],
-    unChecked: [finishedInstances.field, completed.field, canceled.field],
-  });
-});
-
 test('Instance IDs filter', async (t) => {
   await t.expect(screen.queryByTestId('data-list').exists).ok();
 
@@ -798,62 +765,16 @@ test('Process Filter', async (t) => {
 });
 
 test('Process Filter - Interaction with diagram', async (t) => {
-  await t
-    .expect(screen.queryByText('There is no Process selected').exists)
-    .ok()
-    .expect(
-      screen.queryByText(
-        'To see a Diagram, select a Process in the Filters panel'
-      ).exists
-    )
-    .ok();
-
-  await t
-    .expect(ProcessesPage.Filters.processVersion.field.getAttribute('disabled'))
-    .eql('true')
-    .expect(ProcessesPage.Filters.flowNode.field.getAttribute('disabled'))
-    .eql('true');
-
-  await validateSelectValue(ProcessesPage.Filters.processVersion.field, 'All');
-
-  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
-
-  await t
-    .expect(await getPathname())
-    .eql('/processes')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-      })
-    );
-
   // select a process that has only one version
-  await t.click(ProcessesPage.Filters.processName.field);
-  await ProcessesPage.selectProcess('Order process');
-
-  await t
-    .expect(screen.queryByTestId('diagram').exists)
-    .ok()
-    .expect(screen.queryByText('There is no Process selected').exists)
-    .notOk()
-    .expect(
-      screen.queryByText(
-        'To see a Diagram, select a Process in the Filters panel'
-      ).exists
-    )
-    .notOk();
-
   await t
     .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
     .eql('false');
-
+  await t.click(ProcessesPage.Filters.processName.field);
+  await ProcessesPage.selectProcess('Order process');
   await validateSelectValue(
     ProcessesPage.Filters.processVersion.field,
     'Version 1'
   );
-
   await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
 
   await t
@@ -869,7 +790,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
       })
     );
 
-  // select a flow node without an instance from the diagram
+  // select a flow node from the diagram
   await t
     .click(
       within(screen.queryByTestId('diagram')).queryByText(/ship articles/i)
@@ -899,39 +820,9 @@ test('Process Filter - Interaction with diagram', async (t) => {
       })
     );
 
-  // select a flow node with an instance from the diagram
-  await t
-    .click(
-      within(screen.queryByTestId('diagram')).queryByText(/check payment/i)
-    )
-    .expect(
-      screen.queryByText('There are no Instances matching this filter set')
-        .exists
-    )
-    .notOk();
-
-  await validateSelectValue(
-    ProcessesPage.Filters.flowNode.field,
-    'Check payment'
-  );
-
-  await t
-    .expect(await getPathname())
-    .eql('/processes')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-        process: 'orderProcess',
-        version: '1',
-        flowNodeId: 'checkPayment',
-      })
-    );
-
   // select same flow node again and see filter is removed
   await t.click(
-    within(screen.queryByTestId('diagram')).queryByText(/check payment/i)
+    within(screen.queryByTestId('diagram')).queryByText(/ship articles/i)
   );
 
   await t
@@ -948,139 +839,6 @@ test('Process Filter - Interaction with diagram', async (t) => {
     );
 
   await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
-});
-
-test('Should set filters from url', async (t) => {
-  const {
-    runningInstances,
-    active,
-    incidents,
-    finishedInstances,
-    completed,
-    canceled,
-  } = ProcessesPage.Filters;
-
-  await t.navigateTo(
-    `/processes?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      completed: 'true',
-      canceled: 'true',
-      ids: '2251799813685255',
-      errorMessage: 'some error message',
-      startDate: '2020-09-10 18:41:44',
-      endDate: '2020-12-12 12:12:12',
-      version: '2',
-      process: 'processWithMultipleVersions',
-      variableName: 'test',
-      variableValue: '123',
-      operationId: '5be8a137-fbb4-4c54-964c-9c7be98b80e6',
-      flowNodeId: 'alwaysFails',
-      parentInstanceId: '2251799813685731',
-    })}`
-  );
-
-  await validateSelectValue(
-    ProcessesPage.Filters.processName.field,
-    'Process With Multiple Versions'
-  );
-  await validateSelectValue(
-    ProcessesPage.Filters.processVersion.field,
-    'Version 2'
-  );
-  await validateSelectValue(
-    ProcessesPage.Filters.flowNode.field,
-    'Always fails'
-  );
-
-  await t
-    .expect(ProcessesPage.Filters.instanceIds.value.value)
-    .eql('2251799813685255')
-    .expect(ProcessesPage.Filters.parentInstanceId.value.value)
-    .eql('2251799813685731')
-    .expect(ProcessesPage.Filters.errorMessage.value.value)
-    .eql('some error message')
-    .expect(ProcessesPage.Filters.startDate.value.value)
-    .eql('2020-09-10 18:41:44')
-    .expect(ProcessesPage.Filters.endDate.value.value)
-    .eql('2020-12-12 12:12:12')
-
-    .expect(ProcessesPage.Filters.variableName.value.value)
-    .eql('test')
-    .expect(ProcessesPage.Filters.variableValue.value.value)
-    .eql('123')
-    .expect(ProcessesPage.Filters.operationId.value.value)
-    .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
-
-  await validateCheckedState({
-    checked: [
-      runningInstances.field,
-      active.field,
-      incidents.field,
-      finishedInstances.field,
-      completed.field,
-      canceled.field,
-    ],
-    unChecked: [],
-  });
-
-  // should navigate to dashboard and back, and see filters are still there
-
-  await t.click(
-    screen
-      .queryAllByRole('link', {
-        name: /dashboard/i,
-      })
-      .nth(0)
-  );
-  await t.click(
-    screen.queryByRole('link', {
-      name: /view processes/i,
-    })
-  );
-
-  await validateSelectValue(
-    ProcessesPage.Filters.processName.field,
-    'Process With Multiple Versions'
-  );
-  await validateSelectValue(
-    ProcessesPage.Filters.processVersion.field,
-    'Version 2'
-  );
-  await validateSelectValue(
-    ProcessesPage.Filters.flowNode.field,
-    'Always fails'
-  );
-
-  await t
-    .expect(ProcessesPage.Filters.instanceIds.value.value)
-    .eql('2251799813685255')
-    .expect(ProcessesPage.Filters.parentInstanceId.value.value)
-    .eql('2251799813685731')
-    .expect(ProcessesPage.Filters.errorMessage.value.value)
-    .eql('some error message')
-    .expect(ProcessesPage.Filters.startDate.value.value)
-    .eql('2020-09-10 18:41:44')
-    .expect(ProcessesPage.Filters.endDate.value.value)
-    .eql('2020-12-12 12:12:12')
-    .expect(ProcessesPage.Filters.variableName.value.value)
-    .eql('test')
-    .expect(ProcessesPage.Filters.variableValue.value.value)
-    .eql('123')
-    .expect(ProcessesPage.Filters.operationId.value.value)
-    .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
-
-  await validateCheckedState({
-    checked: [
-      runningInstances.field,
-      active.field,
-      incidents.field,
-      finishedInstances.field,
-      completed.field,
-      canceled.field,
-    ],
-    unChecked: [],
-  });
 });
 
 test('Should order optional filters', async (t) => {
