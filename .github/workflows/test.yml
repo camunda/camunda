@@ -54,6 +54,7 @@ jobs:
           method: kubernetes
           path: kubernetes-camunda-ci
           role: gha-runner-camunda-agent
+          exportEnv: true # used in .m2/settings.xml
           secrets: |
             secret/data/k8s-camunda-ci/gha-runner-camunda/agent NEXUS_PASSWORD;
       - uses: stCarolas/setup-maven@v4.3
