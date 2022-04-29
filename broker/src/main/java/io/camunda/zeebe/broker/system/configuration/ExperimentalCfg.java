@@ -29,6 +29,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private PartitioningCfg partitioning = new PartitioningCfg();
   private QueryApiCfg queryApi = new QueryApiCfg();
 
+  private FeatureFlagsCfg features = new FeatureFlagsCfg();
+
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     rocksdb.init(globalConfig, brokerBase);
@@ -95,6 +97,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.queryApi = queryApi;
   }
 
+  public FeatureFlagsCfg getFeatures() {
+    return features;
+  }
+
+  public void setFeatures(final FeatureFlagsCfg features) {
+    this.features = features;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -110,6 +120,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + partitioning
         + ", queryApi="
         + queryApi
+        + ", features="
+        + features
         + '}';
   }
 }
