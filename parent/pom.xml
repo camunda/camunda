@@ -109,6 +109,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.6.0</version.spotbugs>
+    <version.jcip>1.0</version.jcip>
     <version.archunit>0.23.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
 
@@ -192,6 +193,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-exporter-test</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -584,6 +591,12 @@
       </dependency>
 
       <dependency>
+        <groupId>co.elastic.clients</groupId>
+        <artifactId>elasticsearch-java</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${version.guava}</version>
@@ -642,6 +655,13 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${version.spotbugs}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>net.jcip</groupId>
+        <artifactId>jcip-annotations</artifactId>
+        <version>${version.jcip}</version>
         <scope>provided</scope>
       </dependency>
 

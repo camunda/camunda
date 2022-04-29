@@ -15,10 +15,6 @@
 
   <name>Zeebe Elasticsearch Exporter</name>
 
-  <properties>
-    <paths.certificates>${project.build.testResources[0].directory}/certs/</paths.certificates>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -33,11 +29,6 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-x-content</artifactId>
     </dependency>
 
     <dependency>
@@ -72,24 +63,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-bpmn-model</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -108,9 +81,29 @@
       <artifactId>jackson-annotations</artifactId>
     </dependency>
 
+    <!-- test dependencies -->
+
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-jackson</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -133,8 +126,14 @@
     </dependency>
 
     <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -145,44 +144,18 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Dependencies needed for the integration tests only. See https://github.com/camunda/zeebe/issues/8609 -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-logstreams</artifactId>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-common</artifactId>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- End of dependencies need for integration tests only -->
-
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -194,6 +167,7 @@
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -208,7 +182,7 @@
             container will not be able to use IPv6; as such, ensure we always prefer IPv4 when
             resolving host names
           -->
-          <argLine>-XX:MaxDirectMemorySize=4g -Djava.net.preferIPv4Stack=true</argLine>
+          <argLine>-Djava.net.preferIPv4Stack=true</argLine>
         </configuration>
       </plugin>
 

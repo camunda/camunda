@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.exporter.test;
 
+import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -48,9 +50,10 @@ import org.slf4j.LoggerFactory;
  * but instead will run the next time {@link #runScheduledTasks(Duration)} is called.
  */
 @ThreadSafe
-final class ExporterTestController implements Controller {
+public final class ExporterTestController implements Controller {
   private static final ObjectWriter WRITER =
-      new ObjectMapper().writerFor(new TypeReference<Record<?>>() {});
+      new ObjectMapper(new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true))
+          .writerFor(new TypeReference<Record<?>>() {});
   private static final Logger LOGGER = LoggerFactory.getLogger(ExporterTestController.class);
   private static final long UNKNOWN_POSITION = -1;
 
@@ -80,12 +83,13 @@ final class ExporterTestController implements Controller {
     return scheduledTask;
   }
 
-  public <T extends RecordValue> void serializeJson(
+  @Override
+  public <T extends RecordValue> void serializeToJson(
       final Record<T> record, final OutputStream output) throws IOException {
     WRITER.writeValue(output, record);
   }
 
-  void resetScheduledTasks() {
+  public void resetScheduledTasks() {
     LockSupport.runWithLock(
         schedulerLock,
         this::resetScheduler,
@@ -94,15 +98,15 @@ final class ExporterTestController implements Controller {
                 "Interrupted while acquiring schedulerLock, will not reset scheduled tasks", e));
   }
 
-  long getPosition() {
+  public long getPosition() {
     return position.get();
   }
 
-  List<ExporterTestScheduledTask> getScheduledTasks() {
+  public List<ExporterTestScheduledTask> getScheduledTasks() {
     return scheduledTasks;
   }
 
-  Instant getLastRanAt() {
+  public Instant getLastRanAt() {
     return Instant.ofEpochMilli(lastRanAtMs);
   }
 
@@ -111,7 +115,7 @@ final class ExporterTestController implements Controller {
    *
    * @param elapsed upper bound of tasks delay
    */
-  void runScheduledTasks(final Duration elapsed) {
+  public void runScheduledTasks(final Duration elapsed) {
     Objects.requireNonNull(elapsed, "must specify a tick duration");
     LockSupport.runWithLock(
         schedulerLock,

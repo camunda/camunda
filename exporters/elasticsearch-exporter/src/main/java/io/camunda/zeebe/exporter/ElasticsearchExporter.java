@@ -15,13 +15,12 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporter implements Exporter {
-
-  public static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
 
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
@@ -31,7 +30,7 @@ public class ElasticsearchExporter implements Exporter {
 
   private ElasticsearchExporterConfiguration configuration;
 
-  private ElasticsearchClient client;
+  private ElasticClient client;
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
@@ -118,8 +117,8 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration);
+  protected ElasticClient createClient() {
+    return new ElasticClient(configuration);
   }
 
   private void flushAndReschedule() {
@@ -147,80 +146,30 @@ public class ElasticsearchExporter implements Exporter {
     if (index.createTemplate) {
       createComponentTemplate();
 
-      if (index.deployment) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT);
-      }
-      if (index.process) {
-        createValueIndexTemplate(ValueType.PROCESS);
-      }
-      if (index.error) {
-        createValueIndexTemplate(ValueType.ERROR);
-      }
-      if (index.incident) {
-        createValueIndexTemplate(ValueType.INCIDENT);
-      }
-      if (index.job) {
-        createValueIndexTemplate(ValueType.JOB);
-      }
-      if (index.jobBatch) {
-        createValueIndexTemplate(ValueType.JOB_BATCH);
-      }
-      if (index.message) {
-        createValueIndexTemplate(ValueType.MESSAGE);
-      }
-      if (index.messageSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
-      }
-      if (index.variable) {
-        createValueIndexTemplate(ValueType.VARIABLE);
-      }
-      if (index.variableDocument) {
-        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
-      }
-      if (index.processInstance) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE);
-      }
-      if (index.processInstanceCreation) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
-      }
-      if (index.processMessageSubscription) {
-        createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
-      }
-      if (index.decisionRequirements) {
-        createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS);
-      }
-      if (index.decision) {
-        createValueIndexTemplate(ValueType.DECISION);
-      }
-      if (index.decisionEvaluation) {
-        createValueIndexTemplate(ValueType.DECISION_EVALUATION);
-      }
+      ValueTypeMapping.getAcceptedValueTypes().stream()
+          .filter(configuration::shouldIndexValueType)
+          .forEach(this::createValueIndexTemplate);
     }
 
     indexTemplatesCreated = true;
   }
 
   private void createComponentTemplate() {
-    final String templateName = configuration.index.prefix;
-    final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
-    if (!client.createComponentTemplate(templateName, filename)) {
-      log.warn("Put index template {} from file {} was not acknowledged", templateName, filename);
+    if (!client.putComponentTemplate()) {
+      log.warn("Failed to put component template; request was not acknowledged");
     }
   }
 
   private void createValueIndexTemplate(final ValueType valueType) {
     if (!client.putIndexTemplate(valueType)) {
-      log.warn("Put index template for value type {} was not acknowledged", valueType);
+      log.warn(
+          "Failed to put index template for value type {}; request was not acknowledged",
+          valueType);
     }
   }
 
-  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
-
-    private final ElasticsearchExporterConfiguration configuration;
-
-    ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
-      this.configuration = configuration;
-    }
+  record ElasticsearchRecordFilter(ElasticsearchExporterConfiguration configuration)
+      implements Context.RecordFilter {
 
     @Override
     public boolean acceptType(final RecordType recordType) {

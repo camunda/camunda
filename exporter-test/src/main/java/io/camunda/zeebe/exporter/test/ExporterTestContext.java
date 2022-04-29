@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * <p>This class is meant to be used by {@link ExporterTestHarness}.
  */
 @NotThreadSafe
-final class ExporterTestContext implements Context {
+public final class ExporterTestContext implements Context {
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ExporterTestContext.class);
   private static final int DEFAULT_PARTITION_ID = 1;
 
@@ -52,7 +52,7 @@ final class ExporterTestContext implements Context {
     return configuration;
   }
 
-  ExporterTestContext setConfiguration(final Configuration configuration) {
+  public ExporterTestContext setConfiguration(final Configuration configuration) {
     this.configuration = Objects.requireNonNull(configuration, "must specify a configuration");
     return this;
   }
@@ -66,14 +66,14 @@ final class ExporterTestContext implements Context {
     return partitionId;
   }
 
-  ExporterTestContext setPartitionId(final int partitionId) {
+  public ExporterTestContext setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
 
   @Nullable
   @CheckForNull
-  RecordFilter getRecordFilter() {
+  public RecordFilter getRecordFilter() {
     return recordFilter;
   }
 }

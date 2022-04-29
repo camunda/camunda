@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * <p>This implementation is meant to be used with {@link ExporterTestController}.
  */
 @ThreadSafe
-final class ExporterTestScheduledTask implements ScheduledTask, Runnable {
+public final class ExporterTestScheduledTask implements ScheduledTask, Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ExporterTestScheduledTask.class);
 
   private final Lock executeLock = new ReentrantLock();
@@ -43,24 +43,24 @@ final class ExporterTestScheduledTask implements ScheduledTask, Runnable {
   private volatile boolean isExecuted;
   private volatile boolean isCanceled;
 
-  ExporterTestScheduledTask(final Duration delay, final Runnable task) {
+  public ExporterTestScheduledTask(final Duration delay, final Runnable task) {
     this.delay = Objects.requireNonNull(delay, "must specify a task delay");
     this.task = Objects.requireNonNull(task, "must specify a task");
   }
 
-  Duration getDelay() {
+  public Duration getDelay() {
     return delay;
   }
 
-  Runnable getTask() {
+  public Runnable getTask() {
     return task;
   }
 
-  boolean isCanceled() {
+  public boolean isCanceled() {
     return isCanceled;
   }
 
-  boolean wasExecuted() {
+  public boolean wasExecuted() {
     return isExecuted;
   }
 

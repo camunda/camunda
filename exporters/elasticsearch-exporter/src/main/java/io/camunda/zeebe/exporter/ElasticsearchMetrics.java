@@ -11,7 +11,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
-public class ElasticsearchMetrics {
+public final class ElasticsearchMetrics {
   private static final String NAMESPACE = "zeebe_elasticsearch_exporter";
   private static final String PARTITION_LABEL = "partition";
 

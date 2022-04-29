@@ -31,16 +31,16 @@ import net.jcip.annotations.Immutable;
  * @param <T> the actual configuration type
  */
 @Immutable
-final class ExporterTestConfiguration<T> implements Configuration {
+public final class ExporterTestConfiguration<T> implements Configuration {
   private final String id;
   private final Map<String, Object> arguments;
   private final Function<Map<String, Object>, T> configurationSupplier;
 
-  ExporterTestConfiguration(final String id, @Nullable final T configuration) {
+  public ExporterTestConfiguration(final String id, @Nullable final T configuration) {
     this(id, ignored -> configuration);
   }
 
-  ExporterTestConfiguration(
+  public ExporterTestConfiguration(
       final String id, final Function<Map<String, Object>, T> configurationSupplier) {
     this(id, Collections.emptyMap(), configurationSupplier);
   }

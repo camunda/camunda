@@ -10,15 +10,8 @@ package io.camunda.zeebe.exporter.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final class PutIndexTemplateResponse {
-
-  private boolean acknowledged;
-
+public record PutIndexTemplateResponse(boolean acknowledged) {
   public boolean isAcknowledged() {
     return acknowledged;
-  }
-
-  public void setAcknowledged(final boolean acknowledged) {
-    this.acknowledged = acknowledged;
   }
 }

@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.exporter.api.context;
 
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.time.Duration;
 
 /** Controls various aspect of the exporting process. */
@@ -35,4 +39,15 @@ public interface Controller {
    * @return cancellable task.
    */
   ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task);
+
+  /**
+   * Serializes the given record to JSON into the given output stream.
+   *
+   * @param record the record to serialize to JSON
+   * @param outputStream the destination output stream
+   * @param <T> the type of the record value
+   * @throws IOException on serialization error
+   */
+  <T extends RecordValue> void serializeToJson(
+      final Record<T> record, final OutputStream outputStream) throws IOException;
 }

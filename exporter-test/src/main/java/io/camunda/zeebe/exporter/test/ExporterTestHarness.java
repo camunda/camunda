@@ -22,6 +22,7 @@ import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -33,11 +34,17 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jcip.annotations.NotThreadSafe;
+import org.agrona.LangUtil;
 import org.agrona.collections.MutableLong;
 
 /**
- * A test harness to simplify testing {@link Exporter} instances in a synchronous context, without
- * requiring a complete broker.
+ * TODO: evaluate if this is really useful. If not, then we might just move the other classes to
+ * test-util and leave it at that. Honestly this is probably over engineered, but it is kind of nice
+ * to tie things together, as most of the time you really don't care about the individual
+ * components.
+ *
+ * <p>A test harness to simplify testing {@link Exporter} instances in a synchronous context,
+ * without requiring a complete broker.
  *
  * <h2>Lifecycle</h2>
  *
@@ -77,13 +84,26 @@ public final class ExporterTestHarness {
 
   private State exporterState = State.INITIAL;
 
-  /** @param exporter the exporter to be tested */
+  /**
+   * @param exporter the exporter to be tested
+   */
   public ExporterTestHarness(final Exporter exporter) {
-    this(exporter, 1);
+    this.exporter = Objects.requireNonNull(exporter, "must specify an exporter");
   }
 
-  public ExporterTestHarness(final Exporter exporter, final int partitionId) {
+  /**
+   * @param exporter the exporter to be tested
+   */
+  public <T> ExporterTestHarness(
+      final Exporter exporter, final String id, @Nullable final T config) {
     this.exporter = Objects.requireNonNull(exporter, "must specify an exporter");
+
+    // sneakily configure
+    try {
+      configure(id, config);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
   }
 
   /**
@@ -179,8 +199,7 @@ public final class ExporterTestHarness {
   }
 
   /**
-   * Exports a single record to the exporter. The record is patched before being exported to ensure
-   * it has the correct partition ID.
+   * Exports a single record to the exporter. The record is not patched but is exported as is.
    *
    * <p>NOTE: if the exporter is not opened yet, it will attempt to do so via {@link #open()}.
    */
@@ -191,6 +210,16 @@ public final class ExporterTestHarness {
 
     Objects.requireNonNull(record, "must specify a record");
     exporter.export(record);
+  }
+
+  /**
+   * Exports a single, randomly generated record to the exporter. The record is patched before being
+   * exported to ensure it has the correct partition ID.
+   *
+   * <p>NOTE: if the exporter is not opened yet, it will attempt to do so via {@link #open()}.
+   */
+  public void export() {
+    export(recordFactory.generateRecord(this::patchRecord));
   }
 
   /**
@@ -207,14 +236,9 @@ public final class ExporterTestHarness {
     }
 
     final var position = new MutableLong(startPosition);
-    final var timestamp = System.currentTimeMillis();
     final var records =
         recordFactory
-            .generateRecords(
-                b ->
-                    b.withPosition(position.getAndIncrement())
-                        .withTimestamp(timestamp)
-                        .withPartitionId(context.getPartitionId()))
+            .generateRecords(b -> patchRecord(b).withPosition(position.getAndIncrement()))
             .limit(count)
             .collect(Collectors.toList());
 
@@ -245,6 +269,13 @@ public final class ExporterTestHarness {
   @CheckForNull
   public RecordFilter getRecordFilter() {
     return context.getRecordFilter();
+  }
+
+  private ImmutableRecord.Builder<RecordValue> patchRecord(
+      final ImmutableRecord.Builder<RecordValue> builder) {
+    return builder
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(context.getPartitionId());
   }
 
   private enum State {

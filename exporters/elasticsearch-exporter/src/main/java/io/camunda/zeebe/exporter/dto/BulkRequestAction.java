@@ -7,23 +7,9 @@
  */
 package io.camunda.zeebe.exporter.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public final class GetDocumentResponse {
-  @JsonProperty("found")
-  private boolean found;
-
-  @JsonProperty("_source")
-  private Map<String, Object> source;
-
-  public boolean isFound() {
-    return found;
-  }
-
-  public Map<String, Object> getSource() {
-    return source;
-  }
+public record BulkRequestAction(@JsonProperty(value = "index", required = true) IndexAction index) {
+  public record IndexAction(
+      @JsonProperty("_index") String index, @JsonProperty("_id") String id, String routing) {}
 }
