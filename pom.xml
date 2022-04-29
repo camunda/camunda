@@ -45,7 +45,6 @@
     <version.auth0>1.9.2</version.auth0>
     <version.auth0.jwt>3.19.1</version.auth0.jwt>
     <version.gson>2.9.0</version.gson>
-
     <version.node>v16.14.2</version.node>
     <version.yarn>v1.22.10</version.yarn>
 
@@ -412,8 +411,8 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <requirePluginVersion />
-                <banDuplicatePomDependencyVersions />
+                <requirePluginVersion/>
+                <banDuplicatePomDependencyVersions/>
               </rules>
             </configuration>
             <goals>
