@@ -47,12 +47,12 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -496,8 +496,8 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldDetectCorruptionOnStart() throws Throwable {
     // given
     final RaftServer leader = createServers(1).get(0);
-    final long index = appendEntry(leader);
     final File directory = leader.getContext().getStorage().directory();
+    appendEntry(leader);
 
     final Optional<File> optLog =
         Arrays.stream(directory.listFiles()).filter(f -> f.getName().endsWith(".log")).findFirst();
@@ -506,41 +506,13 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     leader.shutdown().join();
-    assertThat(LogCorrupter.corruptRecord(log, index)).isTrue();
+    // TODO: write tests with controllable journal - how to corrupt it is implementation detail
+    Files.writeString(log.toPath(), "i am become corrupt, destroyer of worlds");
 
     // then
     final MemberId memberId = members.get(0).memberId();
     assertThatThrownBy(() -> recreateServer(leader, memberId))
         .isInstanceOf(CorruptedLogException.class);
-  }
-
-  @Test
-  public void shouldTruncateLogAfterPartialWrite() throws Throwable {
-    // given
-    RaftServer leader = createServers(1).get(0);
-    final long index = appendEntry(leader);
-
-    final File directory = leader.getContext().getStorage().directory();
-    final Optional<File> optLog =
-        Arrays.stream(directory.listFiles()).filter(f -> f.getName().endsWith(".log")).findFirst();
-    assertThat(optLog).isPresent();
-    final File log = optLog.get();
-
-    // when
-    leader.getContext().setLastWrittenIndex(index - 1);
-    leader.shutdown().join();
-    assertThat(LogCorrupter.corruptRecord(log, index)).isTrue();
-
-    final MemberId memberId = members.get(0).memberId();
-    leader = recreateServer(leader, memberId);
-
-    // then
-    final RaftLog raftLog = leader.getContext().getLog();
-    final RaftLogReader raftLogReader = raftLog.openUncommittedReader();
-
-    assertThat(raftLog.getLastIndex()).isEqualTo(index - 1);
-    raftLogReader.seek(raftLog.getLastIndex());
-    assertThat(raftLogReader.next().index()).isEqualTo(index - 1);
   }
 
   private RaftServer recreateServer(final RaftServer server, final MemberId memberId) {
