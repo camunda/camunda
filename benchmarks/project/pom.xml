@@ -38,6 +38,14 @@
   </properties>
 
   <dependencies>
+    <!-- Benchmark only dependencies -->
+    <dependency>
+      <groupId>com.typesafe</groupId>
+      <artifactId>config</artifactId>
+      <version>${version.config}</version>
+    </dependency>
+
+    <!-- Shared dependencies with the rest of the project -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -56,12 +64,6 @@
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_httpserver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.typesafe</groupId>
-      <artifactId>config</artifactId>
-      <version>${version.config}</version>
     </dependency>
 
     <dependency>
