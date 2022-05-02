@@ -25,6 +25,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
+      - uses: ./.github/actions/use-ci-nexus-cache
       - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
@@ -57,6 +58,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
+      - uses: ./.github/actions/use-ci-nexus-cache
       - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
@@ -128,7 +130,7 @@ jobs:
           retention-days: 7
   slow-unit-tests:
     name: Slow unit tests
-    runs-on: ["n1-standard-8-netssd-preempt"]
+    runs-on: "n1-standard-8-netssd-preempt"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3.2.0
@@ -139,6 +141,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
+      - uses: ./.github/actions/use-ci-nexus-cache
       - run: >
           mvn -T1C -B
           -D skipTests -D skipChecks
@@ -217,4 +220,3 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
-
