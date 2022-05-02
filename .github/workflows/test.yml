@@ -232,7 +232,7 @@ jobs:
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
-          -Dmaven.repo.local=./.m2/
+          "-Dmaven.repo.local=./.m2/"
           -DskipUTs -DskipChecks
           -pl qa/integration-tests
           -P smoke-test
