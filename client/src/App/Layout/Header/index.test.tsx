@@ -13,7 +13,6 @@ import {render, screen} from 'modules/testing-library';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';
 
@@ -58,7 +57,6 @@ describe('Header', () => {
     processInstanceDetailsStore.reset();
     authenticationStore.reset();
     processInstancesStore.reset();
-    clearStateLocally();
   });
 
   it('should render all header links', async () => {
@@ -75,14 +73,6 @@ describe('Header', () => {
   });
 
   it('should go to the correct pages when clicking on header links', async () => {
-    storeStateLocally({
-      filters: {
-        active: true,
-        incidents: true,
-        completed: true,
-      },
-    });
-
     const {user} = render(<Header />, {
       wrapper: createWrapper(),
     });
@@ -95,7 +85,7 @@ describe('Header', () => {
 
     await user.click(await screen.findByText('Processes'));
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true&completed=true$/
+      /^\?active=true&incidents=true$/
     );
 
     await user.click(await screen.findByText('Dashboard'));

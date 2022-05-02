@@ -14,7 +14,6 @@ import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useLoadingProgress} from './useLoadingProgress';
-import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 
 const TYPE_LABELS: Readonly<Record<OperationEntityType, string>> = {
   ADD_VARIABLE: 'Edit',
@@ -47,8 +46,6 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   function handleInstancesClick(operationId: OperationEntity['id']) {
     panelStatesStore.expandFiltersPanel();
 
-    processInstancesVisibleFiltersStore.reset();
-    processInstancesVisibleFiltersStore.addVisibleFilters(['operationId']);
     navigate(
       Locations.processes({
         active: true,
@@ -56,7 +53,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         completed: true,
         canceled: true,
         operationId,
-      })
+      }),
+      {state: {hideOptionalFilters: true}}
     );
   }
 

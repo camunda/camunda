@@ -47,37 +47,37 @@ class ProcessesPage {
     },
 
     errorMessage: {
-      field: screen.queryByTestId('filter-error-message'),
+      field: screen.queryByTestId('filter-errorMessage'),
       value: within(
-        screen.queryByTestId('filter-error-message').shadowRoot()
+        screen.queryByTestId('filter-errorMessage').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     parentInstanceId: {
-      field: screen.queryByTestId('filter-parent-instance-id'),
+      field: screen.queryByTestId('filter-parentInstanceId'),
       value: within(
-        screen.queryByTestId('filter-parent-instance-id').shadowRoot()
+        screen.queryByTestId('filter-parentInstanceId').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     startDate: {
-      field: screen.queryByTestId('filter-start-date'),
+      field: screen.queryByTestId('filter-startDate'),
       value: within(
-        screen.queryByTestId('filter-start-date').shadowRoot()
+        screen.queryByTestId('filter-startDate').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     endDate: {
-      field: screen.queryByTestId('filter-end-date'),
+      field: screen.queryByTestId('filter-endDate'),
       value: within(
-        screen.queryByTestId('filter-end-date').shadowRoot()
+        screen.queryByTestId('filter-endDate').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     operationId: {
-      field: screen.queryByTestId('filter-operation-id'),
+      field: screen.queryByTestId('filter-operationId'),
       value: within(
-        screen.queryByTestId('filter-operation-id').shadowRoot()
+        screen.queryByTestId('filter-operationId').shadowRoot()
       ).queryByRole('textbox'),
     },
 
@@ -96,9 +96,9 @@ class ProcessesPage {
     },
 
     instanceIds: {
-      field: screen.queryByTestId('filter-instance-ids'),
+      field: screen.queryByTestId('filter-ids'),
       value: within(
-        screen.queryByTestId('filter-instance-ids').shadowRoot()
+        screen.queryByTestId('filter-ids').shadowRoot()
       ).queryByRole('textbox'),
     },
 

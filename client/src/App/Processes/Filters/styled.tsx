@@ -7,7 +7,17 @@
 
 import styled, {css} from 'styled-components';
 import {Panel} from 'modules/components/Panel';
-import {CmText, CmDropdown, CmSelect} from '@camunda-cloud/common-ui-react';
+import {
+  CmText,
+  CmDropdown,
+  CmSelect,
+  CmIcon,
+} from '@camunda-cloud/common-ui-react';
+import {TextField as BaseTextField} from 'modules/components/TextField';
+
+const TextField = styled(BaseTextField)`
+  padding-bottom: 21px;
+`;
 
 const FiltersForm = styled.form`
   width: 100%;
@@ -15,11 +25,6 @@ const FiltersForm = styled.form`
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-`;
-
-const OrderedFilters = styled.div`
-  display: flex;
-  flex-direction: column-reverse;
 `;
 
 const ResetButtonContainer = styled(Panel.Footer)`
@@ -34,6 +39,10 @@ const ResetButtonContainer = styled(Panel.Footer)`
       border-radius: 0;
     `;
   }}
+`;
+
+const Select = styled(CmSelect)`
+  padding-bottom: 5px;
 `;
 
 const Fields = styled.div`
@@ -67,8 +76,33 @@ const MoreFiltersDropdown = styled(CmDropdown)`
   margin: 0 3px 16px 0;
 `;
 
-const Select = styled(CmSelect)`
-  padding-bottom: 5px;
+const OptionalFilters = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+`;
+
+const DeleteIcon = styled(CmIcon)`
+  object-fit: contain;
+  display: none;
+`;
+
+type FormGroupProps = {
+  order: number;
+};
+
+const FormGroup = styled.div<FormGroupProps>`
+  width: 100%;
+  height: fit-content;
+  position: relative;
+
+  &:hover > cm-icon {
+    position: absolute;
+    display: block;
+    right: 8px;
+    top: 0px;
+    cursor: pointer;
+  }
 `;
 
 export {
@@ -78,7 +112,10 @@ export {
   ProcessHeader,
   StatesHeader,
   InstanceStates,
-  OrderedFilters,
   MoreFiltersDropdown,
   Select,
+  OptionalFilters,
+  FormGroup,
+  DeleteIcon,
+  TextField,
 };

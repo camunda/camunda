@@ -14,7 +14,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processesStore} from 'modules/stores/processes';
 import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
 import {mockProcessXML} from 'modules/testUtils';
-import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const GROUPED_PROCESSES = [
@@ -93,7 +92,6 @@ describe('Filters', () => {
   afterEach(() => {
     processesStore.reset();
     processInstancesDiagramStore.reset();
-    processInstancesVisibleFiltersStore.reset();
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -225,32 +223,35 @@ describe('Filters', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Instance Id(s)'));
-    await user.type(screen.getByTestId('filter-instance-ids'), MOCK_VALUES.ids);
+    await user.type(
+      screen.getByLabelText(/instance id\(s\)/i),
+      MOCK_VALUES.ids
+    );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Parent Instance Id'));
     await user.type(
-      screen.getByTestId('filter-parent-instance-id'),
+      screen.getByLabelText(/parent instance id/i),
       MOCK_VALUES.parentInstanceId
     );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Error Message'));
     await user.type(
-      screen.getByTestId('filter-error-message'),
+      screen.getByLabelText(/error message/i),
       MOCK_VALUES.errorMessage
     );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Start Date'));
     await user.type(
-      screen.getByTestId('filter-start-date'),
+      screen.getByLabelText(/start date/i),
       MOCK_VALUES.startDate
     );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('End Date'));
-    await user.type(screen.getByTestId('filter-end-date'), MOCK_VALUES.endDate);
+    await user.type(screen.getByLabelText(/end date/i), MOCK_VALUES.endDate);
 
     await user.selectOptions(screen.getByTestId('filter-flow-node'), [
       MOCK_VALUES.flowNodeId,
@@ -262,15 +263,13 @@ describe('Filters', () => {
       screen.getByTestId('filter-variable-name'),
       MOCK_VALUES.variableName
     );
-    await user.type(
-      screen.getByTestId('filter-variable-value'),
-      MOCK_VALUES.variableValue
-    );
+    await user.type(screen.getByLabelText(/value/i), MOCK_VALUES.variableValue);
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Operation Id'));
     await user.type(
-      screen.getByTestId('filter-operation-id'),
+      screen.getByLabelText(/operation id/i),
+
       MOCK_VALUES.operationId
     );
 
@@ -322,7 +321,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), 'a');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), 'a');
 
       expect(
         await screen.findByText(
@@ -331,7 +330,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-instance-ids'));
+      await user.clear(screen.getByLabelText(/instance id\(s\)/i));
 
       expect(
         screen.queryByText(
@@ -339,7 +338,7 @@ describe('Filters', () => {
         )
       ).not.toBeInTheDocument();
 
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -347,7 +346,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      await user.clear(screen.getByTestId('filter-instance-ids'));
+      await user.clear(screen.getByLabelText(/instance id\(s\)/i));
 
       expect(
         screen.queryByText(
@@ -364,33 +363,33 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Parent Instance Id'));
-      await user.type(screen.getByTestId('filter-parent-instance-id'), 'a');
+      await user.type(screen.getByLabelText(/parent instance id/i), 'a');
 
       expect(
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-parent-instance-id'));
+      await user.clear(screen.getByLabelText(/parent instance id/i));
 
       expect(
         screen.queryByText('Id has to be a 16 to 19 digit number')
       ).not.toBeInTheDocument();
 
-      await user.type(screen.getByTestId('filter-parent-instance-id'), '1');
+      await user.type(screen.getByLabelText(/parent instance id/i), '1');
 
       expect(
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
 
-      await user.clear(screen.getByTestId('filter-parent-instance-id'));
+      await user.clear(screen.getByLabelText(/parent instance id/i));
 
       expect(
         screen.queryByText('Id has to be a 16 to 19 digit number')
       ).not.toBeInTheDocument();
 
       await user.type(
-        screen.getByTestId('filter-parent-instance-id'),
+        screen.getByLabelText(/parent instance id/i),
         '1111111111111111, 2222222222222222'
       );
 
@@ -398,7 +397,7 @@ describe('Filters', () => {
         await screen.findByText('Id has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
 
-      await user.clear(screen.getByTestId('filter-parent-instance-id'));
+      await user.clear(screen.getByLabelText(/parent instance id/i));
 
       expect(
         screen.queryByText('Id has to be a 16 to 19 digit number')
@@ -413,7 +412,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Start Date'));
-      await user.type(screen.getByTestId('filter-start-date'), 'a');
+      await user.type(screen.getByLabelText(/start date/i), 'a');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -421,13 +420,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-start-date'));
+      await user.clear(screen.getByLabelText(/start date/i));
 
       expect(
         screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).not.toBeInTheDocument();
 
-      await user.type(screen.getByTestId('filter-start-date'), '2021-05');
+      await user.type(screen.getByLabelText(/start date/i), '2021-05');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -443,7 +442,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('End Date'));
-      await user.type(screen.getByTestId('filter-end-date'), 'a');
+      await user.type(screen.getByLabelText(/end date/i), 'a');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -451,13 +450,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-end-date'));
+      await user.clear(screen.getByLabelText(/end date/i));
 
       expect(
         screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).not.toBeInTheDocument();
 
-      await user.type(screen.getByTestId('filter-end-date'), '2021-05');
+      await user.type(screen.getByLabelText(/end date/i), '2021-05');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -473,10 +472,7 @@ describe('Filters', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Variable'));
 
-      await user.type(
-        screen.getByTestId('filter-variable-value'),
-        '"someValidValue"'
-      );
+      await user.type(screen.getByLabelText(/value/i), '"someValidValue"');
 
       expect(
         await screen.findByText('Variable has to be filled')
@@ -484,11 +480,8 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-variable-value'));
-      await user.type(
-        screen.getByTestId('filter-variable-value'),
-        'somethingInvalid'
-      );
+      await user.clear(screen.getByLabelText(/value/i));
+      await user.type(screen.getByLabelText(/value/i), 'somethingInvalid');
 
       expect(
         await screen.findByText('Variable has to be filled')
@@ -527,10 +520,7 @@ describe('Filters', () => {
         screen.queryByText('Value has to be JSON')
       ).not.toBeInTheDocument();
 
-      await user.type(
-        screen.getByTestId('filter-variable-value'),
-        'invalidValue'
-      );
+      await user.type(screen.getByLabelText(/value/i), 'invalidValue');
 
       expect(
         await screen.findByText('Value has to be JSON')
@@ -561,7 +551,7 @@ describe('Filters', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Operation Id'));
 
-      await user.type(screen.getByTestId('filter-operation-id'), 'g');
+      await user.type(screen.getByLabelText(/operation id/i), 'g');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -569,13 +559,13 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-operation-id'));
+      await user.clear(screen.getByLabelText(/operation id/i));
 
       expect(
         screen.queryByTitle('Id has to be a UUID')
       ).not.toBeInTheDocument();
 
-      await user.type(screen.getByTestId('filter-operation-id'), 'a');
+      await user.type(screen.getByLabelText(/operation id/i), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -607,7 +597,7 @@ describe('Filters', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Start Date'));
-    await user.type(screen.getByTestId('filter-start-date'), 'a');
+    await user.type(screen.getByLabelText(/start date/i), 'a');
 
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -631,7 +621,7 @@ describe('Filters', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Start Date'));
-    await user.type(screen.getByTestId('filter-start-date'), 'a');
+    await user.type(screen.getByLabelText(/start date/i), 'a');
 
     expect(
       await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -645,7 +635,7 @@ describe('Filters', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Error Message'));
-    await user.type(screen.getByTestId('filter-error-message'), 'test');
+    await user.type(screen.getByLabelText(/error message/i), 'test');
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -662,7 +652,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Operation Id'));
-      await user.type(screen.getByTestId('filter-operation-id'), 'a');
+      await user.type(screen.getByLabelText(/operation id/i), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -671,7 +661,7 @@ describe('Filters', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
 
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
 
@@ -691,7 +681,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -701,7 +691,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Operation Id'));
-      await user.type(screen.getByTestId('filter-operation-id'), 'abc');
+      await user.type(screen.getByLabelText(/operation id/i), 'abc');
 
       expect(
         screen.getByText(
@@ -727,7 +717,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -737,7 +727,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Start Date'));
-      await user.type(screen.getByTestId('filter-start-date'), '2021');
+      await user.type(screen.getByLabelText(/start date/i), '2021');
 
       expect(
         screen.getByText(
@@ -763,7 +753,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -773,7 +763,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('End Date'));
-      await user.type(screen.getByTestId('filter-end-date'), 'a');
+      await user.type(screen.getByLabelText(/end date/i), 'a');
 
       expect(
         screen.getByText(
@@ -799,7 +789,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -809,7 +799,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Variable'));
-      await user.type(screen.getByTestId('filter-variable-value'), 'a');
+      await user.type(screen.getByLabelText(/value/i), 'a');
 
       expect(
         screen.getByText(
@@ -839,7 +829,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -875,7 +865,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -923,7 +913,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByTestId('filter-instance-ids'), '1');
+      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
 
       expect(
         await screen.findByText(
@@ -990,9 +980,9 @@ describe('Filters', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('End Date'));
 
-      await user.type(screen.getByTestId('filter-start-date'), '2021');
+      await user.type(screen.getByLabelText(/start date/i), '2021');
 
-      await user.type(screen.getByTestId('filter-end-date'), '2021');
+      await user.type(screen.getByLabelText(/end date/i), '2021');
 
       await waitFor(() =>
         expect(
@@ -1008,25 +998,21 @@ describe('Filters', () => {
         expect(
           screen.queryByTestId('filter-variable-name')
         ).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-variable-value')
+          screen.queryByLabelText(/instance id\(s\)/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-instance-ids')
+          screen.queryByLabelText(/operation id/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-operation-id')
+          screen.queryByLabelText(/parent instance id/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-parent-instance-id')
+          screen.queryByLabelText(/error message/i)
         ).not.toBeInTheDocument();
-        expect(
-          screen.queryByTestId('filter-error-message')
-        ).not.toBeInTheDocument();
-        expect(
-          screen.queryByTestId('filter-start-date')
-        ).not.toBeInTheDocument();
-        expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
       });
 
       it('should display variable fields on click', async () => {
@@ -1038,7 +1024,7 @@ describe('Filters', () => {
         await user.click(screen.getByText('Variable'));
 
         expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
+        expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
         await user.click(screen.getByText(/^more filters$/i));
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
@@ -1057,7 +1043,7 @@ describe('Filters', () => {
         await user.click(screen.getByText('Instance Id(s)'));
         await user.click(screen.getByText(/^more filters$/i));
 
-        expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
+        expect(screen.getByLabelText(/instance id\(s\)/i)).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
@@ -1075,7 +1061,7 @@ describe('Filters', () => {
         await user.click(screen.getByText('Operation Id'));
         await user.click(screen.getByText(/^more filters$/i));
 
-        expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
+        expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
@@ -1094,7 +1080,7 @@ describe('Filters', () => {
         await user.click(screen.getByText(/^more filters$/i));
 
         expect(
-          screen.getByTestId('filter-parent-instance-id')
+          screen.getByLabelText(/parent instance id/i)
         ).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
@@ -1113,7 +1099,7 @@ describe('Filters', () => {
         await user.click(screen.getByText('Error Message'));
         await user.click(screen.getByText(/^more filters$/i));
 
-        expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
+        expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
@@ -1131,7 +1117,7 @@ describe('Filters', () => {
         await user.click(screen.getByText('Start Date'));
         await user.click(screen.getByText(/^more filters$/i));
 
-        expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
+        expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
@@ -1149,7 +1135,7 @@ describe('Filters', () => {
         await user.click(screen.getByText('End Date'));
         await user.click(screen.getByText(/^more filters$/i));
 
-        expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
+        expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
@@ -1216,16 +1202,16 @@ describe('Filters', () => {
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
-        expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
+        expect(screen.getByLabelText(/instance id\(s\)/i)).toBeInTheDocument();
         expect(
-          screen.getByTestId('filter-parent-instance-id')
+          screen.getByLabelText(/parent instance id/i)
         ).toBeInTheDocument();
-        expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
+        expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
         expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
+        expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-ids'));
 
@@ -1253,7 +1239,7 @@ describe('Filters', () => {
         );
 
         expect(
-          screen.queryByTestId('filter-instance-ids')
+          screen.queryByLabelText(/instance id\(s\)/i)
         ).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-parentInstanceId'));
@@ -1280,7 +1266,7 @@ describe('Filters', () => {
           )
         );
         expect(
-          screen.queryByTestId('filter-parent-instance-id')
+          screen.queryByLabelText(/parent instance id/i)
         ).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-errorMessage'));
@@ -1306,7 +1292,7 @@ describe('Filters', () => {
           )
         );
         expect(
-          screen.queryByTestId('filter-error-message')
+          screen.queryByLabelText(/error message/i)
         ).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-startDate'));
@@ -1330,9 +1316,7 @@ describe('Filters', () => {
             ).toString()}`
           )
         );
-        expect(
-          screen.queryByTestId('filter-start-date')
-        ).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-endDate'));
 
@@ -1354,7 +1338,7 @@ describe('Filters', () => {
             ).toString()}`
           )
         );
-        expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-variable'));
 
@@ -1377,9 +1361,7 @@ describe('Filters', () => {
         expect(
           screen.queryByTestId('filter-variable-name')
         ).not.toBeInTheDocument();
-        expect(
-          screen.queryByTestId('filter-variable-value')
-        ).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-operationId'));
 
@@ -1399,7 +1381,7 @@ describe('Filters', () => {
           )
         );
         expect(
-          screen.queryByTestId('filter-operation-id')
+          screen.queryByLabelText(/operation id/i)
         ).not.toBeInTheDocument();
       });
 
@@ -1432,16 +1414,16 @@ describe('Filters', () => {
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
-        expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
+        expect(screen.getByLabelText(/instance id\(s\)/i)).toBeInTheDocument();
         expect(
-          screen.getByTestId('filter-parent-instance-id')
+          screen.getByLabelText(/parent instance id/i)
         ).toBeInTheDocument();
-        expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
+        expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
         expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
-        expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
+        expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
 
         await user.click(screen.getByTitle(/reset filters/i));
 
@@ -1452,26 +1434,22 @@ describe('Filters', () => {
         );
 
         expect(
-          screen.queryByTestId('filter-instance-ids')
+          screen.queryByLabelText(/instance id\(s\)/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-parent-instance-id')
+          screen.queryByLabelText(/parent instance id/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-error-message')
+          screen.queryByLabelText(/error message/i)
         ).not.toBeInTheDocument();
-        expect(
-          screen.queryByTestId('filter-start-date')
-        ).not.toBeInTheDocument();
-        expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
         expect(
           screen.queryByTestId('filter-variable-name')
         ).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-variable-value')
-        ).not.toBeInTheDocument();
-        expect(
-          screen.queryByTestId('filter-operation-id')
+          screen.queryByLabelText(/operation id/i)
         ).not.toBeInTheDocument();
       });
     });

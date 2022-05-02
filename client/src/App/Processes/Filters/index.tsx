@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect} from 'react';
-import {Form} from 'react-final-form';
+import {useEffect, useState} from 'react';
+import {Field, Form} from 'react-final-form';
 import {useLocation} from 'react-router-dom';
+import {Location} from 'history';
 import {isEqual, intersection} from 'lodash';
 import {
   FiltersForm,
@@ -16,8 +17,11 @@ import {
   StatesHeader,
   InstanceStates,
   ProcessHeader,
-  OrderedFilters,
+  OptionalFilters,
   MoreFiltersDropdown,
+  FormGroup,
+  DeleteIcon,
+  TextField,
 } from './styled';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
@@ -28,50 +32,148 @@ import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {
   getProcessInstanceFilters,
   ProcessInstanceFilters,
+  ProcessInstanceFilterField,
 } from 'modules/utils/filter';
-import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
 import {observer} from 'mobx-react';
-import {
-  OptionalFilter,
-  processInstancesVisibleFiltersStore,
-} from 'modules/stores/processInstancesVisibleFilters';
-import {Ids} from './OptionalFilters/Ids';
-import {ParentInstanceIds} from './OptionalFilters/ParentInstanceIds';
-import {ErrorMessage} from './OptionalFilters/ErrorMessage';
-import {StartDate} from './OptionalFilters/StartDate';
-import {EndDate} from './OptionalFilters/EndDate';
-import {Variable} from './OptionalFilters/Variable';
-import {OperationId} from './OptionalFilters/OperationId';
 import {useFilters} from 'modules/hooks/useFilters';
+import {
+  validateIdsCharacters,
+  validateIdsLength,
+  validatesIdsComplete,
+  validateParentInstanceIdCharacters,
+  validateParentInstanceIdComplete,
+  validateParentInstanceIdNotTooLong,
+  validateDateCharacters,
+  validateDateComplete,
+  validateOperationIdCharacters,
+  validateOperationIdComplete,
+} from 'modules/validators';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
+import {FieldValidator} from 'final-form';
+import {Variable} from './VariableField';
+
+type OptionalFilter =
+  | 'variable'
+  | 'ids'
+  | 'parentInstanceId'
+  | 'operationId'
+  | 'errorMessage'
+  | 'startDate'
+  | 'endDate';
+
+const optionalFilters: Array<OptionalFilter> = [
+  'variable',
+  'ids',
+  'operationId',
+  'parentInstanceId',
+  'errorMessage',
+  'startDate',
+  'endDate',
+];
+
+type LocationType = Omit<Location, 'state'> & {
+  state: {hideOptionalFilters?: boolean};
+};
+
+const initialValues: ProcessInstanceFilters = {
+  active: true,
+  incidents: true,
+};
+
+const OPTIONAL_FILTER_FIELDS: Record<
+  OptionalFilter,
+  {
+    label: string;
+    placeholder?: string;
+    type?: 'multiline' | 'text';
+    rows?: number;
+    validate?: FieldValidator<string | undefined>;
+    keys: ProcessInstanceFilterField[];
+  }
+> = {
+  variable: {
+    keys: ['variableName', 'variableValue'],
+    label: 'Variable',
+  },
+  ids: {
+    keys: ['ids'],
+    label: 'Instance Id(s)',
+    type: 'multiline',
+    placeholder: 'separated by space or comma',
+    rows: 1,
+    validate: mergeValidators(
+      validateIdsCharacters,
+      validateIdsLength,
+      validatesIdsComplete
+    ),
+  },
+  operationId: {
+    keys: ['operationId'],
+    label: 'Operation Id',
+    type: 'text',
+    validate: mergeValidators(
+      validateOperationIdCharacters,
+      validateOperationIdComplete
+    ),
+  },
+  parentInstanceId: {
+    keys: ['parentInstanceId'],
+    label: 'Parent Instance Id',
+    type: 'text',
+    validate: mergeValidators(
+      validateParentInstanceIdComplete,
+      validateParentInstanceIdNotTooLong,
+      validateParentInstanceIdCharacters
+    ),
+  },
+  errorMessage: {
+    keys: ['errorMessage'],
+    label: 'Error Message',
+    type: 'text',
+  },
+  startDate: {
+    keys: ['startDate'],
+    label: 'Start Date',
+    placeholder: 'YYYY-MM-DD hh:mm:ss',
+    type: 'text',
+    validate: mergeValidators(validateDateCharacters, validateDateComplete),
+  },
+  endDate: {
+    keys: ['endDate'],
+    label: 'End Date',
+    placeholder: 'YYYY-MM-DD hh:mm:ss',
+    type: 'text',
+    validate: mergeValidators(validateDateCharacters, validateDateComplete),
+  },
+};
 
 const Filters: React.FC = observer(() => {
-  const location = useLocation();
+  const location = useLocation() as LocationType;
   const filters = useFilters();
 
-  const {visibleFilters} = processInstancesVisibleFiltersStore.state;
-
-  const initialValues: ProcessInstanceFilters = {
-    active: true,
-    incidents: true,
-  };
+  const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+  const unselectedOptionalFilters = optionalFilters.filter(
+    (filter) => !visibleFilters.includes(filter)
+  );
 
   useEffect(() => {
     const filters = getProcessInstanceFilters(location.search);
-    storeStateLocally({
-      filters,
-    });
 
-    processInstancesVisibleFiltersStore.addVisibleFilters([
-      ...intersection(
-        Object.keys(filters),
-        processInstancesVisibleFiltersStore.possibleOptionalFilters
-      ),
-      ...('variableName' in filters && 'variableValue' in filters
-        ? ['variable']
-        : []),
-    ] as OptionalFilter[]);
-  }, [location.search]);
+    setVisibleFilters((currentVisibleFilters) => {
+      return Array.from(
+        new Set([
+          ...(location.state?.hideOptionalFilters ? [] : currentVisibleFilters),
+          ...([
+            ...intersection(Object.keys(filters), optionalFilters),
+            ...('variableName' in filters && 'variableValue' in filters
+              ? ['variable']
+              : []),
+          ] as OptionalFilter[]),
+        ])
+      );
+    });
+  }, [location.state, location.search]);
 
   return (
     <FiltersPanel>
@@ -137,113 +239,76 @@ const Filters: React.FC = observer(() => {
                 />
               </InstanceStates>
 
-              {!processInstancesVisibleFiltersStore.areAllFiltersVisible && (
+              {unselectedOptionalFilters.length > 0 && (
                 <MoreFiltersDropdown
                   trigger={{type: 'label', label: 'More Filters'}}
                   data-testid="more-filters-dropdown"
                   options={[
                     {
-                      options: [
-                        ...(!visibleFilters.includes('variable')
-                          ? [
-                              {
-                                label: 'Variable',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['variable']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(!visibleFilters.includes('ids')
-                          ? [
-                              {
-                                label: 'Instance Id(s)',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['ids']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(!visibleFilters.includes('operationId')
-                          ? [
-                              {
-                                label: 'Operation Id',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['operationId']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(!visibleFilters.includes('parentInstanceId')
-                          ? [
-                              {
-                                label: 'Parent Instance Id',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['parentInstanceId']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(!visibleFilters.includes('errorMessage')
-                          ? [
-                              {
-                                label: 'Error Message',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['errorMessage']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(!visibleFilters.includes('startDate')
-                          ? [
-                              {
-                                label: 'Start Date',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['startDate']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(!visibleFilters.includes('endDate')
-                          ? [
-                              {
-                                label: 'End Date',
-                                handler: () => {
-                                  processInstancesVisibleFiltersStore.addVisibleFilters(
-                                    ['endDate']
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
-                      ],
+                      options: unselectedOptionalFilters.map((filter) => ({
+                        label: OPTIONAL_FILTER_FIELDS[filter].label,
+                        handler: () => {
+                          setVisibleFilters(
+                            Array.from(
+                              new Set([...visibleFilters, ...[filter]])
+                            )
+                          );
+                        },
+                      })),
                     },
                   ]}
                 />
               )}
-              <OrderedFilters>
-                {visibleFilters.includes('ids') && <Ids />}
-                {visibleFilters.includes('parentInstanceId') && (
-                  <ParentInstanceIds />
-                )}
-                {visibleFilters.includes('errorMessage') && <ErrorMessage />}
-                {visibleFilters.includes('startDate') && <StartDate />}
-                {visibleFilters.includes('endDate') && <EndDate />}
-                {visibleFilters.includes('variable') && <Variable />}
-                {visibleFilters.includes('operationId') && <OperationId />}
-              </OrderedFilters>
+
+              <OptionalFilters>
+                {visibleFilters.map((filter) => (
+                  <FormGroup
+                    key={filter}
+                    order={visibleFilters.indexOf(filter)}
+                  >
+                    <DeleteIcon
+                      icon="delete"
+                      data-testid={`delete-${filter}`}
+                      onClick={() => {
+                        setVisibleFilters(
+                          visibleFilters.filter(
+                            (visibleFilter) => visibleFilter !== filter
+                          )
+                        );
+
+                        OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
+                          form.change(key, undefined);
+                        });
+
+                        form.submit();
+                      }}
+                    />
+                    {filter === 'variable' ? (
+                      <Variable />
+                    ) : (
+                      <Field
+                        name={filter}
+                        validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                      >
+                        {({input}) => (
+                          <TextField
+                            {...input}
+                            data-testid={`filter-${filter}`}
+                            label={OPTIONAL_FILTER_FIELDS[filter].label}
+                            type={OPTIONAL_FILTER_FIELDS[filter].type}
+                            rows={OPTIONAL_FILTER_FIELDS[filter].rows}
+                            placeholder={
+                              OPTIONAL_FILTER_FIELDS[filter].placeholder
+                            }
+                            shouldDebounceError={false}
+                            autoFocus
+                          />
+                        )}
+                      </Field>
+                    )}
+                  </FormGroup>
+                ))}
+              </OptionalFilters>
             </Fields>
 
             <ResetButtonContainer>
@@ -257,7 +322,7 @@ const Filters: React.FC = observer(() => {
                 onClick={() => {
                   form.reset();
                   filters.setFiltersToURL(initialValues);
-                  processInstancesVisibleFiltersStore.reset();
+                  setVisibleFilters([]);
                 }}
               >
                 Reset Filters

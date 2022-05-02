@@ -46,6 +46,7 @@ const Header: React.FC = () => {
             to={Locations.processes()}
             title="View Processes"
             label="Processes"
+            state={{hideOptionalFilters: true}}
             onClick={() => {
               tracking.track({
                 eventName: 'navigation',

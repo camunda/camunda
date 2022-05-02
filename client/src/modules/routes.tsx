@@ -6,7 +6,6 @@
  */
 
 import {To} from 'react-router-dom';
-import {getStateLocally} from 'modules/utils/localStorage';
 import {
   DecisionInstanceFilters,
   ProcessInstanceFilters,
@@ -40,14 +39,9 @@ const Paths = {
 const Locations = {
   processes(filters?: ProcessInstanceFilters): To {
     const params = new URLSearchParams();
-    const storage = getStateLocally();
 
     if (filters !== undefined) {
       Object.entries(filters).forEach(([key, value]) => {
-        params.set(key, value as string);
-      });
-    } else if (storage.filters !== undefined && storage.filters !== null) {
-      Object.entries(storage.filters).forEach(([key, value]) => {
         params.set(key, value as string);
       });
     } else {

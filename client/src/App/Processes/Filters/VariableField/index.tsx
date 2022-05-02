@@ -15,7 +15,6 @@ import {
 } from 'modules/validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {OptionalFilter} from './OptionalFilter';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 
 const Variable: React.FC = observer(() => {
@@ -24,10 +23,7 @@ const Variable: React.FC = observer(() => {
   const form = useForm();
 
   return (
-    <OptionalFilter
-      name="variable"
-      filterList={['variableName', 'variableValue']}
-    >
+    <>
       <VariableHeader appearance="emphasis">Variable</VariableHeader>
       <Field
         name="variableName"
@@ -79,7 +75,7 @@ const Variable: React.FC = observer(() => {
         }}
         isModalVisible={isModalVisible}
       />
-    </OptionalFilter>
+    </>
   );
 });
 

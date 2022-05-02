@@ -18,8 +18,8 @@ import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {processInstancesVisibleFiltersStore} from 'modules/stores/processInstancesVisibleFilters';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {Filters} from 'App/Processes/Filters';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -53,10 +53,6 @@ const FinishingOperationsEntry: React.FC = () => {
     />
   );
 };
-
-afterEach(() => {
-  processInstancesVisibleFiltersStore.reset();
-});
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -180,30 +176,26 @@ describe('OperationsEntry', () => {
     panelStatesStore.toggleFiltersPanel();
 
     const {user} = render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 3,
-        }}
-      />,
+      <>
+        <OperationsEntry
+          {...mockProps}
+          operation={{
+            ...OPERATIONS.EDIT,
+            instancesCount: 3,
+          }}
+        />
+        <Filters />
+      </>,
       {wrapper: createWrapper()}
     );
 
-    expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual(
-      []
-    );
+    expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByText('3 Instances'));
-
-    expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual([
-      'operationId',
-    ]);
+    expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
 
     await user.click(screen.getByText('3 Instances'));
-    expect(processInstancesVisibleFiltersStore.state.visibleFilters).toEqual([
-      'operationId',
-    ]);
+    expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
   });
 
   it('should fake the first 10% progress', async () => {
