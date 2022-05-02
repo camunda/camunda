@@ -1239,7 +1239,8 @@
       "limitReached": "Process definition limit reached. Only ten processes allowed.",
       "select": {
         "process": "Select Process",
-        "decision": "Select Decision"
+        "decision": "Select Decision",
+        "multiProcess": "Select one or more processes"
       },
       "version": {
         "label": "Version",

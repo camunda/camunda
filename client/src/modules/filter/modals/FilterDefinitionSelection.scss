@@ -9,6 +9,12 @@
 
   .MultiSelect .Tag {
     font-size: 12px;
+    background-color: var(--blue-base-65);
+    color: var(--white);
+
+    > .Button.close {
+      color: var(--white);
+    }
 
     .tagText {
       padding-top: 2px;

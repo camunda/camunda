@@ -74,6 +74,7 @@ export default function FilterDefinitionSelection({availableDefinitions, applyTo
             value: definition,
             label: definition.displayName || definition.name || definition.key,
           }))}
+          persistMenu={false}
         >
           {options}
         </MultiSelect>

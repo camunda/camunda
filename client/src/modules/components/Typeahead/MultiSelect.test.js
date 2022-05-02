@@ -47,3 +47,47 @@ it('should add a selected option', () => {
 
   expect(spy).toHaveBeenCalledWith('1');
 });
+
+it('should close the menu after selecting an option if persistMenu option is set false', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <MultiSelect onClose={spy} onAdd={() => {}}>
+      <MultiSelect.Option id="test_option" value="1">
+        Option One
+      </MultiSelect.Option>
+    </MultiSelect>
+  );
+
+  node
+    .find('OptionsList')
+    .props()
+    .onSelect({props: {children: 'Option One', value: '1'}});
+  expect(spy).not.toHaveBeenCalled();
+
+  node.setProps({persistMenu: false});
+  node
+    .find('OptionsList')
+    .props()
+    .onSelect({props: {children: 'Option One', value: '1'}});
+
+  expect(spy).toHaveBeenCalled();
+});
+
+it('clear the search after selecting an option', () => {
+  const searchSpy = jest.fn();
+  const node = shallow(
+    <MultiSelect onSearch={searchSpy} onAdd={() => {}}>
+      <MultiSelect.Option id="test_option" value="1">
+        Option One
+      </MultiSelect.Option>
+    </MultiSelect>
+  );
+
+  node.find(UncontrolledMultiValueInput).simulate('change', {target: {value: 'one'}});
+  node
+    .find('OptionsList')
+    .props()
+    .onSelect({props: {children: 'Option One', value: '1'}});
+
+  expect(searchSpy).toHaveBeenCalledWith('');
+});

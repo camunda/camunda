@@ -70,6 +70,15 @@
             width: 120px;
           }
         }
+
+        .MultiSelect .Tag {
+          background-color: var(--blue-base-65);
+          color: var(--white);
+
+          > .Button.close {
+            color: var(--white);
+          }
+        }
       }
     }
 

@@ -305,16 +305,16 @@ export class DefinitionSelection extends React.Component {
         >
           <div className="selectionPanel">
             <div className="dropdowns">
-              <Labeled className="entry" label={processSelectLabel}>
-                {selectedDefinitions ? (
-                  <MultiDefinitionSelection
-                    selectedDefinitions={selectedDefinitions}
-                    availableDefinitions={availableDefinitions}
-                    changeDefinition={this.changeDefinition}
-                    resetSelection={this.resetSelection}
-                    onChange={onChange}
-                  />
-                ) : (
+              {selectedDefinitions ? (
+                <MultiDefinitionSelection
+                  selectedDefinitions={selectedDefinitions}
+                  availableDefinitions={availableDefinitions}
+                  changeDefinition={this.changeDefinition}
+                  resetSelection={this.resetSelection}
+                  onChange={onChange}
+                />
+              ) : (
+                <Labeled className="entry" label={processSelectLabel}>
                   <Typeahead
                     className="name"
                     initialValue={def ? def.key : null}
@@ -329,8 +329,8 @@ export class DefinitionSelection extends React.Component {
                       </Typeahead.Option>
                     ))}
                   </Typeahead>
-                )}
-              </Labeled>
+                </Labeled>
+              )}
               <div className="version entry">
                 <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover

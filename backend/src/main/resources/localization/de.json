@@ -1239,7 +1239,8 @@
       "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
       "select": {
         "process": "Prozess auswählen",
-        "decision": "Entscheidung auswählen"
+        "decision": "Entscheidung auswählen",
+        "multiProcess": "Einen oder mehrere Prozesse auswählen "
       },
       "version": {
         "label": "Version",
