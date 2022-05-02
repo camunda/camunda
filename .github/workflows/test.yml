@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - stable/*
-      - release/*
+      - release-*
       - trying
       - staging
   pull_request: {}
