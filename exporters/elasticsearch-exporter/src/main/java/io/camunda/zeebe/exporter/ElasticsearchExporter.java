@@ -118,7 +118,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   protected ElasticClient createClient() {
-    return new ElasticClient(configuration);
+    return new ElasticClientImpl(configuration);
   }
 
   private void flushAndReschedule() {

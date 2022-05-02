@@ -61,7 +61,7 @@ final class ElasticClientIT {
 
     bulkRequest = new ArrayList<>();
     // set the metrics directly to avoid having to index a record to create them
-    client = new ElasticClient(config, bulkRequest).setMetrics(new ElasticsearchMetrics(1));
+    client = new ElasticClientImpl(config, bulkRequest).setMetrics(new ElasticsearchMetrics(1));
     testClient = new TestClient(config, indexRouter);
   }
 
@@ -145,7 +145,7 @@ final class ElasticClientIT {
 
     // when
     // force recreating the client
-    final var authenticatedClient = new ElasticClient(config, bulkRequest);
+    final var authenticatedClient = new ElasticClientImpl(config, bulkRequest);
     authenticatedClient.putComponentTemplate();
 
     // then

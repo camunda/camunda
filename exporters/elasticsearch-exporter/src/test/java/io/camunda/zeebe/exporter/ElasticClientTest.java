@@ -32,9 +32,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.http.entity.BasicHttpEntity;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -64,7 +62,7 @@ final class ElasticClientTest {
 
   // set the metrics directly to avoid having to index a record to create them
   private final ElasticClient client =
-      new ElasticClient(config, bulkRequest, restClient, indexRouter, templateReader)
+      new ElasticClientImpl(config, bulkRequest, restClient, indexRouter, templateReader)
           .setMetrics(new ElasticsearchMetrics(1));
 
   @ParameterizedTest(name = "{0}")
@@ -102,19 +100,6 @@ final class ElasticClientTest {
     final var request = requestCaptor.getValue();
     final var template = MAPPER.readValue(request.getEntity().getContent(), Template.class);
     assertThat(template).isEqualTo(expectedTemplate);
-  }
-
-  private static Stream<ValueType> provideValueTypes() {
-    final var excludedValueTypes =
-        EnumSet.of(
-            ValueType.SBE_UNKNOWN,
-            ValueType.NULL_VAL,
-            ValueType.TIMER,
-            ValueType.PROCESS_INSTANCE_RESULT,
-            ValueType.DEPLOYMENT_DISTRIBUTION,
-            ValueType.PROCESS_EVENT,
-            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
-    return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
   private <T> ArgumentCaptor<Request> mockClientResponse(final T content) throws IOException {
