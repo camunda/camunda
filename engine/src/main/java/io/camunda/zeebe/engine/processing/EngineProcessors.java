@@ -77,6 +77,7 @@ public final class EngineProcessors {
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(
             zeebeState,
+            zeebeState.getKeyGenerator(),
             expressionProcessor,
             subscriptionCommandSender,
             writers.state(),

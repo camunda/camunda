@@ -5,12 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.storage.atomix;
+package io.camunda.zeebe.broker.logstreams;
 
-import io.atomix.raft.zeebe.ZeebeLogAppender;
-import java.util.Optional;
+import io.atomix.raft.storage.log.RaftLogReader;
 
 @FunctionalInterface
-public interface AtomixAppenderSupplier {
-  Optional<ZeebeLogAppender> getAppender();
+public interface AtomixReaderFactory {
+  RaftLogReader create();
 }

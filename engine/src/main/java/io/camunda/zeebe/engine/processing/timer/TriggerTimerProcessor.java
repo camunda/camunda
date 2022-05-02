@@ -110,7 +110,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
           processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer(), NO_VARIABLES);
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-      if (!eventHandle.canTriggerElement(elementInstance)) {
+      if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
         rejectNoActiveTimer(record);
         return;
       }

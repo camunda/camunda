@@ -41,7 +41,7 @@
 
     <plugin.version.flatten>1.2.7</plugin.version.flatten>
     <plugin.version.javadoc>3.4.0</plugin.version.javadoc>
-    <plugin.version.spotless>2.22.2</plugin.version.spotless>
+    <plugin.version.spotless>2.22.3</plugin.version.spotless>
   </properties>
 
   <dependencyManagement>

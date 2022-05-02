@@ -38,20 +38,20 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     // We schedule only one runnable for all timers.
     // - The runnable is scheduled when the first timer is scheduled.
     // - If a new timer is scheduled which should be triggered before the current runnable is
-    // executed then the runnable is canceled and re-scheduled with the new duration.
+    // executed then the runnable is canceled and re-scheduled with the new delay.
     // - Otherwise, we don't need to cancel the runnable. It will be rescheduled when it is
     // executed.
 
-    final Duration duration = Duration.ofMillis(dueDate - ActorClock.currentTimeMillis());
+    final Duration delay = calculateDelayForNextRun(dueDate);
 
     if (scheduledTimer == null) {
-      scheduledTimer = actor.runDelayed(duration, this::triggerEntities);
+      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
       nextDueDate = dueDate;
 
     } else if (nextDueDate - dueDate > timerResolution) {
       scheduledTimer.cancel();
 
-      scheduledTimer = actor.runDelayed(duration, this::triggerEntities);
+      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
       nextDueDate = dueDate;
     }
   }
@@ -62,12 +62,26 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     // reschedule the runnable if there are timers left
 
     if (nextDueDate > 0) {
-      final Duration duration = Duration.ofMillis(nextDueDate - ActorClock.currentTimeMillis());
-      scheduledTimer = actor.runDelayed(duration, this::triggerEntities);
+      final Duration delay = calculateDelayForNextRun(nextDueDate);
+      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
 
     } else {
       scheduledTimer = null;
     }
+  }
+
+  /**
+   * Calculates the delay for the next run so that it occurs at (or close to) due date. If due date
+   * is in the future, the delay will be precise. If due date is in the past, now or in the very
+   * near future, then a lower floor is applied to the delay. The lower floor is {@code
+   * timerResolution}. This is to prevent the checker from being immediately rescheduled and thus
+   * not giving any other tasks a chance to run.
+   *
+   * @param dueDate due date for which a scheduling delay is calculated
+   * @return delay to hit the next due date; will be {@code >= timerResolution}
+   */
+  private Duration calculateDelayForNextRun(final long dueDate) {
+    return Duration.ofMillis(Math.max(dueDate - ActorClock.currentTimeMillis(), timerResolution));
   }
 
   @Override

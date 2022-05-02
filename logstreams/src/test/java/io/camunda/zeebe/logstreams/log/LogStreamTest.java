@@ -23,16 +23,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public final class LogStreamTest {
   public static final int PARTITION_ID = 0;
 
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
 
-  private final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(logStreamRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(logStreamRule);
 
   private SynchronousLogStream logStream;
 

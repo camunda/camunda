@@ -16,11 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.prometheus.client.CollectorRegistry;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -161,7 +157,7 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double executedProcessInstanceMetric(final String action) {
-    return metricValue(
+    return MetricsTestHelper.readMetricValue(
         "zeebe_executed_instances_total",
         entry("organizationId", "null"),
         entry("type", "ROOT_PROCESS_INSTANCE"),
@@ -178,18 +174,10 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double evaluatedDmnElementsMetric(final String action) {
-    return metricValue(
+    return MetricsTestHelper.readMetricValue(
         "zeebe_evaluated_dmn_elements_total",
         entry("organizationId", "null"),
         entry("action", action),
         entry("partition", "1"));
-  }
-
-  @SafeVarargs
-  private Double metricValue(final String name, final Entry<String, String>... labels) {
-    final List<String> labelNames = Arrays.stream(labels).map(Entry::getKey).toList();
-    final List<String> labelValues = Arrays.stream(labels).map(Entry::getValue).toList();
-    return CollectorRegistry.defaultRegistry.getSampleValue(
-        name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
   }
 }

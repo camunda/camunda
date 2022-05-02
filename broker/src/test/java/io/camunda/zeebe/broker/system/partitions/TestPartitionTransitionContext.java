@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
@@ -220,6 +220,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.streamProcessorFactory = streamProcessorFactory;
   }
 
+  @Override
+  public ConcurrencyControl getConcurrencyControl() {
+    return concurrencyControl;
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = concurrencyControl;
+  }
+
   public void setRaftPartition(final RaftPartition raftPartition) {
     this.raftPartition = raftPartition;
   }
@@ -270,15 +280,5 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   public void setStateController(final StateController stateController) {
     this.stateController = stateController;
-  }
-
-  @Override
-  public ConcurrencyControl getConcurrencyControl() {
-    return concurrencyControl;
-  }
-
-  @Override
-  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
-    this.concurrencyControl = concurrencyControl;
   }
 }
