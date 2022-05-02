@@ -10,10 +10,14 @@ import styled, {css} from 'styled-components';
 const Container = styled.div`
   ${({theme}) => {
     return css`
-      background: ${theme.colors.decisionViewer.background};
+      display: grid;
+      grid-template-columns: 100%;
+      grid-template-rows: 37px calc(100% - 37px);
       overflow: auto;
       height: 100%;
       position: relative;
+
+      background: ${theme.colors.decisionViewer.background};
     `;
   }}
 `;

@@ -18,6 +18,12 @@ const Container = styled.div<ContainerProps>`
     return css`
       padding: 30px 20px;
 
+      &,
+      & > ${ViewerCanvas} {
+        height: 100%;
+        min-height: 200px;
+      }
+
       .powered-by {
         display: none;
       }
@@ -84,4 +90,6 @@ const Container = styled.div<ContainerProps>`
   }}
 `;
 
-export {Container};
+const ViewerCanvas = styled.div``;
+
+export {Container, ViewerCanvas};

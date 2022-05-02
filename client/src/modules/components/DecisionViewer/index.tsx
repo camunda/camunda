@@ -8,7 +8,7 @@
 import {useEffect, useRef} from 'react';
 import {observer} from 'mobx-react';
 import {DecisionViewer as DmnJsDecisionViewer} from 'modules/dmn-js/DecisionViewer';
-import {Container} from './styled';
+import {Container, ViewerCanvas} from './styled';
 
 type Props = {
   xml: string | null;
@@ -49,7 +49,7 @@ const DecisionViewer: React.FC<Props> = observer(
 
     return (
       <Container highlightableRows={highlightableRules}>
-        <div ref={decisionViewerRef} />
+        <ViewerCanvas ref={decisionViewerRef} />
       </Container>
     );
   }
