@@ -10,7 +10,7 @@ package io.camunda.zeebe.util;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-public record FeatureFlags(/*boolean foo*/ ) {
+public record FeatureFlags(boolean yieldingDueDateChecker /*, boolean foo*/) {
 
   /* To add a new feature toggle, please follow these steps:
    *
@@ -22,19 +22,36 @@ public record FeatureFlags(/*boolean foo*/ ) {
    *   As we gain more confidence in the efficacy of the feature flag, the
    *   default value can be set to 'true'
    *
+   * - define a default value to be used in tests
+   *
+   * - make sure that all relevant tests use the default value for tests
+   *
    * - add a field, getter and setter to FeatureFlagsCfg
    *
    * - add a description of the feature flag to
    *    - dist/src/main/config/broker.standalone.yaml.template
    *    - dist/src/main/config/broker.yaml.template
    *
+   * - add test cases to FeaturesFlagCfgTest and feature-flags-cfg.yaml
+   *
    * Be careful with parameter order in constructor calls!
    */
 
   //  protected static final boolean FOO_DEFAULT = false;
-  //
+
+  private static final boolean YIELDING_DUE_DATE_CHECKER = false;
+
   public static FeatureFlags createDefault() {
-    return new FeatureFlags(/*FOO_DEFAULT*/ );
+    return new FeatureFlags(YIELDING_DUE_DATE_CHECKER /*, FOO_DEFAULT*/);
+  }
+
+  /**
+   * Only to be used in tests
+   *
+   * @return
+   */
+  public static FeatureFlags createDefaultForTests() {
+    return new FeatureFlags(/* YIELDING_DUE_DATE_CHECKER*/ true /*, FOO_DEFAULT*/);
   }
 
   @Override

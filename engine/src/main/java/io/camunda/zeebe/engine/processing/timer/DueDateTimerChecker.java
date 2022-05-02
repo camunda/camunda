@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Function;
@@ -26,11 +27,13 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   private static final double GIVE_YIELD_FACTOR = 0.5;
   private final DueDateChecker dueDateChecker;
 
-  public DueDateTimerChecker(final TimerInstanceState timerInstanceState) {
+  public DueDateTimerChecker(
+      final TimerInstanceState timerInstanceState, final FeatureFlags featureFlags) {
     dueDateChecker =
         new DueDateChecker(
             TIMER_RESOLUTION,
-            new TriggerTimersSideEffect(timerInstanceState, ActorClock.current()));
+            new TriggerTimersSideEffect(
+                timerInstanceState, ActorClock.current(), featureFlags.yieldingDueDateChecker()));
   }
 
   public void scheduleTimer(final long dueDate) {
@@ -68,11 +71,15 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     private final ActorClock actorClock;
 
     private final TimerInstanceState timerInstanceState;
+    private final boolean yieldControl;
 
     public TriggerTimersSideEffect(
-        final TimerInstanceState timerInstanceState, final ActorClock actorClock) {
+        final TimerInstanceState timerInstanceState,
+        final ActorClock actorClock,
+        final boolean yieldControl) {
       this.timerInstanceState = timerInstanceState;
       this.actorClock = actorClock;
+      this.yieldControl = yieldControl;
     }
 
     @Override
@@ -81,9 +88,14 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
       final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR);
 
-      final var timerVisitor =
-          new YieldingDecorator(
-              actorClock, yieldAfter, new WriteTriggerTimerCommandVisitor(typedCommandWriter));
+      final TimerVisitor timerVisitor;
+      if (yieldControl) {
+        timerVisitor =
+            new YieldingDecorator(
+                actorClock, yieldAfter, new WriteTriggerTimerCommandVisitor(typedCommandWriter));
+      } else {
+        timerVisitor = new WriteTriggerTimerCommandVisitor(typedCommandWriter);
+      }
 
       return timerInstanceState.processTimersWithDueDateBefore(now, timerVisitor);
     }

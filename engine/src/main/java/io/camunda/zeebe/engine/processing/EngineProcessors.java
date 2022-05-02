@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.Consumer;
 
@@ -51,7 +52,8 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final DeploymentResponder deploymentResponder,
-      final Consumer<String> onJobsAvailableCallback) {
+      final Consumer<String> onJobsAvailableCallback,
+      final FeatureFlags featureFlags) {
 
     final var actor = processingContext.getActor();
     final MutableZeebeState zeebeState = processingContext.getZeebeState();
@@ -73,7 +75,8 @@ public final class EngineProcessors {
             ExpressionLanguageFactory.createExpressionLanguage(),
             new VariableStateEvaluationContextLookup(variablesState));
 
-    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
+    final DueDateTimerChecker timerChecker =
+        new DueDateTimerChecker(zeebeState.getTimerState(), featureFlags);
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(
             zeebeState,

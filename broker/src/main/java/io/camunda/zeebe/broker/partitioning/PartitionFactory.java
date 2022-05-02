@@ -55,6 +55,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.startup.StartupStep;
@@ -112,7 +113,8 @@ final class PartitionFactory {
   List<ZeebePartition> constructPartitions(
       final RaftPartitionGroup partitionGroup,
       final List<PartitionListener> partitionListeners,
-      final TopologyManager topologyManager) {
+      final TopologyManager topologyManager,
+      final FeatureFlags featureFlags) {
     final var partitions = new ArrayList<ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
     final var eventService = clusterServices.getEventService();
@@ -131,7 +133,8 @@ final class PartitionFactory {
             localBroker,
             communicationService,
             eventService,
-            deploymentRequestHandler);
+            deploymentRequestHandler,
+            featureFlags);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -200,7 +203,8 @@ final class PartitionFactory {
       final BrokerInfo localBroker,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
-      final PushDeploymentRequestHandler deploymentRequestHandler) {
+      final PushDeploymentRequestHandler deploymentRequestHandler,
+      final FeatureFlags featureFlags) {
     return (ProcessingContext processingContext) -> {
       final var actor = processingContext.getActor();
 
@@ -229,7 +233,8 @@ final class PartitionFactory {
               subscriptionCommandSender,
               deploymentDistributor,
               deploymentRequestHandler,
-              jobsAvailableNotification::onJobsAvailable);
+              jobsAvailableNotification::onJobsAvailable,
+              featureFlags);
 
       return processor.withListener(
           new StreamProcessorLifecycleAware() {

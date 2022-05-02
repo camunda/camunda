@@ -58,7 +58,7 @@ class DueDateTimerCheckerTest {
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
 
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock);
+      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
 
       // when
       sut.apply(mockTypedCommandWriter);
