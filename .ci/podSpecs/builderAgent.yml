@@ -33,22 +33,6 @@ spec:
         requests:
           cpu: 8
           memory: 27Gi
-    - name: node
-      image: node:16.13.2-alpine
-      command: ["cat"]
-      tty: true
-      env:
-        - name: LIMITS_CPU
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
-      resources:
-        limits:
-          cpu: 2
-          memory: 4Gi
-        requests:
-          cpu: 2
-          memory: 4Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
       env:

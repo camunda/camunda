@@ -48,19 +48,6 @@ pipeline {
   }
 
   stages {
-    stage('Frontend - Build') {
-      steps {
-        container('node') {
-          sh '''
-            apk add --no-cache git
-            cd ./client
-            yarn install --frozen-lockfile
-            yarn lint
-            yarn build
-          '''
-        }
-      }
-    }
     stage('Backend - Build') {
       steps {
         container('maven') {
@@ -68,7 +55,7 @@ pipeline {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             sh '''
             JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
-            mvn com.coveo:fmt-maven-plugin:check clean deploy -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+            mvn com.coveo:fmt-maven-plugin:check clean deploy -s $MAVEN_SETTINGS_XML -P -docker -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
                 -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
           '''
           }
