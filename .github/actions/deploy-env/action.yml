@@ -125,6 +125,7 @@ runs:
         --helm-set git.branch=${{ inputs.revision }}
         --helm-set global.labels.app=${{ env.APP_NAME }}
         --name optimize-${{ env.APP_NAME }}
+        --project optimize-previews
         --revision ${{ inputs.revision }}
         --upsert
         
