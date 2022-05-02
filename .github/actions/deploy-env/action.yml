@@ -117,7 +117,7 @@ runs:
       if: ${{ inputs.step == 'start'}}
       run: >-
         argocd app create
-        --dest-namespace optimize-${APP_NAME}
+        --dest-namespace optimize-${{ env.APP_NAME }}
         --file .ci/deployments-resources/argo/application.yml
         --helm-set optimize.image.tag=${{ inputs.docker_tag }}
         --helm-set cambpm.image.tag=${{ inputs.cambpm_version }}
@@ -129,7 +129,7 @@ runs:
         --revision ${{ inputs.revision }}
         --upsert
         
-        argocd app sync ${{ env.APP_NAME }} --async --force || true
+        argocd app sync optimize-${{ env.APP_NAME }} --async --force || true
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
         ARGOCD_OPTS: "--grpc-web"
