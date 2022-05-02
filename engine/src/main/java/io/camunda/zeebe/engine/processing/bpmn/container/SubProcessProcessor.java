@@ -131,7 +131,7 @@ public final class SubProcessProcessor
                 });
       }
 
-    } else {
+    } else if (stateBehavior.isInterrupted(subProcessContext)) {
       // if the flow scope is not terminating we allow
       // * interrupting event sub processes
       // * non interrupting boundary events
