@@ -16,7 +16,6 @@
   <name>Zeebe Workflow Engine</name>
 
   <dependencies>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
@@ -88,11 +87,6 @@
     </dependency>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient</artifactId>
     </dependency>
@@ -102,8 +96,12 @@
       <artifactId>commons-text</artifactId>
     </dependency>
 
-    <!--    TEST DEPENDENCIES-->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
 
+    <!-- TEST DEPENDENCIES -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-asserts</artifactId>
@@ -165,17 +163,10 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- TEMPORARY -->
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -184,12 +175,10 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>
     <plugins>
-
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -209,14 +198,13 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
+          <includeProjectDependencies>false</includeProjectDependencies>
+          <includePluginDependencies>true</includePluginDependencies>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
             <argument>${project.build.resources[0].directory}/subscription-schema.xml</argument>
@@ -227,7 +215,7 @@
         <dependencies>
           <dependency>
             <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
+            <artifactId>sbe-tool</artifactId>
             <version>${version.sbe}</version>
           </dependency>
         </dependencies>
@@ -243,17 +231,6 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies>
-            <!-- dependency used but plugin seems to report a false positive here -->
-            <dependency>uk.co.real-logic:sbe-tool</dependency>
-          </usedDependencies>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -263,8 +240,6 @@
           </execution>
         </executions>
       </plugin>
-
     </plugins>
   </build>
-
 </project>
