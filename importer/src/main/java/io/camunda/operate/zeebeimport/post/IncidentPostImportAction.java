@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -64,6 +65,7 @@ import org.elasticsearch.client.indices.AnalyzeResponse;
 import org.elasticsearch.client.indices.AnalyzeResponse.AnalyzeToken;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,17 +119,17 @@ public class IncidentPostImportAction implements PostImportAction {
     BulkRequest bulkProcessAndFlowNodeInstanceUpdate = new BulkRequest();
     BulkRequest bulkIncidentUpdate = new BulkRequest();
 
-    Map<String, String> incidentIndices = new HashMap<>();
+    Map<String, String> incidentIndices = new ConcurrentHashMap<>();
     List<IncidentEntity> incidents = getPendingIncidents(incidentIndices);
     if (logger.isDebugEnabled() && !incidents.isEmpty()) {
       logger.debug("Processing pending incidents: " + incidents);
     }
     try {
       Set<Long> flowNodeInstanceIds = new HashSet<>();
-      Map<String, List<String>> flowNodeInstanceIndices = new HashMap<>();
-      Map<String, List<String>> flowNodeInstanceInListViewIndices = new HashMap<>();
-      Map<Long, String> processInstanceTreePaths = new HashMap<>();
-      Map<String, String> processInstanceIndices = new HashMap<>();
+      Map<String, List<String>> flowNodeInstanceIndices = new ConcurrentHashMap<>();
+      Map<String, List<String>> flowNodeInstanceInListViewIndices = new ConcurrentHashMap<>();
+      Map<Long, String> processInstanceTreePaths = new ConcurrentHashMap<>();
+      Map<String, String> processInstanceIndices = new ConcurrentHashMap<>();
       searchForInstances(incidents, flowNodeInstanceIds, flowNodeInstanceIndices,
           flowNodeInstanceInListViewIndices, processInstanceTreePaths, processInstanceIndices);
       for (IncidentEntity incident: incidents) {
@@ -309,11 +311,11 @@ public class IncidentPostImportAction implements PostImportAction {
     }
 
     if (!flowNodeInstanceIndices.keySet().containsAll(fniIds)) {
-      flowNodeInstanceIndices = getIndexNamesAsList(flowNodeInstanceTemplate, fniIds, esClient);
+      flowNodeInstanceIndices.putAll(getIndexNamesAsList(flowNodeInstanceTemplate, fniIds, esClient));
     }
 
     if (!flowNodeInstanceInListViewIndices.keySet().containsAll(fniIds)) {
-      flowNodeInstanceInListViewIndices = getIndexNamesAsList(listViewTemplate, fniIds, esClient);
+      flowNodeInstanceInListViewIndices.putAll(getIndexNamesAsList(listViewTemplate, fniIds, esClient));
     }
 
     for (String fniId : fniIds2Update) {
@@ -322,11 +324,18 @@ public class IncidentPostImportAction implements PostImportAction {
             .doc(updateFields)
             .retryOnConflict(UPDATE_RETRY_COUNT));
       });
-      flowNodeInstanceInListViewIndices.get(fniId).forEach(index -> {
-        bulkUpdateRequest.add(new UpdateRequest(index, fniId)
-            .doc(updateFields)
-            .retryOnConflict(UPDATE_RETRY_COUNT));
-      });
+      if (flowNodeInstanceInListViewIndices.get(fniId) == null) {
+        throw new OperateRuntimeException(
+            String.format(
+                "List view data was not yet imported for flow node instance %s",
+                fniId));
+      } else {
+        flowNodeInstanceInListViewIndices.get(fniId).forEach(index -> {
+          bulkUpdateRequest.add(new UpdateRequest(index, fniId)
+              .doc(updateFields)
+              .retryOnConflict(UPDATE_RETRY_COUNT));
+        });
+      }
     }
   }
 

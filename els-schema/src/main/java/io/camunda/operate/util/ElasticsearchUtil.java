@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -45,7 +46,6 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -573,7 +573,7 @@ public abstract class ElasticsearchUtil {
   public static Map<String, List<String>> getIndexNamesAsList(AbstractTemplateDescriptor template,
       Collection<String> ids, RestHighLevelClient esClient) {
 
-    Map<String, List<String>> indexNames = new HashMap<>();
+    Map<String, List<String>> indexNames = new ConcurrentHashMap<>();
 
     final SearchRequest piRequest = ElasticsearchUtil.createSearchRequest(template)
         .source(new SearchSourceBuilder()
@@ -582,9 +582,13 @@ public abstract class ElasticsearchUtil {
         );
     try {
       scrollWith(piRequest, esClient, sh -> {
-        Arrays.stream(sh.getHits()).forEach(hit ->
-            CollectionUtil.addToMap(indexNames, hit.getId(), hit.getIndex())
-        );
+        Arrays.stream(sh.getHits())
+            .collect(Collectors.groupingBy(SearchHit::getId,
+                Collectors.mapping(SearchHit::getIndex, Collectors.toList())))
+            .forEach((key, value) -> indexNames.merge(key, value, (v1, v2) -> {
+              v1.addAll(v2);
+              return v1;
+            }));
       });
     } catch (IOException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
