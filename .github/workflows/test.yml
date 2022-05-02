@@ -31,7 +31,7 @@ jobs:
           mvn -Dmaven.repo.local=./.m2/ -T1C -B -DskipChecks -DskipTests
           "-D maven.javadoc.skip=true"
           install
-      - run: tar -czf zeebe-build.tar.gz ./.m2/ ./**/*/target/*
+      - run: shopt -s globstar; tar -czf zeebe-build.tar.gz ./.m2/ ./**/target/
       - name: Archive Workspace
         uses: actions/upload-artifact@v3
         with:
