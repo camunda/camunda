@@ -88,9 +88,9 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.withIncidents).toBe(877);
   });
 
-  it('should fetch statistics on init', async () => {
+  it('should fetch statistics', async () => {
     expect(statisticsStore.state.status).toBe('initial');
-    statisticsStore.init();
+    statisticsStore.fetchStatistics();
 
     expect(statisticsStore.state.status).toBe('first-fetch');
     await waitFor(() => {
@@ -212,7 +212,7 @@ describe('stores/statistics', () => {
       eventListeners[event] = cb;
     });
 
-    statisticsStore.init();
+    statisticsStore.fetchStatistics();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1087));
 

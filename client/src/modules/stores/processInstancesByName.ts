@@ -28,7 +28,7 @@ type ProcessInstanceByName = {
 };
 type State = {
   processInstances: ProcessInstanceByName[];
-  status: 'initial' | 'fetching' | 'fetched' | 'error';
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
@@ -52,8 +52,6 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
   }
 
   init() {
-    this.getProcessInstancesByName();
-
     if (this.intervalId === null) {
       this.startPolling();
     }
@@ -75,9 +73,12 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
   });
 
   startFetching = () => {
-    this.state.status = 'fetching';
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
-
   setError = () => {
     this.state.status = 'error';
   };

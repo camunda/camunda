@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Container, ExpandButton} from './styled';
+import {useLocation} from 'react-router-dom';
 
 type Props = {
   content?: React.ReactNode;
@@ -14,8 +15,13 @@ type Props = {
   buttonTitle?: string;
 };
 
-function Collapse({buttonTitle, content, header}: Props) {
+const Collapse: React.FC<Props> = ({buttonTitle, content, header}) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    setIsCollapsed(true);
+  }, [location.key]);
 
   return (
     <Container>
@@ -31,6 +37,6 @@ function Collapse({buttonTitle, content, header}: Props) {
       {!isCollapsed && content}
     </Container>
   );
-}
+};
 
 export {Collapse};

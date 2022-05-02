@@ -70,11 +70,11 @@ describe('stores/incidentsByError', () => {
     incidentsByErrorStore.reset();
   });
 
-  it('should fetch incidents by error on init', async () => {
+  it('should get incidents by error', async () => {
     expect(incidentsByErrorStore.state.status).toBe('initial');
-    incidentsByErrorStore.init();
+    incidentsByErrorStore.getIncidentsByError();
 
-    expect(incidentsByErrorStore.state.status).toBe('fetching');
+    expect(incidentsByErrorStore.state.status).toBe('first-fetch');
     await waitFor(() => {
       expect(incidentsByErrorStore.state.incidents).toEqual(
         mockIncidentsByError

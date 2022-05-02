@@ -24,14 +24,21 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/routes';
+import {useLocation} from 'react-router-dom';
 
 const InstancesByProcess = observer(() => {
+  const location = useLocation();
+
   useEffect(() => {
     processInstancesByNameStore.init();
     return () => {
       processInstancesByNameStore.reset();
     };
   }, []);
+
+  useEffect(() => {
+    processInstancesByNameStore.getProcessInstancesByName();
+  }, [location.key]);
 
   const renderIncidentsPerVersion = (processName: any, items: any) => {
     return (
@@ -137,7 +144,7 @@ const InstancesByProcess = observer(() => {
 
   const {processInstances, status} = processInstancesByNameStore.state;
 
-  if (['initial', 'fetching'].includes(status)) {
+  if (['initial', 'first-fetch'].includes(status)) {
     return <Skeleton />;
   }
 

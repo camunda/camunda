@@ -69,11 +69,11 @@ describe('stores/processInstancesByName', () => {
     processInstancesByNameStore.reset();
   });
 
-  it('should fetch instances by process on init', async () => {
+  it('should get process instances by name', async () => {
     expect(processInstancesByNameStore.state.status).toBe('initial');
-    processInstancesByNameStore.init();
+    processInstancesByNameStore.getProcessInstancesByName();
 
-    expect(processInstancesByNameStore.state.status).toBe('fetching');
+    expect(processInstancesByNameStore.state.status).toBe('first-fetch');
     await waitFor(() => {
       expect(processInstancesByNameStore.state.processInstances).toEqual(
         mockInstancesByProcess

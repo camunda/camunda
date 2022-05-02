@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Link, MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
   within,
@@ -19,7 +19,6 @@ import {
   mockEmptyResponse,
   mockIncidentsByErrorWithBigErrorMessage,
   bigErrorMessage,
-  truncatedBigErrorMessage,
 } from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -27,17 +26,15 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 
-function getParam(search: string, param: string) {
-  return new URLSearchParams(search).get(param);
-}
-
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
-          {children}
-          <Link to="/">go to initial</Link>
+          <Routes>
+            <Route path="/processes" element={<div>Processes</div>} />
+            <Route path="/" element={children} />
+          </Routes>
           <LocationLog />
         </MemoryRouter>
       </ThemeProvider>
@@ -135,31 +132,25 @@ describe('IncidentsByError', () => {
       await screen.findByTestId('incident-byError-0')
     );
 
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
-
     const expandButton = withinIncident.getByTitle(
       "Expand 36 Instances with error JSON path '$.paid' has no result."
     );
     expect(expandButton).toBeInTheDocument();
 
-    await user.click(
-      withinIncident.getByTitle(
-        "View 36 Instances with error JSON path '$.paid' has no result."
-      )
-    );
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
-    );
+    const processLink = withinIncident.getByRole('link', {
+      name: "View 36 Instances with error JSON path '$.paid' has no result.",
+    });
 
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-    panelStatesStore.toggleFiltersPanel();
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+    expect(processLink).toHaveAttribute(
+      'href',
+      '/processes?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+    );
 
     await user.click(expandButton);
 
-    const firstVersion = withinIncident.getByTitle(
-      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
-    );
+    const firstVersion = withinIncident.getByRole('link', {
+      name: "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess",
+    });
     expect(
       within(firstVersion).getByTestId('incident-instances-badge')
     ).toHaveTextContent('37');
@@ -167,11 +158,10 @@ describe('IncidentsByError', () => {
       within(firstVersion).getByText('mockProcess – Version 1')
     ).toBeInTheDocument();
 
-    await user.click(firstVersion);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?process=mockProcess&version=1&errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
+    expect(firstVersion).toHaveAttribute(
+      'href',
+      '/processes?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should update after next poll', async () => {
@@ -231,32 +221,65 @@ describe('IncidentsByError', () => {
       wrapper: createWrapper(),
     });
 
-    await user.click(
-      await screen.findByTitle(
-        `View 36 Instances with error ${bigErrorMessage}`
-      )
+    const withinIncident = within(
+      await screen.findByTestId('incident-byError-0')
+    );
+
+    const expandButton = withinIncident.getByTitle(
+      `Expand 36 Instances with error ${bigErrorMessage}`
     );
 
     expect(
-      getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
-    ).toBe(truncatedBigErrorMessage);
+      withinIncident.getByRole('link', {
+        name: `View 36 Instances with error ${bigErrorMessage}`,
+      })
+    ).toHaveAttribute(
+      'href',
+      '/processes?errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true'
+    );
 
-    await user.click(screen.getByText(/go to initial/i));
+    await user.click(expandButton);
 
     expect(
-      // eslint-disable-next-line testing-library/prefer-presence-queries
-      getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
-    ).toBeNull();
+      screen.getByRole('link', {
+        name: `View 37 Instances with error ${bigErrorMessage} in version 1 of Process mockProcess`,
+      })
+    ).toHaveAttribute(
+      'href',
+      '/processes?process=mockProcess&version=1&errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true'
+    );
+  });
 
-    await user.click(screen.getByTestId('arrow-icon'));
-    await user.click(
-      await screen.findByTitle(
-        `View 37 Instances with error ${bigErrorMessage} in version 1 of Process mockProcess`
+  it('should expand filters panel on click', async () => {
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidentsByError))
       )
     );
 
-    expect(
-      getParam(screen.getByTestId('search').textContent ?? '', 'errorMessage')
-    ).toBe(truncatedBigErrorMessage);
+    const {user} = render(<IncidentsByError />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
+    const withinIncident = within(
+      await screen.findByTestId('incident-byError-0')
+    );
+
+    const expandButton = withinIncident.getByTitle(
+      "Expand 36 Instances with error JSON path '$.paid' has no result."
+    );
+    expect(expandButton).toBeInTheDocument();
+
+    const processLink = withinIncident.getByRole('link', {
+      name: "View 36 Instances with error JSON path '$.paid' has no result.",
+    });
+    await user.click(processLink);
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
+    );
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 });

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
   waitForElementToBeRemoved,
@@ -24,7 +24,10 @@ function createWrapper(initialPath: string = '/') {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
-          {children}
+          <Routes>
+            <Route path="/processes" element={<div>Processes</div>} />
+            <Route path="/" element={children} />
+          </Routes>
           <LocationLog />
         </MemoryRouter>
       </ThemeProvider>

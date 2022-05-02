@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, within, screen} from 'modules/testing-library';
 import {InstancesByProcess} from './index';
 import {
@@ -25,7 +25,10 @@ function createWrapper(initialPath: string = '/') {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
-          {children}
+          <Routes>
+            <Route path="/processes" element={<div>Processes</div>} />
+            <Route path="/" element={children} />
+          </Routes>
           <LocationLog />
         </MemoryRouter>
       </ThemeProvider>
@@ -116,6 +119,12 @@ describe('InstancesByProcess', () => {
     mockServer.use(
       rest.get('/api/incidents/byProcess', (_, res, ctx) =>
         res.once(ctx.json(mockWithMultipleVersions))
+      ),
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(ctx.json(mockWithMultipleVersions))
+      ),
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(ctx.json(mockWithMultipleVersions))
       )
     );
 
@@ -127,21 +136,14 @@ describe('InstancesByProcess', () => {
       await screen.findByTestId('incident-byProcess-0')
     );
 
-    const processLink = withinIncident.getByText(
-      'Order process – 201 Instances in 2 Versions'
+    const processLink = withinIncident.getByRole('link', {
+      name: /View 201 Instances in 2 Versions of Process Order process/,
+    });
+
+    expect(processLink).toHaveAttribute(
+      'href',
+      '/processes?process=orderProcess&version=all&active=true&incidents=true'
     );
-    expect(processLink).toBeInTheDocument();
-
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
-
-    await user.click(processLink);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?process=orderProcess&version=all&active=true&incidents=true$/
-    );
-
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-    panelStatesStore.toggleFiltersPanel();
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
       '65'
@@ -154,12 +156,11 @@ describe('InstancesByProcess', () => {
       'Expand 201 Instances of Process Order process'
     );
 
-    expect(expandButton).toBeInTheDocument();
     await user.click(expandButton);
 
-    const firstVersion = screen.getByTitle(
-      'View 42 Instances in Version 1 of Process First Version'
-    );
+    const firstVersion = screen.getByRole('link', {
+      name: /View 42 Instances in Version 1 of Process First Version/,
+    });
 
     expect(
       within(firstVersion).getByTestId('incident-instances-badge')
@@ -172,16 +173,14 @@ describe('InstancesByProcess', () => {
         'First Version – 42 Instances in Version 1'
       )
     ).toBeInTheDocument();
-
-    await user.click(firstVersion);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?process=mockProcess&version=1&active=true&incidents=true$/
+    expect(firstVersion).toHaveAttribute(
+      'href',
+      '/processes?process=mockProcess&version=1&active=true&incidents=true'
     );
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    const secondVersion = screen.getByTitle(
-      'View 42 Instances in Version 2 of Process Second Version'
-    );
+    const secondVersion = screen.getByRole('link', {
+      name: 'View 42 Instances in Version 2 of Process Second Version',
+    });
 
     expect(
       within(secondVersion).getByTestId('incident-instances-badge')
@@ -194,10 +193,9 @@ describe('InstancesByProcess', () => {
         'Second Version – 42 Instances in Version 2'
       )
     ).toBeInTheDocument();
-
-    await user.click(secondVersion);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?process=mockProcess&version=2&active=true&incidents=true$/
+    expect(secondVersion).toHaveAttribute(
+      'href',
+      '/processes?process=mockProcess&version=2&active=true&incidents=true'
     );
   });
 
@@ -208,7 +206,7 @@ describe('InstancesByProcess', () => {
       )
     );
 
-    const {user} = render(<InstancesByProcess />, {
+    render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
 
@@ -224,13 +222,13 @@ describe('InstancesByProcess', () => {
       withinIncident.getByText('loanProcess – 138 Instances in 1 Version')
     ).toBeInTheDocument();
 
-    const processLink = withinIncident.getByTitle(
-      'View 138 Instances in 1 Version of Process loanProcess'
-    );
-    expect(processLink).toBeInTheDocument();
-    await user.click(processLink);
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?process=loanProcess&version=1&active=true&incidents=true$/
+    const processLink = withinIncident.getByRole('link', {
+      name: 'View 138 Instances in 1 Version of Process loanProcess',
+    });
+
+    expect(processLink).toHaveAttribute(
+      'href',
+      '/processes?process=loanProcess&version=1&active=true&incidents=true'
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -239,6 +237,35 @@ describe('InstancesByProcess', () => {
     expect(screen.getByTestId('active-instances-badge')).toHaveTextContent(
       '122'
     );
+  });
+
+  it('should expand filters panel on click', async () => {
+    mockServer.use(
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(ctx.json(mockWithSingleVersion))
+      )
+    );
+
+    const {user} = render(<InstancesByProcess />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
+    const withinIncident = within(
+      await screen.findByTestId('incident-byProcess-0')
+    );
+
+    const processLink = withinIncident.getByRole('link', {
+      name: 'View 138 Instances in 1 Version of Process loanProcess',
+    });
+
+    await user.click(processLink);
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?process=loanProcess&version=1&active=true&incidents=true$/
+    );
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should update after next poll', async () => {

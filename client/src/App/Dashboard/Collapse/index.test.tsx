@@ -8,6 +8,20 @@
 import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Collapse} from './index';
+import {Link, MemoryRouter} from 'react-router-dom';
+import {LocationLog} from 'modules/utils/LocationLog';
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter initialEntries={['/']}>
+        {children}
+        <LocationLog />
+        <Link to="/">go to initial</Link>
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 describe('<Collapse />', () => {
   it('should be collapsed by default', () => {
@@ -21,7 +35,7 @@ describe('<Collapse />', () => {
         header={mockHeader}
         buttonTitle={mockButtonTitle}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: Wrapper}
     );
 
     expect(screen.getByText(mockHeader)).toBeInTheDocument();
@@ -42,7 +56,7 @@ describe('<Collapse />', () => {
         header={mockHeader}
         buttonTitle={mockButtonTitle}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: Wrapper}
     );
 
     await user.click(screen.getByRole('button', {name: mockButtonTitle}));
@@ -50,6 +64,29 @@ describe('<Collapse />', () => {
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: mockButtonTitle}));
+
+    expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
+  });
+
+  it('should go back to default state on navigation', async () => {
+    const mockContent = 'mock-content';
+    const mockHeader = 'mock-header';
+    const mockButtonTitle = 'button-title';
+
+    const {user} = render(
+      <Collapse
+        content={mockContent}
+        header={mockHeader}
+        buttonTitle={mockButtonTitle}
+      />,
+      {wrapper: Wrapper}
+    );
+
+    await user.click(screen.getByRole('button', {name: mockButtonTitle}));
+
+    expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
+
+    await user.click(screen.getByText(/go to initial/));
 
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });

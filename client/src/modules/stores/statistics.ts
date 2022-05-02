@@ -50,8 +50,6 @@ class Statistics extends NetworkReconnectionHandler {
   }
 
   init() {
-    this.fetchStatistics();
-
     if (this.intervalId === null) {
       this.startPolling();
     }

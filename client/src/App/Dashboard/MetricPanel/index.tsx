@@ -20,8 +20,11 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
+import {useLocation} from 'react-router-dom';
 
 const MetricPanel = observer(() => {
+  const location = useLocation();
+
   const {running, active, withIncidents, status} = statisticsStore.state;
 
   useEffect(() => {
@@ -31,6 +34,10 @@ const MetricPanel = observer(() => {
       statisticsStore.reset();
     };
   }, []);
+
+  useEffect(() => {
+    statisticsStore.fetchStatistics();
+  }, [location.key]);
 
   if (status === 'error') {
     return (

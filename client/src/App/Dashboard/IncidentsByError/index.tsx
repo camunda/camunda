@@ -23,6 +23,7 @@ import {Locations} from 'modules/routes';
 import truncate from 'lodash/truncate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
+import {useLocation} from 'react-router-dom';
 
 function truncateErrorMessage(errorMessage: string) {
   return truncate(errorMessage, {
@@ -33,12 +34,18 @@ function truncateErrorMessage(errorMessage: string) {
 }
 
 const IncidentsByError = observer(() => {
+  const location = useLocation();
+
   useEffect(() => {
     incidentsByErrorStore.init();
     return () => {
       incidentsByErrorStore.reset();
     };
   }, []);
+
+  useEffect(() => {
+    incidentsByErrorStore.getIncidentsByError();
+  }, [location.key]);
 
   const renderIncidentsPerProcess = (errorMessage: any, items: any) => {
     return (
@@ -118,7 +125,7 @@ const IncidentsByError = observer(() => {
 
   const {incidents, status} = incidentsByErrorStore.state;
 
-  if (['initial', 'fetching'].includes(status)) {
+  if (['initial', 'first-fetch'].includes(status)) {
     return <Skeleton />;
   }
 

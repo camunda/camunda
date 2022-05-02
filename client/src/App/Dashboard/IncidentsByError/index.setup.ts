@@ -26,8 +26,7 @@ const mockIncidentsByError = createIncidentsByError([
 
 const bigErrorMessage =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Tempor nec feugiat nisl pretium fusce id. Pulvinar sapien et ligula ullamcorper malesuada. Iaculis nunc sed augue lacus viverra vitae congue eu. Aliquet lectus proin nibh nisl condimentum id. Tempus iaculis urna id volutpat.';
-const truncatedBigErrorMessage =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore';
+
 const mockIncidentsByErrorWithBigErrorMessage = createIncidentsByError([
   createInstanceByError({
     processes: [
@@ -45,6 +44,5 @@ export {
   mockErrorResponse,
   mockEmptyResponse,
   bigErrorMessage,
-  truncatedBigErrorMessage,
   mockIncidentsByErrorWithBigErrorMessage,
 };
