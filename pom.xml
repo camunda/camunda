@@ -28,7 +28,7 @@
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.17.0-ee</camunda.maven.artifacts.version>
 
-    <zeebe.version>8.0.1</zeebe.version>
+    <zeebe.version>8.0.2</zeebe.version>
     <identity.version>8.0.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
