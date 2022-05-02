@@ -58,7 +58,7 @@ class DueDateTimerCheckerTest {
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
 
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock);
+      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
 
       // when
       sut.apply(mockTypedCommandWriter);
@@ -185,7 +185,7 @@ class DueDateTimerCheckerTest {
     }
 
     @Override
-    public long processTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
+    public long findTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
       var yield = false;
 
       while (!yield) {
