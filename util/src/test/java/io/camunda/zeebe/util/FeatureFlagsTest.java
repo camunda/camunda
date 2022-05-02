@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 
 public class FeatureFlagsTest {
@@ -17,6 +19,15 @@ public class FeatureFlagsTest {
     final var sut = FeatureFlags.createDefault();
 
     // then
-    // assertThat(sut.foo()).isFalse();
+    assertThat(sut.yieldingDueDateChecker()).isFalse();
+  }
+
+  @Test
+  void testDefaultValuesForTests() {
+    // given
+    final var sut = FeatureFlags.createDefaultForTests();
+
+    // then
+    assertThat(sut.yieldingDueDateChecker()).isTrue();
   }
 }

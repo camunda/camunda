@@ -149,7 +149,10 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
               partitions.addAll(
                   partitionFactory.constructPartitions(
-                      partitionGroup, partitionListeners, topologyManager));
+                      partitionGroup,
+                      partitionListeners,
+                      topologyManager,
+                      brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
 
               final var futures =
                   partitions.stream()
