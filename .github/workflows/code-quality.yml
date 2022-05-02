@@ -52,4 +52,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+      # install build tools first so changes to tool configuration is available downstream
+      - run: mvn -T1C -B -D skipTests -D skipChecks install -pl build-tools
       - run: mvn -T1C -B -D skipTests -P checkFormat,-autoFormat validate
