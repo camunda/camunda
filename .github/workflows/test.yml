@@ -94,7 +94,6 @@ jobs:
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
           mvn -B --no-snapshot-updates
           -Dmaven.repo.local=./.m2/
