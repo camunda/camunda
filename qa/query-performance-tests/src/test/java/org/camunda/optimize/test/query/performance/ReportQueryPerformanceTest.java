@@ -298,10 +298,11 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
       }
       final Instant finish = Instant.now();
       long timeElapsed = Duration.between(start, finish).toMillis();
-      log.info("{} query response time: {}", getTestDisplayName(), timeElapsed);
+      final String additionalInfo = timeElapsed > 15000 ? " The query took over 15 seconds." : "";
+      log.info("{} query response time: {}.{}", getTestDisplayName(), timeElapsed, additionalInfo);
 
       // then
-      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+      assertThat(timeElapsed).isLessThanOrEqualTo(getMaxAllowedReportQueryTime());
     }
   }
 

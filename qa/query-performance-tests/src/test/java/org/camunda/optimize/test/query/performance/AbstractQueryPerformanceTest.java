@@ -60,6 +60,11 @@ public abstract class AbstractQueryPerformanceTest {
     return Long.parseLong(maxQueryTimeString);
   }
 
+  protected static long getMaxAllowedReportQueryTime() {
+    String maxQueryTimeString = PROPERTIES.getProperty("camunda.optimize.test.query.report.max.time.in.ms");
+    return Long.parseLong(maxQueryTimeString);
+  }
+
   protected static long getMaxAllowedQueryTimeWithWarmCaches() {
     String maxQueryTimeString = PROPERTIES.getProperty("camunda.optimize.test.query.warm.cache.max.time.in.ms");
     return Long.parseLong(maxQueryTimeString);

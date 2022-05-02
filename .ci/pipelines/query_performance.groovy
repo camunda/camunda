@@ -207,7 +207,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 240, unit: 'MINUTES')
+    timeout(time: 3, unit: 'DAYS')
   }
 
   stages {
@@ -247,7 +247,7 @@ pipeline {
         }
         stage('Restore Test Data') {
           steps {
-            timeout(90) {
+            timeout(360) {
               container('gcloud') {
                 sh "gsutil -q cp gs://optimize-data/${SQL_DUMP} /db_dump/${SQL_DUMP}"
               }
