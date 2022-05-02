@@ -37,7 +37,10 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Record} factory which produces randomized records deterministically. A seed can be given
  * on construction to reproduce the same records. On failure, the seed can be fetched via {@link
- * #getSeed()}.
+ * #getSeed()}. By default, calling {@link ProtocolFactory#ProtocolFactory()} will always return a
+ * factory which produces the same records. This is useful for reproducible tests, such that running
+ * the same test twice (regardless of the environment, e.g. CI or locally) will produce the same
+ * results.
  *
  * <p>Every property is fully randomized and cannot be relied upon semantically, except the value
  * type, the value, and the intent. These will always all match the implicit assumptions of the
@@ -46,6 +49,13 @@ import org.slf4j.LoggerFactory;
  * the intent is going to be an instance of {@link
  * io.camunda.zeebe.protocol.record.intent.JobIntent}. This is done to enable using this factory
  * with tests that expect to serialize and deserialize the records.
+ *
+ * <p>All {@link Long} or equivalent primitive fields are guaranteed to never be negative. This is a
+ * bit of a hack because many of our fields are expected to have timestamp semantics, but as they're
+ * only longs, it's not always clear if they are or not. Unfortunately things like the Elastic
+ * exporter expect timestamps and will fail if they aren't. To simplify things, we just guarantee
+ * returning positive numbers. This doesn't really cut down our coverage so much, and if we do want
+ * to test with negative numbers, we can always override the property manually via a builder.
  */
 @SuppressWarnings("java:S1452")
 public final class ProtocolFactory {
@@ -57,12 +67,13 @@ public final class ProtocolFactory {
   private final EasyRandom random;
 
   /**
-   * Every call to this constructor will always return a factory which will produce different
-   * records. If you wish to reproduce past results, consider using {@link
-   * ProtocolFactory#ProtocolFactory(long)}.
+   * Every call to this constructor will always return a factory which produces the exact same
+   * record. This is useful for reproducible tests. If you want a different behavior, then you can
+   * use {@link ProtocolFactory#ProtocolFactory(long)} and pass something like {@link
+   * ThreadLocalRandom#nextLong()}.
    */
   public ProtocolFactory() {
-    this(ThreadLocalRandom.current().nextLong());
+    this(0);
   }
 
   /**
@@ -210,24 +221,23 @@ public final class ProtocolFactory {
     findProtocolTypes().forEach(this::registerProtocolType);
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
 
-    // TODO: add tests for this property
     // restrict longs to be between 0 and max value - this is because many of our long properties
     // are timestamps, which are semantically between 0 and any future time
-    randomizerRegistry.registerRandomizer(Long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE));
-    randomizerRegistry.registerRandomizer(long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE));
+    randomizerRegistry.registerRandomizer(
+        Long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE, getSeed()));
+    randomizerRegistry.registerRandomizer(
+        long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE, getSeed()));
 
+    // never use NULL_VALL or SBE_UNKNOWN for ValueType or RecordType
     randomizerRegistry.registerRandomizer(
         ValueType.class,
         new EnumRandomizer<>(
-            parameters.getSeed(),
-            ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
+            getSeed(), ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
 
-    // TODO: add tests for this property
     final var excludedRecordTypes = EnumSet.of(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN);
     final var recordTypes = EnumSet.complementOf(excludedRecordTypes);
     randomizerRegistry.registerRandomizer(
-        RecordType.class,
-        new EnumRandomizer<>(parameters.getSeed(), recordTypes.toArray(RecordType[]::new)));
+        RecordType.class, new EnumRandomizer<>(getSeed(), recordTypes.toArray(RecordType[]::new)));
   }
 
   private void registerProtocolType(final ClassInfo abstractType) {
