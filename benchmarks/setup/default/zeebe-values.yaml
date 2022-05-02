@@ -140,6 +140,9 @@ tasklist:
 identity:
   enabled: false
 
+optimize:
+  enabled: false
+
 # ELASTIC
 elasticsearch:
   enabled: true
