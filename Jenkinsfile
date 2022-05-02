@@ -398,17 +398,6 @@ pipeline {
             }
         }
 
-        stage('Upload') {
-            when { allOf { branch mainBranchName; not { triggeredBy 'TimerTrigger' } } }
-            steps {
-                retry(3) {
-                    timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                        runMavenContainerCommand('.ci/scripts/distribution/upload.sh')
-                    }
-                }
-            }
-        }
-
         stage('Post') {
             when { not { triggeredBy 'TimerTrigger' } }
 
