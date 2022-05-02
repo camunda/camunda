@@ -30,6 +30,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private QueryApiCfg queryApi = new QueryApiCfg();
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
 
+  private FeatureFlagsCfg features = new FeatureFlagsCfg();
+
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     rocksdb.init(globalConfig, brokerBase);
@@ -104,6 +106,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.consistencyChecks = consistencyChecks;
   }
 
+  public FeatureFlagsCfg getFeatures() {
+    return features;
+  }
+
+  public void setFeatures(final FeatureFlagsCfg features) {
+    this.features = features;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -121,6 +131,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + queryApi
         + ", consistencyChecks="
         + consistencyChecks
+        + ", features="
+        + features
         + '}';
   }
 }
