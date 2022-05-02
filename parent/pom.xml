@@ -143,7 +143,7 @@
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>1.3.7</backwards.compat.version>
+    <backwards.compat.version>1.3.8</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
