@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
@@ -147,20 +146,6 @@ public class DefinitionRestService {
     return definitionVersions;
   }
 
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}/{key}/_resolveTenantsForVersions")
-  public List<TenantResponseDto> getDefinitionTenants(@Context final ContainerRequestContext requestContext,
-                                                      @PathParam("type") final DefinitionType type,
-                                                      @PathParam("key") final String key,
-                                                      @RequestBody final DefinitionTenantsRequestDto request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-
-    return getTenantsForDefinitionVersions(
-      key, type, request.getVersions(), request.getFilterByCollectionScope(), userId
-    );
-  }
-
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}/keys")
@@ -211,7 +196,7 @@ public class DefinitionRestService {
     final Optional<DefinitionOptimizeResponseDto> definitionDto =
       definitionService.getDefinitionWithXml(type, userId, key, version, tenantId);
 
-    if (!definitionDto.isPresent()) {
+    if (definitionDto.isEmpty()) {
       logAndThrowNotFoundException(type, key, version);
     }
     final Response.ResponseBuilder responseBuilder = Response.ok().type(MediaType.APPLICATION_XML);
