@@ -225,7 +225,7 @@ pipeline {
             """)
             // Trigger Snapshot
             sh ("""
-                echo \\\$(curl -qs -H "Content-Type: application/json" -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true" -d '{"indices": "zeebe-record*", "ignore_unavailable": "true", "include_global_state": false}')
+                echo \$(curl -qs -H "Content-Type: application/json" -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true" -d '{"indices": "zeebe-record*", "ignore_unavailable": "true", "include_global_state": false}')
             """)
         }
       }
