@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import io.camunda.operate.entities.UserEntity;
+import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -69,6 +70,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       RolePermissionService.class,
       AuthenticationRestService.class,
       ElasticSearchUserDetailsService.class,
+      ElasticsearchTask.class,
       RetryElasticsearchClient.class,
       OperateProfileService.class
   },

@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
@@ -49,6 +50,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       Jwt2AuthenticationTokenConverter.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
       WebSecurityConfig.class,
+      ElasticsearchTask.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       OperateWebSessionIndex.class,

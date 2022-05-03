@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
+import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -50,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         LDAPWebSecurityConfig.class,
         LDAPUserService.class,
         RetryElasticsearchClient.class,
+        ElasticsearchTask.class,
         ElasticsearchSessionRepository.class,
         OperateWebSessionIndex.class,
         OperateProfileService.class

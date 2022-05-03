@@ -64,7 +64,6 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,11 +82,11 @@ public class RetryElasticsearchClient {
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   @Autowired
   private RestHighLevelClient esClient;
+  @Autowired
+  private ElasticsearchTask elasticsearchTask;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
-
-
 
   public int getNumberOfRetries() {
     return numberOfRetries;
@@ -315,34 +314,21 @@ public class RetryElasticsearchClient {
     );
   }
 
-  private Map<String, Object> getTaskStatusMap(GetTaskResponse taskResponse){
-    return ((RawTaskStatus) taskResponse.getTaskInfo().getStatus()).toMap();
-  }
-
-  private boolean needsToPollAgain(Optional<GetTaskResponse> taskResponse) {
-    if (taskResponse.isEmpty()) {
-      return false;
-    }
-    final Map<String, Object> statusMap = getTaskStatusMap(taskResponse.get());
-    final long total = (Integer) statusMap.get("total");
-    final long created = (Integer) statusMap.get("created");
-    final long updated = (Integer) statusMap.get("updated");
-    final long deleted = (Integer) statusMap.get("deleted");
-    return !taskResponse.get().isCompleted() || (created + updated + deleted != total);
-  }
-
   // Returns if task is completed under this conditions:
   // - If the response is empty we can immediately return false to force a new reindex in outer retry loop
-  // - If the response has a status with uncompleted flag and a sum of changed documents (created,updated and deleted documents) not equal to to total documents
+  // - If the response has a status with uncompleted flag and a sum of changed documents (created,updated and deleted documents) not equal to total documents
   //   we need to wait and poll again the task status
   private boolean waitUntilTaskIsCompleted(String taskId, long srcCount) {
     final String[] taskIdParts = taskId.split(":");
-    String nodeId = taskIdParts[0];
-    long smallTaskId = Long.parseLong(taskIdParts[1]);
+    final String nodeId = taskIdParts[0];
+    final Long smallTaskId = Long.parseLong(taskIdParts[1]);
     Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
-        () -> esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions), this::needsToPollAgain);
+        () -> {
+            elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
+            return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
+        }, elasticsearchTask::needsToPollAgain);
     if (taskResponse.isPresent()) {
-      final long total = (Integer) getTaskStatusMap(taskResponse.get()).get("total");
+      final long total = elasticsearchTask.getTotal(taskResponse.get());
       logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
     } else {

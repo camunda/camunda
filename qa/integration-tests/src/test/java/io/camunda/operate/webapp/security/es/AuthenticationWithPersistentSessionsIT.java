@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import io.camunda.operate.entities.UserEntity;
+import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -72,6 +73,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       AuthenticationRestService.class,
       ElasticSearchUserDetailsService.class,
       RetryElasticsearchClient.class,
+      ElasticsearchTask.class,
       ElasticsearchSessionRepository.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class

@@ -26,6 +26,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.management.ElsIndicesCheck;
 import io.camunda.operate.property.OperateProperties;
@@ -92,6 +93,7 @@ import org.springframework.web.client.RestTemplate;
         ElasticsearchSessionRepository.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
+        ElasticsearchTask.class,
         OperateProfileService.class
     },
     properties = {
