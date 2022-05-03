@@ -29,7 +29,7 @@ const validateNameComplete: FieldValidator<string | undefined> =
   promisifyValidator(
     (
       variableName = '',
-      allValues: {value?: string; newVariables?: Array<FormValues>},
+      allValues: {value?: string; newVariables?: Array<FormValues>} | undefined,
       meta,
     ) => {
       const fieldName = meta?.name ?? '';
@@ -54,7 +54,7 @@ const validateNameNotDuplicate: FieldValidator<string | undefined> =
   promisifyValidator(
     (
       variableName = '',
-      allValues: {value?: string; newVariables?: Array<FormValues>},
+      allValues: {value?: string; newVariables?: Array<FormValues>} | undefined,
       meta,
     ) => {
       if (allValues?.newVariables === undefined) {
@@ -90,7 +90,7 @@ const validateValueComplete: FieldValidator<string | undefined> =
   promisifyValidator(
     (
       variableValue = '',
-      allValues: {value?: string; newVariables?: Array<FormValues>},
+      allValues: {value?: string; newVariables?: Array<FormValues>} | undefined,
       meta,
     ) => {
       const fieldName = meta?.name ?? '';
