@@ -1665,10 +1665,10 @@
   resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.1.0.tgz#0eee6373e11418bfe0b5638f654df7a4ca6a3950"
   integrity sha512-wYn6r8zVZyQJ6rQaALBEln5B1pzxb9shV5Ef97kTvn6yVGrqyXVnDqnU24MXnFubR+rZjBY9NWuxX3FB2sTsjg==
 
-"@grpc/grpc-js@^1.4.4":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.5.0.tgz#fa0ca3170d7544aa89db6f64f7b4778603d0a786"
-  integrity sha512-PDLazk94MFV5hFn/+aSrVj3d5UsOK9HU1xa0ywachvDh1jymBU/Cb+4nGa2NjpfcBoXlHioBC/qIB/XzELednw==
+"@grpc/grpc-js@^1.5.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.6.7.tgz#4c4fa998ff719fe859ac19fe977fdef097bb99aa"
+  integrity sha512-eBM03pu9hd3VqDQG+kHahiG1x80RGkkqqRb1Pchcwqej/KkAH95gAvKs6laqaHCycYaPK+TKuNQnOz9UXYA8qw==
   dependencies:
     "@grpc/proto-loader" "^0.6.4"
     "@types/node" ">=12.12.47"
@@ -1683,6 +1683,17 @@
     long "^4.0.0"
     protobufjs "^6.10.0"
     yargs "^16.1.1"
+
+"@grpc/proto-loader@^0.6.9":
+  version "0.6.10"
+  resolved "https://registry.yarnpkg.com/@grpc/proto-loader/-/proto-loader-0.6.10.tgz#ba5852d35556f53942124edebcb4bffa0b30386e"
+  integrity sha512-TM2ghLt8pchK+XAlytMJ7RQvSqAb75c8kdizk6PuscNOT8aLYUL/CWESGLvp5GiDsWb6Gzs/VEen1M0e43ggZw==
+  dependencies:
+    "@types/long" "^4.0.1"
+    lodash.camelcase "^4.3.0"
+    long "^5.2.0"
+    protobufjs "^6.10.0"
+    yargs "^16.2.0"
 
 "@hapi/address@2.x.x":
   version "2.1.4"
@@ -11103,6 +11114,11 @@ long@^4.0.0:
   resolved "https://registry.yarnpkg.com/long/-/long-4.0.0.tgz#9a7b71cfb7d361a194ea555241c92f7468d5bf28"
   integrity sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==
 
+long@^5.2.0:
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/long/-/long-5.2.0.tgz#2696dadf4b4da2ce3f6f6b89186085d94d52fd61"
+  integrity sha512-9RTUNjK60eJbx3uz+TEGF7fUr29ZDxR5QzXcyDpeSfeH28S9ycINflOgOlppit5U+4kNTe83KQnMEerw7GmE8w==
+
 loose-envify@^1.0.0, loose-envify@^1.1.0, loose-envify@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/loose-envify/-/loose-envify-1.4.0.tgz#71ee51fa7be4caec1a63839f7e682d8132d30caf"
@@ -17627,13 +17643,13 @@ yocto-queue@^0.1.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zeebe-node@2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-2.4.0.tgz#0077135b25644d1d8ddee8ae185ed595493b847e"
-  integrity sha512-0xdSJKQASbiSfet+X/+NRR7mucWyGKDvtTUgKi0+JXelHE34uMGn+b3Gi0fFHHieEmv2wlfPZHNH4DAEIeZctQ==
+zeebe-node@8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.0.0.tgz#432889113ba6751b97ffca9059d0f81f795fe68b"
+  integrity sha512-051h3uY8/oRV7UUngCBykhM9PyxoFTTpTJcHJyOGUizcQ/dJUN3zHpbBkJ4A5TvqUdIBdw4288DIxQU1dXN+lA==
   dependencies:
-    "@grpc/grpc-js" "^1.4.4"
-    "@grpc/proto-loader" "^0.6.4"
+    "@grpc/grpc-js" "^1.5.7"
+    "@grpc/proto-loader" "^0.6.9"
     chalk "^2.4.2"
     console-stamp "^3.0.2"
     dayjs "^1.8.15"
