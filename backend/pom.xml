@@ -280,6 +280,11 @@
       <artifactId>dateparser</artifactId>
       <version>1.0.10</version>
     </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
+    </dependency>
 
     <!--Test dependencies-->
     <dependency>
@@ -296,12 +301,6 @@
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <version>${h2.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.11.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
