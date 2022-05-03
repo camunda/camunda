@@ -135,9 +135,11 @@ public final class CallActivityProcessor
 
   private void transitionToTerminated(
       final ExecutableCallActivity element, final BpmnElementContext context) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     eventSubscriptionBehavior
         .findEventTrigger(context)
+        .filter(eventTrigger -> flowScopeInstance.isActive())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
