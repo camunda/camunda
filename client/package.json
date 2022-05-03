@@ -7,7 +7,7 @@
     "@bpmn-io/form-js": "0.7.1",
     "@camunda-cloud/common-ui": "0.0.18-rc4",
     "@camunda-cloud/common-ui-react": "0.0.18-rc4",
-    "@carbon/react": "1.1.0",
+    "@carbon/react": "1.2.0",
     "brace": "0.11.1",
     "date-fns": "2.28.0",
     "final-form": "4.20.6",
