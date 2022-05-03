@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -471,5 +472,54 @@ public final class BoundaryEventTest {
                 .withElementType(BpmnElementType.BOUNDARY_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsExactlyInAnyOrder(boundaryEventId1, boundaryEventId1, boundaryEventId2);
+  }
+
+  @Test
+  public void shouldNotActivateBoundaryEventIfScopeIsTerminating() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("task"))
+            .boundaryEvent()
+            .timerWithDuration("PT1H")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when trigger the boundary event and cancel the process instance concurrently
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.CANCEL, new ProcessInstanceRecord())
+            .key(processInstanceKey),
+        RecordToWrite.command()
+            .timer(TimerIntent.TRIGGER, timerCreated.getValue())
+            .key(timerCreated.getKey()));
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .doesNotContain(
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 }
