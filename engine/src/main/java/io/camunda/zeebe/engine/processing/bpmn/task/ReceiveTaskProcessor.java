@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
@@ -22,12 +23,14 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public ReceiveTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
+    stateBehavior = behaviors.stateBehavior();
   }
 
   @Override
@@ -63,12 +66,14 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
 
   @Override
   public void onTerminate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
     eventSubscriptionBehavior
         .findEventTrigger(context)
+        .filter(eventTrigger -> flowScopeInstance.isActive())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
