@@ -120,7 +120,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
     logCapturer.assertContains(
-      "Could not load customer onboarding process instances. Please validate the process instance json file.");
+      "Could not load customer onboarding process instances to input stream. Please validate the process instance json file.");
   }
 
   @Test
@@ -141,7 +141,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
     logCapturer.assertContains(
-      "Could not load customer onboarding process instances. Please validate the process instance json file.");
+      "Could not load customer onboarding process instances to input stream. Please validate the process instance json file.");
   }
 
   @Test

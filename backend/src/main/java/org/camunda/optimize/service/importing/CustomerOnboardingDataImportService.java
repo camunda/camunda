@@ -99,34 +99,35 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  private ProcessInstanceDto readProcessInstanceJson(final String pathToProcessInstances, final int batchSize) {
-    ProcessInstanceDto processInstanceDto = null;
+  private void readProcessInstanceJson(final String pathToProcessInstances, final int batchSize) {
     List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     try {
-      ClassLoader classLoader = CustomerOnboardingDataImportService.class.getClassLoader();
-      URL resource = classLoader.getResource(pathToProcessInstances);
-      if (resource != null) {
-        File file = new File(resource.getFile());
-        List<ProcessInstanceDto> rawProcessInstanceDtos = objectMapper.readValue(file, new TypeReference<List<ProcessInstanceDto>>(){});
-        for (ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
-          if (processInstance != null) {
-            Optional<Long> processInstanceDuration = Optional.ofNullable(processInstance.getDuration());
-            if (processInstance.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
-              processInstanceDtos.add(processInstance);
+      InputStream customerOnboardingProcessInstances = this.getClass()
+        .getClassLoader()
+        .getResourceAsStream(pathToProcessInstances);
+      if (customerOnboardingProcessInstances != null) {
+        String result = IOUtils.toString(customerOnboardingProcessInstances, StandardCharsets.UTF_8);
+        if(result != null) {
+          List<ProcessInstanceDto> rawProcessInstanceDtos = objectMapper.readValue(result, new TypeReference<List<ProcessInstanceDto>>(){});
+          for (ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
+            if (processInstance != null) {
+              Optional<Long> processInstanceDuration = Optional.ofNullable(processInstance.getDuration());
+              if (processInstance.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
+                processInstanceDtos.add(processInstance);
+              }
+            } else {
+              log.error("Process instance not loaded correctly. Please check your json file.");
             }
-          } else {
-            log.error("Process instance not loaded correctly. Please check your json file.");
           }
+          loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
+          } else { log.error("Could not load input stream of process instances to String. Please validate the process instance json file.");
         }
-        loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
-
-        } else {
-          log.error("Could not load customer onboarding process instances. Please validate the process instance json file.");
+        }
+        else {log.error("Could not load customer onboarding process instances to input stream. Please validate the process instance json file.");
       }
     } catch (IOException e) {
-      log.error("Could not load customer onboarding process instances. Please validate the process instance json file.");
+      log.error("Could not parse customer onboarding process instances file.", e);
     }
-    return processInstanceDto;
   }
 
   private void loadProcessInstancesToElasticSearch(List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
