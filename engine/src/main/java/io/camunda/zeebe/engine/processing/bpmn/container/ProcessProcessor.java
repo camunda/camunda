@@ -133,8 +133,8 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.isInterrupted(flowScopeContext)) {
+    if (stateBehavior.isInterrupted(flowScopeContext)) {
+      // an interrupting event subprocess was triggered
       eventSubscriptionBehavior
           .findEventTrigger(flowScopeContext)
           .ifPresent(
@@ -144,6 +144,7 @@ public final class ProcessProcessor
                       flowScopeContext.getElementInstanceKey(),
                       eventTrigger,
                       flowScopeContext));
+
     } else if (stateBehavior.canBeTerminated(childContext)) {
       transitionTo(
           element,
