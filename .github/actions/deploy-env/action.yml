@@ -120,6 +120,7 @@ runs:
         --dest-namespace optimize-${{ env.APP_NAME }}
         --file .ci/deployments-resources/argo/application.yml
         --helm-set optimize.image.tag=${{ inputs.docker_tag }}
+        --helm-set optimize.image.repository="gcr.io/ci-30-162810/camunda-optimize"
         --helm-set cambpm.image.tag=${{ inputs.cambpm_version }}
         --helm-set elasticsearch.image.tag=${{ inputs.es_version }}
         --helm-set git.branch=${{ inputs.revision }}
