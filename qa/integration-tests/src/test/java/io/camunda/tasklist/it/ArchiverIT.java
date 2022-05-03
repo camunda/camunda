@@ -14,7 +14,7 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.archiver.Archiver;
+import io.camunda.tasklist.archiver.ArchiverUtil;
 import io.camunda.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.entities.TaskEntity;
@@ -56,7 +56,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private BeanFactory beanFactory;
 
-  @Autowired private Archiver archiver;
+  @Autowired private ArchiverUtil archiverUtil;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -265,11 +265,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
-          archiver.getDestinationIndexName(
+          archiverUtil.getDestinationIndexName(
               taskTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     } else {
       destinationIndexName =
-          archiver.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
+          archiverUtil.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
     }
     final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
 
@@ -297,9 +297,9 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
-          archiver.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
+          archiverUtil.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
+      destinationIndexName = archiverUtil.getDestinationIndexName(mainIndexName, "");
     }
     final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest request =

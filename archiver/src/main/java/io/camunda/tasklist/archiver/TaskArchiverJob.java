@@ -57,8 +57,6 @@ public class TaskArchiverJob extends AbstractArchiverJob {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private Archiver archiver;
-
   public TaskArchiverJob(final List<Integer> partitionIds) {
     super(partitionIds);
   }
@@ -70,13 +68,13 @@ public class TaskArchiverJob extends AbstractArchiverJob {
       try {
 
         // archive task variables
-        archiver.moveDocuments(
+        archiverUtil.moveDocuments(
             taskVariableTemplate.getFullQualifiedName(),
             TaskVariableTemplate.TASK_ID,
             archiveBatch.getFinishDate(),
             archiveBatch.getIds());
 
-        archiver.moveDocuments(
+        archiverUtil.moveDocuments(
             taskTemplate.getFullQualifiedName(),
             TaskTemplate.ID,
             archiveBatch.getFinishDate(),

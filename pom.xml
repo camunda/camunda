@@ -32,8 +32,8 @@
     <version.zeebe>8.0.0</version.zeebe>
     <version.identity>8.0.0</version.identity>
     <version.elasticsearch>7.17.2</version.elasticsearch>
-    <version.spring.boot>2.5.12</version.spring.boot>
-    <version.spring.session>1.3.5.RELEASE</version.spring.session>
+    <version.spring.boot>2.6.6</version.spring.boot>
+    <version.spring.session.bom>2021.1.2</version.spring.session.bom>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.2</version.log4j>
     <version.junit>4.13.2</version.junit>
@@ -100,6 +100,14 @@
       </dependency>
 
       <dependency>
+        <groupId>org.springframework.session</groupId>
+        <artifactId>spring-session-bom</artifactId>
+        <version>${version.spring.session.bom}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-bom</artifactId>
         <version>${version.zeebe}</version>
@@ -132,12 +140,6 @@
         <version>${version.elasticsearch}</version>
       </dependency>
       <!-- END -->
-
-      <dependency>
-        <groupId>org.springframework.session</groupId>
-        <artifactId>spring-session</artifactId>
-        <version>${version.spring.session}</version>
-      </dependency>
 
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>

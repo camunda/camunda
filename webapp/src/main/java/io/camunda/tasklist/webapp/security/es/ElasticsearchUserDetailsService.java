@@ -41,8 +41,6 @@ public class ElasticsearchUserDetailsService implements UserDetailsService {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private PasswordEncoder passwordEncoder;
-
   @Bean
   public PasswordEncoder getPasswordEncoder() {
     return new BCryptPasswordEncoder();
@@ -80,7 +78,7 @@ public class ElasticsearchUserDetailsService implements UserDetailsService {
       final String password,
       final List<String> roles) {
     LOGGER.info("Create user in Elasticsearch for userId {}", userId);
-    final String passwordEncoded = passwordEncoder.encode(password);
+    final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity =
         new UserEntity()
             .setId(userId)

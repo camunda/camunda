@@ -14,12 +14,8 @@ import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_S
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.CollectionUtil;
-import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.util.List;
 import java.util.concurrent.Callable;
-import javax.annotation.PostConstruct;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -30,75 +26,18 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
-public class Archiver {
+public class ArchiverUtil {
 
   private static final String INDEX_NAME_PATTERN = "%s%s";
-  private static final Logger LOGGER = LoggerFactory.getLogger(Archiver.class);
-
-  @Autowired private BeanFactory beanFactory;
-
-  @Autowired private TasklistProperties tasklistProperties;
-
-  @Autowired private PartitionHolder partitionHolder;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverUtil.class);
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  private ThreadPoolTaskScheduler archiverExecutor;
-
   @Autowired private Metrics metrics;
-
-  @PostConstruct
-  public void startArchiving() {
-    if (tasklistProperties.getArchiver().isRolloverEnabled()) {
-      LOGGER.info("INIT: Start archiving data...");
-
-      // split the list of partitionIds to parallelize
-      final List<Integer> partitionIds = partitionHolder.getPartitionIds();
-      LOGGER.info("Starting archiver for partitions: {}", partitionIds);
-      final int threadsCount = tasklistProperties.getArchiver().getThreadsCount();
-      if (threadsCount > partitionIds.size()) {
-        LOGGER.warn(
-            "Too many archiver threads are configured, not all of them will be in use. Number of threads: {}, number of partitions to parallelize by: {}",
-            threadsCount,
-            partitionIds.size());
-      }
-
-      for (int i = 0; i < threadsCount; i++) {
-        final List<Integer> partitionIdsSubset =
-            CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
-        if (!partitionIdsSubset.isEmpty()) {
-          final TaskArchiverJob batchOperationArchiverJob =
-              beanFactory.getBean(TaskArchiverJob.class, partitionIdsSubset);
-          archiverExecutor.execute(batchOperationArchiverJob);
-
-          final ProcessInstanceArchiverJob processInstanceArchiverJob =
-              beanFactory.getBean(ProcessInstanceArchiverJob.class, partitionIdsSubset);
-          archiverExecutor.execute(processInstanceArchiverJob);
-        }
-      }
-    }
-  }
-
-  @Bean("archiverThreadPoolExecutor")
-  public ThreadPoolTaskScheduler getTaskScheduler() {
-    final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-    scheduler.setPoolSize(tasklistProperties.getArchiver().getThreadsCount());
-    scheduler.setThreadNamePrefix("archiver_");
-    scheduler.initialize();
-    return scheduler;
-  }
 
   public void moveDocuments(
       String sourceIndexName, String idFieldName, String finishDate, List<String> ids)

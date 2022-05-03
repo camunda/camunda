@@ -11,7 +11,7 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.archiver.Archiver;
+import io.camunda.tasklist.archiver.ArchiverUtil;
 import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
@@ -56,7 +56,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private BeanFactory beanFactory;
 
-  @Autowired private Archiver archiver;
+  @Autowired private ArchiverUtil archiverUtil;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -131,11 +131,11 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
-          archiver.getDestinationIndexName(
+          archiverUtil.getDestinationIndexName(
               taskTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     } else {
       destinationIndexName =
-          archiver.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
+          archiverUtil.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
     }
     final SearchRequest searchRequest =
         new SearchRequest(destinationIndexName)

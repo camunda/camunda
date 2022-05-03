@@ -57,8 +57,6 @@ public class ProcessInstanceArchiverJob extends AbstractArchiverJob {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private Archiver archiver;
-
   public ProcessInstanceArchiverJob(final List<Integer> partitionIds) {
     super(partitionIds);
   }
@@ -67,15 +65,15 @@ public class ProcessInstanceArchiverJob extends AbstractArchiverJob {
   public int archiveBatch(ArchiveBatch archiveBatch) throws ArchiverException {
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
-      archiver.deleteDocuments(
+      archiverUtil.deleteDocuments(
           variableIndex.getFullQualifiedName(),
           VariableIndex.PROCESS_INSTANCE_ID,
           archiveBatch.getIds());
-      archiver.deleteDocuments(
+      archiverUtil.deleteDocuments(
           flowNodeInstanceIndex.getFullQualifiedName(),
           FlowNodeInstanceIndex.PROCESS_INSTANCE_ID,
           archiveBatch.getIds());
-      archiver.deleteDocuments(
+      archiverUtil.deleteDocuments(
           processInstanceIndex.getFullQualifiedName(),
           ProcessInstanceIndex.ID,
           archiveBatch.getIds());

@@ -34,7 +34,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -61,10 +60,6 @@ public class Migrator {
   @Autowired private StepsRepository stepsRepository;
 
   @Autowired private MigrationProperties migrationProperties;
-
-  @Autowired
-  @Qualifier("migrationThreadPoolExecutor")
-  private ThreadPoolTaskExecutor migrationExecutor;
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
 
@@ -98,23 +93,24 @@ public class Migrator {
         failed = true;
       }
     }
-    migrationExecutor.shutdown();
+    getTaskExecutor().shutdown();
     if (failed) {
       throw new MigrationException("Migration failed. See logging messages above.");
     }
   }
 
   private Future<Boolean> migrateIndexInThread(IndexDescriptor indexDescriptor) {
-    return migrationExecutor.submit(
-        () -> {
-          try {
-            migrateIndexIfNecessary(indexDescriptor);
-          } catch (Exception e) {
-            LOGGER.error("Migration for {} failed:", indexDescriptor.getIndexName(), e);
-            return false;
-          }
-          return true;
-        });
+    return getTaskExecutor()
+        .submit(
+            () -> {
+              try {
+                migrateIndexIfNecessary(indexDescriptor);
+              } catch (Exception e) {
+                LOGGER.error("Migration for {} failed:", indexDescriptor.getIndexName(), e);
+                return false;
+              }
+              return true;
+            });
   }
 
   private void migrateIndexIfNecessary(IndexDescriptor indexDescriptor)

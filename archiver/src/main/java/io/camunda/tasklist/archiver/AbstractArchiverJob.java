@@ -23,20 +23,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class AbstractArchiverJob implements Runnable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
-  private boolean shutdown = false;
-  private List<Integer> partitionIds;
-
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
-  private TaskScheduler archiverExecutor;
+  public ThreadPoolTaskScheduler taskScheduler;
+
+  @Autowired protected ArchiverUtil archiverUtil;
 
   @Autowired private TasklistProperties tasklistProperties;
+
+  private boolean shutdown = false;
+  private List<Integer> partitionIds;
 
   public AbstractArchiverJob(List<Integer> partitionIds) {
     this.partitionIds = partitionIds;
@@ -64,7 +66,7 @@ public abstract class AbstractArchiverJob implements Runnable {
       delay = tasklistProperties.getArchiver().getDelayBetweenRuns();
     }
     if (!shutdown) {
-      archiverExecutor.schedule(this, Date.from(Instant.now().plus(delay, ChronoUnit.MILLIS)));
+      taskScheduler.schedule(this, Date.from(Instant.now().plus(delay, ChronoUnit.MILLIS)));
     }
   }
 
