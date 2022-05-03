@@ -633,6 +633,152 @@ public class InterruptingEventSubprocessTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldTriggerEmbeddedInterruptingEventSubprocessOnlyOnce() {
+    // given
+    final Consumer<EventSubProcessBuilder> eventSubprocess =
+        eventSubProcess ->
+            builder
+                .apply(eventSubProcess.startEvent().interrupting(true))
+                .serviceTask("event_sub_task", t -> t.zeebeJobType("event_sub_task"));
+
+    final Consumer<SubProcessBuilder> embeddedSubprocess =
+        subProcess ->
+            subProcess
+                .embeddedSubProcess()
+                .eventSubProcess("event_sub_proc", eventSubprocess)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("sub_task1", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .moveToNode("fork")
+                .serviceTask("sub_task2", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent();
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("sub_proc", embeddedSubprocess)
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", MESSAGE_CORRELATION_KEY)
+            .create();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(JOB_TYPE)
+                .limit(2)
+                .count())
+        .describedAs("Await until both tasks are activated")
+        .isEqualTo(2);
+
+    // when
+    triggerEventSubprocess.accept(processInstanceKey);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("event_sub_task").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .describedAs("Expected to activate the event subprocess only once")
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTriggerRootInterruptingEventSubprocessOnlyOnce() {
+    // given
+    final Consumer<EventSubProcessBuilder> eventSubprocess =
+        eventSubProcess ->
+            builder
+                .apply(eventSubProcess.startEvent().interrupting(true))
+                .serviceTask("event_sub_task", t -> t.zeebeJobType("event_sub_task"));
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess("event_sub_proc", eventSubprocess)
+            .startEvent()
+            .parallelGateway("fork")
+            .serviceTask("sub_task1", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .moveToNode("fork")
+            .serviceTask("sub_task2", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", MESSAGE_CORRELATION_KEY)
+            .create();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(JOB_TYPE)
+                .limit(2)
+                .count())
+        .describedAs("Await until both tasks are activated")
+        .isEqualTo(2);
+
+    // when
+    triggerEventSubprocess.accept(processInstanceKey);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("event_sub_task").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .describedAs("Expected to activate the event subprocess only once")
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private static void assertEventSubprocessLifecycle(final long processInstanceKey) {
     final List<Record<ProcessInstanceRecordValue>> events =
         RecordingExporter.processInstanceRecords()
