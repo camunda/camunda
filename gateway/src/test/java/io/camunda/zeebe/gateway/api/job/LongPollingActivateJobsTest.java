@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -127,10 +128,11 @@ public final class LongPollingActivateJobsTest {
     activateJobsStub.addAvailableJobs(TYPE, 1);
     verify(responseSpy, times(0)).onCompleted();
     brokerClient.notifyJobsAvailable(TYPE);
+    Awaitility.await().until(request::isCompleted);
 
     // then
-    verify(responseSpy, timeout(2000).times(1)).onNext(any());
-    verify(responseSpy, timeout(1000).times(1)).onCompleted();
+    verify(responseSpy, times(1)).onNext(any());
+    verify(responseSpy, times(1)).onCompleted();
   }
 
   @Test
@@ -212,10 +214,11 @@ public final class LongPollingActivateJobsTest {
     activateJobsStub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
     handler.activateJobs(successRequest);
+    Awaitility.await().until(successRequest::isCompleted);
 
     // then
-    verify(successRequest.getResponseObserver(), timeout(2000).times(1)).onNext(any());
-    verify(successRequest.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+    verify(successRequest.getResponseObserver(), times(1)).onNext(any());
+    verify(successRequest.getResponseObserver(), times(1)).onCompleted();
   }
 
   @Test
@@ -229,9 +232,10 @@ public final class LongPollingActivateJobsTest {
     // when
     final InflightActivateJobsRequest otherRequest = getLongPollingActivateJobsRequest(otherType);
     handler.activateJobs(otherRequest);
+    Awaitility.await().until(otherRequest::isCompleted);
 
     // then
-    verify(otherRequest.getResponseObserver(), timeout(2000).times(1)).onCompleted();
+    verify(otherRequest.getResponseObserver(), times(1)).onCompleted();
   }
 
   @Test
@@ -345,11 +349,12 @@ public final class LongPollingActivateJobsTest {
     waitUntil(shortRequest::isTimedOut);
     activateJobsStub.addAvailableJobs(TYPE, 2);
     brokerClient.notifyJobsAvailable(TYPE);
+    Awaitility.await().until(longRequest::isCompleted);
 
     // then
     assertThat(longRequest.isTimedOut()).isFalse();
-    verify(longRequest.getResponseObserver(), timeout(1000).times(1)).onNext(any());
-    verify(longRequest.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+    verify(longRequest.getResponseObserver(), times(1)).onNext(any());
+    verify(longRequest.getResponseObserver(), times(1)).onCompleted();
   }
 
   @Test
@@ -367,9 +372,10 @@ public final class LongPollingActivateJobsTest {
 
     // when
     handler.activateJobs(request);
-    verify(request.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+    Awaitility.await().until(request::isCompleted);
 
     // then
+    verify(request.getResponseObserver(), times(1)).onCompleted();
     assertThat(request.hasScheduledTimer()).isFalse();
     assertThat(request.isTimedOut()).isFalse();
   }
@@ -475,11 +481,11 @@ public final class LongPollingActivateJobsTest {
         });
     // when
     handler.activateJobs(request);
+    Awaitility.await().until(request::isAborted);
 
     // then
     final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-    verify(request.getResponseObserver(), timeout(1000).times(1))
-        .onError(throwableCaptor.capture());
+    verify(request.getResponseObserver(), times(1)).onError(throwableCaptor.capture());
     verify(request.getResponseObserver(), never()).onNext(Mockito.any());
     verify(request.getResponseObserver(), never()).onCompleted();
 
@@ -615,11 +621,11 @@ public final class LongPollingActivateJobsTest {
     handler.activateJobs(request);
     waitUntil(request::hasScheduledTimer);
     brokerClient.notifyJobsAvailable(TYPE);
+    Awaitility.await().until(request::isAborted);
 
     // then
     final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-    verify(request.getResponseObserver(), timeout(1000).times(1))
-        .onError(throwableCaptor.capture());
+    verify(request.getResponseObserver(), times(1)).onError(throwableCaptor.capture());
     assertThat(throwableCaptor.getValue()).isInstanceOf(StatusException.class);
 
     assertThat(request.hasScheduledTimer()).isFalse();
@@ -656,11 +662,11 @@ public final class LongPollingActivateJobsTest {
     handler.activateJobs(request);
     waitUntil(request::hasScheduledTimer);
     brokerClient.notifyJobsAvailable(TYPE);
+    Awaitility.await().until(request::isAborted);
 
     // then
     final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-    verify(request.getResponseObserver(), timeout(1000).times(1))
-        .onError(throwableCaptor.capture());
+    verify(request.getResponseObserver(), times(1)).onError(throwableCaptor.capture());
     assertThat(throwableCaptor.getValue()).isInstanceOf(BrokerRejectionException.class);
 
     assertThat(request.hasScheduledTimer()).isFalse();
