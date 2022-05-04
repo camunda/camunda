@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Namespace
 
 metadata:
-  name: operate-{{ .Release.Name }}
+  name: {{ .Release.Name }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}
     argocd.argoproj.io/sync-wave: "-5"
   labels: {{ include "commonLabels" $ | nindent 4 }}
