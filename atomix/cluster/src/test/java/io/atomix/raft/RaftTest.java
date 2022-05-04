@@ -69,7 +69,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -407,77 +406,6 @@ public class RaftTest extends ConcurrentTestCase {
     assertThat(secondLatch.await(1, TimeUnit.SECONDS)).isTrue();
 
     assertThat(server.getRole()).isEqualTo(Role.INACTIVE);
-  }
-
-  @Test
-  public void shouldLeaderStepDownOnDisconnect() throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).orElseThrow();
-    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
-
-    final CountDownLatch stepDownListener = new CountDownLatch(1);
-    leader.addRoleChangeListener(
-        (role, term) -> {
-          if (role == Role.FOLLOWER) {
-            stepDownListener.countDown();
-          }
-        });
-
-    // when
-    protocolFactory.partition(leaderId);
-
-    // then
-    assertThat(stepDownListener.await(30, TimeUnit.SECONDS)).isTrue();
-    assertThat(leader.isLeader()).isFalse();
-  }
-
-  @Test
-  public void shouldReconnect() throws Throwable {
-    // given
-    final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).orElseThrow();
-    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
-    final AtomicLong commitIndex = new AtomicLong();
-    leader.getContext().addCommitListener(commitIndex::set);
-    appendEntry(leader);
-    protocolFactory.partition(leaderId);
-    Awaitility.await().until(() -> !leader.isLeader());
-
-    // when
-    Awaitility.await().until(() -> getLeader(servers).isPresent());
-    final var newLeader = getLeader(servers).orElseThrow();
-    assertThat(leader).isNotEqualTo(newLeader);
-    final var secondCommit = appendEntry(newLeader);
-    protocolFactory.heal(leaderId);
-
-    // then - the old leader has received and committed the new entry
-    Awaitility.await().until(() -> commitIndex.get() >= secondCommit);
-  }
-
-  @Test
-  public void shouldFailOverOnLeaderDisconnect() throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-
-    final RaftServer leader = getLeader(servers).orElseThrow();
-    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
-
-    final CountDownLatch newLeaderElected = new CountDownLatch(1);
-    final AtomicReference<MemberId> newLeaderId = new AtomicReference<>();
-    servers.forEach(
-        s ->
-            s.addRoleChangeListener(
-                (role, term) -> {
-                  if (role == Role.LEADER && !s.equals(leader)) {
-                    newLeaderId.set(s.getContext().getCluster().getLocalMember().memberId());
-                    newLeaderElected.countDown();
-                  }
-                }));
-    // when
-    protocolFactory.partition(leaderId);
-
-    // then
-    assertThat(newLeaderElected.await(30, TimeUnit.SECONDS)).isTrue();
-    assertThat(leaderId).isNotEqualTo(newLeaderId.get());
   }
 
   @Test
