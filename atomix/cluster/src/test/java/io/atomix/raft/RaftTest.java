@@ -65,11 +65,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -331,19 +331,6 @@ public class RaftTest extends ConcurrentTestCase {
     assertThat(0.0, is(missedHeartBeats - startMissedHeartBeats));
   }
 
-  private void waitUntil(final BooleanSupplier condition, int retries) {
-    try {
-      while (!condition.getAsBoolean() && retries > 0) {
-        Thread.sleep(100);
-        retries--;
-      }
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    assertThat(condition.getAsBoolean()).isTrue();
-  }
-
   @Test
   public void testRoleChangeNotificationAfterInitialEntryOnLeader() throws Throwable {
     // given
@@ -454,7 +441,7 @@ public class RaftTest extends ConcurrentTestCase {
     leader.getContext().addCommitListener(commitIndex::set);
     appendEntry(leader);
     protocolFactory.partition(leaderId);
-    waitUntil(() -> !leader.isLeader(), 100);
+    Awaitility.await().until(() -> !leader.isLeader());
 
     // when
     final var newLeader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
@@ -463,7 +450,7 @@ public class RaftTest extends ConcurrentTestCase {
     protocolFactory.heal(leaderId);
 
     // then
-    waitUntil(() -> commitIndex.get() >= secondCommit, 200);
+    Awaitility.await().until(() -> commitIndex.get() >= secondCommit);
   }
 
   @Test
