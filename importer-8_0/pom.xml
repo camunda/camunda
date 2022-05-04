@@ -25,12 +25,6 @@
       <version>${version.zeebe}</version>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-util</artifactId>
-      <version>${version.zeebe}</version>
-    </dependency>
-
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
     <dependency>
       <groupId>org.glassfish</groupId>
