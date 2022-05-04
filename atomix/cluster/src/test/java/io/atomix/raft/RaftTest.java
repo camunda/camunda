@@ -444,12 +444,13 @@ public class RaftTest extends ConcurrentTestCase {
     Awaitility.await().until(() -> !leader.isLeader());
 
     // when
-    final var newLeader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
+    Awaitility.await().until(() -> getLeader(servers).isPresent());
+    final var newLeader = getLeader(servers).orElseThrow();
     assertThat(leader).isNotEqualTo(newLeader);
     final var secondCommit = appendEntry(newLeader);
     protocolFactory.heal(leaderId);
 
-    // then
+    // then - the old leader has received and committed the new entry
     Awaitility.await().until(() -> commitIndex.get() >= secondCommit);
   }
 
