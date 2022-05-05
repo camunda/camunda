@@ -79,10 +79,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     if (currentTask != null) {
       try {
         final var actorName = currentTask.actor.getName();
-        actorMetrics.countExecution(actorName);
         try (final var timer = actorMetrics.startExecutionTimer(actorName)) {
           executeCurrentTask();
         }
+        actorMetrics.countExecution(actorName);
 
       } finally {
         taskScheduler.onTaskReleased(currentTask);

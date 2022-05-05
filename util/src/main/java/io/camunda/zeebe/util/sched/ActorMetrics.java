@@ -24,7 +24,7 @@ final class ActorMetrics {
       Counter.build()
           .namespace("zeebe")
           .name("actor_task_execution_count")
-          .help("Number of times a certain actor task was executed")
+          .help("Number of times a certain actor task was executed successfully")
           .labelNames("actorName")
           .register();
 
