@@ -265,10 +265,14 @@ public final class MultiInstanceBodyProcessor
 
   private void terminate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext flowScopeContext) {
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(flowScopeContext);
+
     incidentBehavior.resolveIncidents(flowScopeContext);
 
     eventSubscriptionBehavior
         .findEventTrigger(flowScopeContext)
+        .filter(eventTrigger -> flowScopeInstance.isActive())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated =
