@@ -39,7 +39,11 @@ public class MetricsExporter implements Exporter {
   private Controller controller;
 
   public MetricsExporter() {
-    executionLatencyMetrics = new ExecutionLatencyMetrics();
+    this(new ExecutionLatencyMetrics());
+  }
+
+  public MetricsExporter(final ExecutionLatencyMetrics executionLatencyMetrics) {
+    this.executionLatencyMetrics = executionLatencyMetrics;
     jobKeyToCreationTimeMap = new Long2LongHashMap(-1);
     processInstanceKeyToCreationTimeMap = new Long2LongHashMap(-1);
     creationTimeToJobKeyNavigableMap = new TreeMap<>();
