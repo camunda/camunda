@@ -36,11 +36,6 @@ import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.raft.storage.log.entry.ConfigurationEntry;
-import io.atomix.raft.storage.log.entry.InitialEntry;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespace.Builder;
 import io.atomix.utils.serializer.Namespaces;
@@ -73,8 +68,7 @@ public final class RaftNamespaces {
           .register(RaftResponse.Status.class)
           .register(RaftError.class)
           .register(RaftError.Type.class)
-          .register(ConfigurationEntry.class)
-          .register(InitialEntry.class)
+          .nextId(517) // for backwards compatibility
           .register(ArrayList.class)
           .register(LinkedList.class)
           .register(Collections.emptyList().getClass())
@@ -83,9 +77,7 @@ public final class RaftNamespaces {
           .register(MemberId.class)
           .register(RaftMember.Type.class)
           .register(Instant.class)
-          .register(Configuration.class)
-          .register(ApplicationEntry.class)
-          .register(RaftLogEntry.class)
+          .nextId(528) // for backwards compatibility
           .register(PersistedRaftRecord.class)
           .register(TransferRequest.class)
           .register(TransferResponse.class)
