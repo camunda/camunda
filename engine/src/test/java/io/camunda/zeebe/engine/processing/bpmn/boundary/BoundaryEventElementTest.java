@@ -158,9 +158,17 @@ public final class BoundaryEventElementTest {
             process -> process.callActivity("call", c -> c.zeebeProcessId(PROCESS_ID))));
   }
 
-  private record ElementWithBoundaryEventBuilder(
-      BpmnElementType elementType,
-      Function<AbstractFlowNodeBuilder<?, ?>, AbstractActivityBuilder<?, ?>> builder) {
+  private static class ElementWithBoundaryEventBuilder {
+
+    private final BpmnElementType elementType;
+    private final Function<AbstractFlowNodeBuilder<?, ?>, AbstractActivityBuilder<?, ?>> builder;
+
+    ElementWithBoundaryEventBuilder(
+        final BpmnElementType elementType,
+        final Function<AbstractFlowNodeBuilder<?, ?>, AbstractActivityBuilder<?, ?>> builder) {
+      this.elementType = elementType;
+      this.builder = builder;
+    }
 
     public AbstractActivityBuilder<?, ?> build(final AbstractFlowNodeBuilder<?, ?> process) {
       return builder.apply(process);
