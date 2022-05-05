@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogStorageAppender.LOG;
 import static io.camunda.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
@@ -45,7 +45,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -63,11 +62,13 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
 
 public final class TestStreams {
 
   private static final String SNAPSHOT_FOLDER = "snapshot";
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   static {
     TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
@@ -494,7 +495,8 @@ public final class TestStreams {
       if (closed) {
         return;
       }
-      Loggers.IO_LOGGER.debug("Close stream processor");
+
+      LOG.debug("Close stream processor");
       streamProcessor.closeAsync().join();
       zeebeDb.close();
       if (runtimePath.toFile().exists()) {
