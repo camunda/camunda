@@ -16,12 +16,8 @@
  */
 package io.atomix.raft.storage.log.entry;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.utils.misc.TimestampPrinter;
 import java.util.Collection;
-import java.util.Objects;
 
 /**
  * Stores a cluster configuration.
@@ -31,51 +27,5 @@ import java.util.Objects;
  * represent a server in the cluster. Each time the set of members changes or a property of a single
  * member changes, a new {@code ConfigurationEntry} must be logged for the configuration change.
  */
-public class ConfigurationEntry implements RaftEntry {
-
-  protected final Collection<RaftMember> members;
-  private final long timestamp;
-
-  public ConfigurationEntry(final long timestamp, final Collection<RaftMember> members) {
-    this.members = members;
-    this.timestamp = timestamp;
-  }
-
-  public long timestamp() {
-    return timestamp;
-  }
-
-  /**
-   * Returns the members.
-   *
-   * @return The members.
-   */
-  public Collection<RaftMember> members() {
-    return members;
-  }
-
-  @Override
-  public String toString() {
-    return toStringHelper(this)
-        .add("timestamp", new TimestampPrinter(timestamp))
-        .add("members", members)
-        .toString();
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ConfigurationEntry that = (ConfigurationEntry) o;
-    return timestamp == that.timestamp && Objects.equals(members, that.members);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(members, timestamp);
-  }
-}
+public record ConfigurationEntry(long timestamp, Collection<RaftMember> members)
+    implements RaftEntry {}

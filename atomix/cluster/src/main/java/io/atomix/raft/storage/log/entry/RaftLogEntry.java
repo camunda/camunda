@@ -16,26 +16,10 @@
  */
 package io.atomix.raft.storage.log.entry;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
 import io.atomix.raft.storage.log.RaftLog;
-import java.util.Objects;
 
 /** Stores a state change in a {@link RaftLog}. */
-public class RaftLogEntry {
-
-  private final long term;
-  private final RaftEntry entry;
-
-  public RaftLogEntry(final long term, final RaftEntry entry) {
-    this.term = term;
-    this.entry = entry;
-  }
-
-  public RaftEntry entry() {
-    return entry;
-  }
-
+public record RaftLogEntry(long term, RaftEntry entry) {
   public boolean isApplicationEntry() {
     return entry instanceof ApplicationEntry;
   }
@@ -58,36 +42,5 @@ public class RaftLogEntry {
 
   public InitialEntry getInitialEntry() {
     return (InitialEntry) entry;
-  }
-
-  /**
-   * Returns the entry term.
-   *
-   * @return The entry term.
-   */
-  public long term() {
-    return term;
-  }
-
-  @Override
-  public String toString() {
-    return toStringHelper(this).add("term", term).add("entry", entry).toString();
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final RaftLogEntry that = (RaftLogEntry) o;
-    return term == that.term && Objects.equals(entry, that.entry);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(term, entry);
   }
 }

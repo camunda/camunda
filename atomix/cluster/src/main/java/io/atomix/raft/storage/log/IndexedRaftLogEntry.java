@@ -16,6 +16,7 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 

@@ -16,42 +16,18 @@
  */
 package io.atomix.raft.storage.log;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.camunda.zeebe.journal.JournalRecord;
-import java.util.Objects;
 
 /** Indexed journal entry. */
-class IndexedRaftLogEntryImpl implements IndexedRaftLogEntry {
+record IndexedRaftLogEntryImpl(long index, long term, RaftEntry entry, JournalRecord record)
+    implements IndexedRaftLogEntry {
 
-  private final long index;
-  private final long term;
-  private final RaftEntry entry;
-  private final JournalRecord record;
-
-  public IndexedRaftLogEntryImpl(
+  IndexedRaftLogEntryImpl(
       final long term, final RaftEntry entry, final JournalRecord record) {
-    this.term = term;
-    this.entry = entry;
-    this.record = record;
-    index = record.index();
-  }
-
-  @Override
-  public long index() {
-    return record.index();
-  }
-
-  @Override
-  public long term() {
-    return term;
-  }
-
-  @Override
-  public RaftEntry entry() {
-    return entry;
+    this(record.index(), term, entry, record);
   }
 
   @Override
@@ -70,36 +46,5 @@ class IndexedRaftLogEntryImpl implements IndexedRaftLogEntry {
     record.data().getBytes(0, serializedRaftLogEntry);
     return new PersistedRaftRecord(
         term, index, record.asqn(), record.checksum(), serializedRaftLogEntry);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(index, term, entry, record);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final IndexedRaftLogEntryImpl that = (IndexedRaftLogEntryImpl) o;
-    return index == that.index
-        && term == that.term
-        && record.asqn() == that.record.asqn()
-        && record.checksum() == that.record.checksum()
-        && Objects.equals(entry, that.entry);
-  }
-
-  @Override
-  public String toString() {
-    return toStringHelper(this)
-        .add("index", index)
-        .add("term", term)
-        .add("entry", entry)
-        .add("record", record)
-        .toString();
   }
 }
