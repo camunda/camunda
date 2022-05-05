@@ -5,7 +5,7 @@
   <name>Operate Parent</name>
   <groupId>io.camunda</groupId>
   <artifactId>operate-parent</artifactId>
-  <version>8.1.0-alpha1</version>
+  <version>8.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -411,8 +411,8 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <requirePluginVersion />
-                <banDuplicatePomDependencyVersions />
+                <requirePluginVersion/>
+                <banDuplicatePomDependencyVersions/>
               </rules>
             </configuration>
             <goals>
@@ -439,7 +439,7 @@
     <url>https://github.com/camunda-cloud/operate</url>
     <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/operate.git</connection>
     <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/operate.git</developerConnection>
-    <tag>8.1.0-alpha1</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
