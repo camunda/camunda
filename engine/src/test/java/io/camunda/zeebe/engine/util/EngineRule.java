@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -189,6 +190,8 @@ public final class EngineRule extends ExternalResource {
         partitionId -> {
           final var reprocessingCompletedListener = new ReprocessingCompletedListener();
           partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
+          final var featureFlags = FeatureFlags.createDefaultForTests();
+
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (processingContext) ->
@@ -212,7 +215,8 @@ public final class EngineRule extends ExternalResource {
                               partitionId, new PartitionCommandSenderImpl()),
                           deploymentDistributor,
                           (key, partition) -> {},
-                          jobsAvailableCallback)
+                          jobsAvailableCallback,
+                          featureFlags)
                       .withListener(new ProcessingExporterTransistor())
                       .withListener(reprocessingCompletedListener));
 

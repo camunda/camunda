@@ -633,3 +633,17 @@
         # Enables the query api in the broker.
         # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
         # enabled: false
+
+      # Allows to configure feature flags. These are used to test new features in dev and int environments prior
+      # to rolling them out to production
+      # features:
+        # Changes the DueDateTimerChecker to give yield to other processing steps in situations where
+        # it has many (i.e. millions of) timers to process. If set to false (default) the DueDateTimerChecker will activate all
+        # due timers. In the worst case, this can lead to the node being blocked for indefinite amount of time,
+        # being subsequently flagged as unhealthy. Currently, there is no known way to recover from this situation
+        # If set to true, the DueDateTimerChecker will give yield to other processing steps. This avoids the worst case
+        # described above. However, under consistent high load it may happen that the activated timers will fall behind real time,
+        # if more timers become due than can be activated during a certain time period.
+        #
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEYIELDINGDUEDATECHECKER
+        # enableYieldingDueDateChecker: false
