@@ -107,6 +107,7 @@ public final class SubProcessProcessor
       final ExecutableFlowElementContainer element,
       final BpmnElementContext subProcessContext,
       final BpmnElementContext childContext) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(subProcessContext);
 
     if (stateBehavior.isInterrupted(subProcessContext)) {
       // an interrupting event subprocess was triggered
@@ -124,6 +125,7 @@ public final class SubProcessProcessor
       // if we are able to terminate we try to trigger boundary events
       eventSubscriptionBehavior
           .findEventTrigger(subProcessContext)
+          .filter(eventTrigger -> flowScopeInstance.isActive())
           .ifPresentOrElse(
               eventTrigger -> {
                 final var terminated =

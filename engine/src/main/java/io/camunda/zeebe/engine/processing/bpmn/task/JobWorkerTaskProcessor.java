@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
@@ -28,6 +29,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public JobWorkerTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
@@ -35,6 +37,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
     jobBehavior = behaviors.jobBehavior();
+    stateBehavior = behaviors.stateBehavior();
   }
 
   @Override
@@ -69,6 +72,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
   @Override
   public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -76,6 +80,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
     eventSubscriptionBehavior
         .findEventTrigger(context)
+        .filter(eventTrigger -> flowScopeInstance.isActive())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
