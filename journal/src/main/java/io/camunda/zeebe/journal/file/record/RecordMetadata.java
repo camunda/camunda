@@ -15,45 +15,4 @@
  */
 package io.camunda.zeebe.journal.file.record;
 
-import java.util.Objects;
-
-public final class RecordMetadata {
-
-  private final long checksum;
-  private final int length;
-
-  public RecordMetadata(final long checksum, final int recordLength) {
-    this.checksum = checksum;
-    length = recordLength;
-  }
-
-  public long checksum() {
-    return checksum;
-  }
-
-  public int length() {
-    return length;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(checksum, length);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final RecordMetadata that = (RecordMetadata) o;
-    return checksum == that.checksum && length == that.length;
-  }
-
-  @Override
-  public String toString() {
-    return "RecordMetadata{" + "checksum=" + checksum + ", length=" + length + '}';
-  }
-}
+public record RecordMetadata(long checksum, int length) {}
