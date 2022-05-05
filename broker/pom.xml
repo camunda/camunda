@@ -193,12 +193,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-dispatcher</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
