@@ -10,7 +10,7 @@ package io.camunda.zeebe.util.sched;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 
-public class ActorMetrics {
+final class ActorMetrics {
 
   private static final Histogram EXECUTION_LATENCY =
       Histogram.build()
@@ -28,11 +28,11 @@ public class ActorMetrics {
           .labelNames("actorName")
           .register();
 
-  public Histogram.Timer startExecutionTimer(final String name) {
+  Histogram.Timer startExecutionTimer(final String name) {
     return EXECUTION_LATENCY.labels(name).startTimer();
   }
 
-  public void countExecution(final String name) {
+  void countExecution(final String name) {
     EXECUTION_COUNT.labels(name).inc();
   }
 }
