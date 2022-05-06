@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -184,6 +185,36 @@ final class ProtocolFactoryTest {
 
     // then
     assertThat(records).extracting(Record::getRecordType).hasSameElementsAs(acceptedRecordTypes);
+  }
+
+  @Test
+  void shouldNeverProduceANegativeLong() {
+    // given
+
+    // when
+    final var generatedValues =
+        IntStream.range(0, 10)
+            .mapToLong(ignored -> factory.generateObject(Long.class))
+            .boxed()
+            .toList();
+
+    // then
+    assertThat(generatedValues).allSatisfy(value -> assertThat(value).isNotNegative());
+  }
+
+  @Test
+  void shouldNeverProduceANegativePrimitiveLong() {
+    // given
+
+    // when
+    final var generatedValues =
+        IntStream.range(0, 10)
+            .mapToLong(ignored -> factory.generateObject(long.class))
+            .boxed()
+            .toList();
+
+    // then
+    assertThat(generatedValues).allSatisfy(value -> assertThat(value).isNotNegative());
   }
 
   private static Stream<ValueType> provideValueTypes() {
