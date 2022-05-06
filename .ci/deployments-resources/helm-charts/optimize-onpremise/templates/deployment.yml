@@ -16,8 +16,7 @@ spec:
       app: {{ .Values.global.labels.app }}
   template:
     metadata:
-      labels:
-        app: {{ .Values.global.labels.app }}
+      labels: {{ include "commonLabels" $ | nindent 8 }}
     spec:
       imagePullSecrets:
         - name: registry-camunda-cloud
