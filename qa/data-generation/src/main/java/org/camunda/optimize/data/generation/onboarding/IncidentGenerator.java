@@ -42,7 +42,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 @Slf4j
 public class IncidentGenerator {
 
-  private static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "onboarding-data/customer_onboarding_process_instances.json";
+  private static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "onboarding-data" +
+    "/customer_onboarding_process_instances.json";
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
 
   public static void main(String[] args) {
@@ -56,28 +57,21 @@ public class IncidentGenerator {
           .getResourceAsStream(pathToProcessInstances);
         if (customerOnboardingProcessInstances != null) {
           String customerOnboardingProcessInstancesAsString = IOUtils.toString(
-            customerOnboardingProcessInstances,
-            StandardCharsets.UTF_8
+            customerOnboardingProcessInstances, StandardCharsets.UTF_8
           );
           if (customerOnboardingProcessInstancesAsString != null) {
             String[] processInstances = customerOnboardingProcessInstancesAsString.split("\\r?\\n");
             List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
             for (String processInstance : processInstances) {
               ElasticDumpEntryDto elasticDumpEntryDto = OBJECT_MAPPER.readValue(
-                processInstance,
-                ElasticDumpEntryDto.class
+                processInstance, ElasticDumpEntryDto.class
               );
               ProcessInstanceDto rawProcessInstanceFromDump = elasticDumpEntryDto.getProcessInstanceDto();
               if (rawProcessInstanceFromDump != null) {
-                Optional<Long> processInstanceDuration = Optional.ofNullable(rawProcessInstanceFromDump.getDuration());
-                if (rawProcessInstanceFromDump.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
-                  processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
-                } else {
-                  log.error("Process instance not loaded correctly. Please check your json file.");
-                }
+                processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
               }
             }
-            addIncidentsToProcessInstancesses(processInstanceDtos);
+            addIncidentsToProcessInstances(processInstanceDtos);
           } else {
             log.error(
               "Could not load customer onboarding process instances. Please validate the process instance json file.");
@@ -86,59 +80,72 @@ public class IncidentGenerator {
           log.error("Process instance file cannot be null.");
         }
       }
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      log.error("Could not load process instances.", e);
     }
   }
 
-  private static void addIncidentsToProcessInstancesses(List<ProcessInstanceDto> processInstanceDtos) {
-    int totalProcessInstanceDto = processInstanceDtos.size();
-    int amountOfProcessesToModify = (totalProcessInstanceDto * 10) / 100;
+  private static void addIncidentsToProcessInstances(final List<ProcessInstanceDto> processInstanceDtos) {
+    final int totalProcessInstanceDto = processInstanceDtos.size();
+    final int amountOfProcessesToModify = (totalProcessInstanceDto * 10) / 100;
 
     Collections.shuffle(processInstanceDtos);
+
     for (int i = 0; i < amountOfProcessesToModify; i++) {
       final ProcessInstanceDto processInstanceToModify = processInstanceDtos.get(i);
-      Optional<FlowNodeInstanceDto> firstServiceTask =
-        getFirstServiceTask(processInstanceToModify.getFlowNodeInstances());
-      if (firstServiceTask.isPresent()) {
-        OffsetDateTime incidentStartDate = firstServiceTask.get().getStartDate().plusMinutes(30);
-        OffsetDateTime incidentMaxDuration = incidentStartDate.plusDays(2);
-        long randomGeneratedDate = ThreadLocalRandom.current()
-          .nextLong(incidentStartDate.toInstant().toEpochMilli(), incidentMaxDuration.toInstant().toEpochMilli());
-        long randomGeneratedDuration = randomGeneratedDate - incidentStartDate.toInstant().getEpochSecond();
-        long randomGeneratedDurationInSeconds = TimeUnit.MILLISECONDS.toSeconds(randomGeneratedDuration);
-        IncidentDto incidentDto = new IncidentDto();
+      final Optional<FlowNodeInstanceDto> optionalFirstServiceTask = getFirstServiceTask(
+        processInstanceToModify.getFlowNodeInstances()
+      );
+      if (optionalFirstServiceTask.isPresent()) {
+        final FlowNodeInstanceDto firstServiceTask = optionalFirstServiceTask.get();
+
+        // calculate a random incident duration based on the service task start date
+        final OffsetDateTime incidentStartDate = firstServiceTask.getStartDate();
+        final long incidentEndDateTimestampInMs = ThreadLocalRandom.current().nextLong(
+          incidentStartDate.toInstant().toEpochMilli(), incidentStartDate.plusDays(2).toInstant().toEpochMilli()
+        );
+        final long incidentDurationInMs = incidentEndDateTimestampInMs - incidentStartDate.toInstant().toEpochMilli();
+        final long incidentDurationInSeconds = TimeUnit.MILLISECONDS.toSeconds(incidentDurationInMs);
+
+        // inject an incident that started at the original service task start date
+        final IncidentDto incidentDto = new IncidentDto();
         incidentDto.setId(UUID.randomUUID().toString());
         incidentDto.setDefinitionKey(processInstanceToModify.getProcessDefinitionKey());
         incidentDto.setProcessInstanceId(processInstanceToModify.getProcessInstanceId());
         incidentDto.setDefinitionVersion(processInstanceToModify.getProcessDefinitionVersion());
         incidentDto.setIncidentStatus(IncidentStatus.RESOLVED);
-        incidentDto.setCreateTime(firstServiceTask.get().getStartDate());
-        incidentDto.setDurationInMs(randomGeneratedDuration);
-        incidentDto.setEndTime(firstServiceTask.get().getStartDate().plusSeconds(randomGeneratedDurationInSeconds));
+        incidentDto.setCreateTime(incidentStartDate);
+        incidentDto.setDurationInMs(incidentDurationInMs);
+        incidentDto.setEndTime(firstServiceTask.getStartDate().plusSeconds(incidentDurationInSeconds));
+        incidentDto.setActivityId(firstServiceTask.getFlowNodeId());
         processInstanceToModify.setIncidents(List.of(incidentDto));
-        Optional<OffsetDateTime> optionalEndDate = Optional.ofNullable(processInstanceToModify.getEndDate());
-        if (optionalEndDate.isPresent()) {
-          processInstanceToModify.setEndDate(processInstanceToModify.getEndDate()
-                                               .plusSeconds(randomGeneratedDurationInSeconds));
-        }
-        processInstanceToModify.getFlowNodeInstances().forEach(flowNodeInstanceDto -> {
-          if (!flowNodeInstanceDto.getFlowNodeInstanceId().equals(firstServiceTask.get().getFlowNodeInstanceId())) {
-            flowNodeInstanceDto.setStartDate(flowNodeInstanceDto.getStartDate()
-                                               .plusSeconds(randomGeneratedDurationInSeconds));
-            Optional<OffsetDateTime> optionalFlowNodeEndDate = Optional.ofNullable(flowNodeInstanceDto.getEndDate());
-            if (optionalFlowNodeEndDate.isPresent()) {
-              flowNodeInstanceDto.setEndDate(flowNodeInstanceDto.getEndDate()
-                                               .plusSeconds(randomGeneratedDurationInSeconds));
+
+        // now shift all flow node instances that started after the incident by the duration of the incident
+        processInstanceToModify.getFlowNodeInstances().stream()
+          .filter(flowNodeInstanceDto ->
+                    flowNodeInstanceDto.getStartDate().isAfter(incidentStartDate)
+                      || flowNodeInstanceDto.getStartDate().equals(incidentStartDate)
+          )
+          .forEach(flowNodeInstanceDto -> {
+            flowNodeInstanceDto.setStartDate(
+              flowNodeInstanceDto.getStartDate().plusSeconds(incidentDurationInSeconds)
+            );
+            if (flowNodeInstanceDto.getEndDate() != null) {
+              flowNodeInstanceDto.setEndDate(flowNodeInstanceDto.getEndDate().plusSeconds(incidentDurationInSeconds));
             }
-          }
-        });
+          });
+
+        // finally shift the endDate of the instance if present
+        if (processInstanceToModify.getEndDate() != null) {
+          processInstanceToModify.setEndDate(
+            processInstanceToModify.getEndDate().plusSeconds(incidentDurationInSeconds)
+          );
+        }
       }
       processInstanceDtos.set(i, processInstanceToModify);
     }
     try {
-      ObjectMapper objectMapper = createObjectMapper();
-      objectMapper.writeValue(new File("customer_onboarding_process_instances.json"), processInstanceDtos);
+      OBJECT_MAPPER.writeValue(new File("customer_onboarding_process_instances.json"), processInstanceDtos);
     } catch (JsonProcessingException e) {
       log.error("The process instance list could not be mapped to json.");
     } catch (IOException e) {
@@ -146,7 +153,7 @@ public class IncidentGenerator {
     }
   }
 
-  private static Optional<FlowNodeInstanceDto> getFirstServiceTask(List<FlowNodeInstanceDto> flowNodeInstanceDtos) {
+  private static Optional<FlowNodeInstanceDto> getFirstServiceTask(final List<FlowNodeInstanceDto> flowNodeInstanceDtos) {
     return flowNodeInstanceDtos.stream()
       .filter(flowNodeInstanceDto -> flowNodeInstanceDto.getFlowNodeType().equals("serviceTask"))
       .min(Comparator.comparing(FlowNodeInstanceDto::getStartDate));
@@ -165,12 +172,10 @@ public class IncidentGenerator {
         SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
         DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
-      )
-      .featuresToEnable(
-        JsonParser.Feature.ALLOW_COMMENTS,
+        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
         SerializationFeature.INDENT_OUTPUT
       )
+      .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
       .build();
   }
 }
