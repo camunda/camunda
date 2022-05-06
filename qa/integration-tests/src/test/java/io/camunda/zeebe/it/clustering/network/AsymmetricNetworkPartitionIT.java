@@ -22,8 +22,17 @@ import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -49,7 +58,7 @@ final class AsymmetricNetworkPartitionIT {
   private ZeebeClient zeebeClient;
 
   @SuppressWarnings("unused")
-  public static Stream<Arguments> provideTestCases() {
+  static Stream<Arguments> provideTestCases() {
     return Stream.of(
         Arguments.arguments(
             Named.named("Deployment distribution", new DeploymentDistributionTestCase())),
@@ -64,18 +73,22 @@ final class AsymmetricNetworkPartitionIT {
   @DisplayName("Withstand Asymmetric Network Partition")
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("provideTestCases")
-  public void shouldWithstandAsymmetricNetworkPartition(
+  void shouldWithstandAsymmetricNetworkPartition(
       final AsymmetricNetworkPartitionTestCase asymmetricNetworkPartitionTestCase)
       throws IOException, InterruptedException {
     // given
     setupZeebeCluster();
     zeebeClient = cluster.newClientBuilder().build();
 
+    // the test only works if the leaders of partition 1 and 3 are different nodes
+    Awaitility.await("partition 1 and 3 have a different leader")
+        .atMost(Duration.ofSeconds(30))
+        .during(Duration.ofSeconds(5))
+        .until(this::hasDifferentLeaderForPartitionsOneAndThree);
+
     final var topology = zeebeClient.newTopologyRequest().send().join();
     final var leaderOfPartitionOne = getPartitionLeader(topology, 1);
     final var leaderOfPartitionThree = getPartitionLeader(topology, 3);
-    assertThat(leaderOfPartitionOne.getNodeId()).isNotEqualTo(leaderOfPartitionThree.getNodeId());
-
     final var ipAddress =
         getContainerIpAddress(getContainerForNodeId(leaderOfPartitionOne.getNodeId()));
     asymmetricNetworkPartitionTestCase.given(zeebeClient);
@@ -100,6 +113,39 @@ final class AsymmetricNetworkPartitionIT {
                     .anyMatch(PartitionInfo::isLeader))
         .findFirst()
         .orElseThrow();
+  }
+
+  private void triggerRebalancing() {
+    final var gateway = cluster.getGateways().values().stream().findFirst().orElseThrow();
+    final var monitoringAddress = gateway.getExternalMonitoringAddress();
+    final var httpClient = HttpClient.newHttpClient();
+    final var request =
+        HttpRequest.newBuilder()
+            .POST(BodyPublishers.noBody())
+            .uri(URI.create("http://" + monitoringAddress + "/actuator/rebalance"))
+            .build();
+
+    final HttpResponse<Void> response;
+    try {
+      response = httpClient.send(request, BodyHandlers.discarding());
+      assertThat(response.statusCode()).isEqualTo(200);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  private boolean hasDifferentLeaderForPartitionsOneAndThree() {
+    final var topology = zeebeClient.newTopologyRequest().send().join();
+    final var firstLeader = getPartitionLeader(topology, 1);
+    final var thirdLeader = getPartitionLeader(topology, 3);
+
+    if (firstLeader.getNodeId() == thirdLeader.getNodeId()) {
+      LOGGER.info("Leader of partition 1 and 3 is {}, re-balancing...", firstLeader.getNodeId());
+      triggerRebalancing();
+      return false;
+    }
+
+    return true;
   }
 
   private void removeAsymmetricNetworkPartition(
