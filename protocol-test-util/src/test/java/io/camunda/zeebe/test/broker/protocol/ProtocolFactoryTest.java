@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Execution(ExecutionMode.CONCURRENT)
 final class ProtocolFactoryTest {
   @Test
-  void shouldUseADifferentSeedOnConstruction() {
+  void shouldUseSameSeedOnConstruction() {
     // given
     final var factoryA = new ProtocolFactory();
     final var factoryB = new ProtocolFactory();
@@ -35,7 +35,7 @@ final class ProtocolFactoryTest {
     final var seedB = factoryB.getSeed();
 
     // then
-    assertThat(seedA).isNotEqualTo(seedB);
+    assertThat(seedA).isEqualTo(seedB);
   }
 
   @Test
@@ -70,7 +70,7 @@ final class ProtocolFactoryTest {
   void shouldRandomizeRecordsWithDifferentSeeds() {
     // given
     final var factoryA = new ProtocolFactory();
-    final var factoryB = new ProtocolFactory();
+    final var factoryB = new ProtocolFactory(factoryA.getSeed() + 1);
 
     // when
     final var recordA = factoryA.generateRecord();
