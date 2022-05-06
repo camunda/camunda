@@ -10,9 +10,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -53,6 +55,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
@@ -62,6 +65,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -94,9 +99,15 @@ import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -108,6 +119,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
@@ -644,6 +656,41 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     getOptimizeElasticClient().getHighLevelClient()
       .indices()
       .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), getOptimizeElasticClient().requestOptions());
+  }
+
+  @SneakyThrows
+  public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionkey,
+                                      final long duration) {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("flowNodesField", FLOW_NODE_INSTANCES)
+        .put("flowNodeTypeField", FLOW_NODE_TYPE)
+        .put("totalDurationField", FLOW_NODE_TOTAL_DURATION)
+        .put("idleDurationField", USER_TASK_IDLE_DURATION)
+        .put("workDurationField", USER_TASK_WORK_DURATION)
+        .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
+        .put("newDuration", String.valueOf(duration))
+        .build()
+    );
+    // @formatter:off
+    final String updateScript = substitutor.replace(
+      "for(def flowNode : ctx._source.${flowNodesField}){" +
+          "if(flowNode.${flowNodeTypeField}.equals(\"${userTaskFlowNodeType}\")){" +
+            "flowNode.${totalDurationField} = ${newDuration};" +
+            "flowNode.${workDurationField} = ${newDuration};" +
+            "flowNode.${idleDurationField} = ${newDuration};" +
+          "}" +
+        "}"
+    );
+    // @formatter:on
+
+    final UpdateRequest update = new UpdateRequest()
+      .index(getProcessInstanceIndexAliasName(processDefinitionkey))
+      .id(processInstanceId)
+      .script(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, updateScript, Collections.emptyMap()))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    getOptimizeElasticClient().update(update);
   }
 
   private void deleteCamundaEventIndicesAndEventCountsAndTraces() {

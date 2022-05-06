@@ -34,6 +34,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -45,6 +46,7 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -482,6 +484,55 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
         assertThat(userTask.getWorkDurationInMs()).isNotNull().isZero();
         assertThat(userTask.getIdleDurationInMs()).isEqualTo(userTask.getTotalDurationInMs());
       });
+  }
+
+  @Test
+  public void metricsScriptOnlyAppliedOnUpdatedUserTasks() {
+    // given
+    final ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    // with first import round, first userTask is updated
+    importAllEngineEntitiesFromScratch();
+    // change first userTask durations to be able to assert no update happens in second import round
+    elasticSearchIntegrationTestExtension.updateUserTaskDurations(
+      processInstanceDto.getId(),
+      processInstanceDto.getProcessDefinitionKey(),
+      99999L
+    );
+
+    // when completing userTask 2 as well so the next import round has updates for userTask2 but not for userTask1
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the durations for userTask1 are not recalculated because it was not updated in the second round
+    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .hasSize(1)
+      .flatExtracting(ProcessInstanceDto::getUserTasks)
+      .hasSize(2);
+    final Optional<FlowNodeInstanceDto> task1 = instances.get(0)
+      .getUserTasks()
+      .stream()
+      .filter(task -> USER_TASK_1.equals(task.getFlowNodeId()))
+      .findFirst();
+    final Optional<FlowNodeInstanceDto> task2 = instances.get(0)
+      .getUserTasks()
+      .stream()
+      .filter(task -> USER_TASK_2.equals(task.getFlowNodeId()))
+      .findFirst();
+
+    assertThat(task1).isPresent().get().satisfies(userTask -> {
+      assertThat(userTask.getTotalDurationInMs()).isEqualTo(99999L);
+      assertThat(userTask.getWorkDurationInMs()).isEqualTo(99999L);
+      assertThat(userTask.getIdleDurationInMs()).isEqualTo(99999L);
+    });
+    assertThat(task2).isPresent().get().satisfies(userTask -> {
+      assertThat(userTask.getTotalDurationInMs()).isNotEqualTo(99999L);
+      assertThat(userTask.getWorkDurationInMs()).isNotEqualTo(99999L);
+      assertThat(userTask.getIdleDurationInMs()).isNotEqualTo(99999L);
+    });
   }
 
   @ParameterizedTest
