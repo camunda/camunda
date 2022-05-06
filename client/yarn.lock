@@ -11870,17 +11870,17 @@ mobius1-selectr@^2.4.13:
   resolved "https://registry.yarnpkg.com/mobius1-selectr/-/mobius1-selectr-2.4.13.tgz#0019dfd9f984840d6e40f70683ab3ec78ce3b5df"
   integrity sha512-Mk9qDrvU44UUL0EBhbAA1phfQZ7aMZPjwtL7wkpiBzGh8dETGqfsh50mWoX9EkjDlkONlErWXArHCKfoxVg0Bw==
 
-mobx-react-lite@^3.3.0:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-3.3.0.tgz#7174e807201943beff6f9d3701492314c9fc0db3"
-  integrity sha512-U/kMSFtV/bNVgY01FuiGWpRkaQVHozBq5CEBZltFvPt4FcV111hEWkgwqVg9GPPZSEuEdV438PEz8mk8mKpYlA==
+mobx-react-lite@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-3.4.0.tgz#d59156a96889cdadad751e5e4dab95f28926dfff"
+  integrity sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==
 
-mobx-react@7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-7.3.0.tgz#a17dedb71b75dad2337e3f95eb753179f6cfe732"
-  integrity sha512-RGEcwZokopqyJE5JPwXKB9FWMSqFM9NJVO2QPI+z6laJTJeBHqvPicjnKgY5mvihxTeXB1+72TnooqUePeGV1g==
+mobx-react@7.4.0:
+  version "7.4.0"
+  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-7.4.0.tgz#29bbdc609c7f6c43e5af6c8e984c8b93a7fe08e8"
+  integrity sha512-gbUwaKZK09SiAleTMxNMKs1MYKTpoIEWJLTLRIR/xnALuuHET8wkL8j1nbc1/6cDkOWVyKz/ReftILx0Pdh2PQ==
   dependencies:
-    mobx-react-lite "^3.3.0"
+    mobx-react-lite "^3.4.0"
 
 mobx@6.5.0:
   version "6.5.0"
