@@ -40,9 +40,12 @@ test('infinite scrolling', async (t) => {
   await t.expect(screen.getAllByTestId('operations-entry').count).eql(40);
 });
 
-test.skip('Retry and Cancel single instance ', async (t) => {
+test('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
+
+  // ensure page is loaded
+  await t.expect(screen.queryByTestId('data-list').exists).ok();
 
   await displayOptionalFilter('Instance Id(s)');
 
@@ -56,9 +59,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   );
 
   // wait for filter to be applied
-  await t
-    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
-    .eql(1);
+  await t.expect(screen.queryByText('1 results found').exists).ok();
 
   // retry single instance using operation button
   await t.click(
@@ -92,45 +93,36 @@ test.skip('Retry and Cancel single instance ', async (t) => {
     .nth(0);
   const operationId = await within(operationItem).queryByTestId('operation-id')
     .innerText;
-  await t.expect(within(operationItem).queryByText('Cancel').exists).ok();
 
-  // wait for instance to disappear from instances list
   await t
+    .expect(within(operationItem).queryByText('Cancel').exists)
+    .ok()
+    .expect(within(operationItem).queryByText(DATE_REGEX).exists)
+    .ok()
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
     .ok();
 
-  // wait for instance to finish in operation list (end time is present)
-  await t.expect(within(operationItem).queryByText(DATE_REGEX).exists).ok();
-
   await t.click(within(operationItem).queryByText('1 Instance'));
 
-  // wait for filter to be applied
-  await t
-    .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
-    .eql(1);
-
-  // expect operation id filter to be set
   await t
     .expect(ProcessesPage.Filters.operationId.value.value)
-    .eql(operationId);
+    .eql(operationId)
+    .expect(screen.queryByText('1 results found').exists)
+    .ok();
 
   const instanceRow = within(
     within(screen.queryByTestId('data-list')).getAllByRole('row').nth(0)
   );
+
   await t
     .expect(
-      instanceRow.queryByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
+      screen.queryByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
         .exists
     )
     .ok()
-    .expect(
-      instanceRow.queryByTestId(`ACTIVE-icon-${instance.processInstanceKey}`)
-        .exists
-    )
-    .notOk()
     .expect(instanceRow.queryByText(instance.bpmnProcessId).exists)
     .ok()
     .expect(instanceRow.queryByText(instance.processInstanceKey).exists)
@@ -139,7 +131,12 @@ test.skip('Retry and Cancel single instance ', async (t) => {
 
 test('Retry and cancel multiple instances ', async (t) => {
   const {initialData} = t.fixtureCtx;
+
   const instances = initialData.batchOperationInstances.slice(0, 5);
+
+  // ensure page is loaded
+  await t.expect(screen.queryByTestId('data-list').exists).ok();
+
   const instancesListItems = within(
     screen.queryByTestId('operations-list')
   ).getAllByRole('listitem');
