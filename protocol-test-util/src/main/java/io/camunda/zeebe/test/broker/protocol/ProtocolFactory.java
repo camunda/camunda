@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
@@ -18,6 +19,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.Field;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -206,11 +208,17 @@ public final class ProtocolFactory {
   private void registerRandomizers() {
     findProtocolTypes().forEach(this::registerProtocolType);
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
+
+    // never use NULL_VAL or SBE_UNKNOWN for ValueType or RecordType
     randomizerRegistry.registerRandomizer(
         ValueType.class,
         new EnumRandomizer<>(
-            parameters.getSeed(),
-            ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
+            getSeed(), ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
+
+    final var excludedRecordTypes = EnumSet.of(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN);
+    final var recordTypes = EnumSet.complementOf(excludedRecordTypes);
+    randomizerRegistry.registerRandomizer(
+        RecordType.class, new EnumRandomizer<>(getSeed(), recordTypes.toArray(RecordType[]::new)));
   }
 
   private void registerProtocolType(final ClassInfo abstractType) {
