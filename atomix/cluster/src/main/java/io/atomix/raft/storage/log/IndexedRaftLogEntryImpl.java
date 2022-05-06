@@ -25,8 +25,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 record IndexedRaftLogEntryImpl(long index, long term, RaftEntry entry, JournalRecord record)
     implements IndexedRaftLogEntry {
 
-  IndexedRaftLogEntryImpl(
-      final long term, final RaftEntry entry, final JournalRecord record) {
+  IndexedRaftLogEntryImpl(final long term, final RaftEntry entry, final JournalRecord record) {
     this(record.index(), term, entry, record);
   }
 
