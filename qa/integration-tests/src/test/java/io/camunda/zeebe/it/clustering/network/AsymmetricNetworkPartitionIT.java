@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.clustering.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Capability;
@@ -20,8 +19,10 @@ import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerNode;
+import io.zeebe.containers.ZeebeNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,7 +35,9 @@ import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -44,8 +47,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.Container.ExecResult;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -54,23 +55,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class AsymmetricNetworkPartitionIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(AsymmetricNetworkPartitionIT.class);
 
-  private final Network network = Network.newNetwork();
+  private static final Network NETWORK = Network.newNetwork();
 
   @Container
-  private final ZeebeCluster cluster =
+  private static final ZeebeCluster CLUSTER =
       ZeebeCluster.builder()
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withBrokersCount(3)
           .withEmbeddedGateway(true)
           .withPartitionsCount(2)
           .withReplicationFactor(3)
-          .withBrokerConfig(this::configureBroker)
-          .withNetwork(network)
+          .withBrokerConfig(AsymmetricNetworkPartitionIT::configureBroker)
+          .withNetwork(NETWORK)
           .build();
 
   @SuppressWarnings("unused")
   @RegisterExtension
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getBrokers, LOGGER);
+  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(CLUSTER::getBrokers, LOGGER);
 
   private ZeebeClient client;
 
@@ -81,14 +82,25 @@ final class AsymmetricNetworkPartitionIT {
         Arguments.arguments(Named.named("Message correlation", new MessageCorrelationTestCase())));
   }
 
+  @BeforeAll
+  static void beforeAll() {
+    CLUSTER.getBrokers().forEach((id, broker) -> installNetworkUtilities(broker));
+  }
+
+  @AfterAll
+  static void afterAll() {
+    CloseHelper.quietClose(NETWORK);
+  }
+
   @BeforeEach
   void beforeEach() {
-    client = cluster.newClientBuilder().build();
+    client = CLUSTER.newClientBuilder().build();
+    CLUSTER.getBrokers().forEach((id, broker) -> clearUnreachableRoutes(broker));
   }
 
   @AfterEach
   void afterEach() {
-    CloseHelper.quietCloseAll(client, network);
+    CloseHelper.quietCloseAll(client);
   }
 
   @DisplayName("Withstand Asymmetric Network Partition")
@@ -108,13 +120,13 @@ final class AsymmetricNetworkPartitionIT {
     final var firstLeader = getPartitionLeader(topology, 1);
     final var secondLeader = getPartitionLeader(topology, 2);
     final var firstLeaderIP =
-        getContainerNetworkIP(cluster.getBrokers().get(firstLeader.getNodeId()));
+        getContainerNetworkIP(CLUSTER.getBrokers().get(firstLeader.getNodeId()));
     testCase.given(client);
-    setupNetworkPartition(firstLeaderIP, cluster.getBrokers().get(secondLeader.getNodeId()));
+    setupNetworkPartition(firstLeaderIP, CLUSTER.getBrokers().get(secondLeader.getNodeId()));
 
     // when
     final var future = testCase.when(client);
-    removeNetworkPartition(firstLeaderIP, cluster.getBrokers().get(secondLeader.getNodeId()));
+    clearUnreachableRoutes(CLUSTER.getBrokers().get(secondLeader.getNodeId()));
 
     // then
     testCase.then(client, future);
@@ -132,7 +144,7 @@ final class AsymmetricNetworkPartitionIT {
   }
 
   private void triggerRebalancing() {
-    final var gateway = cluster.getGateways().values().stream().findFirst().orElseThrow();
+    final var gateway = CLUSTER.getGateways().values().stream().findFirst().orElseThrow();
     final var monitoringAddress = gateway.getExternalMonitoringAddress();
     final var httpClient = HttpClient.newHttpClient();
     final var request =
@@ -165,33 +177,13 @@ final class AsymmetricNetworkPartitionIT {
   }
 
   /**
-   * Removes the unreachable `ip route` added via {@link #setupNetworkPartition(String,
-   * ZeebeBrokerNode)}
-   */
-  private void removeNetworkPartition(final String ip, final ZeebeBrokerNode<?> brokerNode)
-      throws IOException, InterruptedException {
-    final var execResult = runCommandInContainer(brokerNode, "ip route del unreachable " + ip);
-    LOGGER.info("{}", execResult.getStdout());
-  }
-
-  /**
    * Set the given ip address unreachable for the given container.
    *
    * @param ipAddress the ip address which should be unreachable
    * @param brokerNode the broker container which should be updated
-   * @throws IOException Can be thrown during running commands in the container
-   * @throws InterruptedException Can be thrown during running commands in the container
    */
-  private void setupNetworkPartition(
-      final String ipAddress, final ZeebeBrokerNode<? extends GenericContainer<?>> brokerNode)
-      throws IOException, InterruptedException {
-    runCommandInContainer(brokerNode, "apt -qq update");
-    runCommandInContainer(brokerNode, "apt install -qq -y iproute2");
-
-    final var execResult =
-        runCommandInContainer(brokerNode, "ip route add unreachable " + ipAddress);
-
-    LOGGER.info("{}", execResult.getStdout());
+  private void setupNetworkPartition(final String ipAddress, final ZeebeNode<?> brokerNode) {
+    exec(brokerNode, "ip route add unreachable " + ipAddress);
   }
 
   private String getContainerNetworkIP(final ZeebeBrokerNode<?> node) {
@@ -201,35 +193,53 @@ final class AsymmetricNetworkPartitionIT {
         .getIpAddress();
   }
 
-  private ExecResult runCommandInContainer(final ZeebeBrokerNode<?> container, final String command)
-      throws IOException, InterruptedException {
-    LOGGER.info("Run command: {}", command);
-
-    final var commands = command.split(" ");
-    final var execResult = container.execInContainer(commands);
-
-    if (execResult.getExitCode() == 0) {
-      LOGGER.info("Command {} was successful.", command);
-    } else {
-      final var errorMessage =
-          String.format(
-              "Command '%s' failed with code: %d stderr: '%s'",
-              command, execResult.getExitCode(), execResult.getStderr());
-      fail(errorMessage);
-    }
-
-    return execResult;
+  /**
+   * Clears all unreachable routes from the given container, i.e. those added via {@link
+   * #setupNetworkPartition(String, ZeebeNode)}.
+   */
+  private static void clearUnreachableRoutes(final ZeebeNode<?> container) {
+    exec(container, "ip route flush type unreachable");
   }
 
-  private void configureBroker(final ZeebeBrokerNode<?> broker) {
+  /**
+   * Installs required network utilities to block certain hosts. Additionally, backs up the routes
+   * table, so we can restore it between tests.
+   */
+  private static void installNetworkUtilities(final ZeebeNode<?> container) {
+    exec(container, "apt-get -qq update");
+    exec(container, "apt-get -qq -y install iproute2");
+  }
+
+  private static void exec(final ZeebeNode<?> container, final String command) {
+    LOGGER.info("Executing command {} on container {}", command, container.getContainerId());
+
+    try {
+      final var result = container.execInContainer(command.split(" "));
+      assertThat(result.getExitCode())
+          .as(
+              "command [%s] failed with status [%d] and output: [%s]",
+              command, result.getExitCode(), result.getStdout())
+          .isEqualTo(0);
+
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LangUtil.rethrowUnchecked(e);
+    }
+
+    LOGGER.info("Executed command {} on container {}", command, container.getContainerId());
+  }
+
+  private static void configureBroker(final ZeebeBrokerNode<?> broker) {
     broker
         .self()
-        .withCreateContainerCmdModifier(this::configureNetAdmin)
+        .withCreateContainerCmdModifier(AsymmetricNetworkPartitionIT::configureNetAdmin)
         .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
         .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "16MB");
   }
 
-  private void configureNetAdmin(final CreateContainerCmd command) {
+  private static void configureNetAdmin(final CreateContainerCmd command) {
     final var hostConfig = Optional.ofNullable(command.getHostConfig()).orElse(new HostConfig());
     command.withHostConfig(hostConfig.withCapAdd(Capability.NET_ADMIN));
   }
