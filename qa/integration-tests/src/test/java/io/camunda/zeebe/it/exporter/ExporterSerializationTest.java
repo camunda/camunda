@@ -19,7 +19,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.util.Strings;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,7 +34,7 @@ public final class ExporterSerializationTest {
     WorkloadGenerator.performSampleWorkload(clusteringRule.getClient());
     final var exportedRecords = RecordingExporter.records().collect(Collectors.toList());
     final var jsonRecords = exportedRecords.stream().map(Record::toJson).toList();
-    final var jsonString = "[" + Strings.join(jsonRecords, ',') + "]";
+    final var jsonString = "[" + String.join(",", jsonRecords) + "]";
 
     // when
     final List<Record<?>> deserializedRecords =
