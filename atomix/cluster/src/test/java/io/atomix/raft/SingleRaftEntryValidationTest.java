@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.raft.zeebe.ValidationResult;
+import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.camunda.zeebe.test.util.TestUtil;
 import java.util.Collection;
 import java.util.function.BiFunction;
@@ -51,7 +51,7 @@ public class SingleRaftEntryValidationTest {
 
     // when
     assertThatThrownBy(() -> raftRule.appendEntry()).hasMessageContaining("invalid");
-    entryValidator.validation = (last, current) -> ValidationResult.success();
+    entryValidator.validation = (last, current) -> ValidationResult.ok();
     TestUtil.waitUntil(() -> getEntryTypeCount(InitialEntry.class) == 2);
     raftRule.appendEntry();
 
