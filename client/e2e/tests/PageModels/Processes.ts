@@ -47,58 +47,58 @@ class ProcessesPage {
     },
 
     errorMessage: {
-      field: screen.queryByTestId('filter-errorMessage'),
+      field: screen.queryByTestId('optional-filter-errorMessage'),
       value: within(
-        screen.queryByTestId('filter-errorMessage').shadowRoot()
+        screen.queryByTestId('optional-filter-errorMessage').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     parentInstanceId: {
-      field: screen.queryByTestId('filter-parentInstanceId'),
+      field: screen.queryByTestId('optional-filter-parentInstanceId'),
       value: within(
-        screen.queryByTestId('filter-parentInstanceId').shadowRoot()
+        screen.queryByTestId('optional-filter-parentInstanceId').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     startDate: {
-      field: screen.queryByTestId('filter-startDate'),
+      field: screen.queryByTestId('optional-filter-startDate'),
       value: within(
-        screen.queryByTestId('filter-startDate').shadowRoot()
+        screen.queryByTestId('optional-filter-startDate').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     endDate: {
-      field: screen.queryByTestId('filter-endDate'),
+      field: screen.queryByTestId('optional-filter-endDate'),
       value: within(
-        screen.queryByTestId('filter-endDate').shadowRoot()
+        screen.queryByTestId('optional-filter-endDate').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     operationId: {
-      field: screen.queryByTestId('filter-operationId'),
+      field: screen.queryByTestId('optional-filter-operationId'),
       value: within(
-        screen.queryByTestId('filter-operationId').shadowRoot()
+        screen.queryByTestId('optional-filter-operationId').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     variableName: {
-      field: screen.queryByTestId('filter-variable-name'),
+      field: screen.queryByTestId('optional-filter-variable-name'),
       value: within(
-        screen.queryByTestId('filter-variable-name').shadowRoot()
+        screen.queryByTestId('optional-filter-variable-name').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     variableValue: {
-      field: screen.queryByTestId('filter-variable-value'),
+      field: screen.queryByTestId('optional-filter-variable-value'),
       value: within(
-        screen.queryByTestId('filter-variable-value').shadowRoot()
+        screen.queryByTestId('optional-filter-variable-value').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     instanceIds: {
-      field: screen.queryByTestId('filter-ids'),
+      field: screen.queryByTestId('optional-filter-ids'),
       value: within(
-        screen.queryByTestId('filter-ids').shadowRoot()
+        screen.queryByTestId('optional-filter-ids').shadowRoot()
       ).queryByRole('textbox'),
     },
 

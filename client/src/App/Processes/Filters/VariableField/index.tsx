@@ -36,7 +36,7 @@ const Variable: React.FC = observer(() => {
           <VariableNameField
             {...input}
             type="text"
-            data-testid="filter-variable-name"
+            data-testid="optional-filter-variable-name"
             label="Name"
             autoFocus
             shouldDebounceError={!meta.dirty && formState.dirty}
@@ -49,7 +49,7 @@ const Variable: React.FC = observer(() => {
             {...input}
             type="text"
             placeholder="in JSON format"
-            data-testid="filter-variable-value"
+            data-testid="optional-filter-variable-value"
             label="Value"
             fieldSuffix={{
               type: 'icon',

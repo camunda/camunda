@@ -293,7 +293,7 @@ const Filters: React.FC = observer(() => {
                         {({input}) => (
                           <TextField
                             {...input}
-                            data-testid={`filter-${filter}`}
+                            data-testid={`optional-filter-${filter}`}
                             label={OPTIONAL_FILTER_FIELDS[filter].label}
                             type={OPTIONAL_FILTER_FIELDS[filter].type}
                             rows={OPTIONAL_FILTER_FIELDS[filter].rows}

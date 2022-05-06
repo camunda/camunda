@@ -260,7 +260,7 @@ describe('Filters', () => {
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Variable'));
     await user.type(
-      screen.getByTestId('filter-variable-name'),
+      screen.getByTestId('optional-filter-variable-name'),
       MOCK_VALUES.variableName
     );
     await user.type(screen.getByLabelText(/value/i), MOCK_VALUES.variableValue);
@@ -504,7 +504,7 @@ describe('Filters', () => {
       await user.click(screen.getByText('Variable'));
 
       await user.type(
-        screen.getByTestId('filter-variable-name'),
+        screen.getByTestId('optional-filter-variable-name'),
         'aRandomVariable'
       );
 
@@ -514,7 +514,7 @@ describe('Filters', () => {
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('filter-variable-name'));
+      await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
       expect(
         screen.queryByText('Value has to be JSON')
@@ -531,7 +531,7 @@ describe('Filters', () => {
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       await user.type(
-        screen.getByTestId('filter-variable-name'),
+        screen.getByTestId('optional-filter-variable-name'),
         'aRandomVariable'
       );
 
@@ -839,7 +839,7 @@ describe('Filters', () => {
 
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Variable'));
-      await user.type(screen.getByTestId('filter-variable-name'), 'a');
+      await user.type(screen.getByTestId('optional-filter-variable-name'), 'a');
 
       expect(
         screen.getByText(
@@ -996,7 +996,7 @@ describe('Filters', () => {
           wrapper: getWrapper(),
         });
         expect(
-          screen.queryByTestId('filter-variable-name')
+          screen.queryByTestId('optional-filter-variable-name')
         ).not.toBeInTheDocument();
         expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
         expect(
@@ -1023,7 +1023,9 @@ describe('Filters', () => {
         await user.click(screen.getByText(/^more filters$/i));
         await user.click(screen.getByText('Variable'));
 
-        expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('optional-filter-variable-name')
+        ).toBeInTheDocument();
         expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
         await user.click(screen.getByText(/^more filters$/i));
         expect(
@@ -1209,7 +1211,9 @@ describe('Filters', () => {
         expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
-        expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('optional-filter-variable-name')
+        ).toBeInTheDocument();
         expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
 
@@ -1359,7 +1363,7 @@ describe('Filters', () => {
           )
         );
         expect(
-          screen.queryByTestId('filter-variable-name')
+          screen.queryByTestId('optional-filter-variable-name')
         ).not.toBeInTheDocument();
         expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
@@ -1421,7 +1425,9 @@ describe('Filters', () => {
         expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
-        expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('optional-filter-variable-name')
+        ).toBeInTheDocument();
         expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
 
@@ -1445,7 +1451,7 @@ describe('Filters', () => {
         expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
         expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
         expect(
-          screen.queryByTestId('filter-variable-name')
+          screen.queryByTestId('optional-filter-variable-name')
         ).not.toBeInTheDocument();
         expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
         expect(
@@ -1453,5 +1459,70 @@ describe('Filters', () => {
         ).not.toBeInTheDocument();
       });
     });
+  });
+
+  it('Should order optional filters', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&incidents=true'),
+    });
+
+    const optionalFilters: Array<{name: string; fields: string[]}> = [
+      {name: 'Error Message', fields: ['Error Message']},
+      {name: 'Parent Instance Id', fields: ['Parent Instance Id']},
+      {name: 'End Date', fields: ['End Date']},
+      {name: 'Variable', fields: ['Name', 'Value']},
+      {name: 'Start Date', fields: ['Start Date']},
+      {name: 'Instance Id(s)', fields: ['Instance Id(s)']},
+      {name: 'Operation Id', fields: ['Operation Id']},
+    ];
+
+    let fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {
+      return [...acc, ...optionalFilter.fields];
+    }, [] as string[]);
+
+    for (let i = 0; i < optionalFilters.length; i++) {
+      await user.click(screen.getByText('More Filters'));
+      await user.click(screen.getByText(optionalFilters[i]!.name));
+    }
+
+    let visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
+
+    for (let i = 0; i < visibleOptionalFilters.length; i++) {
+      expect(
+        within(visibleOptionalFilters[i]?.parentElement!).getByText(
+          fieldLabels[i]!
+        )
+      ).toBeInTheDocument();
+    }
+
+    await user.click(screen.getByText(/reset filters/i));
+
+    for (let i = 0; i < visibleOptionalFilters.length; i++) {
+      expect(
+        within(visibleOptionalFilters[i]?.parentElement!).queryByText(
+          fieldLabels[i]!
+        )
+      ).not.toBeInTheDocument();
+    }
+
+    optionalFilters.reverse();
+    fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {
+      return [...acc, ...optionalFilter.fields];
+    }, [] as string[]);
+
+    for (let i = 0; i < optionalFilters.length; i++) {
+      await user.click(screen.getByText('More Filters'));
+      await user.click(screen.getByText(optionalFilters[i]!.name));
+    }
+
+    visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
+
+    for (let i = 0; i < visibleOptionalFilters.length; i++) {
+      expect(
+        within(visibleOptionalFilters[i]?.parentElement!).getByText(
+          fieldLabels[i]!
+        )
+      ).toBeInTheDocument();
+    }
   });
 });
