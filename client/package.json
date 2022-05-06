@@ -3,7 +3,7 @@
   "version": "8.1.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@apollo/client": "3.4.17",
+    "@apollo/client": "3.6.2",
     "@bpmn-io/form-js": "0.7.1",
     "@camunda-cloud/common-ui": "0.0.18-rc5",
     "@camunda-cloud/common-ui-react": "0.0.18-rc5",
