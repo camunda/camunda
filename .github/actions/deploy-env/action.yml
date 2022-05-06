@@ -125,6 +125,7 @@ runs:
         --helm-set elasticsearch.image.tag=${{ inputs.es_version }}
         --helm-set git.branch=${{ inputs.revision }}
         --helm-set global.labels.app=${{ env.APP_NAME }}
+        --helm-set global.labels.commit=${{ github.sha }}
         --name optimize-${{ env.APP_NAME }}
         --project optimize-previews
         --revision ${{ inputs.revision }}

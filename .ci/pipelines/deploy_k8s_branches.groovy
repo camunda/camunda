@@ -85,14 +85,8 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        dir('infra-core') {
-          git url: 'https://github.com/camunda/infra-core',
-            branch: "${params.INFRASTRUCTURE_BRANCH}",
-            credentialsId: optimizeUtils.defaultCredentialsId(),
-            poll: false
-        }
         dir('optimize') {
-          optimizeCloneGitRepo(params.BRANCH)
+          optimizeCloneGitRepo("master")
         }
 
         container('gcloud') {
@@ -135,10 +129,10 @@ pipeline {
         }
         build job: '/deploy-branch-to-k8s-gha',
                 parameters: [
-                  string(name: 'BRANCH', value: params.BRANCH),
+                  string(name: 'BRANCH', value: "master"),
                   string(name: 'CAMBPM_VERSION', value: env.CAMBPM_VERSION),
                   string(name: 'ES_VERSION', value: env.ES_VERSION),
-                  string(name: 'REF', value: params.BRANCH),
+                  string(name: 'REF', value: "master"),
                 ]
       }
     }

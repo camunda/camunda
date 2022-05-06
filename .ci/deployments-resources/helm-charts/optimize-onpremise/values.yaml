@@ -77,3 +77,4 @@ global:
     camunda.cloud/managed-by: Helm
     app: optimize-camunda-cloud # Should be overridden by Argo app
     team: optimize
+    commit: master # Should be overridden by Argo app
