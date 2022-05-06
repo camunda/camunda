@@ -20,32 +20,70 @@ git:
   repoUrl: https://github.com/camunda-cloud/tasklist
 
 
-# Configuration of the ccsm-helm chart, in particular we disable some features that
+# Configuration of the camunda-platform chart, in particular we disable some features that
 # we don't want to deploy.
 # We also change the `fullNameOverride` and `zeebeClusterName`
 # to simpler values, so we don't duplicate the ReleaseName everwhere
 # (as that's already reflected in the Namespace and can be quite long).
-ccsm-helm:
+camunda-platform:
+  # identity needs to be disabled explicitly
+  identity:
+    enabled: false
+  optimize:
+    enabled: false
   tasklist:
     fullnameOverride: tasklist
+    image:
+      repository: gcr.io/ci-30-162810/tasklist
+    env:
+    - name: JAVA_OPTS
+      value: "-XX:MaxRAMFraction=1"
+    - name: SPRING_PROFILES_ACTIVE
+      value: "dev-data"
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
   operate:
     # Defines the version of Operate to use
     image:
       tag: SNAPSHOT
     fullnameOverride: operate
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
   zeebe:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
       tag: 8.0.0
-    persistence:
-      # Defines whether persistence should be enabled for the `zeebe` StatefulSet.
-      # Depends on https://github.com/camunda/camunda-cloud-helm/issues/232
-      enabled: false
+    # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
+    clusterSize: "1"
+    # PartitionCount defines how many zeebe partitions are set up in the cluster
+    partitionCount: "1"
+    # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
+    replicationFactor: "1"
+    # Disable the creation of persistent volumes.
+    persistenceType: local
     # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
     pvcSize: 2Gi
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
   zeebe-gateway:
     fullnameOverride: zeebe-gateway
+    replicas: 1
     # Defines the version of Zeebe to use
     image:
       tag: 8.0.0
@@ -54,6 +92,7 @@ ccsm-helm:
   # in order to avoid being too wasteful.
   # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
   elasticsearch:
+    replicas: 1
     imageTag: 7.16.2
     persistence:
       enabled: false
@@ -61,11 +100,38 @@ ccsm-helm:
       resources:
         requests:
           storage: 2Gi
+    # This is needed to disable the creation of poddisruptionbudget resource coming from ES chart (supported in k8s 1.21)
+    maxUnavailable: ""
+    minimumMasterNodes: 1
+    extraEnvs:
+    - name: xpack.security.enabled
+      value: "false"
+    - name: processors
+      value: "1"
+    clusterHealthCheckParams: wait_for_status=yellow&timeout=1s
+    esJavaOpts: "-Xms512m -Xmx512m"
+    securityContext:
+      capabilities:
+        add:
+          - IPC_LOCK
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
 
-# Configuration of global values as required by the ccsm-helm chart and to comply
+# Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
 global:
   zeebeClusterName: zeebe
+  # identity should be explicitly disabled in global as well
+  identity:
+    # Identity.auth configuration, to configure Identity authentication setup
+    auth:
+      # Identity.auth.enabled if true, enables the Identity authentication otherwise basic-auth will be used on all services.
+      enabled: false
   labels:
     camunda.cloud/source: argocd
     camunda.cloud/managed-by: Helm

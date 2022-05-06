@@ -23,6 +23,10 @@ String getImageTag() {
   return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
 }
 
+String getCiImageTag() {
+  return "ci-${getGitCommitHash()}"
+}
+
 /******** START PIPELINE *******/
 
 pipeline {
@@ -108,6 +112,7 @@ pipeline {
           environment {
             IMAGE_TAG = getImageTag()
             GOOGLE_APPLICATION_CREDENTIALS = credentials('docker-registry-ci3-file')
+            CI_IMAGE_TAG = getCiImageTag()
           }
           steps {
             lock('zeebe-tasklist-dockerimage-upload') {
@@ -115,6 +120,7 @@ pipeline {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
                     mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
+                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
                     if [ "${env.BRANCH_NAME}" = 'master' ]; then
                       mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:latest
@@ -173,10 +179,11 @@ pipeline {
         }
       }
       steps {
-        build job: '/deploy-branch-to-k8s',
+        build job: '/deploy-branch-to-k8s-gha',
           parameters: [
-              string(name: 'BRANCH', value: getBranchSlug()),
-              string(name: 'ZEEBE_TASKLIST_BRANCH', value: env.BRANCH_NAME),
+              string(name: 'BRANCH', value: env.BRANCH_NAME),
+              string(name: 'DOCKER_TAG', value: getCiImageTag()),
+              string(name: 'REF', value: env.BRANCH_NAME),
           ]
       }
     }

@@ -108,16 +108,16 @@ runs:
     if: ${{ inputs.step == 'start'}}
     run: >-
       argocd app create
-      --dest-namespace tasklist-${APP_NAME}
+      --dest-namespace ztl-${APP_NAME}
       --file .ci/preview-environments/argo/application.yml
-      --helm-set ccsm-helm.tasklist.image.tag=${{ inputs.docker_tag }}
+      --helm-set camunda-platform.tasklist.image.tag=${{ inputs.docker_tag }}
       --helm-set git.branch=${{ inputs.revision }}
       --helm-set global.labels.app=${{ env.APP_NAME }}
-      --name ${{ env.APP_NAME }}
+      --name ztl-${{ env.APP_NAME }}
       --revision ${{ inputs.revision }}
       --upsert
 
-      argocd app sync ${{ env.APP_NAME }} --async --force || true
+      argocd app sync ztl-${{ env.APP_NAME }} --async --force || true
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
       ARGOCD_OPTS: "--grpc-web"
@@ -125,7 +125,7 @@ runs:
   - name: Tear down
     shell: bash
     if: ${{ inputs.step == 'stop'}}
-    run: argocd app delete ${APP_NAME} --yes
+    run: argocd app delete ztl-${APP_NAME} --yes
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
       ARGOCD_OPTS: "--grpc-web"
@@ -134,7 +134,7 @@ runs:
     shell: bash
     run: |-
       echo "::group::wait for sync"
-      argocd app wait ${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
+      argocd app wait ztl-${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
       echo "::endgroup::"
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
@@ -153,7 +153,7 @@ runs:
       token: ${{ github.token }}
       status: ${{ job.status }}
       deployment_id: ${{ steps.deployment.outputs.deployment_id }}
-      env_url: https://${{ inputs.deployment_id }}.tasklist.camunda.cloud
+      env_url: https://${{ inputs.deployment_id }}.zeebe-tasklist.camunda.cloud
     # When tearing down the deployment, also deactivate GitHub Deployment environment
   - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
     if: ${{ inputs.step == 'stop'  && always() }}
