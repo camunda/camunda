@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.test;
 
-import io.camunda.zeebe.broker.exporter.debug.DebugHttpExporter;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
@@ -23,9 +22,6 @@ public final class EmbeddedBrokerConfigurator {
       cfg ->
           cfg.getExporters()
               .put(DebugLogExporter.defaultExporterId(), DebugLogExporter.defaultConfig());
-
-  public static final Consumer<BrokerCfg> HTTP_EXPORTER =
-      cfg -> cfg.getExporters().put("DebugHttpExporter", DebugHttpExporter.defaultConfig());
 
   public static final Consumer<BrokerCfg> TEST_RECORDER =
       cfg -> {
