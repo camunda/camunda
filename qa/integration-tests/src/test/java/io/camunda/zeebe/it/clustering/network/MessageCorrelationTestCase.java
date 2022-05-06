@@ -30,9 +30,9 @@ final class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTest
             .done();
     client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
     // make sure that the message is correlated to correct partition
-    assertThat(SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString("key"), 3))
-        .describedAs("message should correlated to partition three")
-        .isEqualTo(3);
+    assertThat(SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString("key"), 2))
+        .describedAs("message should correlated to partition two")
+        .isEqualTo(2);
 
     client
         .newPublishMessageCommand()
