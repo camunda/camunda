@@ -24,14 +24,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ProtocolFactoryTest {
+  private final ProtocolFactory factory = new ProtocolFactory();
+
   @Test
   void shouldUseSameSeedOnConstruction() {
     // given
-    final var factoryA = new ProtocolFactory();
     final var factoryB = new ProtocolFactory();
 
     // when
-    final var seedA = factoryA.getSeed();
+    final var seedA = factory.getSeed();
     final var seedB = factoryB.getSeed();
 
     // then
@@ -41,11 +42,10 @@ final class ProtocolFactoryTest {
   @Test
   void shouldGenerateRecordDeterministically() {
     // given
-    final var factoryA = new ProtocolFactory();
-    final var factoryB = new ProtocolFactory(factoryA.getSeed());
+    final var factoryB = new ProtocolFactory(factory.getSeed());
 
     // when
-    final var recordA = factoryA.generateRecord();
+    final var recordA = factory.generateRecord();
     final var recordB = factoryB.generateRecord();
 
     // then
@@ -55,11 +55,10 @@ final class ProtocolFactoryTest {
   @Test
   void shouldGenerateRecordsDeterministically() {
     // given
-    final var factoryA = new ProtocolFactory();
-    final var factoryB = new ProtocolFactory(factoryA.getSeed());
+    final var factoryB = new ProtocolFactory(factory.getSeed());
 
     // when
-    final var recordsA = factoryA.generateRecords().limit(5).collect(Collectors.toList());
+    final var recordsA = factory.generateRecords().limit(5).collect(Collectors.toList());
     final var recordsB = factoryB.generateRecords().limit(5).collect(Collectors.toList());
 
     // then
@@ -69,11 +68,10 @@ final class ProtocolFactoryTest {
   @Test
   void shouldRandomizeRecordsWithDifferentSeeds() {
     // given
-    final var factoryA = new ProtocolFactory();
-    final var factoryB = new ProtocolFactory(factoryA.getSeed() + 1);
+    final var factoryB = new ProtocolFactory(1L);
 
     // when
-    final var recordA = factoryA.generateRecord();
+    final var recordA = factory.generateRecord();
     final var recordB = factoryB.generateRecord();
 
     // then
@@ -83,7 +81,6 @@ final class ProtocolFactoryTest {
   @Test
   void shouldRandomizeRecords() {
     // given
-    final var factory = new ProtocolFactory();
 
     // then
     assertThat(factory.generateRecord())
@@ -95,7 +92,6 @@ final class ProtocolFactoryTest {
   @MethodSource("provideValueTypes")
   void shouldSetAllPropertiesOfGeneratedRecordValue(final ValueType valueType) {
     // given
-    final var factory = new ProtocolFactory();
     final var valueClass = ValueTypeMapping.get(valueType).getValueClass();
 
     // when
@@ -108,7 +104,6 @@ final class ProtocolFactoryTest {
   @Test
   void shouldSetAllPropertiesOfGeneratedRecord() {
     // given
-    final var factory = new ProtocolFactory();
 
     // when
     final var record = factory.generateRecord();
@@ -120,7 +115,6 @@ final class ProtocolFactoryTest {
   @Test
   void shouldGenerateForAllAcceptedValueTypes() {
     // given
-    final var factory = new ProtocolFactory();
     final var acceptedValueTypes = ValueTypeMapping.getAcceptedValueTypes();
 
     // when
@@ -137,7 +131,6 @@ final class ProtocolFactoryTest {
   @MethodSource("provideValueTypes")
   void shouldGenerateRecordWithCorrectValueAndIntentTypes(final ValueType valueType) {
     // given
-    final var factory = new ProtocolFactory();
     final var valueTypeMapping = ValueTypeMapping.get(valueType);
 
     // when
@@ -153,7 +146,6 @@ final class ProtocolFactoryTest {
   @MethodSource("provideProtocolClasses")
   void shouldGenerateForAllProtocolClasses(final Class<?> protocolClass) {
     // given
-    final var factory = new ProtocolFactory();
 
     // when - Record cannot be generated directly due to its generic parameter
     final Object generatedObject =
