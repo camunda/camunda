@@ -131,7 +131,7 @@ es:
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
       prefix: 'optimize'
       # How often should the data replicated in case of node failure.
-      number_of_replicas: 1
+      number_of_replicas: 0
       # How many shards should be used in the cluster for process instance and decision instance indices.
       # All other indices will be made up of a single shard
       # NOTE: this property only applies the first time Optimize is started and
