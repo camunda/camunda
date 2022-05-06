@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.test;
 
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
-import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.HTTP_EXPORTER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
@@ -263,10 +262,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     // build-in exporters
     if (ENABLE_DEBUG_EXPORTER) {
       DEBUG_EXPORTER.accept(brokerCfg);
-    }
-
-    if (ENABLE_HTTP_EXPORTER) {
-      HTTP_EXPORTER.accept(brokerCfg);
     }
 
     TEST_RECORDER.accept(brokerCfg);
