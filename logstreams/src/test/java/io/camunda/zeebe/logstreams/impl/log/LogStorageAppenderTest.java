@@ -153,10 +153,8 @@ final class LogStorageAppenderTest {
   void shouldFailActorWhenDetectingGapsInPositions() throws InterruptedException {
     // given
     final var value = new Value(1);
-    final var committed = new CountDownLatch(1);
     final var failed = new CountDownLatch(1);
     final AtomicReference<Throwable> err = new AtomicReference<>();
-    logStorage.setPositionListener(i -> committed.countDown());
     when(subscription.peekBlock(any(), anyInt(), anyBoolean()))
         .then(
             a -> {
