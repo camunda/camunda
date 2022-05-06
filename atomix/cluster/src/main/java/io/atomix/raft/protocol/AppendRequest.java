@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.storage.log.PersistedRaftRecord;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
