@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import java.util.EnumSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ProtocolFactoryTest {
+  private final ProtocolFactory factory = new ProtocolFactory();
+
   @Test
   void shouldUseADifferentSeedOnConstruction() {
     // given
@@ -167,6 +171,19 @@ final class ProtocolFactoryTest {
         .as("should be an Immutable implementation of the protocol class")
         .isNotEqualTo(protocolClass)
         .hasAnnotation(ImmutableProtocol.Type.class);
+  }
+
+  @Test
+  void shouldOnlyGeneratedAcceptedRecordType() {
+    // given
+    final var acceptedRecordTypes =
+        EnumSet.complementOf(EnumSet.of(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN));
+
+    // when
+    final var records = factory.generateRecords().limit(10).toList();
+
+    // then
+    assertThat(records).extracting(Record::getRecordType).hasSameElementsAs(acceptedRecordTypes);
   }
 
   private static Stream<ValueType> provideValueTypes() {
