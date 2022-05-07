@@ -14,14 +14,10 @@ import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.VersionUtil;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,15 +39,12 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
 public class ElasticsearchClient {
-  public static final String INDEX_DELIMITER = "_";
-  public static final String ALIAS_DELIMITER = "-";
-  private static final String DOCUMENT_TYPE = "_doc";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   protected final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
-  private final DateTimeFormatter formatter;
   private final TemplateReader templateReader;
+  private final RecordIndexRouter indexRouter;
 
   private List<String> bulkRequest;
   private ElasticsearchMetrics metrics;
@@ -66,8 +59,8 @@ public class ElasticsearchClient {
     this.bulkRequest = bulkRequest;
 
     client = createClient();
-    formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
     templateReader = new TemplateReader(configuration.index);
+    indexRouter = new RecordIndexRouter(configuration.index);
   }
 
   public void close() throws IOException {
@@ -181,11 +174,12 @@ public class ElasticsearchClient {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName = indexPrefixForValueType(valueType);
-    final String aliasName = aliasNameForValueType(valueType);
+    final String templateName = indexRouter.indexPrefixForValueType(valueType);
     final Template template =
         templateReader.readIndexTemplate(
-            valueType, templateName + INDEX_DELIMITER + "*", aliasName);
+            valueType,
+            indexRouter.searchPatternForValueType(valueType),
+            indexRouter.aliasNameForValueType(valueType));
 
     return putIndexTemplate(templateName, template);
   }
@@ -286,47 +280,12 @@ public class ElasticsearchClient {
     return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
   }
 
-  protected String indexFor(final Record<?> record) {
-    final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
-    return indexPrefixForValueTypeWithDelimiter(record.getValueType())
-        + formatter.format(timestamp);
-  }
-
-  protected String idFor(final Record<?> record) {
-    return record.getPartitionId() + "-" + record.getPosition();
-  }
-
-  protected String typeFor() {
-    return DOCUMENT_TYPE;
-  }
-
-  protected String indexPrefixForValueTypeWithDelimiter(final ValueType valueType) {
-    return indexPrefixForValueType(valueType) + INDEX_DELIMITER;
-  }
-
-  private String aliasNameForValueType(final ValueType valueType) {
-    return configuration.index.prefix + ALIAS_DELIMITER + valueTypeToString(valueType);
-  }
-
-  private String indexPrefixForValueType(final ValueType valueType) {
-    final String version = VersionUtil.getVersionLowerCase();
-    return configuration.index.prefix
-        + INDEX_DELIMITER
-        + valueTypeToString(valueType)
-        + INDEX_DELIMITER
-        + version;
-  }
-
-  private static String valueTypeToString(final ValueType valueType) {
-    return valueType.name().toLowerCase().replace("_", "-");
-  }
-
   private Map<String, Object> newIndexCommand(final Record<?> record) {
     final Map<String, Object> command = new HashMap<>();
     final Map<String, Object> contents = new HashMap<>();
-    contents.put("_index", indexFor(record));
-    contents.put("_id", idFor(record));
-    contents.put("routing", String.valueOf(record.getPartitionId()));
+    contents.put("_index", indexRouter.indexFor(record));
+    contents.put("_id", indexRouter.idFor(record));
+    contents.put("routing", indexRouter.routingFor(record));
 
     command.put("index", contents);
     return command;
