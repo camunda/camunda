@@ -43,10 +43,16 @@ public final class MultiInstanceBodyProcessor
       new UnsafeBuffer(new byte[Long.BYTES + 1]);
   private final MutableDirectBuffer numberOfActiveInstancesVariableBuffer =
       new UnsafeBuffer(new byte[Long.BYTES + 1]);
+  private final MutableDirectBuffer numberOfCompletedInstancesVariableBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + 1]);
+  private final MutableDirectBuffer numberOfTerminatedInstancesVariableBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + 1]);
 
   private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
   private final DirectBuffer numberOfInstancesVariableView = new UnsafeBuffer(0, 0);
   private final DirectBuffer numberOfActiveInstancesVariableView = new UnsafeBuffer(0, 0);
+  private final DirectBuffer numberOfCompletedInstancesVariableView = new UnsafeBuffer(0, 0);
+  private final DirectBuffer numberOfTerminatedInstancesVariableView = new UnsafeBuffer(0, 0);
 
   private final MsgPackWriter variableWriter = new MsgPackWriter();
 
@@ -373,6 +379,12 @@ public final class MultiInstanceBodyProcessor
 
       case "numberOfActiveInstances" -> getNumberOfActiveInstancesVariable(elementInstanceKey);
 
+      case "numberOfCompletedInstances" -> getNumberOfCompletedInstancesVariable(
+          elementInstanceKey);
+
+      case "numberOfTerminatedInstances" -> getNumberOfTerminatedInstancesVariable(
+          elementInstanceKey);
+
       default -> null;
     };
   }
@@ -395,5 +407,25 @@ public final class MultiInstanceBodyProcessor
         numberOfActiveInstancesVariableBuffer,
         numberOfActiveInstancesVariableView,
         numberOfActiveInstances);
+  }
+
+  private DirectBuffer getNumberOfCompletedInstancesVariable(final long elementInstanceKey) {
+    final int numberOfCompletedInstances =
+        stateBehavior.getElementInstance(elementInstanceKey).getNumberOfCompletedElementInstances();
+    return wrapVariable(
+        numberOfCompletedInstancesVariableBuffer,
+        numberOfCompletedInstancesVariableView,
+        numberOfCompletedInstances);
+  }
+
+  private DirectBuffer getNumberOfTerminatedInstancesVariable(final long elementInstanceKey) {
+    final int numberOfTerminatedInstances =
+        stateBehavior
+            .getElementInstance(elementInstanceKey)
+            .getNumberOfTerminatedElementInstances();
+    return wrapVariable(
+        numberOfTerminatedInstancesVariableBuffer,
+        numberOfTerminatedInstancesVariableView,
+        numberOfTerminatedInstances);
   }
 }
