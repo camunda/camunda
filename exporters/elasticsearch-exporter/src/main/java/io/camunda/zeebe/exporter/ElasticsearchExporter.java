@@ -201,16 +201,16 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void createComponentTemplate() {
-    final String templateName = configuration.index.prefix;
-    final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
-    if (!client.createComponentTemplate(templateName, filename)) {
-      log.warn("Put index template {} from file {} was not acknowledged", templateName, filename);
+    if (!client.putComponentTemplate()) {
+      log.warn("Failed to acknowledge the creation or update of the component template");
     }
   }
 
   private void createValueIndexTemplate(final ValueType valueType) {
     if (!client.putIndexTemplate(valueType)) {
-      log.warn("Put index template for value type {} was not acknowledged", valueType);
+      log.warn(
+          "Failed to acknowledge the creation or update of the index template for value type {}",
+          valueType);
     }
   }
 
