@@ -16,27 +16,16 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 
 public class ElasticsearchClient {
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -58,9 +47,9 @@ public class ElasticsearchClient {
     this.configuration = configuration;
     this.bulkRequest = bulkRequest;
 
-    client = createClient();
     templateReader = new TemplateReader(configuration.index);
     indexRouter = new RecordIndexRouter(configuration.index);
+    client = RestClientFactory.of(configuration);
   }
 
   public void close() throws IOException {
@@ -225,59 +214,6 @@ public class ElasticsearchClient {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put component template", e);
     }
-  }
-
-  private RestClient createClient() {
-    final HttpHost[] httpHosts = urlsToHttpHosts(configuration.url);
-    final RestClientBuilder builder =
-        RestClient.builder(httpHosts)
-            .setRequestConfigCallback(
-                b ->
-                    b.setConnectTimeout(configuration.requestTimeoutMs)
-                        .setSocketTimeout(configuration.requestTimeoutMs))
-            .setHttpClientConfigCallback(this::setHttpClientConfigCallback);
-
-    return builder.build();
-  }
-
-  private HttpAsyncClientBuilder setHttpClientConfigCallback(final HttpAsyncClientBuilder builder) {
-    // use single thread for rest client
-    builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
-
-    if (configuration.hasAuthenticationPresent()) {
-      setupBasicAuthentication(builder);
-    }
-
-    return builder;
-  }
-
-  private void setupBasicAuthentication(final HttpAsyncClientBuilder builder) {
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        AuthScope.ANY,
-        new UsernamePasswordCredentials(
-            configuration.getAuthentication().getUsername(),
-            configuration.getAuthentication().getPassword()));
-
-    builder.setDefaultCredentialsProvider(credentialsProvider);
-  }
-
-  private static HttpHost[] urlsToHttpHosts(final String urls) {
-    return Arrays.stream(urls.split(","))
-        .map(String::trim)
-        .map(ElasticsearchClient::urlToHttpHost)
-        .toArray(HttpHost[]::new);
-  }
-
-  private static HttpHost urlToHttpHost(final String url) {
-    final URI uri;
-    try {
-      uri = new URI(url);
-    } catch (final URISyntaxException e) {
-      throw new ElasticsearchExporterException("Failed to parse url " + url, e);
-    }
-
-    return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
   }
 
   private Map<String, Object> newIndexCommand(final Record<?> record) {
