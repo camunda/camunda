@@ -16,7 +16,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -69,7 +68,7 @@ public class PartitionStartupAndTransitionContextImpl
   private StreamProcessor streamProcessor;
   private LogStream logStream;
   private LogDeletionService logDeletionService;
-  private AsyncSnapshotDirector snapshotDirector;
+  private SnapshotDirector snapshotDirector;
   private HealthMonitor criticalComponentsHealthMonitor;
   private ZeebeDb zeebeDb;
   private ActorControl actorControl;
@@ -267,12 +266,12 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public AsyncSnapshotDirector getSnapshotDirector() {
+  public SnapshotDirector getSnapshotDirector() {
     return snapshotDirector;
   }
 
   @Override
-  public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
+  public void setSnapshotDirector(final SnapshotDirector snapshotDirector) {
     this.snapshotDirector = snapshotDirector;
   }
 

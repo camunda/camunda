@@ -10,34 +10,30 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.ThreadSafeSnapshotDirector;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.util.sched.ActorCompatability;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
 
 public final class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
-    final AsyncSnapshotDirector snapshotDirector = context.getSnapshotDirector();
-    if (snapshotDirector != null
+    if (context.getSnapshotDirector() != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       final var director = context.getSnapshotDirector();
-      context.getComponentHealthMonitor().removeComponent(director.getName());
       context.getRaftPartition().getServer().removeCommittedEntryListener(director);
-      final ActorFuture<Void> future = director.closeAsync();
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setSnapshotDirector(null);
-            }
-          });
-      return future;
-    } else {
-      return CompletableActorFuture.completed(null);
+      try {
+        director.close();
+        context.setSnapshotDirector(null);
+      } catch (final Exception e) {
+        // ignored
+      }
     }
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
@@ -45,44 +41,25 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getSnapshotDirector() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final var server = context.getRaftPartition().getServer();
+      final var actorCompatability = new ActorCompatability();
+      context.getActorSchedulingService().submitActor(actorCompatability);
 
-      final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
-      final AsyncSnapshotDirector director;
+      final var snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
+      final StreamProcessorMode mode;
       if (targetRole == Role.LEADER) {
-        director =
-            AsyncSnapshotDirector.ofProcessingMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod);
+        mode = StreamProcessorMode.PROCESSING;
       } else {
-        director =
-            AsyncSnapshotDirector.ofReplayMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod);
+        mode = StreamProcessorMode.REPLAY;
       }
-
-      final var future = context.getActorSchedulingService().submitActor(director);
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setSnapshotDirector(director);
-              context.getComponentHealthMonitor().registerComponent(director.getName(), director);
-              if (targetRole == Role.LEADER) {
-                server.addCommittedEntryListener(director);
-              }
-            }
-          });
-      return future;
-
-    } else {
-      return CompletableActorFuture.completed(null);
+      context.setSnapshotDirector(
+          new ThreadSafeSnapshotDirector(
+              actorCompatability,
+              context.getStateController(),
+              context.getStreamProcessor(),
+              mode,
+              snapshotPeriod));
     }
+    return CompletableActorFuture.completed(null);
   }
 
   @Override

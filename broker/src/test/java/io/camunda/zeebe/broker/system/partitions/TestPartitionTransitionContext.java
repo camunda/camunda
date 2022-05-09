@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -49,7 +48,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ExporterRepository exporterRepository;
   private AtomixLogStorage logStorage;
   private BrokerCfg brokerCfg;
-  private AsyncSnapshotDirector snapshotDirector;
+  private SnapshotDirector snapshotDirector;
   private QueryService queryService;
   private ConcurrencyControl concurrencyControl;
 
@@ -254,12 +253,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public AsyncSnapshotDirector getSnapshotDirector() {
+  public SnapshotDirector getSnapshotDirector() {
     return snapshotDirector;
   }
 
   @Override
-  public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
+  public void setSnapshotDirector(final SnapshotDirector snapshotDirector) {
     this.snapshotDirector = snapshotDirector;
   }
 

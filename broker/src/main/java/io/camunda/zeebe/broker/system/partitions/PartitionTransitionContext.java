@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -35,9 +34,9 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setLogStream(LogStream logStream);
 
-  AsyncSnapshotDirector getSnapshotDirector();
+  SnapshotDirector getSnapshotDirector();
 
-  void setSnapshotDirector(AsyncSnapshotDirector snapshotDirector);
+  void setSnapshotDirector(SnapshotDirector snapshotDirector);
 
   StateController getStateController();
 

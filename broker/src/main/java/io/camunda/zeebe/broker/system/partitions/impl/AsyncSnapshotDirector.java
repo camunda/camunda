@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.camunda.zeebe.broker.system.partitions.SnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -32,7 +33,7 @@ import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
-    implements RaftCommittedEntryListener, HealthMonitorable {
+    implements RaftCommittedEntryListener, HealthMonitorable, SnapshotDirector {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -196,6 +197,7 @@ public final class AsyncSnapshotDirector extends Actor
    * @return A future that is completed successfully when the snapshot was taken. If the snapshot
    *     was skipped, the future is also completed successfully but with a null.
    */
+  @Override
   public CompletableActorFuture<PersistedSnapshot> forceSnapshot() {
     final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
     actor.call(() -> prepareTakingSnapshot(newSnapshotFuture));
