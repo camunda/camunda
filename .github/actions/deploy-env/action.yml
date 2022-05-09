@@ -116,7 +116,7 @@ runs:
       shell: bash
       if: ${{ inputs.step == 'start'}}
       run: >-
-        if [[ ${{ env.APP_NAME }} = "persistent" ]] 
+        if [[ "${{ env.APP_NAME }}" == "persistent" ]];
         then 
           .github/actions/deploy-env/deploy_script.sh/deploy_script.sh persistent
         else

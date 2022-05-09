@@ -31,7 +31,7 @@ deploy_arguments() {
 }
 
 
-if [[ $1 = "persistent" ]]
+if [[ "$1" == "persistent" ]];
 then
   echo "argocd app create $(deploy_arguments) $(persistent_deploy_arguments)"
 else
