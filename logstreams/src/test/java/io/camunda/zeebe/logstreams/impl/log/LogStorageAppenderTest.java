@@ -30,21 +30,21 @@ import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.health.FailureListener;
-import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class LogStorageAppenderTest {
@@ -79,6 +79,7 @@ final class LogStorageAppenderTest {
             .initialPosition(INITIAL_POSITION)
             .build();
     subscription = spy(dispatcher.openSubscription("log"));
+    Mockito.reset(subscription, logStorage);
 
     appender =
         new LogStorageAppender(
@@ -150,13 +151,17 @@ final class LogStorageAppenderTest {
   }
 
   @Test
-  void shouldFailActorWhenDetectingGapsInPositions() throws InterruptedException {
+  void shouldFailActorWhenDetectingGapsInPositions() {
     // given
     final var value = new Value(1);
-    final var failed = new CountDownLatch(1);
-    final AtomicReference<Throwable> err = new AtomicReference<>();
-    when(subscription.peekBlock(any(), anyInt(), anyBoolean()))
-        .then(
+
+    // the stub has to be defined before we start the actor, as otherwise it is accessed by multiple
+    // threads, which is undefined behavior in Mockito. See the FAQ,
+    // https://github.com/mockito/mockito/wiki/FAQ#is-mockito-thread-safe. The FAQ doesn't mention
+    // this case in particular, but you can test this yourself - if you stub it after, it will
+    // sometimes receive the invocation pointing to a different method than peekBlock.
+    when(subscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean()))
+        .thenAnswer(
             a -> {
               final var result = (int) a.callRealMethod();
               if (result <= 0) {
@@ -175,33 +180,15 @@ final class LogStorageAppenderTest {
 
               return result;
             });
-
     scheduler.submitActor(appender).join();
-    appender.addFailureListener(
-        new FailureListener() {
-          @Override
-          public void onFailure(final HealthReport report) {
-            err.set(report.getIssue().throwable());
-            failed.countDown();
-          }
-
-          @Override
-          public void onRecovered() {}
-
-          @Override
-          public void onUnrecoverableFailure(final HealthReport report) {}
-        });
 
     // when
     writer.event().valueWriter(value).done().event().valueWriter(value).done().tryWrite();
 
     // then
-    assertThat(failed.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(err.get())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage(
-            "Expected all positions in a single log entry batch to increase by 1 starting "
-                + "at 2, but got 2 followed by 10");
+    Awaitility.await("until the actor has failed")
+        .atMost(Duration.ofSeconds(10))
+        .until(appender::isActorClosed);
     reader.seekToFirstEvent();
     assertThat(reader.hasNext()).isFalse();
   }
