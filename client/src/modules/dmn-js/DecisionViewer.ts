@@ -23,6 +23,9 @@ class DecisionViewer {
     }
 
     if (this.#xml !== xml) {
+      this.#viewer?.destroy();
+      this.#viewer = new Viewer('decision', {container});
+
       await this.#viewer.importXML(xml);
       this.#xml = xml;
     }
