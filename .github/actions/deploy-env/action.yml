@@ -116,20 +116,12 @@ runs:
       shell: bash
       if: ${{ inputs.step == 'start'}}
       run: >-
-        argocd app create
-        --dest-namespace optimize-${{ env.APP_NAME }}
-        --file .ci/deployments-resources/argo/application.yml
-        --helm-set optimize.image.tag=${{ inputs.docker_tag }}
-        --helm-set optimize.image.repository="gcr.io/ci-30-162810/camunda-optimize"
-        --helm-set cambpm.image.tag=${{ inputs.cambpm_version }}
-        --helm-set elasticsearch.image.tag=${{ inputs.es_version }}
-        --helm-set git.branch=${{ inputs.revision }}
-        --helm-set global.labels.app=${{ env.APP_NAME }}
-        --helm-set global.labels.commit=${{ github.sha }}
-        --name optimize-${{ env.APP_NAME }}
-        --project optimize-previews
-        --revision ${{ inputs.revision }}
-        --upsert
+        if [[ ${{ env.APP_NAME }} = "persistent" ]] 
+        then 
+          .github/actions/deploy-env/deploy_script.sh/deploy_script.sh persistent
+        else
+          .github/actions/deploy-env/deploy_script.sh/deploy_script.sh 
+        fi
         
         argocd app sync optimize-${{ env.APP_NAME }} --async --force || true
       env:
