@@ -4,9 +4,12 @@ name: Use CI Nexus cache
 description: Sets up use of co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml.
 
 inputs:
+  # Using an input with a default value as raw string here instead of relying on secrets.VAULT_ADDR
+  # since workflows accessing any GHA secret cannot be run for PRs from outside contributors anymore,
+  # see also https://github.com/camunda/zeebe/pull/9302#issuecomment-1118971782
   vault-url:
     description: 'Vault URL to use.'
-    default: 'https://stage.vault.int.camunda.com'
+    default: 'https://vault.int.camunda.com'
 
 runs:
   using: composite
