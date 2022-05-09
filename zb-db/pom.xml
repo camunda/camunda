@@ -10,7 +10,6 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <groupId>io.camunda</groupId>
   <artifactId>zeebe-db</artifactId>
   <packaging>jar</packaging>
 

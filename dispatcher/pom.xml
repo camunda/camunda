@@ -32,6 +32,7 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <!-- Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

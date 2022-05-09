@@ -1014,6 +1014,132 @@ public final class MultiInstanceActivityTest {
   }
 
   @Test
+  public void shouldCompleteBodyWhenCompleteConditionAccessNumberOfInstancesEvaluateTrue() {
+    // given
+    int completedJobs = 2;
+    String completionCondition = "= numberOfInstances = 2";
+    if ("parallel".equals(loopCharacteristics)) {
+      completionCondition = "= numberOfInstances = 3";
+      completedJobs = 1;
+    }
+    final String finalCompletionCondition = completionCondition;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(miBuilder.andThen(m -> m.completionCondition(finalCompletionCondition))))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(processInstanceKey, completedJobs);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    if ("parallel".equals(loopCharacteristics)) {
+      // after 1 has completed, the others must be terminated
+      assertThat(
+              RecordingExporter.records()
+                  .limitToProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("all non-completed service tasks have terminated")
+          .isEqualTo(2);
+    } else {
+      assertThat(
+              RecordingExporter.records()
+                  .limitToProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("only 2 out of 3 sequential service tasks has activated")
+          .isEqualTo(2);
+    }
+  }
+
+  @Test
+  public void shouldCompleteBodyWhenCompleteConditionAccessNumberOfActiveInstancesEvaluateTrue() {
+    // given
+    int completedJobs = 1;
+    String completionCondition = "= numberOfActiveInstances = 0";
+    if ("parallel".equals(loopCharacteristics)) {
+      completedJobs = 2;
+      completionCondition = "= numberOfActiveInstances = 1";
+    }
+    final String finalCompletionCondition = completionCondition;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(miBuilder.andThen(m -> m.completionCondition(finalCompletionCondition))))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(processInstanceKey, completedJobs);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    if ("parallel".equals(loopCharacteristics)) {
+      // after 2 has completed, the others must be terminated
+      assertThat(
+              RecordingExporter.records()
+                  .limitToProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("all non-completed service tasks have terminated")
+          .isEqualTo(1);
+    } else {
+      assertThat(
+              RecordingExporter.records()
+                  .limitToProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("only 1 out of 3 sequential service tasks has activated")
+          .isEqualTo(1);
+    }
+  }
+
+  @Test
   public void shouldApplyInputMapping() {
     // given
     final ServiceTask task = process(miBuilder).getModelElementById(ELEMENT_ID);

@@ -22,6 +22,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   private final LongProperty parentKeyProp = new LongProperty("parentKey", -1L);
   private final IntegerProperty childCountProp = new IntegerProperty("childCount", 0);
+  private final IntegerProperty childActivatedCountProp =
+      new IntegerProperty("childActivatedCount", 0);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", 0L);
   private final IntegerProperty multiInstanceLoopCounterProp =
       new IntegerProperty("multiInstanceLoopCounter", 0);
@@ -37,6 +39,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   ElementInstance() {
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
+        .declareProperty(childActivatedCountProp)
         .declareProperty(jobKeyProp)
         .declareProperty(multiInstanceLoopCounterProp)
         .declareProperty(interruptingEventKeyProp)
@@ -121,6 +124,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public int getNumberOfActiveElementInstances() {
     return childCountProp.getValue();
+  }
+
+  public int getNumberOfElementInstances() {
+    return childActivatedCountProp.getValue();
+  }
+
+  public void incrementNumberOfElementInstances() {
+    childActivatedCountProp.increment();
   }
 
   public int getMultiInstanceLoopCounter() {

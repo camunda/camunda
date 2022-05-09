@@ -42,6 +42,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   protected final ActorTimerQueue timerJobQueue;
   protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
   ActorTask currentTask;
+  private final ActorMetrics actorMetrics = new ActorMetrics();
   private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
   private final ActorClock clock;
   private final int threadId;
@@ -77,7 +78,12 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
     if (currentTask != null) {
       try {
-        executeCurrentTask();
+        final var actorName = currentTask.actor.getName();
+        try (final var timer = actorMetrics.startExecutionTimer(actorName)) {
+          executeCurrentTask();
+        }
+        actorMetrics.countExecution(actorName);
+
       } finally {
         taskScheduler.onTaskReleased(currentTask);
       }

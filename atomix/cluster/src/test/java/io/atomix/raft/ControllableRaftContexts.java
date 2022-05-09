@@ -29,7 +29,7 @@ import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.zeebe.NoopEntryValidator;
+import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;

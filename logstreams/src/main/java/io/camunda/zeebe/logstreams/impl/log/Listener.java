@@ -10,13 +10,13 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.prometheus.client.Histogram.Timer;
 
-public final class Listener implements AppendListener {
+final class Listener implements AppendListener {
   private final LogStorageAppender appender;
   private final long highestPosition;
   private final Timer appendLatencyTimer;
   private final Timer commitLatencyTimer;
 
-  public Listener(
+  Listener(
       final LogStorageAppender appender,
       final long highestPosition,
       final Timer startAppendLatencyTimer,

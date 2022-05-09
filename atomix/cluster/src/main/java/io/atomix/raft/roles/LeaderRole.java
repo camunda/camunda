@@ -46,7 +46,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.Configuration;
-import io.atomix.raft.zeebe.ValidationResult;
+import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
@@ -564,7 +564,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     final ValidationResult result = raft.getEntryValidator().validateEntry(lastZbEntry, entry);
     if (result.failed()) {
-      appendListener.onWriteError(new IllegalStateException(result.getErrorMessage()));
+      appendListener.onWriteError(new IllegalStateException(result.errorMessage()));
       raft.transition(Role.FOLLOWER);
     } else {
       append(new RaftLogEntry(raft.getTerm(), entry))

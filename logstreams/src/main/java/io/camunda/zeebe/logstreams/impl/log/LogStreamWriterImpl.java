@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public final class LogStreamWriterImpl implements LogStreamRecordWriter {
+final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
   private final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
   private final ClaimedFragment claimedFragment = new ClaimedFragment();
@@ -39,7 +39,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
 
-  public LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
+  LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
     this.logWriteBuffer = logWriteBuffer;
     this.partitionId = partitionId;
 

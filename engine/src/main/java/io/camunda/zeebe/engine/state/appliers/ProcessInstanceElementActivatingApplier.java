@@ -71,7 +71,7 @@ final class ProcessInstanceElementActivatingApplier
           flowScopeEventTrigger, flowScopeInstance.getParentKey(), elementInstanceKey);
     }
 
-    manageMultiInstanceLoopCounter(elementInstanceKey, flowScopeInstance, flowScopeElementType);
+    manageMultiInstance(elementInstanceKey, flowScopeInstance, flowScopeElementType);
   }
 
   private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
@@ -206,13 +206,15 @@ final class ProcessInstanceElementActivatingApplier
         ExecutableFlowElementContainer.class);
   }
 
-  private void manageMultiInstanceLoopCounter(
+  private void manageMultiInstance(
       final long elementInstanceKey,
       final ElementInstance flowScopeInstance,
       final BpmnElementType flowScopeElementType) {
     if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       // update the loop counter of the multi-instance body (starting by 1)
       flowScopeInstance.incrementMultiInstanceLoopCounter();
+      // update the numberOfInstances of the multi-instance body
+      flowScopeInstance.incrementNumberOfElementInstances();
       elementInstanceState.updateInstance(flowScopeInstance);
 
       // set the loop counter of the inner instance

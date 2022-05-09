@@ -34,7 +34,7 @@ import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
+final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
@@ -160,7 +160,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
     return this;
   }
 
-  public void copyExistingEventToBuffer() {
+  private void copyExistingEventToBuffer() {
     // validation
     if (valueWriter == null) {
       return;

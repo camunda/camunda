@@ -39,9 +39,16 @@ public final class MultiInstanceBodyProcessor
 
   private final MutableDirectBuffer loopCounterVariableBuffer =
       new UnsafeBuffer(new byte[Long.BYTES + 1]);
-  private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
+  private final MutableDirectBuffer numberOfInstancesVariableBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + 1]);
+  private final MutableDirectBuffer numberOfActiveInstancesVariableBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + 1]);
 
-  private final MsgPackWriter loopCounterWriter = new MsgPackWriter();
+  private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
+  private final DirectBuffer numberOfInstancesVariableView = new UnsafeBuffer(0, 0);
+  private final DirectBuffer numberOfActiveInstancesVariableView = new UnsafeBuffer(0, 0);
+
+  private final MsgPackWriter variableWriter = new MsgPackWriter();
 
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -265,10 +272,14 @@ public final class MultiInstanceBodyProcessor
 
   private void terminate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext flowScopeContext) {
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(flowScopeContext);
+
     incidentBehavior.resolveIncidents(flowScopeContext);
 
     eventSubscriptionBehavior
         .findEventTrigger(flowScopeContext)
+        .filter(eventTrigger -> flowScopeInstance.isActive())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated =
@@ -312,7 +323,9 @@ public final class MultiInstanceBodyProcessor
             variableName -> stateBehavior.setLocalVariable(childContext, variableName, NIL_VALUE));
 
     stateBehavior.setLocalVariable(
-        childContext, LOOP_COUNTER_VARIABLE, wrapLoopCounter(loopCounter));
+        childContext,
+        LOOP_COUNTER_VARIABLE,
+        wrapVariable(loopCounterVariableBuffer, loopCounterVariableView, loopCounter));
   }
 
   private Either<Failure, List<DirectBuffer>> readInputCollectionVariable(
@@ -328,14 +341,15 @@ public final class MultiInstanceBodyProcessor
         context, multiInstanceBody.getInnerActivity());
   }
 
-  private DirectBuffer wrapLoopCounter(final int loopCounter) {
-    loopCounterWriter.wrap(loopCounterVariableBuffer, 0);
+  private DirectBuffer wrapVariable(
+      final MutableDirectBuffer variableBuffer, final DirectBuffer variableView, final long value) {
+    variableWriter.wrap(variableBuffer, 0);
 
-    loopCounterWriter.writeInteger(loopCounter);
-    final var length = loopCounterWriter.getOffset();
+    variableWriter.writeInteger(value);
+    final var length = variableWriter.getOffset();
 
-    loopCounterVariableView.wrap(loopCounterVariableBuffer, 0, length);
-    return loopCounterVariableView;
+    variableView.wrap(variableBuffer, 0, length);
+    return variableView;
   }
 
   private Either<Failure, Boolean> satisfiesCompletionCondition(
@@ -343,10 +357,43 @@ public final class MultiInstanceBodyProcessor
     final Optional<Expression> completionCondition =
         element.getLoopCharacteristics().getCompletionCondition();
 
+    final ExpressionProcessor primaryContextExpressionProcessor =
+        expressionBehavior.withPrimaryContext(
+            (variableName -> getVariable(context.getFlowScopeKey(), variableName)));
     if (completionCondition.isPresent()) {
-      return expressionBehavior.evaluateBooleanExpression(
+      return primaryContextExpressionProcessor.evaluateBooleanExpression(
           completionCondition.get(), context.getElementInstanceKey());
     }
     return Either.right(false);
+  }
+
+  private DirectBuffer getVariable(final long elementInstanceKey, final String variableName) {
+    return switch (variableName) {
+      case "numberOfInstances" -> getNumberOfInstancesVariable(elementInstanceKey);
+
+      case "numberOfActiveInstances" -> getNumberOfActiveInstancesVariable(elementInstanceKey);
+
+      default -> null;
+    };
+  }
+
+  private DirectBuffer getNumberOfInstancesVariable(final long elementInstanceKey) {
+    return wrapVariable(
+        numberOfInstancesVariableBuffer,
+        numberOfInstancesVariableView,
+        stateBehavior.getElementInstance(elementInstanceKey).getNumberOfElementInstances());
+  }
+
+  private DirectBuffer getNumberOfActiveInstancesVariable(final long elementInstanceKey) {
+    // The getNumberOfActiveInstancesVariable method is called while the child instance is
+    // completing, but the active element instances value has not yet been decremented,
+    // which is why this variable has to be lowered by 1
+    final int numberOfActiveInstances =
+        stateBehavior.getElementInstance(elementInstanceKey).getNumberOfActiveElementInstances()
+            - 1;
+    return wrapVariable(
+        numberOfActiveInstancesVariableBuffer,
+        numberOfActiveInstancesVariableView,
+        numberOfActiveInstances);
   }
 }

@@ -34,7 +34,7 @@ import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.raft.zeebe.NoopEntryValidator;
+import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -48,6 +48,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -261,6 +262,10 @@ public final class RaftRule extends ExternalResource {
 
   public List<MemberId> getMemberIds() {
     return members.stream().map(RaftMember::memberId).collect(Collectors.toList());
+  }
+
+  public Collection<RaftServer> getServers() {
+    return servers.values();
   }
 
   public void shutdownServer(final RaftServer raftServer) throws Exception {

@@ -38,7 +38,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
-public class LogStorageAppender extends Actor implements HealthMonitorable {
+final class LogStorageAppender extends Actor implements HealthMonitorable {
 
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final Map<String, AlgorithmCfg> ALGORITHM_CFG =
@@ -57,7 +57,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final ActorFuture<Void> closeFuture;
   private final int partitionId;
 
-  public LogStorageAppender(
+  LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
@@ -203,14 +203,25 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
 
   private Tuple<Long, Long> readLowestHighestPosition(final ByteBuffer buffer) {
     final var view = new UnsafeBuffer(buffer);
-    final var positions = new Tuple<>(Long.MAX_VALUE, Long.MIN_VALUE);
+    final var positions = new Tuple<>(-1L, -1L);
     var offset = 0;
+    var lastPosition = -1L;
 
     do {
       positionReader.wrap(view, offset);
       final long pos = positionReader.getPosition();
-      positions.setLeft(Math.min(positions.getLeft(), pos));
-      positions.setRight(Math.max(positions.getRight(), pos));
+      if (lastPosition == -1) {
+        positions.setLeft(pos);
+      } else if (pos != lastPosition + 1) {
+        throw new IllegalStateException(
+            String.format(
+                "Expected all positions in a single log"
+                    + " entry batch to increase by 1 starting at %d, but got %d followed by %d",
+                positions.getLeft(), lastPosition, pos));
+      }
+
+      positions.setRight(pos);
+      lastPosition = pos;
       offset += positionReader.getLength();
     } while (offset < view.capacity());
 
@@ -238,7 +249,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
     actor.fail();
     final var report = HealthReport.unhealthy(this).withIssue(error);
-    failureListeners.forEach((l) -> l.onFailure(report));
+    failureListeners.forEach(l -> l.onFailure(report));
   }
 
   void runOnFailure(final Throwable error) {

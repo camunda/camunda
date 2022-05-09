@@ -3,13 +3,13 @@ name: Tests
 on:
   push:
     branches:
-      - main
       - stable/*
-      - release/*
+      - release-*
       - trying
       - staging
   pull_request: {}
   workflow_dispatch: {}
+  workflow_call: {}
 
 jobs:
   integration-tests:
@@ -17,7 +17,7 @@ jobs:
     runs-on: "n1-standard-32-netssd-preempt"
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.2.0
+      - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -25,6 +25,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
+      - uses: ./.github/actions/use-ci-nexus-cache
       - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
@@ -49,7 +50,7 @@ jobs:
     runs-on: "n1-standard-8-netssd-preempt"
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.2.0
+      - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -57,6 +58,7 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
+      - uses: ./.github/actions/use-ci-nexus-cache
       - run: mvn -T1C -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
@@ -80,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: sudo apt-get -y install jq
-      - uses: actions/setup-java@v3.2.0
+      - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -89,7 +91,7 @@ jobs:
         id: list-projects
         # Build a json array of module names that can be used for the matrix in `unit-tests`
         run: >
-          echo "::set-output name=projects::$(mvn -pl !:zeebe-workflow-engine,!:zeebe-logstreams -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q |  jq -cnR [inputs])"
+          echo "::set-output name=projects::$(mvn -pl !:zeebe-workflow-engine -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q |  jq -cnR [inputs])"
     outputs:
       projects: ${{ steps.list-projects.outputs.projects }}
   unit-tests:
@@ -102,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.2.0
+      - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -128,10 +130,10 @@ jobs:
           retention-days: 7
   slow-unit-tests:
     name: Slow unit tests
-    runs-on: ["n1-standard-8-netssd-preempt"]
+    runs-on: "n1-standard-8-netssd-preempt"
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.2.0
+      - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -139,15 +141,16 @@ jobs:
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
+      - uses: ./.github/actions/use-ci-nexus-cache
       - run: >
           mvn -T1C -B
           -D skipTests -D skipChecks
-          -am -pl :zeebe-workflow-engine,:zeebe-logstreams
+          -am -pl :zeebe-workflow-engine
           install
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
-          -pl :zeebe-workflow-engine,:zeebe-logstreams
+          -pl :zeebe-workflow-engine
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
@@ -173,7 +176,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 17
-        uses: actions/setup-java@v3.2.0
+        uses: actions/setup-java@v3.3.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -208,7 +211,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.15"
-      - uses: actions/setup-java@v3.2.0
+      - uses: actions/setup-java@v3.3.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -217,4 +220,3 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
-
