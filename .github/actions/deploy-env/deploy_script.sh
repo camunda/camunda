@@ -7,15 +7,12 @@
 #
 #!/bin/bash
 
-persistent_deploy_arguments (){
-  echo '--helm-set env=persistent \
+persistent_deploy_arguments='--helm-set env=persistent \
     --helm-set optimize.env.elasticsearchUrl="elasticsearch-es-http:9200" \
-    --helm-set cambpm.env.javaOpts="-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Ddb.username=$DB_USERNAME -Ddb.password=$DB_PASSWORD" \
+    --helm-set cambpm.env.javaOpts="-Xms1g \-Xmx1g \-XX:MaxMetaspaceSize=256m \-Ddb.username=$DB_USERNAME \-Ddb.password=$DB_PASSWORD" \
     --helm-set cambpm.env.postgresUrl="optimize-persistent-postgres.optimize-persistent:5432"'
-}
 
-deploy_arguments() {
-  echo '--dest-namespace optimize-${{ env.APP_NAME }} \
+deploy_arguments='--dest-namespace optimize-${{ env.APP_NAME }} \
     --file .ci/deployments-resources/argo/application.yml \
     --helm-set optimize.image.tag=${{ inputs.docker_tag }} \
     --helm-set optimize.image.repository="gcr.io/ci-30-162810/camunda-optimize" \
@@ -28,12 +25,11 @@ deploy_arguments() {
     --project optimize-previews \
     --revision ${{ inputs.revision }} \
     --upsert'
-}
 
 
 if [[ "$1" == "persistent" ]];
 then
-  echo "argocd app create $(deploy_arguments) $(persistent_deploy_arguments)"
+  argocd app create $deploy_arguments $persistent_deploy_arguments
 else
-  echo "argocd app create $(deploy_arguments)"
+  argocd app create $deploy_arguments
 fi
