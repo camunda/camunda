@@ -65,7 +65,7 @@ echo
 ELASTICSEARCH_LOG_FILE=$BASEDIR/log/elasticsearch.log
 bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.demo.version}/bin/elasticsearch" </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
 
-URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
+URL="http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
 checkStartup $URL "Elasticsearch"
 
 echo "The default Elasticsearch port is 9200"

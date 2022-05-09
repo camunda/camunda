@@ -13,8 +13,8 @@
 # the documentation: https://docs.camunda.org/optimize/${docs.version}/technical-guide/setup/installation/
 
 function checkStartup {
-	RETRIES=6
-    SLEEP_TIME=10
+	RETRIES=20
+    SLEEP_TIME=20
     URL=$1
     NAME=$2
     COMMAND="curl -XGET $URL"
@@ -68,7 +68,7 @@ echo
 ELASTICSEARCH_LOG_FILE=$BASEDIR/log/elasticsearch.log
 bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.demo.version}/bin/elasticsearch" </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
 
-URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
+URL="http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
 checkStartup $URL "Elasticsearch"
 
 echo

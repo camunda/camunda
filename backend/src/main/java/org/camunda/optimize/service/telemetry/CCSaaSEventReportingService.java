@@ -8,12 +8,12 @@ package org.camunda.optimize.service.telemetry;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.telemetry.mixpanel.MixpanelReportingService;
 import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
-import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(CamundaCloudCondition.class)
+@Conditional(CCSaaSCondition.class)
 @AllArgsConstructor
 public class CCSaaSEventReportingService implements EventReportingService {
 

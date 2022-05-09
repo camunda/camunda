@@ -21,7 +21,7 @@ if not exist ".\log" mkdir log
 set RETRIES=5
 set SLEEP_TIME=10
 
-set COMMAND=curl.exe -f -XGET http://localhost:9200/_cluster/health?wait_for_status=yellow^^^&timeout=10s
+set COMMAND=curl.exe -f -XGET http://localhost:9200/_cluster/health?wait_for_status=green^^^&wait_for_active_shards=all^^^&wait_for_no_initializing_shards=true^^^&timeout=120s
 :: we need to execute curl once, otherwise we don't get the correct error code
 %COMMAND% >nul 2>&1
 
