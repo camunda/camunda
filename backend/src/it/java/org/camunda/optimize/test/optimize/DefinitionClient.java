@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseD
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
-import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 
@@ -113,43 +112,6 @@ public class DefinitionClient {
       .buildGetDefinitionVersionsByTypeAndKeyRequest(type.getId(), key, filterByCollectionScope)
       .withUserAuthentication(username, password)
       .executeAndReturnList(DefinitionVersionResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  public List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersions(final DefinitionType type,
-                                                                              final String key,
-                                                                              final List<String> versions) {
-    return resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
-      type, key, versions, null, DEFAULT_USERNAME, DEFAULT_PASSWORD
-    );
-  }
-
-  public List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersions(final DefinitionType type,
-                                                                              final String key,
-                                                                              final List<String> versions,
-                                                                              final String filterByCollectionScope) {
-    return resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
-      type, key, versions, filterByCollectionScope, DEFAULT_USERNAME, DEFAULT_PASSWORD
-    );
-  }
-
-  public List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(final DefinitionType type,
-                                                                                    final String key,
-                                                                                    final List<String> versions,
-                                                                                    final String username,
-                                                                                    final String password) {
-    return resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(type, key, versions, null, username, password);
-  }
-
-  public List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(final DefinitionType type,
-                                                                                    final String key,
-                                                                                    final List<String> versions,
-                                                                                    final String filterByCollectionScope,
-                                                                                    final String username,
-                                                                                    final String password) {
-    return getRequestExecutor()
-      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(type.getId(), key, versions, filterByCollectionScope)
-      .withUserAuthentication(username, password)
-      .executeAndReturnList(TenantResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<DefinitionWithTenantsResponseDto> resolveDefinitionTenantsByTypeMultipleKeyAndVersions(

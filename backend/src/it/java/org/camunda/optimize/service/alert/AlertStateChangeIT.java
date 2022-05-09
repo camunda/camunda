@@ -149,7 +149,7 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     assertThat(content).containsSequence("is not exceeded anymore.");
     assertThat(content).containsSequence(
       String.format(
-        "http://localhost:%d/#/collection/%s/report/%s/",
+        "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_resolved&utm_medium=email",
         getOptimizeHttpPort(),
         collectionId,
         reportId

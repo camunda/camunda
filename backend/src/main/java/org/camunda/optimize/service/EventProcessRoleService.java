@@ -90,4 +90,5 @@ public class EventProcessRoleService implements ConfigurationReloadable {
   public void reloadConfiguration(final ApplicationContext context) {
     this.eventProcessRoleReadCache.invalidateAll();
   }
+
 }

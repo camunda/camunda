@@ -19,9 +19,11 @@ public class WebhookConfiguration {
   private String defaultPayload;
 
   public enum Placeholder {
-    ALERT_MESSAGE(AlertNotificationDto::getAlertMessage),
+    // This only works as the link is at the end of the composed text. We would need to refactor this if the webhook
+    // structure of alerts changes in future
+    ALERT_MESSAGE(alertNotificationDto -> alertNotificationDto.getAlertMessage()  + "&utm_medium=webhook"),
     ALERT_NAME(notificationDto -> notificationDto.getAlert().getName()),
-    ALERT_REPORT_LINK(AlertNotificationDto::getReportLink),
+    ALERT_REPORT_LINK(alertNotificationDto -> alertNotificationDto.getReportLink() + "&utm_medium=webhook"),
     ALERT_CURRENT_VALUE(notificationDto -> String.valueOf(notificationDto.getCurrentValue())),
     ALERT_THRESHOLD_VALUE(notificationDto -> String.valueOf(notificationDto.getAlert().getThreshold())),
     ALERT_THRESHOLD_OPERATOR(notificationDto -> notificationDto.getAlert().getThresholdOperator().getId()),

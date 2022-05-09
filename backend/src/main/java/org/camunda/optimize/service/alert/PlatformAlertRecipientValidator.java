@@ -17,12 +17,11 @@ import java.util.List;
 public class PlatformAlertRecipientValidator implements AlertRecipientValidator {
 
   @Override
-  public List<String> getValidatedRecipientEmailList(final List<String> emailAddresses) {
+  public void validateAlertRecipientEmailAddresses(final List<String> emailAddresses) {
     if (emailAddresses.isEmpty()) {
       throw new OptimizeValidationException(
-        "The field [emails] is not allowed to both be empty. At least one recipient must be set.");
+        "The field [emails] is not allowed to be empty. At least one recipient must be set.");
     }
-    return emailAddresses;
   }
 
 }

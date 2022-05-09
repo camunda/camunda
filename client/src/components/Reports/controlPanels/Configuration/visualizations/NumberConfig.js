@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
@@ -22,8 +23,9 @@ export default function NumberConfig({report, onChange}) {
     view.properties.includes('percentage') ||
     view.entity === 'variable';
   const goalSet = targetValue.active;
-
-  const isMultiMeasure = view.properties.length > 1 || configuration.aggregationTypes.length > 1;
+  const isMultiMeasure =
+    view.properties.length > 1 ||
+    (view.properties.includes('duration') && configuration.aggregationTypes.length > 1);
 
   return (
     <div className="NumberConfig">

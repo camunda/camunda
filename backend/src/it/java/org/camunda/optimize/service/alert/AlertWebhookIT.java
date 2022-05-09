@@ -199,7 +199,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
                                                                             final AlertCreationRequestDto simpleAlert,
                                                                             final AlertNotificationType alertType,
                                                                             final String currentValue) {
-    final String expectedLink = createReportLink(collectionId, reportId);
+    final String expectedLink = createReportLink(collectionId, reportId, alertType);
     final String expectedMessage = createAlertMessage(expectedLink);
     return createPayloadJson(simpleAlert, alertType, currentValue, expectedLink, expectedMessage);
   }
@@ -209,7 +209,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
                                                                               final AlertCreationRequestDto simpleAlert,
                                                                               final AlertNotificationType alertType,
                                                                               final String currentValue) {
-    final String expectedLink = createReportLink(collectionId, reportId);
+    final String expectedLink = createReportLink(collectionId, reportId, alertType);
     final String expectedMessage = createAlertResolvedMessage(expectedLink);
     return createPayloadJson(simpleAlert, alertType, currentValue, expectedLink, expectedMessage);
   }
@@ -229,9 +229,9 @@ public class AlertWebhookIT extends AbstractAlertIT {
       "\n}";
   }
 
-  private String createReportLink(final String collectionId, final String reportId) {
+  private String createReportLink(final String collectionId, final String reportId, final AlertNotificationType type) {
     return String.format(
-      "http://localhost:%d/#/collection/%s/report/%s/",
+      "http://localhost:%d/#/collection/%s/report/%s?utm_source=" + type.getUtmSource() + "&utm_medium=webhook",
       embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090),
       collectionId,
       reportId

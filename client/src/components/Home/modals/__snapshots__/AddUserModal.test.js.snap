@@ -17,6 +17,7 @@ exports[`should match snapshot 1`] = `
         <UserTypeaheadErrorHandler
           collectionUsers={Array []}
           onChange={[Function]}
+          optionsOnly={false}
           users={Array []}
         />
       </FormGroup>

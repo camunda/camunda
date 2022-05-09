@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
@@ -40,6 +41,11 @@ public class UserTaskIdleDurationByUserTaskReportEvaluationIT
   }
 
   @Override
+  protected void setDurationFieldToNullInElasticsearch(final String processInstanceId) {
+    setUserTaskDurationToNull(processInstanceId, ProcessInstanceIndex.USER_TASK_IDLE_DURATION);
+  }
+
+  @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions) {
     return TemplatedProcessReportDataBuilder
       .createReportData()
@@ -54,8 +60,12 @@ public class UserTaskIdleDurationByUserTaskReportEvaluationIT
   protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<MapResultEntryDto>> result,
                                                               final FlowNodeStatusTestValues expectedValues) {
     Optional.ofNullable(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_1))
-      .ifPresent(expectedVal -> assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1).get().getValue()).isEqualTo(expectedVal));
+      .ifPresent(expectedVal ->
+                   assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1).get().getValue())
+                     .isEqualTo(expectedVal));
     Optional.ofNullable(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_2))
-      .ifPresent(expectedVal -> assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2).get().getValue()).isEqualTo(expectedVal));
+      .ifPresent(expectedVal ->
+                   assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2).get().getValue())
+                     .isEqualTo(expectedVal));
   }
 }

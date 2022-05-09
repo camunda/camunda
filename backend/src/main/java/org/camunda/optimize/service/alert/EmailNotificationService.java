@@ -32,8 +32,11 @@ public class EmailNotificationService implements NotificationService {
     notify(notification.getAlertMessage(), notification.getAlert().getEmails());
   }
 
-  public void notify(final String text, final List<String> recipients) {
-    recipients.forEach(recipient -> notifyRecipient(text, recipient));
+  public void notify(String text, final List<String> recipients) {
+    // This only works as the link is at the end of the composed text. We would need to refactor this if the email
+    // structure of alerts changes in future
+    String textWithTracking = text + "&utm_medium=email";
+    recipients.forEach(recipient -> notifyRecipient(textWithTracking, recipient));
   }
 
   private void notifyRecipient(final String text, final String recipient) {

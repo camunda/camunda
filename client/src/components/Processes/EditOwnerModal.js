@@ -1,13 +1,15 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {Button, Deleter, Labeled, Modal, UserTypeahead} from 'components';
 import {t} from 'translation';
+import {getOptimizeProfile} from 'config';
 
 import './EditOwnerModal.scss';
 
@@ -16,6 +18,13 @@ export default function EditOwnerModal({initialOwner, onClose, onConfirm}) {
     initialOwner?.id ? {id: 'USER:' + initialOwner.id, identity: initialOwner} : null
   );
   const [deleting, setDeleting] = useState();
+  const [optimizeProfile, setOptimizeProfile] = useState();
+
+  useEffect(() => {
+    (async () => {
+      setOptimizeProfile(await getOptimizeProfile());
+    })();
+  }, []);
 
   return (
     <Modal open onClose={onClose} className="EditOwnerModal">
@@ -27,6 +36,7 @@ export default function EditOwnerModal({initialOwner, onClose, onConfirm}) {
             users={selectedUser ? [selectedUser] : []}
             onChange={(users) => setSelectedUser(users[users.length - 1])}
             excludeGroups
+            optionsOnly={optimizeProfile === 'cloud'}
           />
         </Labeled>
         <Deleter

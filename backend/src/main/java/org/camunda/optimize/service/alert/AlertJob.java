@@ -67,8 +67,7 @@ public class AlertJob implements Job {
             + "] from Elasticsearch. Report does not exist."
         ));
       final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportDefinition).build();
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-      final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
         reportEvaluator.evaluateReport(reportEvaluationInfo).getEvaluationResult();
       final Double reportResult = evaluationResult.getFirstCommandResult().getFirstMeasureData();
 
@@ -128,8 +127,8 @@ public class AlertJob implements Job {
       alert,
       currentValue,
       notificationType,
-      composeAlertText(alert, reportDefinition, currentValue),
-      createReportViewLink(alert)
+      composeAlertText(alert, reportDefinition, notificationType, currentValue),
+      createReportViewLink(alert, notificationType)
     );
   }
 
@@ -137,10 +136,13 @@ public class AlertJob implements Job {
                                                                final ReportDefinitionDto<?> reportDefinition,
                                                                final Double currentValue) {
     return new AlertNotificationDto(
-      alert, currentValue, RESOLVED, composeFixText(alert, reportDefinition, currentValue), createReportViewLink(alert)
+      alert,
+      currentValue,
+      RESOLVED,
+      composeFixText(alert, reportDefinition, currentValue),
+      createReportViewLink(alert, RESOLVED)
     );
   }
-
 
   private void fanoutNotification(final AlertNotificationDto notification) {
     for (NotificationService notificationService : notificationServices) {
@@ -158,10 +160,11 @@ public class AlertJob implements Job {
 
   private String composeAlertText(final AlertDefinitionDto alert,
                                   final ReportDefinitionDto<?> reportDefinition,
+                                  final AlertNotificationType notificationType,
                                   final Double result) {
     final String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "is not reached" : "was exceeded";
-    return composeAlertText(alert, reportDefinition, result, statusText);
+    return composeAlertText(alert, reportDefinition, result, notificationType, statusText);
   }
 
   private String composeFixText(final AlertDefinitionDto alert,
@@ -169,12 +172,13 @@ public class AlertJob implements Job {
                                 final Double result) {
     String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "has been reached" : "is not exceeded anymore";
-    return composeAlertText(alert, reportDefinition, result, statusText);
+    return composeAlertText(alert, reportDefinition, result, RESOLVED, statusText);
   }
 
   private String composeAlertText(final AlertDefinitionDto alert,
                                   final ReportDefinitionDto<?> reportDefinition,
                                   final Double result,
+                                  final AlertNotificationType notificationType,
                                   final String statusText) {
     return configurationService.getAlertEmailCompanyBranding() + " Optimize - Report Status\n" +
       "Alert name: " + alert.getName() + "\n" +
@@ -185,7 +189,7 @@ public class AlertJob implements Job {
       ". Current value: " +
       formatValueToHumanReadableString(result, reportDefinition) +
       ". Please check your Optimize report for more information! \n" +
-      createReportViewLink(alert);
+      createReportViewLink(alert, notificationType);
   }
 
   private boolean thresholdExceeded(AlertDefinitionDto alert, Double result) {
@@ -238,20 +242,25 @@ public class AlertJob implements Job {
     return String.format("%sd %sh %smin %ss %sms", days, hours, minutes, seconds, milliSeconds);
   }
 
-  private String createReportViewLink(final AlertDefinitionDto alert) {
+  private String createReportViewLink(final AlertDefinitionDto alert,
+                                      final AlertNotificationType notificationType) {
     final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
 
     if (containerAccessUrl.isPresent()) {
-      return containerAccessUrl.get() + createReportViewLinkPath(alert);
+      return containerAccessUrl.get() + createReportViewLinkPath(alert, notificationType);
     } else {
       Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
       String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
       Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      return httpPrefix + configurationService.getContainerHost() + ":" + port + createReportViewLinkPath(alert);
+      return httpPrefix + configurationService.getContainerHost() + ":" + port + createReportViewLinkPath(
+        alert,
+        notificationType
+      );
     }
   }
 
-  private String createReportViewLinkPath(final AlertDefinitionDto alert) {
+  private String createReportViewLinkPath(final AlertDefinitionDto alert,
+                                          final AlertNotificationType notificationType) {
     final ReportDefinitionDto<?> reportDefinition = reportReader.getReport(alert.getReportId())
       .orElseThrow(() -> new OptimizeRuntimeException(
         "Was not able to retrieve report with id [" + alert.getReportId()
@@ -260,9 +269,14 @@ public class AlertJob implements Job {
 
     final String collectionId = reportDefinition.getCollectionId();
     if (collectionId != null) {
-      return String.format("/#/collection/%s/report/%s/", collectionId, alert.getReportId());
+      return String.format(
+        "/#/collection/%s/report/%s?utm_source=%s",
+        collectionId,
+        alert.getReportId(),
+        notificationType.getUtmSource()
+      );
     } else {
-      return String.format("/#/report/%s/", alert.getReportId());
+      return String.format("/#/report/%s?utm_source=%s", alert.getReportId(), notificationType.getUtmSource());
     }
   }
 }

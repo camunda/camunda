@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import {cleanEntities} from '../setup';
@@ -484,6 +485,7 @@ test('multi definition filters', async (t) => {
   await t.click(Filter.removeButtonFor('All included processes'));
   await t.click(Filter.multiSelect);
   await t.click(Filter.multiSelectOption('Hiring Demo 5 Tenants'));
+  await t.click(Filter.multiSelect);
   await t.click(Filter.multiSelectOption('Book Request One Tenant'));
 
   await t.click(Report.primaryModalButton);

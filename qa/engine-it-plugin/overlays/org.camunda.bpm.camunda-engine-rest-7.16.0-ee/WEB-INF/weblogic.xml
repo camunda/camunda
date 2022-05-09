@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app">
+  <charset-params>
+    <input-charset>
+      <resource-path>/*</resource-path>
+      <java-charset-name>UTF-8</java-charset-name>
+    </input-charset>
+  </charset-params>
+  <context-root>/engine-rest</context-root>
+  <container-descriptor>
+    <prefer-application-packages>
+      <package-name>com.fasterxml.jackson.*</package-name>
+      <package-name>org.apache.commons.fileupload.*</package-name>
+
+      <package-name>javax.ws.rs.*</package-name>
+      <package-name>org.glassfish.jersey.*</package-name>
+      <package-name>org.glassfish.hk2.*</package-name>
+      <package-name>org.jvnet.hk2.*</package-name>
+      <package-name>jersey.repackaged.*</package-name>
+      <package-name>com.sun.research.ws.wadl.*</package-name>
+    </prefer-application-packages>
+
+    <prefer-application-resources>
+        <resource-name>META-INF/services/javax.servlet.ServletContainerInitializer</resource-name>
+        <resource-name>META-INF/services/javax.ws.rs.ext.RuntimeDelegate</resource-name>
+        <resource-name>META-INF/services/org.glassfish.jersey.*</resource-name>
+        <resource-name>org.glassfish.jersey.*</resource-name>
+        <resource-name>jersey.repackaged.*</resource-name>
+        <resource-name>META-INF/services/org.glassfish.hk2.*</resource-name>
+    </prefer-application-resources>
+  </container-descriptor>
+</weblogic-web-app>

@@ -1,10 +1,11 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import update from 'immutability-helper';
 
 import {
@@ -26,7 +27,7 @@ import {newReport} from 'config';
 import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
 
-import {loadTenants, updateGoals} from './service';
+import {loadTenants} from './service';
 import ResultPreview from './ResultPreview';
 
 import './TimeGoalsModal.scss';
@@ -46,7 +47,7 @@ const defaultGoals = [
   },
 ];
 
-export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process}) {
+export function TimeGoalsModal({onClose, onConfirm, mightFail, process}) {
   const isEditing = process.durationGoals?.goals?.length > 0;
   const [data, setData] = useState();
   const [isGoalVisible, setIsGoalVisible] = useState(
@@ -89,10 +90,13 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
   }
 
   const isDurationValuesValid = goals.every((goal) => numberParser.isPositiveInt(goal.value));
-  const visibleGoals = goals.filter((_, idx) => isGoalVisible[idx]);
+  const visibleGoals = useMemo(
+    () => goals.filter((_, idx) => isGoalVisible[idx]),
+    [goals, isGoalVisible]
+  );
 
   return (
-    <Modal open size="max" onClose={onClose} className="TimeGoalsModal">
+    <Modal open size="max" onClose={() => !deleting && onClose()} className="TimeGoalsModal">
       <Modal.Header>{t('processes.timeGoals.label')}</Modal.Header>
       <Modal.Content>
         {data ? (
@@ -208,14 +212,10 @@ export function TimeGoalsModal({onClose, onConfirm, onRemove, mightFail, process
         <Deleter
           type="goals"
           entity={deleting}
-          onClose={() => {
-            setDeleting();
-            onRemove();
-            onClose();
-          }}
+          onClose={() => setDeleting()}
           getName={({processName}) => processName}
           deleteEntity={async () => {
-            await updateGoals(deleting.processDefinitionKey, []);
+            await onConfirm([]);
             addNotification({
               type: 'success',
               text: t('processes.goalRemoved', {processName: deleting.processName}),

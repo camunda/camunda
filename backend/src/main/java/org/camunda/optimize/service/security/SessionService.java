@@ -200,7 +200,7 @@ public class SessionService implements ConfigurationReloadable {
 
   private Optional<LocalDateTime> getDynamicExpiresAtLocalDateTime(final DecodedJWT decodedJWT) {
     // we calculate expiry based on current configuration and the issuedAt date of the token
-    // this allows to apply life time config changes onto existing tokens
+    // this allows to apply lifetime config changes onto existing tokens
     return Optional.ofNullable(decodedJWT.getIssuedAt())
       .map(Date::toInstant)
       .map(instant -> instant.atZone(ZoneId.systemDefault()).toLocalDateTime())

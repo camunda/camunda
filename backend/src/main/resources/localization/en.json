@@ -445,8 +445,11 @@
         "variableName": "Variable Name",
         "type": "Type",
         "newName": "New Name",
-        "renameInfo": "You may provide a UI-only alias to override each over your variable names.",
-        "renameWarning": "Warning! Changes will update across all reports using this process definition. This can affect other users."
+        "renameInfo": "You may provide a UI-only alias that is displayed instead of the variable name defined in the Modeler. ",
+        "important": "Important!",
+        "followGuidelines": "Follow these guidelines to avoid unexpected behavior.",
+        "globalChanges": "Changes will update all reports using this process definition",
+        "useSameVariable": "Use the same alias for variables that appear in multiple process definitions"
       }
     },
     "noDefinitionMessage": {
@@ -900,6 +903,7 @@
     "errors": {
       "inValidLink": "This link is not valid.",
       "number": "Enter a number",
+      "percentage": "Enter a valid percentage",
       "positiveNum": "Enter a positive number",
       "positiveInt": "Enter a positive whole number"
     },
@@ -1083,6 +1087,7 @@
       "list": {
         "appliedTo": "Applied to",
         "invalidDefinition": "Data Source is missing version or tenant selection.",
+        "totalInstanceWarning": "Filter applies to the total instance count",
         "operators": {
           "isBetween": "is between",
           "between": "between",
@@ -1234,7 +1239,8 @@
       "limitReached": "Process definition limit reached. Only ten processes allowed.",
       "select": {
         "process": "Select Process",
-        "decision": "Select Decision"
+        "decision": "Select Decision",
+        "multiProcess": "Select one or more processes"
       },
       "version": {
         "label": "Version",

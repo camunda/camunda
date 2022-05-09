@@ -164,8 +164,10 @@ public class DurationScriptUtil {
     // @formatter:off
     return variableDefinitionScript +
       // We require idle time and usertask is finished or
-      // We require idle time and userTask is currently working --> idle duration have already been calculated during import
-      "if(hasEnded || !isCurrentlyIdle){\n" +
+      // We require idle time and userTask is currently working
+      // In both cases, idle duration should already have been calculated during import.
+      // Additional hasIdleDuration just in case of data inconsistencies.
+      "if(hasIdleDuration && (hasEnded || !isCurrentlyIdle)){\n" +
         "result = doc[params.idleDurationFieldName].value;" +
       "}\n" +
 
@@ -184,8 +186,10 @@ public class DurationScriptUtil {
   private static String getUserTaskWorkDurationCalculationScriptPart(final String variableDefinitionScript) {
     // @formatter:off
     return variableDefinitionScript +
-      // We require work time and usertask is finished --> all durations have already been calculated during import
-      "if(hasEnded){\n" +
+      // We require work time and usertask is finished
+      // All durations have already been calculated during import,
+      // additional hasWorkDuration in case of data inconsistencies
+      "if(hasWorkDuration && hasEnded){\n" +
         "result = doc[params.workDurationFieldName].value;" +
       "}\n" +
 

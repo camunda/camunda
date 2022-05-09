@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.8.0</version>
+    <version>3.9.0</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -13,7 +13,7 @@
   <properties>
     <jetty.version>9.4.46.v20220331</jetty.version>
     <jersey.version>2.35</jersey.version>
-    <spring.security.version>5.6.2</spring.security.version>
+    <spring.security.version>5.6.3</spring.security.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
@@ -218,7 +218,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.19.1</version>
+      <version>3.19.2</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -268,7 +268,7 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.0.6</version>
+      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -279,6 +279,11 @@
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
       <version>1.0.10</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -299,12 +304,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.11.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
       <version>${httpclient.version}</version>
@@ -319,7 +318,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.8</version>
+      <version>1.6.9</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

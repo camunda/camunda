@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import {useState, useEffect} from 'react';
@@ -127,13 +128,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   }
 
   return (
-    <Modal
-      open
-      onClose={onClose}
-      onConfirm={createCollection}
-      size="large"
-      className="SourcesModal"
-    >
+    <Modal open onClose={onClose} size="large" className="SourcesModal">
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
       <Modal.Content>
         <div className="header">

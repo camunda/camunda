@@ -1,11 +1,13 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
 
 import {AlertModal} from './AlertModal';
 
@@ -72,6 +74,11 @@ const reports = [
     name: 'Nice report',
     data: {view: {properties: ['duration']}, visualization: 'number'},
   },
+  {
+    id: '10',
+    name: 'percentage report',
+    data: {view: {properties: ['percentage']}, visualization: 'number'},
+  },
 ];
 
 const props = {
@@ -130,6 +137,18 @@ it('should disable the submit button if the threshold is not a number', () => {
   node.setProps({initialAlert});
   node.setState({threshold: 'five'});
   expect(node.find('[primary]')).toBeDisabled();
+});
+
+it('should disable the submit button if the threshold is not a percentage', () => {
+  const node = shallow(<AlertModal {...props} initialAlert={{...initialAlert, reportId: '10'}} />);
+
+  node.setState({threshold: '101'});
+  expect(node.find(ThresholdInput).prop('isInvalid')).toBe(true);
+  expect(node.find('[primary]')).toBeDisabled();
+
+  node.setState({threshold: '100'});
+  expect(node.find(ThresholdInput).prop('isInvalid')).toBe(false);
+  expect(node.find('[primary]')).not.toBeDisabled();
 });
 
 it('should disable the submit button if the check interval is negative', () => {

@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
@@ -159,7 +160,7 @@ export default withErrorHandling(
       } = source;
 
       return (
-        <Modal open onClose={onClose} onConfirm={this.updateSources} className="EventsSourceModal">
+        <Modal open onClose={onClose} className="EventsSourceModal">
           <Modal.Header>
             {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>

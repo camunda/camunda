@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.telemetry.mixpanel.MixpanelReportingService;
-import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventName;
+import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -38,7 +38,7 @@ public class MixpanelNotificationServiceTest {
 
   @ParameterizedTest
   @MethodSource("alertTypeAndExpectedMixPanelEvent")
-  public void notifyWithCorrectEventName(final AlertNotificationType type, final MixpanelEventName eventName) {
+  public void notifyWithCorrectEventName(final AlertNotificationType type, final EventReportingEvent eventName) {
     // given
     final String alertId = "id";
     when(alertDefinitionDto.getId()).thenReturn(alertId);
@@ -55,10 +55,10 @@ public class MixpanelNotificationServiceTest {
 
   private static Stream<Arguments> alertTypeAndExpectedMixPanelEvent() {
     return Stream.of(
-      arguments(AlertNotificationType.NEW, MixpanelEventName.ALERT_NEW_TRIGGERED),
-      arguments(AlertNotificationType.REMINDER, MixpanelEventName.ALERT_REMINDER_TRIGGERED),
-      arguments(AlertNotificationType.RESOLVED, MixpanelEventName.ALERT_RESOLVED_TRIGGERED),
-      arguments(null, MixpanelEventName.ALERT_NEW_TRIGGERED)
+      arguments(AlertNotificationType.NEW, EventReportingEvent.ALERT_NEW_TRIGGERED),
+      arguments(AlertNotificationType.REMINDER, EventReportingEvent.ALERT_REMINDER_TRIGGERED),
+      arguments(AlertNotificationType.RESOLVED, EventReportingEvent.ALERT_RESOLVED_TRIGGERED),
+      arguments(null, EventReportingEvent.ALERT_NEW_TRIGGERED)
     );
   }
 }

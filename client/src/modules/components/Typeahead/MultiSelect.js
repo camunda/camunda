@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React, {useEffect, useRef, useState} from 'react';
@@ -32,6 +33,7 @@ export default function MultiSelect({
   loading,
   disabled,
   children,
+  persistMenu = true,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -67,6 +69,13 @@ export default function MultiSelect({
   }
 
   function selectOption({props: {value}}) {
+    if (query) {
+      setQuery('');
+      onSearch('');
+    }
+    if (!persistMenu) {
+      hideList();
+    }
     onAdd(value);
   }
 
@@ -80,6 +89,7 @@ export default function MultiSelect({
   function onChange({target: {value}}) {
     setQuery(value);
     onSearch(value);
+    showList();
   }
 
   function handleKeyPress(evt) {
@@ -121,7 +131,7 @@ export default function MultiSelect({
         async={async}
         open={open}
         onClose={hideList}
-        onOpen={open}
+        onOpen={showList}
         filter={query}
         onSelect={selectOption}
         input={input.current}

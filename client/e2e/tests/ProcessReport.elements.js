@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import {Selector} from 'testcafe';
@@ -116,6 +117,7 @@ export const submenuOption = (text) => Selector('.Submenu .DropdownOption').with
 export const nextPageButton = Selector('.Table .Button.next');
 export const rowsPerPageButton = Selector('.Table .size .Button');
 export const addMeasureButton = Selector('.addMeasure button');
+export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionPreview .Button');
 export const heatDropdown = Selector('.Heatmap .Select');
 export const sectionToggle = (sectionName) =>
   Selector('.ReportControlPanel .sectionTitle')

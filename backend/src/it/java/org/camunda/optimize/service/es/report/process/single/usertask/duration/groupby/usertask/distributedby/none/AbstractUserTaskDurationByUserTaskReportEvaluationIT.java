@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.usertask.duration.
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
+import org.apache.commons.text.StringSubstitutor;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -28,18 +29,23 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.util.BpmnModels;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,13 +64,18 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -1109,6 +1120,23 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
+  @Test
+  public void aggregationIsNullSafeForDurationFields() {
+    // given a userTask that is completed but the total/idle/work duration field is still null
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto);
+    importAllEngineEntitiesFromScratch();
+
+    // set duration field to null
+    setDurationFieldToNullInElasticsearch(processInstanceDto.getId());
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // then the report can be evaluated without errors
+    reportClient.evaluateMapReport(reportData);
+  }
+
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
@@ -1118,6 +1146,49 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs);
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
+
+  protected abstract void setDurationFieldToNullInElasticsearch(final String processInstanceId);
+
+  protected void setUserTaskDurationToNull(final String processInstanceId,
+                                           final String durationFieldName) {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("flowNodesField", FLOW_NODE_INSTANCES)
+        .put("durationFieldName", durationFieldName)
+        .build()
+    );
+
+    // @formatter:off
+    final String setDurationToNull = substitutor.replace(
+      "for(flowNode in ctx._source.${flowNodesField}) {" +
+        "flowNode.${durationFieldName} = null;" +
+      "}"
+    );
+    // @formatter:on
+
+    final Script updateScript = new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      setDurationToNull,
+      Collections.emptyMap()
+    );
+
+    final UpdateByQueryRequest request = new UpdateByQueryRequest(PROCESS_INSTANCE_MULTI_ALIAS)
+      .setQuery(boolQuery().must(termQuery(PROCESS_INSTANCE_ID, processInstanceId)))
+      .setAbortOnVersionConflict(false)
+      .setScript(updateScript)
+      .setRefresh(true);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().applyIndexPrefixes(request);
+
+    try {
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().updateByQuery(request);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(
+        String.format("Could not set userTask duration field [%s] to null.", durationFieldName),
+        e
+      );
+    }
+  }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
     return createReport(processDefinitionKey, Collections.singletonList(version));

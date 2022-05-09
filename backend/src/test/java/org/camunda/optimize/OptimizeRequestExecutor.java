@@ -55,7 +55,6 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
@@ -1293,27 +1292,6 @@ public class OptimizeRequestExecutor {
     this.path = "/definition/" + type + "/" + key + "/versions";
     this.method = GET;
     addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(final String type,
-                                                                                          final String key,
-                                                                                          final List<String> versions) {
-    return buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(type, key, versions, null);
-  }
-
-  public OptimizeRequestExecutor buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(final String type,
-                                                                                          final String key,
-                                                                                          final List<String> versions,
-                                                                                          final String filterByCollectionScope) {
-    this.path = "/definition/" + type + "/" + key + "/_resolveTenantsForVersions";
-    this.method = POST;
-    this.body = getBody(
-      DefinitionTenantsRequestDto.builder()
-        .versions(versions)
-        .filterByCollectionScope(filterByCollectionScope)
-        .build()
-    );
     return this;
   }
 

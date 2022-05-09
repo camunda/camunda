@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import HeatmapJS from 'heatmap.js';
@@ -65,7 +66,7 @@ function generateHeatmap(viewer, data, noSequenceHighlight) {
 }
 
 function getDimensions(viewer) {
-  const dimensions = viewer.get('canvas').getDefaultLayer().getBBox();
+  const dimensions = viewer.get('canvas').getActiveLayer().getBBox();
 
   return {
     width: dimensions.width + 2 * EDGE_BUFFER,

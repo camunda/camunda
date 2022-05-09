@@ -3,7 +3,7 @@ version: "3.6"
 services:
   optimize:
     container_name: optimize
-    image: registry.camunda.cloud/optimize-ee/optimize:3.7.0
+    image: registry.camunda.cloud/optimize-ee/optimize:latest
     ports:
       - "8090:8090"
     environment:
@@ -20,7 +20,6 @@ services:
       - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
       - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
       - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=1
-      - CAMUNDA_OPTIMIZE_SHARING_ENABLED=false
       - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
     networks:
       - optimize
@@ -52,8 +51,7 @@ services:
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"
-      KEYCLOAK_USERS_0_ROLES_0: "Full Access"
-      KEYCLOAK_USERS_0_ROLES_1: "Optimize"
+      KEYCLOAK_USERS_0_ROLES_0: "Optimize"
     networks:
       - identity-network
   elasticsearch:

@@ -41,7 +41,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   @Override
   public Response authenticateUser(final ContainerRequestContext requestContext,
                                    final CredentialsRequestDto credentials) {
-    throw new NotSupportedException("Requests to this endpoint are not valid in CCSM mode");
+    throw new NotSupportedException("Requests to this endpoint are not valid in Camunda Platform Self-Managed mode");
   }
 
   @Override
@@ -72,7 +72,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
 
   @Override
   public Response logout(final ContainerRequestContext requestContext) {
-    throw new NotSupportedException("Cannot logout in Optimize in CCSM mode");
+    throw new NotSupportedException("Cannot logout in Optimize in Camunda Platform Self-Managed mode");
   }
 
   private static String buildRootRedirect(final ContainerRequestContext requestContext) {

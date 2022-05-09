@@ -19,8 +19,8 @@ import java.util.List;
 public class CCSMAlertRecipientValidator implements AlertRecipientValidator {
 
   @Override
-  public List<String> getValidatedRecipientEmailList(final List<String> emails) {
-    throw new OptimizeValidationException("Alerts are not available in CCSM");
+  public void validateAlertRecipientEmailAddresses(final List<String> emails) {
+    throw new OptimizeValidationException("Alerts are not available in Camunda Platform Self-Managed");
   }
 
 }

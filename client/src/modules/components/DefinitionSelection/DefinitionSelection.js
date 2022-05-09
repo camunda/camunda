@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
@@ -304,16 +305,16 @@ export class DefinitionSelection extends React.Component {
         >
           <div className="selectionPanel">
             <div className="dropdowns">
-              <Labeled className="entry" label={processSelectLabel}>
-                {selectedDefinitions ? (
-                  <MultiDefinitionSelection
-                    selectedDefinitions={selectedDefinitions}
-                    availableDefinitions={availableDefinitions}
-                    changeDefinition={this.changeDefinition}
-                    resetSelection={this.resetSelection}
-                    onChange={onChange}
-                  />
-                ) : (
+              {selectedDefinitions ? (
+                <MultiDefinitionSelection
+                  selectedDefinitions={selectedDefinitions}
+                  availableDefinitions={availableDefinitions}
+                  changeDefinition={this.changeDefinition}
+                  resetSelection={this.resetSelection}
+                  onChange={onChange}
+                />
+              ) : (
+                <Labeled className="entry" label={processSelectLabel}>
                   <Typeahead
                     className="name"
                     initialValue={def ? def.key : null}
@@ -328,8 +329,8 @@ export class DefinitionSelection extends React.Component {
                       </Typeahead.Option>
                     ))}
                   </Typeahead>
-                )}
-              </Labeled>
+                </Labeled>
+              )}
               <div className="version entry">
                 <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover

@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React, {useEffect, useState} from 'react';
@@ -72,21 +73,20 @@ export function RenameVariablesModal({
     variables?.filter(({name}) => name.toLowerCase().includes(query.toLowerCase())) || [];
 
   return (
-    <Modal
-      open
-      size="max"
-      onClose={onClose}
-      onConfirm={updateVariableNames}
-      className="RenameVariablesModal"
-    >
+    <Modal open size="max" onClose={onClose} className="RenameVariablesModal">
       <Modal.Header>{t('report.definition.variables.rename')}</Modal.Header>
       <Modal.Content>
         <div className="header">
           <div className="info">
             {t('report.definition.variables.renameInfo')}
             <p>
-              <b>{t('report.definition.variables.renameWarning')}</b>
+              <b>{t('report.definition.variables.important')} </b>
+              {t('report.definition.variables.followGuidelines')}
             </p>
+            <ul>
+              <li>{t('report.definition.variables.globalChanges')}</li>
+              <li>{t('report.definition.variables.useSameVariable')}</li>
+            </ul>
           </div>
           <div className="searchInputContainer">
             <Input

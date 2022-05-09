@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
@@ -473,7 +474,11 @@ export default withErrorHandling(
                 `report.instanceCount.process.label${
                   result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
                 }-withFilter`,
-                {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
+                {
+                  count: result.instanceCount,
+                  totalCount:
+                    (haveDateFilter(data.filter) ? '*' : '') + result.instanceCountWithoutFilters,
+                }
               )}
             </div>
           )}
@@ -489,4 +494,8 @@ function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
   }
   const availableFlowNodesIds = Object.keys(availableFlowNodeNames);
   return flowNodeIds.every((id) => availableFlowNodesIds.includes(id));
+}
+
+function haveDateFilter(filters) {
+  return filters?.some((filter) => filter.type.toLowerCase().includes('date'));
 }

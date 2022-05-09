@@ -62,7 +62,7 @@ public class UserTaskDurationScriptUtil {
         // Only recalculate duration of userTasks which have been updated
         " if (!currentTask.${flowNodeTypeField}.equalsIgnoreCase(\"${userTaskFlowNodeType}\")" +
         "   || (currentTask.${flowNodeTypeField}.equalsIgnoreCase(\"${userTaskFlowNodeType}\")" +
-        "   && updatedUserTaskIds.contains(\"currentTask.{userTaskInstanceIdField}\"))) {\n" +
+        "   && !updatedUserTaskIds.contains(currentTask.${userTaskInstanceIdField}))) {\n" +
         "   continue;\n" +
         " }\n" +
 

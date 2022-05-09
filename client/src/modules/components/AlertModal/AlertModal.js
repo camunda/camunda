@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
@@ -85,7 +86,7 @@ export class AlertModal extends React.Component {
       inactive:
         alert.webhook && !alert.emails?.length && !this.props.webhooks?.includes(alert.webhook),
       threshold:
-        this.getReportType(alert.reportId) === 'duration'
+        this.getReportMeasure(alert.reportId) === 'duration'
           ? formatters.convertDurationToObject(alert.threshold)
           : alert.threshold.toString(),
       checkInterval: {
@@ -148,7 +149,15 @@ export class AlertModal extends React.Component {
     return this.props.initialAlert && this.props.initialAlert.id;
   };
 
-  isThresholdValid = () => numberParser.isNonNegativeNumber(this.getThresholdValue());
+  isThresholdValid = () => {
+    const reportMeasure = this.getReportMeasure(this.state.reportId);
+    const isNonNegative = numberParser.isNonNegativeNumber(this.getThresholdValue());
+    if (reportMeasure === 'percentage') {
+      return isNonNegative && Number(this.getThresholdValue()) <= 100;
+    }
+
+    return isNonNegative;
+  };
 
   componentDidUpdate({initialAlert}) {
     const {name, webhook, emails, reportId, checkInterval, reminder, validEmails} = this.state;
@@ -190,7 +199,7 @@ export class AlertModal extends React.Component {
     this.setInvalid(false);
   }
 
-  getReportType = (reportId) => {
+  getReportMeasure = (reportId) => {
     const report = this.props.reports.find(({id}) => id === reportId);
 
     if (report) {
@@ -204,12 +213,12 @@ export class AlertModal extends React.Component {
   };
 
   updateReport = (id) => {
-    const reportType = this.getReportType(id);
+    const reportMeasure = this.getReportMeasure(id);
     const currentValue = this.getThresholdValue();
 
     this.setState({
       reportId: id,
-      threshold: reportType === 'duration' ? {value: currentValue, unit: 'days'} : currentValue,
+      threshold: reportMeasure === 'duration' ? {value: currentValue, unit: 'days'} : currentValue,
     });
     this.loadReport(id);
   };
@@ -237,8 +246,9 @@ export class AlertModal extends React.Component {
     } = this.state;
 
     const {reports, webhooks, onClose, onRemove} = this.props;
-
     const selectedReport = reports.find((report) => report.id === reportId) || {};
+    const reportMeasure = this.getReportMeasure(reportId);
+
     return (
       <Modal open onClose={onClose} className="AlertModal">
         <Modal.Header>
@@ -308,10 +318,17 @@ export class AlertModal extends React.Component {
                 <ThresholdInput
                   value={threshold}
                   onChange={(threshold) => this.setState({threshold})}
-                  type={this.getReportType(reportId)}
+                  type={reportMeasure}
+                  isInvalid={!this.isThresholdValid()}
                 />
               </Form.InputGroup>
-              {!this.isThresholdValid() && <Message error>{t('common.errors.number')}</Message>}
+              {!this.isThresholdValid() && (
+                <Message error>
+                  {reportMeasure === 'percentage'
+                    ? t('common.errors.percentage')
+                    : t('common.errors.number')}
+                </Message>
+              )}
             </Form.Group>
             <Form.Group>
               <Labeled label={t('alert.form.frequency')}>

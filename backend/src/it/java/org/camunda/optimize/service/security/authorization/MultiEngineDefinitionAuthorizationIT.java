@@ -7,10 +7,9 @@ package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
@@ -21,11 +20,10 @@ import org.mockserver.model.HttpError;
 import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
@@ -369,12 +367,13 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    final List<TenantResponseDto> tenants = resolveDefinitionTenantsByTypeKeyAndVersionsAsKermit(
-      definitionResourceType, getDefinitionKeyDefaultEngine(definitionResourceType)
-    );
+    final List<String> tenants = definitionClient.getDefinitionsGroupedByTenant()
+      .stream()
+      .map(TenantWithDefinitionsResponseDto::getId)
+      .collect(Collectors.toList());
 
     // then
-    assertThat(tenants).extracting(TenantResponseDto::getId).containsExactly(tenantId2);
+    assertThat(tenants).containsExactly(tenantId2);
     defaultEngineMock.verify(
       request(engineIntegrationExtension.getEnginePath() + WILDCARD_SUB_PATH),
       VerificationTimes.atLeast(1)
@@ -420,18 +419,6 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
       .buildGetDecisionDefinitionsRequest()
       .withUserAuthentication(name, password)
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersionsAsKermit(
-    final int resourceType,
-    final String key) {
-    return definitionClient.resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
-      RESOURCE_TYPE_PROCESS_DEFINITION == resourceType ? DefinitionType.PROCESS : DefinitionType.DECISION,
-      key,
-      Collections.singletonList(ALL_VERSIONS),
-      KERMIT_USER,
-      KERMIT_USER
-    );
   }
 
   protected void deployStartAndImportSameDefinitionForAllEngines(final int definitionResourceType) {

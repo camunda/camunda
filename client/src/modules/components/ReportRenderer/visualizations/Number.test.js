@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React, {runLastEffect} from 'react';
@@ -90,6 +91,29 @@ it('should display a progress bar if target values are active', () => {
   );
 
   expect(node.find(ProgressBar)).toExist();
+});
+
+it('should not display a progress bar for multi measure/aggregation reports', () => {
+  const node = shallow(
+    <Number
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          view: {
+            properties: ['duration'],
+          },
+          configuration: {
+            aggregationTypes: ['avg', 'max'],
+            targetValue: {active: true, countProgress: {baseline: '0', target: '12'}},
+          },
+        },
+      }}
+      formatter={(v) => 2 * v}
+    />
+  );
+
+  expect(node.find(ProgressBar)).not.toExist();
 });
 
 it('should show the view label underneath the number', () => {

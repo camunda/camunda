@@ -1,7 +1,8 @@
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
  */
 
 import React from 'react';
@@ -70,6 +71,19 @@ it('should show the total instance count if there are filters', () => {
   const node = shallow(<InstanceCount {...props} />);
 
   expect(node).toIncludeText('500');
+});
+
+it('should display an astrick near the total instance count if the report includes date filters', () => {
+  const node = shallow(
+    <InstanceCount
+      {...props}
+      report={update(props.report, {
+        data: {filter: {$set: [{type: 'instanceStartDate'}]}},
+      })}
+    />
+  );
+
+  expect(node).toIncludeText('Displaying data from 123 of *500 instances');
 });
 
 it('should contain a popover with information about the filters', () => {
