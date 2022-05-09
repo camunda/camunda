@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
@@ -18,6 +19,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.Field;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -81,7 +83,7 @@ public final class ProtocolFactory {
   /**
    * @return a stream of random records
    */
-  public Stream<Record<RecordValue>> generateRecords() {
+  public <T extends RecordValue> Stream<Record<T>> generateRecords() {
     return generateRecords(UnaryOperator.identity());
   }
 
@@ -93,8 +95,8 @@ public final class ProtocolFactory {
    * @return a stream of random records
    * @throws NullPointerException if modifier is null
    */
-  public Stream<Record<RecordValue>> generateRecords(
-      final UnaryOperator<Builder<RecordValue>> modifier) {
+  public <T extends RecordValue> Stream<Record<T>> generateRecords(
+      final UnaryOperator<Builder<T>> modifier) {
     return Stream.generate(() -> generateRecord(modifier));
   }
 
@@ -104,7 +106,7 @@ public final class ProtocolFactory {
    *
    * @return a stream of records, one for each value type
    */
-  public Stream<Record<RecordValue>> generateForAllValueTypes() {
+  public <T extends RecordValue> Stream<Record<T>> generateForAllValueTypes() {
     return generateForAllValueTypes(UnaryOperator.identity());
   }
 
@@ -115,8 +117,8 @@ public final class ProtocolFactory {
    * @return a stream of records, one for each value type
    * @throws NullPointerException if {@code modifier} is null
    */
-  public Stream<Record<RecordValue>> generateForAllValueTypes(
-      final UnaryOperator<Builder<RecordValue>> modifier) {
+  public <T extends RecordValue> Stream<Record<T>> generateForAllValueTypes(
+      final UnaryOperator<Builder<T>> modifier) {
     return ValueTypeMapping.getAcceptedValueTypes().stream()
         .map(valueType -> generateRecord(valueType, modifier));
   }
@@ -124,7 +126,7 @@ public final class ProtocolFactory {
   /**
    * @return a random record with a random value type
    */
-  public Record<RecordValue> generateRecord() {
+  public <T extends RecordValue> Record<T> generateRecord() {
     return generateRecord(UnaryOperator.identity());
   }
 
@@ -137,7 +139,8 @@ public final class ProtocolFactory {
    * @return a randomly generated record
    * @throws NullPointerException if {@code modifier} is null
    */
-  public Record<RecordValue> generateRecord(final UnaryOperator<Builder<RecordValue>> modifier) {
+  public <T extends RecordValue> Record<T> generateRecord(
+      final UnaryOperator<Builder<T>> modifier) {
     final var valueType = random.nextObject(ValueType.class);
     return generateRecord(valueType, modifier);
   }
@@ -155,7 +158,7 @@ public final class ProtocolFactory {
    *     expected types
    * @throws NullPointerException if {@code valueType} is null
    */
-  public Record<RecordValue> generateRecord(final ValueType valueType) {
+  public <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
     return generateRecord(valueType, UnaryOperator.identity());
   }
 
@@ -176,8 +179,8 @@ public final class ProtocolFactory {
    *     expected types
    * @throws NullPointerException if {@code modifier} is null or if {@code valueType} is null
    */
-  public Record<RecordValue> generateRecord(
-      final ValueType valueType, final UnaryOperator<Builder<RecordValue>> modifier) {
+  public <T extends RecordValue> Record<T> generateRecord(
+      final ValueType valueType, final UnaryOperator<Builder<T>> modifier) {
     return generateImmutableRecord(valueType, modifier);
   }
 
@@ -205,11 +208,17 @@ public final class ProtocolFactory {
   private void registerRandomizers() {
     findProtocolTypes().forEach(this::registerProtocolType);
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
+
+    // never use NULL_VAL or SBE_UNKNOWN for ValueType or RecordType
     randomizerRegistry.registerRandomizer(
         ValueType.class,
         new EnumRandomizer<>(
-            parameters.getSeed(),
-            ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
+            getSeed(), ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
+
+    final var excludedRecordTypes = EnumSet.of(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN);
+    final var recordTypes = EnumSet.complementOf(excludedRecordTypes);
+    randomizerRegistry.registerRandomizer(
+        RecordType.class, new EnumRandomizer<>(getSeed(), recordTypes.toArray(RecordType[]::new)));
   }
 
   private void registerProtocolType(final ClassInfo abstractType) {
@@ -262,8 +271,8 @@ public final class ProtocolFactory {
         .excludeField(excludedRecordFields);
   }
 
-  private Record<RecordValue> generateImmutableRecord(
-      final ValueType valueType, final UnaryOperator<Builder<RecordValue>> modifier) {
+  private <T extends RecordValue> Record<T> generateImmutableRecord(
+      final ValueType valueType, final UnaryOperator<Builder<T>> modifier) {
     Objects.requireNonNull(valueType, "must specify a value type");
     Objects.requireNonNull(modifier, "must specify a builder modifier");
 
@@ -273,7 +282,7 @@ public final class ProtocolFactory {
     final var seedRecord = random.nextObject(Record.class);
 
     //noinspection unchecked
-    final Builder<RecordValue> builder =
+    final Builder<T> builder =
         ImmutableRecord.builder()
             .from(seedRecord)
             .withValueType(valueType)
