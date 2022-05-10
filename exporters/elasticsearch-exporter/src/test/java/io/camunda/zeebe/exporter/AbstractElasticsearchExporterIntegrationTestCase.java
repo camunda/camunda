@@ -168,8 +168,8 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     if (configuration != null && configuration.index.getNumberOfShards() != null) {
       return configuration.index.getNumberOfShards();
     } else if (indexName.startsWith(
-            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.PROCESS_INSTANCE))
-        || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
+            esClient.indexRouter.indexPrefixForValueType(ValueType.PROCESS_INSTANCE))
+        || indexName.startsWith(esClient.indexRouter.indexPrefixForValueType(ValueType.JOB))) {
       return 3;
     } else {
       return 1;
@@ -210,8 +210,11 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   public static class ElasticsearchTestClient extends ElasticsearchClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    protected final RecordIndexRouter indexRouter;
+
     ElasticsearchTestClient(final ElasticsearchExporterConfiguration configuration) {
       super(configuration);
+      indexRouter = new RecordIndexRouter(configuration.index);
     }
 
     public GetSettingsForIndicesResponse getSettingsForIndices() {
@@ -253,7 +256,8 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
     public Map<String, Object> getDocument(final Record<?> record) {
       final var request =
-          new Request("GET", "/" + indexFor(record) + "/" + typeFor() + "/" + idFor(record));
+          new Request(
+              "GET", "/" + indexRouter.indexFor(record) + "/_doc/" + indexRouter.idFor(record));
       request.addParameter("routing", String.valueOf(record.getPartitionId()));
       try {
         final var response = client.performRequest(request);
@@ -262,7 +266,11 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
         return document.getSource();
       } catch (final IOException e) {
         throw new ElasticsearchExporterException(
-            "Failed to get record " + idFor(record) + " from index " + indexFor(record), e);
+            "Failed to get record "
+                + indexRouter.idFor(record)
+                + " from index "
+                + indexRouter.indexFor(record),
+            e);
       }
     }
   }
