@@ -55,7 +55,7 @@ spec:
         - name: WAIT_FOR_TIMEOUT
           value: "60"
         - name: WAIT_FOR
-          value: {{ .Values.optimize.env.elasticsearchUrl }}
+          value: {{ include "elasticsearchUrl" $ | quote }}
         tty: true
         ports:
         - containerPort: 8090
@@ -87,9 +87,9 @@ spec:
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS
-          value: {{ .Values.cambpm.env.javaOpts }}
+          value: {{ include "javaOpts" $ | quote }}
         - name: WAIT_FOR
-          value: {{ .Values.cambpm.env.postgresUrl }}
+          value: {{ include "postgresUrl" $ | quote }}
         - name: SKIP_DB_CONFIG
           value: "true"
         {{ if eq .Values.env "persistent" }}
