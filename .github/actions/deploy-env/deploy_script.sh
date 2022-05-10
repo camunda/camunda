@@ -26,6 +26,7 @@ deploy_arguments="--dest-namespace optimize-${APP_NAME} \
     --revision ${REVISION} \
     --upsert"
 
+set -x
 
 if [[ "${APP_NAME}" == "persistent" ]];
 then
