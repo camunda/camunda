@@ -7,10 +7,10 @@
 #
 #!/bin/bash
 
-persistent_deploy_arguments="--helm-set env=persistent \
-    --helm-set optimize.env.elasticsearchUrl='elasticsearch-es-http:9200' \
-    --helm-set cambpm.env.javaOpts='-Xms1g\ -Xmx1g\ -XX:MaxMetaspaceSize=256m\ -Ddb.username=\$DB_USERNAME\ -Ddb.password=\$DB_PASSWORD' \
-    --helm-set cambpm.env.postgresUrl='optimize-persistent-postgres.optimize-persistent:5432'"
+persistent_deploy_arguments='--helm-set env=persistent
+    --helm-set optimize.env.elasticsearchUrl="elasticsearch-es-http:9200"
+    --helm-set cambpm.env.javaOpts="-Xms1g \-Xmx1g \-XX:MaxMetaspaceSize=256m \-Ddb.username=\$DB_USERNAME \-Ddb.password=\$DB_PASSWORD"
+    --helm-set cambpm.env.postgresUrl="optimize-persistent-postgres.optimize-persistent:5432"'
 
 deploy_arguments="--dest-namespace optimize-${APP_NAME} \
     --file .ci/deployments-resources/argo/application.yml \
