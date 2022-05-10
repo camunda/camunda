@@ -116,7 +116,7 @@ runs:
       shell: bash
       if: ${{ inputs.step == 'start'}}
       run: >-
-        .github/actions/deploy-env/deploy_script.sh/deploy_script.sh
+        .github/actions/deploy-env/deploy_script.sh
         
         argocd app sync optimize-${{ env.APP_NAME }} --async --force || true
       env:
