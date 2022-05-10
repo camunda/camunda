@@ -36,7 +36,10 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Record} factory which produces randomized records deterministically. A seed can be given
  * on construction to reproduce the same records. On failure, the seed can be fetched via {@link
- * #getSeed()}.
+ * #getSeed()}. By default, calling {@link ProtocolFactory#ProtocolFactory()} will always return a
+ * factory which produces the same records. This is useful for reproducible tests, such that running
+ * the same test twice (regardless of the environment, e.g. CI or locally) will produce the same
+ * results.
  *
  * <p>Every property is fully randomized and cannot be relied upon semantically, except the value
  * type, the value, and the intent. These will always all match the implicit assumptions of the
@@ -56,12 +59,13 @@ public final class ProtocolFactory {
   private final EasyRandom random;
 
   /**
-   * Every call to this constructor will always return a factory which will produce different
-   * records. If you wish to reproduce past results, consider using {@link
-   * ProtocolFactory#ProtocolFactory(long)}.
+   * Every call to this constructor will always return a factory which produces the exact same
+   * record. This is useful for reproducible tests. If you want a different behavior, then you can
+   * use {@link ProtocolFactory#ProtocolFactory(long)} and pass something like {@link
+   * ThreadLocalRandom#nextLong()}.
    */
   public ProtocolFactory() {
-    this(ThreadLocalRandom.current().nextLong());
+    this(0);
   }
 
   /**
