@@ -117,8 +117,9 @@ final class AsymmetricNetworkPartitionIT {
         .until(this::hasEvenLeaderDistribution);
 
     final var topology = client.newTopologyRequest().send().join();
-    final var firstLeader = getPartitionLeader(topology, 1);
-    final var secondLeader = getPartitionLeader(topology, 2);
+    final var firstLeader = getPartitionLeader(topology, 1).orElseThrow();
+    final var secondLeader = getPartitionLeader(topology, 2).orElseThrow();
+
     final var firstLeaderIP =
         getContainerNetworkIP(CLUSTER.getBrokers().get(firstLeader.getNodeId()));
     testCase.given(client);
@@ -132,15 +133,14 @@ final class AsymmetricNetworkPartitionIT {
     testCase.then(client, future);
   }
 
-  private BrokerInfo getPartitionLeader(final Topology topology, final int partition) {
+  private Optional<BrokerInfo> getPartitionLeader(final Topology topology, final int partition) {
     return topology.getBrokers().stream()
         .filter(
             b ->
                 b.getPartitions().stream()
                     .filter(p -> p.getPartitionId() == partition)
                     .anyMatch(PartitionInfo::isLeader))
-        .findFirst()
-        .orElseThrow();
+        .findFirst();
   }
 
   private void triggerRebalancing() {
@@ -167,8 +167,13 @@ final class AsymmetricNetworkPartitionIT {
     final var firstLeader = getPartitionLeader(topology, 1);
     final var otherLeader = getPartitionLeader(topology, 2);
 
-    if (firstLeader.getNodeId() == otherLeader.getNodeId()) {
-      LOGGER.info("Leader of all partitions is {}, re-balancing...", firstLeader.getNodeId());
+    if (firstLeader.isEmpty() || otherLeader.isEmpty()) {
+      LOGGER.debug("Not all partitions have a leader yet...");
+      return false;
+    }
+
+    if (firstLeader.get().getNodeId() == otherLeader.get().getNodeId()) {
+      LOGGER.info("Leader of all partitions is {}, re-balancing...", firstLeader.get().getNodeId());
       triggerRebalancing();
       return false;
     }
