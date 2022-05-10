@@ -23,14 +23,13 @@ deploy_arguments="--dest-namespace optimize-${APP_NAME} \
     --helm-set global.labels.commit=${SHA} \
     --name optimize-${APP_NAME} \
     --project optimize-previews \
-    --revision ${REVISION} \
     --upsert"
 
 set -x
 
 if [[ "${APP_NAME}" == "persistent" ]];
 then
-  argocd app create $deploy_arguments $persistent_deploy_arguments
+  argocd app create $deploy_arguments $persistent_deploy_arguments --revision master
 else
-  argocd app create $deploy_arguments
+  argocd app create $deploy_arguments  --revision ${REVISION}
 fi
