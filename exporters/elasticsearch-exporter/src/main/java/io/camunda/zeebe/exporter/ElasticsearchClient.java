@@ -30,7 +30,7 @@ import org.elasticsearch.client.RestClient;
 public class ElasticsearchClient {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  protected final RestClient client;
+  private final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
