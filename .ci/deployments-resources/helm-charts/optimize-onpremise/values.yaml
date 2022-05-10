@@ -22,7 +22,7 @@ ingress:
 # Tags is usually overridden to a specific tag produced by CI
 optimize:
   image:
-    repository: registry.camunda.cloud/optimize-ee/optimize
+    repository: gcr.io/ci-30-162810/camunda-optimize
     tag: latest
   env:
     # should be set to "elasticsearch-es-http:9200" for persistent env

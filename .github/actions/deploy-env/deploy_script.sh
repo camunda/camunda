@@ -15,7 +15,6 @@ persistent_deploy_arguments='--helm-set env=persistent
 deploy_arguments="--dest-namespace optimize-${APP_NAME} \
     --file .ci/deployments-resources/argo/application.yml \
     --helm-set optimize.image.tag=${DOCKER_TAG} \
-    --helm-set optimize.image.repository=\"gcr.io/ci-30-162810/camunda-optimize\" \
     --helm-set cambpm.image.tag=${CAMBPM_VERSION} \
     --helm-set elasticsearch.image.tag=${ES_VERSION} \
     --helm-set git.branch=${REVISION} \
