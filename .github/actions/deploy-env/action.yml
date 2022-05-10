@@ -116,18 +116,19 @@ runs:
       shell: bash
       if: ${{ inputs.step == 'start'}}
       run: >-
-        if [[ "${{ env.APP_NAME }}" == "persistent" ]];
-        then 
-          .github/actions/deploy-env/deploy_script.sh/deploy_script.sh persistent
-        else
-          .github/actions/deploy-env/deploy_script.sh/deploy_script.sh 
-        fi
+        .github/actions/deploy-env/deploy_script.sh/deploy_script.sh
         
         argocd app sync optimize-${{ env.APP_NAME }} --async --force || true
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
         ARGOCD_OPTS: "--grpc-web"
         ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+        APP_NAME: ${{ env.APP_NAME }}
+        DOCKER_TAG: ${{ inputs.docker_tag }}
+        CAMBPM_VERSION: ${{ inputs.cambpm_version }}
+        ES_VERSION: ${{ inputs.es_version }}
+        REVISION: ${{ inputs.revision }}
+        SHA: ${{ github.sha }}
     - name: Wait for sync (up to 15 minutes)
       shell: bash
       run: |-
