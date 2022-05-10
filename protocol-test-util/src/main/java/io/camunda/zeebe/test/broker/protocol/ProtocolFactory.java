@@ -29,6 +29,7 @@ import org.jeasy.random.EasyRandom;
 import org.jeasy.random.EasyRandomParameters;
 import org.jeasy.random.FieldPredicates;
 import org.jeasy.random.api.Randomizer;
+import org.jeasy.random.randomizers.range.LongRangeRandomizer;
 import org.jeasy.random.randomizers.registry.CustomRandomizerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -212,6 +213,13 @@ public final class ProtocolFactory {
   private void registerRandomizers() {
     findProtocolTypes().forEach(this::registerProtocolType);
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
+
+    // restrict longs to be between 0 and max value - this is because many of our long properties
+    // are timestamps, which are semantically between 0 and any future time
+    randomizerRegistry.registerRandomizer(
+        Long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE, getSeed()));
+    randomizerRegistry.registerRandomizer(
+        long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE, getSeed()));
 
     // never use NULL_VAL or SBE_UNKNOWN for ValueType or RecordType
     randomizerRegistry.registerRandomizer(
