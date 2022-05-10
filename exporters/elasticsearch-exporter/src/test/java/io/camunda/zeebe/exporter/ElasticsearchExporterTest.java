@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter;
 
-import static io.camunda.zeebe.exporter.ElasticsearchExporter.ZEEBE_RECORD_TEMPLATE_JSON;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -97,7 +96,7 @@ final class ElasticsearchExporterTest {
     exporter.export(mock(Record.class));
 
     // then
-    verify(client).createComponentTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
+    verify(client).putComponentTemplate();
 
     verify(client).putIndexTemplate(ValueType.DEPLOYMENT);
     verify(client).putIndexTemplate(ValueType.PROCESS);
