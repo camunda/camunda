@@ -34,8 +34,8 @@ public class ElasticsearchClient {
   private final ElasticsearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
+  private final List<String> bulkRequest;
 
-  private List<String> bulkRequest;
   private ElasticsearchMetrics metrics;
 
   public ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
@@ -98,7 +98,7 @@ public class ElasticsearchClient {
     try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
       exportBulk();
       // all records where flushed, create new bulk request, otherwise retry next time
-      bulkRequest = new ArrayList<>();
+      bulkRequest.clear();
     } catch (final ElasticsearchExporterException e) {
       metrics.recordFailedFlush();
       throw e;
