@@ -8,10 +8,12 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 /** Applies state changes for `ProcessInstance:Element_Terminated` */
 final class ProcessInstanceElementTerminatedApplier
@@ -37,5 +39,23 @@ final class ProcessInstanceElementTerminatedApplier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
+
+    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
+
+    if (flowScopeInstance == null) {
+      return;
+    }
+
+    final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
+    manageMultiInstance(flowScopeInstance, flowScopeElementType);
+  }
+
+  private void manageMultiInstance(
+      final ElementInstance flowScopeInstance, final BpmnElementType flowScopeElementType) {
+    if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      // update the numberOfTerminatedInstances of the multi-instance body
+      flowScopeInstance.incrementNumberOfTerminatedElementInstances();
+      elementInstanceState.updateInstance(flowScopeInstance);
+    }
   }
 }
