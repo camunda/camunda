@@ -24,55 +24,18 @@ pipeline {
     timestamps()
   }
 
-  parameters {
-    string defaultValue: 'master', description: 'Optimize branch for deployment', name: 'BRANCH'
-    booleanParam defaultValue: false, description: 'Deploy Optimize persistent ElasticSearch', name: 'DEPLOY_ELASTICSEARCH'
-    booleanParam defaultValue: false, description: 'Deploy Optimize persistent App', name: 'DEPLOY_OPTIMIZE'
-  }
-
   stages {
-    stage('Prepare') {
-      when {
-        anyOf {
-          expression { params.DEPLOY_ELASTICSEARCH == true }
-          expression { params.DEPLOY_OPTIMIZE == true }
-        }
-      }
+    stage('Deploy Persistent environment') {
       steps {
-        dir('optimize') {
-          optimizeCloneGitRepo(params.BRANCH)
+        build job: '/deploy-branch-to-k8s-gha',
+          parameters: [
+          string(name: 'BRANCH', value: "persistent"),
+          string(name: 'DOCKER_TAG', value: params.OPTIMIZE_VERSION),
+          string(name: 'CAMBPM_VERSION', value: params.CAMBPM_VERSION),
+          string(name: 'ES_VERSION', value: params.ES_VERSION),
+          string(name: 'REF', value: "master"),
+           ]
         }
-        container('gcloud') {
-          camundaInstallKubectl()
-          camundaInstallKustomize()
-        }
-      }
-    }
-
-    stage('Deploy ElasticSearch') {
-      when {
-        expression { params.DEPLOY_ELASTICSEARCH == true }
-      }
-      steps {
-        container('gcloud') {
-          dir('optimize/.ci/persistent-deployment/elasticsearch') {
-            deploy()
-          }
-        }
-      }
-    }
-
-    stage('Deploy Optimize') {
-      when {
-        expression { params.DEPLOY_OPTIMIZE == true }
-      }
-      steps {
-        container('gcloud') {
-          dir('optimize/.ci/persistent-deployment/optimize') {
-            deploy()
-          }
-        }
-      }
     }
   }
 
@@ -84,13 +47,4 @@ pipeline {
       retriggerBuildIfDisconnected()
     }
   }
-}
-
-def deploy() {
-  sh """
-    kustomize cfg set . source jenkins
-    kustomize cfg set . managed-by ${JENKINS_DOMAIN}
-    kustomize cfg set . created-by ${BUILD_URL}
-    kubectl apply -k .
-  """
 }
