@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.dto.BulkItemError;
 import io.camunda.zeebe.exporter.dto.BulkResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
@@ -17,9 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.elasticsearch.client.Request;
@@ -61,23 +60,28 @@ public class ElasticsearchClient {
       metrics = new ElasticsearchMetrics(record.getPartitionId());
     }
 
-    bulk(newIndexCommand(record), record);
+    final BulkIndexAction action =
+        new BulkIndexAction(
+            indexRouter.indexFor(record),
+            indexRouter.idFor(record),
+            indexRouter.routingFor(record));
+    bulk(action, record);
   }
 
-  public void bulk(final Map<String, Object> command, final Record<?> record) {
-    final String serializedCommand;
+  public void bulk(final BulkIndexAction action, final Record<?> record) {
+    final String bulkRequestItem;
 
     try {
-      serializedCommand = MAPPER.writeValueAsString(command);
+      final String serializedAction = MAPPER.writeValueAsString(action);
+      bulkRequestItem = serializedAction + "\n" + MAPPER.writeValueAsString(record);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
-          "Failed to serialize bulk request command to JSON", e);
+          "Failed to serialize bulk request action to JSON", e);
     }
 
-    final String jsonCommand = serializedCommand + "\n" + record.toJson();
     // don't re-append when retrying same record, to avoid OOM
-    if (bulkRequest.isEmpty() || !bulkRequest.get(bulkRequest.size() - 1).equals(jsonCommand)) {
-      bulkRequest.add(jsonCommand);
+    if (bulkRequest.isEmpty() || !bulkRequest.get(bulkRequest.size() - 1).equals(bulkRequestItem)) {
+      bulkRequest.add(bulkRequestItem);
     }
   }
 
@@ -108,7 +112,9 @@ public class ElasticsearchClient {
   private void exportBulk() {
     final Response httpResponse;
     try {
-      httpResponse = sendBulkRequest();
+      final var request = new Request("POST", "/_bulk");
+      request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
+      httpResponse = client.performRequest(request);
     } catch (final ResponseException e) {
       throw new ElasticsearchExporterException("Elastic returned an error response on flush", e);
     } catch (final IOException e) {
@@ -141,13 +147,6 @@ public class ElasticsearchClient {
                         errors.size(), errorType, errors.get(0).getReason())));
 
     throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
-  }
-
-  private Response sendBulkRequest() throws IOException {
-    final var request = new Request("POST", "/_bulk");
-    request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
-
-    return client.performRequest(request);
   }
 
   public boolean shouldFlush() {
@@ -214,16 +213,5 @@ public class ElasticsearchClient {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put component template", e);
     }
-  }
-
-  private Map<String, Object> newIndexCommand(final Record<?> record) {
-    final Map<String, Object> command = new HashMap<>();
-    final Map<String, Object> contents = new HashMap<>();
-    contents.put("_index", indexRouter.indexFor(record));
-    contents.put("_id", indexRouter.idFor(record));
-    contents.put("routing", indexRouter.routingFor(record));
-
-    command.put("index", contents);
-    return command;
   }
 }
