@@ -18,33 +18,42 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 
-public class ElasticsearchClient {
+class ElasticsearchClient {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
-  private final List<String> bulkRequest;
+  private final BulkIndexRequest bulkIndexRequest;
 
   private ElasticsearchMetrics metrics;
 
-  public ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
-    this(configuration, new ArrayList<>());
+  ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
+    this(configuration, new BulkIndexRequest());
   }
 
   ElasticsearchClient(
-      final ElasticsearchExporterConfiguration configuration, final List<String> bulkRequest) {
+      final ElasticsearchExporterConfiguration configuration,
+      final BulkIndexRequest bulkIndexRequest) {
+    this(configuration, bulkIndexRequest, null);
+  }
+
+  ElasticsearchClient(
+      final ElasticsearchExporterConfiguration configuration,
+      final BulkIndexRequest bulkIndexRequest,
+      final ElasticsearchMetrics metrics) {
     this.configuration = configuration;
-    this.bulkRequest = bulkRequest;
+    this.bulkIndexRequest = bulkIndexRequest;
+    this.metrics = metrics;
 
     templateReader = new TemplateReader(configuration.index);
     indexRouter = new RecordIndexRouter(configuration.index);
@@ -65,55 +74,76 @@ public class ElasticsearchClient {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             indexRouter.routingFor(record));
-    bulk(action, record);
-  }
-
-  public void bulk(final BulkIndexAction action, final Record<?> record) {
-    final String bulkRequestItem;
-
-    try {
-      final String serializedAction = MAPPER.writeValueAsString(action);
-      bulkRequestItem = serializedAction + "\n" + MAPPER.writeValueAsString(record);
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          "Failed to serialize bulk request action to JSON", e);
-    }
-
-    // don't re-append when retrying same record, to avoid OOM
-    if (bulkRequest.isEmpty() || !bulkRequest.get(bulkRequest.size() - 1).equals(bulkRequestItem)) {
-      bulkRequest.add(bulkRequestItem);
-    }
+    bulkIndexRequest.index(action, record);
   }
 
   /**
+   * Flushes the bulk request to Elastic, unless it's currently empty.
+   *
    * @throws ElasticsearchExporterException if not all items of the bulk were flushed successfully
    */
   public void flush() {
-    if (bulkRequest.isEmpty()) {
+    if (bulkIndexRequest.isEmpty()) {
       return;
     }
 
-    final int bulkSize = bulkRequest.size();
-    metrics.recordBulkSize(bulkSize);
-
-    final var bulkMemorySize = getBulkMemorySize();
-    metrics.recordBulkMemorySize(bulkMemorySize);
+    metrics.recordBulkSize(bulkIndexRequest.size());
+    metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
     try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
       exportBulk();
+
       // all records where flushed, create new bulk request, otherwise retry next time
-      bulkRequest.clear();
+      bulkIndexRequest.clear();
     } catch (final ElasticsearchExporterException e) {
       metrics.recordFailedFlush();
       throw e;
     }
   }
 
+  /**
+   * Returns whether the exporter should call {@link #flush()} or not.
+   *
+   * @return true if {@link #flush()} should be called, false otherwise
+   */
+  public boolean shouldFlush() {
+    return bulkIndexRequest.memoryUsageBytes() >= configuration.bulk.memoryLimit
+        || bulkIndexRequest.size() >= configuration.bulk.size;
+  }
+
+  /**
+   * Creates an index template for the given value type, read from the resources.
+   *
+   * @return true if request was acknowledged
+   */
+  public boolean putIndexTemplate(final ValueType valueType) {
+    final String templateName = indexRouter.indexPrefixForValueType(valueType);
+    final Template template =
+        templateReader.readIndexTemplate(
+            valueType,
+            indexRouter.searchPatternForValueType(valueType),
+            indexRouter.aliasNameForValueType(valueType));
+
+    return putIndexTemplate(templateName, template);
+  }
+
+  /**
+   * Creates or updates the component template on the target Elasticsearch. The template is read
+   * from {@link TemplateReader#readComponentTemplate()}.
+   */
+  public boolean putComponentTemplate() {
+    final Template template = templateReader.readComponentTemplate();
+    return putComponentTemplate(template);
+  }
+
   private void exportBulk() {
     final Response httpResponse;
     try {
       final var request = new Request("POST", "/_bulk");
-      request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
+      final var body = new EntityTemplate(bulkIndexRequest);
+      body.setContentType("application/x-ndjson");
+      request.setEntity(body);
+
       httpResponse = client.performRequest(request);
     } catch (final ResponseException e) {
       throw new ElasticsearchExporterException("Elastic returned an error response on flush", e);
@@ -149,41 +179,6 @@ public class ElasticsearchClient {
     throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
-  public boolean shouldFlush() {
-    return bulkRequest.size() >= configuration.bulk.size
-        || getBulkMemorySize() >= configuration.bulk.memoryLimit;
-  }
-
-  private int getBulkMemorySize() {
-    return bulkRequest.stream().mapToInt(String::length).sum();
-  }
-
-  /**
-   * @return true if request was acknowledged
-   */
-  public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName = indexRouter.indexPrefixForValueType(valueType);
-    final Template template =
-        templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType),
-            indexRouter.aliasNameForValueType(valueType));
-
-    return putIndexTemplate(templateName, template);
-  }
-
-  /**
-   * Creates or updates the component template on the target Elasticsearch. The template is read
-   * from {@link TemplateReader#readComponentTemplate()}.
-   */
-  public boolean putComponentTemplate() {
-    final Template template = templateReader.readComponentTemplate();
-    return putComponentTemplate(template);
-  }
-
-  /**
-   * @return true if request was acknowledged
-   */
   private boolean putIndexTemplate(final String templateName, final Template template) {
     try {
       final var request = new Request("PUT", "/_index_template/" + templateName);
@@ -198,9 +193,6 @@ public class ElasticsearchClient {
     }
   }
 
-  /**
-   * @return true if request was acknowledged
-   */
   private boolean putComponentTemplate(final Template template) {
     try {
       final var request = new Request("PUT", "/_component_template/" + configuration.index.prefix);
