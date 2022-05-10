@@ -410,8 +410,12 @@ public final class MultiInstanceBodyProcessor
   }
 
   private DirectBuffer getNumberOfCompletedInstancesVariable(final long elementInstanceKey) {
+    // The getNumberOfCompletedInstancesVariable method is called while the child instance is
+    // completing, but the completed element instances value has not yet been incremented,
+    // which is why this variable has to be incremented by 1
     final int numberOfCompletedInstances =
-        stateBehavior.getElementInstance(elementInstanceKey).getNumberOfCompletedElementInstances();
+        stateBehavior.getElementInstance(elementInstanceKey).getNumberOfCompletedElementInstances()
+            + 1;
     return wrapVariable(
         numberOfCompletedInstancesVariableBuffer,
         numberOfCompletedInstancesVariableView,
