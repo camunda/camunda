@@ -27,7 +27,7 @@ Optimize team. It defines the deployment of the Optimize application and the Ela
 ### Upgrade
 
 You can deploy a new version of the Optimize application or Elasticsearch Cluster by running
-the [deploy-optimize-persistent](../jobs/deploy_optimize_persistent.dsl) Job and pass the new version as 
+the [deploy-optimize-persistent](../../../jobs/deploy_optimize_persistent.dsl) Job and pass the new version as 
 parameter to the Job. 
 
 > This Job should run only on the prod Jenkins instance as we have only one Postgres instance and it is part of the 
