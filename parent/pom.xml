@@ -72,7 +72,7 @@
     <version.protobuf>3.20.1</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
     <version.micrometer>1.8.5</version.micrometer>
-    <version.rocksdbjni>7.1.2</version.rocksdbjni>
+    <version.rocksdbjni>7.2.2</version.rocksdbjni>
     <version.sbe>1.25.3</version.sbe>
     <version.scala>2.13.8</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
