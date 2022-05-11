@@ -44,20 +44,28 @@ class ElasticsearchClient {
   ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest) {
-    this(configuration, bulkIndexRequest, null);
+    this(
+        configuration,
+        bulkIndexRequest,
+        RestClientFactory.of(configuration),
+        new RecordIndexRouter(configuration.index),
+        new TemplateReader(configuration.index),
+        null);
   }
 
   ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
+      final RestClient client,
+      final RecordIndexRouter indexRouter,
+      final TemplateReader templateReader,
       final ElasticsearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
+    this.client = client;
+    this.indexRouter = indexRouter;
+    this.templateReader = templateReader;
     this.metrics = metrics;
-
-    templateReader = new TemplateReader(configuration.index);
-    indexRouter = new RecordIndexRouter(configuration.index);
-    client = RestClientFactory.of(configuration);
   }
 
   public void close() throws IOException {
