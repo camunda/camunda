@@ -48,8 +48,6 @@ spec:
             value: "-Xms4g -Xmx4g"
           - name: xpack.security.enabled
             value: "false"
-          - name: READINESS_PROBE_PROTOCOL
-            value: http
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
