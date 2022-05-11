@@ -39,6 +39,10 @@ pipeline {
     }
   }
 
+  triggers {
+    cron(env.BRANCH_NAME.contains('stable/') ? 'H 3 * * 1-5' : '') // every working day at around 3am on stable branches
+  }
+
   // Environment
   environment {
     NODE_ENV = "ci"
