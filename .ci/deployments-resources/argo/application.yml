@@ -17,9 +17,9 @@ spec:
     path: .ci/deployments-resources/helm-charts/optimize-onpremise
     repoURL: https://github.com/camunda/camunda-optimize.git
 
-#  syncPolicy:
-#    automated:
-#      prune: true
-#      selfHeal: true
-#    syncOptions:
-#      - CreateNamespace=true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
