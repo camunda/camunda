@@ -11,6 +11,8 @@ spec:
   nodeSets:
   - name: default
     count: 1
+    config:
+      xpack.security.enabled: false
     podTemplate:
       metadata:
         labels:
@@ -46,8 +48,6 @@ spec:
           env:
           - name: ES_JAVA_OPTS
             value: "-Xms4g -Xmx4g"
-          - name: xpack.security.enabled
-            value: "false"
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
