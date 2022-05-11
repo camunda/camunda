@@ -11,6 +11,8 @@ spec:
   nodeSets:
   - name: default
     count: 1
+    config:
+      xpack.security.enabled: false
     podTemplate:
       metadata:
         labels:
