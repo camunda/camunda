@@ -17,7 +17,7 @@ fixture('Process Report Filter').page(config.endpoint).beforeEach(u.login).after
 test('variable filter modal dependent on variable type', async (t) => {
   await u.createNewReport(t);
 
-  await u.selectReportDefinition(t, 'Lead Qualification', 'All');
+  await u.selectReportDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(Report.sectionToggle('Filters'));
@@ -85,7 +85,7 @@ test('variable filter modal dependent on variable type', async (t) => {
 test('filter for custom string variable values', async (t) => {
   await u.createNewReport(t);
 
-  await u.selectReportDefinition(t, 'Lead Qualification', 'All');
+  await u.selectReportDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(Report.sectionToggle('Filters'));
@@ -355,7 +355,7 @@ test('add Flow Node filter', async (t) => {
 
 test('the filter is visible in the control panel and contains correct information', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
@@ -393,7 +393,7 @@ test('the filter is visible in the control panel and contains correct informatio
 
 test('add an incident filter', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Incident Process', 'All');
+  await u.selectReportDefinition(t, 'Incident Process');
   await u.selectView(t, 'Incident', 'Resolution Duration');
 
   await t.click(Report.sectionToggle('Filters'));
@@ -417,7 +417,7 @@ test('add an incident filter', async (t) => {
 
 test('add flow node status filter', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
 
   await t.click(Report.sectionToggle('Filters'));
@@ -440,7 +440,7 @@ test('add flow node status filter', async (t) => {
 
 test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
   await u.selectVisualization(t, 'Table');
 
@@ -469,10 +469,10 @@ test('select which flow nodes to show from the configuration', async (t) => {
 
 test('multi definition filters', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
-  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
-  await u.selectReportDefinition(t, 'Book Request One Tenant', 'All');
-  await u.selectReportDefinition(t, 'Embedded Subprocess', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
+  await u.selectReportDefinition(t, 'Book Request One Tenant');
+  await u.selectReportDefinition(t, 'Embedded Subprocess');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.expect(Report.reportRenderer.visible).ok();

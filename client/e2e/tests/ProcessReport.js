@@ -41,7 +41,7 @@ test('create and name a report', async (t) => {
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
 
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
 
   await t.resizeWindow(1350, 750);
@@ -61,7 +61,7 @@ test('sharing', async (t) => {
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
 
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
 
   await t.resizeWindow(1000, 650);
@@ -119,7 +119,7 @@ test('sharing header parameters', async (t) => {
 
 test('version selection', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Process Instance', 'Count');
 
@@ -158,7 +158,7 @@ test('version selection', async (t) => {
 
 test('raw data table pagination', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
   await t.click(e.nextPageButton);
   await t.click(e.rowsPerPageButton);
@@ -168,7 +168,7 @@ test('raw data table pagination', async (t) => {
 
 test('sort table columns', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
   await t.typeText(e.nameEditField, 'Table Report', {replace: true});
@@ -204,7 +204,7 @@ test('sort table columns', async (t) => {
 
 test('drag raw data table columns', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
   const originalPositionText = await e.tableHeader(3).textContent;
@@ -215,7 +215,7 @@ test('drag raw data table columns', async (t) => {
 
 test('view a variable object in rawdata table', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
   await t.scrollIntoView(e.objectViewBtn);
@@ -228,7 +228,7 @@ test('view a variable object in rawdata table', async (t) => {
 
 test('drag distributed table columns', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'User Task', 'Count');
   await u.selectGroupby(t, 'Candidate Group');
   await u.selectVisualization(t, 'Table');
@@ -241,7 +241,7 @@ test('drag distributed table columns', async (t) => {
 
 test('exclude raw data columns', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
   await t.resizeWindow(1600, 750);
@@ -274,7 +274,7 @@ test('cancel changes', async (t) => {
 
 test('should only enable valid combinations for process instance count grouped by none', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.groupbyDropdown);
@@ -296,7 +296,7 @@ test('should only enable valid combinations for process instance count grouped b
 
 test('Limit the precsion in number report', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await t.typeText(e.nameEditField, 'Number Report', {replace: true});
 
@@ -316,7 +316,7 @@ test('Limit the precsion in number report', async (t) => {
 
 test('Disable absolute and relative values for table reports', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date', 'Month');
@@ -355,7 +355,7 @@ test('select process instance count grouped by end date', async (t) => {
 
 test('select process instance count grouped by variable', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Process Instance', 'Count');
 
@@ -379,7 +379,7 @@ test('select process instance count grouped by variable', async (t) => {
 
 test('variable report', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Variable', 'amount');
 
@@ -394,7 +394,7 @@ test('variable report', async (t) => {
 
 test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Flow Node', 'Count');
 
@@ -410,7 +410,7 @@ test('bar chart and line chart configuration', async (t) => {
   await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
 
-  await u.selectReportDefinition(t, 'Multi-Instance Subprocess', 'All');
+  await u.selectReportDefinition(t, 'Multi-Instance Subprocess');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date', 'Automatic');
@@ -600,7 +600,7 @@ test('heatmap target values', async (t) => {
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
 
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Duration');
 
   await t.resizeWindow(1650, 850);
@@ -648,7 +648,7 @@ test('heatmap target values', async (t) => {
 
 test('always show tooltips', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
 
   await t.resizeWindow(1650, 850);
@@ -668,7 +668,7 @@ test('always show tooltips', async (t) => {
 
 test('should only enable valid combinations for user task', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'User Task', 'Count');
 
@@ -702,7 +702,7 @@ test('should only enable valid combinations for user task', async (t) => {
 
 test('should be able to distribute candidate group by user task', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Lead Qualification', 'All');
+  await u.selectReportDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'User Task', 'Count');
 
   await u.selectGroupby(t, 'Candidate Group');
@@ -731,7 +731,7 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
 test('should be able to select how the time of the user task is calculated', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'User Task', 'Duration');
   await u.selectGroupby(t, 'Candidate Group');
   await u.selectVisualization(t, 'Table');
@@ -750,7 +750,7 @@ test('should be able to select how the time of the user task is calculated', asy
 
 test('show process instance count', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
   await t.click(e.configurationButton);
@@ -762,7 +762,7 @@ test('show process instance count', async (t) => {
 
 test('process parts', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Process Instance', 'Duration');
 
@@ -796,7 +796,7 @@ test('deleting', async (t) => {
 
 test('show raw data and process model', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Duration');
   await u.save(t);
 
@@ -812,7 +812,7 @@ test('show raw data and process model', async (t) => {
 
 test('group by duration', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Duration');
   await u.selectVisualization(t, 'Bar Chart');
@@ -845,7 +845,7 @@ test('group by duration', async (t) => {
 
 test('distribute by variable', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date', 'Automatic');
   await u.selectVisualization(t, 'Bar Chart');
@@ -872,7 +872,7 @@ test('distribute by variable', async (t) => {
 
 test('distribute by start/end date', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Variable', 'invoiceCategory');
   await u.selectVisualization(t, 'Bar Chart');
@@ -889,7 +889,7 @@ test('distribute by start/end date', async (t) => {
 
 test('incident reports', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Incident Process', 'All');
+  await u.selectReportDefinition(t, 'Incident Process');
   await u.selectView(t, 'Incident', 'Count');
   await t.click(e.removeGroupButton);
 
@@ -911,7 +911,7 @@ test('incident reports', async (t) => {
 
 test('multi-measure reports', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.addMeasureButton);
@@ -955,7 +955,7 @@ test('multi-measure reports', async (t) => {
 
 test('multi-aggregation reports', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
   await u.selectView(t, 'Process Instance', 'Duration');
 
   await t.click(e.aggregationTypeSelect);
@@ -993,7 +993,7 @@ test('multi-aggregation reports', async (t) => {
 
 test('distributed multi-measure reports', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Process Instance', 'Duration');
   await u.selectGroupby(t, 'Start Date', 'Automatic');
@@ -1017,13 +1017,13 @@ test('distributed multi-measure reports', async (t) => {
 
 test('multi-definition report', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Process Instance', 'Count');
 
   const singleDefinitionInstances = +(await e.reportNumber.textContent);
 
-  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
 
   const multiDefinitionInstances = +(await e.reportNumber.textContent);
 
@@ -1045,8 +1045,8 @@ test('multi-definition report', async (t) => {
 
 test('group by process', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
-  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Process');
@@ -1067,7 +1067,7 @@ test('group by process', async (t) => {
 
 test('variable renaming', async (t) => {
   await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
   await u.selectView(t, 'Variable', 'amount');
 
