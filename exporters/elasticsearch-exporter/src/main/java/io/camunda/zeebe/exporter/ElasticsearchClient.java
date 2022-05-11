@@ -26,7 +26,7 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 
-class ElasticsearchClient {
+class ElasticsearchClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final RestClient client;
@@ -68,6 +68,7 @@ class ElasticsearchClient {
     this.metrics = metrics;
   }
 
+  @Override
   public void close() throws IOException {
     client.close();
   }
