@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.10.0">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
   <decision id="invoiceClassification" name="Invoice Classification">
     <decisionTable id="decisionTable">
       <input id="clause1" label="Invoice Amount" camunda:inputVariable="">
@@ -81,6 +81,9 @@
     <informationRequirement id="InformationRequirement_1kkeocv">
       <requiredDecision href="#invoiceClassification" />
     </informationRequirement>
+    <informationRequirement id="InformationRequirement_0uzhmkt">
+      <requiredDecision href="#amountToString" />
+    </informationRequirement>
     <decisionTable id="DecisionTable_16o85h8" hitPolicy="COLLECT">
       <input id="InputClause_0og2hn3" label="Invoice Classification" camunda:inputVariable="">
         <inputExpression id="LiteralExpression_1vywt5q" typeRef="string">
@@ -121,6 +124,12 @@
       </rule>
     </decisionTable>
   </decision>
+  <decision id="amountToString" name="Convert amount to string">
+    <variable id="InformationItem_1qw1dn9" name="amountStr" typeRef="string" />
+    <literalExpression id="LiteralExpression_0gfbl7s">
+      <text>"$" + string(amount)</text>
+    </literalExpression>
+  </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1cuuevk">
       <dmndi:DMNShape id="DMNShape_1abvt5s" dmnElementRef="invoiceClassification">
@@ -130,8 +139,17 @@
         <dc:Bounds height="55" width="100" x="224" y="84" />
       </dmndi:DMNShape>
       <dmndi:DMNEdge id="DMNEdge_1wn1950" dmnElementRef="InformationRequirement_1kkeocv">
-        <di:waypoint x="218" y="215" />
-        <di:waypoint x="258" y="139" />
+        <di:waypoint x="203" y="215" />
+        <di:waypoint x="257" y="159" />
+        <di:waypoint x="257" y="139" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNShape id="DMNShape_0kgcvw6" dmnElementRef="amountToString">
+        <dc:Bounds height="80" width="180" x="320" y="203" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1sucp5a" dmnElementRef="InformationRequirement_0uzhmkt">
+        <di:waypoint x="410" y="203" />
+        <di:waypoint x="291" y="159" />
+        <di:waypoint x="291" y="139" />
       </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
