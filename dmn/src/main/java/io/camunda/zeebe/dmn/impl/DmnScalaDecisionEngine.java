@@ -92,9 +92,9 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
 
     if (!decisionRequirementsGraph.isValid()) {
       return new EvaluationFailure(
-          String.format(
-              "Expected to evaluate decision '%s', but the decision requirements graph is invalid",
-              decisionId));
+          "Expected to evaluate decision '%s', but the decision requirements graph is invalid"
+              .formatted(decisionId),
+          decisionId);
     }
 
     final var parsedDmn = ((ParsedDmnScalaDrg) decisionRequirementsGraph).getParsedDmn();
