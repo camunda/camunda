@@ -11,10 +11,8 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.grpc.Status.Code;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
@@ -70,16 +68,8 @@ final class StandaloneGatewayIT {
           .then()
           .statusCode(200);
 
-      // depending on how fast the gateway is, we may get an unavailable error or an empty topology
-      try {
-        final var result = topology.join(5L, TimeUnit.SECONDS);
-        assertThat(result.getBrokers()).as("there are no known brokers").isEmpty();
-      } catch (final ClientStatusException e) {
-        assertThat(e).hasRootCauseMessage("UNAVAILABLE: No brokers available");
-        assertThat(e.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
-      } catch (final Exception e) {
-        throw e;
-      }
+      final var result = topology.join(5L, TimeUnit.SECONDS);
+      assertThat(result.getBrokers()).as("there are no known brokers").isEmpty();
     }
   }
 
