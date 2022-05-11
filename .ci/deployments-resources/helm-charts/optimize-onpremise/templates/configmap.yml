@@ -403,6 +403,9 @@ data:
           - host: 'elasticsearch-es-http'
             # A port number used by Elasticsearch to accept HTTP connections.
             httpPort: 9200
+      settings:
+        index:
+          number_of_replicas: 0
 
     serialization:
       # Define a custom date format that should be used for
