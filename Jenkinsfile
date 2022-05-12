@@ -397,33 +397,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Post') {
-            when { not { triggeredBy 'TimerTrigger' } }
-
-            parallel {
-                stage('Docker') {
-                    when { branch mainBranchName }
-
-                    environment {
-                        VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
-                    }
-
-                    steps {
-                        retry(3) {
-                            timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                                build job: 'zeebe-docker', parameters: [
-                                    string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                    string(name: 'VERSION', value: env.VERSION),
-                                    booleanParam(name: 'IS_LATEST', value: false),
-                                    booleanParam(name: 'PUSH', value: isMainBranch)
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     post {
