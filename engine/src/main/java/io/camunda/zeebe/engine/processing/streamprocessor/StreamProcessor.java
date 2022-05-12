@@ -380,6 +380,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastSourceEventPosition();
+          } else if (processingStateMachine == null) {
+            // StreamProcessor is still replay mode
+            return StreamProcessor.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastSuccessfulProcessedRecordPosition();
           }
@@ -395,6 +398,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastReplayedEventPosition();
+          } else if (processingStateMachine == null) {
+            // StreamProcessor is still replay mode
+            return StreamProcessor.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastWrittenPosition();
           }
@@ -479,7 +485,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               // since the listeners are not recovered yet
               lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
               phase = Phase.PROCESSING;
-              actor.submit(processingStateMachine::readNextRecord);
+              if (processingStateMachine != null) {
+                actor.submit(processingStateMachine::readNextRecord);
+              }
               LOG.debug("Resumed processing for partition {}", partitionId);
             }
           }
