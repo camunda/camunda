@@ -11,7 +11,7 @@ This environment is deployed under the `optimize-persistent` namespace of the `c
 itself is maintained by the Infrastructure team).
 
 The environment is split between 2 places:
-* **[Infra-core](https://github.com/camunda/infra-core/) repo**: Where you can find the definition of PostgreSQL 
+* **[Infra-core](https://github.com/camunda/infra-core/blob/stage/camunda-ci/terraform/google/prod/db.tf#L145) repo**: Where you can find the definition of PostgreSQL 
   instance and its access.
 * **[Optimize on-premise Helm Chart](https://github.com/camunda/camunda-optimize/tree/master/.ci/deployments-resources/helm-charts/optimize-onpremise)**:
   Where the Optimize application and ElasticSearch cluster are defined.
@@ -28,7 +28,7 @@ Optimize team. It defines the deployment of the Optimize application and the Ela
 
 You can deploy a new version of the Optimize application or Elasticsearch Cluster by running
 the [deploy-optimize-persistent](../../../jobs/deploy_optimize_persistent.dsl) Job and pass the new version as 
-parameter to the Job. 
+parameter to the Job. Check the Job in [Jenkins](https://ci.optimize.camunda.cloud/job/deploy-optimize-persistent/). 
 
 > This Job should run only on the prod Jenkins instance as we have only one Postgres instance and it is part of the 
 > production environment.
