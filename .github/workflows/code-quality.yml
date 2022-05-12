@@ -26,7 +26,7 @@ jobs:
         with:
           go-version: v1.15
       - name: Scan for vulnerabilities
-        run: snyk test --org=team-zeebe --sarif-file-output=snyk.sarif --all-projects
+        run: snyk test --policy-path=.github/config/.snyk --org=team-zeebe --sarif-file-output=snyk.sarif --all-projects
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

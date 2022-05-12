@@ -1,0 +1,4 @@
+Ignore:
+  snyk:lic:maven:com.github.spotbugs:spotbugs-annotations:LGPL-2.1:
+    - protocol > pom.xml
+      reason: "this dependency is 'provided'"
