@@ -37,6 +37,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
+/*
++-------------------+                                  +-----------------+
+|                   |                                  |                 |
+|   ActorStarting   |     ---------------------------> |    Actor close  | <-------------------------------
+|                   |     |          |                 |                 |                                 |
++-------------------+     |          |                 +-----------------+                                 |
+         |                |          |                                                                     |
+         v                |          |                                                                     |
++-------------------+     |    +-----------+        +-------------+        +-----------------+      +------------+
+|                   |------    |           |        |             |        |                 |      |            |
+|  Create Reader    | ------>  |   Replay  |----->  |   Replay    |------> | Create writer   | ---> |   Process  |
+|                   |          |           |        |   Completed |        |                 |      |            |
++-------------------+          +-----------+        +-------------+        +-----------------+      +------------+
+                                      |                                            |                      |
+                                      |                                            |                      |
+                                      |                                            |                      |
+                                      v                                            |                      |
+                                +-------------+                                    |                      |
+                                |   Actor     |                                    |                      |
+                                |   Failed    |  <---------------------------------------------------------
+                                |             |
+                                +-------------+
+
+https://textik.com/#f8692d3c3e76c699
+*/
 public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
   public static final long UNSET_POSITION = -1L;
