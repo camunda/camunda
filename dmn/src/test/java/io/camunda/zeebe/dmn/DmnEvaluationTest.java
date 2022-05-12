@@ -54,8 +54,8 @@ class DmnEvaluationTest {
 
     assertThat(result.getFailedDecisionId())
         .describedAs(
-            "Expect that the failed decision id is 'null' if the decision was not evaluated")
-        .isNull();
+            "Expect that the failed decision id is the target decision id if the decision was not evaluated")
+        .isEqualTo("not_in_drg");
 
     assertThat(result.getOutput())
         .describedAs("Expect that a failed evaluation has no output")
@@ -113,8 +113,9 @@ class DmnEvaluationTest {
         .contains("the decision requirements graph is invalid");
 
     assertThat(result.getFailedDecisionId())
-        .describedAs("Expect that the failed decision id is 'null' if the DRG is invalid")
-        .isNull();
+        .describedAs(
+            "Expect that the failed decision id is the target decision id if the DRG is invalid")
+        .isEqualTo("jedi_or_sith");
 
     assertThat(result.getOutput())
         .describedAs("Expect that a successful result has no output")
