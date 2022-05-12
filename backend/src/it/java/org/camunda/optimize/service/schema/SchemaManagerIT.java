@@ -56,7 +56,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_R
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.verify.VerificationTimes.atLeast;
+import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class SchemaManagerIT extends AbstractIT {
 
@@ -163,7 +163,8 @@ public class SchemaManagerIT extends AbstractIT {
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
-    initializeSchema();
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .schemaExists(embeddedOptimizeExtension.getOptimizeElasticClient());
 
     // then the index exist check was performed in batches
     esMockServer.verify(
@@ -172,7 +173,7 @@ public class SchemaManagerIT extends AbstractIT {
         embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService().getIndexPrefix(),
         INDEX_EXIST_BATCH_SIZE
       )).withMethod(HEAD),
-      atLeast(expectedExistQueryBatchExecutionCount)
+      exactly(expectedExistQueryBatchExecutionCount)
     );
   }
 
