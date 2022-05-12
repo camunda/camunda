@@ -8,7 +8,7 @@
 #!/bin/bash
 
 deploy_arguments="--dest-namespace ${APP_NAME} \
-    --file .ci/deployments-resources/argo/application.yml \
+    --file .ci/deployments-resources/argo/c7-optimize-application.yml \
     --helm-set optimize.image.tag=${DOCKER_TAG} \
     --helm-set cambpm.image.tag=${CAMBPM_VERSION} \
     --helm-set elasticsearch.image.tag=${ES_VERSION} \
