@@ -87,7 +87,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final String actorName;
   private LogStreamReader logStreamReader;
-  private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
   private ReplayStateMachine replayStateMachine;
 
@@ -146,7 +145,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     try {
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final var startRecoveryTimer = metrics.startRecoveryTimer();
-      snapshotPosition = recoverFromSnapshot();
+      final long snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
 
@@ -355,10 +354,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     if (throwable instanceof UnrecoverableException) {
       final var report = HealthReport.dead(this).withIssue(throwable);
-      failureListeners.forEach((l) -> l.onUnrecoverableFailure(report));
+      failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
     } else {
       final var report = HealthReport.unhealthy(this).withIssue(throwable);
-      failureListeners.forEach((l) -> l.onFailure(report));
+      failureListeners.forEach(l -> l.onFailure(report));
     }
   }
 
