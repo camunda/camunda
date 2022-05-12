@@ -383,7 +383,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       return HealthReport.unhealthy(this).withMessage("actor is closed");
     }
 
-    if (processingStateMachine == null || !processingStateMachine.isMakingProgress()) {
+    if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this).withMessage("not making progress");
     }
 
