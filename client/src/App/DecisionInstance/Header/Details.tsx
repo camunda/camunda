@@ -65,7 +65,7 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
-                      link: 'decision-instance-parent-process-details',
+                      link: 'decision-details-parent-process-details',
                     });
                   }}
                 >

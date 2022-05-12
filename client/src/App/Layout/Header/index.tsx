@@ -10,7 +10,6 @@ import {NavElement} from './NavElement';
 import {Menu, LeftSeparator, RightSeparator} from './styled';
 import {Locations, Paths} from 'modules/routes';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
-import {tracking} from 'modules/tracking';
 import {LicenseNote} from './LicenseNote';
 
 const Header: React.FC = () => {
@@ -23,48 +22,28 @@ const Header: React.FC = () => {
             title="View Dashboard"
             label="Operate"
             icon={<CmLogo />}
-            onClick={() => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-logo',
-              });
-            }}
+            trackingEvent="header-logo"
           />
           <LeftSeparator />
           <NavElement
             to={Paths.dashboard()}
             title="View Dashboard"
             label="Dashboard"
-            onClick={() => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-dashboard',
-              });
-            }}
+            trackingEvent="header-dashboard"
           />
           <NavElement
             to={Locations.processes()}
             title="View Processes"
             label="Processes"
             state={{hideOptionalFilters: true}}
-            onClick={() => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-processes',
-              });
-            }}
+            trackingEvent="header-processes"
           />
           <NavElement
             to={Locations.decisions()}
             title="View Decisions"
             label="Decisions"
             state={{hideOptionalFilters: true}}
-            onClick={() => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-decisions',
-              });
-            }}
+            trackingEvent="header-decisions"
           />
         </Menu>
       </nav>

@@ -65,7 +65,7 @@ const InstancesByProcess = observer(() => {
                   panelStatesStore.expandFiltersPanel();
                   tracking.track({
                     eventName: 'navigation',
-                    link: 'dashboard-instances-by-process-single-version',
+                    link: 'dashboard-process-instances-by-name-single-version',
                   });
                 }}
                 title={concatTitle(
@@ -118,7 +118,7 @@ const InstancesByProcess = observer(() => {
           panelStatesStore.expandFiltersPanel();
           tracking.track({
             eventName: 'navigation',
-            link: 'dashboard-instances-by-process-all-versions',
+            link: 'dashboard-process-instances-by-name-all-versions',
           });
         }}
         title={concatGroupTitle(

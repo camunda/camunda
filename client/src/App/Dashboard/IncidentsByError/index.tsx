@@ -72,7 +72,7 @@ const IncidentsByError = observer(() => {
                   panelStatesStore.expandFiltersPanel();
                   tracking.track({
                     eventName: 'navigation',
-                    link: 'dashboard-incidents-by-error-single-process',
+                    link: 'dashboard-process-incidents-by-error-message-single-version',
                   });
                 }}
                 title={title}
@@ -108,7 +108,7 @@ const IncidentsByError = observer(() => {
           panelStatesStore.expandFiltersPanel();
           tracking.track({
             eventName: 'navigation',
-            link: 'dashboard-incidents-by-error-all-processes',
+            link: 'dashboard-process-incidents-by-error-message-all-processes',
           });
         }}
         title={title}

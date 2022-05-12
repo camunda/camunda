@@ -6,7 +6,9 @@
  */
 
 import {Container, Link, Label} from './styled';
-import {NavLink} from 'react-router-dom';
+import {NavLink, useLocation, matchPath} from 'react-router-dom';
+import {tracking} from 'modules/tracking';
+import {Paths} from 'modules/routes';
 
 type Props = {
   to: React.ComponentProps<typeof NavLink>['to'];
@@ -14,7 +16,11 @@ type Props = {
   icon?: React.ReactNode;
   title: string;
   label: string;
-  onClick?: () => void;
+  trackingEvent:
+    | 'header-logo'
+    | 'header-dashboard'
+    | 'header-processes'
+    | 'header-decisions';
 };
 
 const NavElement: React.FC<Props> = ({
@@ -22,23 +28,64 @@ const NavElement: React.FC<Props> = ({
   to,
   icon,
   label,
-  onClick,
+  trackingEvent,
   state,
-}) => (
-  <Container>
-    <Link
-      caseSensitive
-      className={({isActive}) => (isActive ? 'active' : '')}
-      title={title}
-      to={to}
-      end
-      onClick={onClick}
-      state={state}
-    >
-      {icon}
-      <Label>{label}</Label>
-    </Link>
-  </Container>
-);
+}) => {
+  const location = useLocation();
+
+  function getCurrentPage():
+    | 'dashboard'
+    | 'processes'
+    | 'decisions'
+    | 'process-details'
+    | 'decision-details'
+    | 'login'
+    | undefined {
+    if (matchPath(Paths.dashboard(), location.pathname) !== null) {
+      return 'dashboard';
+    }
+
+    if (matchPath(Paths.processes(), location.pathname) !== null) {
+      return 'processes';
+    }
+
+    if (matchPath(Paths.decisions(), location.pathname) !== null) {
+      return 'decisions';
+    }
+
+    if (matchPath(Paths.processInstance(), location.pathname) !== null) {
+      return 'process-details';
+    }
+
+    if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {
+      return 'decision-details';
+    }
+
+    return;
+  }
+
+  return (
+    <Container>
+      <Link
+        caseSensitive
+        className={({isActive}) => (isActive ? 'active' : '')}
+        title={title}
+        to={to}
+        end
+        onClick={() => {
+          tracking.track({
+            eventName: 'navigation',
+            link: trackingEvent,
+            currentPage: getCurrentPage(),
+          });
+        }}
+        state={state}
+      >
+        {icon}
+        <Label>{label}</Label>
+      </Link>
+    </Container>
+  );
+};
 
 export {NavElement};

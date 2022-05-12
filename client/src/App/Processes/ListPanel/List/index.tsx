@@ -198,7 +198,7 @@ const List: React.FC = observer(() => {
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
-                      link: 'instances-instance-details',
+                      link: 'processes-instance-details',
                     });
                   }}
                 >
@@ -225,7 +225,7 @@ const List: React.FC = observer(() => {
                     onClick={() => {
                       tracking.track({
                         eventName: 'navigation',
-                        link: 'instances-parent-instance-details',
+                        link: 'processes-parent-instance-details',
                       });
                     }}
                   >

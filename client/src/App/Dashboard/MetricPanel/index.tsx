@@ -55,7 +55,7 @@ const MetricPanel = observer(() => {
           panelStatesStore.expandFiltersPanel();
           tracking.track({
             eventName: 'navigation',
-            link: 'dashboard-running-instances',
+            link: 'dashboard-running-processes',
           });
         }}
         to={Locations.processes(
@@ -95,7 +95,7 @@ const MetricPanel = observer(() => {
             panelStatesStore.expandFiltersPanel();
             tracking.track({
               eventName: 'navigation',
-              link: 'dashboard-instances-with-incidents',
+              link: 'dashboard-processes-with-incidents',
             });
           }}
           to={Locations.processes({
@@ -110,7 +110,7 @@ const MetricPanel = observer(() => {
             panelStatesStore.expandFiltersPanel();
             tracking.track({
               eventName: 'navigation',
-              link: 'dashboard-active-instances',
+              link: 'dashboard-active-processes',
             });
           }}
           to={Locations.processes({

@@ -17,21 +17,28 @@ type Events =
         | 'header-dashboard'
         | 'header-processes'
         | 'header-decisions'
-        | 'dashboard-running-instances'
-        | 'dashboard-instances-with-incidents'
-        | 'dashboard-active-instances'
-        | 'instance-called-instances'
-        | 'dashboard-instances-by-process-all-versions'
-        | 'dashboard-instances-by-process-single-version'
-        | 'dashboard-incidents-by-error-all-processes'
-        | 'dashboard-incidents-by-error-single-process'
-        | 'instances-instance-details'
-        | 'instances-parent-instance-details'
-        | 'instance-parent-details'
-        | 'instance-breadcrumb'
+        | 'dashboard-running-processes'
+        | 'dashboard-processes-with-incidents'
+        | 'dashboard-active-processes'
+        | 'dashboard-process-instances-by-name-all-versions'
+        | 'dashboard-process-instances-by-name-single-version'
+        | 'dashboard-process-incidents-by-error-message-all-processes'
+        | 'dashboard-process-incidents-by-error-message-single-version'
+        | 'processes-instance-details'
+        | 'processes-parent-instance-details'
+        | 'process-details-parent-details'
+        | 'process-details-breadcrumb'
+        | 'process-details-called-instances'
         | 'decision-instances-instance-details'
         | 'decision-instances-parent-process-details'
-        | 'decision-instance-parent-process-details';
+        | 'decision-details-parent-process-details';
+      currentPage?:
+        | 'dashboard'
+        | 'processes'
+        | 'decisions'
+        | 'process-details'
+        | 'decision-details'
+        | 'login';
     }
   | {
       eventName: 'theme-toggle';

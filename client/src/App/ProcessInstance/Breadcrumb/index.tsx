@@ -33,7 +33,7 @@ const Breadcrumb: React.FC = observer(() => {
               onClick={() => {
                 tracking.track({
                   eventName: 'navigation',
-                  link: 'instance-breadcrumb',
+                  link: 'process-details-breadcrumb',
                 });
               }}
             >

@@ -74,7 +74,7 @@ const ProcessInstanceHeader = observer(() => {
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
-                      link: 'instance-parent-details',
+                      link: 'process-details-parent-details',
                     });
                   }}
                 >
@@ -98,10 +98,10 @@ const ProcessInstanceHeader = observer(() => {
                     panelStatesStore.expandFiltersPanel();
                     tracking.track({
                       eventName: 'navigation',
-                      link: 'instance-called-instances',
+                      link: 'process-details-called-instances',
                     });
                   }}
-                  title={`View all called instances`}
+                  title="View all called instances"
                 >
                   View All
                 </Link>
