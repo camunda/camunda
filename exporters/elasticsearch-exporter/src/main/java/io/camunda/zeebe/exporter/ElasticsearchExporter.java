@@ -28,9 +28,7 @@ public class ElasticsearchExporter implements Exporter {
 
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private Controller controller;
-
   private ElasticsearchExporterConfiguration configuration;
-
   private ElasticsearchClient client;
 
   private long lastPosition = -1;
@@ -118,6 +116,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  // TODO: remove this and instead allow client to be inject-able for testing
   protected ElasticsearchClient createClient() {
     return new ElasticsearchClient(configuration);
   }

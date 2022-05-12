@@ -32,6 +32,7 @@ import java.util.Map;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.RestClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -210,11 +211,13 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   public static class ElasticsearchTestClient extends ElasticsearchClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    protected final RecordIndexRouter indexRouter;
+    private final RecordIndexRouter indexRouter;
+    private final RestClient client;
 
     ElasticsearchTestClient(final ElasticsearchExporterConfiguration configuration) {
       super(configuration);
       indexRouter = new RecordIndexRouter(configuration.index);
+      client = RestClientFactory.of(configuration);
     }
 
     public GetSettingsForIndicesResponse getSettingsForIndices() {
