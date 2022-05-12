@@ -113,7 +113,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorStarting() {
     actor.runOnCompletionBlockingCurrentPhase(
-        logStream.newLogStreamBatchWriter(), this::onRetrievingWriter);
+        logStream.newLogStreamReader(), this::onRetrievingReader);
   }
 
   @Override
@@ -124,9 +124,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-
-      processingStateMachine =
-          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
 
       healthCheckTick();
 
@@ -227,19 +224,33 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRetrievingWriter(
-      final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
+      final LogStreamBatchWriter batchWriter,
+      final Throwable errorOnReceivingWriter,
+      final LastProcessingPositions lastProcessingPositions) {
 
     if (errorOnReceivingWriter == null) {
       processingContext
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
           .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
 
-      actor.runOnCompletionBlockingCurrentPhase(
-          logStream.newLogStreamReader(), this::onRetrievingReader);
+      phase = Phase.PROCESSING;
+
+      // enable writing records to the stream
+      processingContext.enableLogStreamWriter();
+
+      processingStateMachine =
+          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
+
+      logStream.registerRecordAvailableListener(this);
+
+      // start reading
+      lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
+      processingStateMachine.startProcessing(lastProcessingPositions);
+      if (!shouldProcess) {
+        setStateToPausedAndNotifyListeners();
+      }
     } else {
-      LOG.error(
-          "Unexpected error on retrieving batch writer from log stream.", errorOnReceivingWriter);
-      actor.close();
+      onFailure(errorOnReceivingWriter);
     }
   }
 
@@ -306,19 +317,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
-    phase = Phase.PROCESSING;
-
-    // enable writing records to the stream
-    processingContext.enableLogStreamWriter();
-
-    logStream.registerRecordAvailableListener(this);
-
-    // start reading
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    processingStateMachine.startProcessing(lastProcessingPositions);
-    if (!shouldProcess) {
-      setStateToPausedAndNotifyListeners();
-    }
+    actor.runOnCompletion(
+        logStream.newLogStreamBatchWriter(),
+        (batchWriter, errorOnReceivingWriter) ->
+            onRetrievingWriter(batchWriter, errorOnReceivingWriter, lastProcessingPositions));
   }
 
   private void onFailure(final Throwable throwable) {
