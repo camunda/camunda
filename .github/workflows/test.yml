@@ -112,7 +112,7 @@ jobs:
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
-          -pl :${{ matrix.project }}
+          -pl ${{ matrix.project }}
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
