@@ -82,16 +82,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: sudo apt-get -y install jq
-      - uses: actions/setup-java@v3.3.0
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
       - name: Get Project List
         id: list-projects
         # Build a json array of module names that can be used for the matrix in `unit-tests`
         run: >
-          echo "::set-output name=projects::$(mvn -pl !:zeebe-workflow-engine -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q |  jq -cnR [inputs])"
+          echo "::set-output name=projects::$(find -not -path "./engine/pom.xml" -wholename "./*/pom.xml" -exec dirname {} \; | jq -cnR [inputs])"
     outputs:
       projects: ${{ steps.list-projects.outputs.projects }}
   unit-tests:
@@ -112,12 +107,12 @@ jobs:
       - run: >
           mvn -B -T1C
           -D skipTests -D skipChecks
-          -am -pl :${{ matrix.project }}
+          -am -pl ${{ matrix.project }}
           install
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
-          -pl :${{ matrix.project }}
+          -pl ${{ matrix.project }}
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
