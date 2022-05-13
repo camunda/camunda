@@ -107,7 +107,7 @@ jobs:
       - run: >
           mvn -B -T1C
           -D skipTests -D skipChecks
-          -am -pl :${{ matrix.project }}
+          -am -pl ${{ matrix.project }}
           install
       - run: >
           mvn -B --no-snapshot-updates
