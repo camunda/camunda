@@ -351,10 +351,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
-    actor.runOnCompletion(
-        logStream.newLogStreamBatchWriter(),
-        (batchWriter, errorOnReceivingWriter) ->
-            onRetrievingWriter(batchWriter, errorOnReceivingWriter, lastProcessingPositions));
+    logStream
+        .newLogStreamBatchWriter()
+        .onComplete(
+            (batchWriter, errorOnReceivingWriter) ->
+                onRetrievingWriter(batchWriter, errorOnReceivingWriter, lastProcessingPositions));
   }
 
   private void onFailure(final Throwable throwable) {
