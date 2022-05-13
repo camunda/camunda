@@ -30,6 +30,11 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   UPDATE_RETRIES((short) 7, false),
   RETRIES_UPDATED((short) 8),
 
+  /**
+   * @deprecated for removal since 8.0.2, removal can only happen if we break backwards
+   *     compatibility with older versions because Cancel command can still exist on log streams
+   */
+  @Deprecated
   CANCEL((short) 9),
   CANCELED((short) 10),
 
