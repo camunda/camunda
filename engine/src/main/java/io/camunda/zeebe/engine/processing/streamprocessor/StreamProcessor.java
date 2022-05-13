@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -97,12 +97,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
+  private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
 
     typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
+    typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
     eventApplierFactory = processorBuilder.getEventApplierFactory();
 
@@ -253,7 +255,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (errorOnReceivingWriter == null) {
       processingContext
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
-          .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
+          .logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
       phase = Phase.PROCESSING;
 
