@@ -69,7 +69,10 @@ class MetricsExporterTest {
   class FilterTest {
 
     static Stream<TypeCombination> acceptedCombinations() {
-      return Stream.of();
+      return Stream.of(
+          new TypeCombination(RecordType.EVENT, ValueType.JOB),
+          new TypeCombination(RecordType.EVENT, ValueType.JOB_BATCH),
+          new TypeCombination(RecordType.EVENT, ValueType.PROCESS_INSTANCE));
     }
 
     /** Returns the inverse of {@link #acceptedCombinations()}. */
