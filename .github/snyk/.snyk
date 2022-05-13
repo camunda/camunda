@@ -1,4 +1,5 @@
 Ignore:
   'snyk:lic:maven:com.github.spotbugs:spotbugs-annotations:LGPL-2.1':
     - '*' :
-        reason: "this dependency is 'provided'"
+      reason: "this dependency is 'provided'"
+      expires: '2029-01-01T00:00:00.000Z'
