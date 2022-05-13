@@ -156,8 +156,6 @@ public class StreamProcessorHealthTest {
         streamProcessorRule.startTypedStreamProcessorNotAwaitOpening(
             processingContext -> {
               final MutableZeebeState zeebeState = processingContext.getZeebeState();
-              mockedLogStreamWriter = new WrappedStreamWriter();
-              processingContext.logStreamWriter(mockedLogStreamWriter);
               return processors(zeebeState.getKeyGenerator(), processingContext.getWriters())
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
@@ -177,7 +175,8 @@ public class StreamProcessorHealthTest {
                           }
                         }
                       });
-            });
+            },
+            batchWriter -> new WrappedStreamWriter());
 
     return streamProcessor;
   }
