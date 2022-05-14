@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.FailJobResponse;
+import java.time.Duration;
 
 public interface FailJobCommandStep1 {
 
@@ -33,6 +34,18 @@ public interface FailJobCommandStep1 {
 
   interface FailJobCommandStep2 extends FinalCommandStep<FailJobResponse> {
     // the place for new optional parameters
+
+    /**
+     * Set the backoff timeout for failing this job.
+     *
+     * <p>If the backoff timeout is greater than zero and retries are greater than zero then after
+     * the job this job will be picked up again after this backoff timeout will pass.
+     *
+     * @param backoffTimeout the backoff timeout of this job
+     * @return the builder for this command. Call {@link #send()} to complete the command and send *
+     *     it to the broker.
+     */
+    FailJobCommandStep2 retryBackoff(final Duration backoffTimeout);
 
     /**
      * Provide an error message describing the reason for the job failure. If failing the job

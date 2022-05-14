@@ -57,6 +57,12 @@ public final class FailJobCommandImpl implements FailJobCommandStep1, FailJobCom
   }
 
   @Override
+  public FailJobCommandStep2 retryBackoff(final Duration backoffTimeout) {
+    builder.setRetryBackOff(backoffTimeout.toMillis());
+    return this;
+  }
+
+  @Override
   public FailJobCommandStep2 errorMessage(final String errorMsg) {
     builder.setErrorMessage(errorMsg);
     return this;
