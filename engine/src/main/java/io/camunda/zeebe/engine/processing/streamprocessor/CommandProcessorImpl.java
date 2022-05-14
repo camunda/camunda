@@ -79,11 +79,13 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
       if (respond) {
         responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
+        responseWriter.flush();
       }
     } else {
       rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
         responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+        responseWriter.flush();
       }
     }
   }
