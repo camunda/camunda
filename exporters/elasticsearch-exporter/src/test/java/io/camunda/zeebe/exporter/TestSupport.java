@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter;
 
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
 import java.util.stream.Stream;
@@ -35,6 +37,53 @@ final class TestSupport {
         .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.auto_create_index", "true")
         .withEnv("xpack.security.enabled", "false");
+  }
+
+  /**
+   * Sets the correct indexing configuration field for the given value type. This is particularly
+   * helpful for parameterized tests.
+   *
+   * <p>TODO: this is terrible, but the configuration is also terrible to use programmatically
+   */
+  @SuppressWarnings("checkstyle:innerassignment")
+  static void setIndexingForValueType(
+      final IndexConfiguration config, final ValueType valueType, final boolean value) {
+    switch (valueType) {
+      case JOB -> config.job = value;
+      case DEPLOYMENT -> config.deployment = value;
+      case PROCESS_INSTANCE -> config.processInstance = value;
+      case INCIDENT -> config.incident = value;
+      case MESSAGE -> config.message = value;
+      case MESSAGE_SUBSCRIPTION -> config.messageSubscription = value;
+      case PROCESS_MESSAGE_SUBSCRIPTION -> config.processMessageSubscription = value;
+      case JOB_BATCH -> config.jobBatch = value;
+      case VARIABLE -> config.variable = value;
+      case VARIABLE_DOCUMENT -> config.variableDocument = value;
+      case PROCESS_INSTANCE_CREATION -> config.processInstanceCreation = value;
+      case ERROR -> config.error = value;
+      case PROCESS -> config.process = value;
+      case DECISION -> config.decision = value;
+      case DECISION_REQUIREMENTS -> config.decisionRequirements = value;
+      case DECISION_EVALUATION -> config.decisionEvaluation = value;
+      default -> throw new IllegalArgumentException(
+          "No known indexing configuration option for value type " + valueType);
+    }
+  }
+
+  /**
+   * Sets the correct indexing configuration field for the given record type. This is particularly
+   * helpful for parameterized tests.
+   */
+  @SuppressWarnings("checkstyle:innerassignment")
+  static void setIndexingForRecordType(
+      final IndexConfiguration config, final RecordType recordType, final boolean value) {
+    switch (recordType) {
+      case EVENT -> config.event = value;
+      case COMMAND -> config.command = value;
+      case COMMAND_REJECTION -> config.rejection = value;
+      default -> throw new IllegalArgumentException(
+          "No known indexing configuration option for record type " + recordType);
+    }
   }
 
   /**
