@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -37,6 +37,41 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
+/*
+
++-------------------+
+|                   |
+|   ActorStarting   |
+|                   |
++-------------------+
+          |
+          v
++-------------------+
+|                   |                                    +-----------------+
+|   Create Reader   |                                    |                 |
+|                   |       ---------------------------> |    Actor close  | <-------------------------------
++-------------------+       |          |                 |                 |                                 |
+          |                 |          |                 +-----------------+                                 |
+          v                 |          |                                                                     |
++-------------------+       |          |                                                                     |
+|                   |       |    +-----------+        +-------------+        +-----------------+      +------------+
+|   Actor Started   |--------    |           |        |             |        |                 |      |            |
+|                   |----------->|   Replay  |------->|   Replay    |------->| Create writer   | ---->|   Process  |
++-------------------+            |           |        |   Completed |        |                 |      |            |
+                                 +-----------+        +-------------+        +-----------------+      +------------+
+                                        |                                            |                      |
+                                        |                                            |                      |
+                                        |                                            |                      |
+                                        v                                            |                      |
+                                  +-------------+                                    |                      |
+                                  |   Actor     |                                    |                      |
+                                  |   Failed    |  <---------------------------------------------------------
+                                  |             |
+                                  +-------------+
+
+
+https://textik.com/#f8692d3c3e76c699
+*/
 public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
   public static final long UNSET_POSITION = -1L;
@@ -62,7 +97,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final String actorName;
   private LogStreamReader logStreamReader;
-  private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
   private ReplayStateMachine replayStateMachine;
 
@@ -73,12 +107,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
+  private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
 
     typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
+    typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
     eventApplierFactory = processorBuilder.getEventApplierFactory();
 
@@ -113,7 +149,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorStarting() {
     actor.runOnCompletionBlockingCurrentPhase(
-        logStream.newLogStreamBatchWriter(), this::onRetrievingWriter);
+        logStream.newLogStreamReader(), this::onRetrievingReader);
   }
 
   @Override
@@ -121,12 +157,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     try {
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final var startRecoveryTimer = metrics.startRecoveryTimer();
-      snapshotPosition = recoverFromSnapshot();
+      final long snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-
-      processingStateMachine =
-          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
 
       healthCheckTick();
 
@@ -227,19 +260,33 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRetrievingWriter(
-      final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
+      final LogStreamBatchWriter batchWriter,
+      final Throwable errorOnReceivingWriter,
+      final LastProcessingPositions lastProcessingPositions) {
 
     if (errorOnReceivingWriter == null) {
       processingContext
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
-          .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
+          .logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
-      actor.runOnCompletionBlockingCurrentPhase(
-          logStream.newLogStreamReader(), this::onRetrievingReader);
+      phase = Phase.PROCESSING;
+
+      // enable writing records to the stream
+      processingContext.enableLogStreamWriter();
+
+      processingStateMachine =
+          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
+
+      logStream.registerRecordAvailableListener(this);
+
+      // start reading
+      lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
+      processingStateMachine.startProcessing(lastProcessingPositions);
+      if (!shouldProcess) {
+        setStateToPausedAndNotifyListeners();
+      }
     } else {
-      LOG.error(
-          "Unexpected error on retrieving batch writer from log stream.", errorOnReceivingWriter);
-      actor.close();
+      onFailure(errorOnReceivingWriter);
     }
   }
 
@@ -306,19 +353,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
-    phase = Phase.PROCESSING;
-
-    // enable writing records to the stream
-    processingContext.enableLogStreamWriter();
-
-    logStream.registerRecordAvailableListener(this);
-
-    // start reading
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    processingStateMachine.startProcessing(lastProcessingPositions);
-    if (!shouldProcess) {
-      setStateToPausedAndNotifyListeners();
-    }
+    logStream
+        .newLogStreamBatchWriter()
+        .onComplete(
+            (batchWriter, errorOnReceivingWriter) ->
+                onRetrievingWriter(batchWriter, errorOnReceivingWriter, lastProcessingPositions));
   }
 
   private void onFailure(final Throwable throwable) {
@@ -330,10 +369,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     if (throwable instanceof UnrecoverableException) {
       final var report = HealthReport.dead(this).withIssue(throwable);
-      failureListeners.forEach((l) -> l.onUnrecoverableFailure(report));
+      failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
     } else {
       final var report = HealthReport.unhealthy(this).withIssue(throwable);
-      failureListeners.forEach((l) -> l.onFailure(report));
+      failureListeners.forEach(l -> l.onFailure(report));
     }
   }
 
@@ -354,6 +393,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastSourceEventPosition();
+          } else if (processingStateMachine == null) {
+            // StreamProcessor is still replay mode
+            return StreamProcessor.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastSuccessfulProcessedRecordPosition();
           }
@@ -369,6 +411,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastReplayedEventPosition();
+          } else if (processingStateMachine == null) {
+            // StreamProcessor is still replay mode
+            return StreamProcessor.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastWrittenPosition();
           }
@@ -381,7 +426,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       return HealthReport.unhealthy(this).withMessage("actor is closed");
     }
 
-    if (processingStateMachine == null || !processingStateMachine.isMakingProgress()) {
+    if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this).withMessage("not making progress");
     }
 
@@ -453,7 +498,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               // since the listeners are not recovered yet
               lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
               phase = Phase.PROCESSING;
-              actor.submit(processingStateMachine::readNextRecord);
+              if (processingStateMachine != null) {
+                actor.submit(processingStateMachine::readNextRecord);
+              }
               LOG.debug("Resumed processing for partition {}", partitionId);
             }
           }

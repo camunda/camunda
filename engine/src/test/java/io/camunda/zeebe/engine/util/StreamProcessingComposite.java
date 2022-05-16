@@ -14,13 +14,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingCont
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.function.Function;
 
 public class StreamProcessingComposite {
 
@@ -98,6 +101,21 @@ public class StreamProcessingComposite {
           lastProcessedPositionState = processingContext.getLastProcessedPositionState();
           return factory.createProcessors(processingContext);
         }));
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory) {
+    return streams.startStreamProcessorNotAwaitOpening(
+        getLogName(partitionId),
+        zeebeDbFactory,
+        (processingContext -> {
+          zeebeState = processingContext.getZeebeState();
+          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
+          return factory.createProcessors(processingContext);
+        }),
+        streamWriterFactory);
   }
 
   public void pauseProcessing(final int partitionId) {
