@@ -101,7 +101,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   // we had to introduce our own options due to a regression with the client's behaviour with the 7.16
   // see https://discuss.elastic.co/t/regression-client-7-16-x-indicesclient-exists-indicesoptions-are-not-present-in-request-anymore/298017
   public static final IndicesOptions INDICES_EXIST_OPTIONS = new IndicesOptions(
-    EnumSet.of(IndicesOptions.Option.FORBID_CLOSED_INDICES),
+    EnumSet.of(IndicesOptions.Option.FORBID_CLOSED_INDICES, IndicesOptions.Option.IGNORE_THROTTLED),
     EnumSet.of(IndicesOptions.WildcardStates.OPEN)
   );
 
