@@ -27,12 +27,6 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
   private final StreamProcessorMode streamProcessorMode;
   private final StateController stateController;
   private long commitPosition = -1;
-  private final Behavior<SnapshotDirectorCommands> transitionToTransientSnapshot =
-      Behaviors.receive(SnapshotDirectorCommands.class)
-          .onMessage(OnCommit.class, this::updateCommitPosition)
-          .onMessage(
-              StartTransientSnapshot.class, (msg1) -> transientSnapshot(msg1.lastProcessedPosition))
-          .build();
   private ActorContext<SnapshotDirectorCommands> ctx;
 
   public AkkaSnapshotDirector(
@@ -53,7 +47,7 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
                 (timers) -> {
                   this.ctx = ctx;
                   timers.startTimerAtFixedRate(
-                      "ScheduledSnapshotTimer", new StartSnapshot(), Duration.ofMinutes(5));
+                      "ScheduledSnapshotTimer", new StartSnapshot(), Duration.ofSeconds(15));
                   return Behaviors.receive(SnapshotDirectorCommands.class)
                       .onMessage(StartSnapshot.class, this::startingSnapshot)
                       .onMessage(OnCommit.class, this::updateCommitPosition)
@@ -67,70 +61,61 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
   }
 
   private Behavior<SnapshotDirectorCommands> startingSnapshot(final StartSnapshot msg) {
-    return Behaviors.setup(
-        (ctx) -> {
-          compat.waitOnActor(
-              streamProcessor::getLastWrittenPositionAsync,
-              ctx.getSelf(),
-              (lastProcessedPosition, error) -> {
-                if (error != null) {
-                  return new StartTransientSnapshot(lastProcessedPosition);
-                } else {
-                  // TODO: Handle error
-                  return null;
-                }
-              });
-          return transitionToTransientSnapshot;
-        });
+    return compat.onActor(
+        streamProcessor::getLastProcessedPositionAsync,
+        StartTransientSnapshot::new,
+        FailSnapshot::new,
+        Behaviors.receive(SnapshotDirectorCommands.class)
+            .onMessage(OnCommit.class, this::updateCommitPosition)
+            .onMessage(
+                StartTransientSnapshot.class,
+                (msg1) -> transientSnapshot(msg1.lastProcessedPosition))
+            .onMessage(FailSnapshot.class, (failure) -> {
+              ctx.getLog().error("Failed taking snapshot", failure.e);
+              return create();
+            })
+            .build());
   }
 
   private Behavior<SnapshotDirectorCommands> transientSnapshot(final Long lastProcessedPos) {
-    return Behaviors.setup(
-        (ctx) -> {
-          compat.waitOnActor(
-              () -> stateController.takeTransientSnapshot(lastProcessedPos),
-              ctx.getSelf(),
-              (transientSnapshot, error) -> {
-                if (error == null) {
-                  return new WaitForLastWrittenPosition(transientSnapshot);
-                } else {
-                  // TODO: handle error
-                  return null;
-                }
-              });
-          return Behaviors.receive(SnapshotDirectorCommands.class)
-              .onMessage(OnCommit.class, this::updateCommitPosition)
-              .onMessage(
-                  WaitForLastWrittenPosition.class,
-                  (msg) -> getLastWrittenPosition(msg.transientSnapshot))
-              .build();
-        });
+    return compat.onActor(
+        () -> stateController.takeTransientSnapshot(lastProcessedPos),
+        TransientSnapshotTaken::new,
+        FailSnapshot::new,
+        Behaviors.receive(SnapshotDirectorCommands.class)
+            .onMessage(OnCommit.class, this::updateCommitPosition)
+            .onMessage(
+                TransientSnapshotTaken.class,
+                (msg) -> getLastWrittenPosition(msg.transientSnapshot))
+            .onMessage(
+                FailSnapshot.class,
+                (msg) -> {
+                  ctx.getLog().error("Failed to take snapshot", msg.e);
+                  return create();
+                })
+            .onMessage(
+                SkipSnapshot.class,
+                (msg) -> {
+                  ctx.getLog().info("Skipping snapshot");
+                  return create();
+                })
+            .build());
   }
 
   private Behavior<SnapshotDirectorCommands> getLastWrittenPosition(
       final TransientSnapshot transientSnapshot) {
-    return Behaviors.setup(
-        (ctx) -> {
-          compat.waitOnActor(
-              streamProcessor::getLastWrittenPositionAsync,
-              ctx.getSelf(),
-              (lastWrittenPosition, error) -> {
-                if (error == null) {
-                  return new WaitForCommitPosition(transientSnapshot, lastWrittenPosition);
-                } else {
-                  // TODO: handle error
-                  return null;
-                }
-              });
-          return Behaviors.receive(SnapshotDirectorCommands.class)
-              .onMessage(OnCommit.class, this::updateCommitPosition)
-              .onMessage(
-                  WaitForCommitPosition.class,
-                  (msg) ->
-                      validateCommitPosition(
-                          msg.transientSnapshot, msg.lastWrittenPosition, commitPosition))
-              .build();
-        });
+    return compat.onActor(
+        streamProcessor::getLastWrittenPositionAsync,
+        (pos) -> new GotLastWrittenPosition(transientSnapshot, pos),
+        FailSnapshot::new,
+        Behaviors.receive(SnapshotDirectorCommands.class)
+            .onMessage(OnCommit.class, this::updateCommitPosition)
+            .onMessage(
+                GotLastWrittenPosition.class,
+                (msg) ->
+                    validateCommitPosition(
+                        msg.transientSnapshot, msg.lastWrittenPosition, commitPosition))
+            .build());
   }
 
   private Behavior<SnapshotDirectorCommands> validateCommitPosition(
@@ -138,24 +123,14 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
       final long lastWrittenPosition,
       final long commitPosition) {
     this.commitPosition = commitPosition;
-    if (streamProcessorMode == StreamProcessorMode.REPLAY || commitPosition >= lastWrittenPosition) {
-      return Behaviors.setup(
-          (ctx) -> {
-            compat.waitOnActor(
-                transientSnapshot::persist,
-                ctx.getSelf(),
-                (persisted, error) -> {
-                  if (error == null) {
-                    return new SnapshotPersisted(persisted);
-                  } else {
-                    // TODO: handle error
-                    return null;
-                  }
-                });
-            return Behaviors.receive(SnapshotDirectorCommands.class)
-                .onMessage(SnapshotPersisted.class, (msg) -> create())
-                .build();
-          });
+    if (commitPosition >= lastWrittenPosition) {
+      return compat.onActor(
+          transientSnapshot::persist,
+          SnapshotPersisted::new,
+          FailSnapshot::new,
+          Behaviors.receive(SnapshotDirectorCommands.class)
+              .onMessage(SnapshotPersisted.class, (msg) -> create())
+              .build());
     } else {
       return Behaviors.receive(SnapshotDirectorCommands.class)
           .onMessage(
@@ -171,6 +146,10 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
   public void onCommit(final IndexedRaftLogEntry indexedRaftLogEntry) {
     if (indexedRaftLogEntry.isApplicationEntry()) {
       ctx.getSelf().tell(new OnCommit(indexedRaftLogEntry.getApplicationEntry().highestPosition()));
+      ctx.getLog()
+          .trace(
+              "Notified about new commit position: {}",
+              indexedRaftLogEntry.getApplicationEntry().highestPosition());
     }
   }
 
@@ -187,18 +166,25 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
 
   record StartSnapshot() implements SnapshotDirectorCommands {}
 
+  record SkipSnapshot() implements SnapshotDirectorCommands {}
+
+  record FailSnapshot(Throwable e) implements SnapshotDirectorCommands {}
+
   record OnCommit(long commitPosition) implements SnapshotDirectorCommands {}
 
   record StartTransientSnapshot(long lastProcessedPosition) implements SnapshotDirectorCommands {}
 
-  record WaitForLastWrittenPosition(TransientSnapshot transientSnapshot)
+  record TransientSnapshotTaken(TransientSnapshot transientSnapshot)
       implements SnapshotDirectorCommands {}
 
-  record WaitForCommitPosition(TransientSnapshot transientSnapshot, long lastWrittenPosition)
+  record GotLastWrittenPosition(TransientSnapshot transientSnapshot, long lastWrittenPosition)
       implements SnapshotDirectorCommands {}
 
   record SnapshotPersisted(PersistedSnapshot persistedSnapshot)
       implements SnapshotDirectorCommands {}
 
-  interface SnapshotDirectorCommands {}
+  record State(long commitPosition) {}
+
+  public interface SnapshotDirectorCommands {
+  }
 }

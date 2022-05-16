@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import akka.actor.typed.ActorSystem;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotDirector.SnapshotDirectorCommands;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -80,6 +82,7 @@ public class PartitionStartupAndTransitionContextImpl
   private long currentTerm;
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
+  private ActorSystem<SnapshotDirectorCommands> snapshotDirectorAkka;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -233,6 +236,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setQueryService(final QueryService queryService) {
     this.queryService = queryService;
+  }
+
+  @Override
+  public ActorSystem<SnapshotDirectorCommands> getSnapshotDirectorAkka() {
+    return snapshotDirectorAkka;
+  }
+
+  @Override
+  public void setSnapshotDirectorAkka(final ActorSystem<SnapshotDirectorCommands> actorSystem) {
+    snapshotDirectorAkka = actorSystem;
   }
 
   @Override

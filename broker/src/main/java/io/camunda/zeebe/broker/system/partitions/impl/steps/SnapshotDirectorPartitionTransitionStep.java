@@ -13,11 +13,9 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaCompatActor;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
 
 public final class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
@@ -27,20 +25,16 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
     if (context.getSnapshotDirector() != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
-      final var director = (AsyncSnapshotDirector) context.getSnapshotDirector();
-      context.getComponentHealthMonitor().removeComponent(director.getName());
+      final var director = (AkkaSnapshotDirector) context.getSnapshotDirector();
       context.getRaftPartition().getServer().removeCommittedEntryListener(director);
-      final ActorFuture<Void> future = director.closeAsync();
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setSnapshotDirector(null);
-            }
-          });
-      return future;
-    } else {
-      return CompletableActorFuture.completed(null);
+      try {
+        context.getSnapshotDirectorAkka().terminate();
+        director.close();
+      } catch (final Exception e) {
+        return CompletableActorFuture.completedExceptionally(e);
+      }
     }
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
@@ -48,65 +42,19 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getSnapshotDirector() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final var server = context.getRaftPartition().getServer();
-
-      final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
-      final AsyncSnapshotDirector director;
-      if (targetRole == Role.LEADER) {
-        director =
-            AsyncSnapshotDirector.ofProcessingMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod);
-      } else {
-        director =
-            AsyncSnapshotDirector.ofReplayMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod);
-      }
-
-      final var future = context.getActorSchedulingService().submitActor(director);
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setSnapshotDirector(director);
-              context.getComponentHealthMonitor().registerComponent(director.getName(), director);
-              if (targetRole == Role.LEADER) {
-                server.addCommittedEntryListener(director);
-              }
-            }
-          });
-      return future;
-
-    } else {
-      return CompletableActorFuture.completed(null);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return "SnapshotDirector";
-  }
-
-  public ActorFuture<Void> prepareTransitionAkka(
-      final PartitionTransitionContext context, final long term, final Role targetRole) {
-    if (context.getSnapshotDirector() != null
-        && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
-            || targetRole == Role.INACTIVE)) {
       final var compat = new AkkaCompatActor();
       context.getActorSchedulingService().submitActor(compat);
-      final var mode = switch (targetRole) {
-        case LEADER -> StreamProcessorMode.PROCESSING;
-        default -> StreamProcessorMode.REPLAY;
-      };
-      final var snapshotDirector = new AkkaSnapshotDirector(compat, context.getStreamProcessor(), mode, context.getStateController());
+      final var mode =
+          switch (targetRole) {
+            case LEADER -> StreamProcessorMode.PROCESSING;
+            default -> StreamProcessorMode.REPLAY;
+          };
+      final var snapshotDirector =
+          new AkkaSnapshotDirector(
+              compat, context.getStreamProcessor(), mode, context.getStateController());
 
       final var actorSystem = ActorSystem.create(snapshotDirector.create(), "SnapshotDirector");
+      context.setSnapshotDirectorAkka(actorSystem);
       context.setSnapshotDirector(snapshotDirector);
       if (targetRole == Role.LEADER) {
         context.getRaftPartition().getServer().addCommittedEntryListener(snapshotDirector);
@@ -115,10 +63,11 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
     return CompletableActorFuture.completed(null);
   }
 
-  public ActorFuture<Void> transitionToAkka(
-      final PartitionTransitionContext context, final long term, final Role targetRole) {
-
+  @Override
+  public String getName() {
+    return "SnapshotDirector";
   }
+
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
     return newRole == Role.LEADER
         || (newRole == Role.FOLLOWER && currentRole != Role.CANDIDATE)

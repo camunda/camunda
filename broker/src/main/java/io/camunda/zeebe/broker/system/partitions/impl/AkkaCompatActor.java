@@ -8,10 +8,13 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.Behaviors;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class AkkaCompatActor extends Actor {
   public <T, U> void waitOnActor(
@@ -28,6 +31,34 @@ public class AkkaCompatActor extends Actor {
             return;
           }
           f.onComplete((result, error) -> replyTo.tell(adapt.apply(result, null)));
+        });
+  }
+
+  public <T, B> Behavior<B> onActor(
+      final Callable<ActorFuture<T>> callable,
+      final Function<T, B> transformResult,
+      final Function<Throwable, B> transformError,
+      final Behavior<B> behavior) {
+    return Behaviors.setup(
+        ctx -> {
+          actor.run(
+              () -> {
+                try {
+                  callable
+                      .call()
+                      .onComplete(
+                          (result, error) -> {
+                            if (error != null) {
+                              ctx.getSelf().tell(transformError.apply(error));
+                            } else {
+                              ctx.getSelf().tell(transformResult.apply(result));
+                            }
+                          });
+                } catch (final Exception e) {
+                  ctx.getSelf().tell(transformError.apply(e));
+                }
+              });
+          return behavior;
         });
   }
 }

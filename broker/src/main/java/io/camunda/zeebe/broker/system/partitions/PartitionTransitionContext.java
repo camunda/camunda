@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import akka.actor.typed.ActorSystem;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotDirector.SnapshotDirectorCommands;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -85,4 +87,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   QueryService getQueryService();
 
   void setQueryService(QueryService queryService);
+
+  ActorSystem<SnapshotDirectorCommands> getSnapshotDirectorAkka();
+
+  void setSnapshotDirectorAkka(ActorSystem<SnapshotDirectorCommands> actorSystem);
 }
