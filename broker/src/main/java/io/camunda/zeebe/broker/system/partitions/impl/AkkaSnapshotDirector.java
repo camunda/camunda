@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -14,6 +15,10 @@ import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.camunda.zeebe.broker.system.partitions.SnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.broker.system.partitions.impl.StreamProcessorAkkaActorWrapper.GetLastProcessedPosition;
+import io.camunda.zeebe.broker.system.partitions.impl.StreamProcessorAkkaActorWrapper.GetLastProcessedPositionResponse;
+import io.camunda.zeebe.broker.system.partitions.impl.StreamProcessorAkkaActorWrapper.StreamProcessorCommands;
+import io.camunda.zeebe.broker.system.partitions.impl.StreamProcessorAkkaActorWrapper.StreamProcessorResponse;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -28,6 +33,8 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
   private final StateController stateController;
   private long commitPosition = -1;
   private ActorContext<SnapshotDirectorCommands> ctx;
+
+  private ActorRef<StreamProcessorCommands> streamProcessorActor;
 
   public AkkaSnapshotDirector(
       final AkkaCompatActor compat,
@@ -61,20 +68,26 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
   }
 
   private Behavior<SnapshotDirectorCommands> startingSnapshot(final StartSnapshot msg) {
-    return compat.onActor(
-        streamProcessor::getLastProcessedPositionAsync,
-        StartTransientSnapshot::new,
-        FailSnapshot::new,
-        Behaviors.receive(SnapshotDirectorCommands.class)
-            .onMessage(OnCommit.class, this::updateCommitPosition)
-            .onMessage(
-                StartTransientSnapshot.class,
-                (msg1) -> transientSnapshot(msg1.lastProcessedPosition))
-            .onMessage(FailSnapshot.class, (failure) -> {
+    final var adaptedCtx = ctx.messageAdapter(StreamProcessorResponse.class, (response) -> {
+      if (response instanceof GetLastProcessedPositionResponse r) {
+        return new StartTransientSnapshot(r.position());
+      }
+      return null;
+    });
+
+    streamProcessorActor.tell(new GetLastProcessedPosition(adaptedCtx));
+    return Behaviors.receive(SnapshotDirectorCommands.class)
+        .onMessage(OnCommit.class, this::updateCommitPosition)
+        .onMessage(
+            StartTransientSnapshot.class,
+            (msg1) -> transientSnapshot(msg1.lastProcessedPosition))
+        .onMessage(
+            FailSnapshot.class,
+            (failure) -> {
               ctx.getLog().error("Failed taking snapshot", failure.e);
               return create();
             })
-            .build());
+        .build();
   }
 
   private Behavior<SnapshotDirectorCommands> transientSnapshot(final Long lastProcessedPos) {
@@ -185,6 +198,5 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
 
   record State(long commitPosition) {}
 
-  public interface SnapshotDirectorCommands {
-  }
+  public interface SnapshotDirectorCommands extends StreamProcessorResponse {}
 }
