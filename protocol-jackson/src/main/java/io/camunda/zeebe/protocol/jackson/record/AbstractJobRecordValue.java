@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.zeebe.protocol.jackson.record.JobRecordValueBuilder.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import java.util.Map;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 
@@ -23,4 +24,8 @@ public abstract class AbstractJobRecordValue implements JobRecordValue, DefaultJ
   public String getErrorCode() {
     return ErrorCode.NULL_VAL.name();
   }
+
+  @Override
+  @AllowNulls
+  public abstract Map<String, Object> getVariables();
 }

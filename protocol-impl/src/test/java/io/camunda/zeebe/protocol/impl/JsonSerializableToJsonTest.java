@@ -379,6 +379,18 @@ public final class JsonSerializableToJsonTest {
         "{'type':'','processDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementInstanceKey':-1,'variables':{},'worker':'','retries':-1,'errorMessage':'','errorCode':'','customHeaders':{},'deadline':-1}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// JobRecord with nullable variable //////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "JobRecordWithNullableVariable",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new JobRecord()
+                    .setVariables(
+                        new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':null}"))),
+        "{'processInstanceKey':-1,'bpmnProcessId':'','processDefinitionKey':-1,'elementId':'','variables':{'foo':null},'elementInstanceKey':-1,'deadline':-1,'customHeaders':{},'worker':'','retries':-1,'errorMessage':'','errorCode':'','processDefinitionVersion':-1,'type':''}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
