@@ -44,8 +44,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-      - name: Spot bugs
-        run: mvn -B -T1C -DskipTests verify -Pspotbugs
+      - name: SpotBugs
+        run: mvn -B -T1C -DskipTests -DskipChecks verify -Pspotbugs -Dspotbugs.skip=false
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest

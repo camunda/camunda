@@ -49,8 +49,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.util.VersionUtil;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -276,18 +274,6 @@ public final class EndpointManager {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
     final BrokerClusterState topology = topologyManager.getTopology();
 
-    if (topology == null) {
-      final StatusRuntimeException error =
-          Status.UNAVAILABLE.augmentDescription("No brokers available").asRuntimeException();
-      responseObserver.onError(error);
-      return;
-    }
-
-    topologyResponseBuilder
-        .setClusterSize(topology.getClusterSize())
-        .setPartitionsCount(topology.getPartitionsCount())
-        .setReplicationFactor(topology.getReplicationFactor());
-
     final String gatewayVersion = VersionUtil.getVersion();
     if (gatewayVersion != null && !gatewayVersion.isBlank()) {
       topologyResponseBuilder.setGatewayVersion(gatewayVersion);
@@ -295,16 +281,23 @@ public final class EndpointManager {
 
     final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
-    topology
-        .getBrokers()
-        .forEach(
-            brokerId -> {
-              final Builder brokerInfo = BrokerInfo.newBuilder();
-              addBrokerInfo(brokerInfo, brokerId, topology);
-              addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
+    if (topology != null) {
+      topologyResponseBuilder
+          .setClusterSize(topology.getClusterSize())
+          .setPartitionsCount(topology.getPartitionsCount())
+          .setReplicationFactor(topology.getReplicationFactor());
 
-              brokers.add(brokerInfo.build());
-            });
+      topology
+          .getBrokers()
+          .forEach(
+              brokerId -> {
+                final Builder brokerInfo = BrokerInfo.newBuilder();
+                addBrokerInfo(brokerInfo, brokerId, topology);
+                addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
+
+                brokers.add(brokerInfo.build());
+              });
+    }
 
     topologyResponseBuilder.addAllBrokers(brokers);
     final TopologyResponse response = topologyResponseBuilder.build();

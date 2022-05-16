@@ -27,9 +27,6 @@
   <properties>
     <version.java>17</version.java>
 
-    <!-- Zeebe Community License v1.1 header -->
-    <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
-
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
@@ -74,8 +71,8 @@
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.20.1</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
-    <version.micrometer>1.8.5</version.micrometer>
-    <version.rocksdbjni>7.1.2</version.rocksdbjni>
+    <version.micrometer>1.9.0</version.micrometer>
+    <version.rocksdbjni>7.2.2</version.rocksdbjni>
     <version.sbe>1.25.3</version.sbe>
     <version.scala>2.13.8</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
@@ -86,11 +83,11 @@
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.17.1</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
+    <version.zeebe-test-container>3.4.0</version.zeebe-test-container>
     <version.feel-scala>1.14.2</version.feel-scala>
-    <version.dmn-scala>1.7.1</version.dmn-scala>
+    <version.dmn-scala>1.7.2</version.dmn-scala>
     <version.rest-assured>5.0.1</version.rest-assured>
-    <version.spring>5.3.19</version.spring>
+    <version.spring>5.3.20</version.spring>
     <version.spring-boot>2.6.7</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
@@ -111,6 +108,7 @@
     <version.spotbugs>4.7.0</version.spotbugs>
     <version.archunit>0.23.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
+    <version.jcip>1.0</version.jcip>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -125,7 +123,6 @@
     <plugin.version.failsafe>3.0.0-M6</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.8</plugin.version.jacoco>
-    <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.maven-jar>3.2.2</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
@@ -135,7 +132,6 @@
     <plugin.version.scala>4.6.1</plugin.version.scala>
     <plugin.version.shade>3.3.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.6.0.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M6</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
@@ -282,6 +278,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-exporter-test</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -572,12 +574,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-x-content</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-client</artifactId>
         <version>${version.elasticsearch}</version>
@@ -642,6 +638,13 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${version.spotbugs}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>net.jcip</groupId>
+        <artifactId>jcip-annotations</artifactId>
+        <version>${version.jcip}</version>
         <scope>provided</scope>
       </dependency>
 
@@ -1029,30 +1032,6 @@
           </executions>
         </plugin>
 
-        <!-- LICENSE PLUGIN -->
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${plugin.version.license}</version>
-          <configuration>
-            <header>${license.header}</header>
-            <properties>
-              <owner>camunda services GmbH</owner>
-              <email>info@camunda.com</email>
-            </properties>
-            <includes>
-              <include>**/*.java</include>
-              <include>**/*.scala</include>
-            </includes>
-            <excludes>
-              <exclude>benchmarks/project/**/*</exclude>
-            </excludes>
-            <mapping>
-              <java>SLASHSTAR_STYLE</java>
-            </mapping>
-          </configuration>
-        </plugin>
-
         <!-- CHECKSTYLE -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1093,13 +1072,6 @@
           </executions>
         </plugin>
 
-        <plugin>
-          <groupId>com.github.ekryd.sortpom</groupId>
-          <artifactId>sortpom-maven-plugin</artifactId>
-          <version>${plugin.version.sortpom}</version>
-        </plugin>
-
-        <!-- Unit tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -1476,11 +1448,6 @@
       </plugin>
 
       <plugin>
-        <groupId>com.github.ekryd.sortpom</groupId>
-        <artifactId>sortpom-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
@@ -1770,114 +1737,6 @@
                   <goal>sonar</goal>
                 </goals>
                 <phase>verify</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- profile to auto format -->
-    <profile>
-      <id>autoFormat</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.mycila</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-license</id>
-                <goals>
-                  <goal>format</goal>
-                </goals>
-                <phase>process-sources</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <configuration combine.children="append">
-              <ratchetFrom>origin/main</ratchetFrom>
-            </configuration>
-            <executions>
-              <execution>
-                <id>spotless-format</id>
-                <goals>
-                  <goal>apply</goal>
-                </goals>
-                <phase>process-sources</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.github.ekryd.sortpom</groupId>
-            <artifactId>sortpom-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>sortpom</id>
-                <goals>
-                  <goal>sort</goal>
-                </goals>
-                <phase>process-resources</phase>
-                <configuration>
-                  <createBackupFile>false</createBackupFile>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- profile to perform strict validation checks -->
-    <profile>
-      <id>checkFormat</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.mycila</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>check-license</id>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>validate</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>spotless-check</id>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>validate</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.github.ekryd.sortpom</groupId>
-            <artifactId>sortpom-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>sortpom</id>
-                <goals>
-                  <goal>verify</goal>
-                </goals>
-                <phase>validate</phase>
-                <configuration>
-                  <verifyFail>stop</verifyFail>
-                </configuration>
               </execution>
             </executions>
           </plugin>

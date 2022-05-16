@@ -56,6 +56,10 @@ public class ExecutionLatencyMetrics {
         .observe(latencyInSeconds(creationTimeMs, activationTimeMs));
   }
 
+  public Histogram getJobLifeTime() {
+    return JOB_LIFE_TIME;
+  }
+
   /**
    * Takes start and end time in milliseconds and calculates the difference (latency) in seconds.
    *

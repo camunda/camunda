@@ -39,6 +39,7 @@
     <module>gateway</module>
     <module>clients/java</module>
     <module>exporter-api</module>
+    <module>exporter-test</module>
     <module>protocol-asserts</module>
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>

@@ -19,8 +19,8 @@ public final class EvaluationFailure implements DecisionEvaluationResult {
   private final String failedDecisionId;
   private final List<EvaluatedDecision> evaluatedDecisions;
 
-  public EvaluationFailure(final String message) {
-    this(message, null, List.of());
+  public EvaluationFailure(final String message, final String failedDecisionId) {
+    this(message, failedDecisionId, List.of());
   }
 
   public EvaluationFailure(
