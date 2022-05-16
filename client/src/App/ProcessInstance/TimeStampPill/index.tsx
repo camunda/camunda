@@ -11,6 +11,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {tracking} from 'modules/tracking';
 
 const TimeStampPill = observer(function TimeStampPill() {
   const {status: flowNodeInstanceStatus} = flowNodeInstanceStore.state;
@@ -28,6 +29,7 @@ const TimeStampPill = observer(function TimeStampPill() {
         isActive={isTimeStampVisible}
         onClick={() => {
           toggleTimeStampVisibility();
+          tracking.track({eventName: 'instance-history-end-time-toggled'});
         }}
         type={PILL_TYPE.TIMESTAMP}
         isDisabled={isDisabled}

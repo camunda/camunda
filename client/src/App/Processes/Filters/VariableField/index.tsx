@@ -16,6 +16,7 @@ import {
 import {Field, useForm, useFormState} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
+import {tracking} from 'modules/tracking';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -56,6 +57,10 @@ const Variable: React.FC = observer(() => {
               icon: 'window',
               press: () => {
                 setIsModalVisible(true);
+                tracking.track({
+                  eventName: 'json-editor-opened',
+                  variant: 'search-variable',
+                });
               },
               tooltip: 'Open JSON editor modal',
             }}
@@ -68,10 +73,18 @@ const Variable: React.FC = observer(() => {
         value={formState.values?.variableValue}
         onClose={() => {
           setIsModalVisible(false);
+          tracking.track({
+            eventName: 'json-editor-closed',
+            variant: 'search-variable',
+          });
         }}
         onSave={(value) => {
           form.change('variableValue', value);
           setIsModalVisible(false);
+          tracking.track({
+            eventName: 'json-editor-saved',
+            variant: 'search-variable',
+          });
         }}
         isModalVisible={isModalVisible}
       />

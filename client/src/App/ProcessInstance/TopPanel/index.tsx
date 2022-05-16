@@ -25,6 +25,7 @@ import {Container, DiagramPanel, StatusMessage} from './styled';
 import {IncidentsBanner} from './IncidentsBanner';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {StateOverlay} from './StateOverlay';
+import {tracking} from 'modules/tracking';
 
 const OVERLAY_TYPE = 'flowNodeState';
 
@@ -112,6 +113,18 @@ const TopPanel: React.FC<Props> = observer(() => {
     incidentsCount,
   } = incidentsStore;
 
+  useEffect(() => {
+    if (flowNodeSelection?.flowNodeId) {
+      tracking.track({
+        eventName: 'diagram-popover-opened',
+      });
+    } else {
+      tracking.track({
+        eventName: 'diagram-popover-closed',
+      });
+    }
+  }, [flowNodeSelection?.flowNodeId]);
+
   return (
     <Container>
       {incidentsCount > 0 && (
@@ -120,6 +133,12 @@ const TopPanel: React.FC<Props> = observer(() => {
             if (isInTransition) {
               return;
             }
+
+            tracking.track({
+              eventName: isIncidentBarOpen
+                ? 'incidents-panel-closed'
+                : 'incidents-panel-opened',
+            });
 
             setIncidentBarOpen(!isIncidentBarOpen);
           }}

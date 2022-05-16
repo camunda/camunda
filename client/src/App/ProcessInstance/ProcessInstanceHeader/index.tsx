@@ -21,7 +21,7 @@ import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 
-const ProcessInstanceHeader = observer(() => {
+const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
   const notifications = useNotifications();
 

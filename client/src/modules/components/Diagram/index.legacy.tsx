@@ -20,6 +20,7 @@ import {StatisticOverlay} from './StatisticOverlay';
 import {PopoverOverlay} from './PopoverOverlay';
 import {isNonSelectableFlowNode} from 'modules/bpmn-js/isNonSelectableFlowNode';
 import {BpmnJSElement} from 'modules/bpmn-js/BpmnJS';
+import {tracking} from 'modules/tracking';
 
 function isMultiInstance(element: BpmnJSElement) {
   return (
@@ -186,14 +187,17 @@ class Diagram extends React.PureComponent<Props, State> {
   };
 
   handleZoomIn = () => {
+    tracking.track({eventName: 'diagram-zoom-in'});
     this.handleZoom(0.1);
   };
 
   handleZoomOut = () => {
+    tracking.track({eventName: 'diagram-zoom-out'});
     this.handleZoom(-0.1);
   };
 
   handleZoomReset = () => {
+    tracking.track({eventName: 'diagram-zoom-reset'});
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const canvas = this.Viewer.get('canvas');
     canvas.resized();

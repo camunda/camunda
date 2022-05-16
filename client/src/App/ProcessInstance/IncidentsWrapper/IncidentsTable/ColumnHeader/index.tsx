@@ -8,6 +8,7 @@
 import * as Styled from './styled';
 import {getSortParams} from 'modules/utils/filter';
 import {useNavigate, useLocation} from 'react-router-dom';
+import {tracking} from 'modules/tracking';
 
 function toggleSorting(
   search: string,
@@ -82,6 +83,11 @@ const ColumnHeader: React.FC<Props> = ({
         disabled={disabled}
         onClick={() => {
           if (!disabled && sortKey !== undefined) {
+            tracking.track({
+              eventName: 'incidents-sorted',
+              column: sortKey,
+            });
+
             navigate({
               search: toggleSorting(location.search, sortKey, table),
             });

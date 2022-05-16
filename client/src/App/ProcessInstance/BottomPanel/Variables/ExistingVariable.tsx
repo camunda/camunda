@@ -17,6 +17,7 @@ import {Field, useForm, useFormState} from 'react-final-form';
 import {useRef, useState} from 'react';
 import {EditButtons} from './EditButtons';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   variableName: string;
@@ -60,6 +61,10 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
                 icon: 'window',
                 press: () => {
                   setIsModalVisible(true);
+                  tracking.track({
+                    eventName: 'json-editor-opened',
+                    variant: 'edit-variable',
+                  });
                 },
                 tooltip: 'Open JSON editor modal',
               }}
@@ -77,10 +82,18 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
         value={formState.values?.value}
         onClose={() => {
           setIsModalVisible(false);
+          tracking.track({
+            eventName: 'json-editor-closed',
+            variant: 'edit-variable',
+          });
         }}
         onSave={(value) => {
           form.change('value', value);
           setIsModalVisible(false);
+          tracking.track({
+            eventName: 'json-editor-saved',
+            variant: 'edit-variable',
+          });
         }}
         isModalVisible={isModalVisible}
       />

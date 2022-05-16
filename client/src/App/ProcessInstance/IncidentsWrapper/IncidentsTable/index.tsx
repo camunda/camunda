@@ -25,6 +25,7 @@ import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/routes';
 import {useLocation} from 'react-router-dom';
+import {tracking} from 'modules/tracking';
 
 const {THead, TBody, TR, TD} = Table;
 
@@ -170,8 +171,15 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                         {incident.errorMessage.length >= 58 && (
                           <Button
                             size="small"
+                            type="button"
                             onClick={(event) => {
                               event.stopPropagation();
+
+                              tracking.track({
+                                eventName:
+                                  'incidents-panel-full-error-message-opened',
+                              });
+
                               handleMoreButtonClick(
                                 incident.errorMessage,
                                 incident.flowNodeName

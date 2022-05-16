@@ -28,7 +28,6 @@ import {
 } from 'modules/components/ResizablePanel';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {Observer} from 'mobx-react';
 import {TimeStampPill} from './TimeStampPill';
 
 const ProcessInstance: React.FC = () => {
@@ -102,19 +101,9 @@ const ProcessInstance: React.FC = () => {
 
   return (
     <Container>
-      <Observer>
-        {() => {
-          const {processInstance} = processInstanceDetailsStore.state;
-
-          return (
-            <>
-              {processInstance && (
-                <VisuallyHiddenH1>{`Operate Process Instance ${processInstance.id}`}</VisuallyHiddenH1>
-              )}
-            </>
-          );
-        }}
-      </Observer>
+      {processInstanceId && (
+        <VisuallyHiddenH1>{`Operate Process Instance ${processInstanceId}`}</VisuallyHiddenH1>
+      )}
       <Breadcrumb />
       <ProcessInstanceHeader />
 

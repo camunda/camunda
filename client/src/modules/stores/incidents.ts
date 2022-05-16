@@ -17,6 +17,7 @@ import {
 import {fetchProcessInstanceIncidents} from 'modules/api/instances';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {tracking} from 'modules/tracking';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
@@ -191,6 +192,12 @@ class Incidents extends NetworkReconnectionHandler {
 
   setIncidentBarOpen = (isOpen: boolean) => {
     this.state.isIncidentBarOpen = isOpen;
+
+    if (isOpen) {
+      tracking.track({
+        eventName: 'flow-node-incident-details-opened',
+      });
+    }
   };
 
   get filteredIncidents() {

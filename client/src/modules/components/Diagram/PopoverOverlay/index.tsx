@@ -33,6 +33,7 @@ import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';
 import {Paths} from 'modules/routes';
 import {Link} from 'modules/components/Link';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   selectedFlowNodeRef: SVGGraphicsElement | null;
@@ -122,7 +123,12 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                   <Title>Details</Title>
                   <LinkButton
                     size="small"
-                    onClick={() => setIsModalVisible(true)}
+                    onClick={() => {
+                      setIsModalVisible(true);
+                      tracking.track({
+                        eventName: 'flow-node-instance-details-opened',
+                      });
+                    }}
                     title="Show more metadata"
                   >
                     View

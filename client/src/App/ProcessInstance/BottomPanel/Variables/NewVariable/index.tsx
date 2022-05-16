@@ -16,6 +16,7 @@ import {
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {tracking} from 'modules/tracking';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();
@@ -57,6 +58,10 @@ const NewVariable: React.FC = () => {
               icon: 'window',
               press: () => {
                 setIsModalVisible(true);
+                tracking.track({
+                  eventName: 'json-editor-opened',
+                  variant: 'add-variable',
+                });
               },
               tooltip: 'Open JSON editor modal',
             }}
@@ -76,10 +81,18 @@ const NewVariable: React.FC = () => {
         value={formState.values?.value}
         onClose={() => {
           setIsModalVisible(false);
+          tracking.track({
+            eventName: 'json-editor-closed',
+            variant: 'add-variable',
+          });
         }}
         onSave={(value) => {
           form.change('value', value);
           setIsModalVisible(false);
+          tracking.track({
+            eventName: 'json-editor-saved',
+            variant: 'add-variable',
+          });
         }}
         isModalVisible={isModalVisible}
       />

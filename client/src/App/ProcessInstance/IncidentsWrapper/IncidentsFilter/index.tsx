@@ -5,13 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import Pill from 'modules/components/Pill';
-
 import Option from 'modules/components/Dropdown/Option';
 import * as Styled from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
+import {tracking} from 'modules/tracking';
 
 const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
   const {
@@ -83,7 +82,12 @@ const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
                       type="FILTER"
                       count={count}
                       isActive={selectedFlowNodes.includes(id)}
-                      onClick={() => toggleFlowNodeSelection(id)}
+                      onClick={() => {
+                        toggleFlowNodeSelection(id);
+                        tracking.track({
+                          eventName: 'incident-filtered',
+                        });
+                      }}
                     >
                       {name}
                     </Pill>
@@ -119,10 +123,16 @@ const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
             data-testid="clear-button"
             size="small"
             title="Clear All"
-            onClick={clearSelection}
+            onClick={() => {
+              clearSelection();
+              tracking.track({
+                eventName: 'incident-filters-cleared',
+              });
+            }}
             disabled={
               selectedFlowNodes.length === 0 && selectedErrorTypes.length === 0
             }
+            type="button"
           >
             Clear All
           </Styled.ClearButton>

@@ -23,8 +23,18 @@ import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
 import {Layout} from './Layout';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
+import {useEffect} from 'react';
+import {tracking} from 'modules/tracking';
+import {currentTheme} from 'modules/stores/currentTheme';
 
 const App: React.FC = () => {
+  useEffect(() => {
+    tracking.track({
+      eventName: 'operate-loaded',
+      theme: currentTheme.state.selectedTheme,
+    });
+  }, []);
+
   return (
     <ThemeProvider>
       <NotificationProvider>

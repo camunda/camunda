@@ -17,6 +17,7 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {OverlayPosition} from 'modules/types/modeler';
 import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
 import {isMultiInstance} from './isMultiInstance';
+import {tracking} from 'modules/tracking';
 
 interface BpmnJSModule {
   [member: string]: any;
@@ -245,15 +246,19 @@ class BpmnJS {
   };
 
   zoomIn = () => {
+    tracking.track({eventName: 'diagram-zoom-in'});
     this.zoom(0.1);
   };
 
   zoomOut = () => {
+    tracking.track({eventName: 'diagram-zoom-out'});
     this.zoom(-0.1);
   };
 
   zoomReset = () => {
     const canvas = this.#navigatedViewer?.get('canvas');
+
+    tracking.track({eventName: 'diagram-zoom-reset'});
 
     if (canvas !== undefined) {
       canvas.resized();

@@ -23,12 +23,14 @@ import {
   SplitDirection,
 } from 'modules/components/ResizablePanel';
 import {PAGE_TITLE} from 'modules/constants';
+import {tracking} from 'modules/tracking';
+
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);
-  const decisionName =
-    decisionInstanceDetailsStore.state.decisionInstance?.decisionName;
+  const {decisionInstance} = decisionInstanceDetailsStore.state;
+  const decisionName = decisionInstance?.decisionName;
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
@@ -56,6 +58,15 @@ const DecisionInstance: React.FC = observer(() => {
         decisionName
       );
   }, [decisionInstanceId, decisionName]);
+
+  useEffect(() => {
+    if (decisionInstance !== null) {
+      tracking.track({
+        eventName: 'decision-instance-details-loaded',
+        state: decisionInstance.state,
+      });
+    }
+  }, [decisionInstance]);
 
   const panelMinHeight = clientHeight / 4;
 

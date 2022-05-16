@@ -71,6 +71,76 @@ type Events =
   | {
       eventName: 'drd-panel-interaction';
       action: 'open' | 'close' | 'maximize' | 'minimize';
+    }
+  | {
+      eventName: 'operate-loaded';
+      theme: 'dark' | 'light';
+    }
+  | {
+      eventName: 'process-instance-details-loaded';
+      state: InstanceEntityState;
+    }
+  | {
+      eventName: 'decision-instance-details-loaded';
+      state: DecisionInstanceEntityState;
+    }
+  | {
+      eventName: 'incidents-panel-opened';
+    }
+  | {
+      eventName: 'incidents-panel-closed';
+    }
+  | {
+      eventName: 'incidents-sorted';
+      column: string;
+    }
+  | {
+      eventName: 'incidents-panel-full-error-message-opened';
+    }
+  | {
+      eventName: 'incident-filtered';
+    }
+  | {
+      eventName: 'incident-filters-cleared';
+    }
+  | {
+      eventName: 'diagram-popover-opened';
+    }
+  | {
+      eventName: 'diagram-popover-closed';
+    }
+  | {
+      eventName: 'diagram-zoom-in';
+    }
+  | {
+      eventName: 'diagram-zoom-out';
+    }
+  | {
+      eventName: 'diagram-zoom-reset';
+    }
+  | {
+      eventName: 'flow-node-instance-details-opened';
+    }
+  | {
+      eventName: 'flow-node-incident-details-opened';
+    }
+  | {
+      eventName: 'json-editor-opened';
+      variant: 'add-variable' | 'edit-variable' | 'search-variable';
+    }
+  | {
+      eventName: 'json-editor-closed';
+      variant: 'add-variable' | 'edit-variable' | 'search-variable';
+    }
+  | {
+      eventName: 'json-editor-saved';
+      variant: 'add-variable' | 'edit-variable' | 'search-variable';
+    }
+  | {
+      eventName: 'instance-history-end-time-toggled';
+    }
+  | {
+      eventName: 'instance-history-item-clicked';
     };
 const STAGE_ENV = getStage(window.location.host);
 

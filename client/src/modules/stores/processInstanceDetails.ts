@@ -21,6 +21,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
+import {tracking} from 'modules/tracking';
 
 type State = {
   processInstance: null | ProcessInstanceEntity;
@@ -59,7 +60,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     });
   }
 
-  init({
+  init = async ({
     id,
     onRefetchFailure,
     onPollingFailure,
@@ -67,8 +68,8 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     id: ProcessInstanceEntity['id'];
     onRefetchFailure?: () => void;
     onPollingFailure?: () => void;
-  }) {
-    this.fetchProcessInstance(id);
+  }) => {
+    await this.fetchProcessInstance(id);
     this.onRefetchFailure = onRefetchFailure;
     this.onPollingFailure = onPollingFailure;
 
@@ -84,7 +85,16 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
         this.stopPolling();
       }
     });
-  }
+
+    const {processInstance} = this.state;
+
+    if (processInstance !== null) {
+      tracking.track({
+        eventName: 'process-instance-details-loaded',
+        state: processInstance.state,
+      });
+    }
+  };
 
   fetchProcessInstance = this.retryOnConnectionLost(
     async (id: ProcessInstanceEntity['id']) => {
