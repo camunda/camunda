@@ -125,7 +125,7 @@ runs:
   - name: Tear down
     shell: bash
     if: ${{ inputs.step == 'stop'}}
-    run: argocd app delete ztl-${APP_NAME} --yes
+    run: argocd app delete ${APP_NAME} --yes
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
       ARGOCD_OPTS: "--grpc-web"
