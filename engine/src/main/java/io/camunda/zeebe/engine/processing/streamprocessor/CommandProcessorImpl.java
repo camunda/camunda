@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -34,6 +35,8 @@ import java.util.function.Consumer;
  */
 public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
+
+  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final CommandProcessor<T> wrappedProcessor;
 
@@ -70,7 +73,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
-    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffect);
+
+    sideEffect.accept(sideEffectQueue);
+    sideEffectQueue.clear();
+    sideEffectQueue.add(responseWriter::flush);
+
+    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffectQueue::add);
 
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 
