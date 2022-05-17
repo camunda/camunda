@@ -69,9 +69,9 @@ pipeline {
             poll: false
         }
         dir('tasklist') {
-          git url: 'https://github.com/camunda-cloud/tasklist.git',
+          git url: 'https://github.com/camunda/tasklist.git',
             branch: "${params.ZEEBE_TASKLIST_BRANCH}",
-            credentialsId: 'github-cloud-zeebe-tasklist-app',
+            credentialsId: 'github-tasklist-app',
             poll: false
         }
 
@@ -112,8 +112,8 @@ pipeline {
             hosts = sh(script: 'cat hosts.txt', returnStdout: true).trim()
             def arr = hosts.split()
             arr.each { host -> 
-              withCredentials([usernamePassword(credentialsId: 'github-cloud-zeebe-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
-                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'camunda-cloud', 'tasklist', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
+              withCredentials([usernamePassword(credentialsId: 'github-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'camunda', 'tasklist', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
               }
             }
           }

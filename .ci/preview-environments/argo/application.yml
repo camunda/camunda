@@ -15,7 +15,7 @@ spec:
     helm:
       parameters: []
     path: .ci/preview-environments
-    repoURL: https://github.com/camunda-cloud/tasklist.git
+    repoURL: https://github.com/camunda/tasklist.git
 
   syncPolicy:
     automated:

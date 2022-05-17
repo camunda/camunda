@@ -85,10 +85,10 @@ pipeline {
     stage('Cleanup K8s branches') {
       steps {
         container('gcloud') {
-          withCredentials([usernamePassword(credentialsId: 'github-cloud-zeebe-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+          withCredentials([usernamePassword(credentialsId: 'github-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
             sh("""
               ./cmd/k8s/cleanup-branch-deployment \
-              camunda-cloud/tasklist \
+              camunda/tasklist \
               zeebe-tasklist \
               gcr.io/ci-30-162810/tasklist \
               ${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}

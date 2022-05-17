@@ -492,15 +492,15 @@
   </distributionManagement>
 
   <scm>
-    <url>https://github.com/camunda-cloud/tasklist</url>
-    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/tasklist.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/tasklist.git</developerConnection>
+    <url>https://github.com/camunda/tasklist</url>
+    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
     <system>Git</system>
-    <url>https://github.com/camunda-cloud/tasklist/issues</url>
+    <url>https://github.com/camunda/tasklist/issues</url>
   </issueManagement>
 
   <organization>

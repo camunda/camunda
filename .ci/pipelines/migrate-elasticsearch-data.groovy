@@ -103,9 +103,9 @@ pipeline {
       steps {
          container('maven'){
          	// checkout current tasklist
-            git url: 'https://github.com/camunda-cloud/tasklist.git',
+            git url: 'https://github.com/camunda/tasklist.git',
                 branch: "master",
-                credentialsId: 'github-cloud-zeebe-tasklist-app',
+                credentialsId: 'github-tasklist-app',
                 poll: false
             // compile current tasklist
             configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
