@@ -17,7 +17,7 @@ git:
   # Defines the branch name to use for annotating resources
   branch: master
   # Defines the repository URL to use for annotating resources
-  repoUrl: https://github.com/camunda-cloud/operate
+  repoUrl: https://github.com/camunda/operate
 
 
 # Configuration of the camunda-platform chart, in particular we disable some features that

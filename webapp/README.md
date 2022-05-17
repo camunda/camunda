@@ -8,13 +8,13 @@
 
 Currently, our structure is separated in something similare to the flow below.
 
-NOTES: 
+NOTES:
 * In the image, BE = backend
 * Authentication part is ommited from this diagram
 
 ![requestflow](https://user-images.githubusercontent.com/3302415/147551182-d754827b-e2ee-4706-9b22-0b724ce6fc4e.png)
 
-_Source: [docs/request_flow.puml](https://github.com/camunda-cloud/operate/blob/master/webapp/docs/request_flow.puml)_
+_Source: [docs/request_flow.puml](https://github.com/camunda/operate/blob/master/webapp/docs/request_flow.puml)_
 
 ## Build the backend
 
@@ -62,6 +62,6 @@ Ways to activated profiles:
 - when running from distribution via `operate` shell script or `operate.bat`:
 ```text
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate
-or 
+or
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate.bat
 ```

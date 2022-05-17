@@ -436,9 +436,9 @@
   </distributionManagement>
 
   <scm>
-    <url>https://github.com/camunda-cloud/operate</url>
-    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/operate.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/operate.git</developerConnection>
+    <url>https://github.com/camunda/operate</url>
+    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/operate.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/operate.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

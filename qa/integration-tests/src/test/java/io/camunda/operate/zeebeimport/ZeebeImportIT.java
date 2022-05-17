@@ -135,7 +135,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
+  @Ignore("https://github.com/camunda/operate/issues/1529")
   public void testIncidentCreatesProcessInstance() {
     // having
     String activityId = "taskA";
@@ -220,7 +220,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
+  @Ignore("https://github.com/camunda/operate/issues/1529")
   public void testEarlierEventsAreIgnored() throws Exception {
     // having
     String activityId = "taskA";
@@ -452,7 +452,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
+  @Ignore("https://github.com/camunda/operate/issues/1529")
   public void testIncidentMetadataForCallActivity() throws Exception {
     //having process with call activity
     final String parentProcessId = "parentProcess";

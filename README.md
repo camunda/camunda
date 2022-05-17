@@ -12,18 +12,18 @@
 
 ![modulesimg](https://user-images.githubusercontent.com/3302415/148035876-9d29b64b-f2ed-4402-b6b8-756401a1467c.png)
 
-_Source: [modules.puml](https://github.com/camunda-cloud/operate/blob/master/modules.puml)_
+_Source: [modules.puml](https://github.com/camunda/operate/blob/master/modules.puml)_
 
 ## Running locally
 
-### Use maven 
-To run the application locally without docker you can use 
+### Use maven
+To run the application locally without docker you can use
 ```
 make start-backend
 ```
 This starts elasticsearch and zeebe docker containers, then installs operate locally and starts the server.
 You can shutdown the application with Control-C.
-At the first run it takes some time to resolve all dependencies. 
+At the first run it takes some time to resolve all dependencies.
 
 ### Use docker
 To run the application locally you can use `docker`, `docker-compose` and

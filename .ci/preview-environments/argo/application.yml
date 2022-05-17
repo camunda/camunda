@@ -15,7 +15,7 @@ spec:
     helm:
       parameters: []
     path: .ci/preview-environments
-    repoURL: https://github.com/camunda-cloud/operate.git
+    repoURL: https://github.com/camunda/operate.git
   syncPolicy:
     automated:
       prune: true

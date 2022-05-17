@@ -69,9 +69,9 @@ pipeline {
             poll: false
         }
         dir('operate') {
-          git url: 'https://github.com/camunda-cloud/operate.git',
+          git url: 'https://github.com/camunda/operate.git',
             branch: "${params.OPERATE_BRANCH}",
-            credentialsId: 'github-cloud-operate-app',
+            credentialsId: 'github-operate-app',
             poll: false
         }
 
@@ -111,9 +111,9 @@ pipeline {
           dir('infra-core') {
             hosts = sh(script: 'cat hosts.txt', returnStdout: true).trim()
             def arr = hosts.split()
-            arr.each { host -> 
-              withCredentials([usernamePassword(credentialsId: 'github-cloud-operate-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
-                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'camunda-cloud', 'operate', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
+            arr.each { host ->
+              withCredentials([usernamePassword(credentialsId: 'github-operate-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'camunda', 'operate', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
               }
             }
           }

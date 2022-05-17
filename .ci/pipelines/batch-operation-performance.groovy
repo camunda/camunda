@@ -189,9 +189,9 @@ pipeline {
       parallel {
         stage('Build Operate') {
           steps {
-            git url: 'https://github.com/camunda-cloud/operate.git',
+            git url: 'https://github.com/camunda/operate.git',
                 branch: "master",
-                credentialsId: 'github-cloud-operate-app',
+                credentialsId: 'github-operate-app',
                 poll: false
             container('maven') {
               // Compile Operate and skip tests

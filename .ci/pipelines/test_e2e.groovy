@@ -212,9 +212,9 @@ pipeline {
       steps {
          container('maven'){
          	// checkout current operate
-            git url: 'https://github.com/camunda-cloud/operate.git',
+            git url: 'https://github.com/camunda/operate.git',
                 branch: "e2e",
-                credentialsId: 'github-cloud-operate-app',
+                credentialsId: 'github-operate-app',
                 poll: false
             // compile current operate
             configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {

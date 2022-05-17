@@ -51,7 +51,7 @@ sha1sum ${ARTIFACT}-${RELEASE_VERSION}.zip > ${ARTIFACT}-${RELEASE_VERSION}.zip.
 curl -sL  https://github.com/github-release/github-release/releases/download/v0.10.0/linux-amd64-github-release.bz2 | bzip2 -fd - > github-release
 chmod +x github-release
 for f in ${ARTIFACT}-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
-	./github-release upload --user camunda-cloud --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
+	./github-release upload --user camunda --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
 done
 '''
 
@@ -142,16 +142,16 @@ pipeline {
     timeout(time: 45, unit: 'MINUTES')
     withCredentials([
       usernamePassword(passwordVariable: 'NEXUS_PSW', usernameVariable: 'NEXUS_USR', credentialsId: 'camunda-nexus'),
-      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'github-cloud-operate-app')
+      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'github-operate-app')
     ])
   }
 
   stages {
     stage('Prepare') {
       steps {
-        git url: 'https://github.com/camunda-cloud/operate.git',
+        git url: 'https://github.com/camunda/operate.git',
             branch: "${params.BRANCH}",
-            credentialsId: 'github-cloud-operate-app',
+            credentialsId: 'github-operate-app',
             poll: false
 
         container('maven') {
@@ -160,7 +160,7 @@ pipeline {
             apt-get update && apt-get install -y git
 
             git config --global user.email "ci@operate.camunda.cloud"
-            git config --global user.name "github-cloud-operate-app"
+            git config --global user.name "github-operate-app"
           ''')
         }
       }

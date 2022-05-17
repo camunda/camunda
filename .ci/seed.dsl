@@ -1,4 +1,4 @@
-def githubOrga = 'camunda-cloud'
+def githubOrga = 'camunda'
 def gitRepository = 'operate'
 def gitBranch = 'master'
 
@@ -32,7 +32,7 @@ def seedJob = job('seed-job-operate') {
     git {
       remote {
         github "${githubOrga}/${gitRepository}", 'https'
-        credentials 'github-cloud-operate-app'
+        credentials 'github-operate-app'
       }
       branch gitBranch
       extensions {
@@ -108,7 +108,7 @@ multibranchPipelineJob('camunda-operate') {
           id 'camunda-operate'
           repoOwner githubOrga
           repository gitRepository
-          credentialsId 'github-cloud-operate-app'
+          credentialsId 'github-operate-app'
           repositoryUrl "https://github.com/${githubOrga}/${gitRepository}"
           configuredByUrl false
           traits {

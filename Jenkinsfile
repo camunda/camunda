@@ -91,7 +91,7 @@ pipeline {
             }
           }
         }
-        //https://github.com/camunda-cloud/operate/issues/2471
+        //https://github.com/camunda/operate/issues/2471
 //        stage('Backend - Tests (old Zeebe)') {
 //          steps {
 //            container('maven') {
