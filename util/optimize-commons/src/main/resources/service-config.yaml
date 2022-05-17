@@ -604,6 +604,10 @@ analytics:
 onboarding:
   enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
   appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
+  # Should process owners receive emails with onboarding data?
+  enableOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_SEND_EMAILS:false}
+  # How often (in seconds) shall optimize check whether process instances from new processes completed?
+  intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:1800}
 
 # Configuration of application internal in-memory caches
 caches:
