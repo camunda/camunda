@@ -108,12 +108,12 @@ runs:
     if: ${{ inputs.step == 'start'}}
     run: >-
       argocd app create
-      --dest-namespace ztl-${APP_NAME}
+      --dest-namespace ${APP_NAME}
       --file .ci/preview-environments/argo/application.yml
       --helm-set camunda-platform.tasklist.image.tag=${{ inputs.docker_tag }}
       --helm-set git.branch=${{ inputs.revision }}
       --helm-set global.labels.app=${{ env.APP_NAME }}
-      --name ztl-${{ env.APP_NAME }}
+      --name ${{ env.APP_NAME }}
       --revision ${{ inputs.revision }}
       --upsert
 
