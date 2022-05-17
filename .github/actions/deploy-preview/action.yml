@@ -85,7 +85,7 @@ runs:
       if [[ "${{ inputs.step}}" = "stop" ]]; then
         APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
       else
-        APP_NAME="${{ inputs.deployment_id }}"
+        APP_NAME="operate-${{ inputs.deployment_id }}"
       fi
       echo "APP_NAME=${APP_NAME}" >> ${GITHUB_ENV}
     env:
@@ -108,12 +108,12 @@ runs:
     if: ${{ inputs.step == 'start'}}
     run: >-
       argocd app create
-      --dest-namespace operate-${APP_NAME}
+      --dest-namespace ${APP_NAME}
       --file .ci/preview-environments/argo/application.yml
       --helm-set camunda-platform.operate.image.tag=${{ inputs.docker_tag }}
       --helm-set git.branch=${{ inputs.revision }}
       --helm-set global.labels.app=${{ env.APP_NAME }}
-      --name operate-${{ env.APP_NAME }}
+      --name ${{ env.APP_NAME }}
       --revision ${{ inputs.revision }}
       --upsert
 
@@ -134,7 +134,7 @@ runs:
     shell: bash
     run: |-
       echo "::group::wait for sync"
-      argocd app wait operate-${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
+      argocd app wait ${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
       echo "::endgroup::"
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
