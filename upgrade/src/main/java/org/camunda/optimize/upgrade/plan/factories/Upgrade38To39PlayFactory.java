@@ -39,7 +39,7 @@ public class Upgrade38To39PlayFactory implements UpgradePlanFactory {
       "if (ctx._source.data != null) {" +
         "def configuration = ctx._source.data.configuration;" +
         "if (configuration != null && configuration.targetValue != null) {" +
-        " configuration.targetValue.kpi = [\"type\": null, \"active\": false];" +
+        " configuration.targetValue.isKpi =  false;" +
         "}" +
         "}";
     // @formatter:on

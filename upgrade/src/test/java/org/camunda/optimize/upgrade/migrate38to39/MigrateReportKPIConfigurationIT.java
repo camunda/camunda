@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.migrate38to39;
 
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.KPIConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -36,12 +35,8 @@ public class MigrateReportKPIConfigurationIT extends AbstractUpgrade38IT {
           (Map<String, Object>) reportData.get(SingleProcessReportIndex.CONFIGURATION);
         final Map<String, Object> targetValueConfig = (Map<String, Object>) reportConfig.get(
           SingleReportConfigurationDto.Fields.targetValue);
-        final Map<String, Object> kpiConfig =
-          (Map<String, Object>) targetValueConfig.get(SingleReportTargetValueDto.Fields.kpi);
-        assertThat(kpiConfig)
-          .containsEntry(KPIConfigurationDto.Fields.active, false);
-        assertThat(kpiConfig)
-          .containsEntry(KPIConfigurationDto.Fields.type, null);
+        assertThat(targetValueConfig)
+          .containsEntry(SingleReportTargetValueDto.Fields.isKpi, false);
       });
   }
 }

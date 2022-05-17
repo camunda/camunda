@@ -16,6 +16,7 @@ public class CountProgressDto {
 
   private String baseline = "0";
   private String target = "100";
+  private Boolean isBelow = false;
 
   @Override
   public boolean equals(Object o) {
@@ -27,6 +28,7 @@ public class CountProgressDto {
     }
     CountProgressDto that = (CountProgressDto) o;
     return Objects.equals(baseline, that.baseline) &&
+      Objects.equals(isBelow, that.isBelow) &&
       Objects.equals(target, that.target);
   }
 

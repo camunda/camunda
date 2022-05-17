@@ -16,6 +16,7 @@ public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private String value = "2";
+  private Boolean isBelow = false;
 
   @Override
   public boolean equals(Object o) {
@@ -27,6 +28,7 @@ public class TargetDto {
     }
     TargetDto targetDto = (TargetDto) o;
     return unit == targetDto.unit &&
+      Objects.equals(isBelow, targetDto.isBelow) &&
       Objects.equals(value, targetDto.value);
   }
 
