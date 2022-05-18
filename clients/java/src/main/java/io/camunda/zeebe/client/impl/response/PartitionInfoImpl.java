@@ -31,9 +31,9 @@ public class PartitionInfoImpl implements PartitionInfo {
   public PartitionInfoImpl(final GatewayOuterClass.Partition partition) {
     partitionId = partition.getPartitionId();
 
-    if (partition.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.LEADER) {
+    if (partition.getRole() == Partition.PartitionBrokerRole.LEADER) {
       role = PartitionBrokerRole.LEADER;
-    } else if (partition.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER) {
+    } else if (partition.getRole() == Partition.PartitionBrokerRole.FOLLOWER) {
       role = PartitionBrokerRole.FOLLOWER;
     } else if (partition.getRole() == Partition.PartitionBrokerRole.INACTIVE) {
       role = PartitionBrokerRole.INACTIVE;
@@ -43,11 +43,13 @@ public class PartitionInfoImpl implements PartitionInfo {
               "Unexpected partition broker role %s, should be one of %s",
               partition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
     }
-    if (partition.getHealth() == GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY) {
-      this.partitionBrokerHealth = PartitionBrokerHealth.HEALTHY;
-    } else if (partition.getHealth()
-        == GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY) {
-      this.partitionBrokerHealth = PartitionBrokerHealth.UNHEALTHY;
+
+    if (partition.getHealth() == Partition.PartitionBrokerHealth.HEALTHY) {
+      partitionBrokerHealth = PartitionBrokerHealth.HEALTHY;
+    } else if (partition.getHealth() == Partition.PartitionBrokerHealth.UNHEALTHY) {
+      partitionBrokerHealth = PartitionBrokerHealth.UNHEALTHY;
+    } else if (partition.getHealth() == Partition.PartitionBrokerHealth.DEAD) {
+      partitionBrokerHealth = PartitionBrokerHealth.DEAD;
     } else {
       throw new RuntimeException(
           String.format(
