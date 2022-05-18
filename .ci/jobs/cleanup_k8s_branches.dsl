@@ -1,5 +1,6 @@
 pipelineJob('cleanup-zeebe-tasklist-k8s-branches') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Cleanup Zeebe Tasklist branch deployments on K8s'
   description 'Cleanup Zeebe Tasklist branch deployments on Kubernetes and corresponding docker images.'
 

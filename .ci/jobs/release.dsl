@@ -1,5 +1,6 @@
 pipelineJob('zeebe-tasklist-release') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Zeebe Tasklist Release'
   description 'Release Zeebe Tasklist to Camunda Nexus and tag GitHub repository.'
 

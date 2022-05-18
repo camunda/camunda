@@ -1,5 +1,6 @@
 pipelineJob('migrate-elasticsearch-data') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Migrates elasticsearch data from one to another version '
   description '''Migrates elasticsearch data from one to another version.
   <br>Following steps are being performed:
