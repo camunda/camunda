@@ -53,7 +53,7 @@ exports[`it should display correct configuration for barchart 1`] = `
     <legend>
       <Switch
         checked={false}
-        label="Goal"
+        label="Set Target"
         onChange={[Function]}
       />
     </legend>

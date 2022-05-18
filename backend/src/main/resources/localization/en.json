@@ -507,7 +507,7 @@
     },
     "progressBar": {
       "invalid": "Invalid Configuration",
-      "goal": "Goal"
+      "goal": "Target"
     },
     "combined": {
       "multiSelect": {
@@ -568,12 +568,14 @@
         "yAxis": "Y Axis Label"
       },
       "goal": {
-        "legend": "Goal",
+        "legend": "Set Target",
         "goalValue": "Goal value",
         "baseline": "Baseline",
         "target": "Target",
         "invalidInput": "Enter a positive number",
-        "lessThanTargetError": "Target must be greater than baseline"
+        "lessThanTargetError": "Target must be greater than baseline",
+        "setKpi": "Display as a process KPI",
+        "kpiDescription": "The status of this metric will be displayed directly on the process in the process page."
       },
       "pointMarkers": {
         "legend": "Line points",

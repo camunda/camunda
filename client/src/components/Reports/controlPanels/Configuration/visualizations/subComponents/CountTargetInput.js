@@ -7,32 +7,39 @@
 
 import React from 'react';
 
-import {Form, LabeledInput, Message} from 'components';
-
+import {Button, ButtonGroup, LabeledInput, Message} from 'components';
 import {numberParser} from 'services';
 import {t} from 'translation';
+
+import './CountTargetInput.scss';
+
 const {isNonNegativeNumber} = numberParser;
 
-export default function CountTargetInput({baseline, target, disabled, onChange}) {
+export default function CountTargetInput({
+  baseline,
+  target,
+  isBelow,
+  isPercentageReport,
+  disabled,
+  onChange,
+}) {
   const baselineInvalid = !isNonNegativeNumber(baseline);
   const targetInvalid = !isNonNegativeNumber(target);
 
   const tooLow = !baselineInvalid && !targetInvalid && parseFloat(target) <= parseFloat(baseline);
 
   return (
-    <>
-      <Form.InputGroup className="CountTargetInput">
+    <div className="CountTargetInput">
+      <ButtonGroup disabled={disabled}>
+        <Button onClick={() => onChange('isBelow', false)} active={!isBelow}>
+          {t('common.above')}
+        </Button>
+        <Button onClick={() => onChange('isBelow', true)} active={isBelow}>
+          {t('common.below')}
+        </Button>
+      </ButtonGroup>
+      <div className="targetInput">
         <LabeledInput
-          label={t('report.config.goal.baseline')}
-          type="number"
-          min="0"
-          value={baseline}
-          disabled={disabled}
-          isInvalid={baselineInvalid}
-          onChange={(evt) => onChange('baseline', evt.target.value)}
-        />
-        <LabeledInput
-          label={t('report.config.goal.target')}
           type="number"
           min="0"
           value={target}
@@ -40,11 +47,21 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
           isInvalid={targetInvalid || tooLow}
           onChange={(evt) => onChange('target', evt.target.value)}
         />
-      </Form.InputGroup>
+        {isPercentageReport && <span className="percentageIndicator">%</span>}
+      </div>
+      <LabeledInput
+        label={t('report.config.goal.baseline')}
+        type="number"
+        min="0"
+        value={baseline}
+        disabled={disabled}
+        isInvalid={baselineInvalid}
+        onChange={(evt) => onChange('baseline', evt.target.value)}
+      />
       {(targetInvalid || baselineInvalid) && (
         <Message error>{t('report.config.goal.invalidInput')}</Message>
       )}
       {tooLow && <Message error>{t('report.config.goal.lessThanTargetError')}</Message>}
-    </>
+    </div>
   );
 }

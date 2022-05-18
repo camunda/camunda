@@ -568,12 +568,14 @@
         "yAxis": "Y-Achse Beschriftung"
       },
       "goal": {
-        "legend": "Ziel",
+        "legend": "Ziel setzen",
         "goalValue": "Zielwert",
         "baseline": "Grundlinie",
         "target": "Ziel",
         "invalidInput": "Einen positiven Zahlenwert eingeben",
-        "lessThanTargetError": "Ziel muss größer als die Grundlinie sein"
+        "lessThanTargetError": "Ziel muss größer als die Grundlinie sein",
+        "setKpi": "Anzeige als Prozess-KPI",
+        "kpiDescription": "Der Status dieser Metrik wird direkt im Prozess auf der Prozessseite angezeigt."
       },
       "pointMarkers": {
         "legend": "Linienpunkte",

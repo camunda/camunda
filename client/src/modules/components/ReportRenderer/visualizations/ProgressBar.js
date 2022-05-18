@@ -8,16 +8,17 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './ProgressBar.scss';
-
 import {numberParser} from 'services';
 import {t} from 'translation';
+
+import './ProgressBar.scss';
+
 const {isNonNegativeNumber} = numberParser;
 
-export default function ProgressBar({min, max, value, formatter, precision}) {
+export default function ProgressBar({min, max, value, isBelow, formatter, precision}) {
   const isInvalid = !isNonNegativeNumber(min) || !isNonNegativeNumber(max) || +max < +min;
 
-  let relative, goalPercentage, goalExceeded, rightLabel, leftLabel;
+  let relative, goalPercentage, goalExceeded, rightLabel, leftLabel, warning;
 
   if (isInvalid) {
     relative = 0;
@@ -32,6 +33,7 @@ export default function ProgressBar({min, max, value, formatter, precision}) {
     rightLabel = goalExceeded
       ? formatter(value, precision)
       : `${t('report.progressBar.goal')} ` + formatter(max);
+    warning = isBelow ? value > max : value < max;
   }
 
   return (
@@ -39,19 +41,19 @@ export default function ProgressBar({min, max, value, formatter, precision}) {
       <div className="barContainer">
         {goalExceeded && (
           <div
-            className="goalOverlay"
+            className={classnames('goalOverlay', {warning})}
             style={{
               width: `${goalPercentage}%`,
             }}
           >
             <span className={classnames('goalLabel', {rightSide: goalPercentage > 50})}>
-              {t('report.progressBar.goal')} {formatter(max)}
+              {t('report.progressBar.goal')} {isBelow ? '<' : '>'} {formatter(max)}
             </span>
           </div>
         )}
         <div className="progressLabel">{formatter(value, precision)}</div>
         <div
-          className={classnames('filledOverlay', {goalExceeded})}
+          className={classnames('filledOverlay', {goalExceeded, warning})}
           style={{width: `${relative * 100}%`}}
         />
         <div className={classnames('rangeLabels')}>

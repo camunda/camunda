@@ -20,10 +20,10 @@ export const reportColorPopover = (text) =>
 export const redColor = Selector('.color[color="#DB3E00"]');
 export const configurationButton = Selector('.Configuration .Popover');
 export const goalSwitch = Selector('.Configuration .Popover fieldset')
-  .withText('Goal')
+  .withText('Set Target')
   .find('.Switch');
 export const goalInput = Selector('.Configuration .Popover fieldset')
-  .withText('Goal')
+  .withText('Set Target')
   .find('.Input[type="number"]');
 
 export const dragEndIndicator = Selector('.endIndicator');

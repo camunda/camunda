@@ -39,7 +39,7 @@ it('should show the overlay with the goal value when the goal value is exceeded'
 
   const node = shallow(<ProgressBar {...props} />);
 
-  expect(node.find('.goalOverlay')).toIncludeText('Goal');
+  expect(node.find('.goalOverlay')).toIncludeText('Target > formatted');
 });
 
 it('should show an invalid configuration message if min or max props are invalid', () => {
@@ -50,4 +50,11 @@ it('should show an invalid configuration message if min or max props are invalid
   expect(node1).toIncludeText('Invalid Configuration');
   expect(node2).toIncludeText('Invalid Configuration');
   expect(node3).toIncludeText('Invalid Configuration');
+});
+
+it('should add a "warning" class if isBelow flag is set and value above the max', () => {
+  const node = shallow(<ProgressBar {...props} max={1} value={2} isBelow={true} />);
+
+  expect(node.find('.goalOverlay')).toHaveClassName('warning');
+  expect(node.find('.filledOverlay')).toHaveClassName('warning');
 });

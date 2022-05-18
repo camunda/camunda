@@ -60,22 +60,25 @@ export function Number({report, formatter, mightFail}) {
   }, []);
 
   if (targetValue && targetValue.active && !isMultiMeasure) {
-    let min, max;
+    let min, max, isBelow;
     if (
       ['frequency', 'percentage'].includes(data.view.properties[0]) ||
       data.view.entity === 'variable'
     ) {
       min = targetValue.countProgress.baseline;
       max = targetValue.countProgress.target;
+      isBelow = targetValue.countProgress.isBelow;
     } else {
       min = formatters.convertDurationToSingleNumber(targetValue.durationProgress.baseline);
       max = formatters.convertDurationToSingleNumber(targetValue.durationProgress.target);
+      isBelow = targetValue.durationProgress.target.isBelow;
     }
 
     return (
       <ProgressBar
         min={min}
         max={max}
+        isBelow={isBelow}
         value={result.data}
         formatter={formatter}
         precision={precision}

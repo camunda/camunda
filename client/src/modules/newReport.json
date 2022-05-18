@@ -29,9 +29,16 @@
           "columnOrder": []
         },
         "targetValue": {
+          "active": false,
+          "isKpi": false,
           "countChart": {
             "isBelow": false,
             "value": "100"
+          },
+          "durationChart": {
+            "unit": "hours",
+            "isBelow": false,
+            "value": "2"
           },
           "durationProgress": {
             "baseline": {
@@ -40,18 +47,14 @@
             },
             "target": {
               "unit": "hours",
-              "value": "2"
+              "value": "2",
+              "isBelow": false
             }
           },
-          "active": false,
           "countProgress": {
             "baseline": "0",
-            "target": "100"
-          },
-          "durationChart": {
-            "unit": "hours",
-            "isBelow": false,
-            "value": "2"
+            "target": "100",
+            "isBelow": false
           }
         },
         "heatmapTargetValue": {
@@ -155,9 +158,16 @@
           "columnOrder": []
         },
         "targetValue": {
+          "active": false,
+          "isKpi": false,
           "countChart": {
             "isBelow": false,
             "value": "100"
+          },
+          "durationChart": {
+            "unit": "hours",
+            "isBelow": false,
+            "value": "2"
           },
           "durationProgress": {
             "baseline": {
@@ -166,18 +176,14 @@
             },
             "target": {
               "unit": "hours",
-              "value": "2"
+              "value": "2",
+              "isBelow": false
             }
           },
-          "active": false,
           "countProgress": {
             "baseline": "0",
-            "target": "100"
-          },
-          "durationChart": {
-            "unit": "hours",
-            "isBelow": false,
-            "value": "2"
+            "target": "100",
+            "isBelow": false
           }
         },
         "heatmapTargetValue": {

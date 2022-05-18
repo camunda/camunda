@@ -34,9 +34,11 @@ export default class Configuration extends React.Component {
         precision: null,
         targetValue: {
           active: false,
+          isKpi: false,
           countProgress: {
             baseline: '0',
             target: '100',
+            isBelow: false,
           },
           durationProgress: {
             baseline: {
@@ -46,6 +48,7 @@ export default class Configuration extends React.Component {
             target: {
               value: '2',
               unit: 'hours',
+              isBelow: false,
             },
           },
           countChart: {

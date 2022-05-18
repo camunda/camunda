@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import {Form, LabeledInput, Message, Select} from 'components';
+import {Button, ButtonGroup, Form, LabeledInput, Message, Select} from 'components';
 
 import {formatters, numberParser} from 'services';
 import {t} from 'translation';
@@ -26,25 +26,14 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
 
   return (
     <>
-      <Form.InputGroup className="DurationTargetInput">
-        <LabeledInput
-          label={t('report.config.goal.baseline')}
-          type="number"
-          min="0"
-          value={baseline.value}
-          disabled={disabled}
-          isInvalid={baselineInvalid}
-          onChange={(evt) => onChange('baseline', 'value', evt.target.value)}
-        />
-        <Select
-          value={baseline.unit}
-          disabled={disabled}
-          onChange={(value) => onChange('baseline', 'unit', value)}
-        >
-          {selectionOptions()}
-        </Select>
-      </Form.InputGroup>
-      {baselineInvalid && <Message error>{t('report.config.goal.invalidInput')}</Message>}
+      <ButtonGroup disabled={disabled}>
+        <Button onClick={() => onChange('target', 'isBelow', false)} active={!target.isBelow}>
+          {t('common.above')}
+        </Button>
+        <Button onClick={() => onChange('target', 'isBelow', true)} active={target.isBelow}>
+          {t('common.below')}
+        </Button>
+      </ButtonGroup>
       <Form.InputGroup>
         <LabeledInput
           label={t('report.config.goal.target')}
@@ -64,6 +53,25 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
         </Select>
       </Form.InputGroup>
       {targetInvalid && <Message error>{t('report.config.goal.invalidInput')}</Message>}
+      <Form.InputGroup className="DurationTargetInput">
+        <LabeledInput
+          label={t('report.config.goal.baseline')}
+          type="number"
+          min="0"
+          value={baseline.value}
+          disabled={disabled}
+          isInvalid={baselineInvalid}
+          onChange={(evt) => onChange('baseline', 'value', evt.target.value)}
+        />
+        <Select
+          value={baseline.unit}
+          disabled={disabled}
+          onChange={(value) => onChange('baseline', 'unit', value)}
+        >
+          {selectionOptions()}
+        </Select>
+      </Form.InputGroup>
+      {baselineInvalid && <Message error>{t('report.config.goal.invalidInput')}</Message>}
       {tooLow && <Message error>{t('report.config.goal.lessThanTargetError')}</Message>}
     </>
   );

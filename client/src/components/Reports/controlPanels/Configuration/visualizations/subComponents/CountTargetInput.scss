@@ -1,0 +1,16 @@
+.CountTargetInput {
+  > * {
+    margin-top: 10px;
+  }
+
+  .targetInput {
+    position: relative;
+
+    .percentageIndicator {
+      position: absolute;
+      right: 30px;
+      top: 6px;
+      color: var(--grey-lighten-56);
+    }
+  }
+}
