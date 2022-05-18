@@ -19,6 +19,10 @@ import java.time.Duration;
 
 public final class ClientProperties {
 
+  /** @see ZeebeClientBuilder#applyEnvironmentVariableOverrides(boolean) */
+  public static final String APPLY_ENVIRONMENT_VARIABLES_OVERRIDES =
+      "zeebe.client.applyEnvironmentVariableOverrides";
+
   /** @see ZeebeClientBuilder#gatewayAddress(String) */
   public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
