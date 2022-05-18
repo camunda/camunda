@@ -37,9 +37,9 @@ public class NonBlockingSnapshotDirector
 
   private final StreamProcessorMode processorMode;
 
-  // We currently use this executor only for scheduling snapshots at fixed rate. Since there are no
-  // shared mutable state, there is no need to use an executor to serialize the task. If we want to
-  // prevent concurrent snapshot, we can add a lock.
+  // Since there are noshared mutable state, there is no need to use an executor to serialize the
+  // task. If we want to prevent concurrent snapshot, we can add a lock. However to stop taking the
+  // snapshot when the director is closed, we execute all tasks in the executor.
   private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
   private final ActorCompatability actorCompatability;
 
@@ -86,8 +86,7 @@ public class NonBlockingSnapshotDirector
         .await(streamProcessor::getLastProcessedPositionAsync)
         // Have to use Async because otherwise it might be executed on the caller thread (in the
         // actor which completes this future). Optionally, we can also pass this.executor to force
-        // it to execute on this executor. However, since there are no shared mutable objects, there
-        // is no need to force it to execute on this.executor.
+        // it to execute on this executor.
         .thenComposeAsync(
             (lastProcessedPosition) -> {
               if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
@@ -97,7 +96,8 @@ public class NonBlockingSnapshotDirector
                 return takeTransientSnapshot(lastProcessedPosition)
                     .thenComposeAsync(this::persistSnapshot);
               }
-            });
+            },
+            executor);
   }
 
   private CompletableFuture<TransientSnapshot> takeTransientSnapshot(
@@ -110,21 +110,29 @@ public class NonBlockingSnapshotDirector
     if (processorMode == StreamProcessorMode.REPLAY) {
       return CompletableFuture.completedFuture(null);
     }
+    LOG.info("Getting last written position");
     return actorCompatability
         .await(streamProcessor::getLastWrittenPositionAsync)
-        .thenComposeAsync(commitAwaiter::waitForCommitPosition);
+        .thenComposeAsync(
+            commitPosition -> {
+              LOG.info("Waiting for commit {}", commitPosition);
+              return commitAwaiter.waitForCommitPosition(commitPosition);
+            },
+            executor);
   }
 
   private CompletableFuture<PersistedSnapshot> persistSnapshot(
       final TransientSnapshot transientSnapshot) {
     return waitForCommitPosition()
-        .thenCompose((ignored) -> actorCompatability.await(transientSnapshot::persist))
-        .whenComplete(
+        .thenComposeAsync(
+            (ignored) -> actorCompatability.await(transientSnapshot::persist), executor)
+        .whenCompleteAsync(
             ((persistedSnapshot, throwable) -> {
               if (throwable != null) {
                 transientSnapshot.abort();
               }
-            }));
+            }),
+            executor);
   }
 
   /**

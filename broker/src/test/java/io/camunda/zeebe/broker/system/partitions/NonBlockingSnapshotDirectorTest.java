@@ -46,6 +46,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 public final class NonBlockingSnapshotDirectorTest {
 
@@ -151,6 +152,23 @@ public final class NonBlockingSnapshotDirectorTest {
     // then
     assertThat(snapshot.get(10, TimeUnit.SECONDS)).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.get());
+  }
+
+  @Test
+  public void shouldNotCommitSnapshotAfterClose() throws Exception {
+    // given
+    createAsyncSnapshotDirectorOfProcessingMode();
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+
+    // when
+    asyncSnapshotDirector.close();
+    setCommitPosition(100L);
+
+    // then
+    Awaitility.await()
+        .during(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(11))
+        .until(() -> persistedSnapshotStore.getLatestSnapshot().isEmpty());
   }
 
   @Test

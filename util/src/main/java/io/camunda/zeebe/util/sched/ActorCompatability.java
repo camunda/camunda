@@ -12,8 +12,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
 public final class ActorCompatability extends Actor {
-  private <T> CompletableFuture<T> awaitFuture(final Callable<ActorFuture<T>> callable) {
-    final var completableFuture = new CompletableFuture<T>();
+  private <T> void awaitFuture(
+      final Callable<ActorFuture<T>> callable, final CompletableFuture<T> completableFuture) {
     try {
       callable
           .call()
@@ -27,10 +27,11 @@ public final class ActorCompatability extends Actor {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-    return completableFuture;
   }
 
   public <T> CompletableFuture<T> await(final Callable<ActorFuture<T>> callable) {
-    return actor.call(() -> awaitFuture(callable)).join();
+    final CompletableFuture<T> future = new CompletableFuture<>();
+    actor.call(() -> awaitFuture(callable, future));
+    return future;
   }
 }

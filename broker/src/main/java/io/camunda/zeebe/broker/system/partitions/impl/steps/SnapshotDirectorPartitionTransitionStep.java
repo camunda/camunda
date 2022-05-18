@@ -10,7 +10,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.ThreadSafeSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.CommitAwaiter;
+import io.camunda.zeebe.broker.system.partitions.impl.NonBlockingSnapshotDirector;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.sched.ActorCompatability;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -51,13 +52,18 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       } else {
         mode = StreamProcessorMode.REPLAY;
       }
-      context.setSnapshotDirector(
-          new ThreadSafeSnapshotDirector(
+      final NonBlockingSnapshotDirector snapshotDirector =
+          new NonBlockingSnapshotDirector(
               actorCompatability,
               context.getStateController(),
               context.getStreamProcessor(),
               mode,
-              snapshotPeriod));
+              snapshotPeriod,
+              new CommitAwaiter());
+      context.setSnapshotDirector(snapshotDirector);
+      if (targetRole == Role.LEADER) {
+        context.getRaftPartition().getServer().addCommittedEntryListener(snapshotDirector);
+      }
     }
     return CompletableActorFuture.completed(null);
   }
