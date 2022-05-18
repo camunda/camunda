@@ -117,7 +117,7 @@ runs:
       --revision ${{ inputs.revision }}
       --upsert
 
-      argocd app sync operate-${{ env.APP_NAME }} --async --force || true
+      argocd app sync ${{ env.APP_NAME }} --async --force || true
     env:
       ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
       ARGOCD_OPTS: "--grpc-web"
