@@ -8,8 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.ActorContext;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.Callable;
@@ -34,31 +33,28 @@ public class AkkaCompatActor extends Actor {
         });
   }
 
-  public <T, B> Behavior<B> onActor(
+  public <T, B> void onActor(
+      final ActorContext<B> ctx,
       final Callable<ActorFuture<T>> callable,
       final Function<T, B> transformResult,
-      final Function<Throwable, B> transformError,
-      final Behavior<B> behavior) {
-    return Behaviors.setup(
-        ctx -> {
-          actor.run(
-              () -> {
-                try {
-                  callable
-                      .call()
-                      .onComplete(
-                          (result, error) -> {
-                            if (error != null) {
-                              ctx.getSelf().tell(transformError.apply(error));
-                            } else {
-                              ctx.getSelf().tell(transformResult.apply(result));
-                            }
-                          });
-                } catch (final Exception e) {
-                  ctx.getSelf().tell(transformError.apply(e));
-                }
-              });
-          return behavior;
+      final Function<Throwable, B> transformError) {
+    actor.run(
+        () -> {
+          try {
+            callable
+                .call()
+                .onComplete(
+                    (result, error) -> {
+                      // ctx.getLog().info("ActorScheduler future is complete: {}", result);
+                      if (error != null) {
+                        ctx.getSelf().tell(transformError.apply(error));
+                      } else {
+                        ctx.getSelf().tell(transformResult.apply(result));
+                      }
+                    });
+          } catch (final Exception e) {
+            ctx.getSelf().tell(transformError.apply(e));
+          }
         });
   }
 }

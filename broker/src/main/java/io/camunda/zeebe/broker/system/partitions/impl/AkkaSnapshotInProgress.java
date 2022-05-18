@@ -19,11 +19,14 @@ import io.camunda.zeebe.broker.system.partitions.impl.AkkaStateController.StateC
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStateController.StateControllerResponse;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStateController.TakeTransientSnapshot;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStateController.TransientSnapshotReply;
+import io.camunda.zeebe.broker.system.partitions.impl.AkkaStateController.TransientSnapshotSkipped;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStreamProcessor.GetLastProcessedPosition;
+import io.camunda.zeebe.broker.system.partitions.impl.AkkaStreamProcessor.GetLastWrittenPosition;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStreamProcessor.LastProcessedPosition;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStreamProcessor.LastWrittenPosition;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStreamProcessor.StreamProcessorCommands;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaStreamProcessor.StreamProcessorResponse;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import java.time.Duration;
@@ -35,7 +38,8 @@ public class AkkaSnapshotInProgress {
   private final ActorRef<SnapshotDirectorCommands> snapshotDirector;
   private final ActorRef<StateControllerCommand> stateController;
 
-  private AkkaSnapshotInProgress(final ActorContext<SnapshotInProgressCommands> ctx,
+  private AkkaSnapshotInProgress(
+      final ActorContext<SnapshotInProgressCommands> ctx,
       final ActorRef<SnapshotResponse> replyTo,
       final ActorRef<StreamProcessorCommands> streamProcessor,
       final ActorRef<SnapshotDirectorCommands> snapshotDirector,
@@ -49,16 +53,24 @@ public class AkkaSnapshotInProgress {
 
   public static Behavior<SnapshotInProgressCommands> create(
       final ActorRef<SnapshotResponse> replyTo,
+      final StreamProcessorMode streamProcessorMode,
       final ActorRef<StreamProcessorCommands> streamProcessor,
       final ActorRef<SnapshotDirectorCommands> snapshotDirector,
       final ActorRef<StateControllerCommand> stateController) {
-    return Behaviors.setup((ctx) -> new AkkaSnapshotInProgress(ctx, replyTo, streamProcessor,
-        snapshotDirector, stateController).getLastProcessedPosition());
+    return Behaviors.setup(
+        (ctx) ->
+            new AkkaSnapshotInProgress(
+                    ctx, replyTo, streamProcessor, snapshotDirector, stateController)
+                .getLastProcessedPosition());
   }
 
   private Behavior<SnapshotInProgressCommands> getLastProcessedPosition() {
-    ctx.ask(StreamProcessorResponse.class, streamProcessor, Duration.ofSeconds(10),
-        GetLastProcessedPosition::new, (response, error) -> {
+    ctx.ask(
+        StreamProcessorResponse.class,
+        streamProcessor,
+        Duration.ofSeconds(10),
+        GetLastProcessedPosition::new,
+        (response, error) -> {
           if (error != null) {
             throw new SnapshotFailure(error);
           } else if (response instanceof LastProcessedPosition lastProcessedPosition) {
@@ -72,28 +84,40 @@ public class AkkaSnapshotInProgress {
         .build();
   }
 
-  private Behavior<SnapshotInProgressCommands> takeTransientSnapshot(final GotLastProcessedPosition lastProcessed) {
-    ctx.ask(StateControllerResponse.class, stateController, Duration.ofSeconds(10), (ref) -> new TakeTransientSnapshot(lastProcessed.position, ref), (response, error) -> {
-      if (error != null) {
-        throw new SnapshotFailure(error);
-      } else if (response instanceof TransientSnapshotReply transientSnapshotTaken) {
-        return new TransientSnapshotTaken(transientSnapshotTaken.transientSnapshot());
-      } else {
-        throw new IllegalStateException();
-      }
-    });
+  private Behavior<SnapshotInProgressCommands> takeTransientSnapshot(
+      final GotLastProcessedPosition lastProcessed) {
+    ctx.ask(
+        StateControllerResponse.class,
+        stateController,
+        Duration.ofSeconds(10),
+        (ref) -> new TakeTransientSnapshot(lastProcessed.position, ref),
+        (response, error) -> {
+          if (error != null) {
+            throw new SnapshotFailure(error);
+          } else if (response instanceof TransientSnapshotSkipped) {
+            return new SkipSnapshot();
+          } else if (response instanceof TransientSnapshotReply transientSnapshotTaken) {
+            return new TransientSnapshotTaken(transientSnapshotTaken.transientSnapshot());
+          } else {
+            throw new IllegalStateException();
+          }
+        });
     return Behaviors.receive(SnapshotInProgressCommands.class)
         .onMessage(
-            TransientSnapshotTaken.class,
-            (msg) -> getLastWrittenPosition(msg.transientSnapshot))
+            TransientSnapshotTaken.class, (msg) -> getLastWrittenPosition(msg.transientSnapshot))
         .build();
   }
 
   private Behavior<SnapshotInProgressCommands> getLastWrittenPosition(
       final TransientSnapshot transientSnapshot) {
-
-    ctx.ask(StreamProcessorResponse.class, streamProcessor, Duration.ofSeconds(10),
-        GetLastProcessedPosition::new, (response, error) -> {
+    ctx.getLog().info("Getting last written position");
+    ctx.ask(
+        StreamProcessorResponse.class,
+        streamProcessor,
+        Duration.ofSeconds(10),
+        GetLastWrittenPosition::new,
+        (response, error) -> {
+          ctx.getLog().info("Transforming last written response: {}, {}", response, error);
           if (error != null) {
             throw new SnapshotFailure(error);
           } else if (response instanceof LastWrittenPosition lastWrittenPosition) {
@@ -105,34 +129,42 @@ public class AkkaSnapshotInProgress {
 
     return Behaviors.receive(SnapshotInProgressCommands.class)
         .onMessage(
-            GotLastWrittenPosition.class,
-            (msg) -> waitForCommit(transientSnapshot, msg.position))
+            GotLastWrittenPosition.class, (msg) -> {
+              ctx.getLog().info("Got last written position: {}", msg);
+              return waitForCommit(transientSnapshot, msg.position);
+            })
         .build();
   }
 
   private Behavior<SnapshotInProgressCommands> waitForCommit(
-      final TransientSnapshot transientSnapshot,
-      final long lastWrittenPosition) {
+      final TransientSnapshot transientSnapshot, final long lastWrittenPosition) {
     snapshotDirector.tell(new WaitForCommitPosition(ctx.getSelf(), lastWrittenPosition));
-    Behaviors.receive(SnapshotInProgressCommands.class)
-        .onMessageEquals(new CommitPositionReached(lastWrittenPosition), () -> persist(transientSnapshot));
-    return Behaviors.same();
+    ctx.getLog().info("Waiting for commit >= {}", lastWrittenPosition);
+    return Behaviors.receive(SnapshotInProgressCommands.class)
+        .onMessageEquals(
+            new CommitPositionReached(lastWrittenPosition), () -> persist(transientSnapshot)).build();
   }
 
   private Behavior<SnapshotInProgressCommands> persist(final TransientSnapshot transientSnapshot) {
-    ctx.ask(StateControllerResponse.class, stateController, Duration.ofSeconds(10),
-        (ref) -> new PersistTransientSnapshot(ref, transientSnapshot), (result, error) -> {
-      if (error != null) {
-        throw new SnapshotFailure(error);
-      } else if(result instanceof PersistedSnapshotReply reply){
-        return new SnapshotPersisted(reply.persistedSnapshot());
-      } else {
-        throw new IllegalStateException();
-      }
-    });
+    ctx.getLog().info("Trying to persist {}", transientSnapshot);
+    ctx.ask(
+        StateControllerResponse.class,
+        stateController,
+        Duration.ofSeconds(10),
+        (ref) -> new PersistTransientSnapshot(ref, transientSnapshot),
+        (result, error) -> {
+          if (error != null) {
+            throw new SnapshotFailure(error);
+          } else if (result instanceof PersistedSnapshotReply reply) {
+            return new SnapshotPersisted(reply.persistedSnapshot());
+          } else {
+            throw new IllegalStateException();
+          }
+        });
 
     return Behaviors.receive(SnapshotInProgressCommands.class)
-            .onMessage(SnapshotPersisted.class, this::finish).build();
+        .onMessage(SnapshotPersisted.class, this::finish)
+        .build();
   }
 
   private Behavior<SnapshotInProgressCommands> finish(final SnapshotPersisted msg) {
@@ -140,6 +172,15 @@ public class AkkaSnapshotInProgress {
     return Behaviors.stopped();
   }
 
+  private Behavior<SnapshotInProgressCommands> skip(final SnapshotSkipped msg) {
+    replyTo.tell(new SnapshotSkipped());
+    return Behaviors.stopped();
+  }
+
+  public record SnapshotSkipped() implements SnapshotResponse {}
+
+  public record SnapshotSucceeded(PersistedSnapshot persistedSnapshot)
+      implements SnapshotResponse {}
 
   record GotLastProcessedPosition(long position) implements SnapshotInProgressCommands {}
 
@@ -147,8 +188,10 @@ public class AkkaSnapshotInProgress {
 
   record CommitPositionReached(long position) implements SnapshotInProgressCommands {}
 
-  record TransientSnapshotTaken(TransientSnapshot transientSnapshot) implements
-      SnapshotInProgressCommands {}
+  record SkipSnapshot() implements SnapshotInProgressCommands {}
+
+  record TransientSnapshotTaken(TransientSnapshot transientSnapshot)
+      implements SnapshotInProgressCommands {}
 
   record SnapshotPersisted(PersistedSnapshot snapshot) implements SnapshotInProgressCommands {}
 
@@ -158,11 +201,7 @@ public class AkkaSnapshotInProgress {
     }
   }
 
-  record SnapshotSkipped() implements SnapshotResponse {}
-  record SnapshotSucceeded(PersistedSnapshot persistedSnapshot) implements SnapshotResponse {}
-
   interface SnapshotInProgressCommands {}
 
   interface SnapshotResponse {}
-
 }

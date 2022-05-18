@@ -9,60 +9,75 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 
 public class AkkaStateController {
+  ActorContext<StateControllerCommand> ctx;
   final AkkaCompatActor compat;
   final StateController stateController;
 
-  private AkkaStateController(final AkkaCompatActor compat, final StateController stateController) {
+  public AkkaStateController(final AkkaCompatActor compat, final StateController stateController) {
     this.compat = compat;
     this.stateController = stateController;
   }
 
   public Behavior<StateControllerCommand> create() {
-    return Behaviors.setup((ctx) -> Behaviors.receive(StateControllerCommand.class)
-        .onMessage(TakeTransientSnapshot.class, this::takeTransientSnapshot)
-        .onMessage(PersistTransientSnapshot.class, this::persistTransientSnapshot)
-        .build());
+    return Behaviors.setup(
+        (ctx) -> {
+          this.ctx = ctx;
+          return Behaviors.receive(StateControllerCommand.class)
+              .onMessage(TakeTransientSnapshot.class, this::takeTransientSnapshot)
+              .onMessage(PersistTransientSnapshot.class, this::persistTransientSnapshot)
+              .build();
+        });
   }
 
   private Behavior<StateControllerCommand> takeTransientSnapshot(final TakeTransientSnapshot msg) {
-    return compat.onActor(
+    compat.onActor(
+        ctx,
         () -> stateController.takeTransientSnapshot(msg.processedPosition),
         InternalTookTransientSnapshot::new,
-        InternalFailure::new,
-        Behaviors.receive(StateControllerCommand.class)
-            .onMessage(InternalTookTransientSnapshot.class, (took) -> finishTransientSnapshot(msg.replyTo, took))
-            .onMessage(InternalFailure.class, (failure) -> failTransientSnapshot(msg.replyTo, failure))
-            .build());
+        InternalFailure::new);
+
+    return Behaviors.receive(StateControllerCommand.class)
+        .onMessage(
+            InternalTookTransientSnapshot.class,
+            (took) -> finishTransientSnapshot(msg.replyTo, took))
+        .onMessage(
+            InternalFailure.class, (failure) -> failTransientSnapshot(msg.replyTo, failure))
+        .build();
   }
 
-  private Behavior<StateControllerCommand> persistTransientSnapshot(final PersistTransientSnapshot msg) {
-    return compat.onActor(
+  private Behavior<StateControllerCommand> persistTransientSnapshot(
+      final PersistTransientSnapshot msg) {
+    compat.onActor(
+        ctx,
         msg.transientSnapshot::persist,
         InternalPersistedTransientSnapshot::new,
-        InternalFailure::new,
-        Behaviors.receive(StateControllerCommand.class)
-            .onMessage(InternalPersistedTransientSnapshot.class, (p) -> finishPersistingSnapshot(msg.replyTo, p))
-            .onMessage(InternalFailure.class, (f) -> failPersistingSnapshot(msg.replyTo, f))
-            .build()
-    );
+        InternalFailure::new);
+    return Behaviors.receive(StateControllerCommand.class)
+        .onMessage(
+            InternalPersistedTransientSnapshot.class,
+            (p) -> finishPersistingSnapshot(msg.replyTo, p))
+        .onMessage(InternalFailure.class, (f) -> failPersistingSnapshot(msg.replyTo, f))
+        .build();
   }
 
-  private Behavior<StateControllerCommand> failPersistingSnapshot(final ActorRef<StateControllerResponse> replyTo, final InternalFailure f) {
+  private Behavior<StateControllerCommand> failPersistingSnapshot(
+      final ActorRef<StateControllerResponse> replyTo, final InternalFailure f) {
     replyTo.tell(new PersistedSnapshotFailed(f.error));
     return create();
   }
 
-  private Behavior<StateControllerCommand> finishPersistingSnapshot(final ActorRef<StateControllerResponse> replyTo, final InternalPersistedTransientSnapshot p) {
+  private Behavior<StateControllerCommand> finishPersistingSnapshot(
+      final ActorRef<StateControllerResponse> replyTo, final InternalPersistedTransientSnapshot p) {
     replyTo.tell(new PersistedSnapshotReply(p.persistedSnapshot));
     return create();
   }
-
 
   private Behavior<StateControllerCommand> failTransientSnapshot(
       final ActorRef<StateControllerResponse> replyTo, final InternalFailure failure) {
@@ -70,7 +85,8 @@ public class AkkaStateController {
     return create();
   }
 
-  private Behavior<StateControllerCommand> finishTransientSnapshot(final ActorRef<StateControllerResponse> replyTo, final InternalTookTransientSnapshot msg) {
+  private Behavior<StateControllerCommand> finishTransientSnapshot(
+      final ActorRef<StateControllerResponse> replyTo, final InternalTookTransientSnapshot msg) {
     if (msg.transientSnapshot == null) {
       replyTo.tell(new TransientSnapshotSkipped());
     } else {
@@ -79,22 +95,34 @@ public class AkkaStateController {
     return create();
   }
 
-  record TakeTransientSnapshot(long processedPosition, ActorRef<StateControllerResponse> replyTo) implements StateControllerCommand {}
-  record PersistTransientSnapshot(ActorRef<StateControllerResponse> replyTo,
-                                  TransientSnapshot transientSnapshot) implements StateControllerCommand {}
+  record TakeTransientSnapshot(long processedPosition, ActorRef<StateControllerResponse> replyTo)
+      implements StateControllerCommand {}
 
-  record InternalTookTransientSnapshot(TransientSnapshot transientSnapshot) implements StateControllerCommand {}
-  record InternalPersistedTransientSnapshot(PersistedSnapshot persistedSnapshot) implements StateControllerCommand {}
+  record PersistTransientSnapshot(
+      ActorRef<StateControllerResponse> replyTo, TransientSnapshot transientSnapshot)
+      implements StateControllerCommand {}
+
+  record InternalTookTransientSnapshot(TransientSnapshot transientSnapshot)
+      implements StateControllerCommand {}
+
+  record InternalPersistedTransientSnapshot(PersistedSnapshot persistedSnapshot)
+      implements StateControllerCommand {}
 
   record InternalFailure(Throwable error) implements StateControllerCommand {}
 
   record TransientSnapshotSkipped() implements StateControllerResponse {}
+
   record TransientSnapshotFailed(Throwable error) implements StateControllerResponse {}
+
   record PersistedSnapshotFailed(Throwable error) implements StateControllerResponse {}
 
-  record PersistedSnapshotReply(PersistedSnapshot persistedSnapshot) implements StateControllerResponse {}
-  record TransientSnapshotReply(TransientSnapshot transientSnapshot) implements StateControllerResponse {}
-  interface StateControllerCommand {}
-  interface StateControllerResponse {}
+  record PersistedSnapshotReply(PersistedSnapshot persistedSnapshot)
+      implements StateControllerResponse {}
 
+  record TransientSnapshotReply(TransientSnapshot transientSnapshot)
+      implements StateControllerResponse {}
+
+  interface StateControllerCommand {}
+
+  interface StateControllerResponse {}
 }

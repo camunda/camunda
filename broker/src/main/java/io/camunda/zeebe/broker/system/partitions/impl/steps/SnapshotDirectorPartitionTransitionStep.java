@@ -51,9 +51,13 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
           };
       final var snapshotDirector =
           new AkkaSnapshotDirector(
-              compat, context.getStreamProcessor(), mode, context.getStateController());
+              compat, mode, context.getStreamProcessor(), context.getStateController());
 
-      final var actorSystem = ActorSystem.create(snapshotDirector.create(), "SnapshotDirector");
+      final var actorSystem =
+          ActorSystem.create(
+              snapshotDirector.create(
+                  compat, context.getStreamProcessor(), context.getStateController()),
+              "SnapshotDirector");
       context.setSnapshotDirectorAkka(actorSystem);
       context.setSnapshotDirector(snapshotDirector);
       if (targetRole == Role.LEADER) {
