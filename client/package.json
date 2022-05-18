@@ -29,7 +29,7 @@
     "react-resizable": "^3.0.4",
     "react-router": "^5.0.1",
     "react-router-dom": "^5.3.0",
-    "react-table": "^7.7.0",
+    "react-table": "^7.8.0",
     "table-js": "^7.2.0",
     "use-deep-compare-effect": "^1.8.1",
     "mixpanel-browser": "^2.45.0"
