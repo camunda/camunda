@@ -94,7 +94,7 @@ runs:
         if [[ "${{ inputs.step}}" = "stop" ]]; then
           APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
         else
-          APP_NAME="${{ inputs.deployment_id }}"
+          APP_NAME="optimize-${{ inputs.deployment_id }}"
         fi
         echo "APP_NAME=${APP_NAME}" >> ${GITHUB_ENV}
       env:
@@ -118,7 +118,7 @@ runs:
       run: >-
         .github/actions/deploy-env/deploy_script.sh
         
-        argocd app sync optimize-${{ env.APP_NAME }} --async --force || true
+        argocd app sync ${{ env.APP_NAME }} --async --force || true
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
         ARGOCD_OPTS: "--grpc-web"
@@ -133,7 +133,7 @@ runs:
       shell: bash
       run: |-
         echo "::group::wait for sync"
-        argocd app wait optimize-${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
+        argocd app wait ${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
         echo "::endgroup::"
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
@@ -153,4 +153,3 @@ runs:
         status: ${{ job.status }}
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ inputs.deployment_id }}.optimize.camunda.cloud
-      # When tearing down the deployment, also deactivate GitHub Deployment environment

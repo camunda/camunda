@@ -7,14 +7,14 @@
 #
 #!/bin/bash
 
-deploy_arguments="--dest-namespace optimize-${APP_NAME} \
+deploy_arguments="--dest-namespace ${APP_NAME} \
     --file .ci/deployments-resources/argo/application.yml \
     --helm-set optimize.image.tag=${DOCKER_TAG} \
     --helm-set cambpm.image.tag=${CAMBPM_VERSION} \
     --helm-set elasticsearch.image.tag=${ES_VERSION} \
     --helm-set global.labels.app=${APP_NAME} \
     --helm-set global.labels.commit=${SHA} \
-    --name optimize-${APP_NAME} \
+    --name ${APP_NAME} \
     --project optimize-previews \
     --upsert"
 
