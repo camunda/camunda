@@ -1,5 +1,6 @@
 pipelineJob('camunda-operate-release') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Release Camunda Operate'
   description 'Release Camunda Operate to Camunda Nexus and tag GitHub repository.'
 

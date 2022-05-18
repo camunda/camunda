@@ -1,5 +1,6 @@
 pipelineJob('camunda-operate-release-test') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Test Camunda Operate Release Build'
   description 'Run Camunda Operate release without committing the changes to github or uploading the artifacts.'
 

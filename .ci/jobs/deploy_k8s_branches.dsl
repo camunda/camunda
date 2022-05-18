@@ -1,5 +1,6 @@
 pipelineJob('deploy-branch-to-k8s') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Deploy branch to K8s'
   description 'Deploys branch to Kubernetes.'
 

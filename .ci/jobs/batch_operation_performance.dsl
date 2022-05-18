@@ -1,5 +1,6 @@
 pipelineJob('batch-operation-performance') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Batch operations performance test on large static dataset'
   description '''Test performance of batch operation execution against a large static dataset.
   <br>Following steps are being performed:

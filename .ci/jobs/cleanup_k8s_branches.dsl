@@ -1,5 +1,6 @@
 pipelineJob('cleanup-operate-k8s-branches') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Cleanup Operate branch deployments on K8s'
   description 'Cleanup Operate branch deployments on Kubernetes and corresponding docker images.'
 

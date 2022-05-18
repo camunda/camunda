@@ -1,5 +1,6 @@
 pipelineJob('migration-performance-test') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Test migration performance on large dataset'
   description '''Test performance of Operate migration against a large dataset.
   <br>Following steps are being performed:

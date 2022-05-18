@@ -1,5 +1,6 @@
 pipelineJob('import-performance-large-static-dataset') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Import performance test on large static dataset'
   description '''Test Operate Import performance against a large static dataset.
   <br>Following steps are being performed:

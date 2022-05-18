@@ -1,5 +1,6 @@
 pipelineJob('test_e2e') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'e2e'
   description '''e2e'''
 

@@ -1,5 +1,6 @@
 pipelineJob('deploy-branch-to-k8s-gha') {
 
+  disabled(ENVIRONMENT != 'prod')
   displayName 'Deploy branch to K8s (via GitHub)'
   description 'Deploys branch to Kubernetes using a GitHub Actions Workflow.'
 
