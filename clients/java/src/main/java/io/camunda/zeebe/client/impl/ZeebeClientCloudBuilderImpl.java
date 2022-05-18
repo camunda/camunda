@@ -91,6 +91,13 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder applyEnvironmentVariableOverrides(
+      boolean applyEnvironmentVariableOverrides) {
+    innerBuilder.applyEnvironmentVariableOverrides(applyEnvironmentVariableOverrides);
+    return this;
+  }
+
+  @Override
   public ZeebeClientCloudBuilderStep4 gatewayAddress(final String gatewayAddress) {
     innerBuilder.gatewayAddress(gatewayAddress);
     return this;
