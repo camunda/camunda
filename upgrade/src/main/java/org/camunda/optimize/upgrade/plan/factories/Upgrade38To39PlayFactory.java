@@ -39,8 +39,19 @@ public class Upgrade38To39PlayFactory implements UpgradePlanFactory {
       "if (ctx._source.data != null) {" +
         "def configuration = ctx._source.data.configuration;" +
         "if (configuration != null && configuration.targetValue != null) {" +
-        " configuration.targetValue.isKpi =  false;" +
-        "}" +
+        " def targetValue = configuration.targetValue;" +
+        " configuration.targetValue.isKpi = false;" +
+        " if(targetValue.durationProgress != null) {" +
+        "   def durationProgressTarget = targetValue.durationProgress.target;" +
+        "   if(durationProgressTarget != null) {" +
+        "     durationProgressTarget?.put(\"isBelow\", false);" +
+        "     }" +
+        "    }" +
+        " if(targetValue.countProgress != null) {" +
+        "   def countProgressTarget = targetValue.countProgress;" +
+        "   countProgressTarget?.put(\"isBelow\", false);" +
+        "  }" +
+        " }" +
         "}";
     // @formatter:on
   }

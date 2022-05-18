@@ -6,7 +6,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import lombok.Data;
-import lombok.Getter;
 import lombok.experimental.FieldNameConstants;
 
 @Data
