@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 public class CommitAwaiter implements RaftCommittedEntryListener {
 
+  // TODO: This is buggy if we want to allow multiple commitAwaiters to wait on the same
+  // commitPosition. This is ok for the prototype.
   final ConcurrentSkipListMap<Long, CompletableFuture<Void>> waiters =
       new ConcurrentSkipListMap<>();
   volatile long commitPosition;
@@ -21,6 +23,10 @@ public class CommitAwaiter implements RaftCommittedEntryListener {
   public CompletableFuture<Void> waitForCommitPosition(final long commitPosition) {
     final var f = new CompletableFuture<Void>();
     waiters.put(commitPosition, f);
+    if (this.commitPosition >= commitPosition) {
+      f.complete(null);
+      waiters.remove(commitPosition);
+    }
     return f;
   }
 

@@ -36,6 +36,10 @@ public class NonBlockingSnapshotDirector
   private final StreamProcessor streamProcessor;
 
   private final StreamProcessorMode processorMode;
+
+  // We currently use this executor only for scheduling snapshots at fixed rate. Since there are no
+  // shared mutable state, there is no need to use an executor to serialize the task. If we want to
+  // prevent concurrent snapshot, we can add a lock.
   private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
   private final ActorCompatability actorCompatability;
 
@@ -80,14 +84,18 @@ public class NonBlockingSnapshotDirector
 
     return actorCompatability
         .await(streamProcessor::getLastProcessedPositionAsync)
-        .thenCompose(
+        // Have to use Async because otherwise it might be executed on the caller thread (in the
+        // actor which completes this future). Optionally, we can also pass this.executor to force
+        // it to execute on this executor. However, since there are no shared mutable objects, there
+        // is no need to force it to execute on this.executor.
+        .thenComposeAsync(
             (lastProcessedPosition) -> {
               if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
                 LOG.info("Skipping snapshot, stream processor hasn't processed anything yet");
                 return CompletableFuture.completedFuture(null);
               } else {
                 return takeTransientSnapshot(lastProcessedPosition)
-                    .thenCompose(this::persistSnapshot);
+                    .thenComposeAsync(this::persistSnapshot);
               }
             });
   }
@@ -104,7 +112,7 @@ public class NonBlockingSnapshotDirector
     }
     return actorCompatability
         .await(streamProcessor::getLastWrittenPositionAsync)
-        .thenCompose(commitAwaiter::waitForCommitPosition);
+        .thenComposeAsync(commitAwaiter::waitForCommitPosition);
   }
 
   private CompletableFuture<PersistedSnapshot> persistSnapshot(
