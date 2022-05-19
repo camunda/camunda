@@ -24,7 +24,7 @@ const NewVariable: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   return (
-    <Container data-testid="add-key-row">
+    <Container data-testid="add-variable-row">
       <Field
         name="name"
         validate={mergeValidators(validateNameCharacters, validateNameComplete)}

@@ -92,41 +92,21 @@ test('Add variables', async (t) => {
     .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
     .notOk();
 
-  // open process instance page, click add new variable button and see that save variable button is disabled.
+  // add a new variable
   await t
     .click(ProcessInstancePage.addVariableButton)
+    .typeText(
+      within(ProcessInstancePage.newVariableNameField).queryByRole('textbox'),
+      'secondTestKey'
+    )
+    .typeText(
+      within(ProcessInstancePage.newVariableValueField).queryByRole('textbox'),
+      '"secondTestValue"'
+    )
     .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
-    .ok();
-
-  // add a key to the newly added variable and see that save variable button is disabled and no spinner is displayed.
-  const nameField = within(
-    ProcessInstancePage.newVariableNameField
-  ).queryByRole('textbox');
-
-  await t
-    .typeText(nameField, 'secondTestKey')
-    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
-    .ok()
-    .expect(ProcessInstancePage.variableSpinner.exists)
-    .notOk()
-    .expect(ProcessInstancePage.operationSpinner.exists)
     .notOk();
 
-  // add a value to the newly added variable and see that save variable button is enabled and no spinner is displayed.
-  const valueField = within(
-    ProcessInstancePage.newVariableValueField
-  ).queryByRole('textbox');
-
-  await t
-    .typeText(valueField, '"secondTestValue"')
-    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
-    .notOk()
-    .expect(ProcessInstancePage.variableSpinner.exists)
-    .notOk()
-    .expect(ProcessInstancePage.operationSpinner.exists)
-    .notOk();
-
-  // click save variable button and see that both edit variable spinner and operation spinner are displayed.
+  // click save variable button and see that both variable spinner and operation spinner are displayed.
   await t
     .click(ProcessInstancePage.saveVariableButton)
     .expect(ProcessInstancePage.variableSpinner.exists)
@@ -181,44 +161,6 @@ test('Add variables', async (t) => {
       }).exists
     )
     .ok();
-});
-
-test('Remove fields when instance is canceled', async (t) => {
-  const {
-    initialData: {instance},
-  } = t.fixtureCtx;
-  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
-
-  await t
-    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
-    .notOk();
-
-  await t
-    .click(ProcessInstancePage.addVariableButton)
-    .expect(
-      within(ProcessInstancePage.newVariableNameField).queryByRole('textbox')
-        .exists
-    )
-    .ok()
-    .expect(
-      within(ProcessInstancePage.newVariableValueField).queryByRole('textbox')
-        .exists
-    )
-    .ok();
-
-  await t
-    .click(screen.queryByRole('button', {name: /^Cancel Instance/}))
-    .click(screen.queryByRole('button', {name: 'Apply'}))
-    .expect(ProcessInstancePage.operationSpinner.exists)
-    .ok();
-
-  await t
-    .expect(screen.queryByTestId('add-variable-name').exists)
-    .notOk()
-    .expect(screen.queryByTestId('add-variable-value').exists)
-    .notOk()
-    .expect(ProcessInstancePage.operationSpinner.exists)
-    .notOk();
 });
 
 test('Infinite scrolling', async (t) => {

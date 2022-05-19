@@ -242,11 +242,11 @@ describe('Variables', () => {
       const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
       await user.click(screen.getByTitle(/add variable/i));
-      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
+      expect(screen.getByTestId('add-variable-row')).toBeInTheDocument();
       await user.click(screen.getByTitle(/exit edit mode/i));
-      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
     });
 
     it('should not allow empty value', async () => {
@@ -484,12 +484,38 @@ describe('Variables', () => {
       const {user} = render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
       await user.click(screen.getByTitle(/add variable/i));
-      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
+      expect(screen.getByTestId('add-variable-row')).toBeInTheDocument();
 
       await user.keyboard('{Enter}');
-      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
+      expect(screen.getByTestId('add-variable-row')).toBeInTheDocument();
+    });
+
+    it('should exit Add Variable mode when process is canceled', async () => {
+      processInstanceDetailsStore.setProcessInstance(instanceMock);
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      const {user} = render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      await user.click(screen.getByTitle(/add variable/i));
+      expect(screen.getByTestId('add-variable-row')).toBeInTheDocument();
+      processInstanceDetailsStore.setProcessInstance({
+        ...instanceMock,
+        state: 'CANCELED',
+      });
+      expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
     });
   });
 
