@@ -16,6 +16,7 @@ import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.camunda.zeebe.broker.system.partitions.SnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotInProgress.CommitPositionReached;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotInProgress.SnapshotInProgressCommands;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotInProgress.SnapshotResponse;
 import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotInProgress.SnapshotSkipped;
@@ -30,25 +31,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, SnapshotDirector {
-  private long commitPosition = -1;
+  private volatile long commitPosition = -1;
   private ActorContext<SnapshotDirectorCommands> ctx;
 
   private ActorRef<StreamProcessorCommands> streamProcessorActor;
   private ActorRef<StateControllerCommand> stateControllerActor;
-  private final AkkaCompatActor compat;
-  private final StreamProcessor streamProcessor;
-  private final StateController stateController;
   private final StreamProcessorMode streamProcessorMode;
 
   public AkkaSnapshotDirector(
-      final AkkaCompatActor compat,
-      final StreamProcessorMode mode,
-      final StreamProcessor streamProcessor,
-      final StateController stateController) {
+      final StreamProcessorMode mode) {
     streamProcessorMode = mode;
-    this.compat = compat;
-    this.streamProcessor = streamProcessor;
-    this.stateController = stateController;
   }
 
   public Behavior<SnapshotDirectorCommands> create(
@@ -84,6 +76,7 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
   }
 
   private Behavior<SnapshotDirectorCommands> updateCommitPosition(final OnCommit msg) {
+    ctx.getLog().info("Updating commit position: {}", msg);
     commitPosition = msg.commitPosition;
     return Behaviors.same();
   }
@@ -110,21 +103,36 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
                 stateControllerActor),
             "SnapshotInProgress");
     ctx.watch(inProgress);
-    return waitingForSnapshot(msg.future);
+    return waitingForSnapshot(inProgress, msg.future);
   }
 
   private Behavior<SnapshotDirectorCommands> waitingForSnapshot(
-      final CompletableFuture<PersistedSnapshot> future) {
+      final ActorRef<SnapshotInProgressCommands> inProgress, final CompletableFuture<PersistedSnapshot> future) {
     return Behaviors.receive(SnapshotDirectorCommands.class)
         .onMessage(
             CompleteSnapshot.class,
             (msg) -> {
+              ctx.getLog().info("Completed snapshot!");
+              ctx.unwatch(inProgress);
               future.complete(msg.persistedSnapshot);
               return idle();
             })
         .onMessage(
+            WaitForCommitPosition.class,
+            (msg) -> {
+              if (streamProcessorMode == StreamProcessorMode.REPLAY) {
+                msg.replyTo.tell(new CommitPositionReached(msg.commitPosition));
+                return Behaviors.same();
+              } else {
+                return waitingForCommit(inProgress, future, msg);
+              }
+            }
+        )
+        .onMessage(
             SkipSnapshot.class,
             (msg) -> {
+              ctx.getLog().info("Skipped snapshot");
+              ctx.unwatch(inProgress);
               future.complete(null);
               return idle();
             })
@@ -134,6 +142,23 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
               future.completeExceptionally(failed.cause());
               return idle();
             })
+
+        .build();
+  }
+
+  private Behavior<SnapshotDirectorCommands> waitingForCommit(
+      final ActorRef<SnapshotInProgressCommands> inProgress, final CompletableFuture<PersistedSnapshot> future, final WaitForCommitPosition wait) {
+    ctx.getLog().info("Waiting for commit {} >= {}", commitPosition, wait.commitPosition);
+    if (commitPosition >= wait.commitPosition) {
+      ctx.getLog().info("Reached commit position,  notifying in progress ");
+      wait.replyTo.tell(new CommitPositionReached(commitPosition));
+      return waitingForSnapshot(inProgress, future);
+    }
+    return Behaviors.receive(SnapshotDirectorCommands.class)
+        .onMessage(OnCommit.class, (commit) -> {
+          commitPosition = commit.commitPosition;
+          return waitingForCommit(inProgress, future, wait);
+        })
         .build();
   }
 

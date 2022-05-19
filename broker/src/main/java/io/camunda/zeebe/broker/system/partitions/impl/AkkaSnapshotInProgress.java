@@ -141,8 +141,7 @@ public class AkkaSnapshotInProgress {
     snapshotDirector.tell(new WaitForCommitPosition(ctx.getSelf(), lastWrittenPosition));
     ctx.getLog().info("Waiting for commit >= {}", lastWrittenPosition);
     return Behaviors.receive(SnapshotInProgressCommands.class)
-        .onMessageEquals(
-            new CommitPositionReached(lastWrittenPosition), () -> persist(transientSnapshot)).build();
+        .onMessage(CommitPositionReached.class, (reached) -> reached.position >= lastWrittenPosition,  (msg) -> persist(transientSnapshot)).build();
   }
 
   private Behavior<SnapshotInProgressCommands> persist(final TransientSnapshot transientSnapshot) {

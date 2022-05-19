@@ -49,9 +49,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
             case LEADER -> StreamProcessorMode.PROCESSING;
             default -> StreamProcessorMode.REPLAY;
           };
-      final var snapshotDirector =
-          new AkkaSnapshotDirector(
-              compat, mode, context.getStreamProcessor(), context.getStateController());
+      final var snapshotDirector = new AkkaSnapshotDirector(mode);
 
       final var actorSystem =
           ActorSystem.create(
