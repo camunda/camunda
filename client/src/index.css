@@ -1,35 +1,13 @@
 @font-face {
   font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-Bold'), url('./fonts/IBMPlexSans-Bold.woff2');
+  src: local('IBMPlexSans-Bold'), url('https://fonts.camunda.io/IBM-Plex-Sans/fonts/complete/woff/IBMPlexSans-Bold.woff');
   font-weight: bold;
 }
 
 @font-face {
   font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-Italic'), url('./fonts/IBMPlexSans-Italic.woff2');
-  font-style: italic;
-}
-
-@font-face {
-  font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-Medium'), url('./fonts/IBMPlexSans-Medium.woff2');
+  src: local('IBMPlexSans-Medium'), url('https://fonts.camunda.io/IBM-Plex-Sans/fonts/complete/woff/IBMPlexSans-Medium.woff');
   font-weight: 500;
-}
-
-@font-face {
-  font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-Regular'), url('./fonts/IBMPlexSans-Regular.woff2');
-}
-
-@font-face {
-  font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-SemiBold'), url('./fonts/IBMPlexSans-SemiBold.woff2');
-  font-weight: 600;
-}
-
-@font-face {
-  font-family: 'IBM Plex Mono';
-  src: local('IBMPlexMono-Regular'), url('./fonts/IBMPlexMono-Regular.woff2');
 }
 
 * {

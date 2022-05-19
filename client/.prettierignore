@@ -6,7 +6,6 @@ coverage/
 **/*.snap
 **/*.svg
 **/*.xml
-src/fonts/
 yarn.lock
 .eslintignore
 public/

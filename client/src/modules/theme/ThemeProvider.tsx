@@ -5,21 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import {ThemeProvider as DefaultProvider} from 'styled-components';
+import styled, {ThemeProvider as DefaultProvider} from 'styled-components';
 import {observer} from 'mobx-react';
 
 import {theme} from './theme';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {Theme as BaseCarbonTheme} from '@carbon/react';
 
 type Props = {
   children?: React.ReactNode;
 };
 
+const CarbonTheme = styled(BaseCarbonTheme)`
+  width: 100%;
+  height: 100%;
+` as typeof BaseCarbonTheme;
+
 const ThemeProvider = observer<React.FC<Props>>(({children}) => {
   return (
-    <DefaultProvider theme={theme[currentTheme.state.selectedTheme]}>
-      {children}
-    </DefaultProvider>
+    <CarbonTheme theme="g10">
+      <DefaultProvider theme={theme[currentTheme.state.selectedTheme]}>
+        {children}
+      </DefaultProvider>
+    </CarbonTheme>
   );
 });
 
