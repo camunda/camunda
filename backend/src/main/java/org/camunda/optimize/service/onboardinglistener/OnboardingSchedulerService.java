@@ -39,6 +39,8 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
   private final ConfigurationService configurationService;
+  private final OnboardingNotificationService onboardingNotificationService;
+
   private Set<String> onboardedProcessDefinitions = new HashSet<>();
   private int intervalToCheckForOnboardingDataInSeconds = 1800; // Check every 30min
   private Function<String, Object> notificationHandler;
@@ -56,6 +58,10 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
           onboardedProcessDefinitions.add(processToBeEvaluated);
         }
       }
+      this.setNotificationHandler(processKey -> {
+        onboardingNotificationService.notifyOnboarding(processKey);
+        return processKey;
+      });
       startOnboardingScheduling();
     }
     else {

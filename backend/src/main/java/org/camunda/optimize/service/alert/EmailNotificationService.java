@@ -39,7 +39,7 @@ public class EmailNotificationService implements NotificationService {
     recipients.forEach(recipient -> notifyRecipient(textWithTracking, recipient));
   }
 
-  private void notifyRecipient(final String text, final String recipient) {
+  public void notifyRecipient(final String text, final String recipient) {
     if (configurationService.getEmailEnabled()) {
       if (StringUtils.isNotEmpty(recipient)) {
         try {
@@ -70,7 +70,7 @@ public class EmailNotificationService implements NotificationService {
     email.setSmtpPort(configurationService.getAlertEmailPort());
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       configurationService.getEmailAuthenticationConfiguration();
-    if (emailAuthenticationConfiguration.getEnabled()) {
+    if (Boolean.TRUE.equals(emailAuthenticationConfiguration.getEnabled())) {
       email.setAuthentication(
         emailAuthenticationConfiguration.getUsername(),
         emailAuthenticationConfiguration.getPassword()

@@ -5,25 +5,48 @@
  */
 package org.camunda.optimize.service.onboardinglistener;
 
+import com.icegreen.greenmail.util.GreenMail;
+import com.icegreen.greenmail.util.GreenMailUtil;
+import com.icegreen.greenmail.util.ServerSetup;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
+import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.mail.internet.MimeMessage;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_PLACEHOLDER;
+import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
+import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.PROCESS_KEY_PLACEHOLDER;
+import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 
 public class OnboardingSchedulerServiceIT extends AbstractIT {
 
+  private ConfigurationService configurationService;
+  private GreenMail greenMail;
+
   @BeforeEach
-  public void setup () {
-    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnableOnboardingEmails(true);
+  public void init() {
+    configurationService = embeddedOptimizeExtension.getConfigurationService();
+    configurationService.getOnboarding().setEnableOnboardingEmails(true);
+  }
+
+  @AfterEach
+  public void cleanUp() {
+    if (greenMail != null) {
+      greenMail.stop();
+    }
   }
 
   @Test
@@ -51,12 +74,12 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     Set<String> processTriggeredOnboarding = new HashSet<>();
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     deployAndStartUserTaskProcess(processKey);
 
 
     // When
     restartOnboardingSchedulingService(onboardingSchedulerService);
+    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     importAllEngineEntitiesFromScratch();
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
@@ -115,13 +138,13 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     Set<String> processTriggeredOnboarding = new HashSet<>();
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     deployAndStartSimpleServiceTaskProcess(processKey1);
     deployAndStartSimpleServiceTaskProcess(processKey2);
 
 
     // When
     restartOnboardingSchedulingService(onboardingSchedulerService);
+    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     importAllEngineEntitiesFromScratch();
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
@@ -137,12 +160,12 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     Set<String> processTriggeredOnboarding = new HashSet<>();
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
 
 
     // When
     restartOnboardingSchedulingService(onboardingSchedulerService);
+    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     importAllEngineEntitiesFromScratch();
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
@@ -218,11 +241,11 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     Set<String> processTriggeredOnboarding = new HashSet<>();
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
     final ProcessDefinitionEngineDto processTwo = deployAndStartSimpleServiceTaskProcess(processKey2);
     importAllEngineEntitiesFromScratch();
     restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start when Optimize is booted
+    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // When
@@ -262,23 +285,56 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     assertThat(processTriggeredOnboarding).isEmpty();
   }
 
-  protected void importAllEngineEntitiesFromScratch() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  @Test
+  public void emailNotificationIsSentCorrectly() {
+    // given
+    setupEmailAlerting(false, null, null, NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
+    final String processKey = "lets_spam";
+    final OnboardingSchedulerService onboardingSchedulerService =
+      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+    restartOnboardingSchedulingService(onboardingSchedulerService);
+    deployAndStartSimpleServiceTaskProcess(processKey);
+
+    // When
+    importAllEngineEntitiesFromScratch();
+    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(1);
+    String expectedEmailBody = OnboardingNotificationService.EMAIL_BODY_TEMPLATE
+      .replaceAll(PROCESS_KEY_PLACEHOLDER, processKey)
+      .replaceAll(MAGIC_LINK_PLACEHOLDER, MAGIC_LINK_TEMPLATE.replaceAll(PROCESS_KEY_PLACEHOLDER, processKey));
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo(expectedEmailBody);
   }
 
-  protected ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess(final String definitionKey) {
+  private void setupEmailAlerting(boolean authenticationEnabled, String username, String password,
+                                  EmailSecurityProtocol securityProtocol) {
+    configurationService.setEmailEnabled(true);
+    configurationService.setAlertEmailAddress("from@localhost.com");
+    configurationService.setAlertEmailHostname("127.0.0.1");
+    configurationService.setAlertEmailPort(4444);
+    EmailAuthenticationConfiguration emailAuthenticationConfiguration =
+      configurationService.getEmailAuthenticationConfiguration();
+    emailAuthenticationConfiguration.setEnabled(authenticationEnabled);
+    emailAuthenticationConfiguration.setUsername(username);
+    emailAuthenticationConfiguration.setPassword(password);
+    emailAuthenticationConfiguration.setSecurityProtocol(securityProtocol);
+  }
+
+  private ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess(final String definitionKey) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     return processDefinition;
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
       definitionKey));
   }
 
-  protected ProcessDefinitionEngineDto deployAndStartUserTaskProcess(final String definitionKey) {
+  private ProcessDefinitionEngineDto deployAndStartUserTaskProcess(final String definitionKey) {
     ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess(definitionKey);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     return processDefinition;
@@ -292,5 +348,11 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     onboardingSchedulerService.stopOnboardingScheduling();
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnableOnboardingEmails(true);
     onboardingSchedulerService.init();
+  }
+
+  private void initGreenMail(String protocol) {
+    greenMail = new GreenMail(new ServerSetup(4444, null, protocol));
+    greenMail.start();
+    greenMail.setUser("from@localhost.com", "demo", "demo");
   }
 }
