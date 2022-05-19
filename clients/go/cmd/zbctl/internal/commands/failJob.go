@@ -20,6 +20,7 @@ import (
 	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/spf13/cobra"
+	"time"
 )
 
 type FailJobResponseWrapper struct {
@@ -27,7 +28,7 @@ type FailJobResponseWrapper struct {
 }
 
 func (f FailJobResponseWrapper) human() (string, error) {
-	return fmt.Sprint("Failed job with key '", failJobKey, "' and set remaining retries to '", failJobRetriesFlag, "'"), nil
+	return fmt.Sprint("Failed job with key '", failJobKey, "' and set remaining retries to '", failJobRetriesFlag, "' with retry backoff '", failJobRetryBackoffFlag, "'"), nil
 }
 
 func (f FailJobResponseWrapper) json() (string, error) {
@@ -35,9 +36,10 @@ func (f FailJobResponseWrapper) json() (string, error) {
 }
 
 var (
-	failJobKey          int64
-	failJobRetriesFlag  int32
-	failJobErrorMessage string
+	failJobKey              int64
+	failJobRetriesFlag      int32
+	failJobRetryBackoffFlag time.Duration
+	failJobErrorMessage     string
 )
 
 var failJobCmd = &cobra.Command{
@@ -52,6 +54,7 @@ var failJobCmd = &cobra.Command{
 		resp, err := client.NewFailJobCommand().
 			JobKey(failJobKey).
 			Retries(failJobRetriesFlag).
+			RetryBackoff(failJobRetryBackoffFlag).
 			ErrorMessage(failJobErrorMessage).
 			Send(ctx)
 		if err != nil {
@@ -69,6 +72,7 @@ func init() {
 	if err := failJobCmd.MarkFlagRequired("retries"); err != nil {
 		panic(err)
 	}
+	failJobCmd.Flags().DurationVar(&failJobRetryBackoffFlag, "retryBackoff", time.Second*0, "Specify retry backoff of job. Example values: 300ms, 50s or 1m")
 
 	failJobCmd.Flags().StringVar(&failJobErrorMessage, "errorMessage", "", "Specify failure error message")
 
