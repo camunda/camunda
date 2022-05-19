@@ -465,6 +465,32 @@ describe('Variables', () => {
         screen.queryByTitle('Name should be unique')
       ).not.toBeInTheDocument();
     });
+
+    it('should not exit add variable state when user presses Enter', async () => {
+      processInstanceDetailsStore.setProcessInstance(instanceMock);
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      const {user} = render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
+      await user.click(screen.getByTitle(/add variable/i));
+      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
+
+      await user.keyboard('{Enter}');
+      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
+    });
   });
 
   describe('Edit variable', () => {

@@ -183,32 +183,6 @@ test('Add variables', async (t) => {
     .ok();
 });
 
-test('Should not change add variable state when enter is pressed', async (t) => {
-  const {
-    initialData: {instance},
-  } = t.fixtureCtx;
-  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
-
-  await t
-    .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
-    .notOk();
-
-  await t.click(ProcessInstancePage.addVariableButton);
-
-  const nameField = within(
-    ProcessInstancePage.newVariableNameField
-  ).queryByRole('textbox');
-  const valueField = within(
-    ProcessInstancePage.newVariableValueField
-  ).queryByRole('textbox');
-
-  await t.expect(nameField.exists).ok().expect(valueField.exists).ok();
-
-  await t.pressKey('enter');
-
-  await t.expect(nameField.exists).ok().expect(valueField.exists).ok();
-});
-
 test('Remove fields when instance is canceled', async (t) => {
   const {
     initialData: {instance},
