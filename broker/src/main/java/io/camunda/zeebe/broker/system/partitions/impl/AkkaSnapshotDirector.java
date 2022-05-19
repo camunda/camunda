@@ -142,7 +142,6 @@ public final class AkkaSnapshotDirector implements RaftCommittedEntryListener, S
               future.completeExceptionally(failed.cause());
               return idle();
             })
-
         .build();
   }
 

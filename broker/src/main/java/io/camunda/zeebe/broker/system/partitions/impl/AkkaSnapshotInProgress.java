@@ -59,8 +59,7 @@ public class AkkaSnapshotInProgress {
       final ActorRef<StateControllerCommand> stateController) {
     return Behaviors.setup(
         (ctx) ->
-            new AkkaSnapshotInProgress(
-                    ctx, replyTo, streamProcessor, snapshotDirector, stateController)
+            new AkkaSnapshotInProgress(ctx, replyTo, streamProcessor, snapshotDirector, stateController)
                 .getLastProcessedPosition());
   }
 
@@ -86,6 +85,7 @@ public class AkkaSnapshotInProgress {
 
   private Behavior<SnapshotInProgressCommands> takeTransientSnapshot(
       final GotLastProcessedPosition lastProcessed) {
+    ctx.getLog().info("Taking transient snapshot for pos: {} ", lastProcessed);
     ctx.ask(
         StateControllerResponse.class,
         stateController,

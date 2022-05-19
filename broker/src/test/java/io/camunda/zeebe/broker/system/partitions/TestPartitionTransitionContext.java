@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import akka.actor.typed.ActorSystem;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.impl.AkkaSnapshotDirector.SnapshotDirectorCommands;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -157,6 +159,14 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setQueryService(final QueryService queryService) {
     this.queryService = queryService;
   }
+
+  @Override
+  public ActorSystem<SnapshotDirectorCommands> getSnapshotDirectorAkka() {
+    return null;
+  }
+
+  @Override
+  public void setSnapshotDirectorAkka(final ActorSystem<SnapshotDirectorCommands> actorSystem) {}
 
   public void setBrokerCfg(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;

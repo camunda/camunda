@@ -11,8 +11,7 @@
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
     <Logger name="io.atomix" level="warn"/>
-
-
+    <Logger name="akka.actor" level="trace"/>
     <Root level="info">
       <AppenderRef ref="Console"/>
     </Root>
