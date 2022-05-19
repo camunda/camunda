@@ -28,6 +28,7 @@ import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Combines {@link java.time.Period}, and {@link java.time.Duration} */
 public class Interval implements TemporalAmount {
@@ -36,10 +37,17 @@ public class Interval implements TemporalAmount {
   private final List<TemporalUnit> units;
   private final Period period;
   private final Duration duration;
+  private final Optional<ZonedDateTime> start;
 
   public Interval(final Period period, final Duration duration) {
+    this(Optional.empty(), period, duration);
+  }
+
+  public Interval(
+      final Optional<ZonedDateTime> start, final Period period, final Duration duration) {
     this.period = period;
     this.duration = duration;
+    this.start = start;
     units = new ArrayList<>();
 
     units.addAll(period.getUnits());
@@ -62,14 +70,35 @@ public class Interval implements TemporalAmount {
     return duration;
   }
 
+  public Optional<ZonedDateTime> getStart() {
+    return start;
+  }
+
   public long toEpochMilli(final long fromEpochMilli) {
-    if (!isCalendarBased()) {
-      return fromEpochMilli + getDuration().toMillis();
+    if (!start.isPresent()) {
+      if (!isCalendarBased()) {
+        return fromEpochMilli + getDuration().toMillis();
+      }
+
+      return ZonedDateTime.ofInstant(Instant.ofEpochMilli(fromEpochMilli), ZoneId.systemDefault())
+          .plus(this)
+          .toInstant()
+          .toEpochMilli();
     }
 
-    final Instant start = Instant.ofEpochMilli(fromEpochMilli);
-    final ZonedDateTime zoneAwareStart = ZonedDateTime.ofInstant(start, ZoneId.systemDefault());
-    return zoneAwareStart.plus(this).toInstant().toEpochMilli();
+    return start.get().plus(this).toInstant().toEpochMilli();
+  }
+
+  /**
+   * Creates a new interval with the specified start instant.
+   *
+   * @param start the start instant for the new interval
+   * @return a new interval from this interval and the specified start
+   */
+  public Interval withStart(final Instant start) {
+    final ZoneId zoneId = getStart().map(ZonedDateTime::getZone).orElse(ZoneId.systemDefault());
+    return new Interval(
+        Optional.of(ZonedDateTime.ofInstant(start, zoneId)), getPeriod(), getDuration());
   }
 
   /**
@@ -122,7 +151,8 @@ public class Interval implements TemporalAmount {
 
     final Interval interval = (Interval) o;
     return Objects.equals(getPeriod(), interval.getPeriod())
-        && Objects.equals(getDuration(), interval.getDuration());
+        && Objects.equals(getDuration(), interval.getDuration())
+        && Objects.equals(getStart(), interval.getStart());
   }
 
   @Override
@@ -143,7 +173,7 @@ public class Interval implements TemporalAmount {
   }
 
   /**
-   * Only supports a subset of ISO8601, combining both period and duration.
+   * Only supports a subset of ISO8601, combining start, period and duration.
    *
    * @param text ISO8601 conforming interval expression
    * @return parsed interval
@@ -151,23 +181,30 @@ public class Interval implements TemporalAmount {
   public static Interval parse(final String text) {
     String sign = "";
     int startOffset = 0;
+    final int index = text.lastIndexOf("/");
+    Optional<ZonedDateTime> start = Optional.empty();
+    if (index != -1) {
+      start = Optional.ofNullable(ZonedDateTime.parse(text.substring(0, index)));
+    }
 
-    if (text.startsWith("-")) {
+    final String intervalExp = text.substring(index + 1);
+    if (intervalExp.startsWith("-")) {
       startOffset = 1;
       sign = "-";
-    } else if (text.startsWith("+")) {
+    } else if (intervalExp.startsWith("+")) {
       startOffset = 1;
     }
 
-    final int durationOffset = text.indexOf('T');
+    final int durationOffset = intervalExp.indexOf('T');
     if (durationOffset == -1) {
-      return new Interval(Period.parse(text), Duration.ZERO);
+      return new Interval(start, Period.parse(intervalExp), Duration.ZERO);
     } else if (durationOffset == startOffset + 1) {
-      return new Interval(Period.ZERO, Duration.parse(text));
+      return new Interval(start, Period.ZERO, Duration.parse(intervalExp));
     }
 
     return new Interval(
-        Period.parse(text.substring(0, durationOffset)),
-        Duration.parse(sign + "P" + text.substring(durationOffset)));
+        start,
+        Period.parse(intervalExp.substring(0, durationOffset)),
+        Duration.parse(sign + "P" + intervalExp.substring(durationOffset)));
   }
 }

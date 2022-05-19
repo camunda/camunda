@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.Period;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import org.junit.Test;
 
 public class RepeatingIntervalTest {
@@ -126,5 +128,44 @@ public class RepeatingIntervalTest {
   @Test
   public void shouldFailToParseEmptyString() {
     assertThatThrownBy(() -> Interval.parse("")).isInstanceOf(DateTimeParseException.class);
+  }
+
+  @Test
+  public void shouldParseWithSpecifiedStartTime() {
+    // given
+    final String text = "R/2022-05-20T08:09:40+02:00[Europe/Berlin]/PT10S";
+    final RepeatingInterval expected =
+        new RepeatingInterval(
+            -1,
+            new Interval(
+                Optional.ofNullable(
+                    ZonedDateTime.parse("2022-05-20T08:09:40+02:00[Europe/Berlin]")),
+                Period.ZERO,
+                Duration.ofSeconds(10)));
+
+    // when
+    final RepeatingInterval parsed = RepeatingInterval.parse(text);
+
+    // then
+    assertThat(parsed).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldParseWithSpecialUTCStartTime() {
+    // given
+    final String text = "R/2022-05-20T08:09:40Z/PT10S";
+    final RepeatingInterval expected =
+        new RepeatingInterval(
+            -1,
+            new Interval(
+                Optional.ofNullable(ZonedDateTime.parse("2022-05-20T08:09:40Z")),
+                Period.ZERO,
+                Duration.ofSeconds(10)));
+
+    // when
+    final RepeatingInterval parsed = RepeatingInterval.parse(text);
+
+    // then
+    assertThat(parsed).isEqualTo(expected);
   }
 }

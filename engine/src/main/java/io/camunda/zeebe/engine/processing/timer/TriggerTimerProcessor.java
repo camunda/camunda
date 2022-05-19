@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -161,8 +162,13 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       repetitions--;
     }
 
-    final Interval interval = timer.map(Timer::getInterval).get();
-    final Timer repeatingInterval = new RepeatingInterval(repetitions, interval);
+    // Use the timer's last due date instead of the current time to avoid a time shift.
+    final Interval refreshedInterval =
+        timer
+            .map(Timer::getInterval)
+            .map(interval -> interval.withStart(Instant.ofEpochMilli(record.getDueDate())))
+            .get();
+    final Timer repeatingInterval = new RepeatingInterval(repetitions, refreshedInterval);
     catchEventBehavior.subscribeToTimerEvent(
         record.getElementInstanceKey(),
         record.getProcessInstanceKey(),
