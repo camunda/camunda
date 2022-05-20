@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -71,6 +72,26 @@ public final class FailJobTest {
     final Record<JobRecordValue> record =
         jobRecords(JobIntent.FAILED).withRecordKey(jobKey).getFirst();
     Assertions.assertThat(record.getValue()).hasRetries(0).hasErrorMessage("test");
+  }
+
+  @Test
+  public void shouldFailJobWithRetryBackOff() {
+    // when
+    final Duration backoffTimeout = Duration.ofSeconds(30);
+    CLIENT_RULE
+        .getClient()
+        .newFailCommand(jobKey)
+        .retries(1)
+        .retryBackoff(backoffTimeout)
+        .send()
+        .join();
+
+    // then
+    final Record<JobRecordValue> beforeRecurRecord =
+        jobRecords(JobIntent.FAILED).withRecordKey(jobKey).getFirst();
+    Assertions.assertThat(beforeRecurRecord.getValue())
+        .hasRetries(1)
+        .hasRetryBackoff(backoffTimeout.toMillis());
   }
 
   @Test
