@@ -178,43 +178,25 @@ public class DefinitionService implements ConfigurationReloadable {
                                               final String userId,
                                               final List<String> versions,
                                               final Supplier<String> latestVersionSupplier) {
-    final List<String> tenantIdsFromDefinition = definitionReader.getDefinitionTenantIds(
-      type, key, versions, latestVersionSupplier
-    );
-    final Map<String, TenantDto> tenantAvailableToUser = tenantService.getTenantsForUser(userId).stream()
-      .collect(toMap(TenantDto::getId, Function.identity()));
-    final List<TenantDto> result = new ArrayList<>();
-    if (tenantIdsFromDefinition.contains(TENANT_NOT_DEFINED.getId())) {
-      // enrich all available tenants if the not defined tenants is among the results
-      result.addAll(tenantAvailableToUser.values());
-    } else {
-      tenantIdsFromDefinition.forEach(tenantId -> {
-        final TenantDto authorizedTenant = tenantAvailableToUser.get(tenantId);
-        if (authorizedTenant != null) {
-          result.add(authorizedTenant);
-        } else {
-          log.debug(
-            "Current user is not authorized to access tenant with id [{}], will not include it in the result.", tenantId
-          );
+    return definitionReader
+      .getDefinitionWithAvailableTenants(type, key, versions, latestVersionSupplier)
+      .map(definitionWithTenantIdsDto -> {
+        final List<TenantDto> authorizedTenants = definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
+          userId,
+          definitionWithTenantIdsDto,
+          definitionWithTenantIdsDto.getTenantIds(),
+          definitionWithTenantIdsDto.getEngines()
+        );
+        if (authorizedTenants.isEmpty()) {
+          throw new ForbiddenException(String.format(
+            "User [%s] is either not authorized to the definition with type [%s] and key [%s]" +
+              " or is not authorized to access any of the tenants this definition  belongs to",
+            userId, type, key
+          ));
         }
-      });
-    }
-
-    if (result.isEmpty() ||
-      !definitionAuthorizationService.isAuthorizedToAccessDefinition(
-        userId, type, key, result.stream().map(TenantDto::getId).collect(Collectors.toList())
-      )
-    ) {
-      throw new ForbiddenException(String.format(
-        "User [%s] is either not authorized to the definition with type [%s] and key [%s] or lacks authorization to " +
-          "every tenant this definition belongs to.",
-        userId, type, key
-      ));
-    }
-
-    return result.stream()
-      .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
-      .collect(Collectors.toList());
+        return authorizedTenants;
+      })
+      .orElse(List.of());
   }
 
   public List<DefinitionResponseDto> getFullyImportedCamundaEventImportedDefinitions(final String userId) {

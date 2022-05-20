@@ -128,12 +128,21 @@ public class DefinitionReader {
 
   public Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
                                                                                 final String key) {
+    return getDefinitionWithAvailableTenants(type, key, null, null);
+
+  }
+  public Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
+                                                                                final String key,
+                                                                                final List<String> versions,
+                                                                                final Supplier<String> latestVersionSupplier) {
     if (type == null || key == null) {
       return Optional.empty();
     }
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(DEFINITION_KEY, key))
       .must(termQuery(DEFINITION_DELETED, false));
+
+    addVersionFilterToQuery(versions, latestVersionSupplier, query);
 
     return getDefinitionWithTenantIdsDtos(query, resolveIndexNameForType(type)).stream().findFirst();
   }
@@ -404,56 +413,6 @@ public class DefinitionReader {
       .collect(Collectors.toList());
   }
 
-  public List<String> getDefinitionTenantIds(final DefinitionType type,
-                                             final String key,
-                                             final List<String> versions,
-                                             final Supplier<String> latestVersionSupplier) {
-    final BoolQueryBuilder filterQuery = boolQuery()
-      .filter(termQuery(DEFINITION_KEY, key))
-      .filter(termQuery(DEFINITION_DELETED, false));
-
-    if (!CollectionUtils.isEmpty(versions) &&
-      // if all is among the versions, no filtering needed
-      !DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versions)) {
-      filterQuery.filter(termsQuery(
-        DEFINITION_VERSION,
-        versions.stream()
-          .filter(version -> !ALL_VERSIONS.equalsIgnoreCase(version))
-          .map(version -> convertToLatestParticularVersion(version, latestVersionSupplier))
-          .collect(Collectors.toSet())
-      ));
-    }
-
-    final TermsAggregationBuilder versionAggregation = terms(TENANT_AGGREGATION)
-      .field(DEFINITION_TENANT_ID)
-      // put `null` values (default tenant) into a dedicated bucket
-      .missing(TENANT_NOT_DEFINED_VALUE)
-      .size(configurationService.getEsAggregationBucketLimit());
-
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(filterQuery)
-      .aggregation(versionAggregation)
-      .size(0);
-    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
-      .source(searchSourceBuilder);
-    final SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      final String reason = String.format(
-        "Was not able to fetch [%s] definition tenants with key [%s] and versions [%s].", type, key, versions
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    return searchResponse.getAggregations().<Terms>get(TENANT_AGGREGATION).getBuckets().stream()
-      .map(Terms.Bucket::getKeyAsString)
-      // convert null bucket back to a `null` id
-      .map(tenantId -> TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
-      .collect(Collectors.toList());
-  }
-
   protected <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
                                                                              final boolean fullyImported,
                                                                              final boolean withXml,
@@ -498,6 +457,22 @@ public class DefinitionReader {
       filteredQuery.must(termsQuery(resolveDefinitionIdFieldFromType(type), definitionIds.toArray()));
     }
     return getDefinitions(type, filteredQuery, withXml);
+  }
+
+  private void addVersionFilterToQuery(final List<String> versions,
+                                       final Supplier<String> latestVersionSupplier,
+                                       final BoolQueryBuilder filterQuery) {
+    if (!CollectionUtils.isEmpty(versions) &&
+      // if all is among the versions, no filtering needed
+      !DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versions)) {
+      filterQuery.filter(termsQuery(
+        DEFINITION_VERSION,
+        versions.stream()
+          .filter(version -> !ALL_VERSIONS.equalsIgnoreCase(version))
+          .map(version -> convertToLatestParticularVersion(version, latestVersionSupplier))
+          .collect(Collectors.toSet())
+      ));
+    }
   }
 
   private <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,

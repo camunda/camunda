@@ -243,6 +243,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
       .getConfiguredEngines()
       .get(DEFAULT_ENGINE_ALIAS)
       .setDefaultTenant(defaultTenant);
+    embeddedOptimizeExtension.reloadConfiguration();
   }
 
   protected void setSecondEngineDefaultTenant(final DefaultTenant defaultTenant) {
@@ -250,5 +251,6 @@ public class AbstractMultiEngineIT extends AbstractIT {
       .getConfiguredEngines()
       .get(SECOND_ENGINE_ALIAS)
       .setDefaultTenant(defaultTenant);
+    embeddedOptimizeExtension.reloadConfiguration();
   }
 }
