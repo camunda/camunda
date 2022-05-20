@@ -17,5 +17,5 @@ public class SingleReportTargetValueDto {
   private Boolean active = false;
   private CountProgressDto countProgress = new CountProgressDto();
   private SingleReportDurationChartDto durationChart = new SingleReportDurationChartDto();
-  private boolean isKpi;
+  private Boolean isKpi;
 }

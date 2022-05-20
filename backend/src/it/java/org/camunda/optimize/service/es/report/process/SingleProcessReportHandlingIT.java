@@ -162,7 +162,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     reportData.setFilter(Collections.emptyList());
     SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
     SingleReportTargetValueDto singleReportTargetValueDto = new SingleReportTargetValueDto();
-    singleReportTargetValueDto.setKpi(true);
+    singleReportTargetValueDto.setIsKpi(true);
     configuration.setTargetValue(singleReportTargetValueDto);
     configuration.setLogScale(true);
     configuration.setYLabel("fooYLabel");
@@ -195,7 +195,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(newReport.getData().getConfiguration().getProcessPart()).isNotEmpty();
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart()).isEqualTo("start123");
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd()).isEqualTo("end123");
-    assertThat(newReport.getData().getConfiguration().getTargetValue().isKpi()).isEqualTo(true);
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getIsKpi()).isEqualTo(true);
     assertThat(newReport.getId()).isEqualTo(id);
     assertThat(newReport.getCreated()).isNotEqualTo(shouldBeIgnoredDate);
     assertThat(newReport.getLastModified()).isNotEqualTo(shouldBeIgnoredDate);
@@ -214,7 +214,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     reportData.setFilter(Collections.emptyList());
     SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
     SingleReportTargetValueDto singleReportTargetValueDto = new SingleReportTargetValueDto();
-    singleReportTargetValueDto.setKpi(true);
+    singleReportTargetValueDto.setIsKpi(true);
     CountProgressDto countProgressDto = new CountProgressDto();
     countProgressDto.setTarget("10");
     countProgressDto.setIsBelow(true);
@@ -251,7 +251,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(newReport.getData().getConfiguration().getProcessPart()).isNotEmpty();
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart()).isEqualTo("start123");
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd()).isEqualTo("end123");
-    assertThat(newReport.getData().getConfiguration().getTargetValue().isKpi()).isTrue();
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getIsKpi()).isTrue();
     assertThat(newReport.getData().getConfiguration().getTargetValue().getCountProgress().getIsBelow()).isTrue();
     assertThat(newReport.getData().getConfiguration().getTargetValue().getCountProgress().getTarget()).isEqualTo("10");
     assertThat(newReport.getData().getConfiguration().getTargetValue().getDurationProgress().getTarget().getValue()).isEqualTo("20");
