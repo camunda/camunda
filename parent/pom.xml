@@ -116,15 +116,9 @@
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-<<<<<<< HEAD
     <version.spotbugs>4.5.3</version.spotbugs>
     <version.archunit>0.23.0</version.archunit>
-=======
-    <version.spotbugs>4.7.0</version.spotbugs>
-    <version.archunit>0.23.1</version.archunit>
-    <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
->>>>>>> 041c5226f3 (feat(exporter-test): add exporter API test implementations)
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
