@@ -26,7 +26,7 @@ jobs:
         with:
           # Required
           # Token to authenticate requests to GitHub
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
 
           # Required
           # Working directory for the backport action
