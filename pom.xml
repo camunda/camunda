@@ -41,7 +41,7 @@
     <version.micrometer>1.8.5</version.micrometer>
     <version.mockito>4.4.0</version.mockito>
     <version.assertj-core>3.22.0</version.assertj-core>
-    <version.jackson>2.13.2</version.jackson>
+    <version.jackson>2.13.3</version.jackson>
     <version.auth0>1.9.2</version.auth0>
     <version.auth0.jwt>3.19.2</version.auth0.jwt>
     <version.gson>2.9.0</version.gson>
