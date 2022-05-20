@@ -30,6 +30,10 @@ import org.agrona.collections.Long2LongHashMap;
 public class MetricsExporter implements Exporter {
 
   public static final Duration TIME_TO_LIVE = Duration.ofSeconds(10);
+
+  private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
+      Set.of(ValueType.JOB, ValueType.JOB_BATCH, ValueType.PROCESS_INSTANCE);
+
   private final ExecutionLatencyMetrics executionLatencyMetrics;
   private final Long2LongHashMap jobKeyToCreationTimeMap;
   private final Long2LongHashMap processInstanceKeyToCreationTimeMap;
@@ -57,9 +61,6 @@ public class MetricsExporter implements Exporter {
   public void configure(final Context context) throws Exception {
     context.setFilter(
         new RecordFilter() {
-          private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
-              Set.of(ValueType.JOB, ValueType.JOB_BATCH, ValueType.PROCESS_INSTANCE);
-
           @Override
           public boolean acceptType(final RecordType recordType) {
             return recordType == RecordType.EVENT;

@@ -10,65 +10,67 @@ package io.camunda.zeebe.broker.exporter.metrics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
-import io.camunda.zeebe.exporter.test.ExporterTestController;
-import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class MetricsExporterTest {
 
-  @Test
-  void shouldObserveJobLifetime() {
-    // given
-    final var metrics = new ExecutionLatencyMetrics();
-    final var exporter = new MetricsExporter(metrics);
-    exporter.open(new ExporterTestController());
-    assertThat(metrics.getJobLifeTime().collect())
-        .flatMap(x -> x.samples)
-        .describedAs("Expected no metrics to be recorded at start of test")
-        .isEmpty();
+  /** Defines a combination of a RecordType and a ValueType. */
+  static class TypeCombination {
+    RecordType recordType;
+    ValueType valueType;
 
-    // when
-    exporter.export(
-        ImmutableRecord.builder()
-            .withRecordType(RecordType.EVENT)
-            .withValueType(ValueType.JOB)
-            .withIntent(JobIntent.CREATED)
-            .withTimestamp(1651505728460L)
-            .withKey(Protocol.encodePartitionId(1, 1))
-            .build());
-    exporter.export(
-        ImmutableRecord.builder()
-            .withRecordType(RecordType.EVENT)
-            .withValueType(ValueType.JOB)
-            .withIntent(JobIntent.COMPLETED)
-            .withTimestamp(1651505729571L)
-            .withKey(Protocol.encodePartitionId(1, 1))
-            .build());
+    public TypeCombination(final RecordType recordType, final ValueType valueType) {
+      this.recordType = recordType;
+      this.valueType = valueType;
+    }
 
-    // then
-    assertThat(metrics.getJobLifeTime().collect())
-        .flatMap(x -> x.samples)
-        .filteredOn(s -> s.name.equals("zeebe_job_life_time_count"))
-        .map(s -> s.value)
-        .describedAs("Expected exactly 1 observed job_life_time sample counted")
-        .containsExactly(1d);
+    public RecordType recordType() {
+      return recordType;
+    }
+
+    public ValueType valueType() {
+      return valueType;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(recordType, valueType);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final TypeCombination that = (TypeCombination) o;
+      return recordType == that.recordType && valueType == that.valueType;
+    }
+
+    @Override
+    public String toString() {
+      return "TypeCombination{" + "recordType=" + recordType + ", valueType=" + valueType + '}';
+    }
   }
 
+  @TestInstance(Lifecycle.PER_CLASS)
   @Nested
   @DisplayName("MetricsExporter should configure a Filter")
   class FilterTest {
 
-    static Stream<TypeCombination> acceptedCombinations() {
+    Stream<TypeCombination> acceptedCombinations() {
       return Stream.of(
           new TypeCombination(RecordType.EVENT, ValueType.JOB),
           new TypeCombination(RecordType.EVENT, ValueType.JOB_BATCH),
@@ -76,11 +78,11 @@ class MetricsExporterTest {
     }
 
     /** Returns the inverse of {@link #acceptedCombinations()}. */
-    static Stream<TypeCombination> rejectedCombinations() {
+    Stream<TypeCombination> rejectedCombinations() {
       return allCombinations().filter(any -> acceptedCombinations().noneMatch(any::equals));
     }
 
-    static Stream<TypeCombination> allCombinations() {
+    Stream<TypeCombination> allCombinations() {
       return Arrays.stream(RecordType.values())
           .flatMap(
               recordType ->
@@ -129,8 +131,5 @@ class MetricsExporterTest {
               recordType, valueType)
           .isFalse();
     }
-
-    /** Defines a combination of a RecordType and a ValueType. */
-    record TypeCombination(RecordType recordType, ValueType valueType) {}
   }
 }
