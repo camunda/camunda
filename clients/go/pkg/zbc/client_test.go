@@ -145,7 +145,7 @@ func (s *clientTestSuite) TestDefaultUserAgent() {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	_, err = client.NewTopologyCommand().Send(ctx)
+	_, _ = client.NewTopologyCommand().Send(ctx)
 	userAgent := incomingContext["user-agent"]
 
 	// then
@@ -173,7 +173,7 @@ func (s *clientTestSuite) TestSpecificUserAgent() {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	_, err = client.NewTopologyCommand().Send(ctx)
+	_, _ = client.NewTopologyCommand().Send(ctx)
 	userAgent := incomingContext["user-agent"]
 
 	// then
