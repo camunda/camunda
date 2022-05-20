@@ -38,8 +38,8 @@ public interface FailJobCommandStep1 {
     /**
      * Set the backoff timeout for failing this job.
      *
-     * <p>If the backoff timeout is greater than zero and retries are greater than zero then after
-     * the job this job will be picked up again after this backoff timeout will pass.
+     * <p>If the backoff timeout is greater than zero and retries are greater than zero then this
+     * job will be picked up again after the given backoff timeout is expired.
      *
      * @param backoffTimeout the backoff timeout of this job
      * @return the builder for this command. Call {@link #send()} to complete the command and send *
