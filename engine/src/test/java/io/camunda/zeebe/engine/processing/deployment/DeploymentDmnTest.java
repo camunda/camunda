@@ -36,6 +36,8 @@ public final class DeploymentDmnTest {
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DMN_DECISION_TABLE_RENAMED_DRG =
       "/dmn/decision-table-with-renamed-drg.dmn";
+  private static final String DMN_DECISION_TABLE_RENAMED_DRG_AND_DECISION =
+      "/dmn/decision-table-with-renamed-drg-and-decision.dmn";
 
   private static final String DMN_INVALID_EXPRESSION =
       "/dmn/decision-table-with-invalid-expression.dmn";
@@ -371,6 +373,55 @@ public final class DeploymentDmnTest {
             tuple("jedi_or_sith", 1, "force_users"),
             tuple("jedi_or_sith", 2, "star-wars"),
             tuple("jedi_or_sith", 3, "force_users"));
+  }
+
+  @Test
+  public void shouldDeployIfMultipleDrgHaveDifferentId() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG_AND_DECISION)
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+
+    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata()).hasSize(2);
+
+    final var drgMetadata = deploymentEvent.getValue().getDecisionRequirementsMetadata().get(0);
+    Assertions.assertThat(drgMetadata).hasDecisionRequirementsId("force_users");
+    assertThat(drgMetadata.getDecisionRequirementsKey()).isPositive();
+    assertThat(drgMetadata.getChecksum())
+        .describedAs("Expect the MD5 checksum of the DMN resource")
+        .isEqualTo(getChecksum(DMN_DECISION_TABLE));
+
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata()).hasSize(2);
+
+    final var decisionMetadata = deploymentEvent.getValue().getDecisionsMetadata().get(0);
+    Assertions.assertThat(decisionMetadata)
+        .hasDecisionId("jedi_or_sith")
+        .hasDecisionRequirementsKey(drgMetadata.getDecisionRequirementsKey());
+    assertThat(decisionMetadata.getDecisionKey()).isPositive();
+
+    final var drgMetadata2 = deploymentEvent.getValue().getDecisionRequirementsMetadata().get(1);
+    Assertions.assertThat(drgMetadata2).hasDecisionRequirementsId("star-wars");
+    assertThat(drgMetadata2.getDecisionRequirementsKey()).isPositive();
+    assertThat(drgMetadata2.getChecksum())
+        .describedAs("Expect the MD5 checksum of the DMN resource")
+        .isEqualTo(getChecksum(DMN_DECISION_TABLE_RENAMED_DRG_AND_DECISION));
+
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata()).hasSize(2);
+
+    final var decisionMetadata2 = deploymentEvent.getValue().getDecisionsMetadata().get(1);
+    Assertions.assertThat(decisionMetadata2)
+        .hasDecisionId("sith_or_jedi")
+        .hasDecisionRequirementsKey(drgMetadata2.getDecisionRequirementsKey());
+    assertThat(decisionMetadata2.getDecisionKey()).isPositive();
   }
 
   @Test
