@@ -235,8 +235,12 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   private void writeRecords(final DeploymentRecord deployment, final DeploymentResource resource) {
+    final var metadataRecords =
+        deployment.decisionRequirementsMetadata().stream()
+            .filter(metadata -> metadata.getResourceName().equals(resource.getResourceName()))
+            .collect(Collectors.toList());
 
-    for (final DecisionRequirementsMetadataRecord drg : deployment.decisionRequirementsMetadata()) {
+    for (final DecisionRequirementsMetadataRecord drg : metadataRecords) {
       if (!drg.isDuplicate()) {
         stateWriter.appendFollowUpEvent(
             drg.getDecisionRequirementsKey(),
@@ -253,8 +257,14 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       }
     }
 
+    final var decisionRequirementKeys =
+        metadataRecords.stream()
+            .map(DecisionRequirementsMetadataRecord::getDecisionRequirementsKey)
+            .collect(Collectors.toList());
+
     for (final DecisionRecord decision : deployment.decisionsMetadata()) {
-      if (!decision.isDuplicate()) {
+      if (!decision.isDuplicate()
+          && decisionRequirementKeys.contains(decision.getDecisionRequirementsKey())) {
         stateWriter.appendFollowUpEvent(
             decision.getDecisionKey(),
             DecisionIntent.CREATED,
