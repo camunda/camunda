@@ -69,8 +69,9 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     // given
     importEngineData();
     elasticSearchIntegrationTestExtension.disableCleanup();
-    // We set a higher token limit to avoid a time out because the extension is initialized in beforeAll mode
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setTokenLifeTime(120);
+    // We set a higher token limit to avoid a time out because the extension is initialized in beforeAll mode and the
+    // engine import takes a long time
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setTokenLifeTime(1440);
   }
 
   @ParameterizedTest
@@ -90,17 +91,12 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public void testQueryPerformance_savedReportEvaluation(SingleReportDataDto report) {
     // given a saved report
     try (final Response saveReportResponse = saveReportToOptimize(report)) {
-
-      // we only evaluate reports that are valid and can be saved
-      if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
-        // when
-        final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
-
-        log.info("Evaluating report {}", getPrintableReportDetails(report));
-        executeRequestAndAssertBelowMaxQueryTime(
-          embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSavedReportRequest(reportId)
-        );
-      }
+      // when
+      final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
+      log.info("Evaluating report {}", getPrintableReportDetails(report));
+      executeRequestAndAssertBelowMaxQueryTime(
+        embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSavedReportRequest(reportId)
+      );
     }
   }
 
@@ -109,17 +105,13 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public void testQueryPerformance_savedReportCsvExport(SingleReportDataDto report) {
     // given a saved report
     try (final Response saveReportResponse = saveReportToOptimize(report)) {
-
-      // we only export reports that are valid and can be saved
-      if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
-        // when
-        final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
-        log.info("CSV export request for report {}", getPrintableReportDetails(report));
-        executeRequestAndAssertBelowMaxQueryTime(
-          embeddedOptimizeExtension.getRequestExecutor()
-            .buildCsvExportRequest(reportId, IdGenerator.getNextId() + ".csv")
-        );
-      }
+      // when
+      final String reportId = saveReportResponse.readEntity(IdResponseDto.class).getId();
+      log.info("CSV export request for report {}", getPrintableReportDetails(report));
+      executeRequestAndAssertBelowMaxQueryTime(
+        embeddedOptimizeExtension.getRequestExecutor()
+          .buildCsvExportRequest(reportId, IdGenerator.getNextId() + ".csv")
+      );
     }
   }
 
@@ -310,11 +302,11 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     if (report instanceof ProcessReportDataDto) {
       return embeddedOptimizeExtension.getRequestExecutor()
         .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto((ProcessReportDataDto) report))
-        .execute();
+        .execute(Response.Status.OK.getStatusCode());
     } else {
       return embeddedOptimizeExtension.getRequestExecutor()
         .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionRequestDto((DecisionReportDataDto) report))
-        .execute();
+        .execute(Response.Status.OK.getStatusCode());
     }
   }
 
