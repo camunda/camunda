@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.15.1</version.agrona>
+    <version.agrona>1.15.2</version.agrona>
     <version.assertj>3.22.0</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
@@ -56,7 +56,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
     <version.httpcomponents>4.4.15</version.httpcomponents>
-    <version.jackson>2.13.2.20220328</version.jackson>
+    <version.jackson>2.13.3</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
     <version.jna>5.11.0</version.jna>
     <version.junit>5.8.2</version.junit>
@@ -88,7 +88,7 @@
     <version.dmn-scala>1.7.2</version.dmn-scala>
     <version.rest-assured>5.0.1</version.rest-assured>
     <version.spring>5.3.20</version.spring>
-    <version.spring-boot>2.6.7</version.spring-boot>
+    <version.spring-boot>2.7.0</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
@@ -132,7 +132,7 @@
     <plugin.version.scala>4.6.1</plugin.version.scala>
     <plugin.version.shade>3.3.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.6.0.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.7.0.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M6</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
