@@ -17,5 +17,6 @@ package io.camunda.zeebe.client.api.response;
 
 public enum PartitionBrokerHealth {
   HEALTHY,
-  UNHEALTHY
+  UNHEALTHY,
+  DEAD,
 }
