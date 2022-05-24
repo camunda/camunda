@@ -8,12 +8,16 @@ package io.camunda.tasklist.webapp.security.oauth;
 
 import static io.camunda.tasklist.util.CollectionUtil.firstOrDefault;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.tasklist.webapp.security.WebSecurityConfig.sendJSONErrorMessage;
 
 import io.camunda.tasklist.property.ClientProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +25,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -47,10 +52,20 @@ public class OAuth2WebConfigurer {
     if (isJWTEnabled()) {
       http.oauth2ResourceServer(
           serverCustomizer ->
-              serverCustomizer.jwt(
-                  jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
+              serverCustomizer
+                  .authenticationEntryPoint(this::authenticationFailure)
+                  .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
       LOGGER.info("Enabled OAuth2 JWT access to GraphQL API");
     }
+  }
+
+  private void authenticationFailure(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException e)
+      throws IOException {
+    request.getSession().invalidate();
+    sendJSONErrorMessage(response, e.getMessage());
   }
 
   protected boolean isJWTEnabled() {

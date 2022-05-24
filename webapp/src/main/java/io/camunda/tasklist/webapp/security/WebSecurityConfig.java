@@ -90,15 +90,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
       throws IOException {
     request.getSession().invalidate();
+    sendJSONErrorMessage(response, profileService.getMessageByProfileFor(ex));
+  }
+
+  public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
+      throws IOException {
     response.reset();
     response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
 
     final PrintWriter writer = response.getWriter();
     final String jsonResponse =
-        Json.createObjectBuilder()
-            .add("message", profileService.getMessageByProfileFor(ex))
-            .build()
-            .toString();
+        Json.createObjectBuilder().add("message", message).build().toString();
 
     writer.append(jsonResponse);
 
