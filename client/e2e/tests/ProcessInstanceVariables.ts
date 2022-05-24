@@ -38,10 +38,7 @@ test('Edit variables', async (t) => {
     .notOk();
 
   // open process instance page, after clicking the edit variable button see that save variable button is disabled.
-  await t
-    .click(screen.queryByTestId('edit-variable-button'))
-    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
-    .ok();
+  await t.click(screen.queryByTestId('edit-variable-button'));
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
   const valueField = within(
@@ -51,16 +48,12 @@ test('Edit variables', async (t) => {
   await t
     .selectText(valueField)
     .pressKey('delete')
-    .typeText(valueField, '"editedTestValue"')
-    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
-    .notOk()
-    .expect(ProcessInstancePage.variableSpinner.exists)
-    .notOk()
-    .expect(ProcessInstancePage.operationSpinner.exists)
-    .notOk();
+    .typeText(valueField, '"editedTestValue"');
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
+    .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
+    .notOk()
     .click(ProcessInstancePage.saveVariableButton)
     .expect(ProcessInstancePage.variableSpinner.exists)
     .ok()
