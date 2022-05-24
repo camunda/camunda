@@ -4,13 +4,6 @@ name: Deploy
 description: Deploys a Optimize stage and persistent environments.
 
 inputs:
-  step:
-    description: >-
-      Indicates which step of the Environment lifecycle should be executed.
-      Values: start (default), stop
-    required: false
-    default: start
-
   deployment_id:
     description: >-
       Identifier for this deployment. Could look like "coffee-and-cigarettes" or "pr-1337".
@@ -91,11 +84,7 @@ runs:
     - name: Determine APP_NAME
       shell: bash
       run: |-
-        if [[ "${{ inputs.step}}" = "stop" ]]; then
-          APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
-        else
-          APP_NAME="optimize-${{ inputs.deployment_id }}"
-        fi
+        APP_NAME="optimize-${{ inputs.deployment_id }}"
         echo "APP_NAME=${APP_NAME}" >> ${GITHUB_ENV}
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
@@ -105,7 +94,6 @@ runs:
       # Create a GitHub deployment that points to the URL we're going to deploy to.
       # If a Pull Request exists, it will show the status of this deployment.
     - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
-      if: ${{ inputs.step == 'start'}}
       name: Create GitHub deployment
       id: deployment
       with:
@@ -114,7 +102,6 @@ runs:
         env: ${{ env.APP_NAME }}
     - name: Deploy
       shell: bash
-      if: ${{ inputs.step == 'start'}}
       run: >-
         .github/actions/deploy-env/deploy_script.sh
         
@@ -133,7 +120,7 @@ runs:
       shell: bash
       run: |-
         echo "::group::wait for sync"
-        argocd app wait ${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
+        argocd app wait ${{ env.APP_NAME }} --timeout 900 --health --sync
         echo "::endgroup::"
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
@@ -145,7 +132,7 @@ runs:
     - name: Update branch deployment status
       # When running the "start" step, `always()` ensures that the deployment status
       # is updated regardless of previous steps failing.
-      if: ${{ inputs.step == 'start' && always() }}
+      if: always()
       uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
       with:
         step: finish
