@@ -31,6 +31,8 @@ type HeaderColumn = {
   sortKey?: string;
   isDisabled?: boolean;
   isDefault?: boolean;
+  showExtraPadding?: boolean;
+  paddingWidth?: number;
 };
 
 type RowProps = Omit<React.ComponentProps<typeof Row>, 'isSelected'> & {
@@ -83,7 +85,14 @@ const SortableTable: React.FC<Props> = observer(
             <THead>
               <TRHeader>
                 {headerColumns.map((header, index) => {
-                  const {content, sortKey, isDisabled, isDefault} = header;
+                  const {
+                    content,
+                    sortKey,
+                    isDisabled,
+                    isDefault,
+                    showExtraPadding,
+                    paddingWidth,
+                  } = header;
 
                   return (
                     <TH key={index}>
@@ -106,6 +115,8 @@ const SortableTable: React.FC<Props> = observer(
                           sortKey={sortKey}
                           isDefault={isDefault}
                           disabled={state !== 'content' || isDisabled}
+                          showExtraPadding={showExtraPadding}
+                          paddingWidth={paddingWidth}
                         />
                       </>
                     </TH>

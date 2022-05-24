@@ -36,6 +36,8 @@ type Props = {
   label: string | React.ReactNode;
   sortKey?: string;
   isDefault?: boolean;
+  showExtraPadding?: boolean;
+  paddingWidth?: number;
 };
 
 const ColumnHeader: React.FC<Props> = ({
@@ -43,6 +45,8 @@ const ColumnHeader: React.FC<Props> = ({
   disabled,
   label,
   isDefault = false,
+  showExtraPadding = false,
+  paddingWidth = 0,
 }) => {
   const isSortable = sortKey !== undefined;
   const navigate = useNavigate();
@@ -74,6 +78,7 @@ const ColumnHeader: React.FC<Props> = ({
         title={`Sort by ${label}`}
         data-testid={`sort-by-${sortKey}`}
         $showExtraPadding={!displaySortIcon}
+        $paddingWidth={22}
       >
         <Label active={isActive} disabled={disabled}>
           {label}
@@ -84,7 +89,7 @@ const ColumnHeader: React.FC<Props> = ({
   }
 
   return (
-    <Header>
+    <Header $showExtraPadding={showExtraPadding} $paddingWidth={paddingWidth}>
       <Label disabled={disabled}>{label}</Label>
     </Header>
   );

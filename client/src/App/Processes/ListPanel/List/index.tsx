@@ -139,6 +139,8 @@ const List: React.FC = observer(() => {
           ? [
               {
                 content: 'Operations',
+                showExtraPadding: true,
+                paddingWidth: 41,
               },
             ]
           : []),

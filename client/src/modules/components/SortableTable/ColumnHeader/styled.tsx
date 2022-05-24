@@ -13,21 +13,28 @@ type Props = {
   disabled?: boolean;
 };
 
-const Header = styled.span`
-  ${({theme}) => {
+type HeaderProps = {
+  $showExtraPadding: boolean;
+  $paddingWidth: number;
+};
+
+const Header = styled.span<HeaderProps>`
+  ${({theme, $showExtraPadding, $paddingWidth}) => {
     return css`
       color: ${theme.colors.text01};
       cursor: default;
+
+      ${$showExtraPadding
+        ? css`
+            padding-right: ${$paddingWidth}px;
+          `
+        : ''}
     `;
   }}
 `;
 
-type SortableHeaderProps = {
-  $showExtraPadding?: boolean;
-};
-
-const SortableHeader = styled.button<Props & SortableHeaderProps>`
-  ${({theme, disabled, $showExtraPadding = false}) => {
+const SortableHeader = styled.button<Props & HeaderProps>`
+  ${({theme, disabled, $showExtraPadding, $paddingWidth}) => {
     return css`
       color: ${theme.colors.text01};
       cursor: ${disabled ? 'default' : 'pointer'};
@@ -35,7 +42,7 @@ const SortableHeader = styled.button<Props & SortableHeaderProps>`
       padding: 0;
       ${$showExtraPadding
         ? css`
-            padding-right: 22px;
+            padding-right: ${$paddingWidth}px;
           `
         : ''}
       background: transparent;
