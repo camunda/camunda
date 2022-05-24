@@ -72,7 +72,7 @@
     <version.mockito-jupiter>4.2.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.0</version.msgpack>
-    <version.netty>4.1.72.Final</version.netty>
+    <version.netty>4.1.77.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.13.0</version.prometheus>
     <version.protobuf>3.19.3</version.protobuf>
@@ -94,7 +94,7 @@
     <version.feel-scala>1.14.1</version.feel-scala>
     <version.dmn-scala>1.7.1</version.dmn-scala>
     <version.rest-assured>4.4.0</version.rest-assured>
-    <version.spring>5.3.18</version.spring>
+    <version.spring>5.3.20</version.spring>
     <version.spring-boot>2.6.7</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
