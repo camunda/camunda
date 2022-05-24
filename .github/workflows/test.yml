@@ -215,3 +215,18 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
+
+
+  # We need to upload the event file as an artifact in order to support
+  # publishing the results of forked repositories 
+  # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
+          retention-days: 1
