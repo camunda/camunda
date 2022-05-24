@@ -1,14 +1,14 @@
 # Publishing of unit test results has to be a separate workflow in order to support forked PRs
 # See https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
-name: Publish Unit Test Results
+name: Publish Test Results
 on:
   workflow_run:
     workflows: [Tests]
     types:
       - completed
 jobs:
-  unit-test-results:
-    name: Unit Test Results
+  test-results:
+    name: Test Results
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion != 'skipped'
 
@@ -28,7 +28,7 @@ jobs:
             unzip -d "$name" "$name.zip"
           done
 
-      - name: Publish Unit Test Results
+      - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1.34
         with:
           commit: ${{ github.event.workflow_run.head_sha }}
