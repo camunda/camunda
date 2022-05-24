@@ -6,11 +6,17 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
+import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
+
+import java.io.IOException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,10 +41,16 @@ public class OAuth2WebConfigurer {
     if (isJWTEnabled()) {
       http.oauth2ResourceServer(
           serverCustomizer ->
-              serverCustomizer.jwt(
+              serverCustomizer.authenticationEntryPoint(this::authenticationFailure)
+                  .jwt(
                   jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
+  }
+
+  private void authenticationFailure(final HttpServletRequest request,
+      final HttpServletResponse response, final AuthenticationException e) throws IOException {
+    sendJSONErrorMessage(response, e.getMessage());
   }
 
   protected boolean isJWTEnabled() {

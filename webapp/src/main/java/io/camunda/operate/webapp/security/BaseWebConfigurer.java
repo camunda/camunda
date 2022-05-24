@@ -103,6 +103,11 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   protected void sendError(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
       throws IOException{
     request.getSession().invalidate();
+    sendJSONErrorMessage(response, errorMessageService.getMessageByProfileFor(ex));
+  }
+
+  public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
+      throws IOException {
     response.reset();
     response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
 
@@ -110,13 +115,12 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
     response.setContentType(APPLICATION_JSON.getMimeType());
 
     String jsonResponse = Json.createObjectBuilder()
-        .add("message", errorMessageService.getMessageByProfileFor(ex))
+        .add("message", message)
         .build()
         .toString();
 
     writer.append(jsonResponse);
     response.setStatus(UNAUTHORIZED.value());
   }
-
 
 }
