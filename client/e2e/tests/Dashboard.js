@@ -69,7 +69,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await u.save(t);
 
   await t.expect(e.dashboardName.textContent).eql('Process performance overview');
-  await t.expect(e.reportTile.nth(0).textContent).contains('Total Completed Process Instances');
+  await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
   await t.expect(e.reportTile.nth(2).textContent).contains('Aggregated Process Duration');
 
   await t.click(e.autoRefreshButton);
@@ -157,7 +157,7 @@ test('sharing', async (t) => {
   await t.navigateTo(shareUrl);
 
   await t.expect(e.reportTile.nth(0).visible).ok();
-  await t.expect(e.reportTile.nth(0).textContent).contains('Total Completed Process Instances');
+  await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
 });
 
 test('sharing header parameters', async (t) => {
