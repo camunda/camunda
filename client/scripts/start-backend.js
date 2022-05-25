@@ -296,7 +296,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           addLog('--------- DATA GENERATION INITIATED ---------', 'dataGenerator');
           generateDemoData();
           response.statusCode = 200;
-          response.end('Data generation initiated', 'utd-8');
+          response.end('Data generation initiated', 'utf-8');
           return;
         }
 
