@@ -217,10 +217,44 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
-
+  java-client:
+    name: Java client tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # First, install dependencies with JDK 17
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - run: mvn -B -D skipChecks -D skipTests -am -pl clients/java install
+      # Then run client tests with JDK 8
+      - run: rm .mvn/jvm.config # This is a workaround for java 8, which does not support the --add-exports options
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: maven
+      - run: >
+          mvn -B
+          -P disableCheckstyle,extract-flaky-tests
+          -D skipChecks -D skipITs
+          -D surefire.rerunFailingTestsCount=3
+          -pl clients/java
+          verify
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: Java 8 client test results
+          path: |
+            **/target/surefire-reports/
+            **/hs_err_*.log
+          retention-days: 7
 
   # We need to upload the event file as an artifact in order to support
-  # publishing the results of forked repositories 
+  # publishing the results of forked repositories
   # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
   event_file:
     name: "Event File"
