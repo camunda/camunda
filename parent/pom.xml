@@ -118,6 +118,7 @@
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.5.3</version.spotbugs>
     <version.archunit>0.23.0</version.archunit>
+    <version.jcip>1.0</version.jcip>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -293,6 +294,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-exporter-test</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -735,6 +742,13 @@
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${version.commons-codec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.jcip</groupId>
+        <artifactId>jcip-annotations</artifactId>
+        <version>${version.jcip}</version>
+        <scope>provided</scope>
       </dependency>
 
       <dependency>
