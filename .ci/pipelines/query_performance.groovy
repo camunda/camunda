@@ -280,7 +280,8 @@ pipeline {
                   cp -R --parents /ssd-storage/es-logs .
                   chown -R 10000:1000 ./ssd-storage
                 ''')
-                archiveArtifacts artifacts: 'ssd-storage/es-logs/*,target/surefire-reports/*', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'ssd-storage/es-logs/*', onlyIfSuccessful: false
+                junit testResults: 'qa/query-performance-tests/target/surefire-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
               }
             }
           }
