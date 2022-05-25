@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.exporter.metrics;
 
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -21,12 +23,17 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Duration;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import org.agrona.collections.Long2LongHashMap;
 
 public class MetricsExporter implements Exporter {
 
   public static final Duration TIME_TO_LIVE = Duration.ofSeconds(10);
+
+  private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
+      Set.of(ValueType.JOB, ValueType.JOB_BATCH, ValueType.PROCESS_INSTANCE);
+
   private final ExecutionLatencyMetrics executionLatencyMetrics;
   private final Long2LongHashMap jobKeyToCreationTimeMap;
   private final Long2LongHashMap processInstanceKeyToCreationTimeMap;
@@ -39,11 +46,31 @@ public class MetricsExporter implements Exporter {
   private Controller controller;
 
   public MetricsExporter() {
-    executionLatencyMetrics = new ExecutionLatencyMetrics();
+    this(new ExecutionLatencyMetrics());
+  }
+
+  public MetricsExporter(final ExecutionLatencyMetrics executionLatencyMetrics) {
+    this.executionLatencyMetrics = executionLatencyMetrics;
     jobKeyToCreationTimeMap = new Long2LongHashMap(-1);
     processInstanceKeyToCreationTimeMap = new Long2LongHashMap(-1);
     creationTimeToJobKeyNavigableMap = new TreeMap<>();
     creationTimeToProcessInstanceKeyNavigableMap = new TreeMap<>();
+  }
+
+  @Override
+  public void configure(final Context context) throws Exception {
+    context.setFilter(
+        new RecordFilter() {
+          @Override
+          public boolean acceptType(final RecordType recordType) {
+            return recordType == RecordType.EVENT;
+          }
+
+          @Override
+          public boolean acceptValue(final ValueType valueType) {
+            return ACCEPTED_VALUE_TYPES.contains(valueType);
+          }
+        });
   }
 
   @Override
