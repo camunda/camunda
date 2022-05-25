@@ -38,7 +38,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Integration test results
           path: |
@@ -68,7 +68,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Exporter test results
           path: |
@@ -118,7 +118,7 @@ jobs:
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Unit test results for ${{ env.ARTIFACT_NAME }}
           path: |
@@ -151,7 +151,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Slow unit test results
           path: |
@@ -193,7 +193,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Smoke test results for ${{ matrix.os }}
           path: |
@@ -217,3 +217,18 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
+
+
+  # We need to upload the event file as an artifact in order to support
+  # publishing the results of forked repositories 
+  # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
+          retention-days: 1
