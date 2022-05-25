@@ -38,7 +38,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Integration test results
           path: |
@@ -68,7 +68,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Exporter test results
           path: |
@@ -116,7 +116,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Unit test results for ${{ matrix.project }}
           path: |
@@ -149,7 +149,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Slow unit test results
           path: |
@@ -191,7 +191,7 @@ jobs:
           verify
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: Smoke test results for ${{ matrix.os }}
           path: |
