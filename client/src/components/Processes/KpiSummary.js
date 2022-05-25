@@ -11,43 +11,52 @@ import classNames from 'classnames';
 import {Icon} from 'components';
 import {t} from 'translation';
 
-import './GoalSummary.scss';
+import './KpiSummary.scss';
 
-export default function GoalSummary({goals}) {
-  if (goals.length === 0) {
+export default function KpiSummary({kpis}) {
+  if (!kpis || kpis.length === 0) {
     return null;
   }
 
-  if (goals.every((goal) => !goal.value)) {
+  const kpisWithData = kpis.filter((report) => report.value);
+
+  if (kpisWithData.length === 0) {
     return (
-      <div className="GoalSummary">
+      <div className="KpiSummary">
         <Icon type="info" />
         <span className="height-center">{t('processes.noData')}</span>
       </div>
     );
   }
 
-  const allSucceeded = goals.every((goal) => goal.successful);
-  const allFailed = goals.every((goal) => !goal.successful);
+  const succeededKpis = kpisWithData.filter(({value, target, isBelow}) =>
+    isBelow ? target > value : target < value
+  );
+  const failedKpis = kpisWithData.filter(({value, target, isBelow}) =>
+    isBelow ? target < value : target > value
+  );
+
+  const allSucceeded = succeededKpis.length === kpisWithData.length;
+  const allFailed = failedKpis.length === kpisWithData.length;
 
   if (allSucceeded || allFailed) {
     return (
-      <div className="GoalSummary">
+      <div className="KpiSummary">
         <Icon
           className={classNames({success: allSucceeded, error: allFailed})}
           type={allSucceeded ? 'check-circle' : 'clear'}
         />
-        <span className="center">{goals.length}</span>
+        <span className="center">{kpisWithData.length}</span>
       </div>
     );
   }
 
   return (
-    <div className="GoalSummary">
+    <div className="KpiSummary">
       <Icon className="success" type="check-circle" />
-      <span className="height-center">1</span>
+      <span className="height-center">{succeededKpis.length}</span>
       <Icon type="clear" className="error" />
-      <span className="height-center">1</span>
+      <span className="height-center">{failedKpis.length}</span>
     </div>
   );
 }

@@ -12,20 +12,18 @@ import {EntityList} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import {Processes} from './Processes';
-import {loadProcesses, updateGoals, updateOwner, loadManagementDashboard} from './service';
-import TimeGoalsModal from './TimeGoalsModal';
+import {loadProcesses, updateOwner, loadManagementDashboard} from './service';
 import EditOwnerModal from './EditOwnerModal';
 
 jest.mock('./service', () => ({
   loadProcesses: jest.fn().mockReturnValue([
     {
       processDefinitionKey: 'defKey',
-      processName: 'defName',
-      durationGoals: {},
+      processDefinitionName: 'defName',
+      kpis: [],
       owner: {id: null},
     },
   ]),
-  updateGoals: jest.fn(),
   updateOwner: jest.fn(),
   loadManagementDashboard: jest.fn(),
 }));
@@ -54,7 +52,7 @@ it('should load processes', async () => {
     {
       icon: 'data-source',
       id: 'defKey',
-      meta: [expect.any(Object), expect.any(Object)],
+      meta: [expect.any(Object), expect.any(Object), expect.any(Object)],
       name: 'defName',
       type: 'Process',
     },
@@ -70,45 +68,6 @@ it('should load processes with sort parameters', () => {
   expect(node.find('EntityList').prop('sorting')).toEqual({key: 'lastModifier', order: 'desc'});
 });
 
-it('should invoke updateGoals when confirming the TimeGoalsModal', async () => {
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-  loadProcesses.mockClear();
-
-  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
-  addGoalBtn.props.onClick();
-  node.find(TimeGoalsModal).simulate('confirm', [{type: 'targetDuration'}]);
-
-  expect(updateGoals).toHaveBeenCalledWith('defKey', [{type: 'targetDuration'}]);
-  expect(loadProcesses).toHaveBeenCalled();
-  expect(node.find(TimeGoalsModal)).not.toExist();
-});
-
-it('should close the TimeGoalsModal when onClose prop is called', async () => {
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-
-  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
-  addGoalBtn.props.onClick();
-  node.find(TimeGoalsModal).simulate('close');
-
-  expect(node.find(TimeGoalsModal)).not.toExist();
-});
-
-it('should reload processes when onRemove is called on the timeGoalsModal', async () => {
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-
-  const addGoalBtn = node.find(EntityList).prop('data')[0].meta[1].props.children[1];
-  addGoalBtn.props.onClick();
-  node.find(TimeGoalsModal).simulate('remove');
-
-  expect(loadProcesses).toHaveBeenCalled();
-});
-
 it('should hide owner column in ccsm mode', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = shallow(<Processes {...props} />);
@@ -116,7 +75,7 @@ it('should hide owner column in ccsm mode', async () => {
   await runAllEffects();
 
   expect(node.find(EntityList).prop('columns')[1].key).not.toBe('owner');
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(1);
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(2);
 });
 
 it('should edit a process owner', async () => {
