@@ -309,7 +309,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public ZeebeClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
-      applyDefaults();
     }
 
     return new ZeebeClientImpl(this);
@@ -335,6 +334,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (Environment.system().isDefined(OVERRIDE_AUTHORITY_VAR)) {
       overrideAuthority(Environment.system().get(OVERRIDE_AUTHORITY_VAR));
     }
+
+    if (shouldUseDefaultCredentialsProvider()) {
+      credentialsProvider = createDefaultCredentialsProvider();
+    }
   }
 
   @Override
@@ -352,12 +355,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "overrideAuthority", overrideAuthority);
 
     return sb.toString();
-  }
-
-  private void applyDefaults() {
-    if (shouldUseDefaultCredentialsProvider()) {
-      credentialsProvider = createDefaultCredentialsProvider();
-    }
   }
 
   private boolean shouldUseDefaultCredentialsProvider() {
