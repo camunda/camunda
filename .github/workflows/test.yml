@@ -86,7 +86,7 @@ jobs:
         id: list-projects
         # Build a json array of module names that can be used for the matrix in `unit-tests`
         run: >
-          echo "::set-output name=projects::$(find -not -path "./engine/pom.xml" -wholename "./*/pom.xml" -exec dirname {} \; | jq -cnR [inputs])"
+          echo "::set-output name=projects::$(find -not -path "./engine/pom.xml" -wholename "./*/pom.xml" -exec dirname {} \; | cut -c 3- | jq -cnR [inputs])"
     outputs:
       projects: ${{ steps.list-projects.outputs.projects }}
   unit-tests:
@@ -114,11 +114,13 @@ jobs:
           -D skipITs -D skipChecks
           -pl ${{ matrix.project }}
           verify
+      - name: Normalize artifact name
+        run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: Unit test results for ${{ matrix.project }}
+          name: Unit test results for ${{ env.ARTIFACT_NAME }}
           path: |
             **/target/surefire-reports/
             **/hs_err_*.log
