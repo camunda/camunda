@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

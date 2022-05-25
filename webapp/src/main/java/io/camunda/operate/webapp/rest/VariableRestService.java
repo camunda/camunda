@@ -8,20 +8,15 @@ package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = {"Variables"})
-@SwaggerDefinition(tags = {
-  @Tag(name = "Variables", description = "Variables")
-})
+@Tag(name = "Variables")
 @RestController
 @RequestMapping(value = VariableRestService.VARIABLE_URL)
 public class VariableRestService {
@@ -31,7 +26,7 @@ public class VariableRestService {
   @Autowired
   private VariableReader variableReader;
 
-  @ApiOperation("Get full variable by id")
+  @Operation(summary = "Get full variable by id")
   @GetMapping("/{id}")
   public VariableDto getVariable(@PathVariable String id) {
     return variableReader.getVariable(id);

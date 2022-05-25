@@ -7,7 +7,7 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -53,7 +53,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return new HashSet<>();
   }
 
-  @ApiModelProperty(value= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
+  @Schema(description= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
       example = "[1605160098477, 4629710542312628000]")
   public Object[] getSearchAfter() {
     return searchAfter;
@@ -73,7 +73,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return (T) this;
   }
 
-  @ApiModelProperty(value= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
+  @Schema(description= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
       example = "[1605160098477, 4629710542312628000]")
   public Object[] getSearchBefore() {
     return searchBefore;

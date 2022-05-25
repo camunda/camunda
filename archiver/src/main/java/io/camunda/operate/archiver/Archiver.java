@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
@@ -51,7 +50,6 @@ public class Archiver {
 
   private static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger logger = LoggerFactory.getLogger(Archiver.class);
-
 
   private boolean shutdown = false;
 
@@ -103,15 +101,6 @@ public class Archiver {
         }
       }
     }
-  }
-
-  @Bean("archiverThreadPoolExecutor")
-  public ThreadPoolTaskScheduler getTaskScheduler() {
-    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-    scheduler.setPoolSize(operateProperties.getArchiver().getThreadsCount());
-    scheduler.setThreadNamePrefix("archiver_");
-    scheduler.initialize();
-    return scheduler;
   }
 
   public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Object> ids) throws ArchiverException {

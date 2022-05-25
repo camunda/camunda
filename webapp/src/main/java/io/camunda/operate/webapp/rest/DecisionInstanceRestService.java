@@ -15,10 +15,8 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDt
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = {"Decision instances"})
-@SwaggerDefinition(tags = {
-    @Tag(name = "Decision instances", description = "Decision instances")
-})
+@Tag(name = "Decision instances")
 @RestController
 @RequestMapping(value = DECISION_INSTANCE_URL)
 @Validated
@@ -44,7 +39,7 @@ public class DecisionInstanceRestService {
   @Autowired
   private DecisionInstanceReader decisionInstanceReader;
 
-  @ApiOperation("Query decision instances by different parameters")
+  @Operation(summary = "Query decision instances by different parameters")
   @PostMapping
   public DecisionInstanceListResponseDto queryDecisionInstances(
       @RequestBody DecisionInstanceListRequestDto decisionInstanceRequest) {
@@ -54,13 +49,13 @@ public class DecisionInstanceRestService {
     return decisionInstanceReader.queryDecisionInstances(decisionInstanceRequest);
   }
 
-  @ApiOperation("Get decision instance by id")
+  @Operation(summary = "Get decision instance by id")
   @GetMapping("/{decisionInstanceId}")
   public DecisionInstanceDto queryProcessInstanceById(@PathVariable String decisionInstanceId) {
     return decisionInstanceReader.getDecisionInstance(decisionInstanceId);
   }
 
-  @ApiOperation("Get DRD data for decision instance")
+  @Operation(summary = "Get DRD data for decision instance")
   @GetMapping("/{decisionInstanceId}/drd-data")
   public Map<String, List<DRDDataEntryDto>> queryProcessInstanceDRDData(@PathVariable String decisionInstanceId) {
     final Map<String, List<DRDDataEntryDto>> result = decisionInstanceReader

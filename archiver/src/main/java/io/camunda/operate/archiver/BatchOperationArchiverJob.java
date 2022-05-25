@@ -26,6 +26,7 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -53,10 +54,11 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
   private RestHighLevelClient esClient;
 
   @Autowired
-  private Archiver archiver;
+  private BeanFactory beanFactory;
 
   @Override
   public int archiveBatch(ArchiveBatch archiveBatch) throws ArchiverException {
+    final Archiver archiver = beanFactory.getBean(Archiver.class);
     if (archiveBatch != null) {
       logger.debug("Following batch operations are found for archiving: {}", archiveBatch);
       try {

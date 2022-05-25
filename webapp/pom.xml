@@ -84,7 +84,7 @@
 
     <dependency>
       <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session</artifactId>
+      <artifactId>spring-session-data-redis</artifactId>
     </dependency>
 
     <dependency>
@@ -116,40 +116,12 @@
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
-
     <dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>javax.json</artifactId>
     </dependency>
 
-    <!-- SWAGGER -->
-    <dependency>
-      <groupId>io.springfox</groupId>
-      <artifactId>springfox-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <artifactId>logback-classic</artifactId>
-          <groupId>ch.qos.logback</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>log4j-over-slf4j</artifactId>
-          <groupId>org.slf4j</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>io.springfox</groupId>
-      <artifactId>springfox-swagger2</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.springfox</groupId>
-      <artifactId>springfox-swagger-ui</artifactId>
-    </dependency>
-
     <!-- WEBJAR -->
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webjar</artifactId>

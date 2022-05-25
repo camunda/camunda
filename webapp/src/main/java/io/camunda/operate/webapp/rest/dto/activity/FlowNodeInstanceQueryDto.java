@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.activity;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -67,7 +67,7 @@ public class FlowNodeInstanceQueryDto {
     return this;
   }
 
-  @ApiModelProperty(value= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+  @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"9223372036854775807\", \"1583836503404\"]")
   public Object[] getSearchBefore() {
     return searchBefore;
@@ -87,7 +87,7 @@ public class FlowNodeInstanceQueryDto {
     return this;
   }
 
-  @ApiModelProperty(value= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+  @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"1583836151645\", \"1583836128180\"]")
   public Object[] getSearchAfter() {
     return searchAfter;

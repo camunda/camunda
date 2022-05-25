@@ -9,10 +9,8 @@ package io.camunda.operate.webapp.rest.dto;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +25,7 @@ public class VariableDto {
   private boolean isPreview;
   private boolean hasActiveOperation = false;
 
-  @ApiModelProperty(value = "True when variable is the first in current list")
+  @Schema(description = "True when variable is the first in current list")
   private boolean isFirst = false;
 
   /**

@@ -6,14 +6,14 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import io.camunda.operate.webapp.rest.dto.PaginatedQuery;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
-@ApiModel("Process instances request")
+@Schema(description = "Process instances request")
 public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
 
   public static final String SORT_BY_ID = "id";

@@ -12,8 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
@@ -116,18 +114,6 @@ public class OperationExecutor extends Thread {
     return handlerMap;
   }
 
-  @Bean("operationsThreadPoolExecutor")
-  public ThreadPoolTaskExecutor getOperationsTaskExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(operateProperties.getOperationExecutor().getThreadsCount());
-    executor.setMaxPoolSize(operateProperties.getOperationExecutor().getThreadsCount());
-    executor.setQueueCapacity(operateProperties.getOperationExecutor().getQueueSize());
-    executor.setRejectedExecutionHandler(new BlockCallerUntilExecutorHasCapacity());
-    executor.setThreadNamePrefix("operation_executor_");
-    executor.initialize();
-    return executor;
-  }
-
   public void registerListener(ExecutionFinishedListener listener) {
     this.listeners.add(listener);
   }
@@ -138,16 +124,4 @@ public class OperationExecutor extends Thread {
     }
   }
 
-  private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
-    public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
-      // this will block if the queue is full
-      if (!executor.isShutdown()) {
-        try {
-          executor.getQueue().put(runnable);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
-  }
 }

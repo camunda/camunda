@@ -31,6 +31,7 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -52,7 +53,7 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   private List<Integer> partitionIds;
 
   @Autowired
-  private Archiver archiver;
+  private BeanFactory beanFactory;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -142,6 +143,7 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
 
   @Override
   public int archiveBatch(ProcessInstancesArchiverJob.ArchiveBatch archiveBatch) throws ArchiverException {
+    final Archiver archiver = beanFactory.getBean(Archiver.class);
     if (archiveBatch != null) {
       logger.debug("Following process instances are found for archiving: {}", archiveBatch);
       try {

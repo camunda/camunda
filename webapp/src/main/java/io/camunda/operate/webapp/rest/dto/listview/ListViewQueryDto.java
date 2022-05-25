@@ -6,13 +6,12 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
-@ApiModel("Process instance query")
+@Schema(description = "Process instance query")
 public class ListViewQueryDto {
 
   private boolean running;
@@ -23,30 +22,30 @@ public class ListViewQueryDto {
   private boolean completed;
   private boolean canceled;
 
-  @ApiModelProperty(value = "Array of process instance ids", allowEmptyValue = true)
+  @Schema(description = "Array of process instance ids", nullable = true)
   private List<String> ids;
 
   private String errorMessage;
 
   private String activityId;
 
-  @ApiModelProperty(value = "Start date after (inclusive)", allowEmptyValue = true)
+  @Schema(description = "Start date after (inclusive)", nullable = true)
   private OffsetDateTime startDateAfter;
 
-  @ApiModelProperty(value = "Start date before (exclusive)", allowEmptyValue = true)
+  @Schema(description = "Start date before (exclusive)", nullable = true)
   private OffsetDateTime startDateBefore;
 
-  @ApiModelProperty(value = "End date after (inclusive)", allowEmptyValue = true)
+  @Schema(description = "End date after (inclusive)", nullable = true)
   private OffsetDateTime endDateAfter;
 
-  @ApiModelProperty(value = "End date before (exclusive)", allowEmptyValue = true)
+  @Schema(description = "End date before (exclusive)", nullable = true)
   private OffsetDateTime endDateBefore;
 
   private List<String> processIds;
 
   private String bpmnProcessId;
 
-  @ApiModelProperty(value = "Process version, goes together with bpmnProcessId. Can be null, then all version of the process are selected.", allowEmptyValue = true)
+  @Schema(description = "Process version, goes together with bpmnProcessId. Can be null, then all version of the process are selected.")
   private Integer processVersion;
 
   private List<String> excludeIds;

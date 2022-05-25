@@ -7,17 +7,14 @@
 package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.property.OperateProperties;
-import java.io.IOException;
 import java.util.Collection;
 import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +34,10 @@ public class ZeebeImporter {
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
 
+  @Autowired
+  @Qualifier("recordsReaderThreadPoolExecutor")
+  private ThreadPoolTaskScheduler recordsReaderThreadPoolExecutor;
+
   @PostConstruct
   public void startImportingData() {
     if (operateProperties.getImporter().isStartLoadingDataOnStartup()) {
@@ -48,41 +49,22 @@ public class ZeebeImporter {
   public void scheduleReaders() {
     logger.info("INIT: Start importing data...");
     recordsReaderHolder.getAllRecordsReaders().stream().forEach(
-        recordsReader -> getRecordsReaderTaskExecutor().submit(recordsReader)
+        recordsReader -> recordsReaderThreadPoolExecutor.submit(recordsReader)
     );
   }
 
-  public void performOneRoundOfImportFor(Collection<RecordsReader> readers) throws IOException {
+  public void performOneRoundOfImportFor(Collection<RecordsReader> readers) {
     for (RecordsReader recordsReader: readers) {
       importOneBatch(recordsReader, false);
     }
   }
 
-  public void performOneRoundOfImport() throws IOException {
+  public void performOneRoundOfImport() {
     performOneRoundOfImportFor(recordsReaderHolder.getAllRecordsReaders());
   }
 
   public void importOneBatch(RecordsReader recordsReader, boolean autoContinue) {
     recordsReader.readAndScheduleNextBatch(autoContinue);
-  }
-
-  @Bean("importThreadPoolExecutor")
-  public ThreadPoolTaskExecutor getTaskExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(operateProperties.getImporter().getThreadsCount());
-    executor.setMaxPoolSize(operateProperties.getImporter().getThreadsCount());
-    executor.setThreadNamePrefix("import_");
-    executor.initialize();
-    return executor;
-  }
-
-  @Bean("recordsReaderThreadPoolExecutor")
-  public ThreadPoolTaskScheduler getRecordsReaderTaskExecutor() {
-    ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
-    executor.setPoolSize(operateProperties.getImporter().getReaderThreadsCount());
-    executor.setThreadNamePrefix("records_reader_");
-    executor.initialize();
-    return executor;
   }
 
 }

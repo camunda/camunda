@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.webapp.api;
 
-import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -16,24 +15,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OpenApiConfig {
-
-  /**
-   * Describes the OpenAPI representation of the whole Operate API (all versions)
-   * @return an OpenAPI description built from all available GroupedOpenApi descriptions
-   */
-  @Bean
-  public OpenAPI operateAPI(){
-    return  new OpenAPI().info(
-        new Info()
-            .title("Operate Public API")
-            .description("To access active and completed process instances in Operate for monitoring and troubleshooting")
-            .contact(new Contact()
-                .url("https://www.camunda.com"))
-            .license(new License()
-                .name("License")
-                .url("https://docs.camunda.io/docs/reference/licenses/"))
-        );
-  }
 
   /**
    * Describes and generates one version of Operate API. In this case version 1
@@ -47,9 +28,21 @@ public class OpenApiConfig {
   private GroupedOpenApi apiDefinitionFor(final String version) {
     return GroupedOpenApi.builder()
         .group(version)
+        .addOpenApiCustomiser(openApi -> openApi.info(getPublicAPIInfo()))
         .packagesToScan("io.camunda.operate.webapp.api."+version)
         .pathsToMatch("/" + version + "/**")
         .build();
+  }
+
+  private Info getPublicAPIInfo() {
+    return new Info()
+        .title("Operate Public API")
+        .description("To access active and completed process instances in Operate for monitoring and troubleshooting")
+        .contact(new Contact()
+            .url("https://www.camunda.com"))
+        .license(new License()
+            .name("License")
+            .url("https://docs.camunda.io/docs/reference/licenses/"));
   }
 
 }

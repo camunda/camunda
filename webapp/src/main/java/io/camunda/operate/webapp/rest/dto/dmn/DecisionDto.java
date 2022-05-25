@@ -8,13 +8,12 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@ApiModel("Decision object")
+@Schema(name = "Decision object")
 public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDefinitionEntity> {
 
-  @ApiModelProperty(value = "Unique id of the decision, must be used when filtering instances by decision ids.")
+  @Schema(description = "Unique id of the decision, must be used when filtering instances by decision ids.")
   private String id;
   private String name;
   private int version;

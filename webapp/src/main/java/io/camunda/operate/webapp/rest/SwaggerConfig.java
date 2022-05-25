@@ -6,31 +6,35 @@
  */
 package io.camunda.operate.webapp.rest;
 
-
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springdoc.core.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-
-/**
- * See https://springfox.github.io/springfox/docs/current/ for how to customize swagger output.
- */
 @Profile("dev")
 @Configuration
-@EnableSwagger2
 public class SwaggerConfig {
   @Bean
-  public Docket api() {
-    return new Docket(DocumentationType.SWAGGER_2)
-      .select()
-      .apis(RequestHandlerSelectors.any())
-      .paths(PathSelectors.any())
-      .build();
+  public GroupedOpenApi internalAPI() {
+    return GroupedOpenApi.builder()
+        .group("internal-api")
+        .addOpenApiCustomiser(openApi -> openApi.info(getInternalAPIInfo()))
+        .pathsToMatch("/api/*")
+        .build();
+  }
+
+  private Info getInternalAPIInfo() {
+    return new Info()
+        .title("Operate Internal API")
+        .description("For internal use only.")
+        .contact(new Contact()
+            .url("https://www.camunda.com"))
+        .license(new License()
+            .name("License")
+            .url("https://docs.camunda.io/docs/reference/licenses/"));
   }
 }
 

@@ -6,14 +6,14 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import io.camunda.operate.entities.ProcessEntity;
-import io.swagger.annotations.ApiModel;
 
-@ApiModel(value="Process group object", description = "Group of processes with the same bpmnProcessId with all versions included")
+@Schema(name="Process group object", description = "Group of processes with the same bpmnProcessId with all versions included")
 public class ProcessGroupDto {
 
   private String bpmnProcessId;

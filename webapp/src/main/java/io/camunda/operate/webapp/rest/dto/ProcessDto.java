@@ -7,13 +7,12 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.entities.ProcessEntity;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@ApiModel("Process object")
+@Schema(name = "Process object")
 public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity> {
 
-  @ApiModelProperty(value = "Unique id of the process, must be used when filtering instances by process ids.")
+  @Schema(description = "Unique id of the process, must be used when filtering instances by process ids.")
   private String id;
   private String name;
   private int version;

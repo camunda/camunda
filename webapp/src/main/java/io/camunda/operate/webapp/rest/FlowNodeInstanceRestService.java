@@ -8,10 +8,8 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.util.CollectionUtil.countNonNullObjects;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -24,10 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = {"Flow node instances"})
-@SwaggerDefinition(tags = {
-    @Tag(name = "Flow node instances", description = "Flow node instances")
-})
+@Tag(name = "Flow node instances")
 @RestController
 @RequestMapping(value = FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL)
 public class FlowNodeInstanceRestService {
@@ -37,7 +32,7 @@ public class FlowNodeInstanceRestService {
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @ApiOperation("Query flow node instance tree. Returns map treePath <-> list of children.")
+  @Operation(summary = "Query flow node instance tree. Returns map treePath <-> list of children.")
   @PostMapping
   public Map<String, FlowNodeInstanceResponseDto> queryFlowNodeInstanceTree(@RequestBody FlowNodeInstanceRequestDto request) {
     validateRequest(request);

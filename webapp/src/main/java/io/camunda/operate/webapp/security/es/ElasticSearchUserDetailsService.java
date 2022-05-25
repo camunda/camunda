@@ -45,9 +45,6 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   @Autowired
   private OperateProperties operateProperties;
 
-  @Autowired
-  private PasswordEncoder passwordEncoder;
-
   @Bean
   public PasswordEncoder getPasswordEncoder() {
     return new BCryptPasswordEncoder();
@@ -72,7 +69,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   private ElasticSearchUserDetailsService addUserWith(final String userId, final String displayName,
       final String password, final List<String> roles) {
     logger.info("Create user in ElasticSearch for userId {}", userId);
-    final String passwordEncoded = passwordEncoder.encode(password);
+    final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity = new UserEntity()
         .setId(userId)
         .setUserId(userId)

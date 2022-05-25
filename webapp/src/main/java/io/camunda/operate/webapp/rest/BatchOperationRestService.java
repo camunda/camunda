@@ -7,6 +7,8 @@
 package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.CollectionUtil;
@@ -19,16 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
 import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPERATIONS_URL;
 
-@Api(tags = {"Batch operations"})
-@SwaggerDefinition(tags = {
-    @Tag(name = "Batch operations", description = "Batch operations")
-})
+@Tag(name = "Batch operations")
 @RestController
 @RequestMapping(value = BATCH_OPERATIONS_URL)
 public class BatchOperationRestService {
@@ -38,7 +33,7 @@ public class BatchOperationRestService {
   @Autowired
   private BatchOperationReader batchOperationReader;
 
-  @ApiOperation("Query batch operations")
+  @Operation(summary = "Query batch operations")
   @PostMapping
   public List<BatchOperationDto> queryBatchOperations(@RequestBody BatchOperationRequestDto batchOperationRequestDto) {
     if (batchOperationRequestDto.getPageSize() == null) {

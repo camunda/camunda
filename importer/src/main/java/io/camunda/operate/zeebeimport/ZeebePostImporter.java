@@ -6,19 +6,16 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.post.IncidentPostImportAction;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
@@ -61,15 +58,5 @@ public class ZeebePostImporter {
   public List<PostImportAction> getPostImportActions() {
     return postImportActions;
   }
-
-  @Bean("postImportThreadPoolScheduler")
-  public ThreadPoolTaskScheduler getPostImportTaskScheduler(OperateProperties operateProperties) {
-    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-    scheduler.setPoolSize(operateProperties.getImporter().getPostImportThreadsCount());
-    scheduler.setThreadNamePrefix("postimport_");
-    scheduler.initialize();
-    return scheduler;
-  }
-
 
 }

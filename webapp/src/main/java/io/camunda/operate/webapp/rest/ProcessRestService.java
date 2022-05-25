@@ -9,6 +9,8 @@ package io.camunda.operate.webapp.rest;
 import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 
@@ -23,15 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
-
-@Api(tags = {"Processes"})
-@SwaggerDefinition(tags = {
-  @Tag(name = "Processes", description = "Processes")
-})
+@Tag(name = "Processes")
 @RestController
 @RequestMapping(value = PROCESS_URL)
 public class ProcessRestService {
@@ -44,20 +38,20 @@ public class ProcessRestService {
 
   public static final String PROCESS_URL = "/api/processes";
 
-  @ApiOperation("Get process BPMN XML")
+  @Operation(summary = "Get process BPMN XML")
   @GetMapping(path = "/{id}/xml")
   public String getProcessDiagram(@PathVariable("id") String processId) {
     return processReader.getDiagram(Long.valueOf(processId));
   }
 
-  @ApiOperation("Get process by id")
+  @Operation(summary = "Get process by id")
   @GetMapping(path = "/{id}")
   public ProcessDto getProcess(@PathVariable("id") String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
     return DtoCreator.create(processEntity, ProcessDto.class);
   }
 
-  @ApiOperation("List processes grouped by bpmnProcessId")
+  @Operation(summary = "List processes grouped by bpmnProcessId")
   @GetMapping(path = "/grouped")
   public List<ProcessGroupDto> getProcessesGrouped() {
     final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped();

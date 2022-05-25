@@ -7,18 +7,14 @@
 package io.camunda.operate.webapp.security.ldap;
 
 import static io.camunda.operate.webapp.security.OperateProfileService.LDAP_AUTH_PROFILE;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import io.camunda.operate.property.LdapProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
@@ -31,10 +27,6 @@ import org.springframework.util.StringUtils;
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class LDAPWebSecurityConfig extends BaseWebConfigurer {
-
-  @Autowired
-  private LdapContextSource contextSource;
-
   @Autowired
   private LDAPUserService userService;
 
@@ -71,31 +63,6 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
         .url(ldapConfig.getUrl() + ldapConfig.getBaseDn())
         .managerDn(ldapConfig.getManagerDn())
         .managerPassword(ldapConfig.getManagerPassword());
-  }
-
-  @Bean
-  public LdapContextSource contextSource() {
-    LdapContextSource contextSource = new LdapContextSource();
-    contextSource.setUrl(operateProperties.getLdap().getUrl());
-    contextSource.setUserDn(operateProperties.getLdap().getManagerDn());
-    contextSource.setPassword(operateProperties.getLdap().getManagerPassword());
-    return contextSource;
-  }
-
-  private void authenticateContextSource(final LdapContextSource contextSource) {
-    try {
-      contextSource
-          .getContext(operateProperties.getLdap().getManagerDn(),
-              operateProperties.getLdap().getManagerPassword());
-    }catch (Exception e){
-      logger.error("Authentication for lookup failed.", e);
-    }
-  }
-
-  @Bean
-  public LdapTemplate ldapTemplate() {
-    authenticateContextSource(contextSource);
-    return new LdapTemplate(contextSource);
   }
 
   @Override

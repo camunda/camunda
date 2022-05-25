@@ -8,10 +8,8 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import io.camunda.operate.webapp.es.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
@@ -21,10 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = {"Operations"})
-@SwaggerDefinition(tags = {
-  @Tag(name = "Operations", description = "Operations")
-})
+@Tag(name = "Operations")
 @RestController
 @RequestMapping(value = OPERATION_URL)
 public class OperationRestService {
@@ -34,7 +29,7 @@ public class OperationRestService {
   @Autowired
   private OperationReader operationReader;
 
-  @ApiOperation("Get single operation")
+  @Operation(summary = "Get single operation")
   @GetMapping
   public List<OperationDto> getOperation(@RequestParam String batchOperationId) {
     return operationReader.getOperationsByBatchOperationId(batchOperationId);

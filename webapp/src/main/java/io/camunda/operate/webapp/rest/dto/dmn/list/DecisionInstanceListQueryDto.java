@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.dmn.list;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -21,10 +21,10 @@ public class DecisionInstanceListQueryDto {
   private List<String> ids;
   private String processInstanceId;
 
-  @ApiModelProperty(value = "Evaluation date after (inclusive)", allowEmptyValue = true)
+  @Schema(description = "Evaluation date after (inclusive)", nullable = true)
   private OffsetDateTime evaluationDateAfter;
 
-  @ApiModelProperty(value = "Evaluation date after (inclusive)", allowEmptyValue = true)
+  @Schema(description = "Evaluation date after (inclusive)", nullable = true)
   private OffsetDateTime evaluationDateBefore;
 
   public List<String> getDecisionDefinitionIds() {

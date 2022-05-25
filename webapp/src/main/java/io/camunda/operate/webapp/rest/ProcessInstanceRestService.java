@@ -42,10 +42,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.micrometer.core.annotation.Timed;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
+import io.swagger.v3.oas.annotations.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -64,10 +61,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = {"Process instances"})
-@SwaggerDefinition(tags = {
-    @Tag(name = "Process instances", description = "Process instances")
-})
 @RestController
 @RequestMapping(value = PROCESS_INSTANCE_URL)
 @Validated
@@ -102,7 +95,7 @@ public class ProcessInstanceRestService {
   @Autowired
   private OperationReader operationReader;
 
-  @ApiOperation("Query process instances by different parameters")
+  @Operation(summary = "Query process instances by different parameters")
   @PostMapping
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_PROCESSINSTANCES}, description = "How long does it take to retrieve the processinstances by query.")
   public ListViewResponseDto queryProcessInstances(
@@ -116,7 +109,7 @@ public class ProcessInstanceRestService {
     return listViewReader.queryProcessInstances(processInstanceRequest);
   }
 
-  @ApiOperation("Perform single operation on an instance (async)")
+  @Operation(summary = "Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity operation(@PathVariable @ValidLongId String id,
@@ -170,7 +163,7 @@ public class ProcessInstanceRestService {
     }
   }
 
-  @ApiOperation("Create batch operation based on filter")
+  @Operation(summary = "Create batch operation based on filter")
   @PostMapping("/batch-operation")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity createBatchOperation(@RequestBody CreateBatchOperationRequestDto batchOperationRequest) {
@@ -178,26 +171,26 @@ public class ProcessInstanceRestService {
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
-  @ApiOperation("Get process instance by id")
+  @Operation(summary = "Get process instance by id")
   @GetMapping("/{id}")
   public ListViewProcessInstanceDto queryProcessInstanceById(@PathVariable @ValidLongId String id) {
     return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
   }
 
-  @ApiOperation("Get incidents by process instance id")
+  @Operation(summary = "Get incidents by process instance id")
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     return incidentReader.getIncidentsByProcessInstanceId(id);
   }
 
-  @ApiOperation("Get sequence flows by process instance id")
+  @Operation(summary = "Get sequence flows by process instance id")
   @GetMapping("/{id}/sequence-flows")
   public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
     return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
   }
 
-  @ApiOperation("Get variables by process instance id and scope id")
+  @Operation(summary = "Get variables by process instance id and scope id")
   @PostMapping("/{processInstanceId}/variables")
   public List<VariableDto> getVariables(
       @PathVariable @ValidLongId String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
@@ -205,13 +198,13 @@ public class ProcessInstanceRestService {
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
-  @ApiOperation("Get flow node states by process instance id")
+  @Operation(summary = "Get flow node states by process instance id")
   @GetMapping("/{processInstanceId}/flow-node-states")
   public Map<String, FlowNodeStateDto> getFlowNodeStates(@PathVariable @ValidLongId String processInstanceId) {
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
-  @ApiOperation("Get flow node metadata.")
+  @Operation(summary = "Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
   public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,
       @RequestBody FlowNodeMetadataRequestDto request) {
@@ -234,7 +227,7 @@ public class ProcessInstanceRestService {
     }
   }
 
-  @ApiOperation("Get activity instance statistics")
+  @Operation(summary = "Get activity instance statistics")
   @PostMapping(path = "/statistics")
   public Collection<FlowNodeStatisticsDto> getStatistics(@RequestBody ListViewQueryDto query) {
     final List<Long> processDefinitionKeys = CollectionUtil.toSafeListOfLongs(query.getProcessIds());
@@ -247,7 +240,7 @@ public class ProcessInstanceRestService {
     return activityStatisticsReader.getFlowNodeStatistics(query);
   }
 
-  @ApiOperation("Get process instance core statistics (aggregations)")
+  @Operation(summary = "Get process instance core statistics (aggregations)")
   @GetMapping(path = "/core-statistics")
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME,Metrics.TAG_VALUE_CORESTATISTICS},description = "How long does it take to retrieve the core statistics.")
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {

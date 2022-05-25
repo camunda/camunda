@@ -48,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         OAuth2WebConfigurer.class,
         Jwt2AuthenticationTokenConverter.class,
         CCSaaSJwtAuthenticationTokenValidator.class,
+        LDAPConfig.class,
         LDAPWebSecurityConfig.class,
         LDAPUserService.class,
         RetryElasticsearchClient.class,

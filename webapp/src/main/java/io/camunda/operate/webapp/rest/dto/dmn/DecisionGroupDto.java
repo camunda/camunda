@@ -8,13 +8,13 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-@ApiModel(value="Decision group object", description = "Group of decisions with the same decisionId with all versions included")
+@Schema(name = "Decision group object", description = "Group of decisions with the same decisionId with all versions included")
 public class DecisionGroupDto {
 
   private String decisionId;
