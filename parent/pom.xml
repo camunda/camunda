@@ -69,7 +69,7 @@
     <version.netty>4.1.77.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
-    <version.protobuf>3.20.1</version.protobuf>
+    <version.protobuf>3.21.0</version.protobuf>
     <version.protobuf-common>2.8.3</version.protobuf-common>
     <version.micrometer>1.9.0</version.micrometer>
     <version.rocksdbjni>7.2.2</version.rocksdbjni>
