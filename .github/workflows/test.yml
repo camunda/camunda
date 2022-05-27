@@ -274,6 +274,23 @@ jobs:
             **/hs_err_*.log
           retention-days: 7
 
+  # Used by bors to check all tests, including the unit test matrix.
+  # New test jobs must be added to the `needs` lists!
+  test-summary:
+    name: Test summary
+    runs-on: ubuntu-latest
+    needs:
+      - integration-tests
+      - exporter-tests
+      - unit-tests
+      - slow-unit-tests
+      - smoke-tests
+      - java-randomized-tests
+      - go-client
+      - java-client
+    steps:
+      - run: exit 0
+
   # We need to upload the event file as an artifact in order to support
   # publishing the results of forked repositories
   # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
