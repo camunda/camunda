@@ -21,9 +21,7 @@ export default function NumberConfig({report, onChange}) {
   const precisionSet = typeof configuration.precision === 'number';
   const countOperation =
     view.properties.includes('frequency') || isPercentageReport || view.entity === 'variable';
-  const isMultiMeasure =
-    view.properties.length > 1 ||
-    (view.properties.includes('duration') && configuration.aggregationTypes.length > 1);
+  const isMultiMeasure = report.result?.measures.length > 1;
   const isSingleProcessReport = definitions.length === 1;
 
   return (

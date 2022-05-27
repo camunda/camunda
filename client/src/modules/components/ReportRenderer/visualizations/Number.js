@@ -23,9 +23,7 @@ export function Number({report, formatter, mightFail}) {
   const {targetValue, precision} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
   const processVariableReport = reportType === 'process' && data.view.entity === 'variable';
-  const isMultiMeasure =
-    data.view.properties?.length > 1 ||
-    (data.view.properties?.includes('duration') && data.configuration.aggregationTypes?.length > 1);
+  const isMultiMeasure = result?.measures.length > 1;
 
   useEffect(() => {
     // We need to load the variables in order to resolve the variable label
