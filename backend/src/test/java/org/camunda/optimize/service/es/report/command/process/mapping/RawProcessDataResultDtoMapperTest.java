@@ -22,7 +22,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RawDataProcessReportResultDtoMapperTest {
+public class RawProcessDataResultDtoMapperTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -64,6 +64,29 @@ public class RawDataProcessReportResultDtoMapperTest {
     assertThat(result)
       .extracting(RawDataProcessInstanceDto::getVariables).isNotEmpty()
       .allSatisfy(variables -> assertThat(variables.keySet()).containsAll(Arrays.asList("var1", "var2")));
+  }
+
+  @Test
+  public void nullVariableValuesReturnedAsEmptyString() {
+    // given
+    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper();
+    final List<ProcessInstanceDto> processInstanceDtos = generateInstanceList(5)
+      .stream()
+      .peek(instance -> {
+        final SimpleProcessVariableDto variableForInstances = new SimpleProcessVariableDto(
+          IdGenerator.getNextId(), "var1", "String", null, 1L);
+        instance.setVariables(Collections.singletonList(variableForInstances));
+      })
+      .collect(Collectors.toList());
+
+    // when
+    final List<RawDataProcessInstanceDto> result =
+      mapper.mapFrom(processInstanceDtos, objectMapper, new HashSet<>());
+
+    // then
+    assertThat(result)
+      .extracting(RawDataProcessInstanceDto::getVariables).isNotEmpty()
+      .allSatisfy(variables -> assertThat(variables).containsEntry("var1", ""));
   }
 
   private List<ProcessInstanceDto> generateInstanceList(final Integer rawDataLimit) {
