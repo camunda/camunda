@@ -7,12 +7,13 @@
 
 import styled from 'styled-components';
 import {CmNotificationContainer} from '@camunda-cloud/common-ui-react';
+import {zNotification} from 'modules/constants/componentHierarchy';
 
 const NotificationContainer = styled(CmNotificationContainer)`
   position: absolute;
   bottom: 13px;
   left: 10px;
-  z-index: 1;
+  z-index: ${zNotification};
 `;
 
 export {NotificationContainer};
