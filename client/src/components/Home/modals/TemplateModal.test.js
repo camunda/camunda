@@ -134,7 +134,7 @@ it('should call the templateToState prop to determine link state', async () => {
   await flushPromises();
 
   expect(spy).toHaveBeenCalledWith({
-    name: 'New Report',
+    name: 'Heatmap: Flownode count',
     definitions: [
       {
         key: 'processDefinition',

@@ -34,9 +34,10 @@ export function TemplateModal({
   blankSlate,
   templateToState = (data) => data,
 }) {
-  const [name, setName] = useState(t(entity + '.new'));
+  const firstTemplate = templateGroups[1].templates[0];
+  const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
   const [xmlData, setXmlData] = useState([]);
-  const [template, setTemplate] = useState(templateGroups[1].templates[0].config);
+  const [template, setTemplate] = useState(firstTemplate.config);
   const [selectedDefinitions, setSelectedDefinitions] = useState([]);
   const diagramArea = useRef();
   const templateContainer = useRef();
@@ -88,8 +89,9 @@ export function TemplateModal({
       );
 
       setTemplate(enabledTemplate.config);
+      setName(t(entity + '.templates.' + enabledTemplate.name));
     }
-  }, [templateGroups, selectedDefinitions, template]);
+  }, [templateGroups, selectedDefinitions, template, entity]);
 
   // scroll to the selected element
   useEffect(() => {
