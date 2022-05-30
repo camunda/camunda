@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -98,6 +99,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     members = Arrays.asList(member1, member2, member3);
     nodes = (Collection) members;
     listeners = Maps.newConcurrentMap();
+  }
+
+  @After
+  public void cleanup() {
+    members.forEach(this::stopProtocol);
   }
 
   @Test
@@ -250,6 +256,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     clearEvents(member1, member2);
 
     // when - starting a member with new version
+    stopProtocol(member2);
     final Member member =
         member(member2.id().id(), member2.address().host(), member2.address().port(), version2);
     startProtocol(member);
