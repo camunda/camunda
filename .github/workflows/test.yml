@@ -125,6 +125,7 @@ jobs:
             **/target/surefire-reports/
             **/hs_err_*.log
           retention-days: 7
+          if-no-files-found: ignore
   slow-unit-tests:
     name: Slow unit tests
     runs-on: "n1-standard-8-netssd-preempt"
