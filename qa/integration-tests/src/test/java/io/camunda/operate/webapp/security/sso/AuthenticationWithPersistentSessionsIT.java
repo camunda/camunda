@@ -35,6 +35,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.ElasticsearchSessionRepositoryConfigurator;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -82,6 +83,7 @@ import org.springframework.web.client.RestTemplate;
         Jwt2AuthenticationTokenConverter.class,
         CCSaaSJwtAuthenticationTokenValidator.class,
         SSOWebSecurityConfig.class,
+        SSOConfigurator.class,
         Auth0Service.class,
         SSOController.class,
         TokenAuthentication.class,
@@ -91,6 +93,7 @@ import org.springframework.web.client.RestTemplate;
         OperateURIs.class,
         OperateProperties.class,
         ElasticsearchSessionRepository.class,
+        ElasticsearchSessionRepositoryConfigurator.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTask.class,

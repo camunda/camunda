@@ -23,6 +23,7 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.ElasticsearchSessionRepositoryConfigurator;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
@@ -63,6 +64,7 @@ import org.springframework.test.context.junit4.SpringRunner;
         OperateProperties.class,
         OperateProfileService.class,
         ElasticsearchSessionRepository.class,
+        ElasticsearchSessionRepositoryConfigurator.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTask.class,

@@ -29,8 +29,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -43,8 +43,6 @@ import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
-import org.springframework.session.web.http.CookieSerializer;
-import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.stereotype.Component;
 
 @Configuration
@@ -70,39 +68,20 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Autowired
   private OperateWebSessionIndex operateWebSessionIndex;
 
+  @Autowired
+  @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
 
   @PostConstruct
   private void setUp() {
     logger.debug("Persistent sessions in Elasticsearch enabled");
-    setupThreadScheduler();
     setupConverter();
     startExpiredSessionCheck();
-  }
-
-  private void setupThreadScheduler() {
-    sessionThreadScheduler = new ThreadPoolTaskScheduler();
-    sessionThreadScheduler.setPoolSize(5);
-    sessionThreadScheduler.setThreadNamePrefix("operate_session_");
-    sessionThreadScheduler.initialize();
   }
 
   @PreDestroy
   private void tearDown() {
     logger.debug("Shutdown ElasticsearchSessionRepository");
-  }
-
-  @Bean("sessionThreadPoolScheduler")
-  public ThreadPoolTaskScheduler getTaskScheduler() {
-    return sessionThreadScheduler;
-  }
-
-  @Bean
-  public CookieSerializer cookieSerializer() {
-    DefaultCookieSerializer serializer = new DefaultCookieSerializer();
-    serializer.setCookieName(OperateURIs.COOKIE_JSESSIONID);
-    serializer.setUseBase64Encoding(false);
-    return serializer;
   }
 
   private void setupConverter() {

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @Configuration
-public class ArchiverConfig {
+public class ArchiverConfigurator {
 
   @Autowired
   private OperateProperties operateProperties;

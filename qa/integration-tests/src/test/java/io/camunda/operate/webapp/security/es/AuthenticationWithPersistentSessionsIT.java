@@ -23,6 +23,7 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.ElasticsearchSessionRepositoryConfigurator;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -74,6 +75,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       ElasticSearchUserDetailsService.class,
       RetryElasticsearchClient.class,
       ElasticsearchTask.class,
+      ElasticsearchSessionRepositoryConfigurator.class,
       ElasticsearchSessionRepository.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class

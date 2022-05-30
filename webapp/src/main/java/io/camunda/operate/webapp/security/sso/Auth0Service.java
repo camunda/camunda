@@ -24,8 +24,6 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -69,16 +67,8 @@ public class Auth0Service {
   private OperateProperties operateProperties;
 
   @Autowired
-  private RestTemplateBuilder builder;
-
-  @Autowired
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
-
-  @Bean("auth0_restTemplate")
-  public RestTemplate restTemplate() {
-    return builder.build();
-  }
 
   public void authenticate(final HttpServletRequest req, final HttpServletResponse res)
       throws Auth0ServiceException {
