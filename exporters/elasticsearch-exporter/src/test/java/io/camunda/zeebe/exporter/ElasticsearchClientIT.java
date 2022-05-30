@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -28,7 +27,7 @@ public class ElasticsearchClientIT extends AbstractElasticsearchExporterIntegrat
 
     config = getDefaultConfiguration();
     bulkRequest = new BulkIndexRequest();
-    client = new ElasticsearchClient(config, bulkRequest, new ElasticsearchMetrics(1));
+    client = new ElasticsearchClient(config, bulkRequest);
   }
 
   @Test
@@ -46,23 +45,5 @@ public class ElasticsearchClientIT extends AbstractElasticsearchExporterIntegrat
         .isInstanceOf(ElasticsearchExporterException.class)
         .hasMessageContaining(
             "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse field [timestamp]");
-  }
-
-  @Test
-  public void shouldFlushOnMemoryLimit() {
-    // given
-    config.bulk.size = Integer.MAX_VALUE;
-    final var firstRecord = recordFactory.generateRecord(ValueType.VARIABLE);
-    final var secondRecord = recordFactory.generateRecord(ValueType.DECISION);
-
-    // when - index a single record, then set the memory limit specifically to be its size + 1
-    // this decouples the test from whatever is used to serialize the record
-    client.index(firstRecord);
-    config.bulk.memoryLimit = bulkRequest.bulkOperations().get(0).source().length + 1;
-    assertThat(client.shouldFlush()).isFalse();
-
-    // when - then
-    client.index(secondRecord);
-    assertThat(client.shouldFlush()).isTrue();
   }
 }

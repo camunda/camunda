@@ -17,6 +17,7 @@ package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.util.RecordingGatewayService.broker;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.partition;
+import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.DEAD;
 import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY;
 import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY;
 import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER;
@@ -117,6 +118,25 @@ public final class TopologyRequestTest extends ClientTest {
         .containsOnly(
             tuple(0, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.UNHEALTHY),
             tuple(1, PartitionBrokerRole.INACTIVE, PartitionBrokerHealth.UNHEALTHY));
+  }
+
+  @Test
+  public void shouldAcceptDeadPartitions() {
+    // given
+    gatewayService.onTopologyRequest(
+        1,
+        1,
+        1,
+        "1.22.3-SNAPSHOT",
+        broker(0, "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER, DEAD)));
+
+    // when
+    final Topology topology = client.newTopologyRequest().send().join();
+
+    // then
+    assertThat(topology.getBrokers().get(0).getPartitions().get(0))
+        .extracting(PartitionInfo::getHealth)
+        .isEqualTo(PartitionBrokerHealth.DEAD);
   }
 
   @Test
