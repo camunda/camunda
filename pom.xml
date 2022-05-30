@@ -37,7 +37,7 @@
     <version.junit>4.13.2</version.junit>
     <version.springdoc>1.6.8</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
-    <version.micrometer>1.8.5</version.micrometer>
+    <version.micrometer>1.9.0</version.micrometer>
     <version.mockito>4.4.0</version.mockito>
     <version.assertj-core>3.22.0</version.assertj-core>
     <version.jackson>2.13.3</version.jackson>
