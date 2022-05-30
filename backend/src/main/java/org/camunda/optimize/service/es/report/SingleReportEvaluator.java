@@ -138,8 +138,8 @@ public class SingleReportEvaluator {
         .map(PaginationScrollableDto::getScrollTimeout)
         .orElse(PAGINATION_DEFAULT_SCROLL_TIMEOUT);
       completePagination = new PaginationScrollableDto();
-      ((PaginationScrollableDto)completePagination).setScrollTimeout(scrollTimeout);
-      ((PaginationScrollableDto)completePagination).setScrollId(scrollId);
+      ((PaginationScrollableDto) completePagination).setScrollTimeout(scrollTimeout);
+      ((PaginationScrollableDto) completePagination).setScrollId(scrollId);
     } else {
       // Just a normal Pagination Dto or no pagination Dto available
       completePagination = new PaginationDto();

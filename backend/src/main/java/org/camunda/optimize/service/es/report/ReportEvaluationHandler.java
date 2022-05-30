@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
@@ -15,13 +16,16 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -58,9 +62,11 @@ public abstract class ReportEvaluationHandler {
   private final SingleReportEvaluator singleReportEvaluator;
   private final CombinedReportEvaluator combinedReportEvaluator;
   private final ProcessVariableService processVariableService;
+  private final DefinitionService definitionService;
 
   public AuthorizedReportEvaluationResult evaluateReport(final ReportEvaluationInfo evaluationInfo) {
     evaluationInfo.postFetchSavedReport(reportReader);
+    setDataSourcesForManagementReport(evaluationInfo);
     final RoleType currentUserRole = getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
       .orElseThrow(() -> new ForbiddenException(String.format(
         "User [%s] is not authorized to evaluate report [%s].",
@@ -74,6 +80,23 @@ public abstract class ReportEvaluationHandler {
       result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
     }
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
+  }
+
+  private void setDataSourcesForManagementReport(final ReportEvaluationInfo reportEvaluationInfo) {
+    if (reportEvaluationInfo.getReport().getData() instanceof ProcessReportDataDto) {
+      final ProcessReportDataDto processReportData = (ProcessReportDataDto) reportEvaluationInfo.getReport()
+        .getData();
+      if (processReportData.isManagementReport()) {
+        final List<ReportDataDefinitionDto> definitionsForManagementReport =
+          definitionService.getFullyImportedDefinitions(reportEvaluationInfo.getUserId())
+            .stream()
+            .map(def -> new ReportDataDefinitionDto(
+              def.getKey(), def.getTenants().stream().map(TenantDto::getId).collect(Collectors.toList())
+            ))
+            .collect(Collectors.toList());
+        processReportData.setDefinitions(definitionsForManagementReport);
+      }
+    }
   }
 
   private CombinedReportEvaluationResult evaluateCombinedReport(final ReportEvaluationInfo evaluationInfo,

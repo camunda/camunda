@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -68,11 +69,14 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
-                                                    @Valid final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
+                                                    @Valid final SingleProcessReportDefinitionRequestDto definition) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (definition != null && definition.getData() != null &&  definition.getData().isManagementReport()) {
+      throw new OptimizeValidationException("Management Reports cannot be created manually");
+    }
     return reportService.createNewSingleProcessReport(
       userId,
-      Optional.ofNullable(singleProcessReportDefinitionDto).orElseGet(SingleProcessReportDefinitionRequestDto::new)
+      Optional.ofNullable(definition).orElseGet(SingleProcessReportDefinitionRequestDto::new)
     );
   }
 
@@ -197,6 +201,10 @@ public class ReportRestService {
                                                                       @Valid @NotNull ReportDefinitionDto reportDefinitionDto,
                                                                       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
+      && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
+      throw new OptimizeValidationException("Unsaved Management Reports cannot be evaluated");
+    }
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
       reportEvaluationService.evaluateUnsavedReport(
@@ -220,6 +228,9 @@ public class ReportRestService {
                                         @QueryParam("force") final boolean force,
                                         @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (updatedReport.getData() != null &&  updatedReport.getData().isManagementReport()) {
+      throw new OptimizeValidationException("Existing Reports cannot be set as Management Reports");
+    }
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -254,7 +265,7 @@ public class ReportRestService {
   public void updateCombinedProcessReport(@Context ContainerRequestContext requestContext,
                                           @PathParam("id") String reportId,
                                           @QueryParam("force") boolean force,
-                                          @NotNull  CombinedReportDefinitionRequestDto updatedReport) {
+                                          @NotNull CombinedReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);

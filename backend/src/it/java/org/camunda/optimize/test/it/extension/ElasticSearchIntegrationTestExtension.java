@@ -659,7 +659,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   @SneakyThrows
-  public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionkey,
+  public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionKey,
                                       final long duration) {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
@@ -685,7 +685,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     // @formatter:on
 
     final UpdateRequest update = new UpdateRequest()
-      .index(getProcessInstanceIndexAliasName(processDefinitionkey))
+      .index(getProcessInstanceIndexAliasName(processDefinitionKey))
       .id(processInstanceId)
       .script(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, updateScript, Collections.emptyMap()))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

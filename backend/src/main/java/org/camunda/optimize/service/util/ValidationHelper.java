@@ -100,7 +100,10 @@ public class ValidationHelper {
   private static void validateDefinitionData(ReportDataDto data) {
     if (data instanceof SingleReportDataDto) {
       SingleReportDataDto singleReportData = (SingleReportDataDto) data;
-      ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
+      if (data instanceof ProcessReportDataDto && !((ProcessReportDataDto) data).isManagementReport()) {
+        // it is valid for management reports to not have a key if the user has no authorization for any processes
+        ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
+      }
       ensureNotNull("definitionVersions", singleReportData.getDefinitionVersions());
     } else if (data == null) {
       throw new OptimizeValidationException("Report data is not allowed to be null!");

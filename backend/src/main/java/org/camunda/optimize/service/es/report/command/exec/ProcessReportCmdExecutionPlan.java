@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 @Slf4j
 public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, ProcessReportDataDto> {
@@ -50,7 +51,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
     FlowNodeStartDateFilterDto.class,
     FlowNodeEndDateFilterDto.class
   );
-  
+
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
@@ -119,6 +120,11 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
 
   private BoolQueryBuilder buildDefinitionBaseQueryForFilters(final ExecutionContext<ProcessReportDataDto> context,
                                                               final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
+    // If the user has access to no definitions, management reports may contain no processes in its data source so we exclude
+    // all instances from the result
+    if (context.getReportData().getDefinitions().isEmpty() && context.getReportData().isManagementReport()) {
+      return boolQuery().mustNot(matchAllQuery());
+    }
     final BoolQueryBuilder multiDefinitionFilterQuery = boolQuery().minimumShouldMatch(1);
     context.getReportData().getDefinitions().forEach(definitionDto -> {
       final BoolQueryBuilder definitionQuery = createDefinitionQuery(definitionDto);

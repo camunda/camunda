@@ -14,6 +14,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DYNAMIC_PRO
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
@@ -32,10 +33,10 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
   }
 
   @Override
-  protected XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException {
+  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    return xContentBuilder.
-      startObject(DATA)
+    return xContentBuilder
+      .startObject(DATA)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .field(DYNAMIC_PROPERTY_TYPE, true)
         .startObject("properties")
@@ -50,6 +51,9 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
           .endObject()
           .startObject(ProcessReportDataDto.Fields.filter)
             .field(MAPPING_ENABLED_SETTING, false)
+          .endObject()
+          .startObject(ProcessReportDataDto.Fields.managementReport)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
           .endObject()
           .startObject(CONFIGURATION)
             .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)

@@ -31,7 +31,12 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -72,8 +77,10 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
@@ -621,6 +628,25 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  public void getStoredPrivateReports_excludesManagementReports() {
+    // given
+    String privateDecisionReportId = reportClient.createEmptySingleDecisionReport();
+    String privateProcessReportId = reportClient.createEmptySingleProcessReport();
+    createManagementReport();
+
+    // when
+    List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
+
+    // then
+    assertThat(
+      reports.stream()
+        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
+        .map(ReportDefinitionDto::getId)
+        .collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(privateDecisionReportId, privateProcessReportId);
+  }
+
+  @Test
   public void getStoredPrivateReports_adoptTimezoneFromHeader() {
     // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
@@ -845,6 +871,18 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  public void managementReportCannotBeDeleted() {
+    // given
+    final String reportId = createManagementReport();
+
+    // when
+    final Response response = reportClient.deleteReport(reportId, true);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void deleteNonExistingReport() {
     // when
     Response response = embeddedOptimizeExtension
@@ -958,15 +996,43 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .containsExactly(reportId);
   }
 
+  @Test
+  public void copyManagementReportDoesNotWork() {
+    // given
+    final String reportId = createManagementReport();
+
+    // when
+    Response response = reportClient.copyReportToCollection(reportId, null);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void copyManagementReportIntoCollectionDoesNotWork() {
+    // given
+    final String reportId = createManagementReport();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+
+    // when
+    Response response = reportClient.copyReportToCollection(reportId, collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void copySingleReport(ReportType reportType) {
+    // given
     String id = createSingleReport(reportType);
 
+    // when
     Response response = reportClient.copyReportToCollection(id, null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     IdResponseDto copyId = response.readEntity(IdResponseDto.class);
 
+    // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData()).hasToString(oldReport.getData().toString());
@@ -975,12 +1041,15 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void copyCombinedReport() {
+    // given
     String id = reportClient.createCombinedReport(null, new ArrayList<>());
 
+    // when
     Response response = reportClient.copyReportToCollection(id, null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     IdResponseDto copyId = response.readEntity(IdResponseDto.class);
 
+    // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData()).hasToString(oldReport.getData().toString());
@@ -1295,4 +1364,30 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 
+  @SneakyThrows
+  private String createManagementReport() {
+    // The initial report is created for a specific process
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey("procDefKey")
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(
+      new SingleProcessReportDefinitionRequestDto(reportData));
+
+    final UpdateRequest update = new UpdateRequest()
+      .index(ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
+      .id(reportId)
+      .script(new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.data.managementReport = true",
+        Collections.emptyMap()
+      ))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    return reportId;
+  }
 }

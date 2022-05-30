@@ -63,11 +63,11 @@ public class PublicApiRestService {
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String LABELS_SUB_PATH = "/variables/labels";
-  public static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
-  public static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
-  public static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
-  public static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
-  public static final String REPORT_EXPORT_DATA_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
+  private static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
+  private static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
+  private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
+  private static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
+  private static final String REPORT_EXPORT_DATA_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
   public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
   public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH +
     "/definition/json";

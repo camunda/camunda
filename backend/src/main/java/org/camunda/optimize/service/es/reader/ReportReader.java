@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -77,13 +78,6 @@ public class ReportReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  /**
-   * Obtain report by it's ID from elasticsearch
-   *
-   * @param reportId - id of report, expected not null
-   * @throws OptimizeRuntimeException if report with specified ID does not
-   *                                  exist or deserialization was not successful.
-   */
   public Optional<ReportDefinitionDto> getReport(String reportId) {
     log.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = performMultiGetReportRequest(reportId);
@@ -97,7 +91,6 @@ public class ReportReader {
         break;
       }
     }
-
     return result;
   }
 
@@ -210,7 +203,10 @@ public class ReportReader {
 
   public List<ReportDefinitionDto> getAllPrivateReportsOmitXml() {
     log.debug("Fetching all available private reports");
-    QueryBuilder qb = boolQuery().mustNot(existsQuery(COLLECTION_ID));
+    QueryBuilder qb = boolQuery().mustNot(existsQuery(COLLECTION_ID))
+      .minimumShouldMatch(1)
+      .should(boolQuery().must(termQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport, false)))
+      .should(boolQuery().mustNot(existsQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport)));
     SearchResponse searchResponse = performGetReportRequestOmitXml(
       qb,
       ALL_REPORT_INDICES,
@@ -235,7 +231,10 @@ public class ReportReader {
   public List<ReportDefinitionDto> getReportsForCollectionOmitXml(String collectionId) {
     log.debug("Fetching reports using collection with id {}", collectionId);
 
-    QueryBuilder qb = QueryBuilders.termQuery(COLLECTION_ID, collectionId);
+    QueryBuilder qb = boolQuery().must(termQuery(COLLECTION_ID, collectionId))
+      .minimumShouldMatch(1)
+      .should(boolQuery().must(termQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport, false)))
+      .should(boolQuery().mustNot(existsQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport)));
     SearchRequest searchRequest = getSearchRequestOmitXml(
       qb,
       new String[]{
@@ -262,9 +261,15 @@ public class ReportReader {
   }
 
   public long getReportCount(final ReportType reportType) {
-    final CountRequest countRequest = new CountRequest(
-      ReportType.PROCESS.equals(reportType) ? SINGLE_PROCESS_REPORT_INDEX_NAME : SINGLE_DECISION_REPORT_INDEX_NAME
-    );
+    final CountRequest countRequest;
+    if (ReportType.PROCESS.equals(reportType)) {
+      countRequest = new CountRequest(
+        new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
+        termQuery(String.join(".", DATA, ProcessReportDataDto.Fields.managementReport), false)
+      );
+    } else {
+      countRequest = new CountRequest(SINGLE_DECISION_REPORT_INDEX_NAME);
+    }
     try {
       return esClient.count(countRequest).getCount();
     } catch (IOException e) {

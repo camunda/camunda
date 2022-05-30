@@ -77,6 +77,7 @@ import static org.camunda.optimize.service.util.DmnModelUtil.extractDecisionDefi
 @Component
 @Slf4j
 public class ReportService implements CollectionReferencingService {
+
   private static final String DEFAULT_REPORT_NAME = "New Report";
   private static final String REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE = "Either the report %s does not reside in " +
     "the same collection as the combined report or both are not private entities";
@@ -198,6 +199,11 @@ public class ReportService implements CollectionReferencingService {
     final AuthorizedReportDefinitionResponseDto authorizedReportDefinition = getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition = authorizedReportDefinition.getDefinitionDto();
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+
+    if (originalReportDefinition instanceof SingleProcessReportDefinitionRequestDto
+      && ((SingleProcessReportDefinitionRequestDto) originalReportDefinition).getData().isManagementReport()) {
+      throw new OptimizeValidationException("Management reports cannot be copied");
+    }
 
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
@@ -336,6 +342,9 @@ public class ReportService implements CollectionReferencingService {
     final SingleProcessReportDefinitionRequestDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId
     );
+    if (currentReportVersion.getData().isManagementReport()) {
+      throw new OptimizeValidationException("Management Reports cannot be updated");
+    }
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
 
@@ -382,12 +391,20 @@ public class ReportService implements CollectionReferencingService {
 
   public void deleteReport(final String reportId) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
+    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto &&
+      ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {
+      throw new OptimizeValidationException("Management Reports cannot be deleted");
+    }
     removeReportAndAssociatedResources(reportId, reportDefinition);
   }
 
   public void deleteReportAsUser(final String userId, final String reportId, final boolean force) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
     getReportWithEditAuthorization(userId, reportDefinition);
+    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto &&
+      ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {
+      throw new OptimizeValidationException("Management Reports cannot be deleted");
+    }
 
     if (!force) {
       final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteReport(reportDefinition);

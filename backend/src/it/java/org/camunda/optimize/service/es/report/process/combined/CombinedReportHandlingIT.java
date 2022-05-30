@@ -481,8 +481,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   @ParameterizedTest
   @MethodSource("reportUpdateScenarios")
-  public void updatePrivateCombinedReportAddingOtherUsersPrivateReportFails(Function<CombinedReportUpdateData,
-    Response> scenario) {
+  public void updatePrivateCombinedReportAddingOtherUsersPrivateReportFails(
+    Function<CombinedReportUpdateData, Response> scenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 

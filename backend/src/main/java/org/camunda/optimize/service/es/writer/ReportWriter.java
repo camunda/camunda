@@ -121,7 +121,6 @@ public class ReportWriter {
     }
   }
 
-
   public IdResponseDto createNewSingleProcessReport(@NonNull final String userId,
                                                     @NonNull final ProcessReportDataDto reportData,
                                                     @NonNull final String reportName,

@@ -21,6 +21,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class CombinedReportEvaluator {
     }
     final SingleReportEvaluatorForCombinedReports singleReportEvaluator =
       new SingleReportEvaluatorForCombinedReports(singleReportEvaluatorInjected);
-    final List<BoolQueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions, singleReportEvaluator);
+    final List<QueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions, singleReportEvaluator);
     final CountRequest instanceCountRequest = createInstanceCountRequest(baseQueries);
     try {
       return esClient.count(instanceCountRequest).getCount();
@@ -93,14 +94,14 @@ public class CombinedReportEvaluator {
     }
   }
 
-  private CountRequest createInstanceCountRequest(final List<BoolQueryBuilder> baseQueries) {
+  private CountRequest createInstanceCountRequest(final List<QueryBuilder> baseQueries) {
     final BoolQueryBuilder baseQuery = new BoolQueryBuilder();
     baseQueries.forEach(baseQuery::should);
     return new CountRequest(PROCESS_INSTANCE_MULTI_ALIAS).query(baseQuery);
   }
 
-  private List<BoolQueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
-                                                   SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
+  private List<QueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
+                                               SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     return singleReportDefinitions
       .stream()
       .filter(reportDefinition ->

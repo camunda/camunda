@@ -50,6 +50,7 @@ import static org.camunda.optimize.service.entities.EntityImportService.API_IMPO
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitionIT {
+
   private static final String ACCESS_TOKEN = "secret_export_token";
   private String collectionId;
 
@@ -94,6 +95,30 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.get(0).getId());
 
     assertImportedReport(importedReport, reportDefToImport, collectionId, API_IMPORT_OWNER_NAME);
+  }
+
+  @Test
+  public void importManagementReportNotPossible() {
+    // given
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(DEFINITION_KEY)
+      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+    reportData.setManagementReport(true);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildPublicImportEntityDefinitionsRequest(
+        collectionId,
+        Sets.newHashSet(createExportDto(createProcessReportDefinition(reportData))),
+        ACCESS_TOKEN
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

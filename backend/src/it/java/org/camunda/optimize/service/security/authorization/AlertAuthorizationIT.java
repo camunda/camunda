@@ -29,8 +29,8 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 
 public class AlertAuthorizationIT extends AbstractAlertIT {
 
-  public final String PROCESS_DEFINITION_KEY = "processDefinition";
-  public final String PROCESS_DEFINITION_KEY_2 = "processDefinition2";
+  private final String PROCESS_DEFINITION_KEY = "processDefinition";
+  private final String PROCESS_DEFINITION_KEY_2 = "processDefinition2";
 
   @Test
   public void getOwnAuthorizedAlertsOnly() {
