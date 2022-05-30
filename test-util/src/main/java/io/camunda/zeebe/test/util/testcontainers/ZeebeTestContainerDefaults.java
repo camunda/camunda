@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.test.util.testcontainers;
 
+import java.util.Optional;
 import org.testcontainers.utility.DockerImageName;
 
 public final class ZeebeTestContainerDefaults {
-  private static final DockerImageName DEFAULT_TEST_IMAGE =
-      DockerImageName.parse("camunda/zeebe:current-test");
+  private static final String TEST_IMAGE_NAME =
+      Optional.ofNullable(System.getenv("ZEEBE_TEST_DOCKER_IMAGE"))
+          .orElse("camunda/zeebe:current-test");
+  private static final DockerImageName DEFAULT_TEST_IMAGE = DockerImageName.parse(TEST_IMAGE_NAME);
 
   private ZeebeTestContainerDefaults() {}
 
