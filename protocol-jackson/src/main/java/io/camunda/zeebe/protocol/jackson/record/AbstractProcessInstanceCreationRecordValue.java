@@ -10,10 +10,16 @@ package io.camunda.zeebe.protocol.jackson.record;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.zeebe.protocol.jackson.record.ProcessInstanceCreationRecordValueBuilder.ImmutableProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ZeebeStyle
 @JsonDeserialize(as = ImmutableProcessInstanceCreationRecordValue.class)
 public abstract class AbstractProcessInstanceCreationRecordValue
-    implements ProcessInstanceCreationRecordValue, DefaultJsonSerializable {}
+    implements ProcessInstanceCreationRecordValue, DefaultJsonSerializable {
+
+  @Override
+  @AllowNulls
+  public abstract Map<String, Object> getVariables();
+}

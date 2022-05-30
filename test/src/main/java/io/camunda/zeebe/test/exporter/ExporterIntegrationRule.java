@@ -272,6 +272,7 @@ public class ExporterIntegrationRule extends ExternalResource {
     variables.put("orderId", "foo-bar-123");
     variables.put("largeValue", "x".repeat(8192));
     variables.put("unicode", "Á");
+    variables.put("nullable", null);
 
     final long processInstanceKey = createProcessInstance("testProcess", variables);
 
