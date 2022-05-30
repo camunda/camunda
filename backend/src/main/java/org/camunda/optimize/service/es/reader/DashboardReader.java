@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -30,6 +31,8 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @RequiredArgsConstructor
 @Component
@@ -40,7 +43,10 @@ public class DashboardReader {
   private final ObjectMapper objectMapper;
 
   public long getDashboardCount() {
-    final CountRequest countRequest = new CountRequest(DASHBOARD_INDEX_NAME);
+    final CountRequest countRequest = new CountRequest(
+      new String[]{DASHBOARD_INDEX_NAME},
+      termQuery(DashboardIndex.MANAGEMENT_DASHBOARD, false)
+    );
     try {
       return esClient.count(countRequest).getCount();
     } catch (IOException e) {
@@ -124,7 +130,7 @@ public class DashboardReader {
   public List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
-    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
+    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = boolQuery()
       .filter(QueryBuilders.nestedQuery(
         "reports",
         QueryBuilders.termQuery("reports.id", reportId),

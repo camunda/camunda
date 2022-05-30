@@ -54,6 +54,35 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  public void copyPrivateManagementDashboardNotSupported() {
+    // given
+    final String dashboardId = createManagementDashboard();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, null)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void copyPrivateManagementDashboardIntoCollectionNotSupported() {
+    // given
+    final String dashboardId = createManagementDashboard();
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, collectionId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void copyPrivateDashboardWithNameParameter() {
     // given
     final String dashboardId = dashboardClient.createEmptyDashboard(null);
@@ -100,6 +129,21 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     assertThat(returnedDashboard).isNotNull();
     assertThat(returnedDashboard.getId()).isEqualTo(id);
     assertThat(returnedDashboard.getName()).isEqualTo(definitionDto.getName());
+    assertThat(returnedDashboard.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(returnedDashboard.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
+  }
+
+  @Test
+  public void getManagementDashboard() {
+    // given
+    final String dashboardId = createManagementDashboard();
+
+    // when
+    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getDashboard(dashboardId);
+
+    // then
+    assertThat(returnedDashboard).isNotNull();
+    assertThat(returnedDashboard.getId()).isEqualTo(dashboardId);
     assertThat(returnedDashboard.getOwner()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(returnedDashboard.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
   }
@@ -164,6 +208,21 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void deleteManagementDashboardNotSupported() {
+    // given
+    String id = createManagementDashboard();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteDashboardRequest(id)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -205,14 +206,17 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
     // the process report within the combined report is only imported once
     assertThat(importedReports).hasSize(3);
 
-    assertThat(importedDashboard).isPresent();
-    assertThat(importedDashboard.get().getName()).isEqualTo(dashboardExport.getName());
-    assertThat(importedDashboard.get().getOwner()).isEqualTo(API_IMPORT_OWNER_NAME);
-    assertThat(importedDashboard.get().getLastModifier()).isEqualTo(API_IMPORT_OWNER_NAME);
-    assertThat(importedDashboard.get().getCreated()).isEqualTo(LocalDateUtil.getCurrentDateTime());
-    assertThat(importedDashboard.get().getLastModified()).isEqualTo(LocalDateUtil.getCurrentDateTime());
-    assertThat(importedDashboard.get().getCollectionId()).isEqualTo(collectionId);
-    assertThat(importedDashboard.get().getAvailableFilters()).isEqualTo(dashboardExport.getAvailableFilters());
+    assertThat(importedDashboard).isPresent().get()
+      .extracting(
+        BaseDashboardDefinitionDto::getName, BaseDashboardDefinitionDto::getOwner, BaseDashboardDefinitionDto::getLastModifier,
+        BaseDashboardDefinitionDto::getCreated, BaseDashboardDefinitionDto::getLastModified,
+        BaseDashboardDefinitionDto::getCollectionId, BaseDashboardDefinitionDto::getAvailableFilters,
+        BaseDashboardDefinitionDto::isManagementDashboard
+      )
+      .containsExactly(
+        dashboardExport.getName(), API_IMPORT_OWNER_NAME, API_IMPORT_OWNER_NAME, LocalDateUtil.getCurrentDateTime(),
+        LocalDateUtil.getCurrentDateTime(), collectionId, dashboardExport.getAvailableFilters(), false
+      );
 
     // the dashboard resources have been imported with correct IDs
     assertThat(importedDashboard.get().getReports())
@@ -342,4 +346,5 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
   private void setAccessToken() {
     embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
   }
+
 }

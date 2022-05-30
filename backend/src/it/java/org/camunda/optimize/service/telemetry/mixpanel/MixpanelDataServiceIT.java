@@ -26,6 +26,7 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 public class MixpanelDataServiceIT extends AbstractIT {
@@ -48,6 +49,7 @@ public class MixpanelDataServiceIT extends AbstractIT {
     final String reportInCollectionId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     reportClient.createEmptySingleDecisionReport();
     final String dashboardId = dashboardClient.createEmptyDashboard();
+    createManagementDashboard();
     alertClient.createAlertForReport(reportInCollectionId);
     final ReportShareRestDto reportShare = new ReportShareRestDto();
     reportShare.setReportId(reportInCollectionId);
@@ -73,6 +75,7 @@ public class MixpanelDataServiceIT extends AbstractIT {
     // The management report is not included in the result
     assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
+    // The management dashboard is not included in the result
     assertThat(mixpanelHeartbeatProperties.getDashboardCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getReportShareCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getDashboardShareCount()).isEqualTo(1);
@@ -131,6 +134,24 @@ public class MixpanelDataServiceIT extends AbstractIT {
         ScriptType.INLINE,
         Script.DEFAULT_SCRIPT_LANG,
         "ctx._source.data.managementReport = true",
+        Collections.emptyMap()
+      ))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  @SneakyThrows
+  protected void createManagementDashboard() {
+    final String dashboardId = dashboardClient.createEmptyDashboard();
+
+    final UpdateRequest update = new UpdateRequest()
+      .index(DASHBOARD_INDEX_NAME)
+      .id(dashboardId)
+      .script(new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.managementDashboard = true",
         Collections.emptyMap()
       ))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

@@ -400,6 +400,10 @@ public class ReportService implements CollectionReferencingService {
 
   public void deleteReportAsUser(final String userId, final String reportId, final boolean force) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
+    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto
+      && ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {
+      throw new OptimizeValidationException("Management reports cannot be deleted");
+    }
     getReportWithEditAuthorization(userId, reportDefinition);
     if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto &&
       ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {

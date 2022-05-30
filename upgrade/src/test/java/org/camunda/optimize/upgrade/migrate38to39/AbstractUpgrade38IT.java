@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.migrate38to39;
 
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndexOld;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+import org.camunda.optimize.upgrade.migrate38to39.indices.DashboardIndexOld;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,12 +19,14 @@ public class AbstractUpgrade38IT extends AbstractUpgradeIT {
   protected static final String TO_VERSION = "3.9.0";
 
   protected static final SingleProcessReportIndexOld SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexOld();
+  protected static final DashboardIndexOld DASHBOARD_INDEX = new DashboardIndexOld();
 
   @BeforeEach
   protected void setUp() throws Exception {
     super.setUp();
     initSchema(List.of(
-      SINGLE_PROCESS_REPORT_INDEX
+      SINGLE_PROCESS_REPORT_INDEX,
+      DASHBOARD_INDEX
     ));
     setMetadataVersion(FROM_VERSION);
   }

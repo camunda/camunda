@@ -23,7 +23,6 @@ import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.export.JsonReportResultExportService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.stereotype.Component;
@@ -72,7 +71,6 @@ public class PublicApiRestService {
   public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH +
     "/definition/json";
 
-  private final SharingService sharingService;
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
   private final EntityImportService entityImportService;

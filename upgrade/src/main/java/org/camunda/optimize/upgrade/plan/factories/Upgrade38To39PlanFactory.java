@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -21,6 +22,7 @@ public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
       .toVersion("3.9.0")
       .addUpgradeStep(migrateDecisionReports())
       .addUpgradeStep(migrateProcessReports())
+      .addUpgradeStep(migrateDashboards())
       .build();
   }
 
@@ -29,8 +31,12 @@ public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
   }
 
   private static UpgradeStep migrateProcessReports() {
-    String processReportMigrationScript = getReportKPIMigrationScript() + getProcessManagementReportMigrationScript();
+    String processReportMigrationScript = getReportKPIMigrationScript() + getManagementProcessReportMigrationScript();
     return new UpdateIndexStep(new SingleProcessReportIndex(), processReportMigrationScript);
+  }
+
+  private static UpgradeStep migrateDashboards() {
+    return new UpdateIndexStep(new DashboardIndex(), "ctx._source.managementDashboard = false;\n");
   }
 
   private static String getReportKPIMigrationScript() {
@@ -56,7 +62,7 @@ public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
     // @formatter:on
   }
 
-  private static String getProcessManagementReportMigrationScript() {
+  private static String getManagementProcessReportMigrationScript() {
     // @formatter:off
     return
       "  if (ctx._source.data != null) {\n" +

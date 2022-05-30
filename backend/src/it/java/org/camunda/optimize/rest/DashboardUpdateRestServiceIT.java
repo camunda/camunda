@@ -64,6 +64,21 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
   }
 
   @Test
+  public void updateManagementDashboardNotSupported() {
+    // given
+    final String dashboardId = createManagementDashboard();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, new DashboardDefinitionRestDto())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void updateDashboardRefreshRate() {
     // given
     final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();

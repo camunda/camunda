@@ -36,6 +36,7 @@ import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.DashboardRelationService;
@@ -170,6 +171,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+    if (dashboardDefinition.isManagementDashboard()) {
+      throw new OptimizeValidationException("Management Dashboards cannot be copied");
+    }
 
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
@@ -310,14 +314,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return dashboardReader.getDashboards(dashboardIds);
   }
 
-  public List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(final String collectionId) {
-    return dashboardReader.getDashboardsForCollection(collectionId);
-  }
-
   public void updateDashboard(final DashboardDefinitionRestDto updatedDashboard, final String userId) {
     final String dashboardId = updatedDashboard.getId();
     final AuthorizedDashboardDefinitionResponseDto dashboardWithEditAuthorization =
       getDashboardWithEditAuthorization(dashboardId, userId);
+    if (dashboardWithEditAuthorization.getDefinitionDto() != null &&
+      dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()) {
+      throw new OptimizeValidationException("Management Dashboards cannot be edited");
+    }
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDtoWithModifier(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
@@ -348,6 +352,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public void deleteDashboardAsUser(final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
+    if (dashboardDefinitionDto != null && dashboardDefinitionDto.isManagementDashboard()) {
+      throw new OptimizeValidationException("Management Dashboards cannot be deleted");
+    }
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 
@@ -365,6 +372,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       validateVariableFilters(filtersByClass);
       validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
     }
+  }
+
+  private List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(final String collectionId) {
+    return dashboardReader.getDashboardsForCollection(collectionId);
   }
 
   private void deleteDashboard(final String dashboardId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
