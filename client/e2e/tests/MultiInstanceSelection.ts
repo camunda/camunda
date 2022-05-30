@@ -81,7 +81,19 @@ test('Should select multi instance flow nodes', async (t) => {
   await t
     .click(within(screen.queryByTestId('diagram')).queryByText(/Task B/))
     .expect(selectedInstanceHistoryRows.count)
-    .eql(5);
+    .eql(5)
+    .expect(
+      within(screen.queryByTestId('popover')).queryByText(
+        /To view details for any of these,.*select one Instance in the Instance History./
+      ).exists
+    )
+    .ok()
+    .expect(
+      screen.queryByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.'
+      ).exists
+    )
+    .ok();
 
   await Promise.all(
     new Array(5).map((i) =>
@@ -107,7 +119,13 @@ test('Should select multi instance flow nodes', async (t) => {
     .expect(selectedInstanceHistoryRows.count)
     .eql(1)
     .expect(selectedInstanceHistoryRows.nth(0).textContent)
-    .eql('Task B');
+    .eql('Task B')
+    .expect(
+      screen.queryByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.'
+      ).exists
+    )
+    .notOk();
 
   await t.click(
     screen.queryByRole('button', {name: /view 25 incidents in instance/i})

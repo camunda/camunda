@@ -23,69 +23,7 @@ fixture('Process Instance')
     await t.useRole(demoUser);
   });
 
-test('History panel - diagram - variable panel interaction', async (t) => {
-  const {
-    initialData: {processWithMultipleTokens},
-  } = t.fixtureCtx;
-
-  await t.navigateTo(
-    `/processes/${processWithMultipleTokens.processInstanceKey}`
-  );
-  await t
-    .expect(screen.queryByText('Instance History').exists)
-    .ok()
-    .expect(screen.queryByTestId('instance-history').exists)
-    .ok()
-    .expect(screen.queryByTestId('diagram').exists)
-    .ok();
-
-  await t
-    .click(within(screen.queryByTestId('diagram')).queryByText(/Task A/))
-    .expect(
-      within(screen.queryByTestId('popover')).queryByText(
-        /To view details for any of these,.*select one Instance in the Instance History./
-      ).exists
-    )
-    .ok()
-    .expect(
-      screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      ).exists
-    )
-    .ok();
-
-  await t
-    .click(
-      within(screen.queryByTestId('instance-history'))
-        .getAllByText(/Task A/)
-        .nth(0)
-    )
-    .expect(screen.queryByTestId('popover').exists)
-    .ok()
-    .expect(
-      within(screen.queryByTestId('popover')).queryByText(/Task A/).exists
-    )
-    .ok()
-    .expect(screen.queryByText('The Flow Node has no Variables').exists)
-    .ok();
-
-  await t
-    .click(
-      within(screen.queryByTestId('instance-history'))
-        .getAllByText(/Task A/)
-        .nth(0)
-    )
-    .expect(screen.queryByTestId('popover').exists)
-    .notOk()
-    .expect(
-      within(screen.queryByTestId('variables-list')).queryByText(
-        'shouldContinue'
-      ).exists
-    )
-    .ok();
-});
-
-test('Instance with an incident - resolve incidents', async (t) => {
+test('Resolve an incident', async (t) => {
   const {
     initialData: {instanceWithIncidentToResolve},
   } = t.fixtureCtx;
