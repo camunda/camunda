@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
@@ -68,8 +69,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       return checkForDuplicateIds(resource, parsedDrg, deployment)
           .map(
               noDuplicates -> {
-                appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
-                writeRecords(deployment, resource);
+                final var drgKey = appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
+                writeRecords(deployment, resource, drgKey);
                 return null;
               });
 
@@ -148,7 +149,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .orElse("<?>");
   }
 
-  private void appendMetadataToDeploymentEvent(
+  private long appendMetadataToDeploymentEvent(
       final DeploymentResource resource,
       final ParsedDecisionRequirementsGraph parsedDrg,
       final DeploymentRecord deploymentEvent) {
@@ -223,6 +224,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                               .setDecisionKey(newDecisionKey.getAsLong())
                               .setVersion(INITIAL_VERSION));
             });
+
+    return drgRecord.getDecisionRequirementsKey();
   }
 
   private boolean isDuplicate(
@@ -234,38 +237,44 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         && drg.getChecksum().equals(checksum);
   }
 
-  private void writeRecords(final DeploymentRecord deployment, final DeploymentResource resource) {
+  private void writeRecords(
+      final DeploymentRecord deployment,
+      final DeploymentResource resource,
+      final long decisionRequirementsKey) {
 
-    for (final DecisionRequirementsMetadataRecord drg : deployment.decisionRequirementsMetadata()) {
-      if (!drg.isDuplicate()) {
-        stateWriter.appendFollowUpEvent(
-            drg.getDecisionRequirementsKey(),
-            DecisionRequirementsIntent.CREATED,
-            new DecisionRequirementsRecord()
-                .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
-                .setDecisionRequirementsId(drg.getDecisionRequirementsId())
-                .setDecisionRequirementsName(drg.getDecisionRequirementsName())
-                .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
-                .setNamespace(drg.getNamespace())
-                .setResourceName(drg.getResourceName())
-                .setChecksum(drg.getChecksumBuffer())
-                .setResource(resource.getResourceBuffer()));
-      }
-    }
+    deployment.decisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
+        .filter(not(DecisionRequirementsMetadataRecord::isDuplicate))
+        .findFirst()
+        .ifPresent(
+            drg ->
+                stateWriter.appendFollowUpEvent(
+                    drg.getDecisionRequirementsKey(),
+                    DecisionRequirementsIntent.CREATED,
+                    new DecisionRequirementsRecord()
+                        .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+                        .setDecisionRequirementsId(drg.getDecisionRequirementsId())
+                        .setDecisionRequirementsName(drg.getDecisionRequirementsName())
+                        .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
+                        .setNamespace(drg.getNamespace())
+                        .setResourceName(drg.getResourceName())
+                        .setChecksum(drg.getChecksumBuffer())
+                        .setResource(resource.getResourceBuffer())));
 
-    for (final DecisionRecord decision : deployment.decisionsMetadata()) {
-      if (!decision.isDuplicate()) {
-        stateWriter.appendFollowUpEvent(
-            decision.getDecisionKey(),
-            DecisionIntent.CREATED,
-            new DecisionRecord()
-                .setDecisionKey(decision.getDecisionKey())
-                .setDecisionId(decision.getDecisionId())
-                .setDecisionName(decision.getDecisionName())
-                .setVersion(decision.getVersion())
-                .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-                .setDecisionRequirementsKey(decision.getDecisionRequirementsKey()));
-      }
-    }
+    deployment.decisionsMetadata().stream()
+        .filter(decision -> decision.getDecisionRequirementsKey() == decisionRequirementsKey)
+        .filter(not(DecisionRecord::isDuplicate))
+        .forEach(
+            decision ->
+                stateWriter.appendFollowUpEvent(
+                    decision.getDecisionKey(),
+                    DecisionIntent.CREATED,
+                    new DecisionRecord()
+                        .setDecisionKey(decision.getDecisionKey())
+                        .setDecisionId(decision.getDecisionId())
+                        .setDecisionName(decision.getDecisionName())
+                        .setVersion(decision.getVersion())
+                        .setDecisionRequirementsId(decision.getDecisionRequirementsId())
+                        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())));
   }
 }
