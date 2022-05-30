@@ -178,6 +178,7 @@
     "ownerInfo": "Der Prozesseigentümer ist für Geschäftsmetriken des Prozesses verantwortlich. Sie können den Prozesseigentümer verwenden, um Prozesse zu sortieren und zu filtern",
     "ownerRemoveWarning": "Der Eigentümer '{owner}' wird aus dem Prozess entfernt",
     "noData": "keine Daten",
+    "processOverview": "Prozessübersicht",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",

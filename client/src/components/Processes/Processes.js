@@ -17,7 +17,8 @@ import TimeGoalsModal from './TimeGoalsModal';
 import GoalResult from './GoalResult';
 import GoalSummary from './GoalSummary';
 import EditOwnerModal from './EditOwnerModal';
-import {loadProcesses, updateGoals, updateOwner} from './service';
+import {loadProcesses, updateGoals, updateOwner, loadManagementDashboard} from './service';
+import {DashboardView} from '../Dashboards/DashboardView';
 
 import './Processes.scss';
 
@@ -27,6 +28,11 @@ export function Processes({mightFail}) {
   const [openProcess, setOpenProcess] = useState();
   const [editOwnerInfo, setEditOwnerInfo] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
+  const [dashboard, setDashboard] = useState();
+
+  useEffect(() => {
+    mightFail(loadManagementDashboard(), setDashboard, showError);
+  }, [mightFail]);
 
   const loadProcessesList = useCallback(
     (sortBy, sortOrder) => {
@@ -58,6 +64,14 @@ export function Processes({mightFail}) {
 
   return (
     <div className="Processes">
+      <h1 className="processOverview">Process Overview</h1>
+      {dashboard && (
+        <DashboardView
+          reports={dashboard.reports}
+          availableFilters={dashboard.availableFilters}
+          disableNameLink
+        />
+      )}
       <EntityList
         name={t('processes.title')}
         headerText={

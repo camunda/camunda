@@ -40,3 +40,9 @@ export async function evaluateGoals(processDefinitionKey, goals) {
 export function updateOwner(processDefinitionKey, id) {
   return put(`api/process/${processDefinitionKey}/owner`, {id});
 }
+
+export async function loadManagementDashboard() {
+  const response = await get(`api/dashboard/management`);
+
+  return await response.json();
+}

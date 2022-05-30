@@ -12,7 +12,7 @@ import {EntityList} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import {Processes} from './Processes';
-import {loadProcesses, updateGoals, updateOwner} from './service';
+import {loadProcesses, updateGoals, updateOwner, loadManagementDashboard} from './service';
 import TimeGoalsModal from './TimeGoalsModal';
 import EditOwnerModal from './EditOwnerModal';
 
@@ -27,6 +27,7 @@ jest.mock('./service', () => ({
   ]),
   updateGoals: jest.fn(),
   updateOwner: jest.fn(),
+  loadManagementDashboard: jest.fn(),
 }));
 
 jest.mock('config', () => ({
@@ -128,4 +129,19 @@ it('should edit a process owner', async () => {
   node.find(EditOwnerModal).simulate('confirm', 'userId');
 
   expect(updateOwner).toHaveBeenCalledWith('defKey', 'userId');
+});
+
+it('should hide owner column in ccsm mode', async () => {
+  const testDashboard = {reports: [], availableFilters: []};
+  loadManagementDashboard.mockReturnValueOnce(testDashboard);
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  expect(loadManagementDashboard).toHaveBeenCalled();
+
+  expect(node.find('DashboardView').prop('reports')).toEqual(testDashboard.reports);
+  expect(node.find('DashboardView').prop('availableFilters')).toEqual(
+    testDashboard.availableFilters
+  );
 });

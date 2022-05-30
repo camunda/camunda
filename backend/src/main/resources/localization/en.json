@@ -178,6 +178,7 @@
     "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to sort and filter processes.",
     "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
     "noData": "No Data",
+    "processOverview": "Process Overview",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",

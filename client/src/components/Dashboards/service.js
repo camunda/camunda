@@ -118,7 +118,7 @@ export function getDefaultFilter(availableFilters) {
   const filters = [];
 
   availableFilters.forEach((availableFilter) => {
-    if (availableFilter?.data.defaultValues) {
+    if (availableFilter?.data?.defaultValues) {
       if (availableFilter.type === 'state') {
         return filters.push(
           ...availableFilter.data.defaultValues.map((type) => ({
