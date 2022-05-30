@@ -18,7 +18,6 @@ import io.restassured.specification.RequestSpecification;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
 import io.zeebe.containers.ZeebePort;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -159,58 +158,6 @@ public class GatewayHealthProbeIntegrationTest {
       // it can happen that a single request takes too long and causes awaitility to timeout,
       // in which case we want to try a second time to run the request without timeout
       given().spec(gatewayServerSpec).when().get(PATH_READINESS_PROBE).then().statusCode(200);
-    }
-
-    // --- shutdown ------------------------------------------
-    gateway.stop();
-  }
-
-  @Test
-  public void shouldReportReadinessUpIfNotAvailable() throws IOException, InterruptedException {
-    // given
-    final ZeebeGatewayContainer gateway =
-        new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withEnv("ZEEBE_GATEWAY_MONITORING_ENABLED", "true")
-            .withExposedPorts(ZeebePort.MONITORING.getPort())
-            .withoutTopologyCheck()
-            .withStartupCheckStrategy(new IsRunningStartupCheckStrategy());
-    gateway.start();
-    final Integer actuatorPort = gateway.getMappedPort(ZeebePort.MONITORING.getPort());
-    final String containerIPAddress = gateway.getExternalHost();
-
-    final RequestSpecification gatewayServerSpec =
-        new RequestSpecBuilder()
-            .setContentType(ContentType.JSON)
-            .setBaseUri("http://" + containerIPAddress)
-            .setPort(actuatorPort)
-            .addFilter(new ResponseLoggingFilter())
-            .addFilter(new RequestLoggingFilter())
-            .build();
-
-    // when
-    // we are trying to kill process to make application unavailable
-    gateway.execInContainer("killbyname", "java");
-
-    // then
-    // most of the readiness probes use a delayed health indicator which is scheduled at a fixed
-    // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
-    // gateway finds the broker
-    try {
-      Awaitility.await("wait until status turns DOWN")
-          .atMost(Duration.ofSeconds(10))
-          .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () ->
-                  given()
-                      .spec(gatewayServerSpec)
-                      .when()
-                      .get(PATH_READINESS_PROBE)
-                      .then()
-                      .statusCode(503));
-    } catch (final ConditionTimeoutException e) {
-      // it can happen that a single request takes too long and causes awaitility to timeout,
-      // in which case we want to try a second time to run the request without timeout
-      given().spec(gatewayServerSpec).when().get(PATH_READINESS_PROBE).then().statusCode(503);
     }
 
     // --- shutdown ------------------------------------------

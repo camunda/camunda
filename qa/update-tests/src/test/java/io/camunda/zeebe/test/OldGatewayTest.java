@@ -10,7 +10,6 @@ package io.camunda.zeebe.test;
 import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
@@ -24,8 +23,6 @@ import org.testcontainers.containers.Network;
 @ExtendWith(ContainerStateExtension.class)
 final class OldGatewayTest {
 
-  public static final String LAST_VERSION = VersionUtil.getPreviousVersion();
-  public static final String CURRENT_VERSION = "current-test";
   private static Network network;
 
   @BeforeAll
@@ -44,11 +41,7 @@ final class OldGatewayTest {
   @SuppressWarnings("java:S2699") // there is an assertion when awaiting completion
   void update(final String name, final UpdateTestCase testCase, final ContainerState state) {
     // given
-    state
-        .withNetwork(network)
-        .broker(CURRENT_VERSION)
-        .withStandaloneGateway(LAST_VERSION)
-        .start(true);
+    state.withNetwork(network).withNewBroker().withOldGateway().start(true);
     final long processInstanceKey = testCase.setUp(state.client());
 
     // when
