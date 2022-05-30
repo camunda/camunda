@@ -13,8 +13,8 @@ import TemplateModal from './TemplateModal';
 
 import heatmapImg from './images/heatmap.png';
 import durationImg from './images/duration.png';
-import percentImg from './images/duration.png';
-// TODO: Add real image using new color scheme
+import durationProgress from './images/durationProgress.png';
+import percentageProgress from './images/percentageProgress.png';
 import tableImg from './images/table.png';
 import chartImg from './images/chart.png';
 
@@ -31,7 +31,7 @@ export default function ReportTemplateModal({onClose}) {
       templates: [
         {
           name: 'p75Duration',
-          img: durationImg,
+          img: durationProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
             view: {entity: 'processInstance', properties: ['duration']},
@@ -61,7 +61,7 @@ export default function ReportTemplateModal({onClose}) {
         },
         {
           name: 'percentSLAMet',
-          img: percentImg,
+          img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
             view: {entity: 'processInstance', properties: ['percentage']},
@@ -136,7 +136,7 @@ export default function ReportTemplateModal({onClose}) {
         },
         {
           name: 'percentSuccess',
-          img: percentImg,
+          img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
             view: {entity: 'processInstance', properties: ['percentage']},
@@ -167,7 +167,7 @@ export default function ReportTemplateModal({onClose}) {
         },
         {
           name: 'percentAutomated',
-          img: percentImg,
+          img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
             view: {entity: 'processInstance', properties: ['percentage']},
@@ -198,7 +198,7 @@ export default function ReportTemplateModal({onClose}) {
         },
         {
           name: 'percentNoIncidents',
-          img: percentImg,
+          img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
             view: {entity: 'processInstance', properties: ['percentage']},
