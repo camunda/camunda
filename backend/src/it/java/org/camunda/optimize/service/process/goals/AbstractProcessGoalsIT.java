@@ -3,13 +3,13 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.process;
+package org.camunda.optimize.service.process.goals;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -44,7 +44,7 @@ public class AbstractProcessGoalsIT extends AbstractIT {
 
   protected void setOwnerForProcess(final String processDefKey, final String owner) {
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(processDefKey, new ProcessGoalsOwnerDto(owner))
+      .buildSetProcessOwnerRequestOld(processDefKey, new ProcessOwnerDto(owner))
       .execute();
   }
 
@@ -82,8 +82,8 @@ public class AbstractProcessGoalsIT extends AbstractIT {
       .extracting(ProcessGoalsResponseDto::getOwner)
       .singleElement()
       .satisfies(processOwner -> assertThat(processOwner)
-        .isEqualTo(expectedOwnerId == null ? new ProcessGoalsOwnerResponseDto()
-                     : new ProcessGoalsOwnerResponseDto(expectedOwnerId, embeddedOptimizeExtension.getIdentityService()
+        .isEqualTo(expectedOwnerId == null ? new ProcessOwnerResponseDto()
+                     : new ProcessOwnerResponseDto(expectedOwnerId, embeddedOptimizeExtension.getIdentityService()
           .getIdentityNameById(expectedOwnerId)
           .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
   }

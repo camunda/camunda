@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.dto.optimize.query;
+package org.camunda.optimize.dto.optimize.query.processoverview;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,8 +14,9 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProcessOverviewDto {
-  private String owner;
-  private String name;
+public class ProcessOverviewResponseDto {
+  private String processDefinitionName;
   private String processDefinitionKey;
+  private ProcessOwnerResponseDto owner;
+  private ProcessDigestResponseDto digest;
 }

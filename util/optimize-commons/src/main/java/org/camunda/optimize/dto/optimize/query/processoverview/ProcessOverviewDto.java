@@ -3,18 +3,20 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.dto.optimize.query.goals;
+package org.camunda.optimize.dto.optimize.query.processoverview;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import lombok.experimental.FieldNameConstants;
 
 @Data
-@NoArgsConstructor
+@FieldNameConstants
 @AllArgsConstructor
-public class ProcessGoalsOwnerDto implements OptimizeDto {
-
-  private String id;
+@NoArgsConstructor
+public class ProcessOverviewDto {
+  private String owner;
+  private String processDefinitionKey;
+  private ProcessDigestDto digest;
 
 }

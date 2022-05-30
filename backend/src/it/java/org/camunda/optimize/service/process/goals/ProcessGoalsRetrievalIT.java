@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.process;
+package org.camunda.optimize.service.process.goals;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
@@ -91,13 +91,13 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
         new ProcessGoalsResponseDto(
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
-          new ProcessGoalsOwnerResponseDto(),
+          new ProcessOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         ),
         new ProcessGoalsResponseDto(
           SECOND_PROCESS_DEFINITION_KEY,
           SECOND_PROCESS_DEFINITION_KEY,
-          new ProcessGoalsOwnerResponseDto(),
+          new ProcessOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         )
       );
@@ -140,13 +140,13 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
         new ProcessGoalsResponseDto(
           eventProcessDefinitionDto.getName(),
           eventProcessDefinitionDto.getKey(),
-          new ProcessGoalsOwnerResponseDto(),
+          new ProcessOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         ),
         new ProcessGoalsResponseDto(
           FIRST_PROCESS_DEFINITION_KEY,
           FIRST_PROCESS_DEFINITION_KEY,
-          new ProcessGoalsOwnerResponseDto(),
+          new ProcessOwnerResponseDto(),
           new ProcessDurationGoalsAndResultsDto()
         )
       );
@@ -234,7 +234,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         DEF_KEY,
         DEF_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto()
       )
     );
@@ -271,7 +271,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         DEF_KEY,
         DEF_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto()
       ));
   }
@@ -333,7 +333,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -367,7 +367,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -636,7 +636,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(
@@ -648,7 +648,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         SECOND_PROCESS_DEFINITION_KEY,
         SECOND_PROCESS_DEFINITION_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto()
       )
     );
@@ -685,7 +685,7 @@ public class ProcessGoalsRetrievalIT extends AbstractProcessGoalsIT {
       new ProcessGoalsResponseDto(
         FIRST_PROCESS_DEFINITION_KEY,
         FIRST_PROCESS_DEFINITION_KEY,
-        new ProcessGoalsOwnerResponseDto(),
+        new ProcessOwnerResponseDto(),
         new ProcessDurationGoalsAndResultsDto(
           goals,
           List.of(

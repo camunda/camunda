@@ -8,7 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
 import org.camunda.optimize.service.goals.ProcessGoalsService;
@@ -74,7 +74,7 @@ public class ProcessGoalsRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateProcessGoalsOwner(@Context final ContainerRequestContext requestContext,
                                       @PathParam("processDefinitionKey") final String processDefKey,
-                                      @NotNull @RequestBody ProcessGoalsOwnerDto ownerDto) {
+                                      @NotNull @RequestBody ProcessOwnerDto ownerDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     processGoalsService.updateProcessGoalsOwner(userId, processDefKey, ownerDto.getId());
   }

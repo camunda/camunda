@@ -3,11 +3,11 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.process;
+package org.camunda.optimize.service.process.goals;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,7 +27,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
   public void setProcessOwner_notPossibleForUnauthenticatedUser() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessGoalsOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .withoutAuthentication()
       .execute();
 
@@ -39,27 +39,27 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
   public void setProcessOwner_noDefinitionExistsForKey() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessGoalsOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  private static Stream<ProcessGoalsOwnerDto> validOwners() {
-    return Stream.of(new ProcessGoalsOwnerDto(null), new ProcessGoalsOwnerDto(DEFAULT_USERNAME));
+  private static Stream<ProcessOwnerDto> validOwners() {
+    return Stream.of(new ProcessOwnerDto(null), new ProcessOwnerDto(DEFAULT_USERNAME));
   }
 
   @ParameterizedTest
   @MethodSource("validOwners")
-  public void setProcessOwner_validOwnerSetting(final ProcessGoalsOwnerDto ownerDto) {
+  public void setProcessOwner_validOwnerSetting(final ProcessOwnerDto ownerDto) {
     // given
     deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, ownerDto)
+      .buildSetProcessOwnerRequestOld(DEF_KEY, ownerDto)
       .execute();
 
     // then
@@ -77,7 +77,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessGoalsOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .execute();
 
     // then
@@ -94,7 +94,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessGoalsOwnerDto(null))
+      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(null))
       .execute();
 
     // then
@@ -111,7 +111,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, null)
+      .buildSetProcessOwnerRequestOld(DEF_KEY, null)
       .execute();
 
     // then
@@ -126,7 +126,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessGoalsOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .execute();
 
     // then
@@ -145,7 +145,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(defKey, new ProcessGoalsOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequestOld(defKey, new ProcessOwnerDto(DEFAULT_USERNAME))
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
@@ -165,7 +165,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(defKey, new ProcessGoalsOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequestOld(defKey, new ProcessOwnerDto(DEFAULT_USERNAME))
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 

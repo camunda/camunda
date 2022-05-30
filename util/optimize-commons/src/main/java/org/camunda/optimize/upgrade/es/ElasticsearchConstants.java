@@ -47,6 +47,7 @@ public class ElasticsearchConstants {
   public static final String DYNAMIC_PROPERTY_TYPE = "dynamic";
 
   public static final String TYPE_KEYWORD = "keyword";
+  public static final String TYPE_INTEGER = "integer";
   public static final String TYPE_LONG = "long";
   public static final String TYPE_DOUBLE = "double";
   public static final String TYPE_DATE = "date";

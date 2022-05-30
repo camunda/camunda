@@ -28,6 +28,7 @@ import org.camunda.optimize.test.optimize.IdentityClient;
 import org.camunda.optimize.test.optimize.ImportClient;
 import org.camunda.optimize.test.optimize.IngestionClient;
 import org.camunda.optimize.test.optimize.LocalizationClient;
+import org.camunda.optimize.test.optimize.ProcessOverviewClient;
 import org.camunda.optimize.test.optimize.PublicApiClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
@@ -127,4 +128,5 @@ public abstract class AbstractIT {
     optimizeRequestExecutorSupplier,
     () -> embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken()
   );
+  protected ProcessOverviewClient processOverviewClient = new ProcessOverviewClient(optimizeRequestExecutorSupplier);
 }
