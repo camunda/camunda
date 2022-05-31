@@ -33,7 +33,7 @@
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.4</version.elasticsearch>
     <version.spring.boot>2.6.6</version.spring.boot>
-    <version.spring.session.bom>2021.1.2</version.spring.session.bom>
+    <version.spring.session.bom>2021.2.0</version.spring.session.bom>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>1.6.8</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
