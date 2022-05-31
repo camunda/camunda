@@ -135,6 +135,19 @@ export default function ReportTemplateModal({onClose}) {
           },
         },
         {
+          name: 'number',
+          img: durationImg,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['duration']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              precision: 2,
+            },
+          },
+        },
+        {
           name: 'percentSuccess',
           img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
@@ -222,19 +235,6 @@ export default function ReportTemplateModal({onClose}) {
                 appliedTo: ['all'],
               },
             ],
-          },
-        },
-        {
-          name: 'number',
-          img: durationImg,
-          disabled: (definitions) => definitions.length === 0,
-          config: {
-            view: {entity: 'processInstance', properties: ['duration']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
-            configuration: {
-              precision: 2,
-            },
           },
         },
       ],
