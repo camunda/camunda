@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +69,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -95,6 +95,7 @@ public final class RaftRule extends ExternalResource {
   private Map<String, AtomicReference<InMemorySnapshot>> snapshots;
   private Map<String, TestSnapshotStore> snapshotStores;
   private final BiFunction<MemberId, Builder, Builder> serverConfigurator;
+  private final Random random = new Random();
 
   private RaftRule(
       final int nodeCount, final BiFunction<MemberId, Builder, Builder> serverConfigurator) {
@@ -569,11 +570,9 @@ public final class RaftRule extends ExternalResource {
   private TestAppendListener appendEntry(final int entrySize, final LeaderRole leaderRole) {
     final var appendListener = new TestAppendListener();
     position += 1;
-    leaderRole.appendEntry(
-        position,
-        position + 10,
-        ByteBuffer.wrap(RandomStringUtils.random(entrySize).getBytes()),
-        appendListener);
+    final var bytes = new byte[entrySize];
+    random.nextBytes(bytes);
+    leaderRole.appendEntry(position, position + 10, ByteBuffer.wrap(bytes), appendListener);
     position += 10;
     return appendListener;
   }
