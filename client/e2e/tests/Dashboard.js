@@ -70,7 +70,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.expect(e.dashboardName.textContent).eql('Process performance overview');
   await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
-  await t.expect(e.reportTile.nth(2).textContent).contains('P99 Duration');
+  await t.expect(e.reportTile.nth(2).textContent).contains('99th Percentile Duration');
 
   await t.click(e.autoRefreshButton);
 
