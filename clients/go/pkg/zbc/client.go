@@ -64,7 +64,10 @@ type ClientConfig struct {
 	// of 45 seconds being used
 	KeepAlive time.Duration
 
-	DialOpts []grpc.DialOption
+	// UserAgent is an optional field, to specify the user-agent header which should be sent by each
+	// gRPC request. Defaults to zeebe-client-go/%version.
+	UserAgent string
+	DialOpts  []grpc.DialOption
 }
 
 // ErrFileNotFound is returned whenever a file can't be found at the provided path. Use this value to do error comparison.
@@ -153,7 +156,11 @@ func NewClient(config *ClientConfig) (Client, error) {
 		return nil, err
 	}
 
-	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent("zeebe-client-go/"+getVersion()))
+	if config.UserAgent == "" {
+		config.UserAgent = "zeebe-client-go/" + getVersion()
+	}
+
+	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent(config.UserAgent))
 
 	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
 	if err != nil {

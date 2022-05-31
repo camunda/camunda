@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"google.golang.org/grpc/metadata"
 	"net"
 	"strconv"
 	"strings"
@@ -122,6 +124,61 @@ func (s *clientTestSuite) TestGatewayAddressEnvVar() {
 		s.EqualValues(codes.Unimplemented, errStat.Code())
 	}
 	s.EqualValues(fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]), config.GatewayAddress)
+}
+
+func (s *clientTestSuite) TestDefaultUserAgent() {
+	// given
+	var incomingContext = make(map[string][]string)
+	lis, server := createServerWithUnaryInterceptor(func(ctx context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+		incomingContext, _ = metadata.FromIncomingContext(ctx)
+		return nil, nil
+	})
+	go server.Serve(lis)
+	defer server.Stop()
+
+	// when
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         lis.Addr().String(),
+		UsePlaintextConnection: true,
+	})
+	s.Require().NoError(err)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	_, _ = client.NewTopologyCommand().Send(ctx)
+	userAgent := incomingContext["user-agent"]
+
+	// then
+	s.Require().Len(userAgent, 1)
+	s.Require().Contains(userAgent[0], "zeebe-client-go/"+getVersion())
+}
+
+func (s *clientTestSuite) TestSpecificUserAgent() {
+	// given
+	var incomingContext = make(map[string][]string)
+	lis, server := createServerWithUnaryInterceptor(func(ctx context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+		incomingContext, _ = metadata.FromIncomingContext(ctx)
+		return nil, nil
+	})
+	go server.Serve(lis)
+	defer server.Stop()
+
+	// when
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         lis.Addr().String(),
+		UsePlaintextConnection: true,
+		UserAgent:              "anotherUserAgentLikeZbctl",
+	})
+	s.Require().NoError(err)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	_, _ = client.NewTopologyCommand().Send(ctx)
+	userAgent := incomingContext["user-agent"]
+
+	// then
+	s.Require().Len(userAgent, 1)
+	s.Require().Contains(userAgent[0], "anotherUserAgentLikeZbctl")
 }
 
 func (s *clientTestSuite) TestCaCertificateEnvVar() {
