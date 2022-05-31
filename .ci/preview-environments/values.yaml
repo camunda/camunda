@@ -29,7 +29,7 @@ camunda-platform:
     fullnameOverride: operate
     # Defines the image repo and tag to be deployed. Tag is usually overridden to a specific tag produced by CI.
     image:
-      repository: gcr.io/ci-30-162810/camunda-operate
+      repository: registry.camunda.cloud/team-operate/camunda-operate
       tag: latest
     env:
     - name: JAVA_OPTS
@@ -43,6 +43,9 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+
+  optimize:
+    enabled: false
 
   tasklist:
     enabled: false
@@ -117,6 +120,9 @@ camunda-platform:
 # Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
 global:
+  image:
+    pullSecrets:
+      - name: registry-camunda-cloud
   zeebeClusterName: zeebe
   # identity should be explicitly disabled in global as well
   identity:

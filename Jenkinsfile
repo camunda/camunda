@@ -5,7 +5,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
+def static OPERATE_DOCKER_IMAGE() { return "registry.camunda.cloud/team-operate/camunda-operate" }
 
 String getBranchSlug() {
   return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
@@ -17,10 +17,6 @@ String getGitCommitMsg() {
 
 String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
-}
-
-String getImageTag() {
-  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
 }
 
 String getCiImageTag() {
@@ -114,14 +110,14 @@ pipeline {
     }
     stage('Prepare Docker login') {
       environment {
-        GCR_REGISTRY = credentials('docker-registry-ci3')
+        HARBOR_REGISTRY = credentials('camunda-nexus')
         DOCKER_HUB = credentials('camunda-dockerhub')
       }
       steps {
         container('docker') {
           sh """
-            echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
             docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
+            docker login registry.camunda.cloud --username ${HARBOR_REGISTRY_USR} --password ${HARBOR_REGISTRY_PSW}
           """
         }
       }
@@ -153,19 +149,17 @@ pipeline {
             }
           }
           environment {
-            IMAGE_TAG = getImageTag()
             CI_IMAGE_TAG = getCiImageTag()
           }
           steps {
             lock('operate-dockerimage-upload') {
               container('docker') {
                 sh """
-                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
-                  docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
+                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
                   docker push ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
                   if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                    docker tag ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
+                    docker tag ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
                     docker push ${OPERATE_DOCKER_IMAGE()}:latest
                   fi
                 """

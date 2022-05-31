@@ -10,6 +10,11 @@ spec:
     - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
     kind: Secret
     name: operate-tls
+  - jsonPointers:
+    - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
+    - /data/.dockerconfigjson
+    kind: Secret
+    name: registry-camunda-cloud
   project: operate-previews
   source:
     helm:
