@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import java.net.InetSocketAddress;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class NetworkCfgTest {
+final class NetworkCfgTest {
 
   @Test
-  public void shouldNotFailOnLongHostName() {
+  void shouldNotFailOnLongHostName() {
     // given
     final var port = 1000;
     final var hostName = "a".repeat(140);
