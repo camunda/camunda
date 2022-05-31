@@ -29,7 +29,7 @@
 
     <version.zeebe>8.1.0-alpha1</version.zeebe>
     <version.identity>8.1.0-alpha1</version.identity>
-    <version.elasticsearch>7.17.3</version.elasticsearch>
+    <version.elasticsearch>7.17.4</version.elasticsearch>
     <version.spring.boot>2.6.7</version.spring.boot>
     <version.spring.session.bom>2021.1.2</version.spring.session.bom>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
