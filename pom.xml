@@ -35,7 +35,7 @@
     <version.spring.boot>2.6.6</version.spring.boot>
     <version.spring.session.bom>2021.2.0</version.spring.session.bom>
     <version.junit>4.13.2</version.junit>
-    <version.springdoc>1.6.8</version.springdoc>
+    <version.springdoc>1.6.9</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.9.0</version.micrometer>
     <version.mockito>4.4.0</version.mockito>
