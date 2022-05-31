@@ -176,7 +176,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             latestDrg -> {
               final int latestVersion = latestDrg.getDecisionRequirementsVersion();
               final boolean isDuplicate =
-                  isDuplicate(resource, checksum, latestDrg)
+                  hasSameResourceNameAs(resource, latestDrg)
+                      && hasSameChecksumAs(checksum, latestDrg)
                       && hasSameDecisionRequirementsKeyAs(parsedDrg.getDecisions(), latestDrg);
 
               if (isDuplicate) {
@@ -236,13 +237,14 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     return drgRecord.getDecisionRequirementsKey();
   }
 
-  private boolean isDuplicate(
-      final DeploymentResource resource,
-      final DirectBuffer checksum,
-      final PersistedDecisionRequirements drg) {
+  private boolean hasSameResourceNameAs(
+      final DeploymentResource resource, final PersistedDecisionRequirements drg) {
+    return drg.getResourceName().equals(resource.getResourceNameBuffer());
+  }
 
-    return drg.getResourceName().equals(resource.getResourceNameBuffer())
-        && drg.getChecksum().equals(checksum);
+  private boolean hasSameChecksumAs(
+      final DirectBuffer checksum, final PersistedDecisionRequirements drg) {
+    return drg.getChecksum().equals(checksum);
   }
 
   private boolean hasSameDecisionRequirementsKeyAs(
