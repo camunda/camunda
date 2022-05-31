@@ -47,6 +47,10 @@ public final class BusinessRuleTaskTest {
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
   private static final String DMN_RESOURCE_WITH_NAMELESS_OUTPUTS =
       "/dmn/drg-force-user-nameless-input-outputs.dmn";
+
+  private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE_RENAMED_DRG =
+      "/dmn/decision-table-with-renamed-drg.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String RESULT_VARIABLE = "result";
@@ -510,5 +514,60 @@ public final class BusinessRuleTaskTest {
         .extracting(EvaluatedOutputValue::getOutputName)
         .describedAs("Expect that evaluated output's name is empty string")
         .containsOnly("");
+  }
+
+  /**
+   * Regression test for https://github.com/camunda/zeebe/issues/9272. An exception occurred if two
+   * DRGs were deployed with a different id but the same decision id.
+   */
+  @Test
+  public void shouldEvaluateDecisionIfMultipleDrgsWithSameDecisionId() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG).deploy();
+
+    final var deploymentCreated =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlResource(
+                processWithBusinessRuleTask(
+                    t ->
+                        t.zeebeCalledDecisionId("jedi_or_sith")
+                            .zeebeResultVariable(RESULT_VARIABLE)))
+            .deploy();
+
+    final var lastDeployment = deploymentCreated.getValue();
+    final var lastDeployedDecisionRequirements =
+        lastDeployment.getDecisionRequirementsMetadata().get(0);
+    final var lastDeployedDecision = lastDeployment.getDecisionsMetadata().get(0);
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.ofEntries(entry("lightsaberColor", "blue")))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.BUSINESS_RULE_TASK))
+        .describedAs("expected the business rule task to be completed")
+        .extracting(Record::getIntent)
+        .contains(ProcessInstanceIntent.ELEMENT_COMPLETED);
+
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(decisionEvaluationRecord.getValue())
+        .hasDecisionKey(lastDeployedDecision.getDecisionKey())
+        .hasDecisionRequirementsKey(lastDeployedDecisionRequirements.getDecisionRequirementsKey());
   }
 }
