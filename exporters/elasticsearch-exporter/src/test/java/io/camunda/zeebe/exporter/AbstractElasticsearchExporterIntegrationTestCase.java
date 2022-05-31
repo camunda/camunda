@@ -35,14 +35,20 @@ import org.elasticsearch.client.ResponseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.Network;
 
 public abstract class AbstractElasticsearchExporterIntegrationTestCase {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(AbstractElasticsearchExporterIntegrationTestCase.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  protected final Network network = Network.newNetwork();
   protected ElasticsearchNode<ElasticsearchContainer> elastic;
   protected ElasticsearchExporterConfiguration configuration;
   protected ElasticsearchExporterFaultToleranceIT.ElasticsearchTestClient esClient;
@@ -52,7 +58,11 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   @Before
   public void setUp() {
-    elastic = new ElasticsearchContainer().withEnv("ES_JAVA_OPTS", "-Xms750m -Xmx750m");
+    elastic =
+        new ElasticsearchContainer()
+            .withEnv("ES_JAVA_OPTS", "-Xms750m -Xmx750m")
+            .withNetwork(network)
+            .withNetworkAliases("elastic");
   }
 
   @After
@@ -64,6 +74,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
     exporterIntegrationRule.stop();
     elastic.stop();
+    network.close();
     configuration = null;
   }
 
@@ -90,7 +101,14 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
         .atMost(Duration.ofMinutes(2))
         .pollInterval(Duration.ofSeconds(1))
         .until(
-            () -> esClient.getIndexTemplateCount(configuration.index.prefix),
+            () -> {
+              try {
+                return esClient.getIndexTemplateCount(configuration.index.prefix);
+              } catch (final Exception e) {
+                LOGGER.warn("Failed to get index template count", e);
+                return -1;
+              }
+            },
             size -> size >= expectedIndexTemplatesCount);
   }
 

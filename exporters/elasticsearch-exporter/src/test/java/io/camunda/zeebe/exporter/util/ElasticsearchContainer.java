@@ -95,7 +95,6 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
   @Override
   public ElasticsearchContainer withPort(final int port) {
     this.port = port;
-    addFixedExposedPort(port, DEFAULT_HTTP_PORT);
     return this;
   }
 
