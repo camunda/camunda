@@ -5,16 +5,28 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 public class SharingRestServiceIT extends AbstractSharingIT {
 
@@ -88,6 +100,19 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
+  public void createNewReportShareForManagementReport() {
+    // given
+    String reportId = createManagementReport();
+    ReportShareRestDto share = createReportShare(reportId);
+
+    // when
+    Response response = sharingClient.createReportShareResponse(share);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void createNewDashboardShare() {
     // given
     String dashboard = addEmptyDashboardToOptimize();
@@ -100,9 +125,21 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    String id =
-      response.readEntity(String.class);
+    String id = response.readEntity(String.class);
     assertThat(id).isNotNull();
+  }
+
+  @Test
+  public void createNewReportShareForManagementDashboard() {
+    // given
+    String dashboardId = createManagementDashboard();
+    final DashboardShareRestDto dashboardShareDto = createDashboardShareDto(dashboardId);
+
+    // when
+    Response response = sharingClient.createDashboardShareResponse(dashboardShareDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -356,6 +393,51 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   private void addShareForFakeReport() {
     addShareForReport(FAKE_REPORT_ID);
+  }
+
+  @SneakyThrows
+  private String createManagementReport() {
+    // The initial report is created for a specific process
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey("procDefKey")
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(
+      new SingleProcessReportDefinitionRequestDto(reportData));
+
+    final UpdateRequest update = new UpdateRequest()
+      .index(ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
+      .id(reportId)
+      .script(new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.data.managementReport = true",
+        Collections.emptyMap()
+      ))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    return reportId;
+  }
+
+  @SneakyThrows
+  protected String createManagementDashboard() {
+    final String dashboardId = dashboardClient.createEmptyDashboard();
+    final UpdateRequest update = new UpdateRequest()
+      .index(DASHBOARD_INDEX_NAME)
+      .id(dashboardId)
+      .script(new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "ctx._source.managementDashboard = true",
+        Collections.emptyMap()
+      ))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    return dashboardId;
   }
 
 }

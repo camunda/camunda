@@ -12,10 +12,12 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
@@ -24,6 +26,7 @@ import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.relations.DashboardReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
@@ -133,6 +136,9 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     try {
       DashboardDefinitionRestDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
+      if (dashboardDefinition.isManagementDashboard()) {
+        throw new OptimizeValidationException("Management Dashboards cannot be shared");
+      }
 
       final Set<String> authorizedReportIdsOnDashboard = reportService.filterAuthorizedReportIds(
         userId,
@@ -147,6 +153,8 @@ public class SharingService implements ReportReferencingService, DashboardRefere
           unauthorizedReportIds + "]";
         throw new ForbiddenException(errorMessage);
       }
+    } catch (OptimizeValidationException exception) {
+      throw exception;
     } catch (OptimizeRuntimeException | NotFoundException e) {
       String errorMessage = "Could not retrieve dashboard [" + dashboardId + "]. It probably does not exist.";
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -156,7 +164,16 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   private void validateAndCheckAuthorization(ReportShareRestDto reportShare, String userId) {
     ValidationHelper.ensureNotEmpty(ReportShareRestDto.Fields.reportId, reportShare.getReportId());
     try {
-      reportService.getReportDefinition(reportShare.getReportId(), userId);
+      final AuthorizedReportDefinitionResponseDto reportDefinition = reportService.getReportDefinition(
+        reportShare.getReportId(),
+        userId
+      );
+      if (reportDefinition.getDefinitionDto() instanceof SingleProcessReportDefinitionRequestDto
+        && ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto()).getData().isManagementReport()) {
+        throw new OptimizeValidationException("Management Reports cannot be shared");
+      }
+    } catch (OptimizeValidationException exception) {
+      throw exception;
     } catch (OptimizeRuntimeException | NotFoundException e) {
       String errorMessage = "Could not retrieve report [" + reportShare.getReportId() + "]. It probably does not " +
         "exist.";
@@ -220,7 +237,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     } catch (ReportEvaluationException e) {
       throw e;
     } catch (Exception e) {
-      throw new OptimizeRuntimeException("Cannot evaluate shared report [" + evaluationInfo.getReportId() + "].",e);
+      throw new OptimizeRuntimeException("Cannot evaluate shared report [" + evaluationInfo.getReportId() + "].", e);
     }
   }
 
