@@ -5,7 +5,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/tasklist" }
+def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "registry.camunda.cloud/team-operate/tasklist" }
 
 String getBranchSlug() {
   return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
@@ -17,10 +17,6 @@ String getGitCommitMsg() {
 
 String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
-}
-
-String getImageTag() {
-  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
 }
 
 String getCiImageTag() {
@@ -93,18 +89,6 @@ pipeline {
         }
       }
     }
-    stage('Install GCR login helper') {
-      steps {
-        container('maven') {
-          sh """
-            curl -L https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.1.0/docker-credential-gcr_linux_amd64-2.1.0.tar.gz --output docker-credential-gcr.tar.gz
-            tar -zxvf docker-credential-gcr.tar.gz
-            chmod +x docker-credential-gcr
-            mv docker-credential-gcr /usr/local/bin/docker-credential-gcr
-          """
-        }
-      }
-    }
     stage('Deploy') {
       parallel {
         stage('Deploy - Docker Image') {
@@ -114,8 +98,7 @@ pipeline {
             }
           }
           environment {
-            IMAGE_TAG = getImageTag()
-            GOOGLE_APPLICATION_CREDENTIALS = credentials('docker-registry-ci3-file')
+            HARBOR_REGISTRY = credentials('camunda-nexus')
             CI_IMAGE_TAG = getCiImageTag()
           }
           steps {
@@ -123,7 +106,6 @@ pipeline {
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
                     mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
                     if [ "${env.BRANCH_NAME}" = 'master' ]; then

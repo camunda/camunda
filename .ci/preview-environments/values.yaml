@@ -34,7 +34,7 @@ camunda-platform:
   tasklist:
     fullnameOverride: tasklist
     image:
-      repository: gcr.io/ci-30-162810/tasklist
+      repository: registry.camunda.cloud/team-operate/tasklist
     env:
     - name: JAVA_OPTS
       value: "-XX:MaxRAMFraction=1"
@@ -125,6 +125,9 @@ camunda-platform:
 # Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
 global:
+  image:
+    pullSecrets:
+      - name: registry-camunda-cloud
   zeebeClusterName: zeebe
   # identity should be explicitly disabled in global as well
   identity:

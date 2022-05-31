@@ -226,8 +226,11 @@
             <image>docker.io/camunda/tasklist</image>
           </to>
           <to>
-            <image>gcr.io/ci-30-162810/tasklist</image>
-            <credHelper>gcr</credHelper>
+            <image>registry.camunda.cloud/team-operate/tasklist</image>
+            <auth>
+              <username>${env.HARBOR_REGISTRY_USR}</username>
+              <password>${env.HARBOR_REGISTRY_PSW}</password>
+            </auth>
           </to>
           <container>
             <jvmFlags>

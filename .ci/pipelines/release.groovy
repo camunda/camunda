@@ -6,7 +6,6 @@ def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 // We can't use maven-alpine because 'frontend-maven-plugin' is incompatible
 // Issue: https://github.com/eirslett/frontend-maven-plugin/issues/633
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-11" }
-def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/tasklist" }
 
 String getGitCommitMsg() {
   return sh(script: 'git log --format=%B -n 1 HEAD', returnStdout: true).trim()
