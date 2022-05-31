@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
 	"google.golang.org/grpc/metadata"
 	"net"
 	"strconv"
