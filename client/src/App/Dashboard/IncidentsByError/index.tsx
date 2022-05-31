@@ -165,7 +165,7 @@ const IncidentsByError = observer(() => {
                 item.errorMessage,
                 item.instancesWithErrorCount
               )}
-              buttonTitle={buttonTitle}
+              title={buttonTitle}
             />
           </Styled.Li>
         );

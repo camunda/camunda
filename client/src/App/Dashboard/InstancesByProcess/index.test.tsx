@@ -11,7 +11,6 @@ import {InstancesByProcess} from './index';
 import {
   mockWithSingleVersion,
   mockErrorResponse,
-  mockEmptyResponse,
   mockWithMultipleVersions,
 } from './index.setup';
 import {rest} from 'msw';
@@ -102,7 +101,7 @@ describe('InstancesByProcess', () => {
   it('should display information message when there are no processes', async () => {
     mockServer.use(
       rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockEmptyResponse))
+        res.once(ctx.json([]))
       )
     );
 

@@ -132,3 +132,4 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
 }
 
 export const processInstancesByNameStore = new ProcessInstancesByName();
+export type {ProcessInstanceByName};

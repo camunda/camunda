@@ -7,26 +7,17 @@
 
 import {useEffect} from 'react';
 import {Collapse} from '../Collapse';
-import InstancesBar from 'modules/components/InstancesBar';
-import {PanelListItem} from '../PanelListItem';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
-import * as Styled from './styled';
-import {
-  concatTitle,
-  concatGroupTitle,
-  concatLabel,
-  concatGroupLabel,
-  concatButtonTitle,
-} from './service';
+import {Li} from './styled';
+import {getExpandAccordionTitle} from './utils/getExpandAccordionTitle';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {panelStatesStore} from 'modules/stores/panelStates';
-import {tracking} from 'modules/tracking';
-import {Locations} from 'modules/routes';
 import {useLocation} from 'react-router-dom';
+import {Accordion} from './Accordion';
+import {AccordionItems} from './AccordionItems';
 
-const InstancesByProcess = observer(() => {
+const InstancesByProcess: React.FC = observer(() => {
   const location = useLocation();
 
   useEffect(() => {
@@ -39,108 +30,6 @@ const InstancesByProcess = observer(() => {
   useEffect(() => {
     processInstancesByNameStore.getProcessInstancesByName();
   }, [location.key]);
-
-  const renderIncidentsPerVersion = (processName: any, items: any) => {
-    return (
-      <Styled.VersionList>
-        {items.map((item: any) => {
-          const totalInstancesCount =
-            item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
-          return (
-            <Styled.VersionLi key={item.processId}>
-              <PanelListItem
-                to={Locations.processes({
-                  process: item.bpmnProcessId,
-                  version: item.version,
-                  active: true,
-                  incidents: true,
-                  ...(totalInstancesCount === 0
-                    ? {
-                        completed: true,
-                        canceled: true,
-                      }
-                    : {}),
-                })}
-                onClick={() => {
-                  panelStatesStore.expandFiltersPanel();
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'dashboard-process-instances-by-name-single-version',
-                  });
-                }}
-                title={concatTitle(
-                  item.name || processName,
-                  totalInstancesCount,
-                  item.version
-                )}
-                $boxSize="small"
-              >
-                <InstancesBar
-                  label={concatLabel(
-                    item.name || processName,
-                    totalInstancesCount,
-                    item.version
-                  )}
-                  incidentsCount={item.instancesWithActiveIncidentsCount}
-                  activeCount={item.activeInstancesCount}
-                  size="small"
-                  barHeight={3}
-                />
-              </PanelListItem>
-            </Styled.VersionLi>
-          );
-        })}
-      </Styled.VersionList>
-    );
-  };
-
-  const renderIncidentByProcess = (item: any) => {
-    const name = item.processName || item.bpmnProcessId;
-    const totalInstancesCount =
-      item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
-
-    return (
-      <PanelListItem
-        to={Locations.processes({
-          process: item.bpmnProcessId,
-          version:
-            item.processes.length === 1 ? item.processes[0].version : 'all',
-          active: true,
-          incidents: true,
-          ...(totalInstancesCount === 0
-            ? {
-                completed: true,
-                canceled: true,
-              }
-            : {}),
-        })}
-        onClick={() => {
-          panelStatesStore.expandFiltersPanel();
-          tracking.track({
-            eventName: 'navigation',
-            link: 'dashboard-process-instances-by-name-all-versions',
-          });
-        }}
-        title={concatGroupTitle(
-          name,
-          totalInstancesCount,
-          item.processes.length
-        )}
-      >
-        <InstancesBar
-          label={concatGroupLabel(
-            name,
-            totalInstancesCount,
-            item.processes.length
-          )}
-          incidentsCount={item.instancesWithActiveIncidentsCount}
-          activeCount={item.activeInstancesCount}
-          size="medium"
-          barHeight={5}
-        />
-      </PanelListItem>
-    );
-  };
 
   const {processInstances, status} = processInstancesByNameStore.state;
 
@@ -165,27 +54,32 @@ const InstancesByProcess = observer(() => {
   return (
     <ul data-testid="instances-by-process">
       {processInstances.map((item, index) => {
-        const processesCount = item.processes.length;
         const name = item.processName || item.bpmnProcessId;
-        const IncidentByProcessComponent = renderIncidentByProcess(item);
-        const totalInstancesCount =
-          item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
 
         return (
-          <Styled.Li
+          <Li
             key={item.bpmnProcessId}
             data-testid={`incident-byProcess-${index}`}
           >
-            {processesCount === 1 ? (
-              IncidentByProcessComponent
+            {item.processes.length === 1 ? (
+              <Accordion item={item} version={item.processes[0]!.version} />
             ) : (
               <Collapse
-                content={renderIncidentsPerVersion(name, item.processes)}
-                header={IncidentByProcessComponent}
-                buttonTitle={concatButtonTitle(name, totalInstancesCount)}
+                header={<Accordion item={item} version="all" />}
+                content={
+                  <AccordionItems
+                    processName={name}
+                    processes={item.processes}
+                  />
+                }
+                title={getExpandAccordionTitle(
+                  name,
+                  item.instancesWithActiveIncidentsCount +
+                    item.activeInstancesCount
+                )}
               />
             )}
-          </Styled.Li>
+          </Li>
         );
       })}
     </ul>

@@ -27,43 +27,33 @@ describe('<Collapse />', () => {
   it('should be collapsed by default', () => {
     const mockContent = 'mock-content';
     const mockHeader = 'mock-header';
-    const mockButtonTitle = 'button-title';
+    const mockTitle = 'mock-title';
 
     render(
-      <Collapse
-        content={mockContent}
-        header={mockHeader}
-        buttonTitle={mockButtonTitle}
-      />,
+      <Collapse content={mockContent} header={mockHeader} title={mockTitle} />,
       {wrapper: Wrapper}
     );
 
     expect(screen.getByText(mockHeader)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: mockButtonTitle})
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: mockTitle})).toBeInTheDocument();
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
 
   it('should uncollapse and collapse', async () => {
     const mockContent = 'mock-content';
     const mockHeader = 'mock-header';
-    const mockButtonTitle = 'button-title';
+    const mockTitle = 'mock-title';
 
     const {user} = render(
-      <Collapse
-        content={mockContent}
-        header={mockHeader}
-        buttonTitle={mockButtonTitle}
-      />,
+      <Collapse content={mockContent} header={mockHeader} title={mockTitle} />,
       {wrapper: Wrapper}
     );
 
-    await user.click(screen.getByRole('button', {name: mockButtonTitle}));
+    await user.click(screen.getByRole('button', {name: mockTitle}));
 
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: mockButtonTitle}));
+    await user.click(screen.getByRole('button', {name: mockTitle}));
 
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
@@ -71,18 +61,14 @@ describe('<Collapse />', () => {
   it('should go back to default state on navigation', async () => {
     const mockContent = 'mock-content';
     const mockHeader = 'mock-header';
-    const mockButtonTitle = 'button-title';
+    const mockTitle = 'mock-title';
 
     const {user} = render(
-      <Collapse
-        content={mockContent}
-        header={mockHeader}
-        buttonTitle={mockButtonTitle}
-      />,
+      <Collapse content={mockContent} header={mockHeader} title={mockTitle} />,
       {wrapper: Wrapper}
     );
 
-    await user.click(screen.getByRole('button', {name: mockButtonTitle}));
+    await user.click(screen.getByRole('button', {name: mockTitle}));
 
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 

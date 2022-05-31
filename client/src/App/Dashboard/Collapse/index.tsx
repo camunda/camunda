@@ -12,10 +12,10 @@ import {useLocation} from 'react-router-dom';
 type Props = {
   content?: React.ReactNode;
   header?: React.ReactNode;
-  buttonTitle?: string;
+  title?: string;
 };
 
-const Collapse: React.FC<Props> = ({buttonTitle, content, header}) => {
+const Collapse: React.FC<Props> = ({title, content, header}) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const location = useLocation();
 
@@ -29,7 +29,7 @@ const Collapse: React.FC<Props> = ({buttonTitle, content, header}) => {
         onClick={() => {
           setIsCollapsed((isCollapsed) => !isCollapsed);
         }}
-        title={buttonTitle}
+        title={title}
         isExpanded={!isCollapsed}
         iconButtonTheme="default"
       />
