@@ -64,7 +64,7 @@ public class ReindexIT extends OperateIntegrationTest {
 
     plan.executeOn(retryElasticsearchClient);
 
-    retryElasticsearchClient.refresh(idxName("-index-*"));
+    retryElasticsearchClient.refresh(idxName("index-*"));
     assertThat(retryElasticsearchClient.getIndexNames(idxName("index-*")))
         .containsExactlyInAnyOrder(
             // reindexed indices:
