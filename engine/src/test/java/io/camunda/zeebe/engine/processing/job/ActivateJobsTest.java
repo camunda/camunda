@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -49,7 +48,7 @@ import org.junit.Test;
 public final class ActivateJobsTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
+  private static final String LONG_CUSTOM_HEADER_VALUE = "foo".repeat(128);
   private static final String PROCESS_ID = "process";
   private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =
       (type) ->
@@ -220,7 +219,7 @@ public final class ActivateJobsTest {
   @Test
   public void shouldReturnEmptyBatchIfNoJobsAvailable() {
     // when
-    final List<Long> jobEvents = activateJobs(RandomString.make(5), 3);
+    final List<Long> jobEvents = activateJobs(Strings.newRandomValidBpmnId(), 3);
 
     // then
     assertThat(jobEvents).isEmpty();
