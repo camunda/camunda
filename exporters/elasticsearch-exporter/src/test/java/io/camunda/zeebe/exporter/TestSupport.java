@@ -10,10 +10,32 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
 import java.util.stream.Stream;
+import org.elasticsearch.client.RestClient;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /** Collection of utilities for unit and integration tests. */
 final class TestSupport {
+  private static final DockerImageName ELASTIC_IMAGE =
+      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
+          .withTag(RestClient.class.getPackage().getImplementationVersion());
+
   private TestSupport() {}
+
+  /**
+   * Returns an Elasticsearch container pointing at the same version as the {@link RestClient}.
+   *
+   * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
+   * because Elasticsearch 7.x, by default, will grab all the RAM available otherwise.
+   *
+   * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
+   */
+  static ElasticsearchContainer createDefaultContainer() {
+    return new ElasticsearchContainer(ELASTIC_IMAGE)
+        .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+        .withEnv("action.auto_create_index", "true")
+        .withEnv("xpack.security.enabled", "false");
+  }
 
   /**
    * Returns a stream of value types which are export-able by the exporter, i.e. the ones with an
