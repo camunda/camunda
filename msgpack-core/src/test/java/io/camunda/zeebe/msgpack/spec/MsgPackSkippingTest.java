@@ -47,7 +47,7 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.assertj.core.internal.bytebuddy.utility.RandomString;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -85,7 +85,7 @@ public final class MsgPackSkippingTest {
             "bin 8 > 127",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make(130).getBytes();
+                  final byte[] bytes = randomString(130);
                   bytes[0] = BIN8;
                   bytes[1] = (byte) 0x80; // length 128
                   b.add(bytes);
@@ -98,7 +98,7 @@ public final class MsgPackSkippingTest {
             "bin 16 > 2^15 - 1",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make((1 << 15) + 3).getBytes();
+                  final byte[] bytes = randomString((1 << 15) + 3);
                   bytes[0] = BIN16;
                   bytes[1] = (byte) 0x80; // length 2^15 = 0x8000
                   bytes[2] = (byte) 0x00;
@@ -115,7 +115,7 @@ public final class MsgPackSkippingTest {
             "ext 8 > 127",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make(131).getBytes();
+                  final byte[] bytes = randomString(131);
                   bytes[0] = EXT8;
                   bytes[1] = (byte) 0x80; // length 128
                   b.add(bytes);
@@ -128,7 +128,7 @@ public final class MsgPackSkippingTest {
             "ext 16 > 2^15 - 1",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make((1 << 15) + 4).getBytes();
+                  final byte[] bytes = randomString((1 << 15) + 4);
                   bytes[0] = EXT16;
                   bytes[1] = (byte) 0x80; // length 2^15 = 0x8000
                   bytes[2] = (byte) 0x00;
@@ -160,7 +160,7 @@ public final class MsgPackSkippingTest {
             "str 8 > 127",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make(130).getBytes();
+                  final byte[] bytes = randomString(130);
                   bytes[0] = STR8;
                   bytes[1] = (byte) 0x80; // length 128
                   b.add(bytes);
@@ -173,7 +173,7 @@ public final class MsgPackSkippingTest {
             "str 16 > 2^15 - 1",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make((1 << 15) + 3).getBytes();
+                  final byte[] bytes = randomString((1 << 15) + 3);
                   bytes[0] = STR16;
                   bytes[1] = (byte) 0x80; // length 2^15 = 0x8000
                   bytes[2] = (byte) 0x00;
@@ -190,7 +190,7 @@ public final class MsgPackSkippingTest {
             "array 16 > 2^15 - 1",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make((1 << 15) + 3).getBytes();
+                  final byte[] bytes = randomString((1 << 15) + 3);
                   bytes[0] = ARRAY16;
                   bytes[1] = (byte) 0x80; // length 2^15 = 0x8000
                   bytes[2] = (byte) 0x00;
@@ -209,7 +209,7 @@ public final class MsgPackSkippingTest {
             "map 16 > 2^15 - 1",
             given(
                 (b) -> {
-                  final byte[] bytes = RandomString.make((1 << 16) + 3).getBytes();
+                  final byte[] bytes = randomString((1 << 16) + 3);
                   bytes[0] = MAP16;
                   bytes[1] = (byte) 0x80; // length 2^15 = 0x8000
                   bytes[2] = (byte) 0x00;
@@ -250,5 +250,9 @@ public final class MsgPackSkippingTest {
 
   protected static byte[] utf8(final String value) {
     return value.getBytes(StandardCharsets.UTF_8);
+  }
+
+  private static byte[] randomString(final int length) {
+    return RandomStringUtils.randomAlphanumeric(length).getBytes();
   }
 }
