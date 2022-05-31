@@ -11,16 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import java.net.InetSocketAddress;
-import org.assertj.core.internal.bytebuddy.utility.RandomString;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class NetworkCfgTest {
+final class NetworkCfgTest {
 
   @Test
-  public void shouldNotFailOnLongHostName() {
+  void shouldNotFailOnLongHostName() {
     // given
     final var port = 1000;
-    final var hostName = RandomString.make(139);
+    final var hostName = "a".repeat(140);
     final var networkCfg = new NetworkCfg();
     networkCfg.setPort(port);
 
