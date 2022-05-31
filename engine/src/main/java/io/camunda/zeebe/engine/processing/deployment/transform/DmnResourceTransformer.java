@@ -17,6 +17,7 @@ import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -28,7 +29,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
+import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
@@ -37,6 +40,8 @@ import org.agrona.DirectBuffer;
 public final class DmnResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
+
+  private static final long UNKNOWN_DECISION_REQUIREMENTS_KEY = -1L;
 
   private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
 
@@ -170,7 +175,10 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .ifPresentOrElse(
             latestDrg -> {
               final int latestVersion = latestDrg.getDecisionRequirementsVersion();
-              final boolean isDuplicate = isDuplicate(resource, checksum, latestDrg);
+              final boolean isDuplicate =
+                  isDuplicate(resource, checksum, latestDrg)
+                      && hasSameDecisionRequirementsKeyAs(parsedDrg.getDecisions(), latestDrg);
+
               if (isDuplicate) {
                 drgRecord
                     .setDecisionRequirementsKey(latestDrg.getDecisionRequirementsKey())
@@ -235,6 +243,20 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
     return drg.getResourceName().equals(resource.getResourceNameBuffer())
         && drg.getChecksum().equals(checksum);
+  }
+
+  private boolean hasSameDecisionRequirementsKeyAs(
+      final Collection<ParsedDecision> decisions, final PersistedDecisionRequirements drg) {
+    return decisions.stream()
+        .map(ParsedDecision::getId)
+        .map(BufferUtil::wrapString)
+        .map(
+            decisionId ->
+                decisionState
+                    .findLatestDecisionById(decisionId)
+                    .map(PersistedDecision::getDecisionRequirementsKey)
+                    .orElse(UNKNOWN_DECISION_REQUIREMENTS_KEY))
+        .allMatch(drgKey -> drgKey == drg.getDecisionRequirementsKey());
   }
 
   private void writeRecords(
