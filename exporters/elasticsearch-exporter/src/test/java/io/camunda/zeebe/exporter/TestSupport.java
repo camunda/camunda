@@ -25,7 +25,7 @@ final class TestSupport {
   /**
    * Returns an Elasticsearch container pointing at the same version as the {@link RestClient}.
    *
-   * <p>The container is configured to use 750m of heap and 750m of direct memory. This is required
+   * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
    * because Elasticsearch 7.x, by default, will grab all the RAM available otherwise.
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
