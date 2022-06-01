@@ -19,6 +19,10 @@ String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
 }
 
+String getImageTag() {
+  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
+}
+
 String getCiImageTag() {
   return "ci-${getGitCommitHash()}"
 }
@@ -98,6 +102,7 @@ pipeline {
             }
           }
           environment {
+            IMAGE_TAG = getImageTag()
             HARBOR_REGISTRY = credentials('camunda-nexus')
             CI_IMAGE_TAG = getCiImageTag()
           }
@@ -106,6 +111,7 @@ pipeline {
               container('maven') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh """
+                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
                     mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
                     if [ "${env.BRANCH_NAME}" = 'master' ]; then
