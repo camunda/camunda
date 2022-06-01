@@ -39,6 +39,7 @@ jobs:
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "${ZEEBE_TEST_DOCKER_IMAGE}" .
       - run: docker push "${ZEEBE_TEST_DOCKER_IMAGE}"
       - name: Prepare Testcontainers Cloud agent
+        if: env.TC_CLOUD_TOKEN != ''
         run: |
           curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
           chmod +x agent
