@@ -10,6 +10,7 @@ jobs:
   tests:
     name: Tests
     uses: ./.github/workflows/test.yml
+    secrets: inherit
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
