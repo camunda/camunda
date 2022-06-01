@@ -354,8 +354,8 @@ public final class DeploymentDmnTest {
         .extracting(
             DecisionRequirementsMetadataValue::getDecisionRequirementsVersion,
             DecisionRequirementsMetadataValue::isDuplicate)
-        .describedAs("Expect that the DRG is a duplicate")
-        .containsOnly(tuple(1, true));
+        .describedAs("Expect that the DRG version is increased")
+        .containsOnly(tuple(2, false));
 
     assertThat(deploymentEvent.getValue().getDecisionsMetadata())
         .extracting(DecisionRecordValue::getVersion, DecisionRecordValue::isDuplicate)
