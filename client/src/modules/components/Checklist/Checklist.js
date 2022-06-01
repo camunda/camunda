@@ -8,7 +8,7 @@
 import React, {useState} from 'react';
 import classnames from 'classnames';
 
-import {Input, LabeledInput, Tag, LoadingIndicator, Icon} from 'components';
+import {LabeledInput, Tag, LoadingIndicator, SearchInput} from 'components';
 import {t} from 'translation';
 
 import './Checklist.scss';
@@ -89,23 +89,19 @@ export default function Checklist({
             />
           )}
           {customHeader && <div className="customHeader">{customHeader}</div>}
-          <div className="searchInputContainer">
-            <Input
-              value={query}
-              className="searchInput"
-              placeholder={labels.search}
-              type="text"
-              onChange={(evt) => {
-                setQuery(evt.target.value);
-                onSearch(evt.target.value);
-              }}
-              onClear={() => {
-                setQuery('');
-                onSearch('');
-              }}
-            />
-            <Icon className="searchIcon" type="search" size="20" />
-          </div>
+          <SearchInput
+            value={query}
+            className="searchInput"
+            placeholder={labels.search}
+            onChange={(evt) => {
+              setQuery(evt.target.value);
+              onSearch(evt.target.value);
+            }}
+            onClear={() => {
+              setQuery('');
+              onSearch('');
+            }}
+          />
           {selectedItems.length > 0 && (
             <Tag onRemove={deselectAll}>{selectedItems.length} Selected</Tag>
           )}

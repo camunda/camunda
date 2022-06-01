@@ -27,21 +27,14 @@
       white-space: nowrap;
     }
 
-    .searchContainer {
-      position: relative;
-      margin-top: 5px;
-
-      .searchIcon {
-        position: absolute;
-        left: 10px;
-        top: 0;
-        bottom: 0;
-        margin: auto;
-        color: var(--grey-base-40);
+    .SearchInput {
+      .Input {
+        border-radius: 3px;
+        margin-top: 5px;
       }
 
-      .searchInput {
-        padding: 6px 35px;
+      .searchIcon {
+        top: 50%;
       }
     }
 

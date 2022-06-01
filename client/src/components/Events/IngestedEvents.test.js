@@ -73,7 +73,7 @@ it('should add sorting and search params to the load event request', () => {
   loadIngestedEvents.mockClear();
   const node = shallow(<IngestedEvents {...props} />);
 
-  node.find(Input).simulate('change', {target: {value: 'invoice'}});
+  node.find('SearchInput').simulate('change', {target: {value: 'invoice'}});
   runAllEffects();
   node.find('Table').prop('updateSorting')('group', 'asc');
   node.find('Table').prop('fetchData')({pageSize: 50, pageIndex: 2});

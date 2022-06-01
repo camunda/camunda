@@ -17,7 +17,7 @@ import {
   Typeahead,
   Labeled,
   Tag,
-  Icon,
+  SearchInput,
 } from 'components';
 import {formatters} from 'services';
 import {t} from 'translation';
@@ -154,21 +154,18 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
             </Labeled>
           )}
           <div className="rightHeader">
-            <div className="searchInputContainer">
-              <Input
-                value={query}
-                className="searchInput"
-                placeholder={t('home.search.name')}
-                type="text"
-                onChange={(evt) => {
-                  setQuery(evt.target.value);
-                }}
-                onClear={() => {
-                  setQuery('');
-                }}
-              />
-              <Icon className="searchIcon" type="search" size="20" />
-            </div>
+            <SearchInput
+              value={query}
+              className="searchInput"
+              placeholder={t('home.search.name')}
+              type="text"
+              onChange={(evt) => {
+                setQuery(evt.target.value);
+              }}
+              onClear={() => {
+                setQuery('');
+              }}
+            />
             {selected.length > 0 && (
               <Tag onRemove={() => setSelected([])}>
                 {selected.length} {t('common.selected')}

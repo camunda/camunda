@@ -27,23 +27,14 @@ exports[`should match snapshot 1`] = `
         ]
       }
     />
-    <div
-      className="searchContainer"
-    >
-      <Icon
-        className="searchIcon"
-        type="search"
-      />
-      <ForwardRef(Input)
-        className="searchInput"
-        onChange={[Function]}
-        onClear={[Function]}
-        placeholder="Search for name..."
-        required={true}
-        type="text"
-        value=""
-      />
-    </div>
+    <SearchInput
+      className="searchInput"
+      onChange={[Function]}
+      onClear={[Function]}
+      placeholder="Search for name..."
+      required={true}
+      value=""
+    />
     <ForwardRef(Button)
       className="collapseButton"
       onClick={[Function]}

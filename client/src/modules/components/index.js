@@ -59,3 +59,4 @@ export {BulkDeleter} from './BulkDeleter';
 export {AlertModal} from './AlertModal';
 export {AlertsDropdown} from './AlertsDropdown';
 export {DurationChart} from './DurationChart';
+export {SearchInput} from './SearchInput';

@@ -48,7 +48,7 @@ export const addSourceModal = Selector('.SourcesModal');
 export const logoutButton = Selector('header .UserMenu.Dropdown .DropdownOption');
 export const usernameDropdown = Selector('header .UserMenu.Dropdown');
 export const usersTypeahead = Selector('.MultiUserInput .Input');
-export const searchField = Selector('.searchInputContainer input');
+export const searchField = Selector('.SearchInput input');
 export const selectAllCheckbox = Selector('.Table thead input[type="checkbox"]');
 export const itemCheckbox = (idx) =>
   Selector('.Table tbody tr').nth(idx).find('input[type="checkbox"]');

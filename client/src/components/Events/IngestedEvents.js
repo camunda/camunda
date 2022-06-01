@@ -8,7 +8,7 @@
 import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
 
-import {Deleter, DocsLink, Dropdown, Icon, Input, Table, Tooltip} from 'components';
+import {Deleter, DocsLink, Dropdown, Icon, Input, SearchInput, Table, Tooltip} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -112,17 +112,12 @@ export function IngestedEvents({mightFail}) {
       <h1 className="title">{t('events.ingested.eventSources')}</h1>
       <div className="header">
         <h4 className="tableTitle">{t('events.ingested.label')}</h4>
-        <div className="searchInputContainer">
-          <Input
-            value={query}
-            className="searchInput"
-            placeholder={t('events.ingested.search')}
-            type="text"
-            onChange={(evt) => setQuery(evt.target.value)}
-            onClear={() => setQuery('')}
-          />
-          <Icon className="searchIcon" type="search" size="20" />
-        </div>
+        <SearchInput
+          value={query}
+          placeholder={t('events.ingested.search')}
+          onChange={(evt) => setQuery(evt.target.value)}
+          onClear={() => setQuery('')}
+        />
         {selected.length > 0 && (
           <Dropdown
             className="selectionActions"
