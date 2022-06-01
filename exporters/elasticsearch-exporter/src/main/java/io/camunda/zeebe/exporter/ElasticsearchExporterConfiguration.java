@@ -116,19 +116,19 @@ public class ElasticsearchExporterConfiguration {
     public boolean rejection = false;
 
     // value types to export
-    public boolean deployment = false;
+    public boolean deployment = true;
     public boolean process = true;
     public boolean error = true;
     public boolean incident = true;
     public boolean job = true;
     public boolean jobBatch = false;
-    public boolean message = false;
-    public boolean messageSubscription = false;
+    public boolean message = true;
+    public boolean messageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
     public boolean processInstance = true;
     public boolean processInstanceCreation = false;
-    public boolean processMessageSubscription = false;
+    public boolean processMessageSubscription = true;
     public boolean decisionRequirements = true;
     public boolean decision = true;
     public boolean decisionEvaluation = true;
