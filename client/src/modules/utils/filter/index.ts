@@ -8,7 +8,7 @@
 import {addDays, startOfDay, addMinutes, format, parse} from 'date-fns';
 import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
-import {Location} from 'history';
+import {Location} from 'react-router-dom';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 type ProcessInstanceFilterField =

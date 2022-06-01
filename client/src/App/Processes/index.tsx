@@ -23,7 +23,7 @@ import {
 } from 'modules/utils/filter';
 import {observer} from 'mobx-react';
 import {Content, Container, RightContainer} from './styled';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {
   ResizablePanel,
@@ -31,8 +31,12 @@ import {
 } from 'modules/components/ResizablePanel';
 import {ListFooter} from './ListPanel/ListFooter';
 
+type LocationType = Omit<Location, 'state'> & {
+  state: {refreshContent?: boolean};
+};
+
 const Processes: React.FC = observer(() => {
-  const location = useLocation();
+  const location = useLocation() as LocationType;
   const navigate = useNavigate();
 
   const filters = getProcessInstanceFilters(location.search);
@@ -46,6 +50,15 @@ const Processes: React.FC = observer(() => {
   const filtersJSON = JSON.stringify(filters);
 
   const notifications = useNotifications();
+
+  useEffect(() => {
+    if (
+      processesStore.state.status !== 'initial' &&
+      location.state?.refreshContent
+    ) {
+      processesStore.fetchProcesses();
+    }
+  }, [location.state]);
 
   useEffect(() => {
     processInstancesSelectionStore.init();

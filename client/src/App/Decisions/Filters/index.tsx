@@ -13,8 +13,7 @@ import {
   updateDecisionsFiltersSearchString,
 } from 'modules/utils/filter';
 import {Field, Form} from 'react-final-form';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {Location} from 'history';
+import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {CollapsablePanel} from './CollapsablePanel';
 import {
   FormElement,

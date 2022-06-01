@@ -35,7 +35,7 @@ const Header: React.FC = () => {
             to={Locations.processes()}
             title="View Processes"
             label="Processes"
-            state={{hideOptionalFilters: true}}
+            state={{refreshContent: true, hideOptionalFilters: true}}
             trackingEvent="header-processes"
           />
           <NavElement

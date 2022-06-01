@@ -7,8 +7,7 @@
 
 import {useEffect, useState} from 'react';
 import {Field, Form} from 'react-final-form';
-import {useLocation} from 'react-router-dom';
-import {Location} from 'history';
+import {useLocation, Location} from 'react-router-dom';
 import {isEqual, intersection} from 'lodash';
 import {
   FiltersForm,
@@ -73,7 +72,7 @@ const optionalFilters: Array<OptionalFilter> = [
 ];
 
 type LocationType = Omit<Location, 'state'> & {
-  state: {hideOptionalFilters?: boolean};
+  state: {hideOptionalFilters?: boolean; refreshContent?: boolean};
 };
 
 const initialValues: ProcessInstanceFilters = {

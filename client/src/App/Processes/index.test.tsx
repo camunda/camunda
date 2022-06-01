@@ -30,6 +30,7 @@ import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {Header} from 'App/Layout/Header';
 
 jest.mock('modules/utils/bpmn');
 
@@ -263,6 +264,53 @@ describe('Instances', () => {
 
     await waitFor(() =>
       expect(processStatisticsStore.state.statistics).toEqual([])
+    );
+  });
+
+  it('should refetch data when navigated from header', async () => {
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
+      ),
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
+      ),
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedProcessesMock))
+      ),
+      rest.post('/api/batch-operations', (_, res, ctx) =>
+        res.once(ctx.json(operations))
+      )
+    );
+
+    const {user} = render(
+      <>
+        <Header />
+        <Processes />
+      </>,
+      {
+        wrapper: getWrapper('/processes?active=true&incidents=true'),
+      }
+    );
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    await user.click(screen.getByRole('link', {name: 'View Processes'}));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument()
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument()
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('instances-loader')).toBeInTheDocument()
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument()
     );
   });
 });

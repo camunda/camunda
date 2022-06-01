@@ -12,8 +12,7 @@ import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagr
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {Location} from 'history';
+import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {
   getProcessInstanceFilters,
   deleteSearchParams,
