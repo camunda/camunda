@@ -71,7 +71,7 @@
     "@testing-library/user-event": "14.1.1",
     "@types/carbon-components-react": "7.55.1",
     "@types/carbon__elements": "10.35.0",
-    "@types/jest": "27.4.1",
+    "@types/jest": "27.5.1",
     "@types/jsoneditor": "9.5.1",
     "@types/lodash": "4.14.182",
     "@types/mixpanel-browser": "2.38.0",
