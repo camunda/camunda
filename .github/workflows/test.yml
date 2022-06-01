@@ -125,6 +125,7 @@ jobs:
             **/target/surefire-reports/
             **/hs_err_*.log
           retention-days: 7
+          if-no-files-found: ignore
   slow-unit-tests:
     name: Slow unit tests
     runs-on: "n1-standard-8-netssd-preempt"
@@ -273,6 +274,23 @@ jobs:
             **/target/surefire-reports/
             **/hs_err_*.log
           retention-days: 7
+
+  # Used by bors to check all tests, including the unit test matrix.
+  # New test jobs must be added to the `needs` lists!
+  test-summary:
+    name: Test summary
+    runs-on: ubuntu-latest
+    needs:
+      - integration-tests
+      - exporter-tests
+      - unit-tests
+      - slow-unit-tests
+      - smoke-tests
+      - java-randomized-tests
+      - go-client
+      - java-client
+    steps:
+      - run: exit 0
 
   # We need to upload the event file as an artifact in order to support
   # publishing the results of forked repositories
