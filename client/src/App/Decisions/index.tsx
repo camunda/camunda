@@ -6,6 +6,7 @@
  */
 
 import {useEffect, useRef, useState} from 'react';
+import {useLocation, Location} from 'react-router-dom';
 import {Filters} from './Filters';
 import {Decision} from './Decision';
 import {InstancesTable} from './InstancesTable';
@@ -18,9 +19,23 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {PAGE_TITLE} from 'modules/constants';
 import {Panel} from 'modules/components/Panel';
 
+type LocationType = Omit<Location, 'state'> & {
+  state: {refreshContent?: boolean};
+};
+
 const Decisions: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);
+  const location = useLocation() as LocationType;
+
+  useEffect(() => {
+    if (
+      groupedDecisionsStore.state.status !== 'initial' &&
+      location.state?.refreshContent
+    ) {
+      groupedDecisionsStore.fetchDecisions();
+    }
+  }, [location.state]);
 
   useEffect(() => {
     document.title = PAGE_TITLE.DECISION_INSTANCES;

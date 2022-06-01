@@ -10,6 +10,7 @@ import {
   screen,
   within,
   waitForElementToBeRemoved,
+  waitFor,
 } from 'modules/testing-library';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -21,6 +22,7 @@ import {Routes, Route, MemoryRouter} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
+import {Header} from 'App/Layout/Header';
 
 const createWrapper = (initialPath: string = '/decisions') => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -288,5 +290,39 @@ describe('<InstancesTable />', () => {
     expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
+  });
+
+  it('should refetch data when navigated from header', async () => {
+    mockServer.use(
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockDecisionInstances))
+      ),
+      rest.get('/api/decisions/grouped', (_, res, ctx) =>
+        res.once(ctx.json(mockGroupedDecisions))
+      ),
+      rest.post('/api/decision-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockDecisionInstances))
+      )
+    );
+
+    const {user} = render(
+      <>
+        <Header />
+        <InstancesTable />
+      </>,
+      {wrapper: createWrapper()}
+    );
+
+    await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    await user.click(screen.getByRole('link', {name: 'View Decisions'}));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('instances-loader')).toBeInTheDocument()
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument()
+    );
   });
 });

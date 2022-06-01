@@ -42,7 +42,7 @@ const Header: React.FC = () => {
             to={Locations.decisions()}
             title="View Decisions"
             label="Decisions"
-            state={{hideOptionalFilters: true}}
+            state={{refreshContent: true, hideOptionalFilters: true}}
             trackingEvent="header-decisions"
           />
         </Menu>
