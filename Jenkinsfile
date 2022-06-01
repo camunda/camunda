@@ -19,6 +19,10 @@ String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
 }
 
+String getImageTag() {
+  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
+}
+
 String getCiImageTag() {
   return "ci-${getGitCommitHash()}"
 }
@@ -149,13 +153,15 @@ pipeline {
             }
           }
           environment {
+            IMAGE_TAG = getImageTag()
             CI_IMAGE_TAG = getCiImageTag()
           }
           steps {
             lock('operate-dockerimage-upload') {
               container('docker') {
                 sh """
-                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
+                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
+                  docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
                   docker push ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
                   if [ "${env.BRANCH_NAME}" = 'master' ]; then
