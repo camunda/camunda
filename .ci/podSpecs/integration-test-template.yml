@@ -25,15 +25,13 @@ spec:
         - name: JAVA_TOOL_OPTIONS
           value: |
             -XX:+UseContainerSupport
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 12
-          memory: 48Gi
+          cpu: 26
+          memory: 104Gi
         requests:
-          cpu: 12
-          memory: 48Gi
+          cpu: 26
+          memory: 104Gi
       securityContext:
         privileged: true
     - name: docker
@@ -41,9 +39,6 @@ spec:
       args:
         - --storage-driver
         - overlay2
-        - --ipv6
-        - --fixed-cidr-v6
-        - "2001:db8:1::/64"
       env:
         # The new dind versions expect secure access using cert
         # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
@@ -52,17 +47,17 @@ spec:
           value: ""
       securityContext:
         privileged: true
+      tty: true
       volumeMounts:
         - mountPath: /var/lib/docker
           name: docker-storage
-      tty: true
       resources:
         limits:
-          cpu: 18
-          memory: 60Gi
+          cpu: 4
+          memory: 4Gi
         requests:
-          cpu: 18
-          memory: 60Gi
+          cpu: 4
+          memory: 4Gi
     - name: python
       image: python:3.10
       command: [ "cat" ]

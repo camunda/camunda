@@ -251,33 +251,33 @@ pipeline {
 
                     stages {
                         stage('Prepare') {
+                            environment {
+                                DOCKER_BUILDKIT = 1
+                                IMAGE = "camunda/zeebe"
+                                TAG = "current-test"
+                            }
+
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     prepareMavenContainer()
 
                                     container('python') {
                                         camundaGCloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
+                                        camundaGCloudRestoreTmpFile('zeebe-distro', ['camunda-zeebe.tar.gz'])
                                         sh "tar -xf zeebe-build.tar"
                                     }
-                                    runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
-                                }
-                            }
-                        }
 
-                        stage('Build Docker Image') {
-                            environment {
-                                DOCKER_BUILDKIT = "1"
-                                IMAGE = "camunda/zeebe"
-                                TAG = 'current-test'
-                            }
-
-                            steps {
-                                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                                    container('python') {
-                                        camundaGCloudRestoreTmpFile('zeebe-distro', ['camunda-zeebe.tar.gz'])
-                                    }
                                     container('docker') {
-                                        sh '.ci/scripts/docker/build.sh'
+                                        sh '.ci/scripts/docker/local-registry.sh'
+                                    }
+
+                                    withVault(
+                                        [vaultSecrets: [
+                                            [path: 'secret/common/ci-zeebe/jenkins', secretValues: [
+                                                [envVar: 'TC_CLOUD_TOKEN', vaultKey: 'TC_CLOUD_TOKEN'],
+                                            ]],
+                                    ]]) {
+                                        runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
                                     }
                                 }
                             }
@@ -289,6 +289,7 @@ pipeline {
                                 MAVEN_PARALLELISM = 2
                                 SUREFIRE_FORK_COUNT = 12
                                 JUNIT_THREAD_COUNT = 12
+                                ZEEBE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/zeebe:current-test"
                             }
 
                             steps {

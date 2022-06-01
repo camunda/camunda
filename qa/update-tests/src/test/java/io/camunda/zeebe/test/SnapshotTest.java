@@ -11,7 +11,6 @@ import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
@@ -25,8 +24,6 @@ import org.testcontainers.containers.Network;
 @ExtendWith(ContainerStateExtension.class)
 final class SnapshotTest {
 
-  public static final String LAST_VERSION = VersionUtil.getPreviousVersion();
-  public static final String CURRENT_VERSION = "current-test";
   private static Network network;
 
   @BeforeAll
@@ -44,14 +41,14 @@ final class SnapshotTest {
   @ArgumentsSource(UpdateTestCaseProvider.class)
   void update(final String name, final UpdateTestCase testCase, final ContainerState state) {
     // given
-    state.withNetwork(network).broker(LAST_VERSION).start(true);
+    state.withNetwork(network).withOldBroker().start(true);
     final long processInstanceKey = testCase.setUp(state.client());
     final long key = testCase.runBefore(state);
 
     // when
     // it's necessary to restart without the debug exporter to allow snapshotting
     state.close();
-    state.broker(LAST_VERSION).start(false);
+    state.withOldBroker().start(false);
     // there's a slight chance that we'd processed everything before shutting down, so we send a
     // dummy message to ensure we have processed something since we recovered and so take a snapshot
     sendDummyMessageToEnforceSnapshot(state);
@@ -62,7 +59,7 @@ final class SnapshotTest {
 
     // perform the update
     state.close();
-    state.broker(CURRENT_VERSION).start(true);
+    state.withNewBroker().start(true);
     assertThat(state).hasSnapshotAvailable(1);
 
     // then

@@ -11,6 +11,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient;
 import io.camunda.zeebe.test.util.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
 import io.zeebe.containers.ZeebeVolume;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerFetchException;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
+import org.testcontainers.utility.DockerImageName;
 
 final class ContainerState implements CloseableResource {
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
@@ -36,6 +38,10 @@ final class ContainerState implements CloseableResource {
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
+  private static final DockerImageName PREVIOUS_VERSION =
+      DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion());
+  private static final DockerImageName CURRENT_VERSION =
+      ZeebeTestContainerDefaults.defaultTestImage();
 
   static {
     CONTAINER_START_RETRY_POLICY
@@ -58,34 +64,34 @@ final class ContainerState implements CloseableResource {
   private ZeebeClient client;
   private PartitionsActuatorClient partitionsActuatorClient;
 
-  private String brokerVersion;
-  private String gatewayVersion;
+  private DockerImageName brokerImage;
+  private DockerImageName gatewayImage;
   private boolean withRemoteDebugging;
 
-  public ZeebeClient client() {
+  ZeebeClient client() {
     return client;
   }
 
-  public ZeebeContainer getBroker() {
-    return broker;
+  ContainerState withOldBroker() {
+    return broker(PREVIOUS_VERSION);
   }
 
-  public ZeebeGatewayContainer getGateway() {
-    return gateway;
+  ContainerState withNewBroker() {
+    return broker(CURRENT_VERSION);
   }
 
-  public ContainerState broker(final String version) {
-    brokerVersion = version;
-    return this;
-  }
-
-  public ContainerState withNetwork(final Network network) {
+  ContainerState withNetwork(final Network network) {
     this.network = network;
     return this;
   }
 
-  public ContainerState withStandaloneGateway(final String gatewayVersion) {
-    this.gatewayVersion = gatewayVersion;
+  ContainerState withOldGateway() {
+    gatewayImage = PREVIOUS_VERSION;
+    return this;
+  }
+
+  private ContainerState broker(final DockerImageName image) {
+    brokerImage = image;
     return this;
   }
 
@@ -96,7 +102,7 @@ final class ContainerState implements CloseableResource {
   public void start(final boolean enableDebug, final boolean withRemoteDebugging) {
     final String contactPoint;
     broker =
-        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage().withTag(brokerVersion))
+        new ZeebeContainer(brokerImage)
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
             .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
@@ -124,12 +130,11 @@ final class ContainerState implements CloseableResource {
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
 
-    if (gatewayVersion == null) {
+    if (gatewayImage == null) {
       contactPoint = broker.getExternalGatewayAddress();
     } else {
       gateway =
-          new ZeebeGatewayContainer(
-                  ZeebeTestContainerDefaults.defaultTestImage().withTag(gatewayVersion))
+          new ZeebeGatewayContainer(gatewayImage)
               .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withNetwork(network);
@@ -244,7 +249,7 @@ final class ContainerState implements CloseableResource {
       broker = null;
     }
 
-    brokerVersion = null;
-    gatewayVersion = null;
+    brokerImage = null;
+    gatewayImage = null;
   }
 }
