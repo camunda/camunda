@@ -122,6 +122,7 @@ public final class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     // then - no error
+    assert false;
   }
 
   @Test
