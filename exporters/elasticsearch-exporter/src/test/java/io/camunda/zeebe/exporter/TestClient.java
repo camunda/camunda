@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTempl
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.io.IOException;
@@ -47,6 +49,18 @@ final class TestClient implements CloseableSilently {
 
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
     esClient = new ElasticsearchClient(transport);
+  }
+
+  @SuppressWarnings("rawtypes")
+  GetResponse<Record> getExportedDocumentFor(final Record<?> record) {
+    final var indexName = indexRouter.indexFor(record);
+
+    try {
+      esClient.indices().refresh(b -> b.index(indexName)); // ensure latest data is visible
+      return esClient.get(b -> b.id(indexRouter.idFor(record)).index(indexName), Record.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType) {
