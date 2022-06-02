@@ -33,6 +33,13 @@
             },
             "variables": {
               "enabled": false
+            },
+            "startInstructions": {
+              "properties": {
+                "elementId": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }
