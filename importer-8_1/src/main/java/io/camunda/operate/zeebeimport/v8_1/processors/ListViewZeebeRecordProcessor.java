@@ -67,7 +67,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -84,9 +83,6 @@ public class ListViewZeebeRecordProcessor {
     AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
   }
-
-  @Autowired
-  private BeanFactory beanFactory;
 
   @Autowired
   private ObjectMapper objectMapper;

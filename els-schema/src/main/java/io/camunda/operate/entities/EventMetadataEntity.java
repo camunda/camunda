@@ -8,6 +8,7 @@ package io.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 public class EventMetadataEntity {
 
@@ -19,13 +20,19 @@ public class EventMetadataEntity {
   private String jobWorker;
   private OffsetDateTime jobDeadline;
   private Map<String, String> jobCustomHeaders;
-  
+  private Long jobKey;
+
   /**
   * Incident data.
   */
   private ErrorType incidentErrorType;
   private String incidentErrorMessage;
-  private Long jobKey;
+
+  /**
+   * Message data.
+   */
+  private String messageName;
+  private String correlationKey;
 
   public String getJobType() {
     return jobType;
@@ -67,6 +74,14 @@ public class EventMetadataEntity {
     this.jobCustomHeaders = jobCustomHeaders;
   }
 
+  public Long getJobKey() {
+    return jobKey;
+  }
+
+  public void setJobKey(Long jobKey) {
+    this.jobKey = jobKey;
+  }
+
   public ErrorType getIncidentErrorType() {
     return incidentErrorType;
   }
@@ -83,50 +98,48 @@ public class EventMetadataEntity {
     this.incidentErrorMessage = incidentErrorMessage;
   }
 
-  public Long getJobKey() {
-    return jobKey;
+  public String getMessageName() {
+    return messageName;
   }
 
-  public void setJobKey(Long jobKey) {
-    this.jobKey = jobKey;
+  public EventMetadataEntity setMessageName(final String messageName) {
+    this.messageName = messageName;
+    return this;
+  }
+
+  public String getCorrelationKey() {
+    return correlationKey;
+  }
+
+  public EventMetadataEntity setCorrelationKey(final String correlationKey) {
+    this.correlationKey = correlationKey;
+    return this;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-
-    EventMetadataEntity that = (EventMetadataEntity) o;
-
-    if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null)
-      return false;
-    if (jobRetries != null ? !jobRetries.equals(that.jobRetries) : that.jobRetries != null)
-      return false;
-    if (jobWorker != null ? !jobWorker.equals(that.jobWorker) : that.jobWorker != null)
-      return false;
-    if (jobDeadline != null ? !jobDeadline.equals(that.jobDeadline) : that.jobDeadline != null)
-      return false;
-    if (jobCustomHeaders != null ? !jobCustomHeaders.equals(that.jobCustomHeaders) : that.jobCustomHeaders != null)
-      return false;
-    if (incidentErrorType != null ? !incidentErrorType.equals(that.incidentErrorType) : that.incidentErrorType != null)
-      return false;
-    if (incidentErrorMessage != null ? !incidentErrorMessage.equals(that.incidentErrorMessage) : that.incidentErrorMessage != null)
-      return false;
-    return jobKey != null ? jobKey.equals(that.jobKey) : that.jobKey == null;
+    }
+    final EventMetadataEntity that = (EventMetadataEntity) o;
+    return Objects.equals(jobType, that.jobType) &&
+        Objects.equals(jobRetries, that.jobRetries) &&
+        Objects.equals(jobWorker, that.jobWorker) &&
+        Objects.equals(jobDeadline, that.jobDeadline) &&
+        Objects.equals(jobCustomHeaders, that.jobCustomHeaders) &&
+        Objects.equals(jobKey, that.jobKey) &&
+        incidentErrorType == that.incidentErrorType &&
+        Objects.equals(incidentErrorMessage, that.incidentErrorMessage) &&
+        Objects.equals(messageName, that.messageName) &&
+        Objects.equals(correlationKey, that.correlationKey);
   }
 
   @Override
   public int hashCode() {
-    int result = jobType != null ? jobType.hashCode() : 0;
-    result = 31 * result + (jobRetries != null ? jobRetries.hashCode() : 0);
-    result = 31 * result + (jobWorker != null ? jobWorker.hashCode() : 0);
-    result = 31 * result + (jobDeadline != null ? jobDeadline.hashCode() : 0);
-    result = 31 * result + (jobCustomHeaders != null ? jobCustomHeaders.hashCode() : 0);
-    result = 31 * result + (incidentErrorType != null ? incidentErrorType.hashCode() : 0);
-    result = 31 * result + (incidentErrorMessage != null ? incidentErrorMessage.hashCode() : 0);
-    result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
-    return result;
+    return Objects.hash(jobType, jobRetries, jobWorker, jobDeadline, jobCustomHeaders, jobKey,
+        incidentErrorType, incidentErrorMessage, messageName, correlationKey);
   }
 }

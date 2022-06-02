@@ -46,7 +46,7 @@ public class TestContainerUtil {
     if (version.equals("SNAPSHOT")) {
       broker.withImagePullPolicy(alwaysPull());
     }
-    broker.withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
+    broker.withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dzeebe.broker.exporters.elasticsearch.args.index.processMessageSubscription=true")
         .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
         .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
         .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")

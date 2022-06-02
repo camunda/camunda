@@ -599,19 +599,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   }
 
-  private void sendMessages(String messageName, String payload, int count, String correlationKey) {
-    for (int i = 0; i<count; i++) {
-      zeebeClient.newPublishMessageCommand()
-          .messageName(messageName)
-          .correlationKey(correlationKey)
-          .variables(payload)
-          .timeToLive(Duration.ofSeconds(30))
-          .messageId(UUID.randomUUID().toString())
-          .send().join();
-    }
-  }
   private void sendMessages(String messageName, String payload, int count) {
-    sendMessages(messageName, payload, count, String.valueOf(5));
+    ZeebeTestUtil.sendMessages(zeebeClient, messageName, payload, count, String.valueOf(5));
   }
 
   @Test

@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,10 +112,22 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       case JOB:
         processJobRecords(bulkRequest, zeebeRecords);
         break;
+      case PROCESS_MESSAGE_SUBSCRIPTION:
+        processProcessMessageSubscription(bulkRequest, zeebeRecords);
+        break;
       default:
         logger.debug("Default case triggered for type {}", importValueType);
         break;
     }
+  }
+
+  private void processProcessMessageSubscription(final BulkRequest bulkRequest,
+      final List<Record> zeebeRecords) throws PersistenceException {
+    // per flow node instance
+    Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> groupedRecordsPerFlowNodeInst
+        = zeebeRecords.stream().map(obj -> (Record<ProcessMessageSubscriptionRecordValue>)obj)
+        .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
+    eventZeebeRecordProcessor.processProcessMessageSubscription(groupedRecordsPerFlowNodeInst, bulkRequest);
   }
 
   private ObjectMapper getLocalObjectMapper() {

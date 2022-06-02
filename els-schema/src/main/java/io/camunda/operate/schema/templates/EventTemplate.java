@@ -34,14 +34,21 @@ public class EventTemplate extends AbstractTemplateDescriptor implements Process
   public static final String JOB_WORKER = "jobWorker";
   public static final String JOB_DEADLINE = "jobDeadline";
   public static final String JOB_CUSTOM_HEADERS = "jobCustomHeaders";
+  public static final String JOB_KEY = "jobKey";
 
   public static final String INCIDENT_ERROR_TYPE = "incidentErrorType";
   public static final String INCIDENT_ERROR_MSG = "incidentErrorMessage";
-  public static final String JOB_KEY = "jobKey";
+
+  public static final String MESSAGE_NAME = "messageName";
+  public static final String CORRELATION_KEY = "correlationKey";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "8.1.0";
+  }
 }

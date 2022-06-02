@@ -10,6 +10,7 @@ import static io.camunda.operate.entities.FlowNodeType.CALL_ACTIVITY;
 import static io.camunda.operate.entities.FlowNodeType.MULTI_INSTANCE_BODY;
 import static io.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
 import static io.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,9 +18,11 @@ import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
@@ -33,8 +36,8 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -71,11 +74,12 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnOneInstanceMetadata() throws Exception {
     //having
     final String taskId = "taskA";
+    final String jobType = "taskAJob";
     final String processId = "testProcess";
     final BpmnModelInstance testProcess =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask(taskId).zeebeJobType(taskId)
+            .serviceTask(taskId).zeebeJobType(jobType)
             .endEvent()
             .done();
     final long processInstanceKey = tester
@@ -99,7 +103,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId, SERVICE_TASK,
-        flowNodeInstanceId1, false);
+        flowNodeInstanceId1, false, jobType);
 
     //when 2.1
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
@@ -114,7 +118,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId, SERVICE_TASK,
-        flowNodeInstanceId2, false);
+        flowNodeInstanceId2, false, jobType);
   }
 
   /**
@@ -127,11 +131,12 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     pinZeebeTime(currentTime.minus(3, ChronoUnit.DAYS));
 
     final String taskId = "taskA";
+    final String jobType = "taskAJob";
     final String processId = "testProcess";
     final BpmnModelInstance testProcess =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask(taskId).zeebeJobType(taskId)
+            .serviceTask(taskId).zeebeJobType(jobType)
             .endEvent()
             .done();
     final long processInstanceKey = tester
@@ -140,7 +145,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .and()
         .waitUntil()
         .flowNodeIsActive(taskId)
-        .completeTask(taskId)
+        .completeTask(jobType)
         .waitUntil()
         .processInstanceIsFinished()
         .getProcessInstanceKey();
@@ -161,7 +166,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId, SERVICE_TASK,
-        flowNodeInstanceId1, false);
+        flowNodeInstanceId1, false, jobType);
 
     //when 2.1
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
@@ -176,7 +181,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId, SERVICE_TASK,
-        flowNodeInstanceId2, false);
+        flowNodeInstanceId2, false, jobType);
   }
 
   /**
@@ -222,7 +227,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
-        MULTI_INSTANCE_BODY, flowNodeInstanceId1, false);
+        MULTI_INSTANCE_BODY, flowNodeInstanceId1, false, null);
 
     //when 2.2 (is multi-instance body itself)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
@@ -238,7 +243,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
-        MULTI_INSTANCE_BODY, flowNodeInstanceId2, false);
+        MULTI_INSTANCE_BODY, flowNodeInstanceId2, false, null);
 
     //when 3.1 (breadcrumb for multi-instance body)
     final FlowNodeInstanceBreadcrumbEntryDto breadcrumb = flowNodeMetadata
@@ -257,7 +262,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
-        MULTI_INSTANCE_BODY, flowNodeInstanceId3, false);
+        MULTI_INSTANCE_BODY, flowNodeInstanceId3, false, null);
 
     //when 3.1 (breadcrumb for subprocess)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
@@ -274,7 +279,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
-        SUB_PROCESS, subprocessInstanceId1, false);
+        SUB_PROCESS, subprocessInstanceId1, false, null);
 
     //when 2.2 (is included in multi-instance)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
@@ -291,7 +296,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
-        SUB_PROCESS, subprocessInstanceId2, false);
+        SUB_PROCESS, subprocessInstanceId2, false, null);
   }
 
   /**
@@ -449,6 +454,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnBreadcrumbForPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";
+    final String jobType = "taskAJob";
     final String processId = "testProcess";
     final BpmnModelInstance testProcess =
         Bpmn.createExecutableProcess(processId)
@@ -457,7 +463,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
             .exclusiveGateway("exclusive")
             .moveToNode("parallel")
             .connectTo("exclusive")
-            .serviceTask(taskId).zeebeJobType(taskId)
+            .serviceTask(taskId).zeebeJobType(jobType)
             .endEvent()
             .done();
     final long processInstanceKey = tester
@@ -486,7 +492,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), taskId,
-        SERVICE_TASK, flowNodeInstanceId, false);
+        SERVICE_TASK, flowNodeInstanceId, false, jobType);
   }
 
   /**
@@ -541,12 +547,13 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
   private void assertFlowNodeInstanceData(final FlowNodeInstanceMetadataDto metadata,
       final String flowNodeId, final FlowNodeType flowNodeType, final String flowNodeInstanceId,
-      boolean endDateExists) {
+      boolean endDateExists, final String jobType) {
     assertThat(metadata.getFlowNodeId()).isEqualTo(flowNodeId);
     assertThat(metadata.getFlowNodeType()).isEqualTo(flowNodeType);
     assertThat(metadata.getFlowNodeInstanceId())
         .isEqualTo(flowNodeInstanceId);
     assertThat(metadata.getStartDate()).isNotNull();
+    assertThat(metadata.getJobType()).isEqualTo(jobType);
     if (endDateExists) {
       assertThat(metadata.getEndDate()).isNotNull();
       assertThat(metadata.getEndDate()).isAfter(metadata.getStartDate());
@@ -985,6 +992,43 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     //two flow node instances
     assertThat(flowNodeMetadata.getInstanceCount()).isEqualTo(2);
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNull();
+  }
+
+
+  @Test
+  public void testMessageData() throws Exception {
+    // having
+    final OffsetDateTime testStartTime = OffsetDateTime.now();
+
+    String processId = "eventProcess";
+    final String correlationKey = "5";
+    final String messageName = "clientMessage";
+    deployProcess("messageEventProcess_v_1.bpmn");
+    final Long processInstanceKey = ZeebeTestUtil
+        .startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+    sleepFor(1000);
+
+    //when
+    ZeebeTestUtil.sendMessages(zeebeClient, messageName, "{\"messageVar\": \"someValue\"}", 20,
+        correlationKey);
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(processInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(3);
+    final String messageEventId = allFlowNodeInstances.get(1).getId();
+    final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(processInstanceKey), null, null, messageEventId);
+    assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
+    assertFlowNodeInstanceMessageData(flowNodeMetadata.getInstanceMetadata(), messageName,
+        correlationKey);
+  }
+
+  private void assertFlowNodeInstanceMessageData(final FlowNodeInstanceMetadataDto metadata,
+      final String messageName, final String correlationKey) {
+    assertThat(metadata.getMessageName()).isEqualTo(messageName);
+    assertThat(metadata.getCorrelationKey()).isEqualTo(correlationKey);
   }
 
   private void assertSingleIncident(final IncidentDto incident, final String bpmnProcessId,

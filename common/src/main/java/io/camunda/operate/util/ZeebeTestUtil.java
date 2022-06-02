@@ -11,6 +11,7 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
@@ -180,5 +181,18 @@ public abstract class ZeebeTestUtil {
   public static void updateVariables(ZeebeClient client, Long scopeKey, String newPayload) {
     client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
+
+  public static void sendMessages(ZeebeClient client, String messageName, String payload, int count, String correlationKey) {
+    for (int i = 0; i<count; i++) {
+      client.newPublishMessageCommand()
+          .messageName(messageName)
+          .correlationKey(correlationKey)
+          .variables(payload)
+          .timeToLive(Duration.ofSeconds(30))
+          .messageId(UUID.randomUUID().toString())
+          .send().join();
+    }
+  }
+
 
 }

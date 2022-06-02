@@ -4,3 +4,5 @@ zeebe.broker.exporters.elasticsearch:
     url: http://elasticsearch:9200
     bulk:
       size: 1
+    index:
+      processMessageSubscription: true

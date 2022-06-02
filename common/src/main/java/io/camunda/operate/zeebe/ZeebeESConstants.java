@@ -18,5 +18,6 @@ public interface ZeebeESConstants {
   String PROCESS_INDEX_NAME = "process";
   String VARIABLE_INDEX_NAME = "variable";
   String VARIABLE_DOCUMENT_INDEX_NAME = "variable-document";
+  String PROCESS_MESSAGE_SUBSCRIPTION_INDEX_NAME = "process-message-subscription";
 
 }

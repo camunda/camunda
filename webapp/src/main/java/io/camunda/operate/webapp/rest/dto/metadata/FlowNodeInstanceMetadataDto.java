@@ -39,6 +39,12 @@ public class FlowNodeInstanceMetadataDto {
   private OffsetDateTime jobDeadline;
   private Map<String, String> jobCustomHeaders;
 
+  /**
+   * Message data.
+   */
+  private String messageName;
+  private String correlationKey;
+
   public String getFlowNodeId() {
     return flowNodeId;
   }
@@ -138,52 +144,76 @@ public class FlowNodeInstanceMetadataDto {
     return jobType;
   }
 
-  public void setJobType(String jobType) {
+  public FlowNodeInstanceMetadataDto setJobType(final String jobType) {
     this.jobType = jobType;
+    return this;
   }
 
   public Integer getJobRetries() {
     return jobRetries;
   }
 
-  public void setJobRetries(Integer jobRetries) {
+  public FlowNodeInstanceMetadataDto setJobRetries(final Integer jobRetries) {
     this.jobRetries = jobRetries;
+    return this;
   }
 
   public String getJobWorker() {
     return jobWorker;
   }
 
-  public void setJobWorker(String jobWorker) {
+  public FlowNodeInstanceMetadataDto setJobWorker(final String jobWorker) {
     this.jobWorker = jobWorker;
+    return this;
   }
 
   public OffsetDateTime getJobDeadline() {
     return jobDeadline;
   }
 
-  public void setJobDeadline(OffsetDateTime jobDeadline) {
+  public FlowNodeInstanceMetadataDto setJobDeadline(final OffsetDateTime jobDeadline) {
     this.jobDeadline = jobDeadline;
+    return this;
   }
 
   public Map<String, String> getJobCustomHeaders() {
     return jobCustomHeaders;
   }
 
-  public void setJobCustomHeaders(Map<String, String> jobCustomHeaders) {
+  public FlowNodeInstanceMetadataDto setJobCustomHeaders(
+      final Map<String, String> jobCustomHeaders) {
     this.jobCustomHeaders = jobCustomHeaders;
+    return this;
+  }
+
+  public String getMessageName() {
+    return messageName;
+  }
+
+  public FlowNodeInstanceMetadataDto setMessageName(final String messageName) {
+    this.messageName = messageName;
+    return this;
+  }
+
+  public String getCorrelationKey() {
+    return correlationKey;
+  }
+
+  public FlowNodeInstanceMetadataDto setCorrelationKey(final String correlationKey) {
+    this.correlationKey = correlationKey;
+    return this;
   }
 
   public static FlowNodeInstanceMetadataDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
       EventEntity eventEntity, String calledProcessInstanceId, String calledProcessDefinitionName,
       String calledDecisionInstanceId, String calledDecisionDefinitionName) {
-    FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto();
+    FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto()
     //flow node instance data
-    metadataDto.setFlowNodeInstanceId(flowNodeInstance.getId());
-    metadataDto.setFlowNodeId(flowNodeInstance.getFlowNodeId());
-    metadataDto.setFlowNodeType(flowNodeInstance.getType());
-    metadataDto.setStartDate(flowNodeInstance.getStartDate());
-    metadataDto.setEndDate(flowNodeInstance.getEndDate());
+        .setFlowNodeInstanceId(flowNodeInstance.getId())
+        .setFlowNodeId(flowNodeInstance.getFlowNodeId())
+        .setFlowNodeType(flowNodeInstance.getType())
+        .setStartDate(flowNodeInstance.getStartDate())
+        .setEndDate(flowNodeInstance.getEndDate());
     if (calledProcessInstanceId != null) {
       metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
     }
@@ -201,11 +231,13 @@ public class FlowNodeInstanceMetadataDto {
     metadataDto.setEventId(eventEntity.getId());
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
     if (eventMetadataEntity != null) {
-      metadataDto.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders());
-      metadataDto.setJobDeadline(eventMetadataEntity.getJobDeadline());
-      metadataDto.setJobRetries(eventMetadataEntity.getJobRetries());
-      metadataDto.setJobType(eventMetadataEntity.getJobType());
-      metadataDto.setJobWorker(eventMetadataEntity.getJobWorker());
+      metadataDto.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders())
+          .setJobDeadline(eventMetadataEntity.getJobDeadline())
+          .setJobRetries(eventMetadataEntity.getJobRetries())
+          .setJobType(eventMetadataEntity.getJobType())
+          .setJobWorker(eventMetadataEntity.getJobWorker())
+          .setMessageName(eventMetadataEntity.getMessageName())
+          .setCorrelationKey(eventMetadataEntity.getCorrelationKey());
     }
 
     return metadataDto;
@@ -234,7 +266,9 @@ public class FlowNodeInstanceMetadataDto {
         Objects.equals(jobRetries, that.jobRetries) &&
         Objects.equals(jobWorker, that.jobWorker) &&
         Objects.equals(jobDeadline, that.jobDeadline) &&
-        Objects.equals(jobCustomHeaders, that.jobCustomHeaders);
+        Objects.equals(jobCustomHeaders, that.jobCustomHeaders) &&
+        Objects.equals(messageName, that.messageName) &&
+        Objects.equals(correlationKey, that.correlationKey);
   }
 
   @Override
@@ -242,7 +276,7 @@ public class FlowNodeInstanceMetadataDto {
     return Objects.hash(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate,
         calledProcessInstanceId, calledProcessDefinitionName, calledDecisionInstanceId,
         calledDecisionDefinitionName, eventId, jobType, jobRetries, jobWorker, jobDeadline,
-        jobCustomHeaders);
+        jobCustomHeaders, messageName, correlationKey);
   }
 
   @Override
@@ -263,6 +297,8 @@ public class FlowNodeInstanceMetadataDto {
         ", jobWorker='" + jobWorker + '\'' +
         ", jobDeadline=" + jobDeadline +
         ", jobCustomHeaders=" + jobCustomHeaders +
+        ", messageName='" + messageName + '\'' +
+        ", correlationKey='" + correlationKey + '\'' +
         '}';
   }
 }

@@ -40,7 +40,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -73,9 +72,6 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  private BeanFactory beanFactory;
 
   public void processIncidentRecord(List<Record> records, BulkRequest bulkRequest) throws PersistenceException {
     List<IncidentEntity> newIncidents = new ArrayList<>();

@@ -34,6 +34,9 @@ public enum EventType {
 
   RETRIES_UPDATED,
 
+  //MESSAGE
+  CORRELATED,
+
   CANCELED,
 
   UNKNOWN;

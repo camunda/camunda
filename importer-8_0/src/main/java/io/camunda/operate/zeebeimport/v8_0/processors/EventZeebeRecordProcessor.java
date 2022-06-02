@@ -8,6 +8,8 @@ package io.camunda.operate.zeebeimport.v8_0.processors;
 
 import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
 import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
+import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
@@ -23,6 +25,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -30,12 +33,15 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
 import org.slf4j.Logger;
@@ -80,53 +86,46 @@ public class EventZeebeRecordProcessor {
   @Autowired
   private EventTemplate eventTemplate;
 
-  public void processIncidentRecords(Map<Long, List<Record<IncidentRecordValue>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<Record<IncidentRecordValue>>> wiRecordsEntry: records.entrySet()) {
-      //we need only last event of the processed type
-      List<Record<IncidentRecordValue>> incidentRecords = wiRecordsEntry.getValue();
-      if (incidentRecords.size() >= 1) {
-        for (int i = incidentRecords.size() - 1; i>=0; i-- ) {
-          final String intentStr = incidentRecords.get(i).getIntent().name();
-          if (INCIDENT_EVENTS.contains(intentStr)) {
-            IncidentRecordValue recordValue = incidentRecords.get(i).getValue();
-            processIncident(incidentRecords.get(i), recordValue, bulkRequest);
-            break;
-          }
-        }
-      }
+  public void processIncidentRecords(Map<Long, List<Record<IncidentRecordValue>>> records,
+      BulkRequest bulkRequest) throws PersistenceException {
+    for (List<Record<IncidentRecordValue>> incidentRecords : records.values()) {
+      processLastRecord(incidentRecords, INCIDENT_EVENTS, rethrowConsumer(record -> {
+        IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+        processIncident(record, recordValue, bulkRequest);
+      }));
     }
   }
 
-  public void processJobRecords(Map<Long, List<Record<JobRecordValue>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<Record<JobRecordValue>>> wiRecordsEntry: records.entrySet()) {
-      //we need only last event of the processed type
-      List<Record<JobRecordValue>> jobRecords = wiRecordsEntry.getValue();
-      if (jobRecords.size() >= 1) {
-        for (int i = jobRecords.size() - 1; i>=0; i-- ) {
-          final String intentStr = jobRecords.get(i).getIntent().name();
-          if (JOB_EVENTS.contains(intentStr)) {
-            JobRecordValue recordValue = jobRecords.get(i).getValue();
-            processJob(jobRecords.get(i), recordValue, bulkRequest);
-            break;
-          }
-        }
-      }
+  public void processJobRecords(Map<Long, List<Record<JobRecordValue>>> records,
+      BulkRequest bulkRequest) throws PersistenceException {
+    for (List<Record<JobRecordValue>> jobRecords : records.values()) {
+      processLastRecord(jobRecords, JOB_EVENTS, rethrowConsumer(record -> {
+        JobRecordValue recordValue = (JobRecordValue) record.getValue();
+        processJob(record, recordValue, bulkRequest);
+      }));
     }
   }
 
   public void processProcessInstanceRecords(
-      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry: records.entrySet()) {
-      //we need only last event of the processed type
-      List<Record<ProcessInstanceRecordValue>> wiRecords = wiRecordsEntry.getValue();
-      if (wiRecords.size() >= 1) {
-        for (int i = wiRecords.size() - 1; i>=0; i-- ) {
-          final String intentStr = wiRecords.get(i).getIntent().name();
-          if (PROCESS_INSTANCE_STATES.contains(intentStr)) {
-            ProcessInstanceRecordValue recordValue = wiRecords.get(i).getValue();
-            processProcessInstance(wiRecords.get(i), recordValue, bulkRequest);
-            break;
-          }
+      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BulkRequest bulkRequest)
+      throws PersistenceException {
+    for (List<Record<ProcessInstanceRecordValue>> piRecords : records.values()) {
+      processLastRecord(piRecords, PROCESS_INSTANCE_STATES, rethrowConsumer(record -> {
+        ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue) record.getValue();
+        processProcessInstance(record, recordValue, bulkRequest);
+      }));
+    }
+  }
+
+  private <T extends RecordValue> void processLastRecord(final List<Record<T>> incidentRecords,
+      final Set<String> events,
+      final Consumer<Record<? extends RecordValue>> recordProcessor) {
+    if (incidentRecords.size() >= 1) {
+      for (int i = incidentRecords.size() - 1; i >= 0; i--) {
+        final String intentStr = incidentRecords.get(i).getIntent().name();
+        if (events.contains(intentStr)) {
+          recordProcessor.accept(incidentRecords.get(i));
+          break;
         }
       }
     }
@@ -223,9 +222,6 @@ public class EventZeebeRecordProcessor {
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setIncidentErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
     eventMetadata.setIncidentErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));
-    if (recordValue.getJobKey() > 0) {
-      eventMetadata.setJobKey(recordValue.getJobKey());
-    }
     eventEntity.setMetadata(eventMetadata);
 
     persistEvent(eventEntity, record.getPosition(), bulkRequest);
@@ -244,7 +240,6 @@ public class EventZeebeRecordProcessor {
   }
 
   private void loadEventGeneralData(Record record, EventEntity eventEntity) {
-//    eventEntity.setId(String.valueOf(record.getPosition()));
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
     eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(record.getValueType() == null ? null : record.getValueType().name()));
@@ -257,11 +252,40 @@ public class EventZeebeRecordProcessor {
       logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getProcessInstanceKey());
 
+      Map<String, Object> jsonMap = new HashMap<>();
+      jsonMap.put(EventTemplate.KEY, entity.getKey());
+      jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
+      jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
+      jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
+      if (entity.getMetadata() != null) {
+        Map<String, Object> metadataMap = new HashMap<>();
+        if (
+            entity.getMetadata().getIncidentErrorMessage() != null) {
+          metadataMap.put(EventTemplate.INCIDENT_ERROR_MSG,
+              entity.getMetadata().getIncidentErrorMessage());
+          metadataMap
+              .put(EventTemplate.INCIDENT_ERROR_TYPE, entity.getMetadata().getIncidentErrorType());
+        }
+        if (entity.getMetadata().getJobKey() != null) {
+          metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
+        }
+        if (entity.getMetadata().getJobType() != null) {
+          metadataMap.put(EventTemplate.JOB_TYPE, entity.getMetadata().getJobType());
+          metadataMap.put(EventTemplate.JOB_RETRIES, entity.getMetadata().getJobRetries());
+          metadataMap.put(EventTemplate.JOB_WORKER, entity.getMetadata().getJobWorker());
+          metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
+          metadataMap.put(EventTemplate.JOB_CUSTOM_HEADERS, entity.getMetadata().getJobCustomHeaders());
+        }
+        if (metadataMap.size() > 0) {
+          jsonMap.put(METADATA, metadataMap);
+        }
+      }
+
       //write event
-      bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName()).id(entity.getId())
-        .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .version(position)
-        .versionType(VersionType.EXTERNAL_GTE));
+      bulkRequest
+          .add(new UpdateRequest().index(eventTemplate.getFullQualifiedName()).id(entity.getId())
+              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+              .doc(objectMapper.writeValueAsString(jsonMap), XContentType.JSON));
 
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert event", e);
