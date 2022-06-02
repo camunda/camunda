@@ -208,6 +208,22 @@
                 "id": 4,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 5,
+                "name": "startInstructions",
+                "type": "ProcessInstanceCreationStartInstruction",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "ProcessInstanceCreationStartInstruction",
+            "fields": [
+              {
+                "id": 1,
+                "name": "elementId",
+                "type": "string"
               }
             ]
           },
