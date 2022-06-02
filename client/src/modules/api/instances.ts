@@ -111,12 +111,11 @@ async function fetchProcessInstancesByIds({
 }
 
 async function fetchProcessInstancesStatistics(payload: any) {
-  const response = await request({
+  return request({
     url: `${URL}/statistics`,
     method: 'POST',
     body: payload,
   });
-  return {statistics: await response.json()};
 }
 
 /**

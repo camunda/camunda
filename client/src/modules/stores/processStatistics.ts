@@ -61,7 +61,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
       this.startLoading();
       try {
         const response = await fetchProcessInstancesStatistics(payload);
-        this.setProcessStatistics(response.statistics);
+        this.setProcessStatistics(await response.json());
       } catch (error) {
         logger.error('Failed to fetch process statistics');
         logger.error(error);
