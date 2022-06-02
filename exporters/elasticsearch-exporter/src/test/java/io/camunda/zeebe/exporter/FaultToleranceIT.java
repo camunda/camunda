@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -63,13 +64,7 @@ final class FaultToleranceIT {
       exporter.open(controller);
 
       // when
-      ElasticsearchExporterException connectException = null;
-      try {
-        exporter.export(record);
-      } catch (final ElasticsearchExporterException e) { // expected since ES is down
-        connectException = e;
-      }
-      assertThat(connectException)
+      assertThatThrownBy(() -> exporter.export(record))
           .as("sanity check: should have failed to export since ES was down")
           .isNotNull();
       container.start();

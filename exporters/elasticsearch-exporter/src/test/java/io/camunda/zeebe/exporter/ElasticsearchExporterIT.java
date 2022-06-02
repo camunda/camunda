@@ -43,7 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * configuration. Testing flushing behavior, template configuration, etc., isn't necessary here.
  *
  * <p>Similarly, testing against a secured Elasticsearch, or testing fault tolerance when Elastic is
- * down, should be done elsewhere.
+ * down, should be done elsewhere (e.g. {@link FaultToleranceIT}
  */
 @Testcontainers
 @Execution(ExecutionMode.CONCURRENT)
@@ -103,6 +103,10 @@ final class ElasticsearchExporterIT {
             record);
   }
 
+  // both tests below are regression tests for https://github.com/camunda/zeebe/issues/4640
+  // one option would be to get rid of these and instead have unit tests on the templates themselves
+  // where we can guarantee that this field is not indexed, for example
+
   // regression test for https://github.com/camunda/zeebe/issues/4640
   @Test
   void shouldExportJobRecordWithOverlappingCustomHeaders() {
@@ -123,10 +127,6 @@ final class ElasticsearchExporterIT {
     final var response = testClient.getExportedDocumentFor(record);
     assertThat(response.source()).isEqualTo(record);
   }
-
-  // both tests below are regression tests for https://github.com/camunda/zeebe/issues/4640
-  // one option would be to get rid of these and instead have unit tests on the templates themselves
-  // where we can guarantee that this field is not indexed, for example
 
   // regression test for https://github.com/camunda/zeebe/issues/4640
   @Test
