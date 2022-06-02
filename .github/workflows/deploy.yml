@@ -94,12 +94,13 @@ jobs:
           target: app
           
   notify-if-failed:
+    name: Send slack notification on build failure
     runs-on: ubuntu-latest
     needs: [tests, deploy-snapshots, deploy-docker-snapshot]
     if: failure()
     steps:
       - id: slack-notify
-        name: Send slack notification about build failure
+        name: Send slack notification
         uses: slackapi/slack-github-action@v1.18.0
         with:
           # For posting a rich message using Block Kit
