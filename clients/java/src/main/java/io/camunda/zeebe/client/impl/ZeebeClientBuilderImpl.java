@@ -43,6 +43,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
 
+  private boolean applyEnvironmentVariableOverrides = true;
+
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private int jobWorkerMaxJobsActive = 32;
@@ -129,7 +131,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
-
+    if (properties.containsKey(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)) {
+      applyEnvironmentVariableOverrides(
+          Boolean.parseBoolean(
+              properties.getProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)));
+    }
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
@@ -183,6 +189,13 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(KEEP_ALIVE)) {
       keepAlive(properties.getProperty(KEEP_ALIVE));
     }
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder applyEnvironmentVariableOverrides(
+      final boolean applyEnvironmentVariableOverrides) {
+    this.applyEnvironmentVariableOverrides = applyEnvironmentVariableOverrides;
     return this;
   }
 
@@ -276,8 +289,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClient build() {
-    applyOverrides();
-    applyDefaults();
+    if (applyEnvironmentVariableOverrides) {
+      applyOverrides();
+    }
 
     return new ZeebeClientImpl(this);
   }
@@ -298,6 +312,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (Environment.system().isDefined(KEEP_ALIVE_VAR)) {
       keepAlive(Environment.system().get(KEEP_ALIVE_VAR));
     }
+
+    if (shouldUseDefaultCredentialsProvider()) {
+      credentialsProvider = createDefaultCredentialsProvider();
+    }
   }
 
   @Override
@@ -314,12 +332,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
 
     return sb.toString();
-  }
-
-  private void applyDefaults() {
-    if (shouldUseDefaultCredentialsProvider()) {
-      credentialsProvider = createDefaultCredentialsProvider();
-    }
   }
 
   private boolean shouldUseDefaultCredentialsProvider() {

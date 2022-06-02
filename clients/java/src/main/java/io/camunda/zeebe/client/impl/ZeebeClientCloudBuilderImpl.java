@@ -109,6 +109,13 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientCloudBuilderStep4 applyEnvironmentVariableOverrides(
+      boolean applyEnvironmentVariableOverrides) {
+    innerBuilder.applyEnvironmentVariableOverrides(applyEnvironmentVariableOverrides);
+    return this;
+  }
+
+  @Override
   public ZeebeClientCloudBuilderStep4 defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
     innerBuilder.defaultJobWorkerMaxJobsActive(maxJobsActive);
     return this;

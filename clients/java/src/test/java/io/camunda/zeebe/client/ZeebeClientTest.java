@@ -112,6 +112,23 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
+  public void shouldNotOverridePropertyWithEnvVariableIfOverridingIsDisabled() {
+    // given
+    Environment.system().put(PLAINTEXT_CONNECTION_VAR, "false");
+    final Properties properties = new Properties();
+    properties.putIfAbsent(USE_PLAINTEXT_CONNECTION, "true");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(false);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+  }
+
+  @Test
   public void shouldCaCertificateWithEnvVar() {
     // given
     final String certPath = getClass().getClassLoader().getResource("ca.cert.pem").getPath();
