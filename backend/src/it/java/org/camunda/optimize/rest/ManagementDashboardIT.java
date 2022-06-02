@@ -14,6 +14,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -89,6 +91,18 @@ public class ManagementDashboardIT extends AbstractIT {
     // and the dashboard configuration is as expected
     final DashboardDefinitionRestDto managementDashboard = getManagementDashboard();
     assertThat(managementDashboard.isManagementDashboard()).isTrue();
+    assertThat(managementDashboard.getId()).isEqualTo(MANAGEMENT_DASHBOARD_ID);
+    assertThat(managementDashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_NAME);
+    assertThat(managementDashboard.getCollectionId()).isNull();
+    assertThat(managementDashboard.getLastModified()).isEqualTo(now);
+    assertThat(managementDashboard.getLastModifier()).isNull();
+    assertThat(managementDashboard.getOwner()).isNull();
+    assertThat(managementDashboard.getCreated()).isEqualTo(now);
+    assertThat(managementDashboard.getExternalResourceUrls()).isEqualTo(Collections.emptySet());
+    assertThat(managementDashboard.getRefreshRateSeconds()).isNull();
+    assertThat(managementDashboard.getAvailableFilters()).isEqualTo(List.of(
+      new DashboardInstanceStartDateFilterDto(), new DashboardInstanceEndDateFilterDto()
+    ));
     assertThat(managementDashboard.getReports())
       .hasSize(6)
       .containsExactlyInAnyOrderElementsOf(

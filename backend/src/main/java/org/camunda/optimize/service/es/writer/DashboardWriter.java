@@ -57,8 +57,6 @@ public class DashboardWriter {
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     log.debug("Writing new dashboard to Elasticsearch");
 
-    dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
-    dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
       Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
@@ -68,6 +66,8 @@ public class DashboardWriter {
   }
 
   public IdResponseDto saveDashboard(@NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
+    dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();
     try {
       IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME)

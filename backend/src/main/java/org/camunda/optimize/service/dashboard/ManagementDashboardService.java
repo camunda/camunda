@@ -11,6 +11,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
@@ -206,6 +208,8 @@ public class ManagementDashboardService {
     dashboardDefinition.setId(MANAGEMENT_DASHBOARD_ID);
     dashboardDefinition.setName(MANAGEMENT_DASHBOARD_NAME);
     dashboardDefinition.setReports(reportsForDashboard);
+    dashboardDefinition.setAvailableFilters(
+      List.of(new DashboardInstanceStartDateFilterDto(), new DashboardInstanceEndDateFilterDto()));
     dashboardDefinition.setManagementDashboard(true);
     dashboardWriter.saveDashboard(dashboardDefinition);
   }
