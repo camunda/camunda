@@ -32,6 +32,16 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder withProperties(Properties properties);
 
   /**
+   * Allows to disable the mechanism to override some properties by ENVIRONMENT VARIABLES. This is
+   * useful if a client shall be constructed for test cases or in an environment that wants to fully
+   * control properties (like Spring Boot).
+   *
+   * <p>The default value is <code>true</code>.
+   */
+  ZeebeClientBuilder applyEnvironmentVariableOverrides(
+      final boolean applyEnvironmentVariableOverrides);
+
+  /**
    * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
