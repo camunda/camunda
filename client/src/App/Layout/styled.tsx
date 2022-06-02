@@ -21,10 +21,10 @@ const Grid = styled.div<GridProps>`
       grid-template-columns: 100%;
       grid-template-rows: ${numberOfRows === 2
         ? css`
-            ${HEADER_HEIGHT}px calc(100vh - ${HEADER_HEIGHT}px)
+            ${HEADER_HEIGHT}px calc(100% - ${HEADER_HEIGHT}px)
           `
         : css`
-            ${HEADER_HEIGHT}px calc(100vh - ${HEADER_HEIGHT + 38}px) 38px
+            ${HEADER_HEIGHT}px calc(100% - ${HEADER_HEIGHT + 38}px) 38px
           `};
     `;
   }}

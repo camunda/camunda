@@ -59,14 +59,24 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         </thead>
         <tbody>
           <tr>
-            <Styled.Td>{getProcessName(processInstance)}</Styled.Td>
-            <Styled.Td>{id}</Styled.Td>
+            <Styled.Td title={getProcessName(processInstance)}>
+              {getProcessName(processInstance)}
+            </Styled.Td>
+            <Styled.Td title={id}>{id}</Styled.Td>
             <Styled.Td>{processVersion}</Styled.Td>
-            <Styled.Td data-testid="start-date">
+            <Styled.Td
+              title={formatDate(startDate) ?? '--'}
+              data-testid="start-date"
+            >
               {formatDate(startDate)}
             </Styled.Td>
-            <Styled.Td data-testid="end-date">{formatDate(endDate)}</Styled.Td>
-            <Styled.Td>
+            <Styled.Td
+              title={formatDate(endDate) ?? '--'}
+              data-testid="end-date"
+            >
+              {formatDate(endDate)}
+            </Styled.Td>
+            <Styled.Td title={parentInstanceId ?? 'None'}>
               {parentInstanceId !== null ? (
                 <Link
                   to={Paths.processInstance(parentInstanceId)}

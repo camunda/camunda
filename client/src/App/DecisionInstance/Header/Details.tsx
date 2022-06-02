@@ -53,11 +53,15 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
           </tr>
         ) : (
           <tr>
-            <TD>{decisionInstance.decisionName}</TD>
-            <TD>{decisionInstanceId}</TD>
+            <TD title={decisionInstance.decisionName}>
+              {decisionInstance.decisionName}
+            </TD>
+            <TD title={decisionInstanceId}>{decisionInstanceId}</TD>
             <TD>{decisionInstance.decisionVersion}</TD>
-            <TD>{formatDate(decisionInstance.evaluationDate)}</TD>
-            <TD>
+            <TD title={formatDate(decisionInstance.evaluationDate) ?? '--'}>
+              {formatDate(decisionInstance.evaluationDate)}
+            </TD>
+            <TD title={decisionInstance.processInstanceId ?? 'None'}>
               {decisionInstance.processInstanceId ? (
                 <Link
                   to={Paths.processInstance(decisionInstance.processInstanceId)}

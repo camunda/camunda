@@ -16,7 +16,7 @@ const Container = styled.div`
       opacity: 0.9;
       font-size: 12px;
       margin-top: 35px;
-      width: 489px;
+      max-width: 489px;
     `;
   }}
 `;

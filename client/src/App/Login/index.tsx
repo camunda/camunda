@@ -48,6 +48,11 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     document.title = PAGE_TITLE.LOGIN;
+    document.getElementById('root')?.classList?.add('hideFixedDimensions');
+
+    return () => {
+      document.getElementById('root')?.classList?.remove('hideFixedDimensions');
+    };
   }, []);
 
   return (

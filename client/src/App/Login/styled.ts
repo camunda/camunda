@@ -18,6 +18,8 @@ const Container = styled.div`
   padding-top: 128px;
   font-family: IBM Plex Sans;
   height: 100%;
+  min-width: auto;
+  min-height: auto;
 `;
 
 const LoginHeader = styled.div`

@@ -10,8 +10,9 @@ import {Container} from './styled';
 const Copyright: React.FC = (props) => {
   return (
     <Container {...props}>
-      &copy; Camunda Services GmbH {new Date().getFullYear()}. All rights
-      reserved. | {process.env.REACT_APP_VERSION}
+      {`© Camunda Services GmbH ${new Date().getFullYear()}. All rights reserved. | ${
+        process.env.REACT_APP_VERSION
+      }`}
     </Container>
   );
 };

@@ -1,12 +1,14 @@
 @font-face {
   font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-Bold'), url('https://fonts.camunda.io/IBM-Plex-Sans/fonts/complete/woff/IBMPlexSans-Bold.woff');
+  src: local('IBMPlexSans-Bold'),
+    url('https://fonts.camunda.io/IBM-Plex-Sans/fonts/complete/woff/IBMPlexSans-Bold.woff');
   font-weight: bold;
 }
 
 @font-face {
   font-family: 'IBM Plex Sans';
-  src: local('IBMPlexSans-Medium'), url('https://fonts.camunda.io/IBM-Plex-Sans/fonts/complete/woff/IBMPlexSans-Medium.woff');
+  src: local('IBMPlexSans-Medium'),
+    url('https://fonts.camunda.io/IBM-Plex-Sans/fonts/complete/woff/IBMPlexSans-Medium.woff');
   font-weight: 500;
 }
 
@@ -23,7 +25,6 @@ body {
   font-family: IBM Plex Sans;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 body.nsResizing {
@@ -39,6 +40,17 @@ body,
 #root {
   height: 100vh;
   width: 100vw;
+  overflow: auto;
+}
+
+#root {
+  min-width: 960px;
+  min-height: 540px;
+}
+
+#root.hideFixedDimensions {
+  min-width: auto;
+  min-height: auto;
 }
 
 button {

@@ -25,6 +25,9 @@ const Th = styled.th`
 const Td = styled.td`
   font-weight: 500;
   font-size: 15px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 `;
 
 const StateIconWrapper = styled.div`
