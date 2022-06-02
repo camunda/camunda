@@ -738,9 +738,9 @@ public class MixedFilterIT extends AbstractFilterIT {
   private static Stream<List<ProcessFilterDto<?>>> invalidFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
-        .filter(it -> !it.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
+        .filter(filter -> !filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
       buildFilters(FilterApplicationLevel.VIEW)
-        .filter(it -> !it.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
+        .filter(filter -> !filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
     );
   }
 
@@ -748,9 +748,9 @@ public class MixedFilterIT extends AbstractFilterIT {
   private static Stream<List<ProcessFilterDto<?>>> validFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
-        .filter(it -> it.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
+        .filter(filter -> filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
       buildFilters(FilterApplicationLevel.VIEW)
-        .filter(it -> it.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
+        .filter(filter -> filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
     );
   }
 

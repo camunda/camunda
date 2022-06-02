@@ -31,7 +31,7 @@ public class MigrateManagementReportIT extends AbstractUpgrade38IT {
       .satisfies(report -> {
         final Map<String, Object> reportAsMap = report.getSourceAsMap();
         final Map<String, Object> reportData = (Map<String, Object>) reportAsMap.get(SingleProcessReportIndex.DATA);
-        final Boolean isManagementReport = (Boolean) reportData.get(ProcessReportDataDto.Fields.managementReport);
+        final Boolean isManagementReport = (Boolean) reportData.get(SingleProcessReportIndex.MANAGEMENT_REPORT);
         assertThat(isManagementReport).isFalse();
       });
   }

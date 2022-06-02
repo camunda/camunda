@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -51,6 +50,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
 import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.*;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
@@ -90,10 +90,10 @@ public class EntitiesReader {
     final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(COLLECTION_ID))
       .minimumShouldMatch(1)
       .should(termQuery(DashboardIndex.MANAGEMENT_DASHBOARD, false))
-      .should(termQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport, false))
+      .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
       .should(boolQuery()
                 .mustNot(existsQuery(DashboardIndex.MANAGEMENT_DASHBOARD))
-                .mustNot(existsQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport))
+                .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT))
       );
 
     if (userId != null) {

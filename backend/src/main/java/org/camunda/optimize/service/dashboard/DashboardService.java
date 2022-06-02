@@ -266,6 +266,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public AuthorizedDashboardDefinitionResponseDto getDashboardDefinition(final String dashboardId,
                                                                          final String userId) {
     final DashboardDefinitionRestDto dashboard = getDashboardDefinitionAsService(dashboardId);
+    if (dashboard.isManagementDashboard()) {
+      return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
+    }
     RoleType currentUserRole = getUserRoleType(userId, dashboard);
     return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
   }

@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
@@ -12,34 +17,40 @@ import org.elasticsearch.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
 public class DashboardIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 6;
 
-  public static final String ID = "id";
-  public static final String NAME = "name";
-  public static final String LAST_MODIFIED = "lastModified";
-  public static final String CREATED = "created";
-  public static final String OWNER = "owner";
-  public static final String LAST_MODIFIER = "lastModifier";
-  public static final String REFRESH_RATE_SECONDS = "refreshRateSeconds";
-  public static final String REPORTS = "reports";
-  public static final String COLLECTION_ID = "collectionId";
-  public static final String MANAGEMENT_DASHBOARD = "managementDashboard";
-  public static final String AVAILABLE_FILTERS = "availableFilters";
+  public static final String ID = BaseDashboardDefinitionDto.Fields.id;
+  public static final String NAME = BaseDashboardDefinitionDto.Fields.name;
+  public static final String LAST_MODIFIED = BaseDashboardDefinitionDto.Fields.lastModified;
+  public static final String CREATED = BaseDashboardDefinitionDto.Fields.created;
+  public static final String OWNER = BaseDashboardDefinitionDto.Fields.owner;
+  public static final String LAST_MODIFIER = BaseDashboardDefinitionDto.Fields.lastModifier;
+  public static final String REFRESH_RATE_SECONDS = BaseDashboardDefinitionDto.Fields.refreshRateSeconds;
+  public static final String REPORTS = DashboardDefinitionRestDto.Fields.reports;
+  public static final String COLLECTION_ID = BaseDashboardDefinitionDto.Fields.collectionId;
+  public static final String MANAGEMENT_DASHBOARD = BaseDashboardDefinitionDto.Fields.managementDashboard;
+  public static final String AVAILABLE_FILTERS = BaseDashboardDefinitionDto.Fields.availableFilters;
 
-  public static final String POSITION = "position";
-  public static final String X_POSITION = "x";
-  public static final String Y_POSITION = "y";
+  public static final String POSITION = ReportLocationDto.Fields.position;
+  public static final String X_POSITION = PositionDto.Fields.x;
+  public static final String Y_POSITION = PositionDto.Fields.y;
 
-  public static final String DIMENSION = "dimensions";
-  public static final String HEIGHT = "height";
-  public static final String WIDTH = "width";
+  public static final String DIMENSION = ReportLocationDto.Fields.dimensions;
+  public static final String HEIGHT = DimensionDto.Fields.height;
+  public static final String WIDTH = DimensionDto.Fields.width;
 
-  public static final String REPORT_ID = "id";
-  public static final String CONFIGURATION = "configuration";
+  public static final String REPORT_ID = ReportLocationDto.Fields.id;
+  public static final String CONFIGURATION = ReportLocationDto.Fields.configuration;
 
   public static final String FILTER_TYPE = "type";
   public static final String FILTER_DATA = DashboardFilterDto.Fields.data;
@@ -59,45 +70,45 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
      XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(NAME)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(LAST_MODIFIED)
-        .field("type", "date")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(CREATED)
-        .field("type", "date")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(OWNER)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(LAST_MODIFIER)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(REFRESH_RATE_SECONDS)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(REPORTS)
-        .field("type", "nested")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
         .startObject("properties");
           addNestedReportsField(newBuilder)
         .endObject()
       .endObject()
       .startObject(COLLECTION_ID)
-        .field("type","keyword")
+        .field(MAPPING_PROPERTY_TYPE,TYPE_KEYWORD)
       .endObject()
       .startObject(MANAGEMENT_DASHBOARD)
-        .field("type","boolean")
+        .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
       .endObject()
       .startObject(AVAILABLE_FILTERS)
-        .field("type", "object")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .startObject("properties")
           .startObject(FILTER_TYPE)
-            .field("type", "keyword")
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
           .endObject()
           .startObject(FILTER_DATA)
             .field("enabled", false)
@@ -112,16 +123,16 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(POSITION)
-        .field("type", "nested")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
         .startObject("properties");
           addNestedPositionField(newBuilder)
         .endObject()
       .endObject()
       .startObject(DIMENSION)
-        .field("type", "nested")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
         .startObject("properties");
           addNestedDimensionField(newBuilder)
         .endObject()
@@ -137,10 +148,10 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(X_POSITION)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(Y_POSITION)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }
@@ -149,10 +160,10 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(WIDTH)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(HEIGHT)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }

@@ -20,6 +20,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public class SingleProcessReportIndex extends AbstractReportIndex {
 
+  public static final String MANAGEMENT_REPORT = ProcessReportDataDto.Fields.managementReport;
+
   public static final int VERSION = 9;
 
   @Override
@@ -52,7 +54,7 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
           .startObject(ProcessReportDataDto.Fields.filter)
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
-          .startObject(ProcessReportDataDto.Fields.managementReport)
+          .startObject(MANAGEMENT_REPORT)
             .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
           .endObject()
           .startObject(CONFIGURATION)

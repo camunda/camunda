@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -50,6 +51,7 @@ import static org.camunda.optimize.service.es.schema.index.report.AbstractReport
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
@@ -205,8 +207,8 @@ public class ReportReader {
     log.debug("Fetching all available private reports");
     QueryBuilder qb = boolQuery().mustNot(existsQuery(COLLECTION_ID))
       .minimumShouldMatch(1)
-      .should(boolQuery().must(termQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport, false)))
-      .should(boolQuery().mustNot(existsQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport)));
+      .should(boolQuery().must(termQuery(DATA + "." + MANAGEMENT_REPORT, false)))
+      .should(boolQuery().mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)));
     SearchResponse searchResponse = performGetReportRequestOmitXml(
       qb,
       ALL_REPORT_INDICES,
@@ -233,8 +235,8 @@ public class ReportReader {
 
     QueryBuilder qb = boolQuery().must(termQuery(COLLECTION_ID, collectionId))
       .minimumShouldMatch(1)
-      .should(boolQuery().must(termQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport, false)))
-      .should(boolQuery().mustNot(existsQuery(DATA + "." + ProcessReportDataDto.Fields.managementReport)));
+      .should(boolQuery().must(termQuery(DATA + "." + MANAGEMENT_REPORT, false)))
+      .should(boolQuery().mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)));
     SearchRequest searchRequest = getSearchRequestOmitXml(
       qb,
       new String[]{
@@ -265,7 +267,7 @@ public class ReportReader {
     if (ReportType.PROCESS.equals(reportType)) {
       countRequest = new CountRequest(
         new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
-        termQuery(String.join(".", DATA, ProcessReportDataDto.Fields.managementReport), false)
+        termQuery(String.join(".", DATA, MANAGEMENT_REPORT), false)
       );
     } else {
       countRequest = new CountRequest(SINGLE_DECISION_REPORT_INDEX_NAME);

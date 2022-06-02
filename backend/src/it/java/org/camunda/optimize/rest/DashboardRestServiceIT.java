@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -56,11 +57,11 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void copyPrivateManagementDashboardNotSupported() {
     // given
-    final String dashboardId = createManagementDashboard();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, null)
+      .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, null)
       .execute();
 
     // then
@@ -70,12 +71,12 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void copyPrivateManagementDashboardIntoCollectionNotSupported() {
     // given
-    final String dashboardId = createManagementDashboard();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
     final String collectionId = collectionClient.createNewCollection();
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, collectionId)
+      .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, collectionId)
       .execute();
 
     // then
@@ -136,16 +137,17 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void getManagementDashboard() {
     // given
-    final String dashboardId = createManagementDashboard();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
-    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto returnedDashboard =
+      dashboardClient.getDashboard(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
 
     // then
     assertThat(returnedDashboard).isNotNull();
-    assertThat(returnedDashboard.getId()).isEqualTo(dashboardId);
-    assertThat(returnedDashboard.getOwner()).isEqualTo(DEFAULT_FULLNAME);
-    assertThat(returnedDashboard.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(returnedDashboard.getId()).isEqualTo(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+    assertThat(returnedDashboard.getOwner()).isNull();
+    assertThat(returnedDashboard.getLastModifier()).isNull();
   }
 
   @Test
@@ -213,16 +215,16 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void deleteManagementDashboardNotSupported() {
     // given
-    String id = createManagementDashboard();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildDeleteDashboardRequest(id)
+      .buildDeleteDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID)
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test

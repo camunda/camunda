@@ -31,12 +31,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -77,11 +72,10 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
@@ -618,26 +612,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // when
     List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
 
-    // then the returned list excludes reports in collections
-    assertThat(
-      reports.stream()
-        .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
-        .map(ReportDefinitionDto::getId)
-        .collect(Collectors.toList()))
-      .containsExactlyInAnyOrder(privateDecisionReportId, privateProcessReportId);
-  }
-
-  @Test
-  public void getStoredPrivateReports_excludesManagementReports() {
-    // given
-    String privateDecisionReportId = reportClient.createEmptySingleDecisionReport();
-    String privateProcessReportId = reportClient.createEmptySingleProcessReport();
-    createManagementReport();
-
-    // when
-    List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
-
-    // then
+    // then the returned list excludes reports in collections and excludes the management reports
     assertThat(
       reports.stream()
         .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
@@ -873,7 +848,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void managementReportCannotBeDeleted() {
     // given
-    final String reportId = createManagementReport();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
 
     // when
     final Response response = reportClient.deleteReport(reportId, true);
@@ -999,7 +975,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void copyManagementReportDoesNotWork() {
     // given
-    final String reportId = createManagementReport();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
 
     // when
     Response response = reportClient.copyReportToCollection(reportId, null);
@@ -1011,7 +988,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void copyManagementReportIntoCollectionDoesNotWork() {
     // given
-    final String reportId = createManagementReport();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
 
     // when
@@ -1364,30 +1342,16 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 
-  @SneakyThrows
-  private String createManagementReport() {
-    // The initial report is created for a specific process
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey("procDefKey")
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final String reportId = reportClient.createSingleProcessReport(
-      new SingleProcessReportDefinitionRequestDto(reportData));
-
-    final UpdateRequest update = new UpdateRequest()
-      .index(ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
-      .id(reportId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.data.managementReport = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    return reportId;
+  private String findManagementReportId() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SingleProcessReportDefinitionRequestDto.class
+      )
+      .stream()
+      .filter(reportDef -> reportDef.getData().isManagementReport())
+      .findFirst()
+      .map(ReportDefinitionDto::getId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("No Management Report Found"));
   }
+
 }

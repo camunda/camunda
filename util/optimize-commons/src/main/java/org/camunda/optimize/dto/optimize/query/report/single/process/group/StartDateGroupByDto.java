@@ -11,8 +11,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class StartDateGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
+
   public StartDateGroupByDto() {
     this.type = ProcessGroupByType.START_DATE;
+  }
+
+  public StartDateGroupByDto(final DateGroupByValueDto groupByValueDto) {
+    this.type = ProcessGroupByType.START_DATE;
+    this.value = groupByValueDto;
   }
 
   @Override

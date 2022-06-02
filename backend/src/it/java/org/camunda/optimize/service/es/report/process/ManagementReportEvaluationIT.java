@@ -6,27 +6,31 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
+import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -36,8 +40,8 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -46,6 +50,11 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   private static final String FIRST_TENANT = "firstTenant";
   private static final String FIRST_DEF_KEY = "someDef";
   private static final String SECOND_DEF_KEY = "otherDef";
+
+  @BeforeEach
+  public void setup() {
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+  }
 
   @Test
   public void managementReportCannotBeCreated() {
@@ -66,9 +75,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void managementReportCannotBeEdited() {
     // given
-    final ProcessInstanceEngineDto firstInstance =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
-    final String reportId = createManagementReport(firstInstance);
+    final String reportId = getIdForManagementReport();
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -117,11 +124,10 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    final String reportId = createManagementReport(firstInstance);
+    final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReportById(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = evaluateReport(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -136,11 +142,29 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
-    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
-    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.START_DATE);
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getFirstMeasureData()).isNotNull();
-    assertThat(resultDto.getFirstMeasureData()).isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(
+      resultDto.getFirstMeasureData(), embeddedOptimizeExtension.getDateTimeFormatter()
+        .format(truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS))
+    )).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+  }
+
+  @Test
+  public void allManagementReportsCanBeEvaluated() {
+    // given
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+
+    // when
+    final List<Response> results = dashboard.getReports()
+      .stream()
+      .map(report -> embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSavedReportRequest(report.getId()).execute())
+      .collect(Collectors.toList());
+
+    // then
+    assertThat(results).allSatisfy(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -157,10 +181,11 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     );
 
     importAllEngineEntitiesFromScratch();
-    final String reportId = createManagementReport(authorizedProcess, KERMIT_USER, KERMIT_USER);
+    final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse = evaluateReportAsKermit(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -177,15 +202,13 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     // given
     engineIntegrationExtension.createTenant(FIRST_TENANT);
     engineIntegrationExtension.createTenant(SECOND_TENANT);
-    final ProcessInstanceEngineDto firstInstance =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), FIRST_TENANT);
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), FIRST_TENANT);
     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), SECOND_TENANT);
     importAllEngineEntitiesFromScratch();
-    final String reportId = createManagementReport(firstInstance);
+    final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReportById(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = evaluateReport(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -197,10 +220,13 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
         Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT, SECOND_TENANT))
       );
     // the result includes data from both tenants
-    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getFirstMeasureData()).isNotNull();
-    assertThat(resultDto.getFirstMeasureData()).isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(
+      resultDto.getFirstMeasureData(), embeddedOptimizeExtension.getDateTimeFormatter()
+        .format(truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS))
+    )).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
   }
 
   @Test
@@ -224,10 +250,11 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     );
 
     importAllEngineEntitiesFromScratch();
-    final String reportId = createManagementReport(processInstance, KERMIT_USER, KERMIT_USER);
+    final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse = evaluateReportAsKermit(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -239,10 +266,12 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
         Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT))
       );
     // the result includes data from the authorized tenant
-    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultDto.getFirstMeasureData()).isNotNull();
-    assertThat(resultDto.getFirstMeasureData()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(
+      resultDto.getFirstMeasureData(), embeddedOptimizeExtension.getDateTimeFormatter()
+        .format(truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS))
+    )).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -255,60 +284,48 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     importAllEngineEntitiesFromScratch();
-    final String reportId = createManagementReport(firstInstance, KERMIT_USER, KERMIT_USER);
+    final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse = evaluateReportAsKermit(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.isManagementReport()).isTrue();
     assertThat(resultReportDataDto.getDefinitions()).hasSize(0);
     // the result is empty as Kermit has no authorization for any processes
-    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isZero();
-    assertThat(resultDto.getFirstMeasureData()).isNotNull();
-    assertThat(resultDto.getFirstMeasureData()).isZero();
+    assertThat(resultDto.getFirstMeasureData()).isEmpty();
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<Double> evaluateReportAsKermit(final String reportId) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReport(final String reportId) {
+    return evaluateReportAsUser(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsKermit(final String reportId) {
+    return evaluateReportAsUser(reportId, KERMIT_USER, KERMIT_USER);
+  }
+
+  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsUser(final String reportId,
+                                                                                                     final String username,
+                                                                                                     final String password) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .withUserAuthentication(username, password)
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-        .execute(new TypeReference<>() {});}
+      .execute(new TypeReference<>() {});}
       // @formatter:on
 
-  private String createManagementReport(final ProcessInstanceEngineDto firstInstance) {
-    return createManagementReport(firstInstance, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  @SneakyThrows
-  private String createManagementReport(final ProcessInstanceEngineDto firstInstance, final String username,
-                                        final String password) {
-    // The initial report is created for a specific process
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(firstInstance.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(firstInstance.getProcessDefinitionVersion())
-      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final String reportId = reportClient.createSingleProcessReportAsUser(
-      new SingleProcessReportDefinitionRequestDto(reportData), username, password);
-
-    final UpdateRequest update = new UpdateRequest()
-      .index(ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
-      .id(reportId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.data.managementReport = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    return reportId;
+  private String getIdForManagementReport() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class)
+      .stream()
+      .filter(report -> report.getName().equals(ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_NAME))
+      .findFirst()
+      .map(ReportDefinitionDto::getId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any management reports"));
   }
 
   private SingleProcessReportDefinitionRequestDto createReportDefinition() {

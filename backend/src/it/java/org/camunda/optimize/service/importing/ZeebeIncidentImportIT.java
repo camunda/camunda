@@ -222,7 +222,7 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     final ZeebeIncidentRecordDto createdRecord = incidentsForRecordByIntent.get(IncidentIntent.CREATED).get(0);
     final ZeebeIncidentRecordDto resolvedRecord =
       Optional.ofNullable(incidentsForRecordByIntent.get(IncidentIntent.RESOLVED))
-        .map(it -> it.get(0))
+        .map(incidentRecords -> incidentRecords.get(0))
         .orElse(null);
     final IncidentDto incident = new IncidentDto();
     incident.setId(String.valueOf(createdRecord.getKey()));

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -43,9 +42,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -58,8 +54,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
 
@@ -337,25 +331,6 @@ public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
     final DashboardVariableFilterDto variableFilter = new DashboardVariableFilterDto();
     variableFilter.setData(new DashboardDateVariableFilterDataDto("dateVar"));
     return Collections.singletonList(variableFilter);
-  }
-
-  @SneakyThrows
-  protected String createManagementDashboard() {
-    final String dashboardId = dashboardClient.createEmptyDashboard();
-
-    final UpdateRequest update = new UpdateRequest()
-      .index(DASHBOARD_INDEX_NAME)
-      .id(dashboardId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.managementDashboard = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    return dashboardId;
   }
 
   private static DashboardFilterDto<?> createDashboardVariableFilter(final VariableType type,

@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 
 import java.time.OffsetDateTime;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@FieldNameConstants
 public class BaseDashboardDefinitionDto {
   protected String id;
   protected String name;

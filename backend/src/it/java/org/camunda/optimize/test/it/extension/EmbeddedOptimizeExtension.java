@@ -23,6 +23,7 @@ import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
+import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -541,6 +542,10 @@ public class EmbeddedOptimizeExtension
 
   public ConfigurationService getConfigurationService() {
     return getOptimize().getConfigurationService();
+  }
+
+  public ManagementDashboardService getManagementDashboardService() {
+    return getOptimize().getManagementDashboardService();
   }
 
   public CleanupScheduler getCleanupScheduler() {

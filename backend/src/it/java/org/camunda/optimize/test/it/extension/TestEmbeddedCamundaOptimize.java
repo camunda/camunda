@@ -15,6 +15,7 @@ import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
+import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
@@ -153,6 +154,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public ConfigurationService getConfigurationService() {
     return getApplicationContext().getBean(ConfigurationService.class);
+  }
+
+  public ManagementDashboardService getManagementDashboardService() {
+    return getApplicationContext().getBean(ManagementDashboardService.class);
   }
 
   public CleanupScheduler getCleanupService() {

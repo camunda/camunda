@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -20,15 +19,9 @@ import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -57,10 +50,8 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -82,6 +73,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntities_returnsMyUsersReports() {
     // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
@@ -95,29 +87,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(privateEntities)
       .hasSize(3)
       .extracting(EntityResponseDto::getReportType, EntityResponseDto::getCombined)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(ReportType.PROCESS, true),
-        Tuple.tuple(ReportType.PROCESS, false),
-        Tuple.tuple(ReportType.DECISION, false)
-      );
-  }
-
-  @Test
-  public void getEntities_excludesManagementEntities() {
-    // given
-    addSingleReportToOptimize("B Report", ReportType.PROCESS);
-    addSingleReportToOptimize("A Report", ReportType.DECISION);
-    addCombinedReport("D Combined");
-    createManagementDashboard();
-    createManagementReport();
-
-    // when
-    final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
-
-    // then
-    assertThat(privateEntities)
-      .hasSize(3)
-      .extracting(EntityResponseDto::getReportType, EntityResponseDto::getCombined)
+      // The created management reports are excluded from the results
       .containsExactlyInAnyOrder(
         Tuple.tuple(ReportType.PROCESS, true),
         Tuple.tuple(ReportType.PROCESS, false),
@@ -902,50 +872,6 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       new EntitiesDeleteRequestDto(Collections.emptyList(), Collections.emptyList(), null),
       null
     );
-  }
-
-  @SneakyThrows
-  private void createManagementReport() {
-    // The initial report is created for a specific process
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey("procDefKey")
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final String reportId = reportClient.createSingleProcessReport(
-      new SingleProcessReportDefinitionRequestDto(reportData));
-
-    final UpdateRequest update = new UpdateRequest()
-      .index(ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
-      .id(reportId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.data.managementReport = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  @SneakyThrows
-  protected void createManagementDashboard() {
-    final String dashboardId = dashboardClient.createEmptyDashboard();
-
-    final UpdateRequest update = new UpdateRequest()
-      .index(DASHBOARD_INDEX_NAME)
-      .id(dashboardId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.managementDashboard = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }
