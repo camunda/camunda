@@ -135,22 +135,6 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
-  public void getManagementDashboard() {
-    // given
-    embeddedOptimizeExtension.getManagementDashboardService().init();
-
-    // when
-    DashboardDefinitionRestDto returnedDashboard =
-      dashboardClient.getDashboard(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
-
-    // then
-    assertThat(returnedDashboard).isNotNull();
-    assertThat(returnedDashboard.getId()).isEqualTo(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
-    assertThat(returnedDashboard.getOwner()).isNull();
-    assertThat(returnedDashboard.getLastModifier()).isNull();
-  }
-
-  @Test
   public void getDashboard_adoptTimezoneFromHeader() {
     // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();

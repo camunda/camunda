@@ -88,6 +88,16 @@ public class DashboardRestService {
     return dashboardDefinition;
   }
 
+  @GET
+  @Path("/management")
+  @Produces(MediaType.APPLICATION_JSON)
+  public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(@Context ContainerRequestContext requestContext) {
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+      dashboardService.getManagementDashboard();
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    return dashboardDefinition;
+  }
+
   @PUT
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)

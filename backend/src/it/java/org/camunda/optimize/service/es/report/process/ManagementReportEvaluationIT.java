@@ -155,7 +155,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void allManagementReportsCanBeEvaluated() {
     // given
-    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getManagementDashboard();
 
     // when
     final List<Response> results = dashboard.getReports()

@@ -39,6 +39,7 @@ import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -60,6 +61,34 @@ public class ManagementDashboardIT extends AbstractIT {
 
   private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =
     createExpectedReportsAndLocationsByName();
+
+  @Test
+  public void getManagementDashboard() {
+    // when
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getManagementDashboard();
+
+    // then
+    assertThat(returnedDashboard).isNotNull();
+    assertThat(returnedDashboard.getId()).isEqualTo(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+    assertThat(returnedDashboard.getOwner()).isNull();
+    assertThat(returnedDashboard.getLastModifier()).isNull();
+  }
+
+  @Test
+  public void getManagementDashboardWithoutAuthentication() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetManagementDashboardRequest()
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
 
   @Test
   public void managementDashboardIsCreatedAsExpected() {
@@ -89,7 +118,7 @@ public class ManagementDashboardIT extends AbstractIT {
       });
 
     // and the dashboard configuration is as expected
-    final DashboardDefinitionRestDto managementDashboard = getManagementDashboard();
+    final DashboardDefinitionRestDto managementDashboard = dashboardClient.getManagementDashboard();
     assertThat(managementDashboard.isManagementDashboard()).isTrue();
     assertThat(managementDashboard.getId()).isEqualTo(MANAGEMENT_DASHBOARD_ID);
     assertThat(managementDashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_NAME);
@@ -117,7 +146,7 @@ public class ManagementDashboardIT extends AbstractIT {
   public void managementDashboardIsOnlyCreatedOnce() {
     // given
     embeddedOptimizeExtension.getManagementDashboardService().init();
-    assertThat(getManagementDashboard()).isNotNull();
+    assertThat(dashboardClient.getManagementDashboard()).isNotNull();
 
     // when
     embeddedOptimizeExtension.getManagementDashboardService().init();
@@ -140,10 +169,6 @@ public class ManagementDashboardIT extends AbstractIT {
       .position(expected.getPositionDto())
       .dimensions(expected.getDimensionDto())
       .build();
-  }
-
-  private DashboardDefinitionRestDto getManagementDashboard() {
-    return dashboardClient.getDashboard(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
   }
 
   private List<DashboardDefinitionRestDto> getAllSavedDashboards() {

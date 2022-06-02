@@ -266,11 +266,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public AuthorizedDashboardDefinitionResponseDto getDashboardDefinition(final String dashboardId,
                                                                          final String userId) {
     final DashboardDefinitionRestDto dashboard = getDashboardDefinitionAsService(dashboardId);
-    if (dashboard.isManagementDashboard()) {
-      return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
-    }
     RoleType currentUserRole = getUserRoleType(userId, dashboard);
     return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
+  }
+
+  public AuthorizedDashboardDefinitionResponseDto getManagementDashboard() {
+    final DashboardDefinitionRestDto dashboard =
+      getDashboardDefinitionAsService(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+    return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
   }
 
   public void verifyUserHasAccessToDashboardCollection(String userId, DashboardDefinitionRestDto dashboard) {
@@ -279,7 +282,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
-    if (dashboard.getCollectionId() != null) {
+    if (dashboard.isManagementDashboard()) {
+      currentUserRole = RoleType.VIEWER;
+    } else if (dashboard.getCollectionId() != null) {
       currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())
         .orElse(null);
     } else if (dashboard.getOwner().equals(userId)) {
@@ -355,9 +360,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public void deleteDashboardAsUser(final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
-    if (dashboardDefinitionDto != null && dashboardDefinitionDto.isManagementDashboard()) {
-      throw new OptimizeValidationException("Management Dashboards cannot be deleted");
-    }
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 

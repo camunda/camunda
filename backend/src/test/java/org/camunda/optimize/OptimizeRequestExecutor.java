@@ -738,6 +738,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetManagementDashboardRequest() {
+    this.path = "dashboard/management";
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetCollectionRequest(String id) {
     this.path = "collection/" + id;
     this.method = GET;
