@@ -246,9 +246,10 @@ public final class ZeebePartition extends Actor
                 t -> {
                   if (t != null) {
                     onInstallFailure(t);
+                  } else {
+                    onRecoveredInternal();
                   }
                 });
-            onRecoveredInternal();
           } else {
             onInstallFailure(error);
           }
@@ -269,9 +270,10 @@ public final class ZeebePartition extends Actor
                   // Compare with the current term in case a new role transition happened
                   if (t != null) {
                     onInstallFailure(t);
+                  } else {
+                    onRecoveredInternal();
                   }
                 });
-            onRecoveredInternal();
           } else {
             onInstallFailure(error);
           }
