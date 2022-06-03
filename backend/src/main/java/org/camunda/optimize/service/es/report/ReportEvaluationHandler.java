@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -88,7 +89,7 @@ public abstract class ReportEvaluationHandler {
         .getData();
       if (processReportData.isManagementReport()) {
         final List<ReportDataDefinitionDto> definitionsForManagementReport =
-          definitionService.getFullyImportedDefinitions(reportEvaluationInfo.getUserId())
+          definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, reportEvaluationInfo.getUserId())
             .stream()
             .map(def -> new ReportDataDefinitionDto(
               def.getKey(), def.getTenants().stream().map(TenantDto::getId).collect(Collectors.toList())

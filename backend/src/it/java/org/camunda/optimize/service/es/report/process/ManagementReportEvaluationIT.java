@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -15,12 +14,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,11 +29,19 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ACTIVE_BOTTLENECKS_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.AUTOMATION_CANDIDATES_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.AUTOMATION_RATE_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_NAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -155,16 +162,51 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void allManagementReportsCanBeEvaluated() {
     // given
-    final DashboardDefinitionRestDto dashboard = dashboardClient.getManagementDashboard();
-
-    // when
-    final List<Response> results = dashboard.getReports()
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+    final Map<String, SingleProcessReportDefinitionRequestDto> mgmtReportsByName = getAllManagementReports()
       .stream()
-      .map(report -> embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSavedReportRequest(report.getId()).execute())
-      .collect(Collectors.toList());
+      .collect(Collectors.toMap(ReportDefinitionDto::getName, Function.identity()));
 
     // then
-    assertThat(results).allSatisfy(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(PROCESS_INSTANCE_USAGE_REPORT_NAME).getId()))
+      .satisfies(response -> {
+        assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
+          .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
+        assertThat(response.getResult().getData()).isNotEmpty();
+      });
+    assertThat(reportClient.evaluateNumberReportById(mgmtReportsByName.get(INCIDENT_FREE_RATE_REPORT_NAME).getId()))
+      .satisfies(response -> {
+        assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
+          .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
+        assertThat(response.getResult().getData()).isNotNull();
+      });
+    assertThat(reportClient.evaluateNumberReportById(mgmtReportsByName.get(AUTOMATION_RATE_REPORT_NAME).getId()))
+      .satisfies(response -> {
+        assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
+          .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
+        assertThat(response.getResult().getData()).isNotNull();
+      });
+    assertThat(reportClient.evaluateHyperMapReportById(mgmtReportsByName.get(LONG_RUNNING_INSTANCES_REPORT_NAME).getId()))
+      .satisfies(response -> {
+        assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
+          .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
+        assertThat(response.getResult().getData()).isNotEmpty().extracting(HyperMapResultEntryDto::getValue).isNotEmpty();
+      });
+    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(AUTOMATION_CANDIDATES_REPORT_NAME).getId()))
+      .satisfies(response -> {
+        assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
+          .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
+        assertThat(response.getResult().getData()).isNotEmpty();
+      });
+    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(ACTIVE_BOTTLENECKS_REPORT_NAME).getId()))
+      .satisfies(response -> {
+        assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
+          .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
+        assertThat(response.getResult().getData()).isNotEmpty();
+      });
   }
 
   @Test
@@ -319,13 +361,17 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       // @formatter:on
 
   private String getIdForManagementReport() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class)
+    return getAllManagementReports()
       .stream()
-      .filter(report -> report.getName().equals(ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_NAME))
+      .filter(report -> report.getName().equals(PROCESS_INSTANCE_USAGE_REPORT_NAME))
       .findFirst()
       .map(ReportDefinitionDto::getId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any management reports"));
+  }
+
+  private List<SingleProcessReportDefinitionRequestDto> getAllManagementReports() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class);
   }
 
   private SingleProcessReportDefinitionRequestDto createReportDefinition() {
