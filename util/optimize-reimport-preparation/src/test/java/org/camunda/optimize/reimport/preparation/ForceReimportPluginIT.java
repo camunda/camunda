@@ -14,6 +14,10 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
 import org.mockserver.model.RequestDefinition;
 import org.mockserver.verify.VerificationTimes;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,6 +25,7 @@ import java.util.stream.IntStream;
 
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
 import static org.mockserver.model.HttpRequest.request;
 
 @Slf4j
@@ -99,6 +104,20 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
     embeddedOptimizeExtension.reloadConfiguration();
+  }
+
+  @Import(org.camunda.optimize.Main.class)
+  @TestConfiguration
+  public class Configuration {
+    @Bean
+    @Primary
+    public ConfigurationService configurationService() {
+      ConfigurationService configurationService = createConfigurationFromLocations(
+        "service-config.yaml",
+        "it/it-config.yaml"
+      );
+      return configurationService;
+    }
   }
 
 }

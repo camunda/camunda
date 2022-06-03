@@ -97,7 +97,7 @@ public class MixpanelDataServiceIT extends AbstractIT {
 
   @NonNull
   private MixpanelDataService getMixpanelDataService() {
-    return embeddedOptimizeExtension.getApplicationContext().getBean(MixpanelDataService.class);
+    return embeddedOptimizeExtension.getBean(MixpanelDataService.class);
   }
 
 }

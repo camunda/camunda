@@ -10,10 +10,10 @@ import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.websocket.Session;
 import java.io.IOException;
 import java.util.Map;
 
@@ -72,9 +72,9 @@ public class StatusNotifier implements ImportObserver {
     StatusResponseDto result = statusCheckingService.getCachedStatusResponse();
     try {
       if (session.isOpen()) {
-        session.getBasicRemote().sendText(objectMapper.writeValueAsString(result));
+        session.getRemote().sendString(objectMapper.writeValueAsString(result));
       } else {
-        logger.debug("Could not write to websocket session [{}], because it already seems closed.", session.getId());
+        logger.debug("Could not write to websocket session [{}], because it already seems closed.", session);
       }
     } catch (IOException e) {
       logger.warn("can't write status to web socket");

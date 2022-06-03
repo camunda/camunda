@@ -18,6 +18,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Configuration;
 
 import java.util.Comparator;
 import java.util.List;
@@ -25,8 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
+@SpringBootTest(
+  webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+  properties = { INTEGRATION_TESTS + "=true" }
+)
+@Configuration
 public abstract class AbstractImportMediatorPermutationsIT {
   protected static final String TEST_PROCESS = "process";
   protected static final String CANDIDATE_GROUP = "candidateGroup";
@@ -44,7 +52,7 @@ public abstract class AbstractImportMediatorPermutationsIT {
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(true);
 
   @BeforeAll
-  public static void beforeAll() {
+  static void beforeAll() {
     engineIntegrationExtension.cleanEngine();
     elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
     elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();

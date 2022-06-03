@@ -25,8 +25,8 @@ import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.F
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModified;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModifier;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {

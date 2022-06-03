@@ -61,8 +61,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
   @RegisterExtension
   @Order(2)
-  public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
-    new EmbeddedOptimizeExtension(true);
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {

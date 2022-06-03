@@ -34,7 +34,7 @@ class UpgradeDataIT extends BaseUpgradeIT {
 
     try {
       // start old optimize and import data
-      oldOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
+      oldOptimize.start(newOptimizeOutputWriter)
       oldOptimize.waitForImportToFinish()
       oldElasticClient.refreshAll()
 
@@ -50,9 +50,9 @@ class UpgradeDataIT extends BaseUpgradeIT {
       oldElasticClient.deleteSnapshot()
 
       // run new optimize upgrade
-      newOptimize.startUpgrade().consumeProcessOutputStream(upgradeOutputWriter)
+      newOptimize.startUpgrade(upgradeOutputWriter)
       newOptimize.waitForUpgradeToFinish()
-      newOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
+      newOptimize.start(newOptimizeOutputWriter)
       newOptimize.waitForImportToFinish()
 
       log.info("Running com.camunda.optimize.PostMigrationTest...")

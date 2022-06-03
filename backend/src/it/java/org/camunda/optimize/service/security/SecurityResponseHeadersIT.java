@@ -18,8 +18,8 @@ import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
 public class SecurityResponseHeadersIT extends AbstractIT {
 

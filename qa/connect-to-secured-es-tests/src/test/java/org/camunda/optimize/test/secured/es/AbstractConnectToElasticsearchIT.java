@@ -11,27 +11,34 @@ import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.main.UpgradeProcedureFactory;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Configuration;
 
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+  properties = {"spring.main.allow-bean-definition-overriding=true", INTEGRATION_TESTS + "=true"})
+@Configuration
 public abstract class AbstractConnectToElasticsearchIT {
 
   @RegisterExtension
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(getClass().getCanonicalName());
+  @Order(1)
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+
+  @BeforeAll
+  public static void beforeAll() {
+    embeddedOptimizeExtension.getConfigurationService();
+  }
 
   protected abstract String getCustomConfigFile();
-
-  @BeforeEach
-  public void before() throws Exception {
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
-  }
 
   @Test
   public void connectToSecuredElasticsearch() {
@@ -59,11 +66,7 @@ public abstract class AbstractConnectToElasticsearchIT {
       embeddedOptimizeExtension.getOptimizeElasticClient(), PreviousVersion.PREVIOUS_VERSION
     );
 
-    // when
-    embeddedOptimizeExtension.stopOptimize();
-
     // then
     testUpgradeProcedure.performUpgrade(new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan());
   }
-
 }

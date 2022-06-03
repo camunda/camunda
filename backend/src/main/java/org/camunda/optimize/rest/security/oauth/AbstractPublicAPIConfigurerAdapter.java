@@ -8,13 +8,10 @@ package org.camunda.optimize.rest.security.oauth;
 import lombok.Getter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
@@ -22,10 +19,6 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 
-
-@Component
-@Order(1)
-@EnableWebSecurity
 public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConfigurerAdapter {
   protected static final String PUBLIC_API_PATH = createApiPath("/public/**");
   protected final ConfigurationService configurationService;

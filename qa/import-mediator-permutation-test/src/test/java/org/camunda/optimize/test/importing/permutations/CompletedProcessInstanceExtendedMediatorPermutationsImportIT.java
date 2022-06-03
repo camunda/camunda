@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.COMPLETED_STATE;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
 @Slf4j
 public class CompletedProcessInstanceExtendedMediatorPermutationsImportIT extends AbstractExtendedImportMediatorPermutationsIT {

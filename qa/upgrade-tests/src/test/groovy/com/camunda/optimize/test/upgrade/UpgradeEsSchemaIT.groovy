@@ -33,7 +33,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
 
     try {
       // start new optimize to obtain expected schema and settings
-      newOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
+      newOptimize.start(newOptimizeOutputWriter)
       newOptimize.waitForImportToFinish()
       newElasticClient.refreshAll()
       def expectedSettings = newElasticClient.getSettings()
@@ -44,7 +44,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       newElasticClient.cleanIndicesAndTemplates()
 
       // start old optimize to prepare for upgrade
-      oldOptimize.start().consumeProcessOutputStream(oldOptimizeOutputWriter)
+      oldOptimize.start(oldOptimizeOutputWriter)
       oldOptimize.waitForImportToFinish()
       oldElasticClient.refreshAll()
       oldOptimize.stop()
@@ -60,14 +60,14 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       newElasticClient.createSnapshot(false)
 
       // run the upgrade
-      newOptimize.startUpgrade().consumeProcessOutputStream(upgradeOutputWriter)
+      newOptimize.startUpgrade(upgradeOutputWriter)
       newOptimize.waitForUpgradeToFinish(360)
 
       // stop/delete async snapshot operation as upgrade completed already
       newElasticClient.deleteSnapshot()
 
       // start new optimize
-      newOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
+      newOptimize.start(newOptimizeOutputWriter)
       newOptimize.waitForImportToFinish()
       newOptimize.stop()
 
@@ -80,24 +80,24 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
 
       log.info("Asserting expected instance data doc counts...")
       assertThat(newElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
-              .as("Process Definition Document Count is not as expected")
-              .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
+        .as("Process Definition Document Count is not as expected")
+        .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
       assertThat(newElasticClient.getDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS))
-              .as("Process Instance Document Count is not as expected")
-              .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS))
+        .as("Process Instance Document Count is not as expected")
+        .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS))
       assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES))
-              .as("Process Instance FlowNodeInstance Count is not as expected")
-              .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES))
+        .as("Process Instance FlowNodeInstance Count is not as expected")
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES))
       assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
-              .as("Process Instance Variable Count is not as expected")
-              .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
+        .as("Process Instance Variable Count is not as expected")
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
 
       assertThat(oldElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
-              .as("Decision Definition Document Count is not as expected")
-              .isEqualTo(newElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
+        .as("Decision Definition Document Count is not as expected")
+        .isEqualTo(newElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
       assertThat(oldElasticClient.getDocumentCount(DECISION_INSTANCE_MULTI_ALIAS))
-              .as("Decision Instance Document Count is not as expected")
-              .isEqualTo(newElasticClient.getDocumentCount(DECISION_INSTANCE_MULTI_ALIAS))
+        .as("Decision Instance Document Count is not as expected")
+        .isEqualTo(newElasticClient.getDocumentCount(DECISION_INSTANCE_MULTI_ALIAS))
       log.info("Finished asserting expected instance data doc counts...")
 
       log.info("Asserting on startup and upgrade errors...")
@@ -106,18 +106,18 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
         def matcherWarn = line =~ /WARN(?!.*snapshot_in_progress_exception.*)/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Upgrade log contained warn log: %s", line)
-                .isFalse()
+          .isFalse()
         assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line)
-                .isFalse()
+          .isFalse()
       }
       new File(getNewOptimizeOutputLogPath()).eachLine { line ->
         // ignore warns about incorrect serializationDataFormat in default processes from ObjectVariableFlatteningService
         def matcherWarn = line =~ /WARN(?!.*ObjectVariableService - Object variable 'approverGroups'*)/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
-                .isFalse()
+          .isFalse()
         assertThat(matcherError.find()).withFailMessage("Startup log contained error log: %s", line)
-                .isFalse()
+          .isFalse()
       }
       log.info("Finished asserting on startup and upgrade errors")
     } finally {

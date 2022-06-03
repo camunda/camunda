@@ -45,7 +45,7 @@ class OptimizeWrapper {
     )
   }
 
-  def startUpgrade() {
+  def startUpgrade(FileWriter upgradeOutputWriter) {
     if (this.upgradeProcess) {
       throw new RuntimeException("Upgrade is already running, wait for it to finish.")
     }
@@ -54,6 +54,7 @@ class OptimizeWrapper {
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
     def command = ["/bin/bash", "./upgrade/upgrade.sh", "--skip-warning"]
     this.upgradeProcess = command.execute(environmentVars, new File(optimizeDirectory))
+    this.upgradeProcess.consumeProcessOutputStream(upgradeOutputWriter)
     return this.upgradeProcess
   }
 
@@ -71,7 +72,7 @@ class OptimizeWrapper {
     }
   }
 
-  synchronized def start() {
+  synchronized def start(FileWriter outPutStreamWriter) {
     if (this.process) {
       throw new RuntimeException("Already started, stop it first.")
     }
@@ -84,7 +85,10 @@ class OptimizeWrapper {
     environmentVars.add("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED=false")
     environmentVars.add("OPTIMIZE_API_ACCESS_TOKEN=secret")
     def command = ["/bin/bash", "./optimize-startup.sh"]
+
     this.process = command.execute(environmentVars, new File(optimizeDirectory))
+    this.process.consumeProcessOutputStream(outPutStreamWriter)
+
     try {
       HealthClient healthClient = new HealthClient(() -> requestExecutor)
       log.info("Waiting for Optimize ${optimizeVersion} to boot...");

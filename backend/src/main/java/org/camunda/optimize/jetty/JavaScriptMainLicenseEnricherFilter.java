@@ -6,6 +6,7 @@
 package org.camunda.optimize.jetty;
 
 import com.google.common.io.CharStreams;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
@@ -23,6 +24,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
+@NoArgsConstructor
 public class JavaScriptMainLicenseEnricherFilter implements Filter {
   public static final String LICENSE_PATH = "OPTIMIZE-LICENSE.txt";
   private static final Pattern MAIN_JS_PATTERN = Pattern.compile(".*/main\\..*\\.chunk\\.js");
@@ -86,5 +88,4 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
     }
     return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
   }
-
 }

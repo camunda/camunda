@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 
-import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;

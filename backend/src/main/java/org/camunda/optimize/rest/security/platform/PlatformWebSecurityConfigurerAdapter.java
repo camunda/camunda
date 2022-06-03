@@ -14,7 +14,6 @@ import org.camunda.optimize.rest.security.SingleSignOnRequestFilter;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -31,7 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 
-import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
@@ -68,7 +67,6 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
       .authenticationProvider(preAuthenticatedAuthenticationProvider);
   }
 
-  @Bean
   public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
     return new AuthenticationCookieFilter(sessionService, authenticationManager());
   }

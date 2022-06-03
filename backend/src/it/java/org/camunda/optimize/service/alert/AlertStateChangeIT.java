@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.alert;
 
+import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
@@ -24,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -150,7 +152,7 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     assertThat(content).containsSequence(
       String.format(
         "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_resolved&utm_medium=email",
-        getOptimizeHttpPort(),
+        embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(HTTP_PORT_KEY),
         collectionId,
         reportId
       )

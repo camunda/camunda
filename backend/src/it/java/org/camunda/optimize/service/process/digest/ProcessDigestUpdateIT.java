@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.DAYS;
 import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.MONTHS;
 import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.WEEKS;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 

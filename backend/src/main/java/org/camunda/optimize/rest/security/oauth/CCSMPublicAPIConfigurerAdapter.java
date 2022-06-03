@@ -11,14 +11,15 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.stereotype.Component;
 
-
-@Component
+@Configuration
+@Order(1)
 @Conditional(CCSMCondition.class)
 public class CCSMPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigurerAdapter {
   private static final String JWT_DECODING_SET_URI_METHOD = "jwt";

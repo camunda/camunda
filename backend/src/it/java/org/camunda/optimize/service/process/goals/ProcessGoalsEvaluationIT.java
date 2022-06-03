@@ -28,8 +28,8 @@ import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.SLA
 import static org.camunda.optimize.dto.optimize.query.goals.DurationGoalType.TARGET_DURATION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit.MONTHS;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessGoalsEvaluationIT extends AbstractProcessGoalsIT {

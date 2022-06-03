@@ -59,7 +59,7 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
     esMockServer.clear(request());
 
     // when
-    embeddedOptimizeExtension.getApplicationContext().getBean(OptimizeElasticsearchClientConfiguration.class)
+    embeddedOptimizeExtension.getBean(OptimizeElasticsearchClientConfiguration.class)
       .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
     // clear the version validation request the client does on first use, which bypasses our plugins
     // see RestHighLevelClient#versionValidationFuture

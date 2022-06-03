@@ -210,6 +210,9 @@ pipeline {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             sh("""
+              mvn -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker -s \$MAVEN_SETTINGS_XML clean install -B
+            """)
+            sh("""
               mvn -B -s \$MAVEN_SETTINGS_XML -f qa/import-performance-tests -P zeebe-data-import-performance-test test \
               -Dzeebe.enabled=true \
               -Dzeebe.name=zeebe-record \

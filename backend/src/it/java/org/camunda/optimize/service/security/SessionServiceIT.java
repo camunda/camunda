@@ -268,6 +268,6 @@ public class SessionServiceIT extends AbstractIT {
   }
 
   private TerminatedSessionService getTerminatedSessionService() {
-    return embeddedOptimizeExtension.getApplicationContext().getBean(TerminatedSessionService.class);
+    return embeddedOptimizeExtension.getBean(TerminatedSessionService.class);
   }
 }

@@ -210,7 +210,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
+  public void afterRestartOfOptimizeRightImportIndexIsUsed() {
     // given
     deployAllPossibleEngineDataForAllEngines();
 
@@ -219,8 +219,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then

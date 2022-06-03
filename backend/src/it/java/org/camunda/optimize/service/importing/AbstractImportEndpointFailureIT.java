@@ -31,6 +31,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,7 @@ import java.util.stream.Stream;
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -49,6 +52,11 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.mockserver.model.HttpRequest.request;
 
 @TestInstance(PER_CLASS)
+@SpringBootTest(
+  webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+  properties = { INTEGRATION_TESTS + "=true" }
+)
+@Configuration
 public abstract class AbstractImportEndpointFailureIT {
 
   protected static final String START_EVENT = "startEvent";
@@ -68,15 +76,15 @@ public abstract class AbstractImportEndpointFailureIT {
   protected static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension(false);
   @RegisterExtension
   @Order(3)
-  protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(true);
+  protected EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   @RegisterExtension
-  @Order(5)
+  @Order(4)
   protected final LogCapturer logCapturer =
     LogCapturer.create().captureForType(VariableUpdateElasticsearchImportJob.class);
 
   @BeforeAll
-  public static void beforeAll() {
+  public void beforeAll() {
     engineIntegrationExtension.cleanEngine();
     // Due to a possible race condition with data from the previous tests not being yet in the indices, we need to
     // refresh the indices before deleting the existing data
@@ -165,11 +173,11 @@ public abstract class AbstractImportEndpointFailureIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected static ClientAndServer getAndUseEngineMockServer() {
+  protected ClientAndServer getAndUseEngineMockServer() {
     return getAndUseMockServerForEngine(engineIntegrationExtension.getEngineName());
   }
 
-  protected static ClientAndServer getAndUseMockServerForEngine(String engineName) {
+  protected ClientAndServer getAndUseMockServerForEngine(String engineName) {
     String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
       IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
     embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);

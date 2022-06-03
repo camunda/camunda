@@ -48,6 +48,7 @@ import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields
 import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.type;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 
 public class EventIngestionRestIT extends AbstractIT {
@@ -210,9 +211,9 @@ public class EventIngestionRestIT extends AbstractIT {
       .setHttpProcessor(HttpProcessorBuilder.create().addAll(new RequestTargetHost()).build())
       .build()) {
       final HttpPut httpPut = new HttpPut(
-        IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint() + INGESTION_PATH + EVENT_BATCH_SUB_PATH
+        IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(embeddedOptimizeExtension.getApplicationContext()) + INGESTION_PATH + EVENT_BATCH_SUB_PATH
       );
-      httpPut.addHeader(HttpHeaders.AUTHORIZATION, getAccessToken());
+      httpPut.addHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + getAccessToken());
       final CloseableHttpResponse response = httpClient.execute(httpPut);
 
       // then

@@ -45,6 +45,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
   @SneakyThrows
   public void indexProgressIsRestoredAfterRestartOfOptimize() {
     // given
+    startAndUseNewOptimizeInstance();
     final ExternalProcessVariableRequestDto externalVariable = ingestionClient.createPrimitiveExternalVariable();
     ingestionClient.ingestVariables(List.of(externalVariable));
 
@@ -57,8 +58,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
         EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID, ENGINE_ALIAS_OPTIMIZE
       ).toInstant().toEpochMilli();
 
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
 
     // then
     assertThat(embeddedOptimizeExtension.getIndexHandlerRegistry().getExternalVariableUpdateImportIndexHandler())

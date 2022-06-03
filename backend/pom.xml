@@ -105,6 +105,32 @@
       <artifactId>spring-tx</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <version>${spring.boot.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jetty</artifactId>
+      <version>${spring.boot.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <version>${spring.boot.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jersey</artifactId>
+      <version>${spring.boot.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
       <version>${spring.security.version}</version>
@@ -160,58 +186,6 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>javax-websocket-server-impl</artifactId>
       <version>${jetty.version}</version>
-    </dependency>
-
-    <!-- JAX-RS -->
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-common</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-bean-validation</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-entity-filtering</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.media</groupId>
-      <artifactId>jersey-media-json-jackson</artifactId>
-      <version>${jersey.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-annotations</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-spring5</artifactId>
-      <version>${jersey.version}</version>
-      <exclusions>
-        <!-- excludes taken over from spring-boot pom -->
-        <exclusion>
-          <groupId>org.jvnet</groupId>
-          <artifactId>tiger-types</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.glassfish.hk2.external</groupId>
-          <artifactId>bean-validator</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.glassfish.hk2.external</groupId>
-          <artifactId>javax.inject</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.hibernate</groupId>
-          <artifactId>hibernate-validator</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Authentication -->
@@ -342,6 +316,18 @@
       <artifactId>json-flattener</artifactId>
       <version>0.13.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <version>${spring.boot.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <build>
@@ -365,6 +351,11 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
 
       <plugin>
@@ -574,15 +565,16 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether Camunda Platform is running">
-                    <echo message="Check Camunda Platform Tomcat is running..." />
+                    <echo message="Check Camunda Platform Tomcat is running..."/>
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="${tomcat.connector.http.port}" />
+                      <socket server="localhost" port="${tomcat.connector.http.port}"/>
                     </waitfor>
-                    <echo message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..." />
+                    <echo
+                        message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..."/>
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
+                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list"/>
                     </waitfor>
-                    <echo message="Camunda Platform Tomcat manager app is running." />
+                    <echo message="Camunda Platform Tomcat manager app is running."/>
                   </target>
                 </configuration>
                 <goals>

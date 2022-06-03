@@ -14,15 +14,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @Slf4j
+@SpringBootTest(
+  webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+  properties = { INTEGRATION_TESTS + "=true" }
+)
 public class ImportPerformanceZeebeDataTest {
 
   @RegisterExtension
@@ -31,7 +37,7 @@ public class ImportPerformanceZeebeDataTest {
     new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   private OffsetDateTime zeebeImportTestStart;
   private Integer expectedDefinitionCount;

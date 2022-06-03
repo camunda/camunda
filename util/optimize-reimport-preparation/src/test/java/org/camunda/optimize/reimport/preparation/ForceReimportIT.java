@@ -8,6 +8,7 @@ package org.camunda.optimize.reimport.preparation;
 import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.SpringDefaultITConfig;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -25,6 +26,8 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Import;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -371,6 +374,11 @@ public class ForceReimportIT extends AbstractEventProcessIT {
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), variables);
     return processDefinitionEngineDto;
+  }
+
+  @Import(SpringDefaultITConfig.class)
+  @TestConfiguration
+  public class Configuration {
   }
 
 }

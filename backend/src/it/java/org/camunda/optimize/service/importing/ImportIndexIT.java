@@ -63,8 +63,8 @@ public class ImportIndexIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
+
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then

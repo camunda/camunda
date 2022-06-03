@@ -6,78 +6,70 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.ApplicationContextProvider;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.web.socket.server.standard.SpringConfigurator;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
-
-@RequiredArgsConstructor
-@ServerEndpoint(value = STATUS_WEBSOCKET_PATH, configurator = SpringConfigurator.class)
+@NoArgsConstructor
 @Slf4j
+@WebSocket
 public class StatusWebSocket {
-
-  private final StatusCheckingService statusCheckingService;
-  private final ObjectMapper objectMapper;
-  private final ConfigurationService configurationService;
-  private final ImportSchedulerManagerService importSchedulerManagerService;
+  private static final String ERROR_MESSAGE = "Web socket connection terminated prematurely!";
+  private final StatusCheckingService statusCheckingService = ApplicationContextProvider.getBean(StatusCheckingService.class);
+  private final ObjectMapper objectMapper = ApplicationContextProvider.getBean(ObjectMapper.class);
+  private final ConfigurationService configurationService = ApplicationContextProvider.getBean(ConfigurationService.class);
+  private final ImportSchedulerManagerService importSchedulerManagerService = ApplicationContextProvider.getBean(ImportSchedulerManagerService.class);
 
   private final Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
-  @OnOpen
-  public void onOpen(Session session) {
+  @OnWebSocketConnect
+  public void onOpen(final Session session) {
     if (statusReportJobs.size() < configurationService.getMaxStatusConnections()) {
       StatusNotifier job = new StatusNotifier(
         statusCheckingService,
         objectMapper,
         session
       );
-      statusReportJobs.put(session.getId(), job);
+      statusReportJobs.put(session.toString(), job);
       importSchedulerManagerService.subscribeImportObserver(job);
-      log.debug("starting to report status for session [{}]", session.getId());
+      log.debug("starting to report status for session [{}]", session);
     } else {
-      log.debug("cannot create status report job for [{}], max connections exceeded", session.getId());
-      try {
-        session.close();
-      } catch (IOException e) {
-        log.error("can't close status report web socket session");
-      }
+      log.debug("cannot create status report job for [{}], max connections exceeded", session);
+      session.close();
     }
 
   }
 
-  @OnClose
-  public void onClose(Session session) {
-    log.debug("stopping status reporting for session [{}]", session.getId());
+  @OnWebSocketClose
+  public void onClose(final Session session, final int statusCode, final String reason) {
+    log.debug("stopping status reporting for session");
     removeSession(session);
   }
 
-  private void removeSession(Session session) {
-    if (statusReportJobs.containsKey(session.getId())) {
-      StatusNotifier job = statusReportJobs.remove(session.getId());
+  private void removeSession(final Session session) {
+    if (statusReportJobs.containsKey(session.toString())) {
+      StatusNotifier job = statusReportJobs.remove(session.toString());
       importSchedulerManagerService.unsubscribeImportObserver(job);
     }
   }
 
-  @OnError
-  public void onError(Throwable t, Session session) {
-    String message = "Web socket connection terminated prematurely!";
+  @OnWebSocketError
+  public void onError(final Session session, final Throwable t) {
     if (log.isWarnEnabled()) {
-      log.warn(message);
+      log.warn(ERROR_MESSAGE);
     } else if (log.isDebugEnabled()) {
-      log.debug(message, t);
+      log.debug(ERROR_MESSAGE, t);
     }
     removeSession(session);
   }

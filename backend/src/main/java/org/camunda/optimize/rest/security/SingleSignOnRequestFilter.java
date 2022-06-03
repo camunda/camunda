@@ -13,7 +13,6 @@ import org.camunda.optimize.plugin.security.authentication.AuthenticationResult;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 
 import javax.servlet.FilterChain;
@@ -29,7 +28,6 @@ import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 
 @AllArgsConstructor
-@Component
 @Slf4j
 public class SingleSignOnRequestFilter extends GenericFilterBean {
   private final AuthenticationExtractorProvider authenticationExtractorProvider;

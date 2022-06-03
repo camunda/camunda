@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.metadata;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.Optional;
 
@@ -27,16 +30,13 @@ public class ElasticMetadataVersionIT extends AbstractIT {
   private static final String INSTALLATION_ID = "testId";
 
   @Test
-  public void verifyVersionAndInstallationIdIsInitialized() throws Exception {
+  public void verifyVersionAndInstallationIdIsInitialized() {
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
 
     // then schemaversion matches expected version and installationID is present
     final Optional<MetadataDto> metadataDto = getMetadataDto();
-    final String expectedVersion = embeddedOptimizeExtension.getApplicationContext()
-      .getBean(OptimizeVersionService.class)
-      .getVersion();
+    final String expectedVersion = embeddedOptimizeExtension.getBean(OptimizeVersionService.class).getVersion();
 
     assertThat(metadataDto)
       .isPresent().get()
@@ -47,67 +47,19 @@ public class ElasticMetadataVersionIT extends AbstractIT {
   }
 
   @Test
-  public void verifyStillStartingEvenIfMetadataIndexMissing() throws Exception {
-    // given
-    embeddedOptimizeExtension.stopOptimize();
-    elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new MetadataIndex());
-
-    // when
-    embeddedOptimizeExtension.startOptimize();
-
-    // then the metadata index & doc is recreated
-    final Optional<MetadataDto> metadataDto = getMetadataDto();
-    final String expectedVersion = embeddedOptimizeExtension.getApplicationContext()
-      .getBean(OptimizeVersionService.class)
-      .getVersion();
-
-    assertThat(metadataDto)
-      .isPresent().get()
-      .satisfies(metadata -> {
-        assertThat(metadata.getSchemaVersion()).isEqualTo(expectedVersion);
-      });
-  }
-
-  @Test
-  public void verifyStillStartingEvenIfExpectedMetadataDocIsMissing() throws Exception {
-    // given
-    embeddedOptimizeExtension.stopOptimize();
-    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new MetadataIndex());
-
-    // when
-    embeddedOptimizeExtension.startOptimize();
-
-    // then the metadata doc is created
-    final Optional<MetadataDto> metadataDto = getMetadataDto();
-    final String expectedVersion = embeddedOptimizeExtension.getApplicationContext()
-      .getBean(OptimizeVersionService.class)
-      .getVersion();
-
-    assertThat(metadataDto)
-      .isPresent().get()
-      .satisfies(metadata -> {
-        assertThat(metadata.getSchemaVersion()).isEqualTo(expectedVersion);
-      });
-  }
-
-  @Test
-  public void verifyNotStartingIfVersionDoesNotMatch() throws Exception {
-    // given
-    embeddedOptimizeExtension.stopOptimize();
+  public void verifyNotStartingIfVersionDoesNotMatch() {
     elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+
     MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
+    assertThatThrownBy(() -> {
+      ConfigurableApplicationContext context = SpringApplication.run(Main.class);
+      context.close();
+    })
+      .getCause().getCause()
+      .hasMessageContaining("The Elasticsearch Optimize schema version [" + SCHEMA_VERSION + "]");
 
-    // when
-    try {
-      assertThatThrownBy(() -> embeddedOptimizeExtension.startOptimize())
-        .getCause()
-        .hasMessageContaining("The Elasticsearch Optimize schema version [" + SCHEMA_VERSION + "]");
-    } finally {
-      embeddedOptimizeExtension.stopOptimize();
-      elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
-      embeddedOptimizeExtension.startOptimize();
-    }
+    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
   }
 
   @Test
@@ -123,8 +75,7 @@ public class ElasticMetadataVersionIT extends AbstractIT {
   }
 
   private Optional<MetadataDto> getMetadataDto() {
-    return embeddedOptimizeExtension.getApplicationContext()
-      .getBean(ElasticsearchMetadataService.class)
+    return embeddedOptimizeExtension.getBean(ElasticsearchMetadataService.class)
       .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
   }
 }

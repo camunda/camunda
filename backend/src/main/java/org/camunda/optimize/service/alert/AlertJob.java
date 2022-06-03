@@ -7,6 +7,7 @@ package org.camunda.optimize.service.alert;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -51,6 +52,7 @@ public class AlertJob implements Job {
   private final ReportReader reportReader;
   private final AlertWriter alertWriter;
   private final PlainReportEvaluationHandler reportEvaluator;
+  private final JettyConfig jettyConfig;
 
   @Override
   public void execute(final JobExecutionContext jobExecutionContext) {

@@ -16,8 +16,8 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import javax.ws.rs.core.Response;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
 @AllArgsConstructor
 public class SharingClient {

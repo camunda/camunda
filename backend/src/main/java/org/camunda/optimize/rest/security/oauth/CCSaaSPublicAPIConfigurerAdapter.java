@@ -11,15 +11,16 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.stereotype.Component;
 
-
-@Component
+@Configuration
+@Order(1)
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigurerAdapter {
 
@@ -33,6 +34,7 @@ public class CCSaaSPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigure
   }
 
   @Bean
+  @Override
   @SneakyThrows
   public JwtDecoder jwtDecoder() {
       NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(getJwtSetUri()).build();

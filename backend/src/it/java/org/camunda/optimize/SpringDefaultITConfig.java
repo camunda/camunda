@@ -15,11 +15,13 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 
 @Import(org.camunda.optimize.Main.class)
 @Configuration
-@IgnoreDuringScan
 public class SpringDefaultITConfig {
   @Bean
   @Primary
   public static ConfigurationService configurationService() {
-    return createConfigurationFromLocations("service-config.yaml", "it/it-config.yaml");
+    return createConfigurationFromLocations(
+      "service-config.yaml",
+      "it/it-config.yaml"
+    );
   }
 }

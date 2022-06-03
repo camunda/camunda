@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.sql.SQLException;
 import java.util.Properties;
@@ -28,6 +29,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public abstract class AbstractImportTest {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -39,7 +41,7 @@ public abstract class AbstractImportTest {
     new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
   @RegisterExtension
   @Order(3)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(properties);
