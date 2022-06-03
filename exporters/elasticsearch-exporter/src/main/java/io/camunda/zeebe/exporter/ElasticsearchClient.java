@@ -9,8 +9,8 @@ package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
-import io.camunda.zeebe.exporter.dto.BulkItemError;
-import io.camunda.zeebe.exporter.dto.BulkResponse;
+import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
+import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -160,30 +160,30 @@ class ElasticsearchClient implements AutoCloseable {
       throw new ElasticsearchExporterException("Failed to flush bulk", e);
     }
 
-    final BulkResponse bulkResponse;
+    final BulkIndexResponse response;
     try {
-      bulkResponse = MAPPER.readValue(httpResponse.getEntity().getContent(), BulkResponse.class);
+      response = MAPPER.readValue(httpResponse.getEntity().getContent(), BulkIndexResponse.class);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to parse response when flushing", e);
     }
 
-    if (bulkResponse.hasErrors()) {
-      throwCollectedBulkError(bulkResponse);
+    if (response.errors()) {
+      throwCollectedBulkError(response);
     }
   }
 
-  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
+  private void throwCollectedBulkError(final BulkIndexResponse bulkResponse) {
     final var collectedErrors = new ArrayList<String>();
-    bulkResponse.getItems().stream()
-        .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
-        .flatMap(index -> Optional.ofNullable(index.getError()).stream())
-        .collect(Collectors.groupingBy(BulkItemError::getType))
+    bulkResponse.items().stream()
+        .flatMap(item -> Optional.ofNullable(item.index()).stream())
+        .flatMap(index -> Optional.ofNullable(index.error()).stream())
+        .collect(Collectors.groupingBy(Error::type))
         .forEach(
             (errorType, errors) ->
                 collectedErrors.add(
                     String.format(
                         "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
-                        errors.size(), errorType, errors.get(0).getReason())));
+                        errors.size(), errorType, errors.get(0).reason())));
 
     throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }

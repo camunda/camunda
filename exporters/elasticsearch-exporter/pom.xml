@@ -15,10 +15,6 @@
 
   <name>Zeebe Elasticsearch Exporter</name>
 
-  <properties>
-    <paths.certificates>${project.build.testResources[0].directory}/certs/</paths.certificates>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -84,6 +80,8 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
     </dependency>
+
+    <!-- Test dependencies -->
 
     <dependency>
       <groupId>org.assertj</groupId>
@@ -157,6 +155,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -168,6 +167,7 @@
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -177,12 +177,6 @@
             <include>**/*IT.java</include>
             <include>**/*ITCase.java</include>
           </includes>
-          <!--
-            as our in-house CI does not enable IPv6, clients not running in a Testcontainer-managed
-            container will not be able to use IPv6; as such, ensure we always prefer IPv4 when
-            resolving host names
-          -->
-          <argLine>-XX:MaxDirectMemorySize=4g -Djava.net.preferIPv4Stack=true</argLine>
         </configuration>
       </plugin>
 

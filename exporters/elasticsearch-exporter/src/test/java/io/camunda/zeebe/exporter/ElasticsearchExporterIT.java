@@ -30,8 +30,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -46,7 +44,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * down, should be done elsewhere (e.g. {@link FaultToleranceIT}
  */
 @Testcontainers
-@Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
