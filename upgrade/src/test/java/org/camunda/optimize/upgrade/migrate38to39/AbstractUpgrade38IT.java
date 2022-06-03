@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.upgrade.migrate38to39;
 
-
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
-import org.camunda.optimize.upgrade.migrate38to39.indices.DashboardIndex38;
 import org.camunda.optimize.upgrade.migrate38to39.indices.CollectionIndex38;
+import org.camunda.optimize.upgrade.migrate38to39.indices.DashboardIndex38;
 import org.camunda.optimize.upgrade.migrate38to39.indices.SingleProcessReportIndex38;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;

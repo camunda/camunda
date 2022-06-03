@@ -104,7 +104,7 @@ public class PublicApiRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
   public PaginatedDataExportDto exportReportData(@Context ContainerRequestContext requestContext,
-                                                 @PathParam("reportId") String reportId,
+                                                 @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") String reportId,
                                                  @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
     final ZoneId timezone = ZoneId.of("UTC");
     try {

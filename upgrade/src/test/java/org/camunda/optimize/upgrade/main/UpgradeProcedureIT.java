@@ -217,7 +217,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
       // then the logged message includes all of the task error fields
       .isInstanceOf(UpgradeRuntimeException.class)
-      .getCause()
+      .cause()
       .hasMessageContainingAll(
         Arrays.stream(TaskResponse.Error.class.getDeclaredFields())
           .filter(field -> field.isAnnotationPresent(JsonProperty.class))

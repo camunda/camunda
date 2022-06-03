@@ -103,13 +103,11 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(savedInstance -> {
-        assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .hasSize(1)
-          .containsExactly(
-            createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
-          );
-      });
+      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
+        .hasSize(1)
+        .containsExactly(
+          createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
+        ));
   }
 
   @Test
@@ -125,13 +123,11 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(savedInstance -> {
-        assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .hasSize(1)
-          .containsExactly(
-            createIncident(savedInstance, deployedInstance, CATCH_EVENT, OPEN)
-          );
-      });
+      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
+        .hasSize(1)
+        .containsExactly(
+          createIncident(savedInstance, deployedInstance, CATCH_EVENT, OPEN)
+        ));
   }
 
   @Test
@@ -150,12 +146,10 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(savedInstance -> {
-        assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .containsExactly(
-            createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
-          );
-      });
+      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
+        .containsExactly(
+          createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
+        ));
   }
 
   @Test
@@ -172,12 +166,10 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(savedInstance -> {
-        assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .containsExactly(
-            createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
-          );
-      });
+      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
+        .containsExactly(
+          createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
+        ));
 
     // when
     resolveIncident();
@@ -187,12 +179,10 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(savedInstance -> {
-        assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .containsExactly(
-            createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
-          );
-      });
+      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
+        .containsExactly(
+          createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
+        ));
   }
 
   private void waitUntilMinimumIncidentEventsExportedCount(final int minExportedEventCount) {
@@ -275,7 +265,7 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
         .stream()
         .flatMap(Collection::stream)
         .findFirst().orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any exported incidents"));
-    zeebeExtension.resolveIncident(exportedIncident.getValue().getJobKey(), exportedIncident.getKey());
+    zeebeExtension.resolveIncident(exportedIncident.getKey());
   }
 
   private String getFlowNodeIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
