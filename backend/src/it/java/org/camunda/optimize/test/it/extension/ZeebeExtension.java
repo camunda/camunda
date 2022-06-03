@@ -85,16 +85,11 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
         .build();
   }
 
-  public void destroyClient() {
-    zeebeClient.close();
-    zeebeClient = null;
-  }
-
   public Process deployProcess(BpmnModelInstance bpmnModelInstance) {
-    DeployResourceCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployResourceCommand();
-    deployProcessCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
+    final DeployResourceCommandStep1 deployResourceCommandStep1 = zeebeClient.newDeployResourceCommand();
+    deployResourceCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
     final DeploymentEvent deploymentEvent =
-      ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
+      ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployResourceCommandStep1)
         .send()
         .join();
     return deploymentEvent.getProcesses().get(0);
@@ -149,25 +144,21 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void throwErrorIncident(String jobType) {
-    handleSingleJob(jobType, (zeebeClient, job) -> {
-      zeebeClient.newThrowErrorCommand(job.getKey())
-        .errorCode("1")
-        .errorMessage("someErrorMessage")
-        .send().join();
-    });
+    handleSingleJob(jobType, (zeebeClient, job) -> zeebeClient.newThrowErrorCommand(job.getKey())
+      .errorCode("1")
+      .errorMessage("someErrorMessage")
+      .send().join());
   }
 
   public void failTask(String jobType) {
-    handleSingleJob(jobType, (zeebeClient, job) -> {
-      zeebeClient.newFailCommand(job.getKey())
-        .retries(0)
-        .errorMessage("someTaskFailMessage")
-        .send()
-        .join();
-    });
+    handleSingleJob(jobType, (zeebeClient, job) -> zeebeClient.newFailCommand(job.getKey())
+      .retries(0)
+      .errorMessage("someTaskFailMessage")
+      .send()
+      .join());
   }
 
-  public void resolveIncident(Long jobKey, Long incidentKey) {
+  public void resolveIncident(Long incidentKey) {
     zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
   }
 
@@ -199,6 +190,11 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX",
       zeebeRecordPrefix
     );
+  }
+
+  private void destroyClient() {
+    zeebeClient.close();
+    zeebeClient = null;
   }
 
 }
