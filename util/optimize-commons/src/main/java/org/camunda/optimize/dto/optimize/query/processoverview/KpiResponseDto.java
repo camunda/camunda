@@ -9,17 +9,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
 @Data
 @FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProcessOverviewResponseDto {
-  private String processDefinitionName;
-  private String processDefinitionKey;
-  private ProcessOwnerResponseDto owner;
-  private ProcessDigestResponseDto digest;
-  private List<KpiResponseDto> kpis;
+public class KpiResponseDto {
+
+  private String reportId;
+  private String reportName;
+  private String value;
+  private String target;
+  private Boolean isBelow;
+  private KpiType type;
+  private ViewProperty measure;
+
 }

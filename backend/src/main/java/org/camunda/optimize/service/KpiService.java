@@ -30,4 +30,12 @@ public class KpiService {
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toList());
   }
+
+  public List<SingleProcessReportDefinitionRequestDto> getKpiReportsForProcessDefinition(final String processDefinitionKey) {
+    return reportService.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
+      .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
+      .map(SingleProcessReportDefinitionRequestDto.class::cast)
+      .filter(processReport -> processReport.getData().getConfiguration().getTargetValue().getIsKpi().equals(true))
+      .collect(Collectors.toList());
+  }
 }

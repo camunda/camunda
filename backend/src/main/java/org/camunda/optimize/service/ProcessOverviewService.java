@@ -11,20 +11,53 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.KpiResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DeletedIncidentFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
+import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +76,8 @@ public class ProcessOverviewService {
   private final ProcessOverviewWriter processOverviewWriter;
   private final ProcessOverviewReader processOverviewReader;
   private final AbstractIdentityService identityService;
+  private final KpiService kpiService;
+  private final ReportEvaluationService reportEvaluationService;
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
@@ -59,11 +94,46 @@ public class ProcessOverviewService {
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
       processOverviewReader.getProcessOverviewsByKey(procDefKeysAndName.keySet());
+
+    final Map<String, List<SingleProcessReportDefinitionRequestDto>> kpiReportsByKey = new HashMap<>();
+    procDefKeysAndName.keySet()
+      .forEach(processDefinitionKey -> kpiReportsByKey.put(
+        processDefinitionKey,
+        kpiService.getKpiReportsForProcessDefinition(processDefinitionKey)
+      ));
+
     return procDefKeysAndName.entrySet()
       .stream()
       .map(entry -> {
         final String procDefKey = entry.getKey();
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
+        final Optional<List<SingleProcessReportDefinitionRequestDto>> kpiReportsForKey = Optional.ofNullable(
+          kpiReportsByKey.get(procDefKey));
+        List<KpiResponseDto> kpis = new ArrayList<>();
+        if (kpiReportsForKey.isPresent()) {
+          for (SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto :
+            kpiReportsForKey.get()) {
+            @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
+              reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
+                userId,
+                null,
+                singleProcessReportDefinitionRequestDto.getId(),
+                null,
+                null
+              ).getEvaluationResult();
+            final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
+            KpiResponseDto responseDto = new KpiResponseDto();
+            responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
+            responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
+            responseDto.setIsBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
+            responseDto.setTarget(getTarget(singleProcessReportDefinitionRequestDto));
+            responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
+            responseDto.setValue(evaluationValue.toString());
+            responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
+            kpis.add(responseDto);
+          }
+        }
+
         return new ProcessOverviewResponseDto(
           StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
           procDefKey,
@@ -71,9 +141,96 @@ public class ProcessOverviewService {
             .map(owner -> new ProcessOwnerResponseDto(owner, identityService.getIdentityNameById(owner).orElse(owner)))
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
-            .orElse(new ProcessDigestDto())
+            .orElse(new ProcessDigestDto()),
+          kpis
         );
       }).collect(Collectors.toList());
+  }
+
+  private KpiType getReportType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
+    if (ViewProperty.DURATION.equals(viewProperty)) {
+      return KpiType.TIME;
+    } else if (ViewProperty.PERCENTAGE.equals(viewProperty) && timeKpiFilters(
+      singleProcessReportDefinitionRequestDto)) {
+      return KpiType.TIME;
+    } else {
+      return KpiType.QUALITY;
+    }
+  }
+
+  private boolean timeKpiFilters(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    boolean timeKpiFilters = false;
+    for (ProcessFilterDto<?> processFilter : singleProcessReportDefinitionRequestDto.getData().getFilter()) {
+      if ((processFilter instanceof FlowNodeStartDateFilterDto) ||
+        (processFilter instanceof FlowNodeEndDateFilterDto) ||
+        (processFilter instanceof VariableFilterDto) ||
+        (processFilter instanceof MultipleVariableFilterDto) ||
+        (processFilter instanceof ExecutedFlowNodeFilterDto) ||
+        (processFilter instanceof ExecutingFlowNodeFilterDto) ||
+        (processFilter instanceof CanceledFlowNodeFilterDto) ||
+        (processFilter instanceof RunningInstancesOnlyFilterDto) ||
+        (processFilter instanceof CompletedInstancesOnlyFilterDto) ||
+        (processFilter instanceof CanceledInstancesOnlyFilterDto) ||
+        (processFilter instanceof NonCanceledInstancesOnlyFilterDto) ||
+        (processFilter instanceof SuspendedInstancesOnlyFilterDto) ||
+        (processFilter instanceof NonSuspendedInstancesOnlyFilterDto) ||
+        (processFilter instanceof FlowNodeDurationFilterDto) ||
+        (processFilter instanceof OpenIncidentFilterDto) ||
+        (processFilter instanceof DeletedIncidentFilterDto) ||
+        (processFilter instanceof ResolvedIncidentFilterDto) ||
+        (processFilter instanceof NoIncidentFilterDto) ||
+        (processFilter instanceof RunningFlowNodesOnlyFilterDto) ||
+        (processFilter instanceof CompletedFlowNodesOnlyFilterDto) ||
+        (processFilter instanceof CanceledFlowNodesOnlyFilterDto) ||
+        (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)) {
+        return timeKpiFilters;
+      } else {
+        timeKpiFilters = true;
+      }
+    }
+    return timeKpiFilters;
+  }
+
+  private ViewProperty getMeasure(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    List<ViewProperty> viewProperties = singleProcessReportDefinitionRequestDto.getData().getViewProperties();
+    if (viewProperties.contains(ViewProperty.DURATION)) {
+      return ViewProperty.DURATION;
+    } else if (viewProperties.contains(ViewProperty.FREQUENCY)) {
+      return ViewProperty.FREQUENCY;
+    } else if (viewProperties.contains(ViewProperty.PERCENTAGE)) {
+      return ViewProperty.PERCENTAGE;
+    } else {
+      return null;
+    }
+  }
+
+  private boolean getIsBelow(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
+      .getConfiguration()
+      .getTargetValue();
+    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
+    if (viewProperty == null) {
+      return false;
+    } else if (viewProperty.equals(ViewProperty.DURATION)) {
+      return targetValue.getDurationProgress().getTarget().getIsBelow();
+    } else {
+      return targetValue.getCountProgress().getIsBelow();
+    }
+  }
+
+  private String getTarget(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
+      .getConfiguration()
+      .getTargetValue();
+    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
+    if (viewProperty == null) {
+      return null;
+    } else if (viewProperty.equals(ViewProperty.DURATION)) {
+      return targetValue.getDurationProgress().getTarget().getValue();
+    } else {
+      return targetValue.getCountProgress().getTarget();
+    }
   }
 
   public void updateProcessOwner(final String userId, final String processDefKey, final String ownerId) {
