@@ -26,9 +26,8 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -249,9 +248,15 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
       waitUntil(
           () -> {
-            final BrokerTopologyManager topologyManager = brokerClient.getTopologyManager();
-            final BrokerClusterState topology = topologyManager.getTopology();
-            return topology != null && topology.getLeaderForPartition(1) >= 0;
+            final var topology = brokerClient.getTopologyManager().getTopology();
+            if (topology == null) {
+              return false;
+            }
+            final var leader = topology.getLeaderForPartition(1);
+            if (leader < 0) {
+              return false;
+            }
+            return topology.getPartitionHealth(leader, 1) == PartitionHealthStatus.HEALTHY;
           });
     }
 
