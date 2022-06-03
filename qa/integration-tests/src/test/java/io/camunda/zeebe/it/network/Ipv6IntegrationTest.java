@@ -7,149 +7,122 @@
  */
 package io.camunda.zeebe.it.network;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebeGatewayContainer;
+import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.zeebe.containers.ZeebeBrokerNode;
+import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebePort;
-import io.zeebe.containers.ZeebeTopologyWaitStrategy;
-import java.util.ArrayList;
-import java.util.List;
+import io.zeebe.containers.cluster.ZeebeCluster;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import org.agrona.CloseHelper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.utility.DockerImageName;
 
 @EnabledOnOs(
     value = OS.LINUX,
     disabledReason =
         "The Docker documentation says that IPv6 networking is only supported on Docker daemons running on Linux hosts. See: https://docs.docker.com/config/daemon/ipv6/")
-public class Ipv6IntegrationTest {
-
-  private static final int CLUSTER_SIZE = 3;
-  private static final int PARTITION_COUNT = 1;
-  private static final int REPLICATION_FACTOR = 3;
-  private static final DockerImageName ZEEBE_IMAGE_VERSION =
-      DockerImageName.parse("camunda/zeebe:current-test");
-  private static final String NETWORK_ALIAS = Ipv6IntegrationTest.class.getName();
+final class Ipv6IntegrationTest {
   private static final String BASE_PART_OF_SUBNET = "2081::aede:4844:fe00:";
   private static final String SUBNET = BASE_PART_OF_SUBNET + "0/123";
+  private static final String GATEWAY_IP = String.format("%s%d", BASE_PART_OF_SUBNET, 2);
+  private static final String BROKER_IP = String.format("%s%d", BASE_PART_OF_SUBNET, 3);
   private static final String INADDR6_ANY = "[::]";
-
-  public final Network network =
+  private final Network network =
       Network.builder()
           .createNetworkCmdModifier(
               createNetworkCmd ->
                   createNetworkCmd
                       .withIpam(new Ipam().withConfig(new Config().withSubnet(SUBNET)))
-                      .withName(NETWORK_ALIAS))
+                      .withName(UUID.randomUUID().toString()))
           .enableIpv6(true)
           .build();
+  private final ZeebeCluster cluster =
+      ZeebeCluster.builder()
+          .withPartitionsCount(1)
+          .withReplicationFactor(1)
+          .withNetwork(network)
+          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
+          .withBrokerConfig(this::configureBroker)
+          .withBrokersCount(1)
+          .withEmbeddedGateway(false)
+          .withGatewaysCount(1)
+          .withGatewayConfig(this::configureGateway)
+          .build();
 
-  private List<ZeebeBrokerContainer> containers;
-  private List<String> initialContactPoints;
-  private ZeebeGatewayContainer gateway;
-
+  @SuppressWarnings({"resource", "Convert2MethodRef", "ResultOfMethodCallIgnored"})
   @BeforeEach
-  public void setup() {
-    initialContactPoints = new ArrayList<>();
-    containers =
-        IntStream.range(0, CLUSTER_SIZE)
-            .mapToObj(i -> new ZeebeBrokerContainer(ZEEBE_IMAGE_VERSION).withNetwork(network))
-            .collect(Collectors.toList());
+  void beforeEach() {
+    final var networkInfo =
+        DockerClientFactory.lazyClient().inspectNetworkCmd().withNetworkId(network.getId()).exec();
 
-    gateway = new ZeebeGatewayContainer(ZEEBE_IMAGE_VERSION);
-    IntStream.range(0, CLUSTER_SIZE).forEach(i -> configureBrokerContainer(i, containers));
-    configureGatewayContainer(gateway, initialContactPoints.get(0));
+    Assertions.assertThat(networkInfo)
+        .as("IPv6 network was properly created")
+        .isNotNull()
+        .extracting(n -> n.getEnableIPv6());
   }
 
   @AfterEach
-  public void tearDown() {
-    containers.parallelStream().forEach(GenericContainer::stop);
-    network.close();
+  void tearDown() {
+    CloseHelper.closeAll(cluster, network);
   }
 
   @Test
-  public void shouldCommunicateOverIpv6() {
+  void shouldCommunicateOverIpv6() {
     // given
-    containers.parallelStream().forEach(GenericContainer::start);
-    gateway.start();
+    cluster.start();
 
     // when
-    final ZeebeClientBuilder zeebeClientBuilder =
-        ZeebeClient.newClientBuilder()
-            .usePlaintext()
-            .gatewayAddress(gateway.getExternalGatewayAddress());
-    try (final var client = zeebeClientBuilder.build()) {
+    try (final var client = cluster.newClientBuilder().build()) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       // then - can find each other
-      TopologyAssert.assertThat(topology).isComplete(3, 1);
+      TopologyAssert.assertThat(topology).isComplete(1, 1);
     }
   }
 
-  private void configureBrokerContainer(final int index, final List<ZeebeBrokerContainer> brokers) {
-    final int clusterSize = brokers.size();
-    final var broker = brokers.get(index);
-    final var hostNameWithoutBraces = getIpv6AddressForIndex(index);
-    final var hostName = String.format("[%s]", hostNameWithoutBraces);
-
-    initialContactPoints.add(hostName + ":" + ZeebePort.INTERNAL.getPort());
+  private void configureBroker(final ZeebeBrokerNode<?> broker) {
+    final var hostName = String.format("[%s]", BROKER_IP);
 
     broker
-        .withNetwork(network)
-        .withNetworkAliases(NETWORK_ALIAS)
-        .withCreateContainerCmdModifier(
-            createContainerCmd ->
-                createContainerCmd
-                    .withIpv6Address(hostNameWithoutBraces)
-                    .withHostName(hostNameWithoutBraces))
-        .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
-        .withEnv("ZEEBE_BROKER_CLUSTER_NODEID", String.valueOf(index))
-        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERSIZE", String.valueOf(clusterSize))
-        .withEnv("ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR", String.valueOf(REPLICATION_FACTOR))
-        .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONCOUNT", String.valueOf(PARTITION_COUNT))
-        .withEnv(
-            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostNameWithoutBraces)
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+        .withEnv("ATOMIX_LOG_LEVEL", "INFO")
+        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostName)
         .withEnv("ZEEBE_BROKER_NETWORK_HOST", INADDR6_ANY)
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-        .withEnv("ATOMIX_LOG_LEVEL", "INFO");
+        .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, BROKER_IP));
   }
 
-  private void configureGatewayContainer(
-      final ZeebeGatewayContainer gateway, final String initialContactPoint) {
-    final String address = getIpv6AddressForIndex(CLUSTER_SIZE);
+  private void configureHostForIPv6(
+      final CreateContainerCmd cmd, final String hostNameWithoutBraces) {
+    final var hostConfig = Optional.ofNullable(cmd.getHostConfig()).orElse(new HostConfig());
+    cmd.withHostConfig(hostConfig.withNetworkMode(network.getId()));
+    cmd.withIpv6Address(hostNameWithoutBraces).withHostName(hostNameWithoutBraces);
+  }
+
+  private void configureGateway(final ZeebeGatewayNode<?> gateway) {
+    final var hostName = String.format("[%s]", GATEWAY_IP);
+
     gateway
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", initialContactPoint)
-        .withTopologyCheck(
-            new ZeebeTopologyWaitStrategy()
-                .forBrokersCount(CLUSTER_SIZE)
-                .forPartitionsCount(PARTITION_COUNT)
-                .forReplicationFactor(REPLICATION_FACTOR))
-        .withNetwork(network)
-        .withNetworkAliases(NETWORK_ALIAS)
+        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+        .withEnv("ATOMIX_LOG_LEVEL", "INFO")
+        .withEnv(
+            "ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT",
+            String.format("[%s]:%d", BROKER_IP, ZeebePort.INTERNAL.getPort()))
         .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", INADDR6_ANY)
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", address)
-        .withCreateContainerCmdModifier(
-            createContainerCmd ->
-                createContainerCmd.withIpv6Address(address).withHostName(address));
-  }
-
-  private String getIpv6AddressForIndex(final int index) {
-    // offset the index by 2 as indexes start at 0, and :1 is the gateway, so the first address
-    // should start at :2
-    return String.format("%s%d", BASE_PART_OF_SUBNET, index + 2);
+        .withEnv("ZEEBE_GATEWAY_NETWORK_ADVERTISEDHOST", hostName)
+        .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", hostName)
+        .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, GATEWAY_IP));
   }
 }
