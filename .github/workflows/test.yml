@@ -210,7 +210,7 @@ jobs:
         with:
           name: Smoke test results for ${{ matrix.os }}
           path: |
-            **/target/surefire-reports/
+            **/target/failsafe-reports/
             **/hs_err_*.log
           retention-days: 7
   java-randomized-tests:
