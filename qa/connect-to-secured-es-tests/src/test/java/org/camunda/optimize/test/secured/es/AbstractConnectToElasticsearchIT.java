@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.test.annotation.DirtiesContext;
 
 import javax.ws.rs.core.Response;
 
@@ -24,9 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-  properties = {"spring.main.allow-bean-definition-overriding=true", INTEGRATION_TESTS + "=true"})
-@Configuration
+@SpringBootTest(
+  webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+  properties = {"spring.main.allow-bean-definition-overriding=true", INTEGRATION_TESTS + "=true"}
+)
+@DirtiesContext
 public abstract class AbstractConnectToElasticsearchIT {
 
   @RegisterExtension
