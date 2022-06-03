@@ -35,7 +35,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
           server-id: camunda-nexus
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
@@ -69,7 +68,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: actions/setup-go@v3
         with:
           go-version: "1.15"
@@ -92,7 +90,7 @@ jobs:
           no-cache: true
           build-args: DISTBALL=dist/target/camunda-zeebe-*-SNAPSHOT.tar.gz
           target: app
-          
+
   notify-if-failed:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest

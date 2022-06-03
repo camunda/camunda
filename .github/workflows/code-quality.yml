@@ -22,7 +22,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
@@ -51,6 +50,5 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
-      - run: mvn -T1C -B -D skipTests -D skipChecks install
+      - run: mvn -B -D skipTests -D skipChecks install
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify

@@ -30,12 +30,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
+      - run: mvn -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "${ZEEBE_TEST_DOCKER_IMAGE}" .
       - run: docker push "${ZEEBE_TEST_DOCKER_IMAGE}"
       - name: Prepare Testcontainers Cloud agent
@@ -71,12 +70,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
+      - run: mvn -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
           mvn -B --no-snapshot-updates
@@ -120,9 +118,8 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - run: >
-          mvn -B -T1C
+          mvn -B
           -D skipTests -D skipChecks
           -am -pl ${{ matrix.project }}
           install
@@ -152,13 +149,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
       - run: >
-          mvn -T1C -B
+          mvn -B
           -D skipTests -D skipChecks
           -am -pl :zeebe-workflow-engine
           install
@@ -195,10 +191,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
       - name: Build relevant modules
         run: >
-          mvn -B -T1C
+          mvn -B
           -D skipTests -D skipChecks "-D maven.javadoc.skip=true"
           -am -pl qa/integration-tests
           install
@@ -215,7 +210,7 @@ jobs:
         with:
           name: Smoke test results for ${{ matrix.os }}
           path: |
-            **/target/surefire-reports/
+            **/target/failsafe-reports/
             **/hs_err_*.log
           retention-days: 7
   java-randomized-tests:
@@ -227,8 +222,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
-      - run: mvn -T1C -B -D skipChecks -D skipTests install
+      - run: mvn -B -D skipChecks -D skipTests install
       - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
@@ -251,8 +245,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
+      - run: mvn -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
