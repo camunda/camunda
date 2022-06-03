@@ -51,6 +51,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.mapping;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
 
 @RequiredArgsConstructor
@@ -92,7 +93,11 @@ public abstract class ReportEvaluationHandler {
           definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, reportEvaluationInfo.getUserId())
             .stream()
             .map(def -> new ReportDataDefinitionDto(
-              def.getKey(), def.getTenants().stream().map(TenantDto::getId).collect(Collectors.toList())
+              def.getKey(),
+              def.getName(),
+              List.of(ALL_VERSIONS),
+              def.getTenants().stream().map(TenantDto::getId).collect(Collectors.toList()),
+              def.getName()
             ))
             .collect(Collectors.toList());
         processReportData.setDefinitions(definitionsForManagementReport);

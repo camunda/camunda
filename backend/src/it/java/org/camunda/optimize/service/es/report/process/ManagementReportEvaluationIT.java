@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -49,6 +51,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -162,8 +165,10 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void allManagementReportsCanBeEvaluated() {
     // given
-    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
-    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
+    final String firstDefName = "first";
+    engineIntegrationExtension.deployAndStartProcess(createSimpleProcessWithName(FIRST_DEF_KEY, firstDefName));
+    final String secondDefName = "second";
+    engineIntegrationExtension.deployAndStartProcess(createSimpleProcessWithName(SECOND_DEF_KEY, secondDefName));
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     importAllEngineEntitiesFromScratch();
     final Map<String, SingleProcessReportDefinitionRequestDto> mgmtReportsByName = getAllManagementReports()
@@ -193,7 +198,11 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
-        assertThat(response.getResult().getData()).isNotEmpty().extracting(HyperMapResultEntryDto::getValue).isNotEmpty();
+        assertThat(response.getResult().getData()).isNotEmpty()
+          .allSatisfy(result -> assertThat(result.getValue()).isNotEmpty())
+          .extracting(HyperMapResultEntryDto::getValue)
+          .allSatisfy(hyperResult -> assertThat(hyperResult).extracting(MapResultEntryDto::getLabel)
+            .containsExactlyInAnyOrder(firstDefName, secondDefName));
       });
     assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(AUTOMATION_CANDIDATES_REPORT_NAME).getId()))
       .satisfies(response -> {
@@ -380,6 +389,16 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       FIRST_DEF_KEY,
       Collections.emptyList()
     );
+  }
+
+  private BpmnModelInstance createSimpleProcessWithName(final String processDefKey, final String processName) {
+    return Bpmn.createExecutableProcess(processDefKey)
+      .camundaVersionTag(VERSION_TAG)
+      .name(processName)
+      .startEvent("startEvent")
+      .userTask("userTask")
+      .endEvent("endEvent")
+      .done();
   }
 
 }
