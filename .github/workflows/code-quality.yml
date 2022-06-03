@@ -52,5 +52,5 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-      - run: mvn -T1C -B -D skipTests -D skipChecks install
+      - run: mvn -B -D skipTests -D skipChecks install
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
