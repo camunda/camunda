@@ -30,7 +30,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
@@ -71,7 +70,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
@@ -120,7 +118,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - run: >
           mvn -B
           -D skipTests -D skipChecks
@@ -152,7 +149,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
@@ -195,7 +191,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
       - name: Build relevant modules
         run: >
           mvn -B
@@ -227,7 +222,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - run: mvn -B -D skipChecks -D skipTests install
       - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
       - name: Archive Test Results
@@ -251,7 +245,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
       - run: mvn -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
