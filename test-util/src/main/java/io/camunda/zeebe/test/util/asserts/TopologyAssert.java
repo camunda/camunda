@@ -26,7 +26,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return new TopologyAssert(actual);
   }
 
-  public final TopologyAssert isComplete(final int clusterSize, final int partitionCount) {
+  public TopologyAssert isComplete(final int clusterSize, final int partitionCount) {
     isNotNull();
 
     final List<BrokerInfo> brokers = actual.getBrokers();
@@ -68,7 +68,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
-  public final TopologyAssert doesNotContainBroker(final int nodeId) {
+  public TopologyAssert doesNotContainBroker(final int nodeId) {
     isNotNull();
 
     final List<Integer> brokers =
@@ -82,7 +82,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
-  public final TopologyAssert hasBrokerSatisfying(final Consumer<BrokerInfo> condition) {
+  public TopologyAssert hasBrokerSatisfying(final Consumer<BrokerInfo> condition) {
     isNotNull();
 
     final List<BrokerInfo> brokers = actual.getBrokers();
@@ -91,7 +91,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
-  public final TopologyAssert hasBrokersCount(final int count) {
+  public TopologyAssert hasBrokersCount(final int count) {
     isNotNull();
 
     if (actual.getBrokers().size() != count) {
