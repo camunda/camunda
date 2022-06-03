@@ -106,7 +106,7 @@ jobs:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
              	"blocks": [
                 {
                   "type": "section",
@@ -119,7 +119,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}\n \\cc @zeebe-medic"
+                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
                   }
                 }
               ]
