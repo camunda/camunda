@@ -11,7 +11,7 @@ COPY docker-notice.txt notice.txt
 RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
 # Operate Image
-FROM openjdk:11-jre
+FROM openjdk:19-ea-slim-buster
 
 EXPOSE 8080
 
