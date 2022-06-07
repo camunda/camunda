@@ -78,8 +78,11 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   private static String buildRootRedirect(final ContainerRequestContext requestContext) {
     final URI baseUri = requestContext.getUriInfo().getBaseUri();
     String redirectUri = baseUri.getScheme() + "://" + baseUri.getHost();
-    if ((baseUri.getScheme().equals("http") && baseUri.getPort() != 80) || (
-      baseUri.getScheme().equals("https") && baseUri.getPort() != 443)) {
+    if (
+      // value is -1 if no port is set, in that case no need to add it
+      baseUri.getPort() != -1 &&
+      (baseUri.getScheme().equals("http") && baseUri.getPort() != 80) ||
+        (baseUri.getScheme().equals("https") && baseUri.getPort() != 443)) {
       redirectUri += ":" + baseUri.getPort();
     }
     return redirectUri;
