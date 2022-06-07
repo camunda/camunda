@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.asserts;
 
 import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import java.util.List;
@@ -100,6 +101,18 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
           count, actual.getBrokers());
     }
 
+    return myself;
+  }
+
+  public TopologyAssert isHealthy() {
+    isNotNull();
+    final var partitions =
+        actual.getBrokers().stream()
+            .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
+            .collect(Collectors.toList());
+    newListAssertInstance(partitions)
+        .as("all partitions are healthy")
+        .allMatch(partition -> partition.getHealth() == PartitionBrokerHealth.HEALTHY);
     return myself;
   }
 }
