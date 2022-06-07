@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.Application;
+import io.camunda.tasklist.es.ElasticsearchTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -51,6 +52,7 @@ import org.springframework.web.context.WebApplicationContext;
       WebSecurityConfig.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
+      ElasticsearchTask.class,
       TasklistProperties.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
