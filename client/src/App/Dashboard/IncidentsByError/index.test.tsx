@@ -16,7 +16,6 @@ import {IncidentsByError} from './index';
 import {
   mockIncidentsByError,
   mockErrorResponse,
-  mockEmptyResponse,
   mockIncidentsByErrorWithBigErrorMessage,
   bigErrorMessage,
 } from './index.setup';
@@ -104,7 +103,7 @@ describe('IncidentsByError', () => {
   it('should display information message when there are no processes', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockEmptyResponse))
+        res.once(ctx.json([]))
       )
     );
 

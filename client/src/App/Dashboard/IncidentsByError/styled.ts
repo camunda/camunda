@@ -6,20 +6,10 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
-import BaseInstancesBar, {Wrapper, Bar} from 'modules/components/InstancesBar';
+import {Bar} from 'modules/components/InstancesBar';
 
 const Li = styled.li`
   margin: 0 10px 10px 0;
-`;
-
-const VersionUl = styled.ul`
-  margin-top: 8px;
-  margin-bottom: 16px;
-`;
-
-const VersionLi = styled.li`
-  margin: 6px 0 0;
-  padding: 0;
 `;
 
 const InstancesBarStyles: ThemedInterpolationFunction = ({theme}) => {
@@ -32,20 +22,4 @@ const InstancesBarStyles: ThemedInterpolationFunction = ({theme}) => {
   `;
 };
 
-const LiInstancesBar = styled(BaseInstancesBar)`
-  ${({theme}) => {
-    return css`
-      ${InstancesBarStyles};
-
-      ${Wrapper} {
-        color: ${theme.colors.incidentsAndErrors};
-      }
-    `;
-  }}
-`;
-
-const VersionLiInstancesBar = styled(BaseInstancesBar)`
-  ${InstancesBarStyles}
-`;
-
-export {Li, VersionUl, VersionLi, LiInstancesBar, VersionLiInstancesBar};
+export {Li, InstancesBarStyles};

@@ -134,3 +134,4 @@ class IncidentsByError extends NetworkReconnectionHandler {
 }
 
 export const incidentsByErrorStore = new IncidentsByError();
+export type {Process};

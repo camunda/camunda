@@ -37,12 +37,12 @@ const mockIncidentsByErrorWithBigErrorMessage = createIncidentsByError([
     errorMessage: bigErrorMessage,
   }),
 ]);
+
 const mockErrorResponse = {error: 'an error occured'};
-const mockEmptyResponse: any = [];
+
 export {
   mockIncidentsByError,
   mockErrorResponse,
-  mockEmptyResponse,
   bigErrorMessage,
   mockIncidentsByErrorWithBigErrorMessage,
 };

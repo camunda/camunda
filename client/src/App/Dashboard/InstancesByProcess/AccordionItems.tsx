@@ -9,7 +9,7 @@ import {getAccordionItemTitle} from './utils/getAccordionItemTitle';
 import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import InstancesBar from 'modules/components/InstancesBar';
 import {VersionList, VersionLi} from './styled';
-import {PanelListItem} from '../PanelListItem';
+import {PanelListItem} from 'modules/components/PanelListItem';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
