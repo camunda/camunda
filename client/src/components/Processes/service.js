@@ -27,3 +27,9 @@ export async function loadManagementDashboard() {
 
   return await response.json();
 }
+
+export function isSuccessful({target, value, isBelow}) {
+  const actualValue = Number(value);
+
+  return isBelow ? target > actualValue : target < actualValue;
+}

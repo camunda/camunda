@@ -13,6 +13,8 @@ import {t} from 'translation';
 import {formatters} from 'services';
 import {Icon, NoDataNotice} from 'components';
 
+import {isSuccessful} from './service';
+
 import './KpiResult.scss';
 
 export default function KpiResult({kpis, displayTip}) {
@@ -29,17 +31,21 @@ export default function KpiResult({kpis, displayTip}) {
   return (
     <div className="KpiResult">
       {kpis?.map(({reportId, reportName, value, target, isBelow, measure}, idx) => {
-        const isSuccessful = isBelow ? target > value : target < value;
         return (
           <div key={idx} className="kpi">
             <b className="title">
               {t('report.label')}: {reportName}
             </b>{' '}
-            <Link to={`/report/${reportId}`} target="_blank">
+            <Link to={`/report/${reportId}/`} target="_blank">
               <Icon type="jump" />
             </Link>
             <div className="reportValues">
-              <span className={classnames({success: isSuccessful}, 'reportValue')}>
+              <span
+                className={classnames(
+                  {success: isSuccessful({target, value, isBelow})},
+                  'reportValue'
+                )}
+              >
                 {t('common.value')}: {formatters[measure](value)}
               </span>
               <span>

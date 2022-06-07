@@ -11,6 +11,8 @@ import classNames from 'classnames';
 import {Icon} from 'components';
 import {t} from 'translation';
 
+import {isSuccessful} from './service';
+
 import './KpiSummary.scss';
 
 export default function KpiSummary({kpis}) {
@@ -29,12 +31,8 @@ export default function KpiSummary({kpis}) {
     );
   }
 
-  const succeededKpis = kpisWithData.filter(({value, target, isBelow}) =>
-    isBelow ? target > value : target < value
-  );
-  const failedKpis = kpisWithData.filter(({value, target, isBelow}) =>
-    isBelow ? target < value : target > value
-  );
+  const succeededKpis = kpisWithData.filter(isSuccessful);
+  const failedKpis = kpisWithData.filter((args) => !isSuccessful(args));
 
   const allSucceeded = succeededKpis.length === kpisWithData.length;
   const allFailed = failedKpis.length === kpisWithData.length;
