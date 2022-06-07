@@ -102,6 +102,17 @@ public interface CreateProcessInstanceCommandStep1 {
     CreateProcessInstanceCommandStep3 variables(Object variables);
 
     /**
+     * Overrides the default start position of the process. Calling this method will make the
+     * process start at the given {@code elementId}, if possible. This method can be called more
+     * than once to simultaneously start ar different elements in different branches of the process
+     *
+     * @param elementId elementId
+     * @return the builder for this command. Call {@link #send()} to complete the command and send *
+     *     it to the broker.
+     */
+    CreateProcessInstanceCommandStep3 startBeforeElement(final String elementId);
+
+    /**
      * When this method is called, the response to the command will be received after the process is
      * completed. The response consists of a set of variables.
      *
