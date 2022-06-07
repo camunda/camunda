@@ -131,6 +131,7 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	client, err = zbc.NewClient(&zbc.ClientConfig{
 		GatewayAddress:      fmt.Sprintf("%s:%s", host, port),
 		CredentialsProvider: credsProvider,
+		UserAgent:           "zeebe-client-zbctl/" + Version,
 	})
 	return err
 }

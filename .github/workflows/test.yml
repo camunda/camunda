@@ -15,19 +15,35 @@ jobs:
   integration-tests:
     name: Integration tests
     runs-on: "n1-standard-32-netssd-preempt"
+    env:
+      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+      TC_CLOUD_CONCURRENCY: 4
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
+      - run: mvn -B -DskipChecks -DskipTests install
+      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "${ZEEBE_TEST_DOCKER_IMAGE}" .
+      - run: docker push "${ZEEBE_TEST_DOCKER_IMAGE}"
+      - name: Prepare Testcontainers Cloud agent
+        if: env.TC_CLOUD_TOKEN != ''
+        run: |
+          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
+          chmod +x agent
+          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
+          ./agent wait
       - run: >
           mvn -B -T2 --no-snapshot-updates
           -D junitThreadCount=12
@@ -54,12 +70,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
+      - run: mvn -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
           mvn -B --no-snapshot-updates
@@ -103,9 +118,8 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - run: >
-          mvn -B -T1C
+          mvn -B
           -D skipTests -D skipChecks
           -am -pl ${{ matrix.project }}
           install
@@ -125,6 +139,7 @@ jobs:
             **/target/surefire-reports/
             **/hs_err_*.log
           retention-days: 7
+          if-no-files-found: ignore
   slow-unit-tests:
     name: Slow unit tests
     runs-on: "n1-standard-8-netssd-preempt"
@@ -134,13 +149,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: stCarolas/setup-maven@v4.3
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
       - run: >
-          mvn -T1C -B
+          mvn -B
           -D skipTests -D skipChecks
           -am -pl :zeebe-workflow-engine
           install
@@ -177,10 +191,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
       - name: Build relevant modules
         run: >
-          mvn -B -T1C
+          mvn -B
           -D skipTests -D skipChecks "-D maven.javadoc.skip=true"
           -am -pl qa/integration-tests
           install
@@ -197,7 +210,7 @@ jobs:
         with:
           name: Smoke test results for ${{ matrix.os }}
           path: |
-            **/target/surefire-reports/
+            **/target/failsafe-reports/
             **/hs_err_*.log
           retention-days: 7
   java-randomized-tests:
@@ -209,8 +222,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
-      - run: mvn -T1C -B -D skipChecks -D skipTests install
+      - run: mvn -B -D skipChecks -D skipTests install
       - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
       - name: Archive Test Results
         uses: actions/upload-artifact@v3
@@ -233,8 +245,17 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
-      - run: mvn -T1C -B -DskipChecks -DskipTests install
+      - name: Check gocompat
+        run: |
+          curl -sL https://github.com/smola/gocompat/releases/download/v0.3.0/gocompat_linux_amd64.tar.gz | tar xzvf - gocompat_linux_amd64
+          PREFIX=github.com/camunda/zeebe/clients/go/v8
+          EXCLUDE=""
+          for file in {internal,cmd/zbctl/internal}/*; do
+            EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
+          done
+          ./gocompat_linux_amd64 compare --go1compat ${EXCLUDE} ./...
+        working-directory: clients/go/
+      - run: mvn -B -DskipChecks -DskipTests install
       - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
@@ -273,6 +294,23 @@ jobs:
             **/target/surefire-reports/
             **/hs_err_*.log
           retention-days: 7
+
+  # Used by bors to check all tests, including the unit test matrix.
+  # New test jobs must be added to the `needs` lists!
+  test-summary:
+    name: Test summary
+    runs-on: ubuntu-latest
+    needs:
+      - integration-tests
+      - exporter-tests
+      - unit-tests
+      - slow-unit-tests
+      - smoke-tests
+      - java-randomized-tests
+      - go-client
+      - java-client
+    steps:
+      - run: exit 0
 
   # We need to upload the event file as an artifact in order to support
   # publishing the results of forked repositories

@@ -10,6 +10,7 @@ jobs:
   tests:
     name: Tests
     uses: ./.github/workflows/test.yml
+    secrets: inherit
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
@@ -34,7 +35,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
           server-id: camunda-nexus
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
@@ -68,7 +68,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
       - uses: actions/setup-go@v3
         with:
           go-version: "1.15"
@@ -91,3 +90,38 @@ jobs:
           no-cache: true
           build-args: DISTBALL=dist/target/camunda-zeebe-*-SNAPSHOT.tar.gz
           target: app
+
+  notify-if-failed:
+    name: Send slack notification on build failure
+    runs-on: ubuntu-latest
+    needs: [tests, deploy-snapshots, deploy-docker-snapshot]
+    if: failure()
+    steps:
+      - id: slack-notify
+        name: Send slack notification
+        uses: slackapi/slack-github-action@v1.19.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
+             	"blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: Build on `main` failed! :alarm:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

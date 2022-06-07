@@ -8,28 +8,16 @@
 package io.camunda.zeebe.exporter.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Collections;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final class BulkResponse {
+public record BulkIndexResponse(boolean errors, List<Item> items) {
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Item(Index index) {}
 
-  private boolean errors;
-  private List<BulkItem> items = Collections.emptyList();
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Index(int status, Error error) {}
 
-  public List<BulkItem> getItems() {
-    return items;
-  }
-
-  public void setItems(final List<BulkItem> items) {
-    this.items = items;
-  }
-
-  public void setErrors(final boolean errors) {
-    this.errors = errors;
-  }
-
-  public boolean hasErrors() {
-    return errors;
-  }
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Error(String type, String reason) {}
 }

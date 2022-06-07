@@ -1,8 +1,7 @@
 status = [
-  "continuous-integration/jenkins/branch",
-  "Smoke tests on macos-latest",
-  "Smoke tests on windows-latest",
-  "Smoke tests on ubuntu-latest"
+    "Test summary",
+    "Java checks",
+    "Go linting"
 ]
 
 required_approvals = 1

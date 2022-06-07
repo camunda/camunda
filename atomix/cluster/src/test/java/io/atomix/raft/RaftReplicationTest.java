@@ -63,8 +63,8 @@ public class RaftReplicationTest {
   @Test
   public void shouldReplicateSnapshotIfEventsNotAvailable() throws Exception {
     // given
-    final var entryCount = 10;
-    final var snapshotIndex = 15;
+    final var entryCount = 20;
+    final var snapshotIndex = 30;
 
     final var leader = raftRule.getLeader().orElseThrow();
     final var follower = raftRule.getFollower().orElseThrow();
