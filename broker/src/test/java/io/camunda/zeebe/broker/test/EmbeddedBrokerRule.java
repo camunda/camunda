@@ -14,7 +14,6 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommand
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.Broker;
@@ -22,14 +21,13 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
@@ -37,6 +35,7 @@ import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +49,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.LangUtil;
 import org.assertj.core.util.Files;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -242,23 +242,23 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       Thread.currentThread().interrupt();
     }
 
-    final EmbeddedGatewayService embeddedGatewayService =
-        broker.getBrokerContext().getEmbeddedGatewayService();
-    if (embeddedGatewayService != null) {
-      final BrokerClient brokerClient = embeddedGatewayService.get().getBrokerClient();
-
-      waitUntil(
-          () -> {
-            final var topology = brokerClient.getTopologyManager().getTopology();
-            if (topology == null) {
-              return false;
-            }
-            final var leader = topology.getLeaderForPartition(1);
-            if (leader < 0) {
-              return false;
-            }
-            return topology.getPartitionHealth(leader, 1) == PartitionHealthStatus.HEALTHY;
-          });
+    if (brokerCfg.getGateway().isEnable()) {
+      try (final var client =
+          ZeebeClient.newClientBuilder()
+              .gatewayAddress(NetUtil.toSocketAddressString(getGatewayAddress()))
+              .usePlaintext()
+              .build()) {
+        Awaitility.await("until we have a complete topology")
+            .untilAsserted(
+                () -> {
+                  final var topology = client.newTopologyRequest().send().join();
+                  TopologyAssert.assertThat(topology)
+                      .isComplete(
+                          brokerCfg.getCluster().getClusterSize(),
+                          brokerCfg.getCluster().getPartitionsCount())
+                      .isHealthy();
+                });
+      }
     }
 
     dataDirectory = broker.getSystemContext().getBrokerConfiguration().getData().getDirectory();
