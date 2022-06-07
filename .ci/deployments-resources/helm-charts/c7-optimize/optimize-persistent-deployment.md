@@ -13,14 +13,14 @@ itself is maintained by the Infrastructure team).
 The environment is split between 2 places:
 * **[Infra-core](https://github.com/camunda/infra-core/blob/stage/camunda-ci/terraform/google/prod/db.tf#L145) repo**: Where you can find the definition of PostgreSQL 
   instance and its access.
-* **[Optimize on-premise Helm Chart](https://github.com/camunda/camunda-optimize/tree/master/.ci/deployments-resources/helm-charts/optimize-onpremise)**:
+* **[Optimize on-premise Helm Chart](https://github.com/camunda/camunda-optimize/tree/master/.ci/deployments-resources/helm-charts/c7-optimize)**:
   Where the Optimize application and ElasticSearch cluster are defined.
   
 ## Optimize On-premise Helm Chart 
 
 ### Intro
 
-The [Optimize on-premise Helm Chart](https://github.com/camunda/camunda-optimize/tree/master/.ci/deployments-resources/helm-charts/optimize-onpremise) is created 
+The [Optimize on-premise Helm Chart](https://github.com/camunda/camunda-optimize/tree/master/.ci/deployments-resources/helm-charts/c7-optimize) is created 
 and configured to deploy Optimize Stage and Persistent environments. It is part of the Optimize project and owned by the 
 Optimize team. It defines the deployment of the Optimize application and the Elasticsearch Cluster.
 

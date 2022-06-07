@@ -14,7 +14,7 @@ spec:
   source:
     helm:
       parameters: []
-    path: .ci/deployments-resources/helm-charts/optimize-onpremise
+    path: .ci/deployments-resources/helm-charts/c7-optimize
     repoURL: https://github.com/camunda/camunda-optimize.git
 
   syncPolicy:

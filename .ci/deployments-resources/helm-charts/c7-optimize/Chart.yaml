@@ -1,5 +1,5 @@
 apiVersion: v2
-name: optimize-onpremise
+name: c7-optimize
 description: A Helm chart to deploy on-permise Optimize stage and persistent environment to the camunda-ci cluster managed by Infrastructure team
 
 # A chart can be either an 'application' or a 'library' chart.
