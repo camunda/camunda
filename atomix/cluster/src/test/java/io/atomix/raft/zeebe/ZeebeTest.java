@@ -15,11 +15,8 @@
  */
 package io.atomix.raft.zeebe;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import com.google.common.base.Stopwatch;
 import io.atomix.raft.RaftCommitListener;
@@ -148,7 +145,7 @@ public class ZeebeTest {
     server.snapshot().join();
 
     // then
-    assertTrue(helper.containsIndexed(server, firstAppended));
+    assertThat(helper.containsIndexed(server, firstAppended)).isTrue();
   }
 
   @Test
@@ -169,13 +166,13 @@ public class ZeebeTest {
     server.snapshot().join();
 
     // then
-    assertFalse(helper.containsIndexed(server, firstAppended));
-    assertTrue(helper.containsIndexed(server, appended));
+    assertThat(helper.containsIndexed(server, firstAppended)).isFalse();
+    assertThat(helper.containsIndexed(server, appended)).isTrue();
   }
 
   @Test
   public void shouldFailover() {
-    assumeTrue(nodes.size() > 1);
+    assumeThat(nodes.size() > 1).isTrue();
 
     // given
     final int partitionId = 1;
@@ -189,21 +186,20 @@ public class ZeebeTest {
     originalLeader.start(nodes).join();
 
     // then
-    assertNotEquals(originalLeader, helper.awaitLeader(partitionId));
-    assertEquals(newLeader, helper.awaitLeader(partitionId));
+    assertThat(helper.awaitLeader(partitionId)).isNotEqualTo(originalLeader).isEqualTo(newLeader);
   }
 
   @SuppressWarnings("squid:S2699") // awaitAllContain is the assert here
   @Test
   public void shouldAppendAllEntriesEvenWithFollowerFailures() {
-    assumeTrue(nodes.size() > 1);
+    assumeThat(nodes.size() > 1).isTrue();
 
     // given
     final int partitionId = 1;
     final ZeebeTestNode leader = helper.awaitLeader(partitionId);
     final ZeebeLogAppender appender = helper.awaitLeaderAppender(partitionId);
     final List<ZeebeTestNode> followers =
-        nodes.stream().filter(node -> !node.equals(leader)).collect(Collectors.toList());
+        nodes.stream().filter(node -> !node.equals(leader)).toList();
     final List<IndexedRaftLogEntry> entries = new ArrayList<>();
 
     // when
