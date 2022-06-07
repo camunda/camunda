@@ -14,15 +14,12 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 
-import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.tasklist.property.TasklistProperties;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,12 +35,7 @@ public class IdentityController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired protected TasklistProperties tasklistProperties;
-
-  @Autowired private BeanFactory beanFactory;
-
-  @Autowired private Identity identity;
-
+  @Autowired private IdentityService identityService;
   /**
    * Initiates user login - the user will be redirected to Camunda Account
    *
@@ -54,12 +46,7 @@ public class IdentityController {
       value = LOGIN_RESOURCE,
       method = {RequestMethod.GET, RequestMethod.POST})
   public String login(final HttpServletRequest req) {
-    final String authorizeUrl =
-        identity
-            .authentication()
-            .authorizeUriBuilder(IdentityAuthentication.getRedirectURI(req, IDENTITY_CALLBACK_URI))
-            .build()
-            .toString();
+    final String authorizeUrl = identityService.getRedirectUrl(req);
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
   }
@@ -86,8 +73,7 @@ public class IdentityController {
         authCodeDto.getCode());
     try {
       final IdentityAuthentication authentication =
-          beanFactory.getBean(IdentityAuthentication.class);
-      authentication.authenticate(req, authCodeDto);
+          identityService.getAuthenticationFor(req, authCodeDto);
       SecurityContextHolder.getContext().setAuthentication(authentication);
       redirectToPage(req, res);
     } catch (Exception iae) {
@@ -127,9 +113,7 @@ public class IdentityController {
   public void logout(HttpServletRequest req, HttpServletResponse res) throws IOException {
     logger.debug("logout user");
     try {
-      final IdentityAuthentication authentication =
-          (IdentityAuthentication) SecurityContextHolder.getContext().getAuthentication();
-      identity.authentication().revokeToken(authentication.getTokens().getRefreshToken());
+      identityService.logout();
     } catch (Exception e) {
       logger.error("An error occurred in logout process", e);
     }

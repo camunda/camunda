@@ -6,31 +6,24 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.IDENTITY_CALLBACK_URI;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
-import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.identity.sdk.exception.IdentityException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
-import javax.servlet.http.HttpServletRequest;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
-import net.jodah.failsafe.function.CheckedSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -42,17 +35,33 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class IdentityAuthentication extends AbstractAuthenticationToken {
 
-  public static final int DELAY_IN_MILLISECONDS = 500;
-  public static final int MAX_ATTEMPTS = 10;
   public static final String READ_PERMISSION_VALUE = "read:*";
   public static final String WRITE_PERMISSION_VALUE = "write:*";
-  protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired private transient Identity identity;
+  private transient Logger logger;
+  private transient Identity identity;
 
-  private AccessToken accessToken;
+  @Value("${" + TasklistProperties.PREFIX + ".identity.issuer.url}")
+  private String issuerUrl;
+
+  @Value("${" + TasklistProperties.PREFIX + ".identity.issuer.backend.url}")
+  private String issuerBackendUrl;
+
+  @Value("${" + TasklistProperties.PREFIX + ".identity.client.id}")
+  private String clientId;
+
+  @Value("${" + TasklistProperties.PREFIX + ".identity.client.secret}")
+  private String clientSecret;
+
+  @Value("${" + TasklistProperties.PREFIX + ".identity.audience}")
+  private String audience;
+
   private Tokens tokens;
-  private UserDetails userDetails;
+  private String id;
+  private String name;
+  private List<String> permissions;
+  private String subject;
+  private Date expires;
 
   public IdentityAuthentication() {
     super(null);
@@ -65,7 +74,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
 
   @Override
   public Object getPrincipal() {
-    return accessToken.getToken().getSubject();
+    return subject;
   }
 
   public Tokens getTokens() {
@@ -73,34 +82,34 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   }
 
   private boolean hasExpired() {
-    final Date expires = accessToken.getToken().getExpiresAt();
     return expires == null || expires.before(new Date());
   }
 
   private boolean hasRefreshTokenExpired() {
-    final DecodedJWT refreshToken = identity.authentication().decodeJWT(tokens.getRefreshToken());
-    final Date expires = refreshToken.getExpiresAt();
-    return expires == null || expires.before(new Date());
+    final DecodedJWT refreshToken =
+        getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
+    final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
+    return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
   }
 
   @Override
   public String getName() {
-    return userDetails.getName().orElse("");
+    return name;
   }
 
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {
-      logger.info("Access token is expired");
+      getLogger().info("Access token is expired");
       if (hasRefreshTokenExpired()) {
         setAuthenticated(false);
-        logger.info("No refresh token available. Authentication is invalid.");
+        getLogger().info("No refresh token available. Authentication is invalid.");
       } else {
-        logger.info("Get a new access token by using refresh token");
+        getLogger().info("Get a new access token by using refresh token");
         try {
           renewAccessToken();
         } catch (Exception e) {
-          logger.error("Renewing access token failed with exception", e);
+          getLogger().error("Renewing access token failed with exception", e);
           setAuthenticated(false);
         }
       }
@@ -109,11 +118,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   }
 
   public String getId() {
-    return userDetails.getId();
+    return id;
   }
 
   private boolean hasPermission(String permissionName) {
-    return accessToken.hasPermissions(Set.of(permissionName));
+    return permissions.containsAll(Set.of(permissionName));
   }
 
   private boolean hasReadPermission() {
@@ -132,72 +141,63 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     if (hasWritePermission()) {
       permissions.add(Permission.WRITE);
     }
-
     return permissions;
   }
 
-  public void authenticate(final HttpServletRequest req, AuthCodeDto authCodeDto) {
-    authenticate(retrieveTokens(req, authCodeDto));
-  }
-
-  private void authenticate(final Tokens tokens) {
-    this.tokens = tokens;
-    accessToken = identity.authentication().verifyToken(tokens.getAccessToken());
-    userDetails = accessToken.getUserDetails();
+  public void authenticate(final Tokens tokens) {
+    if (tokens != null) {
+      this.tokens = tokens;
+    }
+    final AccessToken accessToken =
+        getIdentity().authentication().verifyToken(this.tokens.getAccessToken());
+    final UserDetails userDetails = accessToken.getUserDetails();
+    id = userDetails.getId();
+    name = userDetails.getName().orElse("");
+    permissions = accessToken.getPermissions();
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
     }
-    setAuthenticated(true);
+    subject = accessToken.getToken().getSubject();
+    expires = accessToken.getToken().getExpiresAt();
+    if (!hasExpired()) {
+      setAuthenticated(true);
+    }
   }
 
   private void renewAccessToken() {
     authenticate(renewTokens(tokens.getRefreshToken()));
   }
 
-  private Tokens retrieveTokens(final HttpServletRequest req, final AuthCodeDto authCodeDto) {
-    return requestWithRetry(
-        () ->
-            identity
-                .authentication()
-                .exchangeAuthCode(authCodeDto, getRedirectURI(req, IDENTITY_CALLBACK_URI)));
-  }
-
   private Tokens renewTokens(final String refreshToken) {
-    return requestWithRetry(() -> identity.authentication().renewToken(refreshToken));
+    return IdentityService.requestWithRetry(
+        () -> getIdentity().authentication().renewToken(refreshToken));
   }
 
-  private <T> T requestWithRetry(final CheckedSupplier<T> operation) {
-    final RetryPolicy<T> retryPolicy =
-        new RetryPolicy<T>()
-            .handle(IdentityException.class)
-            .withDelay(Duration.ofMillis(DELAY_IN_MILLISECONDS))
-            .withMaxAttempts(MAX_ATTEMPTS);
-    return Failsafe.with(retryPolicy).get(operation);
+  // Can't use Autowired for Identity and Logger due to serialization
+  private Identity getIdentity() {
+    if (identity == null) {
+      identity =
+          new Identity(
+              new IdentityConfiguration(
+                  issuerUrl, issuerBackendUrl, clientId, clientSecret, audience));
+    }
+    return identity;
   }
 
-  public static String getRedirectURI(final HttpServletRequest req, final String redirectTo) {
-    String redirectUri = req.getScheme() + "://" + req.getServerName();
-    if ((req.getScheme().equals("http") && req.getServerPort() != 80)
-        || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
-      redirectUri += ":" + req.getServerPort();
+  private Logger getLogger() {
+    if (logger == null) {
+      logger = LoggerFactory.getLogger(this.getClass());
     }
-    final String result;
-    if (contextPathIsUUID(req.getContextPath())) {
-      final String clusterId = req.getContextPath().replace("/", "");
-      result = redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
-    } else {
-      result = redirectUri + req.getContextPath() + redirectTo;
-    }
-    return result;
+    return logger;
   }
 
-  protected static boolean contextPathIsUUID(String contextPath) {
-    try {
-      UUID.fromString(contextPath.replace("/", ""));
-      return true;
-    } catch (Exception e) {
-      // Assume it isn't a UUID
-      return false;
-    }
+  public IdentityAuthentication setExpires(final Date expires) {
+    this.expires = expires;
+    return this;
+  }
+
+  public IdentityAuthentication setPermissions(final List<String> permissions) {
+    this.permissions = permissions;
+    return this;
   }
 }

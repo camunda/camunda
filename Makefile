@@ -27,6 +27,7 @@ env-identity-up:
        CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist \
        CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
        CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api \
+       CAMUNDA_TASKLIST_PERSISTENTSESSIONSENABLED=true \
 	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
 
 .PHONY: env-down
