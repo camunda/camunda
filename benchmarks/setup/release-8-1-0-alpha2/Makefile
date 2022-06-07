@@ -1,4 +1,4 @@
-namespace ?= release-8-1-0-alpha1
+namespace ?= release-8-1-0-alpha2
 
 .PHONY: all
 all: zeebe starter timer simpleStarter worker

@@ -1,6 +1,6 @@
 global:
   image:
-    tag: 8.1.0-alpha1
+    tag: 8.1.0-alpha2
     pullPolicy: Always
 
 zeebe:
@@ -134,13 +134,13 @@ retentionPolicy:
 operate:
   enabled: false
 
-optimize:
-  enabled: false
-
 tasklist:
   enabled: false
 
 identity:
+  enabled: false
+
+optimize:
   enabled: false
 
 # ELASTIC

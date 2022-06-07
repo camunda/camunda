@@ -16,12 +16,12 @@ spec:
     spec:
       containers:
       - name: worker
-        image: gcr.io/zeebe-io/worker:8.1.0-alpha1
+        image: gcr.io/zeebe-io/worker:8.1.0-alpha2
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
             value: >-
-              -Dapp.brokerUrl=release-8-1-0-alpha1-zeebe-gateway:26500
+              -Dapp.brokerUrl=release-8-1-0-alpha2-zeebe-gateway:26500
               -Dzeebe.client.requestTimeout=62000
               -Dapp.worker.capacity=120
               -Dapp.worker.pollingDelay=1ms
@@ -42,7 +42,7 @@ kind: Service
 metadata:
   labels:
     app: zeebe
-    app.kubernetes.io/instance: release-8-1-0-alpha1
+    app.kubernetes.io/instance: release-8-1-0-alpha2
     app.kubernetes.io/name: zeebe-cluster
   name: worker
 spec:
