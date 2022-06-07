@@ -18,7 +18,6 @@ package io.atomix.raft.zeebe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-import com.google.common.base.Stopwatch;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -51,8 +50,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public class ZeebeTest {
@@ -67,8 +64,6 @@ public class ZeebeTest {
   @Parameter(1)
   public Collection<Function<TemporaryFolder, ZeebeTestNode>> nodeSuppliers;
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final Stopwatch stopwatch = Stopwatch.createUnstarted();
   private final TestAppender appenderWrapper = new TestAppender();
 
   private Collection<ZeebeTestNode> nodes;
@@ -97,21 +92,13 @@ public class ZeebeTest {
 
   @Before
   public void setUp() throws Exception {
-    stopwatch.reset();
     nodes = buildNodes();
     helper = new ZeebeTestHelper(nodes);
     start();
-
-    stopwatch.start();
   }
 
   @After
   public void tearDown() throws Exception {
-    if (stopwatch.isRunning()) {
-      stopwatch.stop();
-    }
-
-    logger.info("Test run time: {}", stopwatch.toString());
     stop();
   }
 
@@ -220,6 +207,7 @@ public class ZeebeTest {
     }
   }
 
+  @SuppressWarnings("squid:S2699") // helper::await asserts
   @Test
   public void shouldNotifyCommitListeners() {
     // given
