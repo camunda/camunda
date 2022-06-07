@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -244,15 +243,13 @@ public class ZeebeTest {
     // when - then
     for (int i = 0; i < 5; i++) {
       final IndexedRaftLogEntry entry = appenderWrapper.append(appender, i, i, getIntAsBytes(i));
-      final int expectedCount = i + 1;
       helper.awaitAllContains(nodes, partitionId, entry);
 
       for (final ZeebeTestNode node : nodes) {
         final CommitListener listener = listeners.get(node);
         // it may take a little bit before the listener is called as this is done
         // asynchronously
-        helper.await(() -> listener.calledCount.get() == expectedCount);
-        assertEquals(entry.index(), listener.lastCommitted.get());
+        helper.await(() -> listener.lastCommitted.get() == entry.index());
       }
     }
   }
@@ -281,12 +278,10 @@ public class ZeebeTest {
   static class CommitListener implements RaftCommitListener {
 
     private final AtomicLong lastCommitted = new AtomicLong();
-    private final AtomicInteger calledCount = new AtomicInteger(0);
 
     @Override
     public void onCommit(final long index) {
       lastCommitted.set(index);
-      calledCount.incrementAndGet();
     }
   }
 }
