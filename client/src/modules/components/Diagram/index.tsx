@@ -34,7 +34,7 @@ const Diagram: React.FC<Props> = ({
 
   function getViewer() {
     if (viewerRef.current === null) {
-      viewerRef.current = new BpmnJS(onFlowNodeSelection);
+      viewerRef.current = new BpmnJS();
     }
     return viewerRef.current;
   }
@@ -57,6 +57,12 @@ const Diagram: React.FC<Props> = ({
 
     renderDiagram();
   }, [xml, selectableFlowNodes, selectedFlowNodeId, overlaysData, viewer]);
+
+  useEffect(() => {
+    if (onFlowNodeSelection !== undefined) {
+      viewer.onFlowNodeSelection = onFlowNodeSelection;
+    }
+  }, [viewer, onFlowNodeSelection]);
 
   useEffect(() => {
     return () => {

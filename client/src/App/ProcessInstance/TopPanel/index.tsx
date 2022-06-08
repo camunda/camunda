@@ -102,7 +102,9 @@ const TopPanel: React.FC<Props> = observer(() => {
 
   const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {processInstance} = processInstanceDetailsStore.state;
-  const stateOverlays = diagramOverlaysStore.state.overlays[OVERLAY_TYPE];
+  const stateOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE
+  );
   const {
     state: {status, diagramModel, xml},
   } = processInstanceDetailsDiagramStore;

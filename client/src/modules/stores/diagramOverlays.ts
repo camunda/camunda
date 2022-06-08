@@ -11,14 +11,15 @@ type Overlay = {
   payload: unknown;
   container: HTMLElement;
   flowNodeId: string;
+  type: string;
 };
 
 type State = {
-  overlays: {[type: string]: Overlay[] | undefined};
+  overlays: Overlay[];
 };
 
 const DEFAULT_STATE: State = {
-  overlays: {},
+  overlays: [],
 };
 
 class DiagramOverlays {
@@ -28,30 +29,8 @@ class DiagramOverlays {
     makeAutoObservable(this);
   }
 
-  addOverlay = (type: string, overlay: Overlay) => {
-    if (this.state.overlays[type] === undefined) {
-      this.state.overlays[type] = [];
-    }
-
-    this.state.overlays[type]!.push(overlay);
-  };
-
-  removeOverlay = (type: string, flowNodeId: string) => {
-    if (this.state.overlays[type] === undefined) {
-      return;
-    }
-
-    const index = this.state.overlays[type]!.findIndex(
-      (overlay) => overlay.flowNodeId === flowNodeId
-    );
-
-    if (index >= 0) {
-      this.state.overlays[type]!.splice(index, 1);
-    }
-
-    if (this.state.overlays[type]!.length === 0) {
-      delete this.state.overlays[type];
-    }
+  addOverlay = (overlay: Overlay) => {
+    this.state.overlays.push(overlay);
   };
 
   reset = () => {

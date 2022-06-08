@@ -37,6 +37,7 @@ const mockedModules: {[module: string]: any} = {
       document.body.appendChild(children);
     }),
     remove: jest.fn(),
+    clear: jest.fn(),
   },
 };
 

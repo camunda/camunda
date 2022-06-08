@@ -22,34 +22,24 @@ describe('diagramOverlaysStore', () => {
   it('should add and remove overlays ', async () => {
     const {container} = render(<div />);
 
-    const startEventOverlay = createStartEventOverlay(container);
-    const taskOverlay = createTaskOverlay(container);
+    const startEventOverlay = createStartEventOverlay(container, OVERLAY_TYPE);
+    const taskOverlay = createTaskOverlay(container, OVERLAY_TYPE);
 
-    expect(diagramOverlaysStore.state.overlays).toEqual({});
+    expect(diagramOverlaysStore.state.overlays).toEqual([]);
 
-    diagramOverlaysStore.addOverlay(OVERLAY_TYPE, startEventOverlay);
+    diagramOverlaysStore.addOverlay(startEventOverlay);
 
-    expect(diagramOverlaysStore.state.overlays).toEqual({
-      [OVERLAY_TYPE]: [startEventOverlay],
-    });
+    expect(diagramOverlaysStore.state.overlays).toEqual([startEventOverlay]);
 
-    diagramOverlaysStore.addOverlay(OVERLAY_TYPE, taskOverlay);
+    diagramOverlaysStore.addOverlay(taskOverlay);
 
-    expect(diagramOverlaysStore.state.overlays).toEqual({
-      [OVERLAY_TYPE]: [startEventOverlay, taskOverlay],
-    });
+    expect(diagramOverlaysStore.state.overlays).toEqual([
+      startEventOverlay,
+      taskOverlay,
+    ]);
 
-    diagramOverlaysStore.removeOverlay(
-      OVERLAY_TYPE,
-      startEventOverlay.flowNodeId
-    );
+    diagramOverlaysStore.reset();
 
-    expect(diagramOverlaysStore.state.overlays).toEqual({
-      [OVERLAY_TYPE]: [taskOverlay],
-    });
-
-    diagramOverlaysStore.removeOverlay(OVERLAY_TYPE, taskOverlay.flowNodeId);
-
-    expect(diagramOverlaysStore.state.overlays).toEqual({});
+    expect(diagramOverlaysStore.state.overlays).toEqual([]);
   });
 });

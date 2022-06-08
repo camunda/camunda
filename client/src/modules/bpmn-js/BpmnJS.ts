@@ -65,12 +65,22 @@ class BpmnJS {
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
   #selectedFlowNodeId?: string;
-  #onFlowNodeSelection?: OnFlowNodeSelection;
+  onFlowNodeSelection?: OnFlowNodeSelection;
   #overlaysData: OverlayData[] = [];
 
-  constructor(onFlowNodeSelection?: OnFlowNodeSelection) {
-    this.#onFlowNodeSelection = onFlowNodeSelection;
-  }
+  import = async (xml: string) => {
+    // Cleanup before importing
+    this.#navigatedViewer!.off('element.click', this.#handleElementClick);
+    this.#overlaysData = [];
+    this.#selectableFlowNodes = [];
+    this.#selectedFlowNodeId = undefined;
+
+    await this.#navigatedViewer!.importXML(xml);
+
+    // Initialize after importing
+    this.zoomReset();
+    this.#navigatedViewer!.on('element.click', this.#handleElementClick);
+  };
 
   render = async (
     container: HTMLElement,
@@ -86,18 +96,8 @@ class BpmnJS {
     if (this.#theme !== currentTheme.state.selectedTheme || this.#xml !== xml) {
       this.#theme = currentTheme.state.selectedTheme;
 
-      // Cleanup before importing
-      this.#navigatedViewer!.off('element.click', this.#handleElementClick);
-      this.#selectableFlowNodes = [];
-      this.#selectedFlowNodeId = undefined;
-      this.#overlaysData = [];
-
-      await this.#navigatedViewer!.importXML(xml);
-
-      // Initialize after importing
       this.#xml = xml;
-      this.zoomReset();
-      this.#navigatedViewer!.on('element.click', this.#handleElementClick);
+      await this.import(xml);
     }
 
     this.#themeChangeReactionDisposer?.();
@@ -142,11 +142,10 @@ class BpmnJS {
     // handle overlays
     if (!isEqual(this.#overlaysData, overlaysData)) {
       this.#overlaysData = overlaysData;
+      diagramOverlaysStore.reset();
+      this.#removeOverlays();
 
       overlaysData.forEach(({payload, flowNodeId, position, type}) => {
-        diagramOverlaysStore.removeOverlay(type, flowNodeId);
-        this.#detachOverlay(type, flowNodeId);
-
         const container = document.createElement('div');
 
         this.#attachOverlay({
@@ -156,10 +155,11 @@ class BpmnJS {
           type,
         });
 
-        diagramOverlaysStore.addOverlay(type, {
+        diagramOverlaysStore.addOverlay({
           container,
           payload,
           flowNodeId,
+          type,
         });
       });
     }
@@ -201,8 +201,8 @@ class BpmnJS {
     });
   };
 
-  #detachOverlay = (type: string, elementId: string) => {
-    this.#navigatedViewer?.get('overlays')?.remove({type, elementId});
+  #removeOverlays = () => {
+    this.#navigatedViewer?.get('overlays')?.clear();
   };
 
   #removeMarker = (elementId: string, className: string) => {
@@ -226,9 +226,9 @@ class BpmnJS {
       this.#selectableFlowNodes.includes(flowNode.id) &&
       flowNode.id !== this.#selectedFlowNodeId
     ) {
-      this.#onFlowNodeSelection?.(flowNode.id, isMultiInstance(flowNode));
+      this.onFlowNodeSelection?.(flowNode.id, isMultiInstance(flowNode));
     } else if (this.#selectedFlowNodeId !== undefined) {
-      this.#onFlowNodeSelection?.(undefined);
+      this.onFlowNodeSelection?.(undefined);
     }
   };
 

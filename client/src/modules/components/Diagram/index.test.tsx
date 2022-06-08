@@ -54,7 +54,7 @@ describe('<Diagram />', () => {
           },
         ]}
       >
-        {diagramOverlaysStore.state.overlays[OVERLAY_TYPE]?.map(
+        {diagramOverlaysStore.state.overlays.map(
           ({container, payload, flowNodeId}) => (
             <Overlay key={flowNodeId} container={container} data={payload} />
           )
@@ -66,9 +66,7 @@ describe('<Diagram />', () => {
       wrapper: ThemeProvider,
     });
 
-    await waitFor(() => {
-      return diagramOverlaysStore.state.overlays[OVERLAY_TYPE] !== undefined;
-    });
+    await waitFor(() => diagramOverlaysStore.state.overlays.length > 0);
 
     rerender(<DiagramComponent />);
 
