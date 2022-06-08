@@ -19,9 +19,9 @@ deploy_arguments="--dest-namespace ${APP_NAME} \
     --upsert"
 
 
-if [[ "${APP_NAME}" == "persistent" ]];
+if [[ "${APP_NAME}" == "optimize-persistent" ]];
 then
-  argocd app create $deploy_arguments $persistent_deploy_arguments --revision master --helm-set git.branch=master \
+  argocd app create $deploy_arguments --revision master --helm-set git.branch=master \
   --helm-set env=persistent
 else
   argocd app create $deploy_arguments  --revision ${REVISION} --helm-set git.branch=${REVISION}
