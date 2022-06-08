@@ -42,4 +42,8 @@ public final class ActorFutureSubscription implements ActorSubscription {
   public boolean isRecurring() {
     return false;
   }
+
+  ActorFuture<?> getFuture() {
+    return future;
+  }
 }

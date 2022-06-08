@@ -66,6 +66,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     this.taskScheduler = taskScheduler;
   }
 
+  ActorMetrics getActorMetrics() {
+    return actorMetrics;
+  }
+
   private void doWork() {
     submittedCallbacks.drain(this);
 
@@ -80,6 +84,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       try (final var timer = actorMetrics.startExecutionTimer(actorName)) {
         executeCurrentTask();
       }
+      actorMetrics.updateJobQueueLength(actorName, currentTask.estimateQueueLength());
       actorMetrics.countExecution(actorName);
     } else {
       idleStrategy.onIdle();

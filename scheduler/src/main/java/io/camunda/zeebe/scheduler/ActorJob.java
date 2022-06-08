@@ -31,8 +31,10 @@ public final class ActorJob {
   private boolean isDoneCalled;
   private ActorFuture resultFuture;
   private ActorSubscription subscription;
+  private long scheduledAt = -1;
 
   public void onJobAddedToTask(final ActorTask task) {
+    scheduledAt = System.nanoTime();
     actor = task.actor;
     this.task = task;
     schedulingState = TaskSchedulingState.QUEUED;
@@ -40,6 +42,7 @@ public final class ActorJob {
 
   void execute(final ActorThread runner) {
     actorThread = runner;
+    observeSchedulingLatency(runner.getActorMetrics());
     try {
       invoke();
 
@@ -59,7 +62,22 @@ public final class ActorJob {
         schedulingState = TaskSchedulingState.TERMINATED;
       } else {
         schedulingState = TaskSchedulingState.QUEUED;
+        scheduledAt = System.nanoTime();
       }
+    }
+  }
+
+  private void observeSchedulingLatency(final ActorMetrics metrics) {
+    final var now = System.nanoTime();
+    if (subscription instanceof ActorFutureSubscription s
+        && s.getFuture() instanceof CompletableActorFuture<?> f) {
+      final var subscriptionCompleted = f.getCompletedAt();
+      metrics.observeJobSchedulingLatency(now - subscriptionCompleted, "Future");
+    } else if (subscription instanceof TimerSubscription s) {
+      final var timerExpired = s.getTimerExpiredAt();
+      metrics.observeJobSchedulingLatency(now - timerExpired, "Timer");
+    } else if (subscription == null && scheduledAt != -1) {
+      metrics.observeJobSchedulingLatency(now - scheduledAt, "None");
     }
   }
 
@@ -97,6 +115,7 @@ public final class ActorJob {
   /** used to recycle the job object */
   void reset() {
     schedulingState = TaskSchedulingState.NOT_SCHEDULED;
+    scheduledAt = -1;
 
     actor = null;
 

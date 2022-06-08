@@ -527,6 +527,14 @@ public class ActorTask {
     actor.onActorFailed();
   }
 
+  public int estimateQueueLength() {
+    if (fastLaneJobs instanceof ClosedQueue || submittedJobs instanceof ClosedQueue) {
+      return 0;
+    }
+    // TODO: In theory this could overflow. We could consider using a saturating add using a long
+    return fastLaneJobs.size() + submittedJobs.size();
+  }
+
   /** Describes an actor's scheduling state */
   public enum TaskSchedulingState {
     NOT_SCHEDULED,
