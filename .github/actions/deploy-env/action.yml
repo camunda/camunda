@@ -4,13 +4,6 @@ name: Deploy
 description: Deploys a Optimize stage and persistent environments.
 
 inputs:
-  step:
-    description: >-
-      Indicates which step of the Environment lifecycle should be executed.
-      Values: start (default), stop
-    required: false
-    default: start
-
   deployment_id:
     description: >-
       Identifier for this deployment. Could look like "coffee-and-cigarettes" or "pr-1337".
@@ -91,11 +84,7 @@ runs:
     - name: Determine APP_NAME
       shell: bash
       run: |-
-        if [[ "${{ inputs.step}}" = "stop" ]]; then
-          APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
-        else
-          APP_NAME="${{ inputs.deployment_id }}"
-        fi
+        APP_NAME="optimize-${{ inputs.deployment_id }}"
         echo "APP_NAME=${APP_NAME}" >> ${GITHUB_ENV}
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
@@ -105,7 +94,6 @@ runs:
       # Create a GitHub deployment that points to the URL we're going to deploy to.
       # If a Pull Request exists, it will show the status of this deployment.
     - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
-      if: ${{ inputs.step == 'start'}}
       name: Create GitHub deployment
       id: deployment
       with:
@@ -114,32 +102,25 @@ runs:
         env: ${{ env.APP_NAME }}
     - name: Deploy
       shell: bash
-      if: ${{ inputs.step == 'start'}}
       run: >-
-        argocd app create
-        --dest-namespace optimize-${{ env.APP_NAME }}
-        --file .ci/deployments-resources/argo/application.yml
-        --helm-set optimize.image.tag=${{ inputs.docker_tag }}
-        --helm-set optimize.image.repository="gcr.io/ci-30-162810/camunda-optimize"
-        --helm-set cambpm.image.tag=${{ inputs.cambpm_version }}
-        --helm-set elasticsearch.image.tag=${{ inputs.es_version }}
-        --helm-set git.branch=${{ inputs.revision }}
-        --helm-set global.labels.app=${{ env.APP_NAME }}
-        --name optimize-${{ env.APP_NAME }}
-        --project optimize-previews
-        --revision ${{ inputs.revision }}
-        --upsert
+        .github/actions/deploy-env/deploy_script.sh
         
-        argocd app sync optimize-${{ env.APP_NAME }} --async --force || true
+        argocd app sync ${{ env.APP_NAME }} --async --force || true
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
         ARGOCD_OPTS: "--grpc-web"
         ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+        APP_NAME: ${{ env.APP_NAME }}
+        DOCKER_TAG: ${{ inputs.docker_tag }}
+        CAMBPM_VERSION: ${{ inputs.cambpm_version }}
+        ES_VERSION: ${{ inputs.es_version }}
+        REVISION: ${{ inputs.revision }}
+        SHA: ${{ github.sha }}
     - name: Wait for sync (up to 15 minutes)
       shell: bash
       run: |-
         echo "::group::wait for sync"
-        argocd app wait optimize-${{ env.APP_NAME }} --timeout 900 ${{ inputs.step != 'start' && '--sync' || '--health --sync' }}
+        argocd app wait ${{ env.APP_NAME }} --timeout 900 --health --sync
         echo "::endgroup::"
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
@@ -151,7 +132,7 @@ runs:
     - name: Update branch deployment status
       # When running the "start" step, `always()` ensures that the deployment status
       # is updated regardless of previous steps failing.
-      if: ${{ inputs.step == 'start' && always() }}
+      if: always()
       uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
       with:
         step: finish
@@ -159,4 +140,3 @@ runs:
         status: ${{ job.status }}
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
         env_url: https://${{ inputs.deployment_id }}.optimize.camunda.cloud
-      # When tearing down the deployment, also deactivate GitHub Deployment environment

@@ -13,6 +13,8 @@ import TemplateModal from './TemplateModal';
 
 import heatmapImg from './images/heatmap.png';
 import durationImg from './images/duration.png';
+import durationProgress from './images/durationProgress.png';
+import percentageProgress from './images/percentageProgress.png';
 import tableImg from './images/table.png';
 import chartImg from './images/chart.png';
 
@@ -27,6 +29,69 @@ export default function ReportTemplateModal({onClose}) {
     {
       name: 'templatesGroup',
       templates: [
+        {
+          name: 'p75Duration',
+          img: durationProgress,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['duration']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              aggregationTypes: [
+                {
+                  type: 'percentile',
+                  value: 75,
+                },
+              ],
+              precision: 1,
+              targetValue: {
+                active: true,
+                isKpi: true,
+                durationProgress: {
+                  target: {
+                    unit: 'hours',
+                    value: '24',
+                    isBelow: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          name: 'percentSLAMet',
+          img: percentageProgress,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['percentage']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              targetValue: {
+                active: true,
+                isKpi: true,
+                countProgress: {
+                  baseline: '0',
+                  target: '99',
+                },
+              },
+            },
+            filter: [
+              {
+                type: 'processInstanceDuration',
+                data: {
+                  value: 7,
+                  unit: 'days',
+                  operator: '<',
+                  includeNull: false,
+                },
+                filterLevel: 'instance',
+                appliedTo: ['all'],
+              },
+            ],
+          },
+        },
         {
           name: 'chart',
           img: chartImg,
@@ -56,19 +121,6 @@ export default function ReportTemplateModal({onClose}) {
           },
         },
         {
-          name: 'number',
-          img: durationImg,
-          disabled: (definitions) => definitions.length === 0,
-          config: {
-            view: {entity: 'processInstance', properties: ['duration']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
-            configuration: {
-              precision: 3,
-            },
-          },
-        },
-        {
           name: 'table',
           img: tableImg,
           disabled: (definitions) => definitions.length === 0,
@@ -80,6 +132,109 @@ export default function ReportTemplateModal({onClose}) {
               xLabel: t('report.groupBy.userTasks'),
               yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
             },
+          },
+        },
+        {
+          name: 'number',
+          img: durationImg,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['duration']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              precision: 2,
+            },
+          },
+        },
+        {
+          name: 'percentSuccess',
+          img: percentageProgress,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['percentage']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              targetValue: {
+                active: true,
+                isKpi: true,
+                countProgress: {
+                  baseline: '0',
+                  target: '70',
+                },
+              },
+            },
+            filter: [
+              {
+                type: 'executedFlowNodes',
+                appliedTo: ['definition'],
+                filterLevel: 'instance',
+                data: {
+                  operator: 'in',
+                  values: ['StartEvent_1'],
+                },
+              },
+            ],
+          },
+        },
+        {
+          name: 'percentAutomated',
+          img: percentageProgress,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['percentage']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              targetValue: {
+                active: true,
+                isKpi: true,
+                countProgress: {
+                  baseline: '0',
+                  target: '90',
+                },
+              },
+            },
+            filter: [
+              {
+                type: 'executedFlowNodes',
+                appliedTo: ['definition'],
+                filterLevel: 'instance',
+                data: {
+                  operator: 'not in',
+                  values: ['StartEvent_1'],
+                },
+              },
+            ],
+          },
+        },
+        {
+          name: 'percentNoIncidents',
+          img: percentageProgress,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['percentage']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              targetValue: {
+                active: true,
+                isKpi: true,
+                countProgress: {
+                  baseline: '0',
+                  target: '99',
+                },
+              },
+            },
+            filter: [
+              {
+                type: 'doesNotIncludeIncident',
+                data: null,
+                filterLevel: 'instance',
+                appliedTo: ['all'],
+              },
+            ],
           },
         },
       ],

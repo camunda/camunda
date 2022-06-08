@@ -105,8 +105,7 @@ test('user permissions', async (t) => {
   await t.typeText(e.usersTypeahead, 'mary', {replace: true});
   await t.click(e.option('mary'));
   await t.typeText(e.usersTypeahead, 'peter', {replace: true});
-  await t.click(e.option('peter'));
-  await t.selectText(e.usersTypeahead).pressKey('delete');
+  await t.click(e.option('peter')).pressKey('tab');
   await t.click(e.roleOption('Editor'));
   await t.takeElementScreenshot(e.addUserModal, 'homepage/addUser.png');
   await t.click(e.confirmModalButton);

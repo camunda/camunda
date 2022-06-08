@@ -8,8 +8,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Button, LabeledInput} from 'components';
+
 import CountTargetInput from './CountTargetInput';
-import {LabeledInput} from 'components';
+
 const validProps = {
   baseline: 10,
   target: 200,
@@ -19,8 +21,8 @@ const validProps = {
 it('should display the current target values', () => {
   const node = shallow(<CountTargetInput {...validProps} />);
 
-  expect(node.find(LabeledInput).first()).toHaveValue(10);
-  expect(node.find(LabeledInput).at(1)).toHaveValue(200);
+  expect(node.find(LabeledInput).first()).toHaveValue(200);
+  expect(node.find({label: 'Baseline'})).toHaveValue(10);
 });
 
 it('should update target values', () => {
@@ -29,7 +31,7 @@ it('should update target values', () => {
 
   node
     .find(LabeledInput)
-    .at(1)
+    .first()
     .simulate('change', {target: {value: '73'}});
 
   expect(spy).toHaveBeenCalledWith('target', '73');
@@ -45,4 +47,13 @@ it('should show an error message if target is below baseline', async () => {
   const node = shallow(<CountTargetInput baseline={50} target={4} />);
 
   expect(node.find('Message')).toExist();
+});
+
+it('should invoke the onChange prop on button click', async () => {
+  const spy = jest.fn();
+  const node = shallow(<CountTargetInput {...validProps} onChange={spy} />);
+
+  node.find(Button).first().simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('isBelow', false);
 });

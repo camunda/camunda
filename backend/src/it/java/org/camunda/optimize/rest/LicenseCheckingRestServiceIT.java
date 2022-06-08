@@ -143,7 +143,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
 
   @Test
   public void noLicenseAvailableShouldThrowAnError() {
-    LicenseManager licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
+    LicenseManager licenseManager = embeddedOptimizeExtension.getBean(LicenseManager.class);
     try {
       // given
       licenseManager.setOptimizeLicense(null);
@@ -165,7 +165,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
   public void excludedEndpointsAreAccessibleWithNoLicense(
     Function<OptimizeRequestExecutor, OptimizeRequestExecutor> requestExecutorBuilder
   ) {
-    LicenseManager licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
+    LicenseManager licenseManager = embeddedOptimizeExtension.getBean(LicenseManager.class);
     try {
       // given
       licenseManager.setOptimizeLicense(null);

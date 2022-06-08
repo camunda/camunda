@@ -165,7 +165,8 @@
     "title": "Prozesse",
     "empty": "Es sind noch keine Prozesse importiert",
     "owner": "Eigentümer",
-    "timeGoal": "Ziel: Zeit",
+    "timeKpi": "KPI: Zeit",
+    "qualityKpi": "KPI: Qualität",
     "displayData": "Ziele zeigen Daten von Instanzen an",
     "endedThisMonth": "die in den letzten 30 Tagen beendet wurden",
     "setGoal": "Ziel setzen",
@@ -178,6 +179,7 @@
     "ownerInfo": "Der Prozesseigentümer ist für Geschäftsmetriken des Prozesses verantwortlich. Sie können den Prozesseigentümer verwenden, um Prozesse zu sortieren und zu filtern",
     "ownerRemoveWarning": "Der Eigentümer '{owner}' wird aus dem Prozess entfernt",
     "noData": "keine Daten",
+    "processOverview": "Prozessübersicht",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
@@ -321,10 +323,15 @@
     "noSources": "Keine Datenquelle",
     "templates": {
       "blank": "Leerer Bericht",
+      "p75Duration": "KPI: 75. Perzentil Dauer",
+      "percentSLAMet": "KPI: % SLA erfüllt",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
-      "number": "Nummer: Prozessinstanz Dauer",
       "table": "Datentabelle: Benutzeraufgaben Anzahl",
-      "chart": "Balkendiagram: Prozessinstanz Anzahl"
+      "chart": "Balkendiagram: Prozessinstanz Anzahl",
+      "percentNoIncidents": "KPI: Incident-Free Rate",
+      "percentSuccess": "KPI: Erfolgsrate (Filter bearbeiten, um nur erfolgreiche Endereignisse anzuzeigen)",
+      "percentAutomated": "KPI: Automatisierungsrate (Filter bearbeiten, um Benutzeraufgaben auszuschließen)",
+      "number": "Nummer: Prozessinstanz Dauer"
     },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter",
@@ -568,12 +575,14 @@
         "yAxis": "Y-Achse Beschriftung"
       },
       "goal": {
-        "legend": "Ziel",
+        "legend": "Ziel setzen",
         "goalValue": "Zielwert",
         "baseline": "Grundlinie",
         "target": "Ziel",
         "invalidInput": "Einen positiven Zahlenwert eingeben",
-        "lessThanTargetError": "Ziel muss größer als die Grundlinie sein"
+        "lessThanTargetError": "Ziel muss größer als die Grundlinie sein",
+        "setKpi": "Anzeige als Prozess-KPI",
+        "kpiDescription": "Der Status dieser Metrik wird direkt im Prozess auf der Prozessseite angezeigt."
       },
       "pointMarkers": {
         "legend": "Linienpunkte",
@@ -642,9 +651,13 @@
       "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen",
       "operationsMonitoring": "Betriebsüberwachung",
       "operationsMonitoring_subTitle": "Aktive Prozesse und Vorfälle überwachen",
-      "completedInstances": "Abgeschlossene Prozessinstanzen",
-      "runningInstances": "Laufende Prozessinstanzen",
-      "aggregateDuration": "Aggregierte Prozessdauer (ToDo: Aggregationen alternativer Dauer anzeigen)",
+      "30DayThroughput": "Durchsatz (30 Tage fortlaufend)",
+      "p75Duration": "75. Perzentil Dauer",
+      "p99Duration": "99. Perzentil Dauer",
+      "percentSLAMet": "% SLA erfüllt",
+      "percentNoIncidents": "Prozent ohne Zwischenfällen",
+      "percentSuccess": "Erfolgsrate (Filter bearbeiten, um nur erfolgreiche Endereignisse anzuzeigen)",
+      "percentAutomated": "Automatisierungsrate (Filter bearbeiten, um Benutzeraufgaben auszuschließen)",
       "flownodeDuration": "Welche Prozessschritte nehmen zu viel Zeit in Anspruch? (ToDo: Zielwerte für diese Prozessschritte hinzufügen)",
       "controlChart": "Ist mein Prozess unter Kontrolle?",
       "flownodeFrequency": "Wie oft wird jeder Prozessschritt ausgeführt?",

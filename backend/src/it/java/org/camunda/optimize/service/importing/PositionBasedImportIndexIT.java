@@ -55,8 +55,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
     setupZeebeImportAndReloadConfiguration();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 

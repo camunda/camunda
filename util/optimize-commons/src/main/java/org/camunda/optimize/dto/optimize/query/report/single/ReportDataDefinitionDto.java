@@ -48,6 +48,15 @@ public class ReportDataDefinitionDto {
     this.tenantIds = tenantIds;
   }
 
+  public ReportDataDefinitionDto(final String key, final String name, final List<String> versions,
+                                 final List<String> tenantIds, final String displayName) {
+    this.key = key;
+    this.name = name;
+    this.versions = versions;
+    this.tenantIds = tenantIds;
+    this.displayName = displayName;
+  }
+
   public ReportDataDefinitionDto(final String key, final List<String> versions, final List<String> tenantIds) {
     this.key = key;
     this.versions = versions;

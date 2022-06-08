@@ -28,6 +28,7 @@ import org.camunda.optimize.test.optimize.IdentityClient;
 import org.camunda.optimize.test.optimize.ImportClient;
 import org.camunda.optimize.test.optimize.IngestionClient;
 import org.camunda.optimize.test.optimize.LocalizationClient;
+import org.camunda.optimize.test.optimize.ProcessOverviewClient;
 import org.camunda.optimize.test.optimize.PublicApiClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
@@ -38,26 +39,38 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Configuration;
 
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTPS_PORT_KEY;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 
+@SpringBootTest(
+  webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+  properties = {INTEGRATION_TESTS + "=true"}
+)
+@Configuration
 public abstract class AbstractIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
     new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
-  public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
+  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
   @RegisterExtension
   @Order(3)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
+  public static EngineDatabaseExtension engineDatabaseExtension =
     new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
@@ -100,8 +113,30 @@ public abstract class AbstractIT {
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
   protected OutlierDistributionClient outlierDistributionClient =
     new OutlierDistributionClient(engineIntegrationExtension);
-  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
 
+  public void startAndUseNewOptimizeInstance() {
+    final String httpsPort = getPortArg(HTTPS_PORT_KEY);
+    final String httpPort = getPortArg(HTTP_PORT_KEY);
+
+    // run after-test cleanups with the old context
+    embeddedOptimizeExtension.afterTest();
+    // in case it's not the first *additional* instance, we terminate the first one
+    if (embeddedOptimizeExtension.isCloseContextAfterTest()) {
+      ((ConfigurableApplicationContext) embeddedOptimizeExtension.getApplicationContext()).close();
+    }
+
+    final ConfigurableApplicationContext context = SpringApplication.run(Main.class, httpsPort, httpPort);
+    embeddedOptimizeExtension.setApplicationContext(context);
+    embeddedOptimizeExtension.setCloseContextAfterTest(true);
+    embeddedOptimizeExtension.setResetImportOnStart(false);
+    embeddedOptimizeExtension.setupOptimize();
+  }
+
+  private String getPortArg(String httpsPortKey) {
+    return String.format("--%s=%s", httpsPortKey, embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(httpsPortKey) + 100);
+  }
+
+  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
   // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);
   protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
@@ -127,4 +162,5 @@ public abstract class AbstractIT {
     optimizeRequestExecutorSupplier,
     () -> embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken()
   );
+  protected ProcessOverviewClient processOverviewClient = new ProcessOverviewClient(optimizeRequestExecutorSupplier);
 }

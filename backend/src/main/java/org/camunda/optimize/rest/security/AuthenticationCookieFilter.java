@@ -10,13 +10,11 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
-import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
 @AllArgsConstructor
-@Component
 public class AuthenticationCookieFilter extends AbstractPreAuthenticatedProcessingFilter {
 
   private final SessionService sessionService;

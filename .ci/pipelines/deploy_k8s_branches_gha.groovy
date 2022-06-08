@@ -14,7 +14,7 @@ camundaGitHubWorkflowDispatch([
         credentialsId: 'github-optimize-app',
         dryRun: params.DRY_RUN,
         inputs: [
-                app_name:  GitUtilities.getSanitizedBranchName([BRANCH_NAME: params.BRANCH]).replaceAll(/[^a-z0-9]/, '-'),
+                app_name: GitUtilities.getSanitizedBranchName([BRANCH_NAME: params.BRANCH],50),
                 chart_ref: params.BRANCH,
                 docker_tag: params.DOCKER_TAG,
                 es_version: params.ES_VERSION,

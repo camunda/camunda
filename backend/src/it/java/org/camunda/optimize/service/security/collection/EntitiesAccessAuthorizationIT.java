@@ -152,7 +152,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");
 
     reportClient.createAndStoreProcessReport(unauthorizedProcess.getKey());
-    reportClient.createSingleDecisionReportDefinitionDto(unauthorizedDecision.getKey()).getId();
+    reportClient.createSingleDecisionReportDefinitionDto(unauthorizedDecision.getKey());
 
     // when
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);

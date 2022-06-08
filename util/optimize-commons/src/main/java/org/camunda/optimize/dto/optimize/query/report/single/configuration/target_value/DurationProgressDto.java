@@ -7,11 +7,13 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration.targ
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.Objects;
 
 @Getter
 @Setter
+@FieldNameConstants
 public class DurationProgressDto {
 
   private BaseLineDto baseline = new BaseLineDto();

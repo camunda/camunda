@@ -52,10 +52,11 @@ import static org.mockserver.model.HttpRequest.request;
 public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @Test
+//  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
   public void retrieveTelemetryData() {
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     final Optional<MetadataDto> metadata = getMetadata();
@@ -77,7 +78,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     assertThat(telemetryData.getProduct().getInternals().getEngineInstallationIds())
@@ -91,7 +92,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     assertThat(getMetadata()).isNotPresent();
@@ -111,7 +112,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     final Optional<MetadataDto> metadata = getMetadata();
@@ -133,7 +134,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
@@ -312,8 +313,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private LicenseKeyDto getTelemetryLicenseKey() {
-    return embeddedOptimizeExtension.getApplicationContext()
-      .getBean(EasyTelemetryDataService.class)
+    return embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class)
       .getTelemetryData()
       .getProduct()
       .getInternals()
@@ -321,26 +321,26 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private Optional<MetadataDto> getMetadata() {
-    return embeddedOptimizeExtension.getApplicationContext().getBean(ElasticsearchMetadataService.class)
+    return embeddedOptimizeExtension.getBean(ElasticsearchMetadataService.class)
       .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
   }
 
   @SneakyThrows
   private void removeLicense() {
-    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).setOptimizeLicense(null);
+    embeddedOptimizeExtension.getBean(LicenseManager.class).setOptimizeLicense(null);
   }
 
   @SneakyThrows
   private void initOptimizeLicense() {
-    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).init();
+    embeddedOptimizeExtension.getBean(LicenseManager.class).init();
   }
 
   private void storeLicense(final String licenseString) {
-    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).storeLicense(licenseString);
+    embeddedOptimizeExtension.getBean(LicenseManager.class).storeLicense(licenseString);
   }
 
   private String getLicense() {
-    return embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).getOptimizeLicense();
+    return embeddedOptimizeExtension.getBean(LicenseManager.class).getOptimizeLicense();
   }
 
   private String getEsVersion() {

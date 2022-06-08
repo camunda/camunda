@@ -7,15 +7,18 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration.targ
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.Objects;
 
 @Getter
 @Setter
+@FieldNameConstants
 public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private String value = "2";
+  private Boolean isBelow = false;
 
   @Override
   public boolean equals(Object o) {
@@ -27,6 +30,7 @@ public class TargetDto {
     }
     TargetDto targetDto = (TargetDto) o;
     return unit == targetDto.unit &&
+      Objects.equals(isBelow, targetDto.isBelow) &&
       Objects.equals(value, targetDto.value);
   }
 

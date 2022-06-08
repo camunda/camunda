@@ -21,6 +21,9 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -32,10 +35,15 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public abstract class AbstractQueryPerformanceTest {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
   protected static final String DEFAULT_USER = "demo";
+
+  @Autowired
+  protected static ApplicationContext applicationContext;
 
   private static final String PROPERTY_LOCATION = "query-performance.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(PROPERTY_LOCATION);
@@ -48,7 +56,7 @@ public abstract class AbstractQueryPerformanceTest {
 
   @RegisterExtension
   @Order(2)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   @BeforeEach
   public void init(TestInfo testInfo) {

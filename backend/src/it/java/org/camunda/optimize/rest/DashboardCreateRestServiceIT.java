@@ -63,6 +63,22 @@ public class DashboardCreateRestServiceIT extends AbstractDashboardRestServiceIT
     assertThat(idDto).isNotNull();
   }
 
+  @Test
+  public void createNewManagementDashboardNotSupported() {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinition = generateDashboardDefinitionDto();
+    dashboardDefinition.setManagementDashboard(true);
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinition)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   @ParameterizedTest
   @MethodSource("validFilterCombinations")
   public void createNewDashboardWithFilterSpecification(List<DashboardFilterDto<?>> dashboardFilterDtos) {

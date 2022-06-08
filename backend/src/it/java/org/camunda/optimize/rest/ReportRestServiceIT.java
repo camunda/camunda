@@ -75,6 +75,7 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
@@ -611,7 +612,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // when
     List<AuthorizedReportDefinitionResponseDto> reports = reportClient.getAllReportsAsUser();
 
-    // then the returned list excludes reports in collections
+    // then the returned list excludes reports in collections and excludes the management reports
     assertThat(
       reports.stream()
         .map(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
@@ -845,6 +846,19 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  public void managementReportCannotBeDeleted() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
+
+    // when
+    final Response response = reportClient.deleteReport(reportId, true);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void deleteNonExistingReport() {
     // when
     Response response = embeddedOptimizeExtension
@@ -958,15 +972,45 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .containsExactly(reportId);
   }
 
+  @Test
+  public void copyManagementReportDoesNotWork() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
+
+    // when
+    Response response = reportClient.copyReportToCollection(reportId, null);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void copyManagementReportIntoCollectionDoesNotWork() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+
+    // when
+    Response response = reportClient.copyReportToCollection(reportId, collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void copySingleReport(ReportType reportType) {
+    // given
     String id = createSingleReport(reportType);
 
+    // when
     Response response = reportClient.copyReportToCollection(id, null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     IdResponseDto copyId = response.readEntity(IdResponseDto.class);
 
+    // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData()).hasToString(oldReport.getData().toString());
@@ -975,12 +1019,15 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
   public void copyCombinedReport() {
+    // given
     String id = reportClient.createCombinedReport(null, new ArrayList<>());
 
+    // when
     Response response = reportClient.copyReportToCollection(id, null);
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     IdResponseDto copyId = response.readEntity(IdResponseDto.class);
 
+    // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
     assertThat(report.getData()).hasToString(oldReport.getData().toString());
@@ -1293,6 +1340,18 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(xmlOutput, bpmnModelInstance);
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  private String findManagementReportId() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SingleProcessReportDefinitionRequestDto.class
+      )
+      .stream()
+      .filter(reportDef -> reportDef.getData().isManagementReport())
+      .findFirst()
+      .map(ReportDefinitionDto::getId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("No Management Report Found"));
   }
 
 }

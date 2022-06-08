@@ -100,14 +100,12 @@ it('should not display a progress bar for multi measure/aggregation reports', ()
         ...report,
         data: {
           ...report.data,
-          view: {
-            properties: ['duration'],
-          },
           configuration: {
             aggregationTypes: ['avg', 'max'],
             targetValue: {active: true, countProgress: {baseline: '0', target: '12'}},
           },
         },
+        result: {measures: [{}, {}]},
       }}
       formatter={(v) => 2 * v}
     />

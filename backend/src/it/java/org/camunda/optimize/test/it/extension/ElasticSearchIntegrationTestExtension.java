@@ -97,6 +97,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
@@ -108,7 +109,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
@@ -659,7 +659,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   @SneakyThrows
-  public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionkey,
+  public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionKey,
                                       final long duration) {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
@@ -685,7 +685,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     // @formatter:on
 
     final UpdateRequest update = new UpdateRequest()
-      .index(getProcessInstanceIndexAliasName(processDefinitionkey))
+      .index(getProcessInstanceIndexAliasName(processDefinitionKey))
       .id(processInstanceId)
       .script(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, updateScript, Collections.emptyMap()))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

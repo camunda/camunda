@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
-import org.camunda.optimize.test.optimize.SharingClient;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,8 +57,10 @@ public class MixpanelDataServiceIT extends AbstractIT {
     assertThat(mixpanelHeartbeatProperties.getStage()).isEqualTo(STAGE);
     assertThat(mixpanelHeartbeatProperties.getOrganizationId()).isEqualTo(ORGANIZATION_ID);
     assertThat(mixpanelHeartbeatProperties.getClusterId()).isEqualTo(CLUSTER_ID);
+    // The management reports are not included in the result
     assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
+    // The management dashboard is not included in the result
     assertThat(mixpanelHeartbeatProperties.getDashboardCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getReportShareCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getDashboardShareCount()).isEqualTo(1);
@@ -96,6 +97,7 @@ public class MixpanelDataServiceIT extends AbstractIT {
 
   @NonNull
   private MixpanelDataService getMixpanelDataService() {
-    return embeddedOptimizeExtension.getApplicationContext().getBean(MixpanelDataService.class);
+    return embeddedOptimizeExtension.getBean(MixpanelDataService.class);
   }
+
 }

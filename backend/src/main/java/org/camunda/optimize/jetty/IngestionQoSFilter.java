@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.http.HttpStatus;
 
 import javax.servlet.AsyncContext;
@@ -68,6 +69,7 @@ public class IngestionQoSFilter implements Filter {
     passes = new Semaphore(maxRequests, true);
   }
 
+  @SneakyThrows
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
                                                                                             IOException,
@@ -94,6 +96,11 @@ public class IngestionQoSFilter implements Filter {
             asyncContext.setTimeout(suspendMs);
           }
           asyncContext.addListener(listeners[priority]);
+
+          // Spring Security wraps the asyncContext into HttpServlet3RequestFactory$SecurityContextAsyncContext
+          // we need to unwrap it for the filter to work properly
+          asyncContext = (AsyncContext) FieldUtils.readField(asyncContext, "asyncContext", true);
+
           queues[priority].add(asyncContext);
           log.debug("Suspended {}", request);
           return;

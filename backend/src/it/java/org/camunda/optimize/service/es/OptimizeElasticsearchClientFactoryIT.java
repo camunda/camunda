@@ -40,7 +40,7 @@ public class OptimizeElasticsearchClientFactoryIT extends AbstractIT {
     // when the client is created the factory should retry and wait for a connection to be established
     OptimizeElasticsearchClient optimizeElasticsearchClient = null;
     try {
-      optimizeElasticsearchClient = embeddedOptimizeExtension.getApplicationContext()
+      optimizeElasticsearchClient = embeddedOptimizeExtension
         .getBean(OptimizeElasticsearchClientConfiguration.class)
         .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
 

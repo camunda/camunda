@@ -24,6 +24,10 @@ import {
 } from './formatters';
 const nbsp = '\u00A0';
 
+jest.mock('chart.js', () => {
+  return {Chart: {defaults: {scales: {logarithmic: {ticks: {callback: () => ''}}}}}};
+});
+
 describe('frequencyFormatter', () => {
   it('should do nothing for numbers < 1000', () => {
     expect(frequencyFormatter(4)).toBe('4');
@@ -393,14 +397,30 @@ describe('automatic interval selection', () => {
   });
 });
 
-it('should show nice ticks for duration formats on the y axis', () => {
-  const maxValue = 7 * 24 * 60 * 60 * 1000;
+describe('createDurationFormattingOptions', () => {
+  const maxDuration = 7 * 24 * 60 * 60 * 1000;
 
-  const config = createDurationFormattingOptions(0, maxValue);
-  config.getLabelForValue = (v) => v + '';
+  it('should show nice ticks for duration formats on the y axis', () => {
+    const config = createDurationFormattingOptions(0, maxDuration);
 
-  expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
-  expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
+    expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
+    expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
+  });
+
+  it('should show nice ticks for duration formats on the x axis', () => {
+    const config = createDurationFormattingOptions(0, maxDuration);
+    config.axis = 'x';
+    config.getLabels = () => [(2 * 24 * 60 * 60 * 1000).toString()];
+
+    expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
+    expect(config.callback(0)).toBe('2d');
+  });
+
+  it('should show skip duration tick values that do not have a log scale value', () => {
+    const config = createDurationFormattingOptions(0, maxDuration, true);
+
+    expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('');
+  });
 });
 
 describe('File name formatting', () => {

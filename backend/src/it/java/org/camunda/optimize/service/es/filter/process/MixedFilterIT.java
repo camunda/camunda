@@ -48,9 +48,9 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
@@ -738,9 +738,9 @@ public class MixedFilterIT extends AbstractFilterIT {
   private static Stream<List<ProcessFilterDto<?>>> invalidFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
-        .filter(it -> !it.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
+        .filter(filter -> !filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
       buildFilters(FilterApplicationLevel.VIEW)
-        .filter(it -> !it.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
+        .filter(filter -> !filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
     );
   }
 
@@ -748,9 +748,9 @@ public class MixedFilterIT extends AbstractFilterIT {
   private static Stream<List<ProcessFilterDto<?>>> validFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
-        .filter(it -> it.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
+        .filter(filter -> filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.INSTANCE)),
       buildFilters(FilterApplicationLevel.VIEW)
-        .filter(it -> it.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
+        .filter(filter -> filter.get(0).validApplicationLevels().contains(FilterApplicationLevel.VIEW))
     );
   }
 

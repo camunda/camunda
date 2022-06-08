@@ -26,14 +26,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -50,12 +45,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT;
+import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT;
 import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 @Configuration
@@ -65,19 +62,14 @@ import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityCon
 @Order(2)
 public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
-  public static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";
-  public static final String URL_TEMPLATE = "https://%s%s";
-  private static final String OAUTH_AUTH_ENDPOINT = "/sso";
-  private static final String OAUTH_REDIRECT_ENDPOINT = "/sso-callback";
-  private static final String AUTH0_AUTH_ENDPOINT = "/authorize";
-  private static final String AUTH0_TOKEN_ENDPOINT = "/oauth/token";
-  private static final String AUTH0_USERINFO_ENDPOINT = "/userinfo";
-
   private final SessionService sessionService;
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
   private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;
   private final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider;
+
+  private final ClientRegistrationRepository clientRegistrationRepository;
+  private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
   @Override
   public void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -93,33 +85,6 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
   public HttpCookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository() {
     return new HttpCookieOAuth2AuthorizationRequestRepository(
       configurationService, new AuthorizationRequestCookieValueMapper()
-    );
-  }
-
-  @Bean
-  public ClientRegistrationRepository clientRegistrationRepository() {
-    final ClientRegistration.Builder builder = ClientRegistration.withRegistrationId("auth0")
-      .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-      .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-      // For allowed redirect urls auth0 is not supporting wildcards within the actual path.
-      // Thus the clusterId is passed along as query parameter and will get picked up by the cloud ingress proxy
-      // which redirects the callback to the particular Optimize instance of the cluster the login was issued from.
-      .redirectUri("{baseUrl}" + OAUTH_REDIRECT_ENDPOINT + "?uuid=" + getAuth0Configuration().getClusterId())
-      .authorizationUri(buildAuth0CustomDomainUrl(AUTH0_AUTH_ENDPOINT))
-      .tokenUri(buildAuth0DomainUrl(AUTH0_TOKEN_ENDPOINT))
-      .userInfoUri(buildAuth0DomainUrl(AUTH0_USERINFO_ENDPOINT))
-      .scope("openid", "profile")
-      .userNameAttributeName(getAuth0Configuration().getUserIdAttributeName())
-      .clientId(getAuth0Configuration().getClientId())
-      .clientSecret(getAuth0Configuration().getClientSecret())
-      .jwkSetUri(String.format(URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
-    return new InMemoryClientRegistrationRepository(List.of(builder.build()));
-  }
-
-  @Bean
-  public OAuth2AuthorizedClientService authorizedClientService() {
-    return new InMemoryOAuth2AuthorizedClientService(
-      clientRegistrationRepository()
     );
   }
 
@@ -153,8 +118,8 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         .anyRequest().authenticated()
       .and()
       .oauth2Login()
-        .clientRegistrationRepository(clientRegistrationRepository())
-        .authorizedClientService(authorizedClientService())
+        .clientRegistrationRepository(clientRegistrationRepository)
+        .authorizedClientService(oAuth2AuthorizedClientService)
         .authorizationEndpoint(authorizationEndpointConfig -> authorizationEndpointConfig
           .baseUri(OAUTH_AUTH_ENDPOINT)
           .authorizationRequestRepository(cookieOAuth2AuthorizationRequestRepository())
@@ -221,14 +186,6 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         .anyMatch(organisationId -> getAuth0Configuration().getOrganizationId().equals(organisationId));
     }
     return accessGranted;
-  }
-
-  private String buildAuth0DomainUrl(final String path) {
-    return String.format(URL_TEMPLATE, getAuth0Configuration().getDomain(), path);
-  }
-
-  private String buildAuth0CustomDomainUrl(final String path) {
-    return String.format(URL_TEMPLATE, getAuth0Configuration().getCustomDomain(), path);
   }
 
   private String getClusterIdPath() {

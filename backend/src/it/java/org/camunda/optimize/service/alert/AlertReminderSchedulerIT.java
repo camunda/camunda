@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.OffsetDateTime;
 
@@ -51,14 +52,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   }
 
   @Test
-  public void reminderIsNotCreatedOnStartupIfNotDefinedInAlert() throws Exception {
+  public void reminderIsNotCreatedOnStartupIfNotDefinedInAlert() {
     // given
     AlertCreationRequestDto alert = setupBasicProcessAlert();
     alertClient.createAlert(alert);
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
 
     // then
     assertThat(alertClient.getAllAlerts().get(0).getReminder()).isNull();
@@ -192,8 +192,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   }
 
   @Test
+  @DirtiesContext
   public void reminderJobsAreScheduledAfterRestart() throws Exception {
     // given
+    startAndUseNewOptimizeInstance();
     AlertCreationRequestDto simpleAlert = createBasicAlertWithReminder();
 
     String id = alertClient.createAlert(simpleAlert);
@@ -201,8 +203,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
 
     assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(2);
   }

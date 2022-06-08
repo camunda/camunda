@@ -7,28 +7,30 @@ package org.camunda.optimize.test.secured.es;
 
 import org.camunda.optimize.IgnoreDuringScan;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationWithDefaultAndAdditionalLocations;
 
 @Import(org.camunda.optimize.Main.class)
-@Configuration
 @IgnoreDuringScan
 public class ConnectToElasticsearchSslCustomCertAndCaIT extends AbstractConnectToElasticsearchIT {
 
   private static final String CONFIG_FILE = "secured-connection-ssl-custom-cert-and-ca.yaml";
 
-  @Bean
-  @Primary
-  public ConfigurationService configurationService() {
-    return createConfigurationWithDefaultAndAdditionalLocations(CONFIG_FILE);
-  }
-
   @Override
   protected String getCustomConfigFile() {
     return CONFIG_FILE;
+  }
+
+  @TestConfiguration
+  static class Configuration {
+    @Bean
+    @Primary
+    public ConfigurationService configurationService() {
+      return createConfigurationWithDefaultAndAdditionalLocations(CONFIG_FILE);
+    }
   }
 }

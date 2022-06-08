@@ -17,6 +17,6 @@ public class CamundaPlatformCondition extends CCSMCondition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
     final List<String> activeProfiles = Arrays.asList(context.getEnvironment().getActiveProfiles());
-    return activeProfiles.isEmpty() || (activeProfiles.size() == 1 && activeProfiles.contains(PLATFORM_PROFILE));
+    return activeProfiles.isEmpty() || activeProfiles.contains(PLATFORM_PROFILE);
   }
 }

@@ -3,6 +3,44 @@
 .Processes {
   height: 100%;
 
+  .processOverview {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: normal;
+    color: var(--grey-darken-23);
+    margin: 30px 0 0 65px;
+    flex-grow: 1;
+  }
+
+  .fullscreen {
+    height: 500px;
+    padding: 0 65px;
+
+    .DashboardView .head > .EntityName {
+      display: none;
+    }
+
+    .EntityName .Popover,
+    .InstanceCount .Popover {
+      display: none;
+    }
+
+    .tools {
+      margin-top: 40px;
+      display: none;
+    }
+
+    .FiltersView {
+      border: none;
+      padding: 0;
+      margin: 20px 0 5px 0;
+
+      > h3 {
+        display: none;
+      }
+    }
+  }
+
   .EntityList {
     .ListItem .meta,
     .columnHeaders .meta {

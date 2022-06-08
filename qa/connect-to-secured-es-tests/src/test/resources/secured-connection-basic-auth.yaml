@@ -12,3 +12,5 @@ es:
     password: 'optimize'
     ssl:
       enabled: false
+plugin:
+  directory: '.'

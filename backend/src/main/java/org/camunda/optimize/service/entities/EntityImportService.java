@@ -17,10 +17,12 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.entities.dashboard.DashboardImportService;
 import org.camunda.optimize.service.entities.report.ReportImportService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
@@ -152,10 +154,16 @@ public class EntityImportService {
 
   private List<ReportDefinitionExportDto> retrieveAllReportsToImport(final Set<OptimizeEntityExportDto> entitiesToImport) {
     return entitiesToImport.stream()
-      .filter(exportDto -> SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType())
-        || SINGLE_DECISION_REPORT.equals(exportDto.getExportEntityType())
-        || COMBINED_REPORT.equals(exportDto.getExportEntityType()))
-      .map(ReportDefinitionExportDto.class::cast)
+      .filter(entityToImport -> SINGLE_PROCESS_REPORT.equals(entityToImport.getExportEntityType())
+        || SINGLE_DECISION_REPORT.equals(entityToImport.getExportEntityType())
+        || COMBINED_REPORT.equals(entityToImport.getExportEntityType()))
+      .map(reportToImport -> {
+        if (reportToImport instanceof SingleProcessReportDefinitionExportDto
+          && ((SingleProcessReportDefinitionExportDto) reportToImport).getData().isManagementReport()) {
+          throw new OptimizeValidationException("Cannot import management reports");
+        }
+        return (ReportDefinitionExportDto) reportToImport;
+      })
       .collect(toList());
   }
 

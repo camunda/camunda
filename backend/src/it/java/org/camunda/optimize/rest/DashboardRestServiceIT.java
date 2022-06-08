@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,35 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     assertThat(dashboard).hasToString(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
     assertThat(dashboard.getReports()).containsExactlyElementsOf(oldDashboard.getReports());
+  }
+
+  @Test
+  public void copyPrivateManagementDashboardNotSupported() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, null)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void copyPrivateManagementDashboardIntoCollectionNotSupported() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, collectionId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -164,6 +194,21 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void deleteManagementDashboardNotSupported() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test

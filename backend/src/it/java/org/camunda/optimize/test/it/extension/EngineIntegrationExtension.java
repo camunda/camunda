@@ -38,9 +38,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 /**

@@ -78,8 +78,12 @@ public class RawProcessDataResultDtoMapper {
           // Object variable value is available on demand in FE so that large values don't distort raw data tables
           result.put(variableInstance.getName(), OBJECT_VARIABLE_VALUE_PLACEHOLDER);
         } else {
-          // Convert strings to join list entries for neater display in raw data report UI
-          result.put(variableInstance.getName(), String.join(", ", variableInstance.getValue()));
+          // Convert strings to join list entries for neater display in raw data report UI, or use empty space if null
+          result.put(variableInstance.getName(),
+                     Optional.ofNullable(variableInstance.getValue())
+                       .map(value -> String.join(", ", value))
+                       .orElse("")
+          );
         }
       } else {
         try {

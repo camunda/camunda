@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalResultDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalsAndResultsDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsResponseDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.ProcessGoalsReader;
@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -77,8 +78,8 @@ public class ProcessGoalsService {
           goalsForKey.flatMap(goals -> Optional.ofNullable(goals.getOwner())
             .map(owner -> {
               final String ownerName = identityService.getIdentityNameById(owner).orElse(owner);
-              return new ProcessGoalsOwnerResponseDto(owner, ownerName);
-            })).orElse(new ProcessGoalsOwnerResponseDto()),
+              return new ProcessOwnerResponseDto(owner, ownerName);
+            })).orElse(new ProcessOwnerResponseDto()),
           goalsForKey.map(
             goals -> {
               ProcessDurationGoalsAndResultsDto goalsAndResults = new ProcessDurationGoalsAndResultsDto();
@@ -90,6 +91,12 @@ public class ProcessGoalsService {
           ).orElseGet(ProcessDurationGoalsAndResultsDto::new)
         );
       }).collect(Collectors.toList());
+  }
+
+  public Optional<ProcessGoalsDto> getProcessDefinitionGoalsByKey(final String processDefinitionKey) {
+    final Map<String, ProcessGoalsDto> goalsForProcessesByKey =
+      processGoalsReader.getGoalsForProcessesByKey(Set.of(processDefinitionKey));
+    return Optional.ofNullable(goalsForProcessesByKey.get(processDefinitionKey));
   }
 
   public void updateProcessGoals(final String userId,

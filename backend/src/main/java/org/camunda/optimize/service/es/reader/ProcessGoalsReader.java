@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -62,5 +61,4 @@ public class ProcessGoalsReader {
       .stream()
       .collect(Collectors.toMap(ProcessGoalsDto::getProcessDefinitionKey, Function.identity()));
   }
-
 }

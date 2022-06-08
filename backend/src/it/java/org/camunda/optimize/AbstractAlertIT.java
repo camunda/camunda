@@ -48,9 +48,9 @@ import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
@@ -65,7 +65,6 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
 public abstract class AbstractAlertIT extends AbstractIT {
-
   @BeforeEach
   public void beforeEach() throws Exception {
     embeddedOptimizeExtension.getAlertService().getScheduler().clear();
@@ -97,10 +96,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   private JobKey reminderJobKey(String id) {
     return new JobKey(id + "-reminder-job", "statusReminder-job");
-  }
-
-  protected Integer getOptimizeHttpPort() {
-    return embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090);
   }
 
   protected OffsetDateTime getNextReminderExecutionTime(String id) throws SchedulerException {
@@ -432,4 +427,5 @@ public abstract class AbstractAlertIT extends AbstractIT {
     final DmnModelInstance modelInstance = createSimpleDmnModel(definitionKey);
     return engineIntegrationExtension.deployAndStartDecisionDefinition(modelInstance);
   }
+
 }

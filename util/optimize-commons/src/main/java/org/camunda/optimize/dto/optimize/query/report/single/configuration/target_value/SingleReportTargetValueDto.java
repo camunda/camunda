@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 
 @Data
+@FieldNameConstants
 public class SingleReportTargetValueDto {
 
   private SingleReportCountChartDto countChart = new SingleReportCountChartDto();
@@ -15,5 +17,5 @@ public class SingleReportTargetValueDto {
   private Boolean active = false;
   private CountProgressDto countProgress = new CountProgressDto();
   private SingleReportDurationChartDto durationChart = new SingleReportDurationChartDto();
-
+  private Boolean isKpi;
 }

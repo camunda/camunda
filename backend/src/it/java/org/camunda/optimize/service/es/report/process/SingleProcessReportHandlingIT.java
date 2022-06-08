@@ -15,6 +15,10 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.DurationProgressDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -157,6 +161,9 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
     SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+    SingleReportTargetValueDto singleReportTargetValueDto = new SingleReportTargetValueDto();
+    singleReportTargetValueDto.setIsKpi(true);
+    configuration.setTargetValue(singleReportTargetValueDto);
     configuration.setLogScale(true);
     configuration.setYLabel("fooYLabel");
     reportData.setConfiguration(configuration);
@@ -188,9 +195,68 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(newReport.getData().getConfiguration().getProcessPart()).isNotEmpty();
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart()).isEqualTo("start123");
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd()).isEqualTo("end123");
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getIsKpi()).isEqualTo(true);
     assertThat(newReport.getId()).isEqualTo(id);
     assertThat(newReport.getCreated()).isNotEqualTo(shouldBeIgnoredDate);
     assertThat(newReport.getLastModified()).isNotEqualTo(shouldBeIgnoredDate);
+    assertThat(newReport.getName()).isEqualTo("MyReport");
+    assertThat(newReport.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+  }
+
+  @Test
+  public void updateProcessReportICanSetAboveBelowValuesOnProgressBars() {
+    // given
+    final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
+    String id = reportClient.createEmptySingleProcessReport();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setProcessDefinitionKey("procdef");
+    reportData.setProcessDefinitionVersion("123");
+    reportData.setFilter(Collections.emptyList());
+    SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+    SingleReportTargetValueDto singleReportTargetValueDto = new SingleReportTargetValueDto();
+    singleReportTargetValueDto.setIsKpi(true);
+    CountProgressDto countProgressDto = new CountProgressDto();
+    countProgressDto.setTarget("10");
+    countProgressDto.setIsBelow(true);
+    singleReportTargetValueDto.setCountProgress(countProgressDto);
+    TargetDto targetDto = new TargetDto();
+    targetDto.setIsBelow(true);
+    targetDto.setValue("20");
+    DurationProgressDto durationProgressDto = new DurationProgressDto();
+    durationProgressDto.setTarget(targetDto);
+    singleReportTargetValueDto.setDurationProgress(durationProgressDto);
+    configuration.setTargetValue(singleReportTargetValueDto);
+    configuration.setLogScale(true);
+    reportData.setConfiguration(configuration);
+    ProcessPartDto processPartDto = new ProcessPartDto();
+    processPartDto.setStart("start123");
+    processPartDto.setEnd("end123");
+    reportData.getConfiguration().setProcessPart(processPartDto);
+    SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
+    report.setData(reportData);
+    report.setId(shouldNotBeUpdatedString);
+    report.setLastModifier("shouldNotBeUpdatedManually");
+    report.setName("MyReport");
+
+    // when
+    reportClient.updateSingleProcessReport(id, report);
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
+
+    // then
+    assertThat(reports.size()).isEqualTo(1);
+    SingleProcessReportDefinitionRequestDto newReport = (SingleProcessReportDefinitionRequestDto) reports.get(0);
+    assertThat(newReport.getData().getProcessDefinitionKey()).isEqualTo("procdef");
+    assertThat(newReport.getData().getDefinitionVersions()).containsExactly("123");
+    assertThat(newReport.getData().getConfiguration().getLogScale()).isTrue();
+    assertThat(newReport.getData().getConfiguration().getProcessPart()).isNotEmpty();
+    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart()).isEqualTo("start123");
+    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd()).isEqualTo("end123");
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getIsKpi()).isTrue();
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getCountProgress().getIsBelow()).isTrue();
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getCountProgress().getTarget()).isEqualTo("10");
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getDurationProgress().getTarget().getValue()).isEqualTo("20");
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getDurationProgress().getTarget().getIsBelow()).isTrue();
+    assertThat(newReport.getId()).isEqualTo(id);
     assertThat(newReport.getName()).isEqualTo("MyReport");
     assertThat(newReport.getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }

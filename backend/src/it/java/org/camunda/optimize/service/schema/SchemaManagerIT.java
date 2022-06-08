@@ -163,12 +163,13 @@ public class SchemaManagerIT extends AbstractIT {
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
-    initializeSchema();
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .schemaExists(embeddedOptimizeExtension.getOptimizeElasticClient());
 
     // then the index exist check was performed in batches
     esMockServer.verify(
       request().withPath(String.format(
-        "/(%s-.*){2,%s}",
+        "/(%s.*){2,%s}",
         embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService().getIndexPrefix(),
         INDEX_EXIST_BATCH_SIZE
       )).withMethod(HEAD),

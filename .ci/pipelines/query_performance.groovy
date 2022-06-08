@@ -66,10 +66,10 @@ spec:
       # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
       # this is 30 - (cpu of other containers)
       limits:
-        cpu: 13
+        cpu: 1
         memory: 6Gi
       requests:
-        cpu: 13
+        cpu: 1
         memory: 6Gi
     volumeMounts:
       - name: ssd-storage
@@ -152,11 +152,11 @@ static String camBpmContainerSpec(String camBpmVersion) {
         value: localhost:5432
     resources:
       limits:
-        cpu: 4
-        memory: 5Gi
+        cpu: 8
+        memory: 6Gi
       requests:
-        cpu: 4
-        memory: 5Gi
+        cpu: 8
+        memory: 6Gi
     volumeMounts:
       - name: cambpm-invoice-override
         mountPath: /camunda/webapps/camunda-invoice
@@ -181,11 +181,11 @@ static String elasticSearchContainerSpec(esVersion) {
       capabilities:
         add: ["IPC_LOCK"]
     resources:
-      limits:
-        cpu: 8
-        memory: 16Gi
       requests:
-        cpu: 8
+        cpu: 16
+        memory: 16Gi
+      limits:
+        cpu: 16
         memory: 16Gi
     volumeMounts:
       - name: ssd-storage
@@ -280,7 +280,8 @@ pipeline {
                   cp -R --parents /ssd-storage/es-logs .
                   chown -R 10000:1000 ./ssd-storage
                 ''')
-                archiveArtifacts artifacts: 'ssd-storage/es-logs/*,target/surefire-reports/*', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'ssd-storage/es-logs/*', onlyIfSuccessful: false
+                junit testResults: 'qa/query-performance-tests/target/surefire-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
               }
             }
           }

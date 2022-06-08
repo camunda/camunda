@@ -30,6 +30,12 @@ public class DashboardClient {
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public DashboardDefinitionRestDto getManagementDashboard() {
+    return getRequestExecutor()
+      .buildGetManagementDashboardRequest()
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public AuthorizedDashboardDefinitionResponseDto getDashboardAsUser(final String dashboardId, String username,
                                                                      String password) {
     return getRequestExecutor()

@@ -13,13 +13,7 @@ import java.lang.annotation.RetentionPolicy;
  * 
  * Sample usage:
  * <pre>{@code
- * @ComponentScan(
- *   basePackages = {
- *     "org.camunda.optimize.service",
- *     "org.camunda.optimize.rest",
- *     "org.camunda.optimize.plugin"
- *   },
- *   excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
+ * @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
  * @Configuration
  * public class Main {
  * }</pre>

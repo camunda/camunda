@@ -27,8 +27,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   // users can define which timezone the date data should be based on
   private ZoneId timezone = ZoneId.systemDefault();
 
-  public Optional<PaginationDto> getPagination()
-  {
+  public Optional<PaginationDto> getPagination() {
     return Optional.ofNullable(pagination);
   }
 

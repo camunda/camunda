@@ -103,14 +103,14 @@ public class TenantImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
+  public void afterRestartOfOptimizeAlsoNewDataIsImported() {
     // given
+    startAndUseNewOptimizeInstance();
     engineIntegrationExtension.createTenant("tenantId", "My New Tenant");
     importAllEngineEntitiesFromScratch();
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
 
     // and
     engineIntegrationExtension.createTenant("tenantId2", "My New Tenant 2");

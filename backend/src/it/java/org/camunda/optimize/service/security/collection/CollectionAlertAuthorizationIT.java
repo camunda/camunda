@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security.collection;
 
-import com.google.common.collect.ImmutableMap;
 import org.assertj.core.api.SoftAssertions;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -28,10 +27,9 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.util.DefinitionResourceTypeUtil.getResourceTypeByDefinitionType;
 
 public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
@@ -52,11 +50,6 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     );
   }
 
-  private ImmutableMap<DefinitionType, Integer> definitionTypeToResourceType =
-    ImmutableMap.of(PROCESS, RESOURCE_TYPE_PROCESS_DEFINITION,
-                    DECISION, RESOURCE_TYPE_DECISION_DEFINITION
-    );
-
   @ParameterizedTest
   @MethodSource("definitionTypes")
   public void getAlertsForAuthorizedCollection(final DefinitionType definitionType) {
@@ -73,7 +66,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     alertClient.createAlertForReport(reportId3);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
+    authorizationClient.addGlobalAuthorizationForResource(getResourceTypeByDefinitionType(definitionType));
     collectionClient.addRolesToCollection(collectionId1, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
@@ -106,7 +99,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     alertClient.createAlertForReport(reportId2);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(typePair.get(0)));
+    authorizationClient.addGlobalAuthorizationForResource(getResourceTypeByDefinitionType(typePair.get(0)));
     collectionClient.addRolesToCollection(collectionId1, new CollectionRoleRequestDto(
         new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER));
 
@@ -133,7 +126,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     createNumberReportForCollection(collectionId1, definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
+    authorizationClient.addGlobalAuthorizationForResource(getResourceTypeByDefinitionType(definitionType));
 
     // when
     Response response = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1).execute();
@@ -153,7 +146,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     final AlertCreationRequestDto alertCreationRequestDto = alertClient.createSimpleAlert(reportId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
+    authorizationClient.addGlobalAuthorizationForResource(getResourceTypeByDefinitionType(definitionType));
     collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
@@ -184,7 +177,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addUserAndGrantOptimizeAccess(MISS_PIGGY_USER);
-    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
+    authorizationClient.addGlobalAuthorizationForResource(getResourceTypeByDefinitionType(definitionType));
     collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER

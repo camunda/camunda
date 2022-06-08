@@ -27,9 +27,12 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ZeebeConfiguration;
 import org.camunda.optimize.websocket.StatusNotifier;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 
 @Slf4j
 @Component
@@ -49,6 +54,9 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   private final List<AbstractIngestedImportMediatorFactory> ingestedMediatorFactories;
   private final List<AbstractEngineImportMediatorFactory> engineMediatorFactories;
   private final List<AbstractZeebeImportMediatorFactory> zeebeMediatorFactories;
+  @Autowired
+  private Environment environment;
+
 
   @Getter
   private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers = new ArrayList<>();
@@ -75,6 +83,13 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     for (AbstractImportScheduler<? extends SchedulerConfig> oldScheduler : importSchedulers) {
       oldScheduler.stopImportScheduling();
       oldScheduler.shutdown();
+    }
+  }
+
+  @PostConstruct
+  public void init() {
+    if (!(Boolean.parseBoolean(environment.getProperty(INTEGRATION_TESTS)))) {
+      startSchedulers();
     }
   }
 

@@ -102,6 +102,7 @@ test('add sources, map and publish a process', async (t) => {
   // the search cache. Id usage will always work regardless of the search cache state.
   await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
   await t.click(e.typeaheadOption(e.usersTypeahead, 'john'));
+  await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
 
   await t.takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png');
 

@@ -45,54 +45,135 @@ export default function DashboardTemplateModal({onClose}) {
           config: [
             {
               position: {x: 0, y: 0},
-              dimensions: {height: 2, width: 4},
+              dimensions: {height: 2, width: 3},
               report: {
-                name: t('dashboard.templates.completedInstances'),
+                name: t('dashboard.templates.30DayThroughput'),
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
                   visualization: 'number',
                   filter: [
                     {
-                      appliedTo: ['all'],
+                      type: 'instanceEndDate',
+                      data: {
+                        type: 'rolling',
+                        start: {
+                          value: 30,
+                          unit: 'days',
+                        },
+                      },
                       filterLevel: 'instance',
-                      type: 'completedInstancesOnly',
+                      appliedTo: ['all'],
                     },
                   ],
+                  configuration: {
+                    targetValue: {
+                      active: true,
+                      isKpi: true,
+                      countProgress: {
+                        target: '200',
+                      },
+                    },
+                  },
                 },
               },
             },
             {
-              position: {x: 4, y: 0},
+              position: {x: 3, y: 0},
               dimensions: {height: 2, width: 4},
               report: {
-                name: t('dashboard.templates.runningInstances'),
-                data: {
-                  view: {entity: 'processInstance', properties: ['frequency']},
-                  groupBy: {type: 'none', value: null},
-                  visualization: 'number',
-                  filter: [
-                    {
-                      appliedTo: ['all'],
-                      filterLevel: 'instance',
-                      type: 'runningInstancesOnly',
-                    },
-                  ],
-                },
-              },
-            },
-            {
-              position: {x: 8, y: 0},
-              dimensions: {height: 2, width: 6},
-              report: {
-                name: t('dashboard.templates.aggregateDuration'),
+                name: t('dashboard.templates.p75Duration'),
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'none', value: null},
                   visualization: 'number',
                   configuration: {
-                    precision: 3,
+                    aggregationTypes: [
+                      {
+                        type: 'percentile',
+                        value: 75,
+                      },
+                    ],
+                    precision: 1,
+                    targetValue: {
+                      active: true,
+                      isKpi: true,
+                      durationProgress: {
+                        target: {
+                          unit: 'hours',
+                          value: '24',
+                          isBelow: true,
+                        },
+                      },
+                    },
                   },
+                },
+              },
+            },
+            {
+              position: {x: 7, y: 0},
+              dimensions: {height: 2, width: 4},
+              report: {
+                name: t('dashboard.templates.p99Duration'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['duration']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  configuration: {
+                    aggregationTypes: [
+                      {
+                        type: 'percentile',
+                        value: 99,
+                      },
+                    ],
+                    precision: 1,
+                    targetValue: {
+                      active: true,
+                      isKpi: true,
+                      durationProgress: {
+                        target: {
+                          unit: 'days',
+                          value: '7',
+                          isBelow: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 11, y: 0},
+              dimensions: {height: 2, width: 3},
+              report: {
+                name: t('dashboard.templates.percentSLAMet'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['percentage']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  configuration: {
+                    targetValue: {
+                      active: true,
+                      isKpi: true,
+                      countProgress: {
+                        baseline: '0',
+                        target: '99',
+                      },
+                    },
+                  },
+                  filter: [
+                    {
+                      type: 'processInstanceDuration',
+                      data: {
+                        value: 7,
+                        unit: 'days',
+                        operator: '<',
+                        includeNull: false,
+                      },
+                      filterLevel: 'instance',
+                      appliedTo: ['all'],
+                    },
+                  ],
                 },
               },
             },
@@ -100,16 +181,27 @@ export default function DashboardTemplateModal({onClose}) {
               position: {x: 14, y: 0},
               dimensions: {height: 2, width: 4},
               report: {
-                name: t('dashboard.templates.activeIncidents'),
+                name: t('dashboard.templates.percentNoIncidents'),
                 data: {
-                  view: {entity: 'incident', properties: ['frequency']},
+                  view: {entity: 'processInstance', properties: ['percentage']},
                   groupBy: {type: 'none', value: null},
                   visualization: 'number',
+                  configuration: {
+                    targetValue: {
+                      active: true,
+                      isKpi: true,
+                      countProgress: {
+                        baseline: '0',
+                        target: '99',
+                      },
+                    },
+                  },
                   filter: [
                     {
+                      type: 'doesNotIncludeIncident',
+                      data: null,
+                      filterLevel: 'instance',
                       appliedTo: ['all'],
-                      filterLevel: 'view',
-                      type: 'includesOpenIncident',
                     },
                   ],
                 },
@@ -141,14 +233,14 @@ export default function DashboardTemplateModal({onClose}) {
                 name: t('dashboard.templates.controlChart'),
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
-                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  groupBy: {type: 'startDate', value: {unit: 'week'}},
                   visualization: 'line',
                   configuration: {
                     aggregationTypes: [
-                      {type: 'min', value: null},
-                      {type: 'avg', value: null},
+                      {type: 'percentile', value: 99},
+                      {type: 'percentile', value: 90},
+                      {type: 'percentile', value: 75},
                       {type: 'percentile', value: 50},
-                      {type: 'max', value: null},
                     ],
                   },
                 },
@@ -173,7 +265,7 @@ export default function DashboardTemplateModal({onClose}) {
                 name: t('dashboard.templates.instanceTrends'),
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
-                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  groupBy: {type: 'startDate', value: {unit: 'week'}},
                   visualization: 'bar',
                   configuration: {
                     xLabel: t('report.groupBy.startDate'),
@@ -220,7 +312,7 @@ export default function DashboardTemplateModal({onClose}) {
                 name: t('dashboard.templates.incidentDurationTrend'),
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency', 'duration']},
-                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  groupBy: {type: 'startDate', value: {unit: 'week'}},
                   visualization: 'barLine',
                   filter: [
                     {
@@ -458,6 +550,7 @@ export default function DashboardTemplateModal({onClose}) {
                     aggregationTypes: [{type: 'max', value: null}],
                     targetValue: {
                       active: true,
+                      isKpi: true,
                       durationChart: {unit: 'hours', isBelow: true, value: '4'},
                     },
                   },
@@ -615,7 +708,7 @@ export default function DashboardTemplateModal({onClose}) {
               name: t('dashboard.templates.userTaskImprovement'),
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
-                groupBy: {type: 'endDate', value: {unit: 'automatic'}},
+                groupBy: {type: 'endDate', value: {unit: 'week'}},
                 distributedBy: {type: 'userTask', value: null},
                 visualization: 'bar',
                 configuration: {
@@ -695,7 +788,7 @@ export default function DashboardTemplateModal({onClose}) {
               name: t('dashboard.templates.durationImprovement'),
               data: {
                 view: {entity: 'processInstance', properties: ['duration']},
-                groupBy: {type: 'endDate', value: {unit: 'automatic'}},
+                groupBy: {type: 'endDate', value: {unit: 'week'}},
                 visualization: 'line',
                 configuration: {
                   aggregationTypes: [
@@ -739,7 +832,7 @@ export default function DashboardTemplateModal({onClose}) {
               name: t('dashboard.templates.workDuration'),
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
-                groupBy: {type: 'endDate', value: {unit: 'automatic'}},
+                groupBy: {type: 'endDate', value: {unit: 'week'}},
                 distributedBy: {type: 'userTask', value: null},
                 visualization: 'line',
                 filter: [
@@ -854,7 +947,7 @@ export default function DashboardTemplateModal({onClose}) {
             name: t('dashboard.templates.processTotal'),
             data: {
               view: {entity: 'processInstance', properties: ['frequency']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+              groupBy: {type: 'startDate', value: {unit: 'month'}},
               distributedBy: {type: 'process', value: null},
               visualization: 'bar',
               configuration: {
@@ -870,7 +963,7 @@ export default function DashboardTemplateModal({onClose}) {
             name: t('dashboard.templates.laborSavings'),
             data: {
               view: {entity: 'userTask', properties: ['duration']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+              groupBy: {type: 'startDate', value: {unit: 'month'}},
               distributedBy: {type: 'process', value: null},
               visualization: 'bar',
               filter: [
@@ -896,7 +989,7 @@ export default function DashboardTemplateModal({onClose}) {
             name: t('dashboard.templates.processAcceleration'),
             data: {
               view: {entity: 'processInstance', properties: ['duration']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+              groupBy: {type: 'startDate', value: {unit: 'month'}},
               distributedBy: {type: 'process', value: null},
               visualization: 'line',
             },
@@ -909,7 +1002,7 @@ export default function DashboardTemplateModal({onClose}) {
             name: t('dashboard.templates.taskAutomation'),
             data: {
               view: {entity: 'userTask', properties: ['frequency']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+              groupBy: {type: 'startDate', value: {unit: 'month'}},
               distributedBy: {type: 'process', value: null},
               visualization: 'bar',
               configuration: {
@@ -941,6 +1034,7 @@ export default function DashboardTemplateModal({onClose}) {
                 aggregationTypes: [{type: 'avg', value: null}],
                 targetValue: {
                   active: true,
+                  isKpi: true,
                   durationChart: {unit: 'hours', isBelow: true, value: '1'},
                 },
               },

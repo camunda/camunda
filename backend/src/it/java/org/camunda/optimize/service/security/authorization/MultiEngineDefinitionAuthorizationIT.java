@@ -10,9 +10,13 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
+import org.camunda.optimize.util.DefinitionResourceTypeUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
@@ -275,6 +279,56 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // then
     assertThat(definitions).hasSize(1);
     assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(SECOND_ENGINE_ALIAS));
+  }
+
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void grantAllResourceAuthorizationsForUserByOneEngineGivesAccessToDefaultTenantOfThatEngineForSharedDefinition(int definitionResourceType) {
+    // given
+    final String tenantId1 = "engine1";
+    setDefaultEngineDefaultTenant(new DefaultTenant(tenantId1));
+    addSecondEngineToConfiguration();
+    final String tenantId2 = "engine2";
+    setSecondEngineDefaultTenant(new DefaultTenant(tenantId2));
+
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    final String definitionKey = "key";
+    switch (definitionResourceType) {
+      case RESOURCE_TYPE_PROCESS_DEFINITION:
+        deployAndStartProcessOnDefaultEngine(definitionKey, null);
+        deployAndStartProcessOnSecondEngine(definitionKey, null);
+        break;
+      case RESOURCE_TYPE_DECISION_DEFINITION:
+        deployAndStartDecisionDefinitionOnDefaultEngine(definitionKey, null);
+        deployAndStartDecisionDefinitionOnSecondEngine(definitionKey, null);
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
+    }
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<DefinitionWithTenantsResponseDto> definitionWithTenantsResponse = definitionClient.
+      resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        DefinitionResourceTypeUtil.getDefinitionTypeByResourceType(definitionResourceType),
+        MultiDefinitionTenantsRequestDto.builder().definition(
+          MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build()
+        ).build(),
+        KERMIT_USER,
+        KERMIT_USER
+      );
+
+    // then
+    assertThat(definitionWithTenantsResponse)
+      .singleElement()
+      .satisfies(definition -> {
+        assertThat(definition.getTenants()).extracting(TenantResponseDto::getId).containsExactly(tenantId1);
+      });
   }
 
   @ParameterizedTest

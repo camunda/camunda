@@ -14,4 +14,8 @@ public class OnboardingConfiguration {
   private boolean enabled;
   @Property("appCuesScriptUrl")
   private String appCuesScriptUrl;
+  @Property("enableOnboardingEmails")
+  private boolean enableOnboardingEmails;
+  @Property("intervalForCheckingTriggerForOnboardingEmails")
+  private int intervalForCheckingTriggerForOnboardingEmails;
 }

@@ -36,7 +36,7 @@ public class PluginLoadingIT extends AbstractIT {
   @BeforeEach
   public void setup() {
     configurationService = embeddedOptimizeExtension.getConfigurationService();
-    pluginProvider = embeddedOptimizeExtension.getApplicationContext().getBean(VariableImportAdapterProvider.class);
+    pluginProvider = embeddedOptimizeExtension.getBean(VariableImportAdapterProvider.class);
   }
 
   @Test

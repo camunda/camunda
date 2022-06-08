@@ -146,6 +146,7 @@ public class DashboardImportService {
     dashboardDefinition.setCollectionId(collectionId);
     dashboardDefinition.setAvailableFilters(dashboardToImport.getAvailableFilters());
     dashboardDefinition.setReports(dashboardToImport.getReports());
+    dashboardDefinition.setManagementDashboard(false);
     return dashboardDefinition;
   }
 

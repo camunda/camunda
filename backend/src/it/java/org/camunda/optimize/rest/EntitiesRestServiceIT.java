@@ -43,11 +43,11 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
@@ -73,6 +73,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntities_returnsMyUsersReports() {
     // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
@@ -86,6 +87,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(privateEntities)
       .hasSize(3)
       .extracting(EntityResponseDto::getReportType, EntityResponseDto::getCombined)
+      // The created management reports are excluded from the results
       .containsExactlyInAnyOrder(
         Tuple.tuple(ReportType.PROCESS, true),
         Tuple.tuple(ReportType.PROCESS, false),

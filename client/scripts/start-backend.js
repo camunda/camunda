@@ -123,7 +123,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         });
 
         // wait for the optimize endpoint to be up before resolving the promise
-        serverCheck('http://localhost:8090', resolve);
+        serverCheck('http://localhost:8090/api/readyz', resolve);
       });
     }
 
@@ -160,7 +160,10 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     function serverCheck(url, onComplete) {
       setTimeout(async () => {
         try {
-          await fetch(url);
+          const response = await fetch(url);
+          if (response.status !== 200) {
+            return serverCheck(url, onComplete);
+          }
         } catch (e) {
           return serverCheck(url, onComplete);
         }
@@ -296,7 +299,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           addLog('--------- DATA GENERATION INITIATED ---------', 'dataGenerator');
           generateDemoData();
           response.statusCode = 200;
-          response.end('Data generation initiated', 'utd-8');
+          response.end('Data generation initiated', 'utf-8');
           return;
         }
 

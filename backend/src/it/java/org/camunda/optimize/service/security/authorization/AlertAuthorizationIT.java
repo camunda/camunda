@@ -19,18 +19,18 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 public class AlertAuthorizationIT extends AbstractAlertIT {
 
-  public final String PROCESS_DEFINITION_KEY = "processDefinition";
-  public final String PROCESS_DEFINITION_KEY_2 = "processDefinition2";
+  private final String PROCESS_DEFINITION_KEY = "processDefinition";
+  private final String PROCESS_DEFINITION_KEY_2 = "processDefinition2";
 
   @Test
   public void getOwnAuthorizedAlertsOnly() {

@@ -6,8 +6,13 @@
 package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.ApplicationContextProvider;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -15,13 +20,16 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
+import org.camunda.optimize.service.KpiService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
+import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -57,18 +65,24 @@ import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -83,52 +97,62 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
-/**
- * Helper to start embedded jetty with Camunda Optimize on board.
- */
 @Slf4j
 public class EmbeddedOptimizeExtension
   implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
 
-  private final String context;
   private final boolean beforeAllMode;
+  private ApplicationContext applicationContext;
 
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
+  @Getter
+  @Setter
+  private boolean closeContextAfterTest = false;
+
+  private static final ObjectMapper configObjectMapper = new ObjectMapper().registerModules(
+    new JavaTimeModule(), new Jdk8Module()
+  );
+  private static String serializedDefaultConfiguration;
 
   public EmbeddedOptimizeExtension() {
     this(false);
   }
 
   public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
-    this(null, beforeAllMode);
-  }
-
-  public EmbeddedOptimizeExtension(final String context) {
-    this(context, false);
-  }
-
-  public EmbeddedOptimizeExtension(final String context, final boolean beforeAllMode) {
-    this.context = context;
     this.beforeAllMode = beforeAllMode;
   }
 
+  @SneakyThrows
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
+    setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
+
+    if (serializedDefaultConfiguration == null) {
+      // store the default configuration to restore it later
+      serializedDefaultConfiguration = configObjectMapper.writeValueAsString(getConfigurationService());
+    }
     if (beforeAllMode) {
       setupOptimize();
     }
   }
 
+  public void setApplicationContext(ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+    applicationContext.getBean(ApplicationContextProvider.class).setApplicationContext(applicationContext);
+  }
+
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
+    setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
+    initMetadataIfMissing();
     if (!beforeAllMode) {
       setupOptimize();
     }
@@ -146,18 +170,23 @@ public class EmbeddedOptimizeExtension
     if (!beforeAllMode) {
       afterTest();
     }
+    if (closeContextAfterTest) {
+      ((ConfigurableApplicationContext) applicationContext).close();
+      setCloseContextAfterTest(false);
+      setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
+    }
   }
 
   public void setupOptimize() {
     try {
-      startOptimize();
-      objectMapper = getApplicationContext().getBean(ObjectMapper.class);
+      objectMapper = getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
-          DEFAULT_USERNAME, DEFAULT_PASSWORD, IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint()
+          DEFAULT_USERNAME, DEFAULT_PASSWORD, IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(applicationContext)
         ).initAuthCookie();
       if (isResetImportOnStart()) {
         resetImportStartIndexes();
+        setResetImportOnStart(true);
       }
     } catch (Exception e) {
       final String message = "Failed starting embedded Optimize.";
@@ -166,11 +195,11 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  private void afterTest() {
+  public void afterTest() {
     try {
       this.getAlertService().getScheduler().clear();
       stopImportScheduling();
-      TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
+      resetConfiguration();
       LocalDateUtil.reset();
       reloadConfiguration();
     } catch (Exception e) {
@@ -196,11 +225,11 @@ public class EmbeddedOptimizeExtension
   }
 
   public void startContinuousImportScheduling() {
-    getOptimize().startEngineImportSchedulers();
+    getImportSchedulerManager().startSchedulers();
   }
 
   public void stopImportScheduling() {
-    getOptimize().stopImportSchedulers();
+    getImportSchedulerManager().stopSchedulers();
   }
 
   @SneakyThrows
@@ -269,11 +298,11 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
-    RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
+    RunningActivityInstanceWriter writer = getBean(RunningActivityInstanceWriter.class);
     ProcessDefinitionResolverService processDefinitionResolverService =
-      getApplicationContext().getBean(ProcessDefinitionResolverService.class);
+      getBean(ProcessDefinitionResolverService.class);
     CamundaEventImportServiceFactory camundaEventServiceFactory =
-      getApplicationContext().getBean(CamundaEventImportServiceFactory.class);
+      getBean(CamundaEventImportServiceFactory.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       final RunningActivityInstanceImportService service =
@@ -297,7 +326,7 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionFromResolverService(final String definitionId) {
     DecisionDefinitionResolverService resolverService =
-      getApplicationContext().getBean(DecisionDefinitionResolverService.class);
+      getBean(DecisionDefinitionResolverService.class);
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       final Optional<DecisionDefinitionOptimizeDto> definition =
         resolverService.getDefinition(definitionId, configuredEngine);
@@ -311,7 +340,7 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromResolverService(final String definitionId) {
     ProcessDefinitionResolverService resolverService =
-      getApplicationContext().getBean(ProcessDefinitionResolverService.class);
+      getBean(ProcessDefinitionResolverService.class);
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       final Optional<ProcessDefinitionOptimizeDto> definition =
         resolverService.getDefinition(definitionId, configuredEngine);
@@ -364,7 +393,7 @@ public class EmbeddedOptimizeExtension
   }
 
   private Collection<EngineContext> getConfiguredEngines() {
-    return getApplicationContext().getBean(PlatformEngineContextFactory.class).getConfiguredEngines();
+    return getBean(PlatformEngineContextFactory.class).getConfiguredEngines();
   }
 
   public EngineConfiguration getDefaultEngineConfiguration() {
@@ -409,15 +438,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public ImportSchedulerManagerService getImportSchedulerManager() {
-    return getOptimize().getApplicationContext().getBean(ImportSchedulerManagerService.class);
-  }
-
-  private TestEmbeddedCamundaOptimize getOptimize() {
-    if (context != null) {
-      return TestEmbeddedCamundaOptimize.getInstance(context);
-    } else {
-      return TestEmbeddedCamundaOptimize.getInstance();
-    }
+    return getBean(ImportSchedulerManagerService.class);
   }
 
   public OptimizeRequestExecutor getRequestExecutor() {
@@ -440,32 +461,49 @@ public class EmbeddedOptimizeExtension
       .post(Entity.json(entity));
   }
 
-  public void startOptimize() throws Exception {
-    getOptimize().start();
+  public void initMetadataIfMissing() {
     getElasticsearchMetadataService().initMetadataIfMissing(getOptimizeElasticClient());
-    getAlertService().init();
   }
 
   public void reloadConfiguration() {
-    getOptimize().reloadConfiguration();
+    // reset engine context factory first to ensure we have new clients before reinitializing any other object
+    // as they might make use of the engine client
+    final EngineContextFactory engineContextFactory =
+      getBean(PlatformEngineContextFactory.class);
+    engineContextFactory.close();
+    engineContextFactory.init();
+
+    final Map<String, ?> refreshableServices = getApplicationContext().getBeansOfType(ConfigurationReloadable.class);
+    for (Map.Entry<String, ?> entry : refreshableServices.entrySet()) {
+      Object beanRef = entry.getValue();
+      if (beanRef instanceof ConfigurationReloadable) {
+        ConfigurationReloadable reloadable = (ConfigurationReloadable) beanRef;
+        reloadable.reloadConfiguration(getApplicationContext());
+      }
+    }
+
+
+    // warmup the elastic client with default options (to not make use of plugins)
+    // this is done to fully initialize the client as the client does a version validation on the first request
+    try {
+      getOptimizeElasticClient().getHighLevelClient().info(RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      log.error("Could not get cluster info from Elasticsearch", e);
+    }
+  }
+
+  public void resetConfiguration() throws IOException {
+    log.info("resetting config, parsing defaultconfig and copying properties");
+    // copy all properties from the default configuration to the embedded optimize
+    BeanUtils.copyProperties(
+      configObjectMapper.readValue(serializedDefaultConfiguration, ConfigurationService.class),
+      getBean(ConfigurationService.class)
+    );
+    log.info("done resetting config");
   }
 
   public void reloadTenantCache() {
     getTenantService().reloadConfiguration(null);
-  }
-
-  public void stopOptimize() {
-    try {
-      this.getAlertService().destroy();
-    } catch (Exception e) {
-      log.error("Failed to destroy alert service", e);
-    }
-
-    try {
-      getOptimize().destroy();
-    } catch (Exception e) {
-      log.error("Failed to stop Optimize", e);
-    }
   }
 
   public final WebTarget target(String path) {
@@ -477,12 +515,12 @@ public class EmbeddedOptimizeExtension
   }
 
   public final WebTarget rootTarget(String path) {
-    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint())
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint(applicationContext))
       .path(path);
   }
 
   public final WebTarget securedRootTarget() {
-    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint());
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint(applicationContext));
   }
 
   public List<Long> getImportIndexes() {
@@ -531,47 +569,55 @@ public class EmbeddedOptimizeExtension
   }
 
   public ApplicationContext getApplicationContext() {
-    return getOptimize().getApplicationContext();
+    return applicationContext;
+  }
+
+  public <T> T getBean(Class<T> clazz) {
+    return applicationContext.getBean(clazz);
   }
 
   public DateTimeFormatter getDateTimeFormatter() {
-    return getOptimize().getDateTimeFormatter();
+    return getBean(DateTimeFormatter.class);
   }
 
   public ConfigurationService getConfigurationService() {
-    return getOptimize().getConfigurationService();
+    return getBean(ConfigurationService.class);
+  }
+
+  public ManagementDashboardService getManagementDashboardService() {
+    return getApplicationContext().getBean(ManagementDashboardService.class);
   }
 
   public CleanupScheduler getCleanupScheduler() {
-    return getOptimize().getCleanupService();
+    return getBean(CleanupScheduler.class);
   }
 
   public TelemetryScheduler getTelemetryScheduler() {
-    return getOptimize().getTelemetryService();
+    return getBean(TelemetryScheduler.class);
   }
 
   public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
-    return getOptimize().getProcessInstanceArchivingService();
+    return getBean(ProcessInstanceArchivingService.class);
   }
 
   public PlatformUserIdentityCache getUserIdentityCache() {
-    return getOptimize().getPlatformUserIdentityCache();
+    return getBean(PlatformUserIdentityCache.class);
   }
 
   public PlatformUserTaskIdentityCache getUserTaskIdentityCache() {
-    return getOptimize().getPlatformUserTaskIdentityCache();
+    return getBean(PlatformUserTaskIdentityCache.class);
   }
 
   public EventIndexRolloverService getEventIndexRolloverService() {
-    return getOptimize().getEventIndexRolloverService();
+    return getBean(EventIndexRolloverService.class);
   }
 
   public ExternalProcessVariableIndexRolloverService getExternalProcessVariableIndexRolloverService() {
-    return getOptimize().getExternalProcessVariableIndexRolloverService();
+    return getBean(ExternalProcessVariableIndexRolloverService.class);
   }
 
   public LocalizationService getLocalizationService() {
-    return getOptimize().getLocalizationService();
+    return getBean(LocalizationService.class);
   }
 
   public ObjectMapper getObjectMapper() {
@@ -579,19 +625,23 @@ public class EmbeddedOptimizeExtension
   }
 
   public ImportIndexHandlerRegistry getIndexHandlerRegistry() {
-    return getApplicationContext().getBean(ImportIndexHandlerRegistry.class);
+    return getBean(ImportIndexHandlerRegistry.class);
   }
 
   public AlertService getAlertService() {
-    return getApplicationContext().getBean(AlertService.class);
+    return getBean(AlertService.class);
   }
 
   public TenantService getTenantService() {
-    return getApplicationContext().getBean(TenantService.class);
+    return getBean(TenantService.class);
+  }
+
+  public KpiService getKpiService() {
+    return getApplicationContext().getBean(KpiService.class);
   }
 
   public PlatformIdentityService getIdentityService() {
-    return getApplicationContext().getBean(PlatformIdentityService.class);
+    return getBean(PlatformIdentityService.class);
   }
 
   @SneakyThrows
@@ -606,39 +656,39 @@ public class EmbeddedOptimizeExtension
   }
 
   public ExternalEventService getEventService() {
-    return getApplicationContext().getBean(ExternalEventService.class);
+    return getBean(ExternalEventService.class);
   }
 
   public SettingsService getSettingsService() {
-    return getApplicationContext().getBean(SettingsService.class);
+    return getBean(SettingsService.class);
   }
 
   public OptimizeIndexNameService getIndexNameService() {
-    return getApplicationContext().getBean(OptimizeIndexNameService.class);
+    return getBean(OptimizeIndexNameService.class);
   }
 
   public EventTraceStateProcessingScheduler getEventProcessingScheduler() {
-    return getApplicationContext().getBean(EventTraceStateProcessingScheduler.class);
+    return getBean(EventTraceStateProcessingScheduler.class);
   }
 
   public EventProcessInstanceImportMediatorManager getEventProcessInstanceImportMediatorManager() {
-    return getApplicationContext().getBean(EventProcessInstanceImportMediatorManager.class);
+    return getBean(EventProcessInstanceImportMediatorManager.class);
   }
 
   public EventBasedProcessesInstanceImportScheduler getEventBasedProcessesInstanceImportScheduler() {
-    return getApplicationContext().getBean(EventBasedProcessesInstanceImportScheduler.class);
+    return getBean(EventBasedProcessesInstanceImportScheduler.class);
   }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {
-    return getApplicationContext().getBean(ElasticSearchSchemaManager.class);
+    return getBean(ElasticSearchSchemaManager.class);
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {
-    return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
+    return getBean(OptimizeElasticsearchClient.class);
   }
 
   public ElasticsearchMetadataService getElasticsearchMetadataService() {
-    return getApplicationContext().getBean(ElasticsearchMetadataService.class);
+    return getBean(ElasticsearchMetadataService.class);
   }
 
   private boolean isResetImportOnStart() {

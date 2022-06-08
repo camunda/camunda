@@ -1,0 +1,30 @@
+.KpiResult {
+  min-width: max-content;
+  padding: 20px 20px 20px 20px;
+  height: 100%;
+
+  .kpi {
+    > .title {
+      color: var(--grey-darken-23);
+    }
+
+    &:not(:first-child) {
+      border-top: 1px solid var(--silver-darken-87);
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+
+    .reportValues {
+      margin-top: 5px;
+
+      .reportValue {
+        margin-right: 20px;
+        color: var(--red-darken-38);
+
+        &.success {
+          color: var(--green-base-44);
+        }
+      }
+    }
+  }
+}

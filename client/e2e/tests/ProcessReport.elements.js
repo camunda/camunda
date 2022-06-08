@@ -41,10 +41,10 @@ export const reportProgressBar = reportRenderer.find('.ProgressBar');
 export const configurationButton = Selector('.Configuration .Popover');
 export const resetButton = Selector('.resetButton');
 export const goalSwitch = Selector('.Configuration .Popover fieldset')
-  .withText('Goal')
+  .withText('Set Target')
   .find('.Switch');
 export const goalTargetInput = Selector('.Configuration .Popover fieldset')
-  .withText('Goal')
+  .withText('Set Target')
   .find('.LabeledInput')
   .nth(1)
   .find('input');
@@ -83,7 +83,7 @@ export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
-export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child');
+export const limitPrecisionSwitch = Selector('.NumberConfig .Switch').withText('Limit Precision');
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);

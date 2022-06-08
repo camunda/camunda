@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -40,17 +41,15 @@ public class DashboardRestService {
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
-  /**
-   * Creates a new dashboard.
-   *
-   * @return the id of the dashboard
-   */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewDashboard(@Context final ContainerRequestContext requestContext,
                                           DashboardDefinitionRestDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    if (dashboardDefinitionDto != null && dashboardDefinitionDto.isManagementDashboard()) {
+      throw new OptimizeValidationException("Management Dashboards cannot be created");
+    }
     return dashboardService.createNewDashboardAndReturnId(
       userId,
       Optional.ofNullable(dashboardDefinitionDto)
@@ -77,9 +76,6 @@ public class DashboardRestService {
     }
   }
 
-  /**
-   * Retrieve the dashboard to the specified id.
-   */
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -92,13 +88,16 @@ public class DashboardRestService {
     return dashboardDefinition;
   }
 
-  /**
-   * Updates the given fields of a dashboard to the given id.
-   *
-   * @param dashboardId      the id of the dashboard
-   * @param updatedDashboard dashboard that needs to be updated. Only the fields that are defined here are actually
-   *                         updated.
-   */
+  @GET
+  @Path("/management")
+  @Produces(MediaType.APPLICATION_JSON)
+  public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(@Context ContainerRequestContext requestContext) {
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+      dashboardService.getManagementDashboard();
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    return dashboardDefinition;
+  }
+
   @PUT
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -111,9 +110,6 @@ public class DashboardRestService {
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
-  /**
-   * Delete the dashboard to the specified id.
-   */
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)

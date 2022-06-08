@@ -342,9 +342,8 @@ String itZeebePodSpec(String camBpmVersion, String esVersion) {
 }
 
 String e2eTestPodSpec(String camBpmVersion, String esVersion) {
-  // use Docker image with preinstalled Chrome (large) and install Maven (small)
-  // manually for performance reasons
-  return basePodSpec(1, 6, 'selenium/node-chrome:3.141.59-xenon') +
+  // use Docker image with preinstalled headless Chrome and Maven
+  return basePodSpec(1, 6, 'markhobson/maven-chrome:jdk-11') +
       camBpmContainerSpec(camBpmVersion, true, 2, 2, false) +
       elasticSearchContainerSpec(esVersion) +
       postgresContainerSpec() +
@@ -707,8 +706,6 @@ void e2eTestSteps() {
     sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc || true'
   }
   container('maven') {
-    sh 'sudo apt-get update'
-    sh 'sudo apt-get install -y --no-install-recommends maven openjdk-11-jdk'
     runMaven('test -pl client -Pclient.e2etests-chromeheadless -Dskip.yarn.build')
   }
 }

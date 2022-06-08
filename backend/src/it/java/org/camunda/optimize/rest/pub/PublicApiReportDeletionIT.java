@@ -6,6 +6,9 @@
 package org.camunda.optimize.rest.pub;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -31,6 +34,19 @@ public class PublicApiReportDeletionIT extends AbstractIT {
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(SINGLE_PROCESS_REPORT_INDEX_NAME)).isEqualTo(0);
   }
 
+  @Test
+  public void deleteManagementProcessReportNotSupported() {
+    // given
+    setAccessToken();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
+
+    // when
+    final Response deleteResponse = publicApiClient.deleteReport(reportId, ACCESS_TOKEN);
+
+    // then
+    assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
 
   @Test
   public void deleteDecisionReport() {
@@ -60,6 +76,16 @@ public class PublicApiReportDeletionIT extends AbstractIT {
 
   private void setAccessToken() {
     embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
+  }
+
+  private String findManagementReportId() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class)
+      .stream()
+      .filter(reportDef -> reportDef.getData().isManagementReport())
+      .findFirst()
+      .map(ReportDefinitionDto::getId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("No Management Report Found"));
   }
 
 }

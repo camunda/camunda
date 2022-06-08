@@ -5,11 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.alert;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
 @Data
 @FieldNameConstants
+@AllArgsConstructor
+@NoArgsConstructor
 public class AlertInterval {
   private int value;
   private AlertIntervalUnit unit;

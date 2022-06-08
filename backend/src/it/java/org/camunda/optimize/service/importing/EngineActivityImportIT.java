@@ -302,14 +302,14 @@ public class EngineActivityImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
+  public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() {
     // given
+    startAndUseNewOptimizeInstance();
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
+    startAndUseNewOptimizeInstance();
     importAllEngineEntitiesFromScratch();
 
     // then

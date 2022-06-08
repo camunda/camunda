@@ -5,31 +5,16 @@
  */
 package org.camunda.optimize;
 
-import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 
-@ComponentScan(
-  basePackages = {
-    "org.camunda.optimize.service",
-    "org.camunda.optimize.rest",
-    "org.camunda.optimize.plugin"
-  },
-  excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
-@Configuration
+@Slf4j
+@ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
+@SpringBootApplication
 public class Main {
-
-  private static EmbeddedCamundaOptimize jettyCamundaOptimize;
-
-  public static void main(String[] args) throws Exception {
-    jettyCamundaOptimize = new EmbeddedCamundaOptimize();
-    try {
-      jettyCamundaOptimize.startOptimize();
-      jettyCamundaOptimize.startEngineImportSchedulers();
-      jettyCamundaOptimize.join();
-    } finally {
-      jettyCamundaOptimize.destroyOptimize();
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(Main.class, args);
   }
-
 }

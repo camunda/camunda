@@ -6,24 +6,23 @@
 package org.camunda.optimize.test.importing.permutations;
 
 import com.google.common.collect.Collections2;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.permutations.AbstractImportMediatorPermutationsIT;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-@Slf4j
 public abstract class AbstractExtendedImportMediatorPermutationsIT extends AbstractImportMediatorPermutationsIT {
   private static final int MAX_MEDIATORS_TO_PERMUTATE = 8;
 
-  protected void logMediatorOrder(List<Class<? extends ImportMediator>> mediatorOrder) {
+  protected void logMediatorOrder(final Logger logger, List<Class<? extends ImportMediator>> mediatorOrder) {
     StringBuilder order = new StringBuilder();
     mediatorOrder.forEach(mediator -> order.append(mediator.getSimpleName()).append("\n"));
 
-    log.warn("Testing the following mediators order: \n" + order);
+    logger.warn("Testing the following mediators order: \n" + order);
   }
 
   protected static Stream<List<Class<? extends ImportMediator>>> getMediatorPermutationsStream(

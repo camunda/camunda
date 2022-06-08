@@ -22,7 +22,7 @@ import {ReactComponent as link} from './link.svg';
 import {ReactComponent as embed} from './embed.svg';
 import {ReactComponent as save} from './save.svg';
 import {ReactComponent as contextMenu} from './context-menu.svg';
-import {ReactComponent as openInCockpit} from './open-in-cockpit.svg';
+import {ReactComponent as jump} from './jump.svg';
 import {ReactComponent as copyDocument} from './copy-document.svg';
 import {ReactComponent as copySmall} from './copy-small.svg';
 import {ReactComponent as checkSmall} from './check-small.svg';
@@ -83,7 +83,7 @@ const icons = {
   embed,
   save,
   'context-menu': contextMenu,
-  'open-in-cockpit': openInCockpit,
+  jump,
   'copy-document': copyDocument,
   'copy-small': copySmall,
   'check-small': checkSmall,

@@ -32,7 +32,7 @@ public class SingleDecisionReportIndex extends AbstractReportIndex {
   }
 
   @Override
-  protected XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException {
+  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder.
       startObject(DATA)

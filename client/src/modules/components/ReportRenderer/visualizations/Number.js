@@ -23,9 +23,7 @@ export function Number({report, formatter, mightFail}) {
   const {targetValue, precision} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
   const processVariableReport = reportType === 'process' && data.view.entity === 'variable';
-  const isMultiMeasure =
-    data.view.properties?.length > 1 ||
-    (data.view.properties?.includes('duration') && data.configuration.aggregationTypes?.length > 1);
+  const isMultiMeasure = result?.measures.length > 1;
 
   useEffect(() => {
     // We need to load the variables in order to resolve the variable label
@@ -60,22 +58,25 @@ export function Number({report, formatter, mightFail}) {
   }, []);
 
   if (targetValue && targetValue.active && !isMultiMeasure) {
-    let min, max;
+    let min, max, isBelow;
     if (
       ['frequency', 'percentage'].includes(data.view.properties[0]) ||
       data.view.entity === 'variable'
     ) {
       min = targetValue.countProgress.baseline;
       max = targetValue.countProgress.target;
+      isBelow = targetValue.countProgress.isBelow;
     } else {
       min = formatters.convertDurationToSingleNumber(targetValue.durationProgress.baseline);
       max = formatters.convertDurationToSingleNumber(targetValue.durationProgress.target);
+      isBelow = targetValue.durationProgress.target.isBelow;
     }
 
     return (
       <ProgressBar
         min={min}
         max={max}
+        isBelow={isBelow}
         value={result.data}
         formatter={formatter}
         precision={precision}

@@ -47,6 +47,7 @@ public class EngineVersionChecker {
     try {
       response = engineClient.target(engineRestPath + EngineConstants.VERSION_ENDPOINT).request().get();
     } catch (Exception e) {
+      log.error(ERROR_CONNECTION_REFUSED, e);
       throw new OptimizeRuntimeException(ERROR_CONNECTION_REFUSED);
     }
 

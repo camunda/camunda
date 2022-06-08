@@ -12,15 +12,18 @@
     position: relative;
     border-radius: 4px;
     background-color: var(--silver-darken-94);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
     margin-top: 24px;
 
     .goalOverlay {
       height: 100%;
       position: absolute;
-      color: var(--red-darken-38);
+      color: var(--black);
       border-radius: 4px;
-      background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
+      background: var(--green-lighten-80);
+
+      &.warning {
+        background: var(--red-lighten-85);
+      }
 
       .goalLabel {
         display: block;
@@ -31,7 +34,7 @@
         padding-right: 10px;
         padding-left: 10px;
         white-space: nowrap;
-        font-size: 1.3em;
+        font-size: 18px;
 
         &.rightSide {
           margin-left: 0%;
@@ -44,7 +47,7 @@
           left: 0;
           right: 0;
           height: 135%;
-          border-right: 2px solid var(--red-darken-38);
+          border-right: 2px solid var(--black);
         }
       }
     }
@@ -65,16 +68,16 @@
 
     .filledOverlay {
       height: 100%;
-      background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
+      background: var(--green-base-44);
       border-radius: 4px;
       min-width: 5px;
 
       &.goalExceeded {
-        background: linear-gradient(
-          to bottom,
-          var(--blue-darken-62) 0%,
-          var(--blue-darken-55) 100%
-        );
+        background: var(--green-base-44);
+      }
+
+      &.warning {
+        background: var(--red-darken-42);
       }
     }
 

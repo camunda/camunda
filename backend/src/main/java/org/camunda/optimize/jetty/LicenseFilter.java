@@ -5,9 +5,11 @@
  */
 package org.camunda.optimize.jetty;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.license.OptimizeLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.springframework.context.ApplicationContext;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -23,11 +25,15 @@ import java.util.Arrays;
 import java.util.Set;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 
+@RequiredArgsConstructor
 @Slf4j
 public class LicenseFilter implements Filter {
+  private final LicenseManager licenseManager;
+  private final ApplicationContext applicationContext;
   private static final Set<String> EXCLUDED_EXTENSIONS = Set.of("css", "html", "js", "ico");
   private static final Set<String> EXCLUDED_API_CALLS = Set.of(
     "authentication",
@@ -38,12 +44,6 @@ public class LicenseFilter implements Filter {
     "status",
     "readyz"
   );
-
-  private final SpringAwareServletConfiguration awareDelegate;
-
-  public LicenseFilter(SpringAwareServletConfiguration awareDelegate) {
-    this.awareDelegate = awareDelegate;
-  }
 
   @Override
   public void init(FilterConfig filterConfig) {
@@ -61,9 +61,9 @@ public class LicenseFilter implements Filter {
     HttpServletResponse servletResponse = (HttpServletResponse) response;
     HttpServletRequest servletRequest = (HttpServletRequest) request;
 
-    if (isLicenseCheckNeeded(servletRequest)) {
+    if (isLicenseCheckNeeded(servletRequest, applicationContext)) {
       try {
-        getLicenseManager().validateLicenseStoredInOptimize();
+        licenseManager.validateLicenseStoredInOptimize();
       } catch (OptimizeLicenseException e) {
         log.warn("Given License is invalid or not available!");
         constructForbiddenResponse(servletResponse, e);
@@ -81,28 +81,24 @@ public class LicenseFilter implements Filter {
     servletResponse.setStatus(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  private LicenseManager getLicenseManager() {
-    return awareDelegate.getApplicationContext().getBean(LicenseManager.class);
-  }
-
-  private boolean isLicenseCheckNeeded(HttpServletRequest servletRequest) {
+  private static boolean isLicenseCheckNeeded(HttpServletRequest servletRequest, ApplicationContext applicationContext) {
     String requestPath = servletRequest.getServletPath().toLowerCase();
     String pathInfo = servletRequest.getPathInfo();
 
     return !isStaticResource(requestPath)
       && !isRootRequest(requestPath)
-      && !isCloudEnvironment()
+      && !isCloudEnvironment(applicationContext)
       && !isExcludedApiPath(pathInfo)
       && !isStatusRequest(requestPath);
   }
 
-  private boolean isCloudEnvironment() {
-    return Arrays.stream(awareDelegate.getApplicationContext().getEnvironment().getActiveProfiles())
+  private static boolean isCloudEnvironment(ApplicationContext applicationContext) {
+    return Arrays.stream(applicationContext.getEnvironment().getActiveProfiles())
       .anyMatch(profile -> CLOUD_PROFILE.equalsIgnoreCase(profile) || CCSM_PROFILE.equalsIgnoreCase(profile));
   }
 
   private static boolean isStatusRequest(String requestPath) {
-    return requestPath.equals("/ws/status");
+    return requestPath.equals(STATUS_WEBSOCKET_PATH);
   }
 
   private static boolean isExcludedApiPath(String pathInfo) {

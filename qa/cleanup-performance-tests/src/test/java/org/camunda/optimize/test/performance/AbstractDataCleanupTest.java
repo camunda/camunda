@@ -13,6 +13,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,10 +25,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = { INTEGRATION_TESTS + "=true" })
 public abstract class AbstractDataCleanupTest {
   protected static final Logger logger = LoggerFactory.getLogger(AbstractDataCleanupTest.class);
 
   private static final Properties properties = PropertyUtil.loadProperties("static-cleanup-test.properties");
+
+  @Autowired
+  protected static ApplicationContext applicationContext;
 
   @RegisterExtension
   @Order(1)

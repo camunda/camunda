@@ -14,6 +14,7 @@ import NumberConfig from './NumberConfig';
 const props = {
   report: {
     data: {
+      definitions: [{}],
       view: {properties: ['frequency']},
       configuration: {
         precision: null,
@@ -34,6 +35,7 @@ const props = {
         aggregationTypes: [{type: 'avg', value: null}],
       },
     },
+    result: {measures: [{}]},
   },
 };
 
@@ -44,10 +46,7 @@ it('should have a switch for the precision setting', () => {
   expect(node.find('Switch')).toExist();
   expect(node.find('.precision')).toExist();
 
-  node
-    .find('Switch')
-    .first()
-    .simulate('change', {target: {checked: true}});
+  node.find({label: 'Limit Precision'}).simulate('change', {target: {checked: true}});
 
   expect(spy).toHaveBeenCalledWith({precision: {$set: 1}});
 });
@@ -90,32 +89,7 @@ it('should contain a target input for duration property', () => {
 
 it('should not show target input for multi-measure reports', () => {
   const node = shallow(
-    <NumberConfig
-      report={update(props.report, {data: {view: {properties: {$set: ['frequency', 'duration']}}}})}
-    />
-  );
-
-  expect(node.find('CountTargetInput')).not.toExist();
-  expect(node.find('DurationTargetInput')).not.toExist();
-});
-
-it('should not show target input for multi-aggregation duration reports', () => {
-  const node = shallow(
-    <NumberConfig
-      report={update(props.report, {
-        data: {
-          view: {properties: {$set: ['duration']}},
-          configuration: {
-            aggregationTypes: {
-              $set: [
-                {type: 'avg', value: null},
-                {type: 'max', value: null},
-              ],
-            },
-          },
-        },
-      })}
-    />
+    <NumberConfig report={update(props.report, {result: {measures: {$set: [{}, {}]}}})} />
   );
 
   expect(node.find('CountTargetInput')).not.toExist();
@@ -130,4 +104,24 @@ it('should not show precision selection for percentage reports', () => {
   );
 
   expect(node.find('.precision')).not.toExist();
+});
+
+it('should set the report as kpi report', () => {
+  const spy = jest.fn();
+  const node = shallow(<NumberConfig {...props} onChange={spy} />);
+
+  node.find({label: 'Display as a process KPI'}).simulate('change', {target: {checked: true}});
+
+  expect(spy).toHaveBeenCalledWith({targetValue: {isKpi: {$set: true}}});
+});
+
+it('should not show kpi config for multi process reports', () => {
+  const node = shallow(
+    <NumberConfig
+      {...props}
+      report={update(props.report, {data: {definitions: {$set: [{}, {}]}}})}
+    />
+  );
+
+  expect(node.find({label: 'Display as a process KPI'})).not.toExist();
 });

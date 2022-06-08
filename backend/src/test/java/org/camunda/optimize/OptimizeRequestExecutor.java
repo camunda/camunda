@@ -32,7 +32,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -524,10 +525,34 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildSetProcessOwnerRequest(final String processDefinitionKey,
-                                                             final ProcessGoalsOwnerDto owner) {
+                                                             final ProcessOwnerDto owner) {
+    // TODO modify with OPT-6175
+    this.path = "process/" + processDefinitionKey + "/owner-new";
+    this.method = PUT;
+    this.body = getBody(owner);
+    return this;
+  }
+
+  // TODO remove with OPT-6175
+  public OptimizeRequestExecutor buildSetProcessOwnerRequestOld(final String processDefinitionKey,
+                                                                final ProcessOwnerDto owner) {
     this.path = "process/" + processDefinitionKey + "/owner";
     this.method = PUT;
     this.body = getBody(owner);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetProcessOverviewRequest() {
+    this.path = "process/overview";
+    this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateProcessDigestRequest(final String processDefinitionKey,
+                                                                 final ProcessDigestRequestDto digest) {
+    this.path = "process/" + processDefinitionKey + "/digest";
+    this.method = PUT;
+    this.body = getBody(digest);
     return this;
   }
 
@@ -709,6 +734,12 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetDashboardRequest(String id) {
     this.path = "dashboard/" + id;
+    this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetManagementDashboardRequest() {
+    this.path = "dashboard/management";
     this.method = GET;
     return this;
   }

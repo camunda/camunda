@@ -7,15 +7,17 @@ package org.camunda.optimize.test.it.extension;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.springframework.context.ApplicationContext;
 
 import java.util.Properties;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationTestConfigurationUtil {
-
   private static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
 
@@ -67,16 +69,16 @@ public class IntegrationTestConfigurationUtil {
     return PROPERTIES.getProperty("camunda.engine.it.port");
   }
 
-  public static String getEmbeddedOptimizeEndpoint() {
-    return "http://localhost:" + System.getProperty("optimizeHttpPort", "8090");
+  public static String getEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
+    return "http://localhost:" + applicationContext.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY);
   }
 
-  public static String getSecuredEmbeddedOptimizeEndpoint() {
-    return "https://localhost:" + System.getProperty("optimizeHttpsPort", "8091");
+  public static String getSecuredEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
+    return "https://localhost:" + applicationContext.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY);
   }
 
-  public static String getEmbeddedOptimizeRestApiEndpoint() {
-    return getEmbeddedOptimizeEndpoint() + "/api";
+  public static String getEmbeddedOptimizeRestApiEndpoint(ApplicationContext applicationContext) {
+    return getEmbeddedOptimizeEndpoint(applicationContext) + "/api";
   }
 
   public static ConfigurationService createItConfigurationService() {

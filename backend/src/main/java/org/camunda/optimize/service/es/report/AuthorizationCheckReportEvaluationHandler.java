@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
@@ -23,8 +24,9 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
                                                    final SingleReportEvaluator singleReportEvaluator,
                                                    final CombinedReportEvaluator combinedReportEvaluator,
                                                    final ReportAuthorizationService authorizationService,
-                                                   final ProcessVariableService processVariableService) {
-    super(reportReader, singleReportEvaluator, combinedReportEvaluator, processVariableService);
+                                                   final ProcessVariableService processVariableService,
+                                                   final DefinitionService definitionService) {
+    super(reportReader, singleReportEvaluator, combinedReportEvaluator, processVariableService, definitionService);
     this.authorizationService = authorizationService;
   }
 

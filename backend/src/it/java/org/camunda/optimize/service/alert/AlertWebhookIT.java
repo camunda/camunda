@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.AbstractAlertIT;
+import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration.Placeholder;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.junit.jupiter.api.Test;
@@ -232,7 +234,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
   private String createReportLink(final String collectionId, final String reportId, final AlertNotificationType type) {
     return String.format(
       "http://localhost:%d/#/collection/%s/report/%s?utm_source=" + type.getUtmSource() + "&utm_medium=webhook",
-      embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090),
+      embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY),
       collectionId,
       reportId
     );

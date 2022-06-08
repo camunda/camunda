@@ -50,7 +50,9 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.*;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -85,7 +87,14 @@ public class EntitiesReader {
   public List<CollectionEntity> getAllPrivateEntities(final String userId) {
     log.debug("Fetching all available entities for user [{}]", userId);
 
-    final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(COLLECTION_ID));
+    final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(COLLECTION_ID))
+      .minimumShouldMatch(1)
+      .should(termQuery(DashboardIndex.MANAGEMENT_DASHBOARD, false))
+      .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
+      .should(boolQuery()
+                .mustNot(existsQuery(DashboardIndex.MANAGEMENT_DASHBOARD))
+                .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT))
+      );
 
     if (userId != null) {
       query.must(termQuery(OWNER, userId));
@@ -212,7 +221,7 @@ public class EntitiesReader {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
     return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
-      optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
+        optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
       .map(MultiBucketsAggregation.Bucket::getDocCount)
       .orElse(0L);
   }

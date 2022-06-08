@@ -285,20 +285,26 @@ export function createDurationFormattingOptions(targetLine, dataMinStep, logScal
   }
 
   return {
-    callback: function (v, ...args) {
-      let label = this.getLabelForValue(v);
-      if (typeof label === 'string') {
-        label = parseFloat(label.replace(/,/g, ''));
+    callback: function (value, ...args) {
+      let durationMs = value;
+      if (this.axis === 'x') {
+        const labels = this.getLabels();
+        durationMs = Number(labels[value]);
       }
 
       if (logScale) {
-        const logValue = Chart.defaults.scales.logarithmic.ticks.callback.call(this, v, ...args);
+        const logValue = Chart.defaults.scales.logarithmic.ticks.callback.call(
+          this,
+          value,
+          ...args
+        );
+
         if (!logValue) {
           return '';
         }
       }
 
-      return +(label / niceStepSize.base).toFixed(2) + niceStepSize.unit;
+      return +(durationMs / niceStepSize.base).toFixed(2) + niceStepSize.unit;
     },
     stepSize: niceStepSize.value,
   };

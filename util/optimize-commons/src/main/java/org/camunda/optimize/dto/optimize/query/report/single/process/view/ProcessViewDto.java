@@ -43,6 +43,12 @@ public class ProcessViewDto implements Combinable {
     this.properties.add(property);
   }
 
+  public ProcessViewDto(final ProcessViewEntity entity,
+                        final List<ViewProperty> properties) {
+    this.entity = entity;
+    this.properties = properties;
+  }
+
   @Override
   public boolean isCombinable(Object o) {
     if (this == o) {

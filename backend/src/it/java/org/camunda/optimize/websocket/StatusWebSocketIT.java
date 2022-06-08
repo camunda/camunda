@@ -7,6 +7,8 @@ package org.camunda.optimize.websocket;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.JettyConfig;
+import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
@@ -182,7 +184,7 @@ public class StatusWebSocketIT extends AbstractIT {
     throws DeploymentException, IOException, URISyntaxException {
     final String dest = String.format(
       "ws://localhost:%d/ws/status",
-      embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090)
+      embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
     );
     return WEB_SOCKET_CONTAINER.connectToServer(statusClientSocket, new URI(dest));
   }

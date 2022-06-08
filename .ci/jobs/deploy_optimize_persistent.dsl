@@ -14,4 +14,10 @@ pipelineJob('deploy-optimize-persistent') {
       sandbox()
     }
   }
+
+  parameters {
+      stringParam('OPTIMIZE_VERSION', 'latest', 'Optimize Docker tag to deploy.')
+      stringParam('ES_VERSION', 'latest', 'ES Docker tag to deploy.')
+      stringParam('CAMBPM_VERSION', 'latest', 'CAMBPM Docker tag to deploy.')
+    }
 }

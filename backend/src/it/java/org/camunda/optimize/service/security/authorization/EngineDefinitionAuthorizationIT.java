@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -45,6 +44,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.DefinitionResourceTypeUtil.getResourceTypeByDefinitionType;
 
 public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public static final String PROCESS_KEY = "aProcess";
@@ -578,7 +578,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeDefinitionAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -605,7 +605,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -634,7 +634,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     engineIntegrationExtension.createTenant(tenant1);
     final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -666,7 +666,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeDefinitionAuthorizationsUser_getDefinitions(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -693,7 +693,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -722,7 +722,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     engineIntegrationExtension.createTenant(tenant1);
     final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -752,7 +752,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeDefinitionAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -777,7 +777,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -806,7 +806,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     engineIntegrationExtension.createTenant(tenant1);
     final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -833,7 +833,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeDefinitionAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -859,7 +859,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -885,7 +885,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     engineIntegrationExtension.createTenant(TENANT_ID_1);
     engineIntegrationExtension.createTenant(TENANT_ID_2);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -913,7 +913,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeDefinitionAuthorizationsUser_getDefinitionTenantsByTypeForMultipleKeyAndVersions(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -943,7 +943,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     // given
     final String definitionKey = "key";
     engineIntegrationExtension.createTenant(TENANT_ID_1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -975,7 +975,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     engineIntegrationExtension.createTenant(TENANT_ID_1);
     engineIntegrationExtension.createTenant(TENANT_ID_2);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -1011,7 +1011,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeDefinitionAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -1038,7 +1038,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -1066,7 +1066,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final String definitionKey2 = "key";
     final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -1101,7 +1101,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     engineIntegrationExtension.createTenant(tenant1);
     final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
-    final int engineResourceType = getEngineResourceType(definitionType);
+    final int engineResourceType = getResourceTypeByDefinitionType(definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -1127,12 +1127,6 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .flatExtracting(TenantWithDefinitionsResponseDto::getDefinitions)
       .extracting(SimpleDefinitionDto::getKey)
       .containsExactly(definitionKey);
-  }
-
-  private int getEngineResourceType(final DefinitionType definitionType) {
-    return DefinitionType.PROCESS.equals(definitionType)
-      ? RESOURCE_TYPE_PROCESS_DEFINITION
-      : RESOURCE_TYPE_DECISION_DEFINITION;
   }
 
   private void deployAndImportDefinition(int definitionResourceType) {

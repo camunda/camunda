@@ -36,6 +36,7 @@ import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.DashboardRelationService;
@@ -170,6 +171,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+    if (dashboardDefinition.isManagementDashboard()) {
+      throw new OptimizeValidationException("Management Dashboards cannot be copied");
+    }
 
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
@@ -266,13 +270,21 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
   }
 
+  public AuthorizedDashboardDefinitionResponseDto getManagementDashboard() {
+    final DashboardDefinitionRestDto dashboard =
+      getDashboardDefinitionAsService(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+    return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
+  }
+
   public void verifyUserHasAccessToDashboardCollection(String userId, DashboardDefinitionRestDto dashboard) {
     getUserRoleType(userId, dashboard);
   }
 
   private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
-    if (dashboard.getCollectionId() != null) {
+    if (dashboard.isManagementDashboard()) {
+      currentUserRole = RoleType.VIEWER;
+    } else if (dashboard.getCollectionId() != null) {
       currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())
         .orElse(null);
     } else if (dashboard.getOwner().equals(userId)) {
@@ -310,14 +322,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return dashboardReader.getDashboards(dashboardIds);
   }
 
-  public List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(final String collectionId) {
-    return dashboardReader.getDashboardsForCollection(collectionId);
-  }
-
   public void updateDashboard(final DashboardDefinitionRestDto updatedDashboard, final String userId) {
     final String dashboardId = updatedDashboard.getId();
     final AuthorizedDashboardDefinitionResponseDto dashboardWithEditAuthorization =
       getDashboardWithEditAuthorization(dashboardId, userId);
+    if (dashboardWithEditAuthorization.getDefinitionDto() != null &&
+      dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()) {
+      throw new OptimizeValidationException("Management Dashboards cannot be edited");
+    }
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDtoWithModifier(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
@@ -365,6 +377,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       validateVariableFilters(filtersByClass);
       validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
     }
+  }
+
+  private List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(final String collectionId) {
+    return dashboardReader.getDashboardsForCollection(collectionId);
   }
 
   private void deleteDashboard(final String dashboardId, final DashboardDefinitionRestDto dashboardDefinitionDto) {

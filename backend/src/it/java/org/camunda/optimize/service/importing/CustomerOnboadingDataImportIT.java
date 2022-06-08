@@ -216,8 +216,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
 
   private void addDataToOptimize(final String processInstanceFile, final String processDefinitionFile) {
     CustomerOnboardingDataImportService customerOnboardingDataImportService =
-      embeddedOptimizeExtension.getApplicationContext()
-        .getBean(CustomerOnboardingDataImportService.class);
+      embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
     customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

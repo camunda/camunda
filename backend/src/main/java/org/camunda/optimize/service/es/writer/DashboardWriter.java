@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.es.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -52,22 +53,25 @@ public class DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdResponseDto createNewDashboard(@NonNull final String userId,
+  public IdResponseDto createNewDashboard(final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     log.debug("Writing new dashboard to Elasticsearch");
 
-    String id = IdGenerator.getNextId();
+    dashboardDefinitionDto.setOwner(userId);
+    dashboardDefinitionDto.setName(
+      Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
+    dashboardDefinitionDto.setLastModifier(userId);
+    dashboardDefinitionDto.setId(IdGenerator.getNextId());
+    return saveDashboard(dashboardDefinitionDto);
+  }
+
+  public IdResponseDto saveDashboard(@NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    dashboardDefinitionDto.setOwner(userId);
-    dashboardDefinitionDto.setName(Optional.ofNullable(dashboardDefinitionDto.getName())
-                                     .orElse(DEFAULT_DASHBOARD_NAME));
-    dashboardDefinitionDto.setLastModifier(userId);
-    dashboardDefinitionDto.setId(id);
-
+    final String dashboardId = dashboardDefinitionDto.getId();
     try {
       IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME)
-        .id(id)
+        .id(dashboardId)
         .source(objectMapper.writeValueAsString(dashboardDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -85,8 +89,8 @@ public class DashboardWriter {
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    log.debug("Dashboard with id [{}] has successfully been created.", id);
-    return new IdResponseDto(id);
+    log.debug("Dashboard with id [{}] has successfully been created.", dashboardId);
+    return new IdResponseDto(dashboardId);
   }
 
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
@@ -188,4 +192,15 @@ public class DashboardWriter {
       throw new NotFoundException(message);
     }
   }
+
+  public void deleteManagementDashboard() {
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+      esClient,
+      QueryBuilders.termQuery(MANAGEMENT_DASHBOARD, true),
+      "Management Dashboard",
+      true,
+      DASHBOARD_INDEX_NAME
+    );
+  }
+
 }
