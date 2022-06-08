@@ -104,7 +104,7 @@ public final class EventAppliers implements EventApplier {
     final var elementInstanceState = state.getElementInstanceState();
     register(
         ProcessInstanceCreationIntent.CREATED,
-        new ProcessInstanceCreatedApplier(elementInstanceState));
+        new ProcessInstanceCreatedApplier(elementInstanceState, state.getProcessState()));
   }
 
   private void registerProcessInstanceEventAppliers(final MutableZeebeState state) {
