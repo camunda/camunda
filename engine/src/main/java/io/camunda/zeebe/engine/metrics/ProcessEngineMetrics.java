@@ -53,7 +53,7 @@ public final class ProcessEngineMetrics {
           .namespace(NAMESPACE)
           .name("process_instance_creations_total")
           .help("Number of created (root) process instances")
-          .labelNames(ORGANIZATION_ID_LABEL, PARTITION_LABEL, CREATION_MODE_LABEL)
+          .labelNames(PARTITION_LABEL, CREATION_MODE_LABEL)
           .register();
   private final String partitionIdLabel;
 
@@ -70,9 +70,7 @@ public final class ProcessEngineMetrics {
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 
-    CREATED_PROCESS_INSTANCES
-        .labels(ORGANIZATION_ID, partitionIdLabel, creationMode.toString())
-        .inc();
+    CREATED_PROCESS_INSTANCES.labels(partitionIdLabel, creationMode.toString()).inc();
   }
 
   private void elementInstanceEvent(final String action, final BpmnElementType elementType) {
