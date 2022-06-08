@@ -17,7 +17,7 @@ public final class ProcessEngineMetrics {
       Counter.build()
           .namespace("zeebe")
           .name("executed_instances_total")
-          .help("Number of executed instances")
+          .help("Number of executed (root) process instances")
           .labelNames("organizationId", "type", "action", "partition")
           .register();
   static final Counter EVALUATED_DMN_ELEMENTS =
