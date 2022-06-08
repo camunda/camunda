@@ -39,8 +39,8 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
   }, [dropdownRef]);
 
   useEffect(() => {
-    if (data?.currentUser.userId) {
-      tracking.identifyUser(data?.currentUser.userId);
+    if (data?.currentUser) {
+      tracking.identifyUser(data?.currentUser);
     }
   }, [data]);
 

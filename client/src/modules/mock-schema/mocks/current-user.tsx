@@ -11,6 +11,8 @@ const currentUser: User = {
   userId: 'demo',
   displayName: 'Demo User',
   permissions: ['read', 'write'],
+  salesPlanType: null,
+  roles: [],
   __typename: 'User',
 };
 
@@ -18,6 +20,8 @@ const currentRestrictedUser: User = {
   userId: 'demo',
   displayName: 'Demo User',
   permissions: ['read'],
+  salesPlanType: null,
+  roles: [],
   __typename: 'User',
 };
 

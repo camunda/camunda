@@ -90,6 +90,8 @@ type User {
     userId: ID!
     displayName: String
     permissions: [String!]
+    roles: [String]
+    salesPlanType: String
 }
 # What can be searched for.
 type Query {

@@ -39,7 +39,8 @@ import org.springframework.test.context.ActiveProfiles;
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";
-  private static final String CURRENT_USER_QUERY = "{currentUser{ userId \n displayName }}";
+  private static final String CURRENT_USER_QUERY =
+      "{currentUser{ userId \n displayName salesPlanType roles}}";
 
   private static final String USERNAME = "demo";
   private static final String PASSWORD = "demo";

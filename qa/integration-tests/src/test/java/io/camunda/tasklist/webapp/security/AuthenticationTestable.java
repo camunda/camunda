@@ -31,7 +31,7 @@ public interface AuthenticationTestable {
 
   String SET_COOKIE_HEADER = "Set-Cookie";
 
-  String CURRENT_USER_QUERY = "{currentUser{ userId \n displayName }}";
+  String CURRENT_USER_QUERY = "{currentUser{ userId \n displayName roles salesPlanType }}";
 
   TestRestTemplate getTestRestTemplate();
 

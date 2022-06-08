@@ -13,6 +13,8 @@ type User = Readonly<{
   userId: string;
   displayName: string | null;
   permissions: Permissions;
+  roles: ReadonlyArray<string> | null;
+  salesPlanType: string | null;
   __typename: string;
 }>;
 

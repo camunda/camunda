@@ -78,7 +78,11 @@ public class Auth0Service {
             PERMISSION_URL_TEMPLATE, urlDomain, tasklistProperties.getAuth0().getOrganization());
     final ResponseEntity<ClusterInfo> responseEntity =
         restTemplate.exchange(url, HttpMethod.GET, new HttpEntity(headers), ClusterInfo.class);
+
     final ClusterInfo clusterInfo = responseEntity.getBody();
+    if (clusterInfo.getSalesPlan() != null) {
+      authentication.setSalesPlanType(clusterInfo.getSalesPlan().getType());
+    }
 
     final ClusterInfo.Permission tasklistPermissions =
         clusterInfo.getPermissions().getCluster().getTasklist();

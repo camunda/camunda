@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
+import static io.camunda.tasklist.property.Auth0Properties.DEFAULT_ROLES_KEY;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
@@ -14,6 +15,8 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
+import static io.camunda.tasklist.webapp.security.sso.AuthenticationIT.TASKLIST_TEST_ROLES;
+import static io.camunda.tasklist.webapp.security.sso.AuthenticationIT.TASKLIST_TEST_SALESPLAN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -247,6 +250,11 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
     assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(graphQLResponse.get("$.data.currentUser.salesPlanType"))
+        .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
+    assertThat(graphQLResponse.get("$.data.currentUser.roles", List.class))
+        .asList()
+        .isEqualTo(TASKLIST_TEST_ROLES);
   }
 
   @Test
@@ -271,8 +279,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
     final String emptyJSONEncoded = toEncodedToken(Map.of());
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    final Map<String, Object> orgMap =
-        Map.of("id", organization, "roles", List.of("owner", "user"));
+    final Map<String, Object> orgMap = Map.of("id", organization);
     final String accountData =
         toEncodedToken(
             asMap(
@@ -283,7 +290,9 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
                 "name",
                 TASKLIST_TESTUSER,
                 "email",
-                TASKLIST_TESTUSER_EMAIL));
+                TASKLIST_TESTUSER_EMAIL,
+                DEFAULT_ROLES_KEY,
+                TASKLIST_TEST_ROLES));
     return new Tokens(
         "accessToken",
         emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
@@ -369,7 +378,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(tasklist, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, TASKLIST_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 

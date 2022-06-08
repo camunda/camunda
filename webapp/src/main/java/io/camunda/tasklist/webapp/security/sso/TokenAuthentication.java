@@ -56,6 +56,9 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   private String idToken;
   private String refreshToken;
+
+  private String salesPlanType;
+
   private List<Permission> permissions = new ArrayList<>();
 
   public TokenAuthentication() {
@@ -167,6 +170,26 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return JWT.decode(idToken).getClaims();
   }
 
+  public List<String> getRoles(final String rolesKey) {
+    try {
+      final Map<String, Claim> claims = getClaims();
+      if (claims.containsKey(rolesKey)) {
+        return claims.get(rolesKey).asList(String.class);
+      }
+    } catch (Exception e) {
+      getLogger().error("Could not get roles. Return empty roles list.", e);
+    }
+    return List.of();
+  }
+
+  public String getSalesPlanType() {
+    return salesPlanType;
+  }
+
+  public void setSalesPlanType(final String salesPlanType) {
+    this.salesPlanType = salesPlanType;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -185,7 +208,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         && clientId.equals(that.clientId)
         && clientSecret.equals(that.clientSecret)
         && idToken.equals(that.idToken)
-        && Objects.equals(refreshToken, that.refreshToken);
+        && Objects.equals(refreshToken, that.refreshToken)
+        && Objects.equals(salesPlanType, that.salesPlanType);
   }
 
   @Override
@@ -198,6 +222,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         clientId,
         clientSecret,
         idToken,
-        refreshToken);
+        refreshToken,
+        salesPlanType);
   }
 }

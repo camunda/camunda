@@ -10,13 +10,15 @@ import java.io.Serializable;
 
 public class ClusterInfo implements Serializable {
   private String name;
+  private SalesPlan salesPlan;
   private OrgPermissions permissions;
 
   public ClusterInfo() {}
 
-  public ClusterInfo(String name, OrgPermissions permissions) {
+  public ClusterInfo(String name, OrgPermissions permissions, SalesPlan salesPlan) {
     this.name = name;
     this.permissions = permissions;
+    this.salesPlan = salesPlan;
   }
 
   public String getName() {
@@ -25,6 +27,24 @@ public class ClusterInfo implements Serializable {
 
   public OrgPermissions getPermissions() {
     return permissions;
+  }
+
+  public SalesPlan getSalesPlan() {
+    return salesPlan;
+  }
+
+  public static class SalesPlan {
+    private String type;
+
+    public SalesPlan() {}
+
+    public SalesPlan(final String type) {
+      this.type = type;
+    }
+
+    public String getType() {
+      return type;
+    }
   }
 
   public static class OrgPermissions {

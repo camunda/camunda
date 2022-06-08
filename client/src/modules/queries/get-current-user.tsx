@@ -6,7 +6,6 @@
  */
 
 import {gql} from '@apollo/client';
-
 import {User} from 'modules/types';
 import {
   currentUser,
@@ -21,6 +20,8 @@ const GET_CURRENT_USER = gql`
       userId
       displayName
       permissions
+      salesPlanType
+      roles
     }
   }
 `;

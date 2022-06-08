@@ -45,7 +45,9 @@ public class SSOUserReader implements UserReader {
               .setUserId(email)
               .setDisplayName(name)
               .setApiUser(false)
-              .setPermissions(tokenAuthentication.getPermissions()));
+              .setPermissions(tokenAuthentication.getPermissions())
+              .setRoles(tokenAuthentication.getRoles(tasklistProperties.getAuth0().getRolesKey()))
+              .setSalesPlanType(tokenAuthentication.getSalesPlanType()));
     }
     return Optional.empty();
   }

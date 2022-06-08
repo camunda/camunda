@@ -18,6 +18,9 @@ public class UserDTO {
   private boolean apiUser;
 
   private List<Permission> permissions;
+  private List<String> roles;
+
+  private String salesPlanType;
 
   public String getUserId() {
     return userId;
@@ -58,9 +61,27 @@ public class UserDTO {
     return this;
   }
 
+  public List<String> getRoles() {
+    return roles;
+  }
+
+  public UserDTO setRoles(final List<String> roles) {
+    this.roles = roles;
+    return this;
+  }
+
+  public UserDTO setSalesPlanType(final String salesPlanType) {
+    this.salesPlanType = salesPlanType;
+    return this;
+  }
+
+  public String getSalesPlanType() {
+    return salesPlanType;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(userId, displayName, apiUser, permissions);
+    return Objects.hash(userId, displayName, apiUser, permissions, roles, salesPlanType);
   }
 
   @Override
@@ -78,6 +99,8 @@ public class UserDTO {
     return Objects.equals(apiUser, other.apiUser)
         && Objects.equals(displayName, other.displayName)
         && Objects.equals(userId, other.userId)
-        && Objects.equals(permissions, other.permissions);
+        && Objects.equals(permissions, other.permissions)
+        && Objects.equals(roles, other.roles)
+        && Objects.equals(salesPlanType, other.salesPlanType);
   }
 }

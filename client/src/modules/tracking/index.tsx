@@ -7,6 +7,7 @@
 
 import {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
+import {User} from 'modules/types';
 
 const EVENT_PREFIX = 'tasklist:';
 type Events =
@@ -64,9 +65,14 @@ class Tracking {
     }
   }
 
-  identifyUser = (userId: string) => {
-    this.#mixpanel?.identify(userId);
-    this.#appCues?.identify(userId);
+  identifyUser = (user: User) => {
+    this.#mixpanel?.identify(user.userId);
+    this.#appCues?.identify(user.userId, {
+      orgId: this.#baseProperties.organizationId,
+      salesPlanType: user.salesPlanType,
+      roles: user.roles?.join('|'),
+      clusters: this.#baseProperties.clusterId,
+    });
   };
 
   trackPagination = () => {

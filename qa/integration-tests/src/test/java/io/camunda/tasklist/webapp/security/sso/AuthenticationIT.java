@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
+import static io.camunda.tasklist.property.Auth0Properties.DEFAULT_ROLES_KEY;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
@@ -36,6 +37,7 @@ import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
+import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -87,8 +89,11 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
 
+  public static final SalesPlan TASKLIST_TEST_SALESPLAN = new SalesPlan("test");
+  public static final List<String> TASKLIST_TEST_ROLES = List.of("owner", "admin");
   private static final String COOKIE_KEY = "Cookie";
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
+
   private static final String TASKLIST_TESTUSER_EMAIL = "testuser@tasklist.io";
   @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
@@ -299,6 +304,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     // Step 2: Get Login provider url
     mockPermissionAllowed();
+
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
@@ -325,6 +331,11 @@ public class AuthenticationIT implements AuthenticationTestable {
     final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
     assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(graphQLResponse.get("$.data.currentUser.salesPlanType"))
+        .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
+    assertThat(graphQLResponse.get("$.data.currentUser.roles", List.class))
+        .asList()
+        .isEqualTo(TASKLIST_TEST_ROLES);
   }
 
   @Test
@@ -349,8 +360,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
     final String emptyJSONEncoded = toEncodedToken(Map.of());
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    final Map<String, Object> orgMap =
-        Map.of("id", organization, "roles", List.of("owner", "user"));
+    final Map<String, Object> orgMap = Map.of("id", organization);
     final String accountData =
         toEncodedToken(
             asMap(
@@ -361,7 +371,9 @@ public class AuthenticationIT implements AuthenticationTestable {
                 "name",
                 TASKLIST_TESTUSER,
                 "email",
-                TASKLIST_TESTUSER_EMAIL));
+                TASKLIST_TESTUSER_EMAIL,
+                DEFAULT_ROLES_KEY,
+                TASKLIST_TEST_ROLES));
     return new Tokens(
         "accessToken",
         emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
@@ -448,7 +460,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(tasklist, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, TASKLIST_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
@@ -462,7 +474,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(false, true, true, true));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(tasklist, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, TASKLIST_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
@@ -476,7 +488,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, false, false, false));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(tasklist, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, TASKLIST_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
