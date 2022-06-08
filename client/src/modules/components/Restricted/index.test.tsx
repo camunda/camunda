@@ -20,6 +20,8 @@ describe('Restricted', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(
@@ -37,6 +39,8 @@ describe('Restricted', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(
@@ -54,6 +58,8 @@ describe('Restricted', () => {
       permissions: ['read', 'write'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(
@@ -71,6 +77,8 @@ describe('Restricted', () => {
       permissions: undefined,
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(

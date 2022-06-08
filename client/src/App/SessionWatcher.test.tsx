@@ -50,6 +50,8 @@ describe('<SessionWatcher />', () => {
       canLogout: true,
       permissions: ['read', 'write'],
       userId: 'jon',
+      roles: null,
+      salesPlanType: null,
     });
     authenticationStore.expireSession();
 
@@ -64,6 +66,8 @@ describe('<SessionWatcher />', () => {
       permissions: ['read', 'write'],
       canLogout: true,
       userId: 'jon',
+      roles: null,
+      salesPlanType: null,
     });
 
     await waitFor(() => expect(mockRemoveNotification).toHaveBeenCalled());
@@ -79,6 +83,8 @@ describe('<SessionWatcher />', () => {
       canLogout: true,
       permissions: [],
       userId: 'jon',
+      roles: null,
+      salesPlanType: null,
     });
     authenticationStore.expireSession();
 
@@ -99,6 +105,8 @@ describe('<SessionWatcher />', () => {
       canLogout: true,
       permissions: [],
       userId: 'jon',
+      roles: null,
+      salesPlanType: null,
     });
     authenticationStore.expireSession();
 

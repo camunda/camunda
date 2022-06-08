@@ -163,8 +163,18 @@ class Authentication {
     permissions,
     canLogout,
     userId,
+    salesPlanType,
+    roles,
   }: Undefinable<
-    Pick<State, 'displayName' | 'permissions' | 'canLogout' | 'userId'>,
+    Pick<
+      State,
+      | 'displayName'
+      | 'permissions'
+      | 'canLogout'
+      | 'userId'
+      | 'salesPlanType'
+      | 'roles'
+    >,
     'permissions'
   >) => {
     storeStateLocally({
@@ -175,6 +185,8 @@ class Authentication {
     this.state.displayName = displayName;
     this.state.canLogout = canLogout;
     this.state.userId = userId;
+    this.state.salesPlanType = salesPlanType;
+    this.state.roles = roles ?? [];
     this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
   };
 

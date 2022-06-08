@@ -31,6 +31,8 @@ describe('stores/authentication', () => {
       permissions: undefined,
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
     expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
     authenticationStore.setUser({
@@ -38,6 +40,8 @@ describe('stores/authentication', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
     expect(authenticationStore.state.permissions).toEqual(['read']);
   });
@@ -51,6 +55,8 @@ describe('stores/authentication', () => {
       permissions: undefined,
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
     expect(authenticationStore.hasPermission(['write'])).toBe(true);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);
@@ -60,6 +66,8 @@ describe('stores/authentication', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
     expect(authenticationStore.hasPermission(['write'])).toBe(false);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);

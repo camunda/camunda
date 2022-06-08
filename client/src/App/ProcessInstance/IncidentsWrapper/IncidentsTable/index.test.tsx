@@ -91,6 +91,8 @@ describe('IncidentsTable', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -167,6 +169,8 @@ describe('IncidentsTable', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});

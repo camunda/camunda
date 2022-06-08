@@ -198,7 +198,7 @@ class Tracking {
     this.#mixpanel?.identify(user.userId);
     this.#appCues?.identify(user.userId, {
       orgId: this.#baseProperties.organizationId,
-      salesPlanType: user.salesPlanType,
+      salesPlanType: user.salesPlanType ?? '',
       roles: user.roles?.join('|'),
       clusters: this.#baseProperties.clusterId,
     });

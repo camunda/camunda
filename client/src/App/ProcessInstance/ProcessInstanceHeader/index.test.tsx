@@ -382,6 +382,8 @@ describe('InstanceHeader', () => {
       permissions: ['read', 'write'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -417,6 +419,8 @@ describe('InstanceHeader', () => {
       permissions: ['read'],
       canLogout: true,
       userId: 'demo',
+      roles: null,
+      salesPlanType: null,
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
