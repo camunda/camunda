@@ -16,6 +16,7 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.v8_1.processors.ElasticsearchBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;

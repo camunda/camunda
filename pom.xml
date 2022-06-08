@@ -29,11 +29,9 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <version.zeebe>8.1.0-alpha1</version.zeebe>
     <version.identity>8.1.0-alpha1</version.identity>
-    <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.4</version.elasticsearch>
-    <version.spring.boot>2.6.6</version.spring.boot>
-    <version.spring.session.bom>2021.2.0</version.spring.session.bom>
+    <version.spring.boot>2.7.0</version.spring.boot>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>1.6.9</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
@@ -63,26 +61,10 @@
     <dependencies>
 
       <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>${version.log4j}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <!-- Import dependency management from Spring Boot -->
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${version.spring.boot}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.session</groupId>
-        <artifactId>spring-session-bom</artifactId>
-        <version>${version.spring.session.bom}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

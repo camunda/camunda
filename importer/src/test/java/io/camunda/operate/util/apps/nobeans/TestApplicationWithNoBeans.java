@@ -7,8 +7,9 @@
 package io.camunda.operate.util.apps.nobeans;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
 public class TestApplicationWithNoBeans {
 
 }
