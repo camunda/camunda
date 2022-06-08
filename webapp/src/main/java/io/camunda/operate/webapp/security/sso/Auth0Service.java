@@ -94,6 +94,10 @@ public class Auth0Service {
         restTemplate.exchange(url, HttpMethod.GET, new HttpEntity(headers), ClusterInfo.class);
     final ClusterInfo clusterInfo = responseEntity.getBody();
 
+    if (clusterInfo.getSalesPlan() != null) {
+      authentication.setSalesPlanType(clusterInfo.getSalesPlan().getType());
+    }
+
     final ClusterInfo.Permission operatePermissions =
         clusterInfo.getPermissions().getCluster().getOperate();
     if (operatePermissions.getRead()) {

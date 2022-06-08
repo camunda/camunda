@@ -25,17 +25,21 @@ type State = {
     | 'invalid-initial-session'
     | 'invalid-third-party-session';
   permissions: Permissions;
-  displayName: string | undefined;
+  displayName: string | null;
   canLogout: boolean;
-  userId: string | undefined;
+  userId: string | null;
+  salesPlanType: string | null;
+  roles: ReadonlyArray<string> | null;
 };
 
 const DEFAULT_STATE: State = {
   status: 'initial',
   permissions: ['read', 'write'],
-  displayName: undefined,
+  displayName: null,
   canLogout: false,
-  userId: undefined,
+  userId: null,
+  salesPlanType: null,
+  roles: [],
 };
 
 class Authentication {

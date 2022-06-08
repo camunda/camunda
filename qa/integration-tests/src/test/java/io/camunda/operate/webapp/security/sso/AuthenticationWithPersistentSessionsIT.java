@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.property.Auth0Properties.DEFAULT_ROLES_KEY;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
@@ -13,6 +14,8 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.sso.AuthenticationIT.OPERATE_TEST_ROLES;
+import static io.camunda.operate.webapp.security.sso.AuthenticationIT.OPERATE_TEST_SALESPLAN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -309,6 +312,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     response = get(userInfoUrl, httpEntity);
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
+    assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
+    assertThat(response.getBody()).contains("\"roles\":[\"owner\",\"admin\"]");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
@@ -339,11 +344,12 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
     String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    Map<String, Object> orgMap = Map.of("id", organization, "roles", List.of("owner", "user"));
+    Map<String, Object> orgMap = Map.of("id", organization);
     String accountData = toEncodedToken(asMap(
         claim, List.of(orgMap),
         "exp", expiresInSeconds,
-        "name", "operate-testuser"
+        "name", "operate-testuser",
+        DEFAULT_ROLES_KEY, OPERATE_TEST_ROLES
     ));
     return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
         "refreshToken", "type", 5L);
@@ -371,7 +377,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, OPERATE_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 

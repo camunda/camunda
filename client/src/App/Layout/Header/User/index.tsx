@@ -14,13 +14,14 @@ import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 
 const User: React.FC = observer(() => {
-  const {displayName, canLogout, userId} = authenticationStore.state;
+  const {displayName, canLogout, userId, salesPlanType, roles} =
+    authenticationStore.state;
 
   useEffect(() => {
     if (userId) {
-      tracking.identifyUser(userId);
+      tracking.identifyUser({userId, salesPlanType, roles});
     }
-  }, [userId]);
+  }, [userId, salesPlanType, roles]);
 
   return (
     <ProfileDropdown data-testid="profile-dropdown">

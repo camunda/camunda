@@ -8,6 +8,7 @@ package io.camunda.operate.property;
 
 public class Auth0Properties {
 
+  public static final String DEFAULT_ROLES_KEY = "https://camunda.com/roles";
   /**
    * Defines the domain which the user always sees<br/> auth0.com call it <b>Custom Domain</b>
    */
@@ -46,6 +47,16 @@ public class Auth0Properties {
   private String m2mClientSecret;
 
   private String m2mAudience;
+
+  private String rolesKey = DEFAULT_ROLES_KEY;
+
+  public String getRolesKey() {
+    return rolesKey;
+  }
+
+  public void setRolesKey(final String rolesKey) {
+    this.rolesKey = rolesKey;
+  }
 
   public String getDomain() {
     return domain;

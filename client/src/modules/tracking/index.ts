@@ -190,9 +190,18 @@ class Tracking {
     }
   }
 
-  identifyUser = (userId: string) => {
-    this.#mixpanel?.identify(userId);
-    this.#appCues?.identify(userId);
+  identifyUser = (user: {
+    userId: string;
+    salesPlanType: string | null;
+    roles: ReadonlyArray<string> | null;
+  }) => {
+    this.#mixpanel?.identify(user.userId);
+    this.#appCues?.identify(user.userId, {
+      orgId: this.#baseProperties.organizationId,
+      salesPlanType: user.salesPlanType,
+      roles: user.roles?.join('|'),
+      clusters: this.#baseProperties.clusterId,
+    });
   };
 
   trackPagination = () => {

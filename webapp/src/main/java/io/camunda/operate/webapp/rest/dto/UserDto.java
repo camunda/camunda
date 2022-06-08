@@ -21,6 +21,11 @@ public class UserDto {
 
   private List<Permission> permissions;
 
+  private List<String> roles;
+
+  private String salesPlanType;
+
+
   public boolean isCanLogout() {
     return canLogout;
   }
@@ -65,6 +70,24 @@ public class UserDto {
     return this;
   }
 
+  public List<String> getRoles() {
+    return roles;
+  }
+
+  public UserDto setRoles(final List<String> roles) {
+    this.roles = roles;
+    return this;
+  }
+
+  public UserDto setSalesPlanType(final String salesPlanType) {
+    this.salesPlanType = salesPlanType;
+    return this;
+  }
+
+  public String getSalesPlanType() {
+    return salesPlanType;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -75,11 +98,13 @@ public class UserDto {
     }
     final UserDto userDto = (UserDto) o;
     return canLogout == userDto.canLogout && userId.equals(userDto.userId) && displayName.equals(
-        userDto.displayName) && permissions.equals(userDto.permissions);
+        userDto.displayName) && permissions.equals(userDto.permissions) &&
+        Objects.equals(roles, userDto.roles) &&
+        Objects.equals(salesPlanType, userDto.salesPlanType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(userId, displayName, canLogout, permissions);
+    return Objects.hash(userId, displayName, canLogout, permissions, roles, salesPlanType);
   }
 }

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.property.Auth0Properties.DEFAULT_ROLES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
@@ -34,6 +35,7 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.es.RolePermissionService;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
+import io.camunda.operate.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -100,6 +102,9 @@ import org.springframework.web.client.RestTemplate;
 )
 @ActiveProfiles(SSO_AUTH_PROFILE)
 public class AuthenticationIT implements AuthenticationTestable {
+
+  public static final SalesPlan OPERATE_TEST_SALESPLAN = new SalesPlan("test");
+  public static final List<String> OPERATE_TEST_ROLES = List.of("owner", "admin");
 
   public final static String CONTEXT_PATH = "/operate-test";
   @ClassRule
@@ -388,6 +393,8 @@ public class AuthenticationIT implements AuthenticationTestable {
     response = get(userInfoUrl, httpEntity);
     assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
+    assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
+    assertThat(response.getBody()).contains("\"roles\":[\"owner\",\"admin\"]");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
@@ -418,11 +425,12 @@ public class AuthenticationIT implements AuthenticationTestable {
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
     String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    Map<String, Object> orgMap = Map.of("id", organization, "roles", List.of("owner", "user"));
+    Map<String, Object> orgMap = Map.of("id", organization);
     String accountData = toEncodedToken(asMap(
         claim, List.of(orgMap),
         "exp", expiresInSeconds,
-        "name", "operate-testuser"
+        "name", "operate-testuser",
+        DEFAULT_ROLES_KEY, OPERATE_TEST_ROLES
     ));
     return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
         "refreshToken", "type", 5L);
@@ -450,7 +458,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, true, true, true));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, OPERATE_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
@@ -464,7 +472,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(false, true, true, true));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, OPERATE_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
@@ -481,7 +489,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ClusterInfo.OrgPermissions(null, new ClusterInfo.Permission(true, false, false, false));
 
     final ClusterInfo.OrgPermissions cluster = new ClusterInfo.OrgPermissions(operate, null);
-    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster);
+    final ClusterInfo clusterInfo = new ClusterInfo("Org Name", cluster, OPERATE_TEST_SALESPLAN);
     final ResponseEntity<ClusterInfo> clusterInfoResponseEntity =
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
