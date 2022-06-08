@@ -111,21 +111,27 @@ describe('InstanceHeader', () => {
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
-    const {processInstance} = processInstanceDetailsStore.state;
 
-    const processName = getProcessName(processInstance);
-    const instanceState = mockInstanceWithActiveOperation.state;
+    const processName = getProcessName(mockInstanceWithActiveOperation);
 
     expect(screen.getByText(processName)).toBeInTheDocument();
     expect(
       screen.getByText(mockInstanceWithActiveOperation.id)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(mockInstanceWithActiveOperation.processVersion)
-    ).toBeInTheDocument();
+      screen.getByRole('link', {
+        name: `View process ${getProcessName(
+          mockInstanceWithActiveOperation
+        )} version ${mockInstanceWithActiveOperation.processVersion} instances`,
+      })
+    ).toHaveTextContent(
+      mockInstanceWithActiveOperation.processVersion.toString()
+    );
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
-    expect(screen.getByTestId(`${instanceState}-icon`)).toBeInTheDocument();
+    expect(
+      screen.getByTestId(`${mockInstanceWithActiveOperation.state}-icon`)
+    ).toBeInTheDocument();
     expect(screen.getByText('Process')).toBeInTheDocument();
     expect(screen.getByText('Instance Id')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();

@@ -36,8 +36,15 @@ const ProcessInstanceHeader: React.FC = observer(() => {
     );
   }
 
-  const {id, processVersion, startDate, endDate, parentInstanceId, state} =
-    processInstance;
+  const {
+    id,
+    processVersion,
+    startDate,
+    endDate,
+    parentInstanceId,
+    state,
+    bpmnProcessId,
+  } = processInstance;
 
   return (
     <Styled.Container data-testid="instance-header">
@@ -63,7 +70,27 @@ const ProcessInstanceHeader: React.FC = observer(() => {
               {getProcessName(processInstance)}
             </Styled.Td>
             <Styled.Td title={id}>{id}</Styled.Td>
-            <Styled.Td>{processVersion}</Styled.Td>
+            <Styled.Td>
+              <Link
+                to={Locations.processes({
+                  version: processVersion.toString(),
+                  process: bpmnProcessId,
+                  active: true,
+                  incidents: true,
+                })}
+                title={`View process ${getProcessName(
+                  processInstance
+                )} version ${processVersion} instances`}
+                onClick={() => {
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'process-details-version',
+                  });
+                }}
+              >
+                {processVersion}
+              </Link>
+            </Styled.Td>
             <Styled.Td
               title={formatDate(startDate) ?? '--'}
               data-testid="start-date"

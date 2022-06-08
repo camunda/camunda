@@ -29,9 +29,11 @@ type Events =
         | 'process-details-parent-details'
         | 'process-details-breadcrumb'
         | 'process-details-called-instances'
+        | 'process-details-version'
         | 'decision-instances-instance-details'
         | 'decision-instances-parent-process-details'
-        | 'decision-details-parent-process-details';
+        | 'decision-details-parent-process-details'
+        | 'decision-details-version';
       currentPage?:
         | 'dashboard'
         | 'processes'

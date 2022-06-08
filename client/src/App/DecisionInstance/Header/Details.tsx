@@ -6,7 +6,7 @@
  */
 
 import {Link} from 'modules/components/Link';
-import {Paths} from 'modules/routes';
+import {Paths, Locations} from 'modules/routes';
 import {DecisionInstanceType} from 'modules/stores/decisionInstanceDetails';
 import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date/formatDate';
@@ -57,7 +57,25 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
               {decisionInstance.decisionName}
             </TD>
             <TD title={decisionInstanceId}>{decisionInstanceId}</TD>
-            <TD>{decisionInstance.decisionVersion}</TD>
+            <TD>
+              <Link
+                to={Locations.decisions({
+                  version: decisionInstance.decisionVersion.toString(),
+                  name: decisionInstance.decisionId,
+                  evaluated: true,
+                  failed: true,
+                })}
+                title={`View decision ${decisionInstance.decisionName} version ${decisionInstance.decisionVersion} instances`}
+                onClick={() => {
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'decision-details-version',
+                  });
+                }}
+              >
+                {decisionInstance.decisionVersion}
+              </Link>
+            </TD>
             <TD title={formatDate(decisionInstance.evaluationDate) ?? '--'}>
               {formatDate(decisionInstance.evaluationDate)}
             </TD>

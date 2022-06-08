@@ -87,22 +87,24 @@ describe('<Header />', () => {
       await screen.findByRole('cell', {
         name: invoiceClassification.decisionName,
       })
-    );
-    expect(await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID}));
+    ).toBeInTheDocument();
     expect(
-      await screen.findByRole('cell', {
-        name: invoiceClassification.decisionVersion.toString(),
+      await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID})
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', {
+        name: `View decision ${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion} instances`,
       })
-    );
+    ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
     expect(
       await screen.findByRole('cell', {
         name: '2018-12-12 00:00:00',
       })
-    );
+    ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
         name: `View process instance ${invoiceClassification.processInstanceId}`,
       })
-    );
+    ).toBeInTheDocument();
   });
 });
