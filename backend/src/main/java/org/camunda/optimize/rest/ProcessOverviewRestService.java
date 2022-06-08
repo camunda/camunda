@@ -25,7 +25,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.time.ZoneId;
 import java.util.List;
+
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
 @Path("/process")
@@ -40,7 +43,8 @@ public class ProcessOverviewRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public List<ProcessOverviewResponseDto> getProcessOverviews(@Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processOverviewService.getAllProcessOverviews(userId);
+    final ZoneId timezone = extractTimezone(requestContext);
+    return processOverviewService.getAllProcessOverviews(userId, timezone);
   }
 
   @PUT

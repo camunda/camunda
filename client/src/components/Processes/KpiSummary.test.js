@@ -14,7 +14,7 @@ import KpiSummary from './KpiSummary';
 
 const succeededKpi = {
   reportName: 'Duration Report',
-  value: '13123123',
+  value: '13',
   target: '312312',
   isBelow: true,
   measure: 'duration',

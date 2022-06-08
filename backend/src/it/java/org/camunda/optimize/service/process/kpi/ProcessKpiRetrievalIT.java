@@ -12,13 +12,18 @@ import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -64,6 +69,49 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
         Tuple.tuple(
           PROCESS_DEFINITION_KEY,
           List.of(kpiResponseDto1, kpiResponseDto2)
+        )
+      );
+  }
+
+  @Test
+  public void getKpiWithDateFilterForDefinition() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    importAllEngineEntitiesFromScratch();
+    String reportId1 = createKpiReport(true, "1", true, PROCESS_DEFINITION_KEY);
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+      .build();
+    reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("1");
+    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
+      new RollingDateFilterStartDto(4L, DateUnit.DAYS)
+    );
+    final InstanceStartDateFilterDto startDateFilterDto = new InstanceStartDateFilterDto();
+    startDateFilterDto.setData(dateFilterDataDto);
+    startDateFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
+    reportDataDto.setFilter(Collections.singletonList(startDateFilterDto));
+    KpiResponseDto kpiResponseDto1 = new KpiResponseDto();
+    kpiResponseDto1.setReportId(reportId1);
+    kpiResponseDto1.setReportName("My test report");
+    kpiResponseDto1.setValue("1.0");
+    kpiResponseDto1.setTarget("1");
+    kpiResponseDto1.setIsBelow(true);
+    kpiResponseDto1.setType(KpiType.QUALITY);
+    kpiResponseDto1.setMeasure(ViewProperty.FREQUENCY);
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+
+    // then
+    assertThat(processes).hasSize(1)
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(
+          PROCESS_DEFINITION_KEY,
+          List.of(kpiResponseDto1)
         )
       );
   }

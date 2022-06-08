@@ -55,6 +55,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,7 +80,7 @@ public class ProcessOverviewService {
   private final KpiService kpiService;
   private final ReportEvaluationService reportEvaluationService;
 
-  public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId) {
+  public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final ZoneId timezone) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
       .stream()
       .filter(def ->
@@ -116,21 +117,23 @@ public class ProcessOverviewService {
             @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
               reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
                 userId,
-                null,
+                timezone,
                 singleProcessReportDefinitionRequestDto.getId(),
                 null,
                 null
               ).getEvaluationResult();
             final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-            KpiResponseDto responseDto = new KpiResponseDto();
-            responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
-            responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
-            responseDto.setIsBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
-            responseDto.setTarget(getTarget(singleProcessReportDefinitionRequestDto));
-            responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
-            responseDto.setValue(evaluationValue.toString());
-            responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
-            kpis.add(responseDto);
+            if(!String.valueOf(evaluationValue).equals("null")){
+              KpiResponseDto responseDto = new KpiResponseDto();
+              responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
+              responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
+              responseDto.setIsBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
+              responseDto.setTarget(getTarget(singleProcessReportDefinitionRequestDto));
+              responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
+              responseDto.setValue(evaluationValue.toString());
+              responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
+              kpis.add(responseDto);
+            }
           }
         }
 
