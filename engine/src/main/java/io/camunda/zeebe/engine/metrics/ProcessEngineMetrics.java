@@ -15,7 +15,18 @@ import io.prometheus.client.Counter;
 public final class ProcessEngineMetrics {
 
   private static final String NAMESPACE = "zeebe";
+  /**
+   * Metrics that are annotated with this label are vitally important for usage tracking and
+   * data-based decision-making as part of Camunda's SaaS offering.
+   *
+   * <p>DO NOT REMOVE this label from existing metrics without previous discussion within the team.
+   *
+   * <p>At the same time, NEW METRICS MAY NOT NEED THIS label. In that case, it is preferable to not
+   * add this label to a metric as Prometheus best practices warn against using labels with a high
+   * cardinality of possible values.
+   */
   private static final String ORGANIZATION_ID_LABEL = "organizationId";
+
   private static final String PARTITION_LABEL = "partition";
   private static final String ACTION_LABEL = "action";
   static final Counter EVALUATED_DMN_ELEMENTS =
