@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -332,11 +333,7 @@ class TransactionalColumnFamily<
 
             boolean shouldVisitNext = true;
 
-            for (RocksDbInternal.seek(
-                    iterator,
-                    ZeebeTransactionDb.getNativeHandle(iterator),
-                    prefixKey,
-                    prefixLength);
+            for (iterator.seek(ByteBuffer.wrap(prefixKey, 0, prefixLength));
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
               final byte[] keyBytes = iterator.key();

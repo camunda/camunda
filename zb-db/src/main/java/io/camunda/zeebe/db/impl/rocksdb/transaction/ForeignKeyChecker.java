@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
 /**
@@ -89,8 +90,7 @@ public final class ForeignKeyChecker {
         transaction.newIterator(
             transactionDb.getPrefixReadOptions(), transactionDb.getDefaultHandle())) {
 
-      RocksDbInternal.seek(
-          iterator, ZeebeTransactionDb.getNativeHandle(iterator), prefix, prefixLength);
+      iterator.seek(ByteBuffer.wrap(prefix, 0, prefixLength));
       boolean exists = false;
       if (iterator.isValid()) {
         final byte[] keyBytes = iterator.key();
