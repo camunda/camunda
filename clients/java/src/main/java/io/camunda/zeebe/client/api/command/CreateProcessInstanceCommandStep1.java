@@ -104,9 +104,9 @@ public interface CreateProcessInstanceCommandStep1 {
     /**
      * Overrides the default start position of the process. Calling this method will make the
      * process start at the given {@code elementId}, if possible. This method can be called more
-     * than once to simultaneously start ar different elements in different branches of the process
+     * than once to simultaneously start at different elements in different branches of the process.
      *
-     * @param elementId elementId
+     * @param elementId the id of the BPMN element where to start the process instance
      * @return the builder for this command. Call {@link #send()} to complete the command and send *
      *     it to the broker.
      */
