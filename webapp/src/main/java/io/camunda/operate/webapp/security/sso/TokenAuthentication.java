@@ -92,6 +92,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return permissions;
   }
 
+  public void addPermission(Permission permission) {
+    this.permissions.add(permission);
+  }
+
   private void getNewTokenByRefreshToken() {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);

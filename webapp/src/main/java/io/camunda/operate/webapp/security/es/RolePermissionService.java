@@ -4,8 +4,9 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.security;
+package io.camunda.operate.webapp.security.es;
 
+import io.camunda.operate.webapp.security.Permission;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;

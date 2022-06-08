@@ -43,8 +43,6 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   @Autowired
   OperateProfileService errorMessageService;
 
-  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
-
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     http.csrf().disable()
@@ -67,8 +65,10 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
         .invalidateHttpSession(true)
         .and()
         .exceptionHandling().authenticationEntryPoint(this::failureHandler);
-    oAuth2WebConfigurer.configure(http);
+    configureOAuth2(http);
   }
+
+  protected abstract void configureOAuth2(HttpSecurity http) throws Exception;
 
   protected void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) {

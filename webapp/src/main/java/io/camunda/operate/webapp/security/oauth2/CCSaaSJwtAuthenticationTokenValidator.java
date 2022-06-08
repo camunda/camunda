@@ -8,9 +8,9 @@ package io.camunda.operate.webapp.security.oauth2;
 
 import static io.camunda.operate.util.CollectionUtil.firstOrDefault;
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OAuthClientProperties;
 import io.camunda.operate.property.OperateProperties;
 import java.util.Collections;
 import java.util.List;
@@ -18,10 +18,12 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!" + IDENTITY_AUTH_PROFILE)
 public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationTokenValidator{
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());

@@ -6,33 +6,27 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.IdentityConfiguration;
-import io.camunda.operate.property.IdentityProperties;
+import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateURIs.API;
+import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
+import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
+import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
+
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import io.camunda.operate.webapp.security.oauth2.IdentityOAuth2WebConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.*;
-
 @Profile(IDENTITY_AUTH_PROFILE)
-@Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
-  @Bean
-  public Identity identity() throws IllegalArgumentException {
-    final IdentityProperties props = operateProperties.getIdentity();
-    final IdentityConfiguration configuration =
-        new IdentityConfiguration(props.getIssuerUrl(), props.getIssuerBackendUrl(), props.getClientId(), props.getClientSecret(), props.getAudience());
-    return new Identity(configuration);
-  }
+  @Autowired
+  protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
@@ -42,6 +36,11 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
         .antMatchers(API, PUBLIC_API, ROOT).authenticated()
         .and().exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
+    configureOAuth2(http);
+  }
+
+  @Override
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 

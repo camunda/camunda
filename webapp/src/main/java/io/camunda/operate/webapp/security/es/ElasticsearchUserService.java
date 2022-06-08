@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.security.es;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.OperateProfileService;
-import io.camunda.operate.webapp.security.RolePermissionService;
 import io.camunda.operate.webapp.security.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;

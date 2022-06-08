@@ -71,7 +71,7 @@ public class IdentityService {
                 identity
                     .authentication()
                     .exchangeAuthCode(authCodeDto, getRedirectURI(req, IDENTITY_CALLBACK_URI)));
-    final IdentityAuthentication authentication = beanFactory.getBean(IdentityAuthentication.class);
+    final IdentityAuthentication authentication = new IdentityAuthentication();
     authentication.authenticate(tokens);
     return authentication;
   }

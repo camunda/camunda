@@ -10,12 +10,14 @@ import static io.camunda.operate.webapp.security.OperateProfileService.LDAP_AUTH
 
 import io.camunda.operate.property.LdapProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
@@ -29,6 +31,9 @@ import org.springframework.util.StringUtils;
 public class LDAPWebSecurityConfig extends BaseWebConfigurer {
   @Autowired
   private LDAPUserService userService;
+
+  @Autowired
+  protected OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
   public void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -63,6 +68,11 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
         .url(ldapConfig.getUrl() + ldapConfig.getBaseDn())
         .managerDn(ldapConfig.getManagerDn())
         .managerPassword(ldapConfig.getManagerPassword());
+  }
+
+  @Override
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
+    oAuth2WebConfigurer.configure(http);
   }
 
   @Override

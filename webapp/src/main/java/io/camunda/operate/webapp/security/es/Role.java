@@ -4,10 +4,9 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.security;
+package io.camunda.operate.webapp.security.es;
 
 import java.util.Arrays;
-import java.util.List;
 
 public enum Role {
   OWNER, OPERATOR, USER;

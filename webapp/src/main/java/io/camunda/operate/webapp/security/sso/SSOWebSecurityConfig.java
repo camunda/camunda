@@ -14,6 +14,8 @@ import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_
 
 import com.auth0.AuthenticationController;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -26,6 +28,9 @@ import org.springframework.stereotype.Component;
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends BaseWebConfigurer {
+
+  @Autowired
+  protected OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Bean
   public AuthenticationController authenticationController() {
@@ -42,6 +47,11 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
       .antMatchers(API, PUBLIC_API, ROOT).authenticated()
       .and().exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
+    configureOAuth2(http);
+  }
+
+  @Override
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 

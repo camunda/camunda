@@ -8,31 +8,27 @@ package io.camunda.operate.webapp.security.oauth2;
 
 import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
+import io.camunda.identity.sdk.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + IDENTITY_AUTH_PROFILE)
-public class Jwt2AuthenticationTokenConverter implements Converter<Jwt, AbstractAuthenticationToken> {
-
-  private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
+@Profile(IDENTITY_AUTH_PROFILE)
+public class IdentityJwt2AuthenticationTokenConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
   @Autowired
-  private JwtAuthenticationTokenValidator validator;
+  private Identity identity;
 
   @Override
   public AbstractAuthenticationToken convert(final Jwt jwt) {
-    final JwtAuthenticationToken token = (JwtAuthenticationToken) delegate.convert(jwt);
-    if (validator.isValid(token)) {
-      return token;
-    }
-    return null;
+    //this will validate audience
+    identity.authentication().verifyToken(jwt.getTokenValue());
+    return new JwtAuthenticationToken(jwt, null, jwt.getSubject());
   }
 
 }

@@ -28,6 +28,8 @@ import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.IdentityOAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import java.util.HashMap;
@@ -57,9 +59,11 @@ import org.springframework.test.context.junit4.SpringRunner;
         CCSaaSJwtAuthenticationTokenValidator.class,
         IdentityWebSecurityConfig.class,
         IdentityService.class,
+        IdentityConfigurer.class,
         IdentityController.class,
-        IdentityAuthentication.class,
         IdentityUserService.class,
+        IdentityOAuth2WebConfigurer.class,
+        IdentityJwt2AuthenticationTokenConverter.class,
         OperateURIs.class,
         OperateProperties.class,
         OperateProfileService.class,

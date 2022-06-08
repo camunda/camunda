@@ -97,7 +97,7 @@ public class Auth0Service {
     final ClusterInfo.Permission operatePermissions =
         clusterInfo.getPermissions().getCluster().getOperate();
     if (operatePermissions.getRead()) {
-      authentication.getPermissions().add(Permission.READ);
+      authentication.addPermission(Permission.READ);
     } else {
       throw new InsufficientAuthenticationException("User doesn't have read access");
     }
@@ -105,7 +105,7 @@ public class Auth0Service {
     if (operatePermissions.getDelete()
         && operatePermissions.getCreate()
         && operatePermissions.getUpdate()) {
-      authentication.getPermissions().add(Permission.WRITE);
+      authentication.addPermission(Permission.WRITE);
     }
   }
 

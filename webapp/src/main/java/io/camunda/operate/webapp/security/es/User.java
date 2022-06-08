@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.security.es;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 
-import io.camunda.operate.webapp.security.Role;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;

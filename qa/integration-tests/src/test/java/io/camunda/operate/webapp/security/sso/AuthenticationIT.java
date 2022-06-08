@@ -32,7 +32,7 @@ import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenVal
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
-import io.camunda.operate.webapp.security.RolePermissionService;
+import io.camunda.operate.webapp.security.es.RolePermissionService;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import java.util.Base64;
 import java.util.Collections;

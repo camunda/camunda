@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.security.es;
 import static io.camunda.operate.util.CollectionUtil.map;
 
 import io.camunda.operate.webapp.security.OperateProfileService;
-import io.camunda.operate.webapp.security.Role;
 import java.util.List;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;

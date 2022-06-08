@@ -22,8 +22,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + IDENTITY_AUTH_PROFILE)
-public class OAuth2WebConfigurer {
+@Profile(IDENTITY_AUTH_PROFILE)
+public class IdentityOAuth2WebConfigurer {
 
   public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI =
       "spring.security.oauth2.resourceserver.jwt.issuer-uri";
@@ -32,21 +32,20 @@ public class OAuth2WebConfigurer {
   public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI =
       "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2WebConfigurer.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IdentityOAuth2WebConfigurer.class);
 
   @Autowired
   private Environment env;
 
   @Autowired
-  private Jwt2AuthenticationTokenConverter jwtConverter;
+  private IdentityJwt2AuthenticationTokenConverter jwtConverter;
 
   public void configure(HttpSecurity http) throws Exception {
     if (isJWTEnabled()) {
       http.oauth2ResourceServer(
           serverCustomizer ->
               serverCustomizer.authenticationEntryPoint(this::authenticationFailure)
-                  .jwt(
-                  jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
+                  .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
   }
