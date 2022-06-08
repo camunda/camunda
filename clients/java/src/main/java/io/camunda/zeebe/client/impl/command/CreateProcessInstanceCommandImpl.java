@@ -141,10 +141,6 @@ public final class CreateProcessInstanceCommandImpl
     return future;
   }
 
-  protected CreateProcessInstanceRequest buildRequest() {
-    return builder.build();
-  }
-
   private void send(
       final CreateProcessInstanceRequest request,
       final StreamObserver<GatewayOuterClass.CreateProcessInstanceResponse> future) {
