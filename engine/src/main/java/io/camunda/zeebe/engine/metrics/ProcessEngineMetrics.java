@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.prometheus.client.Counter;
 
@@ -46,10 +47,32 @@ public final class ProcessEngineMetrics {
           .help("Number of process element instance events")
           .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL)
           .register();
+  private static final String CREATION_MODE_LABEL = "creation_mode";
+  private static final Counter CREATED_PROCESS_INSTANCES =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("process_instance_creations_total")
+          .help("Number of created (root) process instances")
+          .labelNames(ORGANIZATION_ID_LABEL, PARTITION_LABEL, CREATION_MODE_LABEL)
+          .register();
   private final String partitionIdLabel;
 
   public ProcessEngineMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
+  }
+
+  public void processInstanceCreated(final ProcessInstanceCreationRecord record) {
+    final CreationMode creationMode =
+        record
+                .startInstructions()
+                .iterator()
+                .hasNext() // TODO use isEmpty() which is a commit in another branch
+            ? CreationMode.CREATION_AT_GIVEN_ELEMENT
+            : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
+
+    CREATED_PROCESS_INSTANCES
+        .labels(ORGANIZATION_ID, partitionIdLabel, creationMode.toString())
+        .inc();
   }
 
   private void elementInstanceEvent(final String action, final BpmnElementType elementType) {
@@ -108,5 +131,15 @@ public final class ProcessEngineMetrics {
 
   private void increaseEvaluatedDmnElements(final String action, final int amount) {
     EVALUATED_DMN_ELEMENTS.labels(ORGANIZATION_ID, action, partitionIdLabel).inc(amount);
+  }
+
+  private enum CreationMode {
+    CREATION_AT_DEFAULT_START_EVENT,
+    CREATION_AT_GIVEN_ELEMENT;
+
+    @Override
+    public String toString() {
+      return name().toLowerCase();
+    }
   }
 }
