@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {Header} from 'App/Layout/Header';
 import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
@@ -15,6 +15,13 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
+
+function reset() {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+  groupedDecisionsStore.reset();
+  localStorage.clear();
+}
 
 function getWrapper(initialPath: string = '/decisions') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -53,12 +60,7 @@ describe('<Filters />', () => {
     jest.useFakeTimers();
   });
 
-  afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-    groupedDecisionsStore.reset();
-    localStorage.clear();
-  });
+  afterEach(reset);
 
   it('should render the correct elements', () => {
     render(<Filters />, {
@@ -420,5 +422,33 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/
     );
+  });
+
+  it('should omit all versions option', async () => {
+    reset();
+    const [firstDecision] = groupedDecisions;
+    const [, firstVersion] = firstDecision.decisions;
+    mockServer.use(
+      rest.get('/api/decisions/grouped', (_, res, ctx) =>
+        res.once(ctx.json([{...firstDecision, decisions: [firstVersion]}]))
+      )
+    );
+    await groupedDecisionsStore.fetchDecisions();
+
+    jest.useFakeTimers();
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`
+      ),
+    });
+
+    await user.click(screen.getByLabelText(/version/i));
+
+    expect(
+      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+        name: /all/i,
+      })
+    ).not.toBeInTheDocument();
   });
 });

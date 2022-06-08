@@ -26,7 +26,10 @@ const ProcessVersionField: React.FC = observer(() => {
 
   const options = [
     {
-      options: [{label: 'All', value: 'all'}, ...mappedVersions],
+      options:
+        mappedVersions.length === 1
+          ? mappedVersions
+          : [{label: 'All', value: 'all'}, ...mappedVersions],
     },
   ];
 

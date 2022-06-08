@@ -6,7 +6,13 @@
  */
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {render, screen, waitFor, within} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitFor,
+  within,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
@@ -16,19 +22,21 @@ import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagr
 import {mockProcessXML} from 'modules/testUtils';
 import {LocationLog} from 'modules/utils/LocationLog';
 
+const GROUPED_BIG_VARIABLE_PROCESS = {
+  bpmnProcessId: 'bigVarProcess',
+  name: 'Big variable process',
+  processes: [
+    {
+      id: '2251799813685530',
+      name: 'Big variable process',
+      version: 1,
+      bpmnProcessId: 'bigVarProcess',
+    },
+  ],
+};
+
 const GROUPED_PROCESSES = [
-  {
-    bpmnProcessId: 'bigVarProcess',
-    name: 'Big variable process',
-    processes: [
-      {
-        id: '2251799813685530',
-        name: 'Big variable process',
-        version: 1,
-        bpmnProcessId: 'bigVarProcess',
-      },
-    ],
-  },
+  GROUPED_BIG_VARIABLE_PROCESS,
   {
     bpmnProcessId: 'complexProcess',
     name: null,
@@ -1524,5 +1532,46 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
     }
+  });
+
+  it('should omit all versions option', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      ),
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json([GROUPED_BIG_VARIABLE_PROCESS]))
+      )
+    );
+
+    processesStore.fetchProcesses();
+    processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
+
+    jest.useFakeTimers();
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+          })
+        ).toString()}`
+      ),
+    });
+
+    await user.click(screen.getByLabelText(/version/i));
+
+    await waitForElementToBeRemoved(() =>
+      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+        name: /all/i,
+      })
+    );
+
+    expect(
+      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+        name: /all/i,
+      })
+    ).not.toBeInTheDocument();
   });
 });

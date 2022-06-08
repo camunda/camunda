@@ -24,6 +24,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
     },
     ...decisions,
   ];
+
   return (
     <FormGroup>
       <SectionTitle appearance="emphasis">Decision</SectionTitle>
@@ -71,16 +72,22 @@ const DecisionsFormGroup: React.FC = observer(() => {
             disabled={areDecisionsEmpty || versions.length === 0}
             options={[
               {
-                options: [
-                  {
-                    label: 'All',
-                    value: 'all',
-                  },
-                  ...(versions.map((version) => ({
-                    label: `Version ${version}`,
-                    value: version.toString(),
-                  })) ?? []),
-                ],
+                options:
+                  versions.length === 1
+                    ? versions.map((version) => ({
+                        label: `Version ${version}`,
+                        value: version.toString(),
+                      }))
+                    : [
+                        {
+                          label: 'All',
+                          value: 'all',
+                        },
+                        ...(versions.map((version) => ({
+                          label: `Version ${version}`,
+                          value: version.toString(),
+                        })) ?? []),
+                      ],
               },
             ]}
           />
