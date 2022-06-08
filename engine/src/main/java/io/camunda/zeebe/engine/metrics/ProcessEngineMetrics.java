@@ -13,19 +13,24 @@ import io.prometheus.client.Counter;
 
 public final class ProcessEngineMetrics {
 
-  static final Counter EXECUTED_INSTANCES =
-      Counter.build()
-          .namespace("zeebe")
-          .name("executed_instances_total")
-          .help("Number of executed (root) process instances")
-          .labelNames("organizationId", "type", "action", "partition")
-          .register();
+  private static final String NAMESPACE = "zeebe";
+  private static final String ORGANIZATION_ID_LABEL = "organizationId";
+  private static final String PARTITION_LABEL = "partition";
+  private static final String ACTION_LABEL = "action";
   static final Counter EVALUATED_DMN_ELEMENTS =
       Counter.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE)
           .name("evaluated_dmn_elements_total")
           .help("Number of evaluated DMN elements including required decisions")
-          .labelNames("organizationId", "action", "partition")
+          .labelNames(ORGANIZATION_ID_LABEL, ACTION_LABEL, PARTITION_LABEL)
+          .register();
+  private static final String TYPE_LABEL = "type";
+  static final Counter EXECUTED_INSTANCES =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("executed_instances_total")
+          .help("Number of executed (root) process instances")
+          .labelNames(ORGANIZATION_ID_LABEL, TYPE_LABEL, ACTION_LABEL, PARTITION_LABEL)
           .register();
   private static final String ORGANIZATION_ID =
       System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
@@ -36,10 +41,10 @@ public final class ProcessEngineMetrics {
   private static final String ACTION_EVALUATED_FAILED = "evaluated_failed";
   private static final Counter ELEMENT_INSTANCE_EVENTS =
       Counter.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE)
           .name("element_instance_events_total")
           .help("Number of process element instance events")
-          .labelNames("action", "type", "partition")
+          .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL)
           .register();
   private final String partitionIdLabel;
 
