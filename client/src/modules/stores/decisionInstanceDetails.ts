@@ -34,6 +34,7 @@ type DecisionInstanceType = ReadonlyDeep<{
     value: string | null;
   }>;
   result: string | null;
+  decisionType: 'DECISION_TABLE' | 'LITERAL_EXPRESSION';
 }>;
 
 type State = {

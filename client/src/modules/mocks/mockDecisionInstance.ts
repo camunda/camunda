@@ -94,6 +94,7 @@ const invoiceClassification: DecisionInstanceType = {
       ruleIndex: 4,
     },
   ],
+  decisionType: 'DECISION_TABLE',
   result: JSON.stringify({
     areAgeRequirementsSatisfied: 'satisfied',
     paragraph: 'sbl §17',
@@ -126,6 +127,7 @@ const assignApproverGroup: DecisionInstanceType = {
       ruleIndex: 1,
     },
   ],
+  decisionType: 'DECISION_TABLE',
   result: null,
 } as const;
 
@@ -135,8 +137,25 @@ const assignApproverGroupWithoutVariables: DecisionInstanceType = {
   evaluatedOutputs: [],
 } as const;
 
+const literalExpression: DecisionInstanceType = {
+  id: '247986278462738-1',
+  decisionDefinitionId: '111',
+  decisionId: 'calc-key-figures',
+  state: 'EVALUATED',
+  decisionName: 'Calculate Credit History Key Figures',
+  decisionVersion: 1,
+  evaluationDate: '2022-01-20T13:26:52.531+0000',
+  processInstanceId: '42',
+  errorMessage: null,
+  evaluatedInputs: [],
+  evaluatedOutputs: [],
+  decisionType: 'LITERAL_EXPRESSION',
+  result: null,
+} as const;
+
 export {
   invoiceClassification,
   assignApproverGroup,
   assignApproverGroupWithoutVariables,
+  literalExpression,
 };

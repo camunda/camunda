@@ -14,7 +14,10 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablesPanel} from './index';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
+import {
+  invoiceClassification,
+  literalExpression,
+} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
@@ -114,5 +117,32 @@ describe('<VariablesPanel />', () => {
     );
 
     expect(getStateLocally()?.decisionInstanceTab).toBe('inputs-and-outputs');
+  });
+
+  it('should hide input/output tab for literal expressions', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
+        res.once(ctx.json(literalExpression))
+      )
+    );
+    decisionInstanceDetailsStore.fetchDecisionInstance('1');
+
+    render(<VariablesPanel />, {wrapper: ThemeProvider});
+
+    expect(
+      await screen.findByTestId('results-json-viewer')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('heading', {
+        name: /result/i,
+      })
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {
+        name: /inputs and outputs/i,
+      })
+    ).not.toBeInTheDocument();
   });
 });

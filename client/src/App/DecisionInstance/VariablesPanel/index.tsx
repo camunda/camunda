@@ -8,7 +8,9 @@
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
+import {PanelHeader} from 'modules/components/PanelHeader';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
 import {Container, Header, Tab} from './styled';
@@ -16,6 +18,10 @@ import {Container, Header, Tab} from './styled';
 const LOCAL_STORAGE_KEY = 'decisionInstanceTab';
 
 const VariablesPanel: React.FC = observer(() => {
+  const isLiteralExpression =
+    decisionInstanceDetailsStore.state.decisionInstance?.decisionType ===
+    'LITERAL_EXPRESSION';
+
   const [selectedTab, setSelectedTab] = useState<
     'inputs-and-outputs' | 'result'
   >(getStateLocally()?.[LOCAL_STORAGE_KEY] ?? 'inputs-and-outputs');
@@ -38,26 +44,36 @@ const VariablesPanel: React.FC = observer(() => {
     });
   }
 
+  useEffect(() => {
+    if (isLiteralExpression) {
+      setSelectedTab('result');
+    }
+  }, [isLiteralExpression]);
+
   return (
     <Container data-testid="decision-instance-variables-panel">
-      <Header>
-        <Tab
-          isSelected={selectedTab === 'inputs-and-outputs'}
-          onClick={() => {
-            selectTab('inputs-and-outputs');
-          }}
-        >
-          Inputs and Outputs
-        </Tab>
-        <Tab
-          isSelected={selectedTab === 'result'}
-          onClick={() => {
-            selectTab('result');
-          }}
-        >
-          Result
-        </Tab>
-      </Header>
+      {isLiteralExpression ? (
+        <PanelHeader title="Result"></PanelHeader>
+      ) : (
+        <Header>
+          <Tab
+            isSelected={selectedTab === 'inputs-and-outputs'}
+            onClick={() => {
+              selectTab('inputs-and-outputs');
+            }}
+          >
+            Inputs and Outputs
+          </Tab>
+          <Tab
+            isSelected={selectedTab === 'result'}
+            onClick={() => {
+              selectTab('result');
+            }}
+          >
+            Result
+          </Tab>
+        </Header>
+      )}
       <>
         {selectedTab === 'inputs-and-outputs' && <InputsAndOutputs />}
         {selectedTab === 'result' && <Result />}

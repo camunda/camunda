@@ -15,8 +15,9 @@ const Container = styled.section`
       width: 100%;
       height: 100%;
       display: grid;
-      grid-template-rows: 38px 1fr;
+      grid-template-rows: 37px 1fr;
       background-color: ${colors.backgroundColor};
+      border-top: 1px solid ${theme.colors.borderColor};
     `;
   }}
 `;
@@ -62,7 +63,9 @@ const Header = styled.header`
 
     return css`
       padding: 0 20px;
-      border: 1px solid ${theme.colors.borderColor};
+      border-width: 0 1px 1px 1px;
+      border-style: solid;
+      border-color: ${theme.colors.borderColor};
       background-color: ${colors.backgroundColor};
     `;
   }}

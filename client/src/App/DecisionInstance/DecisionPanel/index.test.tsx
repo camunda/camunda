@@ -11,8 +11,8 @@ import {render, screen} from 'modules/testing-library';
 import {
   invoiceClassification,
   assignApproverGroup,
+  literalExpression,
 } from 'modules/mocks/mockDecisionInstance';
-import {mockLiteralExpression} from 'modules/mocks/mockLiteralExpression';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -58,7 +58,7 @@ describe('<DecisionPanel />', () => {
   it('should render literal expression', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockLiteralExpression))
+        res.once(ctx.json(literalExpression))
       )
     );
 
