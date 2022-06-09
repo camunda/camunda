@@ -56,9 +56,9 @@ jobs:
         name: Set environment variables
         run: |
           version=$(mvn help:evaluate -q -DforceStdout -D"expression=project.version")
-          tag="$version-$branch-${GITHUB_SHA::8}"
+          tag="$version-$BRANCH_NAME-${GITHUB_SHA::8}"
           echo "TAG=$tag" >> $GITHUB_ENV
-          echo "QA_RUN_VARIABLES={\"zeebeImage\": \"$IMAGE:$tag\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", \"channel\": \"Internal Dev\", \"branch\": \"$branch\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}" >> $GITHUB_ENV
+          echo "QA_RUN_VARIABLES={\"zeebeImage\": \"$IMAGE:$tag\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", \"channel\": \"Internal Dev\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}" >> $GITHUB_ENV
           echo "BUSINESS_KEY=$BUILD_URL" >> $GITHUB_ENV          
                                     
       - name: Import Secrets
