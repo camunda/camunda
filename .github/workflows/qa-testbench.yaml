@@ -47,7 +47,7 @@ jobs:
       # The version is necessary, since CC Saas only accepts SemVer for docker image tags (need to start with a version tag)
       - uses: actions/checkout@v3
         with:
-          ref: "${{ env.BRANCH_NAME }}"
+          ref: "${{ github.event.inputs.branch }}"
       - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
