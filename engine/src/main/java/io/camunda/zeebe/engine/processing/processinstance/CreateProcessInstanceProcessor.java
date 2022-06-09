@@ -93,7 +93,8 @@ public final class CreateProcessInstanceProcessor
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
     } else {
-      activateElementsForStartInstructions(record, process, processInstanceKey, processInstance);
+      activateElementsForStartInstructions(
+          record.startInstructions(), process, processInstanceKey, processInstance);
     }
 
     record
@@ -216,7 +217,7 @@ public final class CreateProcessInstanceProcessor
   }
 
   private void activateElementsForStartInstructions(
-      final ProcessInstanceCreationRecord record,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
       final DeployedProcess process,
       final long processInstanceKey,
       final ProcessInstanceRecord processInstance) {
@@ -227,21 +228,20 @@ public final class CreateProcessInstanceProcessor
 
     final Map<DirectBuffer, Long> activatedFlowScopeIds = new HashMap<>();
     activatedFlowScopeIds.put(processInstance.getElementIdBuffer(), processInstanceKey);
-    record
-        .startInstructions()
-        .forEach(
-            instruction -> {
-              final DirectBuffer elementId =
-                  new UnsafeBuffer(StringUtil.getBytes(instruction.getElementId()));
-              final long flowScopeKey =
-                  activateFlowScopes(process, processInstanceKey, elementId, activatedFlowScopeIds);
 
-              final long elementKey = keyGenerator.nextKey();
-              final ProcessInstanceRecord elementRecord =
-                  createProcessInstanceRecord(process, processInstanceKey, elementId, flowScopeKey);
-              commandWriter.appendFollowUpCommand(
-                  elementKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
-            });
+    startInstructions.forEach(
+        instruction -> {
+          final DirectBuffer elementId =
+              new UnsafeBuffer(StringUtil.getBytes(instruction.getElementId()));
+          final long flowScopeKey =
+              activateFlowScopes(process, processInstanceKey, elementId, activatedFlowScopeIds);
+
+          final long elementKey = keyGenerator.nextKey();
+          final ProcessInstanceRecord elementRecord =
+              createProcessInstanceRecord(process, processInstanceKey, elementId, flowScopeKey);
+          commandWriter.appendFollowUpCommand(
+              elementKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
+        });
   }
 
   /**
@@ -253,7 +253,7 @@ public final class CreateProcessInstanceProcessor
    * process is already activated, so the activation for this is skipped (it is present in the
    * activatedFlowScopeIds map). From here it traverses the flow scopes back down to the desired
    * start element and activates all flow scopes in order. The desired start element is not
-   * activated here as an activate command is send for this later on.
+   * activated here as an activate command is sent for this later on.
    *
    * <p>To prevent activating the same element multiple times a map of activatedFlowScopeIds will
    * keep track of which elements have been activated and the key of the element instance.
