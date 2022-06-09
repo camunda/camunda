@@ -51,6 +51,14 @@ public class CreateProcessInstanceAnywhereTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(key)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType())
         .doesNotContain(BpmnElementType.START_EVENT);
@@ -107,6 +115,14 @@ public class CreateProcessInstanceAnywhereTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(key)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType())
         .doesNotContain(BpmnElementType.START_EVENT);
@@ -148,8 +164,8 @@ public class CreateProcessInstanceAnywhereTest {
                         s.embeddedSubProcess()
                             .startEvent()
                             .serviceTask("task", t -> t.zeebeJobType("type"))
-                            .endEvent())
-                .endEvent()
+                            .endEvent("spend"))
+                .endEvent("end")
                 .done())
         .deploy();
 
@@ -173,9 +189,17 @@ public class CreateProcessInstanceAnywhereTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(key)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType())
-        .doesNotContain(BpmnElementType.START_EVENT, BpmnElementType.END_EVENT);
+        .doesNotContain(BpmnElementType.START_EVENT);
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
@@ -238,12 +262,17 @@ public class CreateProcessInstanceAnywhereTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(key)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType())
-        .doesNotContain(
-            BpmnElementType.START_EVENT,
-            BpmnElementType.PARALLEL_GATEWAY,
-            BpmnElementType.END_EVENT);
+        .doesNotContain(BpmnElementType.START_EVENT);
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
@@ -259,7 +288,9 @@ public class CreateProcessInstanceAnywhereTest {
             Tuple.tuple(
                 "process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             Tuple.tuple(
-                "subprocess", BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+                "subprocess",
+                BpmnElementType.SUB_PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
             Tuple.tuple(
                 "subprocess", BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             Tuple.tuple(
