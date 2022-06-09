@@ -25,6 +25,8 @@ jobs:
       IMAGE: "gcr.io/zeebe-io/zeebe"
       GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
       BRANCH_NAME: "${{ github.event.inputs.branch }}"
+      ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
+      ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
 
     steps:
       # Dynamic environment variables are not supported by GHA
