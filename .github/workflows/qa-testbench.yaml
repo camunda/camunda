@@ -79,7 +79,7 @@ jobs:
         with:
           registry: gcr.io
           username: _json_key
-          password: ${{ steps.secrets.outputs.GCR_JSON_KEY }}
+          password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
