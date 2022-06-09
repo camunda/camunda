@@ -132,13 +132,13 @@ jobs:
         with:
           payload: |
             {
-              "text": ":alarm: QA run on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }} failed! :alarm:\n ${{ env.BUILD_URL }}",
+              "text": ":alarm: QA run on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }}` failed! :alarm:\n ${{ env.BUILD_URL }}",
              	"blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: QA run on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }} failed! :alarm:"
+                    "text": ":alarm: QA run on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }}` failed! :alarm:"
                   }
                 },
                 {
@@ -161,13 +161,13 @@ jobs:
         with:
           payload: |
             {
-              "text": ":alarm: QA run on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }} failed! :alarm:\n ${{ env.BUILD_URL }}",
+              "text": ":tada: QA run succeeded on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }}`! :tada:\n ${{ env.BUILD_URL }}",
              	"blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":tada: QA run succeeded on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }}! :tada:"
+                    "text": ":tada: QA run succeeded on `${{ env.BRANCH_NAME }}` with generation template `${{ env.GENERATION_TEMPLATE }}`! :tada:"
                   }
                 },
                 {
