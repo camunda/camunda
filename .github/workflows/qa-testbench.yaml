@@ -34,22 +34,33 @@ jobs:
       #
       # Since we run the workflow either on demand or via schedule we need to assign some defaults
       # Furthermore we have branches like stable/1.0 where we have to replace certain patterns, in order to use the branch name as docker image tag
-      - id: set-env
-        name: Set environment variables
+      - id: evaluate-inputs
+        name: Evaluate Inputs
         run: |
           branch=${BRANCH_NAME/\//-}
           branch=${branch//\./-}
           branch=${branch:-main}
           echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
           echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
-          echo "TAG=$branch-${GITHUB_SHA::8}" >> $GITHUB_ENV
-          echo "QA_RUN_VARIABLES={\"zeebeImage\": \"$IMAGE:SNAPSHOT-${GITHUB_SHA::8}\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", \"channel\": \"Internal Dev\", \"branch\": \"$branch\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}" >> $GITHUB_ENV
-          echo "BUSINESS_KEY=$BUILD_URL" >> $GITHUB_ENV
-          
-                                    
+      # We need to check out the evaluated branch and setup java (incl. maven), so we can retrieve the current project version
+      # The version is necessary, since CC Saas only accepts SemVer for docker image tags (need to start with a version tag)
       - uses: actions/checkout@v3
         with:
-          ref: "${{ github.event.inputs.branch }}"
+          ref: "${{ env.BRANCH_NAME }}"
+      - uses: actions/setup-java@v3.3.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      # Set further environment variables, which are needed for the QA Testbench run
+      - id: set-env
+        name: Set environment variables
+        run: |
+          version=$(mvn help:evaluate -q -DforceStdout -D"expression=project.version")
+          tag="$version-$branch-${GITHUB_SHA::8}"
+          echo "TAG=$tag" >> $GITHUB_ENV
+          echo "QA_RUN_VARIABLES={\"zeebeImage\": \"$IMAGE:$tag\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", \"channel\": \"Internal Dev\", \"branch\": \"$branch\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}" >> $GITHUB_ENV
+          echo "BUSINESS_KEY=$BUILD_URL" >> $GITHUB_ENV          
+                                    
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.4.1
@@ -62,10 +73,6 @@ jobs:
             secret/data/common/github.com/actions/camunda/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
             secret/data/common/github.com/actions/camunda/zeebe TESTBENCH_PROD_CLIENT_SECRET;
             secret/data/common/github.com/actions/camunda/zeebe TESTBENCH_PROD_CONTACT_POINT;
-      - uses: actions/setup-java@v3.3.0
-        with:
-          distribution: 'temurin'
-          java-version: '17'
 
       - uses: actions/setup-go@v3
         with:
