@@ -154,7 +154,7 @@ jobs:
       - id: slack-success-notify
         name: Send success slack notification
         uses: slackapi/slack-github-action@v1.19.0
-        if: ${{ success() }}
+        if: ${{ !failure() }}
         with:
           payload: |
             {
