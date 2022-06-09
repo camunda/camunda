@@ -13,7 +13,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.assertj.core.api.Assertions;
@@ -374,6 +376,45 @@ public class CreateProcessInstanceAnywhereTest {
             Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldCreateVariablesInProcessScope() {
+    // Given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process").startEvent().endEvent("end").done())
+        .deploy();
+
+    // When
+    final long key =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withStartInstruction(newStartInstruction("end"))
+            .withVariable("variable", "value")
+            .create();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(key)
+                .getFirst())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getScopeKey,
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue)
+        .containsExactly(key, "variable", "\"value\"");
   }
 
   private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {
