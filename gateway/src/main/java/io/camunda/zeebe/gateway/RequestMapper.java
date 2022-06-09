@@ -128,6 +128,7 @@ public final class RequestMapper {
         .setKey(request.getProcessDefinitionKey())
         .setVersion(request.getVersion())
         .setVariables(ensureJsonSet(request.getVariables()))
+        .setStartInstructions(request.getStartInstructionsList())
         .setFetchVariables(grpcRequest.getFetchVariablesList());
 
     return brokerRequest;
