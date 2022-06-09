@@ -106,6 +106,8 @@ More specifically, each option configures the following:
 * `rejection` (`boolean`): if true, rejection records will be exported; if false, ignored.
 * `deployment` (`boolean`): if true, records related to deployments will be exported; if false,
   ignored.
+* `process` (`boolean`): if true, records related to processes will be exported; if false, ignored.
+* `error` (`boolean`): if true, records related to errors will be exported; if false, ignored.
 * `incident` (`boolean`): if true, records related to incidents will be exported; if false, ignored.
 * `job` (`boolean`): if true, records related to jobs will be exported; if false, ignored.
 * `jobBatch` (`boolean`): if true, records related to job batches will be exported; if false,
@@ -115,8 +117,15 @@ More specifically, each option configures the following:
   exported; if false, ignored.
 * `processInstance` (`boolean`): if true, records related to process instances will be exported; if
   false, ignored.
+* `processInstanceCreation` (`boolean`): if true, records related to process instance creations will
+  be exported; if false, ignored.
 * `processMessageSubscription` (`boolean`): if true, records related to process message
   subscriptions will be exported; if false, ignored.
+* `decisionRequirements` (`boolean`): if true, records related to decision requirements will be
+   exported; if false, ignored.
+* `decision` (`boolean`): if true, records related to decisions will be exported; if false, ignored.
+* `decisionEvaluation` (`boolean`): if true, records related to decision evaluations will be
+   exported; if false, ignored.
 
 Here is a complete, default configuration example:
 
@@ -155,18 +164,21 @@ exporters:
         event: true
         rejection: false
 
-        deployment: false
+        deployment: true
         process: true
         error: true
         incident: true
         job: true
         jobBatch: false
-        message: false
-        messageSubscription: false
+        message: true
+        messageSubscription: true
         variable: true
         variableDocument: true
         processInstance: true
         processInstanceCreation: false
-        processMessageSubscription: false
+        processMessageSubscription: true
+        decisionRequirements: true
+        decision: true
+        decisionEvaluation: true
 ```
 
