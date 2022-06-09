@@ -1,3 +1,52 @@
+# v8.1.0-alpha2
+## 🚀 New Features
+* Add salesPlanType and roles to User data ([#1888](https://github.com/camunda/tasklist/issues/1888))
+* Pass JWT error message ([#1839](https://github.com/camunda/tasklist/issues/1839))
+
+## 💊 Bugfixes
+* save Identity authentication in persistent sessions ([#1813](https://github.com/camunda/tasklist/issues/1813))
+* **backend**: add additional checks for error on migration ([#1828](https://github.com/camunda/tasklist/issues/1828))
+* **deps**: update dependency graphql to v16.5.0 ([#1833](https://github.com/camunda/tasklist/issues/1833))
+* **deps**: update dependency @carbon/react to v1.3.0 ([#1844](https://github.com/camunda/tasklist/issues/1844))
+* **deps**: update all non-major dependencies ([#1826](https://github.com/camunda/tasklist/issues/1826))
+* **deps**: update dependency @apollo/client to v3.6.2 ([#1469](https://github.com/camunda/tasklist/issues/1469))
+* **deps**: update dependency mobx-react-lite to v3.4.0 ([#1824](https://github.com/camunda/tasklist/issues/1824))
+
+## 🧹 Chore
+* update Zeebe and Identity to 8.1.0-alpha2 ([#1892](https://github.com/camunda/tasklist/issues/1892))
+* bump guava from 31.0.1-jre to 31.1-jre ([#1829](https://github.com/camunda/tasklist/issues/1829))
+* **deps**: bump jib-maven-plugin from 3.2.0 to 3.2.1 ([#1831](https://github.com/camunda/tasklist/issues/1831))
+* **deps**: bump zeebe-test-container from 3.3.0 to 3.4.0 ([#1842](https://github.com/camunda/tasklist/issues/1842))
+* **deps**: bump version.micrometer from 1.8.5 to 1.9.0 ([#1871](https://github.com/camunda/tasklist/issues/1871))
+* **deps**: bump assertj-core from 3.22.0 to 3.23.1 ([#1872](https://github.com/camunda/tasklist/issues/1872))
+* **preview-env**: Keep using the branch name tagging ([#1873](https://github.com/camunda/tasklist/issues/1873))
+* **preview-env**: move Tasklist preview environments docker images to Harbor from gcr.io ([#1866](https://github.com/camunda/tasklist/issues/1866))
+* **deps**: bump version.micrometer from 1.8.5 to 1.9.0 ([#1841](https://github.com/camunda/tasklist/issues/1841))
+* **deps**: bump version.jackson from 2.13.2 to 2.13.3 ([#1843](https://github.com/camunda/tasklist/issues/1843))
+* **deps**: bump spring-session-bom from 2021.1.2 to 2021.2.0 ([#1855](https://github.com/camunda/tasklist/issues/1855))
+* **deps**: bump elasticsearch from 1.16.3 to 1.17.2 ([#1859](https://github.com/camunda/tasklist/issues/1859))
+* **deps**: bump version.elasticsearch from 7.17.3 to 7.17.4 ([#1864](https://github.com/camunda/tasklist/issues/1864))
+* **deps**: update dependency husky to v8 ([#1827](https://github.com/camunda/tasklist/issues/1827))
+* **deps**: update dependency @types/jest to v27.5.1 ([#1808](https://github.com/camunda/tasklist/issues/1808))
+* **deps**: update dependency @types/node to v16.11.36 ([#1845](https://github.com/camunda/tasklist/issues/1845))
+* **preview-env**: Use getSanitizedBranchName instead of creating a new function ([#1863](https://github.com/camunda/tasklist/issues/1863))
+* **preview env**: fixing tear down gha to return a success
+* **preview env**: resolve the namespace name limitation for branch deployment ([#1856](https://github.com/camunda/tasklist/issues/1856))
+* **preview env**: cleanup old branch deployment Jobs ([#1851](https://github.com/camunda/tasklist/issues/1851))
+* **preview env**: remove  unneeded prefix
+* **seed**: disable jobs on non prod env ([#1850](https://github.com/camunda/tasklist/issues/1850))
+* **preview env**: Fix argocd app name
+* **preview env**: Fix deploy GHA
+* **preview env**: Fix tear down GHA
+* **project**: rename camunda-cloud to camunda ([#1838](https://github.com/camunda/tasklist/issues/1838))
+* **preview env**: cleanup old preview env files ([#1840](https://github.com/camunda/tasklist/issues/1840))
+* **Jenkinsfile**: periodically trigger stable branches ([#1835](https://github.com/camunda/tasklist/issues/1835))
+* **deps**: bump maven-failsafe-plugin from 3.0.0-M4 to 3.0.0-M6 ([#1789](https://github.com/camunda/tasklist/issues/1789))
+* **deps**: bump version.elasticsearch from 7.17.2 to 7.17.3 ([#1804](https://github.com/camunda/tasklist/issues/1804))
+* **deps**: bump maven-surefire-plugin from 3.0.0-M5 to 3.0.0-M6 ([#1805](https://github.com/camunda/tasklist/issues/1805))
+* **deps**: bump nexus-staging-maven-plugin from 1.6.12 to 1.6.13 ([#1806](https://github.com/camunda/tasklist/issues/1806))
+* bump maven-javadoc-plugin from 3.3.2 to 3.4.0 ([#1811](https://github.com/camunda/tasklist/issues/1811))
+* bump netty-bom from 4.1.75.Final to 4.1.77.Final ([#1825](https://github.com/camunda/tasklist/issues/1825))
 # v8.1.0-alpha1
 ## 🚀 New Features
 * **ci**: migrate frontend stages to github actions ([#1624](https://github.com/camunda-cloud/tasklist/issues/1624))
@@ -42,4 +91,3 @@
 * create changelog workflows ([#1764](https://github.com/camunda-cloud/tasklist/issues/1764))
 * **deps**: update definitelytyped (major) ([#1774](https://github.com/camunda-cloud/tasklist/issues/1774))
 * **deps**: update dependency jest-junit to v13.1.0 ([#1767](https://github.com/camunda-cloud/tasklist/issues/1767))
-
