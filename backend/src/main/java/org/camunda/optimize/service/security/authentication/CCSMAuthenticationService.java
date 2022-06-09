@@ -80,15 +80,14 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     String redirectUri = baseUri.getScheme() + "://" + baseUri.getHost();
     if (
       // value is -1 if no port is set, in that case no need to add it
-      baseUri.getPort() != -1 &&
-      (baseUri.getScheme().equals("http") && baseUri.getPort() != 80) ||
-        (baseUri.getScheme().equals("https") && baseUri.getPort() != 443)) {
+      baseUri.getPort() != -1
+    ) {
       redirectUri += ":" + baseUri.getPort();
     }
     return redirectUri;
   }
 
-  private boolean userHasOptimizeAuthorization(final AccessToken accessToken) {
+  private static boolean userHasOptimizeAuthorization(final AccessToken accessToken) {
     return accessToken.getPermissions().contains(OPTIMIZE_PERMISSION);
   }
 
