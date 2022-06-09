@@ -84,7 +84,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          tags: gcr.io/zeebe-io/zeebe:SNAPSHOT-${GITHUB_SHA::8}
+          tags: "${{ env.IMAGE }}:${{ env.TAG }}"
           push: true
           no-cache: true
           build-args: DISTBALL=dist/target/camunda-zeebe-*-SNAPSHOT.tar.gz
