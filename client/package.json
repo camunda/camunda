@@ -95,7 +95,7 @@
     "sass": "^1.52.2",
     "shelljs": "^0.8.5",
     "testcafe": "^1.19.0",
-    "testcafe-browser-provider-browserstack": "^1.13.2",
+    "testcafe-browser-provider-browserstack": "^1.14.0",
     "tree-kill": "^1.2.2",
     "ws": "^8.6.0",
     "xml2js": "^0.4.23",
