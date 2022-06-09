@@ -1,20 +1,19 @@
 name: QA Testbench run
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
   schedule:
   # * is a special character in YAML so you have to quote this string
-    - cron:  '0 0 * * *'
-  
-inputs:
-  generation:
-    description: 'Specifies the generation template which should be used by the testbench run'
-    required: false
-    default: 'Zeebe SNAPSHOT'
-  branch:
-    description: 'Specifies the branch, for which the QA Testbench run should be executed'
-    default: 'main'
-    required: false
+    - cron:  '0 1 * * *'
   
 jobs:     
   qa-testbench:
@@ -35,6 +34,8 @@ jobs:
           echo 'TAG=SNAPSHOT-${GITHUB_SHA::8}' >> $GITHUB_ENV
           echo 'QA_RUN_VARIABLES="{\"zeebeImage\": \"$IMAGE:SNAPSHOT-${GITHUB_SHA::8}\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", "\"channel\": \"Internal Dev\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}"' >> $GITHUB_ENV
           echo 'BUSINESS_KEY=$BUILD_URL' >> $GITHUB_ENV
+          echo "BRANCH_NAME=${BRANCH_NAME:-main}" >> $GITHUB_ENV
+          echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
                                     
       - uses: actions/checkout@v3
         with:
