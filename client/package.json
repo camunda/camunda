@@ -89,7 +89,7 @@
     "husky": "8.0.1",
     "jest-styled-components": "7.0.8",
     "lint-staged": "12.4.0",
-    "msw": "0.39.2",
+    "msw": "0.42.1",
     "node-fetch": "2.6.7",
     "prettier": "2.6.2",
     "react-scripts": "4.0.3",
