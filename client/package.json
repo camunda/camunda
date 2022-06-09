@@ -6,7 +6,7 @@
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@ibm/plex": "^6.0.2",
-    "bpmn-js": "9.2.1",
+    "bpmn-js": "9.2.2",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.4",
     "chart.js": "^3.5.1",
     "chartjs-plugin-datalabels": "^2.0.0",
