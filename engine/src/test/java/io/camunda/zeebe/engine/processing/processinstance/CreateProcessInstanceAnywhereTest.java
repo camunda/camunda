@@ -164,8 +164,8 @@ public class CreateProcessInstanceAnywhereTest {
                         s.embeddedSubProcess()
                             .startEvent()
                             .serviceTask("task", t -> t.zeebeJobType("type"))
-                            .endEvent("spend"))
-                .endEvent("end")
+                            .endEvent())
+                .endEvent()
                 .done())
         .deploy();
 
@@ -301,6 +301,79 @@ public class CreateProcessInstanceAnywhereTest {
                 "task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             Tuple.tuple(
                 "task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldActivateElementWithinNestedSubprocess() {
+    // Given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .subProcess(
+                                "nestedSubprocess",
+                                ns ->
+                                    ns.embeddedSubProcess()
+                                        .startEvent()
+                                        .serviceTask("task", t -> t.zeebeJobType("type"))
+                                        .endEvent())
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // When
+    final long key =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withStartInstruction(newStartInstruction("task"))
+            .create();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(key)
+                .limit(1)
+                .count())
+        .isEqualTo(1);
+    ENGINE.job().ofInstance(key).withType("type").complete();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
+                .limitToProcessInstanceCompleted())
+        .extracting(record -> record.getValue().getBpmnElementType())
+        .doesNotContain(BpmnElementType.START_EVENT);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(key)
+                .limitToProcessInstanceCompleted())
+        .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {
