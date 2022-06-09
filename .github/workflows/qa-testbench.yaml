@@ -21,6 +21,7 @@ jobs:
   qa-testbench:
     name: QA Testbench run
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       IMAGE: "gcr.io/zeebe-io/zeebe"
       GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
