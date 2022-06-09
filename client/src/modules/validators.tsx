@@ -161,8 +161,8 @@ const validateVariableNameCharacters: FieldValidator<string | undefined> = (
 const validateVariableNameComplete: FieldValidator<
   ProcessInstanceFilters['variableName']
 > = promisifyValidator(
-  (variableName = '', allValues: {variableValue?: string}) => {
-    const variableValue = allValues.variableValue ?? '';
+  (variableName = '', allValues: {variableValue?: string} | undefined) => {
+    const variableValue = allValues?.variableValue ?? '';
 
     if ((variableName === '' && variableValue === '') || variableName !== '') {
       return undefined;
@@ -176,8 +176,8 @@ const validateVariableNameComplete: FieldValidator<
 const validateVariableValueComplete: FieldValidator<
   ProcessInstanceFilters['variableValue']
 > = promisifyValidator(
-  (variableValue = '', allValues: {variableName?: string}) => {
-    const variableName = allValues.variableName ?? '';
+  (variableValue = '', allValues: {variableName?: string} | undefined) => {
+    const variableName = allValues?.variableName ?? '';
 
     if (variableName === '' && variableValue === '') {
       return undefined;

@@ -20,35 +20,41 @@ const validateNameCharacters: FieldValidator<string | undefined> = (
 };
 
 const validateNameComplete: FieldValidator<string | undefined> =
-  promisifyValidator((variableName = '', allValues: {value?: string}, meta) => {
-    const variableValue = allValues.value ?? '';
+  promisifyValidator(
+    (variableName = '', allValues: {value?: string} | undefined, meta) => {
+      const variableValue = allValues?.value ?? '';
 
-    if (variableValue.trim() !== '' && variableName === '') {
-      return ERRORS.EMPTY_NAME;
-    }
+      if (variableValue.trim() !== '' && variableName === '') {
+        return ERRORS.EMPTY_NAME;
+      }
 
-    const isVariableDuplicate =
-      variablesStore.state.items
-        .map(({name}) => name)
-        .filter((name) => name === variableName).length > 0;
+      const isVariableDuplicate =
+        variablesStore.state.items
+          .map(({name}) => name)
+          .filter((name) => name === variableName).length > 0;
 
-    if (meta?.dirty && isVariableDuplicate) {
-      return ERRORS.DUPLICATE_NAME;
-    }
-  }, VALIDATION_DELAY);
+      if (meta?.dirty && isVariableDuplicate) {
+        return ERRORS.DUPLICATE_NAME;
+      }
+    },
+    VALIDATION_DELAY
+  );
 
 const validateValueComplete: FieldValidator<string | undefined> =
-  promisifyValidator((variableValue = '', allValues: {name?: string}) => {
-    const variableName = allValues.name ?? '';
+  promisifyValidator(
+    (variableValue = '', allValues: {name?: string} | undefined) => {
+      const variableName = allValues?.name ?? '';
 
-    if (
-      (variableName === '' && variableValue === '') ||
-      isValidJSON(variableValue)
-    ) {
-      return;
-    }
+      if (
+        (variableName === '' && variableValue === '') ||
+        isValidJSON(variableValue)
+      ) {
+        return;
+      }
 
-    return ERRORS.INVALID_VALUE;
-  }, VALIDATION_DELAY);
+      return ERRORS.INVALID_VALUE;
+    },
+    VALIDATION_DELAY
+  );
 
 export {validateNameCharacters, validateNameComplete, validateValueComplete};
