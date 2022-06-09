@@ -20,8 +20,10 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -76,7 +78,7 @@ public final class CreateProcessInstanceProcessor
       final CommandControl<ProcessInstanceCreationRecord> controller) {
     final ProcessInstanceCreationRecord record = command.getValue();
     final DeployedProcess process = getProcess(record, controller);
-    if (process == null || !isValidProcess(controller, process)) {
+    if (process == null || !isValidProcess(controller, process, record.startInstructions())) {
       return true;
     }
 
@@ -105,8 +107,9 @@ public final class CreateProcessInstanceProcessor
 
   private boolean isValidProcess(
       final CommandControl<ProcessInstanceCreationRecord> controller,
-      final DeployedProcess process) {
-    if (process.getProcess().getNoneStartEvent() == null) {
+      final DeployedProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+    if (process.getProcess().getNoneStartEvent() == null && startInstructions.isEmpty()) {
       controller.reject(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT);
       return false;
     }
