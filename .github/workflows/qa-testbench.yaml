@@ -113,12 +113,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: [qa-testbench]
     if: ${{ always() }}
+    env:
+      GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
+      BRANCH_NAME: "${{ github.event.inputs.branch }}"
     steps:
       # Sharing environment variables are not supported, so we have to do it here again
       - id: evaluate-inputs
         name: Evaluate Inputs
         run: |
-          branch=${branch:-main}
+          branch=${BRANCH_NAME:-main}
           echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
           echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
 
