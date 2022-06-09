@@ -1,0 +1,134 @@
+name: QA Testbench run
+
+on:
+  workflow_dispatch:
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
+  schedule:
+  # * is a special character in YAML so you have to quote this string
+    - cron:  '0 1 * * *'
+env:
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:     
+  qa-testbench:
+    name: QA Testbench run
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: "gcr.io/zeebe-io/zeebe"
+      GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
+      BRANCH_NAME: "${{ github.event.inputs.branch }}"
+
+    steps:
+      # Dynamic environment variables are not supported by GHA
+      # https://brandur.org/fragments/github-actions-env-vars-in-env-vars
+      #
+      # Since we run the workflow either on demand or via schedule we need to assign some defaults
+      # Furthermore we have branches like stable/1.0 where we have to replace certain patterns, in order to use the branch name as docker image tag
+      - id: set-env
+        name: Set environment variables
+        run: |
+          branch=${BRANCH_NAME/\//-}
+          branch=${branch//\./-}
+          branch=${branch:-main}
+          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
+          echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
+          echo 'TAG=$branch-${GITHUB_SHA::8}' >> $GITHUB_ENV
+          echo 'QA_RUN_VARIABLES="{\"zeebeImage\": \"$IMAGE:SNAPSHOT-${GITHUB_SHA::8}\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", "\"channel\": \"Internal Dev\", \"branch\": \"$branch\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}"' >> $GITHUB_ENV
+          echo 'BUSINESS_KEY=$BUILD_URL' >> $GITHUB_ENV
+          
+                                    
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ github.event.inputs.branch }}"
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.1
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/common/ci-zeebe/jenkins ZEEBE_GCR_SERVICEACCOUNT_JSON;
+            secret/data/common/ci-zeebe/testbench-secrets-1.x-prod clientSecret;
+            secret/data/common/ci-zeebe/testbench-secrets-1.x-prod contactPoint;
+      - uses: actions/setup-java@v3.3.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.15"
+      - name: Build Go
+        run: ./build.sh
+        working-directory: clients/go/cmd/zbctl
+      - name: Package Zeebe
+        run: mvn -B -DskipTests -DskipChecks package
+        
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: gcr.io
+          username: _json_key
+          password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          tags: "${{ env.IMAGE }}:${{ env.TAG }}"
+          push: true
+          no-cache: true
+          build-args: DISTBALL=dist/target/camunda-zeebe-*-SNAPSHOT.tar.gz
+          target: app
+      # Executes the Testbench QA run and awaits the result
+      - name: Run Testbench QA
+        run: .ci/scripts/distribution/qa-testbench.sh
+        env:
+          ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.clientSecret }}
+          ZEEBE_ADDRESS: ${{ steps.secrets.outputs.contactPoint }}
+           
+           
+  notify-if-failed:
+    name: Send slack notification on build failure
+    runs-on: ubuntu-latest
+    needs: [qa-testbench]
+    if: failure()
+    steps:
+      - id: slack-notify
+        name: Send slack notification
+        uses: slackapi/slack-github-action@v1.19.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": ":alarm: QA run on `${{ github.event.inputs.branch }}` failed! :alarm:\n ${{ env.BUILD_URL }}",
+             	"blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: Build on `${{ github.event.inputs.branch }}` failed! :alarm:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check: ${{ env.BUILD_URL }}\n"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK           
