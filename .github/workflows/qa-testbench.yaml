@@ -28,14 +28,21 @@ jobs:
     steps:
       # Dynamic environment variables are not supported by GHA
       # https://brandur.org/fragments/github-actions-env-vars-in-env-vars
+      #
+      # Since we run the workflow either on demand or via schedule we need to assign some defaults
+      # Furthermore we have branches like stable/1.0 where we have to replace certain patterns, in order to use the branch name as docker image tag
       - id: set-env
         name: Set environment variables
         run: |
-          echo 'TAG=SNAPSHOT-${GITHUB_SHA::8}' >> $GITHUB_ENV
-          echo 'QA_RUN_VARIABLES="{\"zeebeImage\": \"$IMAGE:SNAPSHOT-${GITHUB_SHA::8}\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", "\"channel\": \"Internal Dev\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}"' >> $GITHUB_ENV
-          echo 'BUSINESS_KEY=$BUILD_URL' >> $GITHUB_ENV
-          echo "BRANCH_NAME=${BRANCH_NAME:-main}" >> $GITHUB_ENV
+          branch=${BRANCH_NAME/\//-}
+          branch=${branch//\./-}
+          branch=${branch:-main}
+          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
           echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
+          echo 'TAG=$branch-${GITHUB_SHA::8}' >> $GITHUB_ENV
+          echo 'QA_RUN_VARIABLES="{\"zeebeImage\": \"$IMAGE:SNAPSHOT-${GITHUB_SHA::8}\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", "\"channel\": \"Internal Dev\", \"branch\": \"$branch\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}"' >> $GITHUB_ENV
+          echo 'BUSINESS_KEY=$BUILD_URL' >> $GITHUB_ENV
+          
                                     
       - uses: actions/checkout@v3
         with:
