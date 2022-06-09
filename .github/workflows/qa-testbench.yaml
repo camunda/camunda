@@ -14,7 +14,9 @@ on:
   schedule:
   # * is a special character in YAML so you have to quote this string
     - cron:  '0 1 * * *'
-  
+env:
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
 jobs:     
   qa-testbench:
     name: QA Testbench run
@@ -23,8 +25,7 @@ jobs:
       IMAGE: "gcr.io/zeebe-io/zeebe"
       GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
       BRANCH_NAME: "${{ github.event.inputs.branch }}"
-      ZEEBE_AUTHORIZATION_SERVER_URL: "https://login.cloud.ultrawombat.com/oauth/token"
-      BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
     steps:
       # Dynamic environment variables are not supported by GHA
       # https://brandur.org/fragments/github-actions-env-vars-in-env-vars
@@ -110,7 +111,7 @@ jobs:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":alarm: QA run on `${{ github.event.inputs.branch }}` failed! :alarm:\n${{ github.event.head_commit.url }}",
+              "text": ":alarm: QA run on `${{ github.event.inputs.branch }}` failed! :alarm:\n ${{ env.BUILD_URL }}",
              	"blocks": [
                 {
                   "type": "section",
@@ -123,7 +124,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
+                    "text": "Please check: ${{ env.BUILD_URL }}\n"
                   }
                 }
               ]
