@@ -1,3 +1,76 @@
+# v8.1.0-alpha2
+## 🚀 New Features
+* Add salesPlanType and roles to User data ([#2858](https://github.com/camunda/operate/issues/2858))
+* Link version on Decision and Process details ([#2811](https://github.com/camunda/operate/issues/2811))
+* Hide all versions option when only one versions is available ([#2844](https://github.com/camunda/operate/issues/2844))
+* Identity m2m token ([#2856](https://github.com/camunda/operate/issues/2856))
+* add jobType, messageName and correlationKey to metadata ([#2763](https://github.com/camunda/operate/issues/2763))
+* refetch data when navigating decisions from the header ([#2789](https://github.com/camunda/operate/issues/2789))
+* refetch data when navigating to processes from the header ([#2735](https://github.com/camunda/operate/issues/2735))
+* Pass JWT error message ([#2757](https://github.com/camunda/operate/issues/2757))
+* install carbon dependencies and remove font files ([#2774](https://github.com/camunda/operate/issues/2774))
+
+## 💊 Bugfixes
+* Add roles and sales plan to setUser method in auth store
+* Hide input/output tab in decision panel if decision is a literal expression ([#2781](https://github.com/camunda/operate/issues/2781))
+* **ldap**: clean up LdapConfig ([#2863](https://github.com/camunda/operate/issues/2863))
+* Dockerfile to reduce vulnerabilities ([#2857](https://github.com/camunda/operate/issues/2857))
+* **deps**: update dependency react-popper to v2.3.0 ([#2696](https://github.com/camunda/operate/issues/2696))
+* **backend-test**: fix typo
+* **backend**: use Configurators as bean providers ([#2814](https://github.com/camunda/operate/issues/2814))
+* display notification on top of everything ([#2787](https://github.com/camunda/operate/issues/2787))
+* add padding for operation column to fix jumping when spinner is visible ([#2681](https://github.com/camunda/operate/issues/2681))
+* Literal expression support ([#2682](https://github.com/camunda/operate/issues/2682))
+* save Identity authentication in persistent sessions  ([#2728](https://github.com/camunda/operate/issues/2728))
+* **DecisionViewer**: recreate decision viewer on import ([#2647](https://github.com/camunda/operate/issues/2647))
+* **deps**: update dependency mobx-react to v7.4.0 ([#2737](https://github.com/camunda/operate/issues/2737))
+
+## 🧹 Chore
+* update Zeebe and Identity to 8.1.0-alpha2 ([#2866](https://github.com/camunda/operate/issues/2866))
+* Refactor overlays ([#2838](https://github.com/camunda/operate/issues/2838))
+* **pom**: update Spring Boot to 2.7.0 ([#2869](https://github.com/camunda/operate/issues/2869))
+* refactor incidentsByError component ([#2801](https://github.com/camunda/operate/issues/2801))
+* Create processDiagram store ([#2840](https://github.com/camunda/operate/issues/2840))
+* **Processes**: create legacy files ([#2833](https://github.com/camunda/operate/issues/2833))
+* **deps**: bump assertj-core from 3.23.0 to 3.23.1 ([#2837](https://github.com/camunda/operate/issues/2837))
+* fix overflows in several components ([#2810](https://github.com/camunda/operate/issues/2810))
+* **deps**: update node.js to v16.15.0 ([#2679](https://github.com/camunda/operate/issues/2679))
+* **preview-env**: Keep using the branch name tagging ([#2831](https://github.com/camunda/operate/issues/2831))
+* **deps**: update dependency @types/jest to v27.5.1 ([#2721](https://github.com/camunda/operate/issues/2721))
+* **deps**: update dependency husky to v8 ([#2743](https://github.com/camunda/operate/issues/2743))
+* **preview-env**: move Operate preview environments docker images to Harbor from gcr.io ([#2796](https://github.com/camunda/operate/issues/2796))
+* refactor instancesByProcess component ([#2802](https://github.com/camunda/operate/issues/2802))
+* **deps**: bump assertj-core from 3.22.0 to 3.23.0 ([#2827](https://github.com/camunda/operate/issues/2827))
+* **deps**: bump netty-tcnative-boringssl-static ([#2828](https://github.com/camunda/operate/issues/2828))
+* **deps**: bump springdoc-openapi-ui from 1.6.8 to 1.6.9 ([#2813](https://github.com/camunda/operate/issues/2813))
+* **deps**: bump netty-tcnative-boringssl-static ([#2733](https://github.com/camunda/operate/issues/2733))
+* **deps**: bump spring-session-bom from 2021.1.2 to 2021.2.0 ([#2803](https://github.com/camunda/operate/issues/2803))
+* remove redundant test and cover some cases in multi instance selection test instead ([#2798](https://github.com/camunda/operate/issues/2798))
+* **deps**: bump version.micrometer from 1.8.5 to 1.9.0 ([#2761](https://github.com/camunda/operate/issues/2761))
+* **deps**: bump zeebe-test-container from 3.3.0 to 3.4.0 ([#2760](https://github.com/camunda/operate/issues/2760))
+* **deps**: bump version.elasticsearch from 7.17.3 to 7.17.4 ([#2804](https://github.com/camunda/operate/issues/2804))
+* **deps**: bump elasticsearch from 1.17.1 to 1.17.2 ([#2791](https://github.com/camunda/operate/issues/2791))
+* **deps**: bump version.spring.boot from 2.5.6 to 2.6.6 ([#2534](https://github.com/camunda/operate/issues/2534))
+* **preview-env**: Use getSanitizedBranchName instead of creating a new function ([#2800](https://github.com/camunda/operate/issues/2800))
+* **preview-env**: Fix the tear down gha
+* remove unnecessary validations from edit variable e2e tests ([#2786](https://github.com/camunda/operate/issues/2786))
+* **deps**: bump version.jackson from 2.13.2 to 2.13.3 ([#2764](https://github.com/camunda/operate/issues/2764))
+* **preview env**: resolve the namespace name limitation for branch deployment ([#2784](https://github.com/camunda/operate/issues/2784))
+* refactor add variable tests ([#2783](https://github.com/camunda/operate/issues/2783))
+* **preview env**: cleanup old branch deployment Jobs ([#2776](https://github.com/camunda/operate/issues/2776))
+* move add variable e2e test to integration tests ([#2777](https://github.com/camunda/operate/issues/2777))
+* **preview env**: remove unneeded prefix
+* **seed**: disable jobs on non prod env ([#2775](https://github.com/camunda/operate/issues/2775))
+* **preview env**: fix deploy GHA
+* **preview env**: Fix tear down GHA
+* **project**: rename camunda-cloud to camunda for repository move ([#2753](https://github.com/camunda/operate/issues/2753))
+* Add new tracking events ([#2756](https://github.com/camunda/operate/issues/2756))
+* Rename and enhance tracking events ([#2748](https://github.com/camunda/operate/issues/2748))
+* Cleanup old preview env files ([#2759](https://github.com/camunda/operate/issues/2759))
+* **Jenkinsfile**: periodically trigger stable branches ([#2747](https://github.com/camunda/operate/issues/2747))
+* **deps**: bump java-jwt from 3.19.1 to 3.19.2 ([#2738](https://github.com/camunda/operate/issues/2738))
+* **deps**: bump unboundid-ldapsdk from 6.0.4 to 6.0.5 ([#2744](https://github.com/camunda/operate/issues/2744))
+* refactor e2e tests for process instances filters ([#2736](https://github.com/camunda/operate/issues/2736))
 # v8.1.0-alpha1
 ## 🚀 New Features
 * Make Decisions table viewer scrollable ([#2674](https://github.com/camunda-cloud/operate/issues/2674))
@@ -78,4 +151,3 @@
 * **backend**: update Zeebe and Identity to v. 8.0.0 ([#2577](https://github.com/camunda-cloud/operate/issues/2577))
 * update license ([#2564](https://github.com/camunda-cloud/operate/issues/2564))
 * **project**: remove IAM integration ([#2511](https://github.com/camunda-cloud/operate/issues/2511))
-
