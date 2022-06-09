@@ -57,9 +57,9 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/common/ci-zeebe/jenkins ZEEBE_GCR_SERVICEACCOUNT_JSON;
-            secret/data/common/ci-zeebe/testbench-secrets-1.x-prod clientSecret;
-            secret/data/common/ci-zeebe/testbench-secrets-1.x-prod contactPoint;
+            secret/data/common/github.com/actions/camunda/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
+            secret/data/common/github.com/actions/camunda/zeebe TESTBENCH_PROD_CLIENT_SECRET;
+            secret/data/common/github.com/actions/camunda/zeebe TESTBENCH_PROD_CONTACT_POINT;
       - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
@@ -94,8 +94,8 @@ jobs:
       - name: Run Testbench QA
         run: .ci/scripts/distribution/qa-testbench.sh
         env:
-          ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.clientSecret }}
-          ZEEBE_ADDRESS: ${{ steps.secrets.outputs.contactPoint }}
+          ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
+          ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
            
            
   notify-if-failed:
