@@ -35,7 +35,8 @@ public class ProcessInstanceCreatedApplier
   @Override
   public void applyState(final long key, final ProcessInstanceCreationRecord value) {
     if (!value.startInstructions().isEmpty()) {
-      incrementActiveSequenceFlowsForScopes(value.getProcessInstanceKey());
+      // we don't need to increment here because the events are already applied
+      // incrementActiveSequenceFlowsForScopes(value.getProcessInstanceKey());
 
       final var process =
           processState.getProcessByKey(value.getProcessDefinitionKey()).getProcess();
