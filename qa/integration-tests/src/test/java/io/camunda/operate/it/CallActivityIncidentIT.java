@@ -105,11 +105,15 @@ public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
         .startProcessInstance(PARENT_PROCESS_ID, null)
         .waitUntil()
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 2)
+        .flowNodeIsActive(TASK_ID)
+        .flowNodeIsActive(TASK_ID_2)
         .getProcessInstanceKey();
     tester
         .startProcessInstance(PARENT_PROCESS_ID, null)
         .and().waitUntil()
-        .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 3);
+        .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 3)
+        .flowNodeIsActive(TASK_ID)
+        .flowNodeIsActive(TASK_ID_2);
   }
 
   /**
