@@ -69,7 +69,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       }
 
       final var future =
-          context.getActorSchedulingService().submitActor(director, SchedulingHints.ioBound());
+          context.getActorSchedulingService().submitActor(director, SchedulingHints.cpuBound());
       future.onComplete(
           (ok, error) -> {
             if (error == null) {
