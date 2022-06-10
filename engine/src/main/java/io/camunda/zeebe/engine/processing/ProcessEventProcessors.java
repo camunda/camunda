@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -201,10 +202,11 @@ public final class ProcessEventProcessors {
       final VariableBehavior variableBehavior) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
+    final ProcessEngineMetrics metrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
     final CreateProcessInstanceProcessor createProcessor =
         new CreateProcessInstanceProcessor(
-            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior);
+            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior, metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 

@@ -74,10 +74,7 @@ public final class ProcessEngineMetrics {
 
   public void processInstanceCreated(final ProcessInstanceCreationRecord record) {
     final CreationMode creationMode =
-        record
-                .startInstructions()
-                .iterator()
-                .hasNext() // TODO use isEmpty() which is a commit in another branch
+        record.startInstructions().isEmpty()
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 

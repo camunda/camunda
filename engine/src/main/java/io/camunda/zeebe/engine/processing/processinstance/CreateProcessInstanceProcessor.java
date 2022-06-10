@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -58,17 +59,20 @@ public final class CreateProcessInstanceProcessor
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final ProcessEngineMetrics metrics;
 
   public CreateProcessInstanceProcessor(
       final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final ProcessEngineMetrics metrics) {
     this.processState = processState;
     this.variableBehavior = variableBehavior;
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     stateWriter = writers.state();
+    this.metrics = metrics;
   }
 
   @Override
@@ -102,6 +106,7 @@ public final class CreateProcessInstanceProcessor
         .setVersion(process.getVersion())
         .setProcessDefinitionKey(process.getKey());
     controller.accept(ProcessInstanceCreationIntent.CREATED, record);
+    metrics.processInstanceCreated(record);
     return true;
   }
 
