@@ -22,7 +22,7 @@ final class ActorSchedulerTest {
 
     // when + then
     assertThatThrownBy(() -> sut.submitActor(testActor)).isInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> sut.submitActor(testActor, 0))
+    assertThatThrownBy(() -> sut.submitActor(testActor, SchedulingHints.cpuBound()))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -39,7 +39,7 @@ final class ActorSchedulerTest {
 
     // when + then
     assertThatThrownBy(() -> sut.submitActor(testActor)).isInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> sut.submitActor(testActor, 0))
+    assertThatThrownBy(() -> sut.submitActor(testActor, SchedulingHints.cpuBound()))
         .isInstanceOf(IllegalStateException.class);
   }
 

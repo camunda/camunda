@@ -23,14 +23,13 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   /**
-   * Submits an non-blocking, CPU-bound actor.
+   * Submits a non-blocking, CPU-bound actor.
    *
    * @param actor the actor to submit
    */
   @Override
   public ActorFuture<Void> submitActor(final Actor actor) {
-    checkRunningState();
-    return actorTaskExecutor.submitCpuBound(actor.actor.task);
+    return submitActor(actor, SchedulingHints.cpuBound());
   }
 
   /**
@@ -51,18 +50,15 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    * @param schedulingHints additional scheduling hint
    */
   @Override
-  public ActorFuture<Void> submitActor(final Actor actor, final int schedulingHints) {
+  public ActorFuture<Void> submitActor(final Actor actor, final SchedulingHints schedulingHints) {
     checkRunningState();
 
     final ActorTask task = actor.actor.task;
 
-    final ActorFuture<Void> startingFuture;
-    if (SchedulingHints.isCpuBound(schedulingHints)) {
-      startingFuture = actorTaskExecutor.submitCpuBound(task);
-    } else {
-      startingFuture = actorTaskExecutor.submitIoBoundTask(task);
-    }
-    return startingFuture;
+    return switch (schedulingHints) {
+      case CPU_BOUND -> actorTaskExecutor.submitCpuBound(task);
+      case IO_BOUND -> actorTaskExecutor.submitIoBoundTask(task);
+    };
   }
 
   private void checkRunningState() {
