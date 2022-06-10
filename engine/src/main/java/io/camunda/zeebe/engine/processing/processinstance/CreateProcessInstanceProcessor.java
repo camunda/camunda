@@ -29,11 +29,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.util.StringUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CreateProcessInstanceProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
@@ -231,16 +230,15 @@ public final class CreateProcessInstanceProcessor
 
     startInstructions.forEach(
         instruction -> {
-          final DirectBuffer elementId =
-              new UnsafeBuffer(StringUtil.getBytes(instruction.getElementId()));
+          final DirectBuffer elementId = BufferUtil.wrapString(instruction.getElementId());
           final long flowScopeKey =
               activateFlowScopes(process, processInstanceKey, elementId, activatedFlowScopeIds);
 
-          final long elementKey = keyGenerator.nextKey();
+          final long elementInstanceKey = keyGenerator.nextKey();
           final ProcessInstanceRecord elementRecord =
               createProcessInstanceRecord(process, processInstanceKey, elementId, flowScopeKey);
           commandWriter.appendFollowUpCommand(
-              elementKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
+              elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
         });
   }
 
@@ -280,13 +278,13 @@ public final class CreateProcessInstanceProcessor
       final ProcessInstanceRecord flowScopeRecord =
           createProcessInstanceRecord(process, processInstanceKey, flowScope.getId(), flowScopeKey);
 
-      final long key = keyGenerator.nextKey();
-      activatedFlowScopeIds.put(flowScope.getId(), key);
+      final long elementInstanceKey = keyGenerator.nextKey();
+      activatedFlowScopeIds.put(flowScope.getId(), elementInstanceKey);
       stateWriter.appendFollowUpEvent(
-          key, ProcessInstanceIntent.ELEMENT_ACTIVATING, flowScopeRecord);
+          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, flowScopeRecord);
       stateWriter.appendFollowUpEvent(
-          key, ProcessInstanceIntent.ELEMENT_ACTIVATED, flowScopeRecord);
-      return key;
+          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, flowScopeRecord);
+      return elementInstanceKey;
     }
   }
 

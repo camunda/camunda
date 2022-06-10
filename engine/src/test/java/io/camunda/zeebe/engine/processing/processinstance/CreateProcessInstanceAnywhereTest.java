@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static org.assertj.core.groups.Tuple.tuple;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -19,7 +21,6 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,10 +72,10 @@ public class CreateProcessInstanceAnywhereTest {
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
@@ -138,18 +139,12 @@ public class CreateProcessInstanceAnywhereTest {
             record -> record.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
-            Tuple.tuple(
-                "process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
-                "process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(
-                "task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
-                "task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(
-                "task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
-                "task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple("process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
@@ -209,12 +204,12 @@ public class CreateProcessInstanceAnywhereTest {
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
@@ -285,24 +280,18 @@ public class CreateProcessInstanceAnywhereTest {
             record -> record.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
-            Tuple.tuple(
-                "process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
-                "process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(
+            tuple("process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("process", BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
                 "subprocess",
                 BpmnElementType.SUB_PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
+            tuple(
                 "subprocess", BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(
-                "task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
-                "task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(
-                "task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(
-                "task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple("task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("task1", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("task2", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
@@ -368,14 +357,14 @@ public class CreateProcessInstanceAnywhereTest {
                 .limitToProcessInstanceCompleted())
         .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
