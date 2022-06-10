@@ -9,7 +9,6 @@ package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,7 +58,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
     final ActorFuture<Void> startingFuture;
     if (SchedulingHints.isCpuBound(schedulingHints)) {
-      task.setPriority(SchedulingHints.getPriority(schedulingHints));
       startingFuture = actorTaskExecutor.submitCpuBound(task);
     } else {
       startingFuture = actorTaskExecutor.submitIoBoundTask(task);
@@ -104,7 +102,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   public static class ActorSchedulerBuilder {
-    private final double[] priorityQuotas = new double[] {0.60, 0.30, 0.10};
     private String schedulerName = "";
     private ActorClock actorClock;
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
@@ -160,10 +157,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     public ActorSchedulerBuilder setIoBoundActorThreadCount(final int ioBoundActorsThreadCount) {
       ioBoundThreadsCount = ioBoundActorsThreadCount;
       return this;
-    }
-
-    public double[] getPriorityQuotas() {
-      return Arrays.copyOf(priorityQuotas, priorityQuotas.length);
     }
 
     public ActorThreadFactory getActorThreadFactory() {

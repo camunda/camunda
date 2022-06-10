@@ -41,15 +41,11 @@ public class ActorTask {
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
-  private ActorExecutor actorExecutor;
   private ActorThreadGroup actorThreadGroup;
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
   private volatile ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
   private List<ActorSubscription> subscriptions = new ArrayList<>();
-  /**
-   * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
-   */
-  private int priority = ActorPriority.REGULAR.getPriorityClass();
+
   /**
    * jobs that are submitted to this task externally. A job is submitted "internally" if it is
    * submitted from a job within the same actor while the task is in RUNNING state.
@@ -63,7 +59,6 @@ public class ActorTask {
   /** called when the task is initially scheduled. */
   public ActorFuture<Void> onTaskScheduled(
       final ActorExecutor actorExecutor, final ActorThreadGroup actorThreadGroup) {
-    this.actorExecutor = actorExecutor;
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
     closeFuture.close();
@@ -470,18 +465,6 @@ public class ActorTask {
 
   public boolean isClosing() {
     return lifecyclePhase == ActorLifecyclePhase.CLOSING;
-  }
-
-  public int getPriority() {
-    return priority;
-  }
-
-  public void setPriority(final int priority) {
-    this.priority = priority;
-  }
-
-  public ActorExecutor getActorExecutor() {
-    return actorExecutor;
   }
 
   public ActorLifecyclePhase getLifecyclePhase() {

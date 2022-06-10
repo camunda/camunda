@@ -15,18 +15,6 @@ public final class IoThreadGroup extends ActorThreadGroup {
     super(
         String.format("%s-%s", builder.getSchedulerName(), "zb-fs-workers"),
         builder.getIoBoundActorThreadCount(),
-        1,
         builder);
-  }
-
-  @Override
-  protected TaskScheduler createTaskScheduler(
-      final MultiLevelWorkstealingGroup tasks, final ActorSchedulerBuilder builder) {
-    return new IoScheduler(tasks);
-  }
-
-  @Override
-  protected int getLevel(final ActorTask actorTask) {
-    return 0;
   }
 }

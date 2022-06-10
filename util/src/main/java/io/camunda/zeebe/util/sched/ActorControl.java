@@ -376,11 +376,6 @@ public class ActorControl implements ConcurrencyControl {
         || lifecyclePhase == ActorLifecyclePhase.STARTED);
   }
 
-  public void setPriority(final ActorPriority priority) {
-    ensureCalledFromActorThread("setPriority()");
-    task.setPriority(priority.getPriorityClass());
-  }
-
   public ActorLifecyclePhase getLifecyclePhase() {
     ensureCalledFromWithinActor("getLifecyclePhase()");
     return task.getLifecyclePhase();

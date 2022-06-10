@@ -19,25 +19,20 @@ import java.util.concurrent.ThreadLocalRandom;
 public abstract class ActorThreadGroup {
   protected final String groupName;
   protected final ActorThread[] threads;
-  protected final MultiLevelWorkstealingGroup tasks;
+  protected final WorkStealingGroup tasks;
   protected final int numOfThreads;
 
   public ActorThreadGroup(
-      final String groupName,
-      final int numOfThreads,
-      final int numOfQueuesPerThread,
-      final ActorSchedulerBuilder builder) {
+      final String groupName, final int numOfThreads, final ActorSchedulerBuilder builder) {
     this.groupName = groupName;
     this.numOfThreads = numOfThreads;
 
-    tasks = new MultiLevelWorkstealingGroup(numOfThreads, numOfQueuesPerThread);
+    tasks = new WorkStealingGroup(numOfThreads);
 
     threads = new ActorThread[numOfThreads];
 
     for (int t = 0; t < numOfThreads; t++) {
       final String threadName = String.format("%s-%d", groupName, t);
-      final TaskScheduler taskScheduler = createTaskScheduler(tasks, builder);
-
       final ActorThread thread =
           builder
               .getActorThreadFactory()
@@ -45,7 +40,7 @@ public abstract class ActorThreadGroup {
                   threadName,
                   t,
                   this,
-                  taskScheduler,
+                  tasks,
                   builder.getActorClock(),
                   builder.getActorTimerQueue());
 
@@ -53,30 +48,15 @@ public abstract class ActorThreadGroup {
     }
   }
 
-  protected abstract TaskScheduler createTaskScheduler(
-      MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder);
-
   public void submit(final ActorTask actorTask) {
-    final int level = getLevel(actorTask);
-
     final ActorThread current = ActorThread.current();
     if (current != null && current.getActorThreadGroup() == this) {
-      tasks.submit(actorTask, level, current.getRunnerId());
+      tasks.submit(actorTask, current.getRunnerId());
     } else {
       final int threadId = ThreadLocalRandom.current().nextInt(numOfThreads);
-      tasks.submit(actorTask, level, threadId);
+      tasks.submit(actorTask, threadId);
       threads[threadId].hintWorkAvailable();
     }
-  }
-
-  protected abstract int getLevel(ActorTask actorTask);
-
-  public String getGroupName() {
-    return groupName;
-  }
-
-  public int getNumOfThreads() {
-    return numOfThreads;
   }
 
   public void start() {
