@@ -1331,10 +1331,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/element-templates-icons-renderer@0.1.2":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/element-templates-icons-renderer/-/element-templates-icons-renderer-0.1.2.tgz#517e6a2c906ceb192fd3b66c6c3c6109eaad2d72"
-  integrity sha512-HMcjVGPfCrkkMKy6N6seQlh0R6F0YfXUJvflPTLgo6Kbv/k0/f0RUuicke2JW0How7uQrANp+ryn5j+c6W6ilg==
+"@bpmn-io/element-templates-icons-renderer@0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/element-templates-icons-renderer/-/element-templates-icons-renderer-0.2.0.tgz#02d4af5bb8e8ce42506dad0c49652308ec3ab47b"
+  integrity sha512-hJQ1WyDIG5XsyrrJ/2CaqQy9t/8ZnwxPFMeAQ+DSb5x47e0TOoMWIWYW3i2aSqUPLk77E+i712emyOMjPhHKmg==
   dependencies:
     bpmn-js "^9.0.3"
     diagram-js "^8.2.1"
