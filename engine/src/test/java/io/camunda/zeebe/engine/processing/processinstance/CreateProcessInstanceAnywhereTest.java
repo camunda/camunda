@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -395,15 +394,20 @@ public class CreateProcessInstanceAnywhereTest {
         .hasSize(1);
 
     Assertions.assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(key)
-                .getFirst())
+            RecordingExporter.records()
+                .limit(
+                    // extract the condition into a method like limitToProcessInstance()
+                    r ->
+                        r.getKey() == key
+                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .variableRecords())
+        .hasSize(1)
         .extracting(Record::getValue)
         .extracting(
             VariableRecordValue::getScopeKey,
             VariableRecordValue::getName,
             VariableRecordValue::getValue)
-        .containsExactly(key, "variable", "\"value\"");
+        .containsExactly(tuple(key, "variable", "\"value\""));
   }
 
   private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {
