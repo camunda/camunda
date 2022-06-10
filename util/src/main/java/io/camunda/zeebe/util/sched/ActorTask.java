@@ -57,8 +57,7 @@ public class ActorTask {
   }
 
   /** called when the task is initially scheduled. */
-  public ActorFuture<Void> onTaskScheduled(
-      final ActorExecutor actorExecutor, final ActorThreadGroup actorThreadGroup) {
+  public ActorFuture<Void> onTaskScheduled(final ActorThreadGroup actorThreadGroup) {
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
     closeFuture.close();
