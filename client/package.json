@@ -98,7 +98,7 @@
     "testcafe": "1.18.6",
     "testcafe-browser-provider-browserstack": "1.13.2",
     "ts-toolbelt": "9.6.0",
-    "typescript": "4.6.3",
+    "typescript": "4.7.3",
     "zeebe-node": "8.0.1"
   },
   "lint-staged": {
