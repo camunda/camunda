@@ -16,18 +16,6 @@ public final class CpuThreadGroup extends ActorThreadGroup {
     super(
         String.format("%s-%s", builder.getSchedulerName(), "zb-actors"),
         builder.getCpuBoundActorThreadCount(),
-        builder.getPriorityQuotas().length,
         builder);
-  }
-
-  @Override
-  protected TaskScheduler createTaskScheduler(
-      final MultiLevelWorkstealingGroup tasks, final ActorSchedulerBuilder builder) {
-    return new PriorityScheduler(tasks::getNextTask, builder.getPriorityQuotas());
-  }
-
-  @Override
-  protected int getLevel(final ActorTask actorTask) {
-    return actorTask.getPriority();
   }
 }

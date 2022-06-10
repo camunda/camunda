@@ -41,15 +41,11 @@ public class ActorTask {
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
-  private ActorExecutor actorExecutor;
   private ActorThreadGroup actorThreadGroup;
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
   private volatile ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
   private List<ActorSubscription> subscriptions = new ArrayList<>();
-  /**
-   * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
-   */
-  private int priority = ActorPriority.REGULAR.getPriorityClass();
+
   /**
    * jobs that are submitted to this task externally. A job is submitted "internally" if it is
    * submitted from a job within the same actor while the task is in RUNNING state.
@@ -61,9 +57,7 @@ public class ActorTask {
   }
 
   /** called when the task is initially scheduled. */
-  public ActorFuture<Void> onTaskScheduled(
-      final ActorExecutor actorExecutor, final ActorThreadGroup actorThreadGroup) {
-    this.actorExecutor = actorExecutor;
+  public ActorFuture<Void> onTaskScheduled(final ActorThreadGroup actorThreadGroup) {
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
     closeFuture.close();
@@ -460,10 +454,6 @@ public class ActorTask {
     return stateCount.get();
   }
 
-  public ActorThreadGroup getActorThreadGroup() {
-    return actorThreadGroup;
-  }
-
   public String getName() {
     return actor.getName();
   }
@@ -474,18 +464,6 @@ public class ActorTask {
 
   public boolean isClosing() {
     return lifecyclePhase == ActorLifecyclePhase.CLOSING;
-  }
-
-  public int getPriority() {
-    return priority;
-  }
-
-  public void setPriority(final int priority) {
-    this.priority = priority;
-  }
-
-  public ActorExecutor getActorExecutor() {
-    return actorExecutor;
   }
 
   public ActorLifecyclePhase getLifecyclePhase() {
@@ -511,15 +489,6 @@ public class ActorTask {
   public void onSubscriptionCancelled(final ActorSubscription subscription) {
     if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
       removeSubscription(subscription);
-    }
-  }
-
-  public void setUpdatedSchedulingHints(final int hints) {
-    if (SchedulingHints.isCpuBound(hints)) {
-      priority = SchedulingHints.getPriority(hints);
-      actorThreadGroup = actorExecutor.getCpuBoundThreads();
-    } else {
-      actorThreadGroup = actorExecutor.getIoBoundThreads();
     }
   }
 

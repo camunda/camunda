@@ -16,5 +16,5 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 public interface ActorSchedulingService {
   ActorFuture<Void> submitActor(final Actor actor);
 
-  ActorFuture<Void> submitActor(final Actor actor, int schedulingHints);
+  ActorFuture<Void> submitActor(final Actor actor, SchedulingHints schedulingHints);
 }

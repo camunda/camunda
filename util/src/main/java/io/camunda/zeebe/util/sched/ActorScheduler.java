@@ -9,7 +9,6 @@ package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,14 +23,13 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   /**
-   * Submits an non-blocking, CPU-bound actor.
+   * Submits a non-blocking, CPU-bound actor.
    *
    * @param actor the actor to submit
    */
   @Override
   public ActorFuture<Void> submitActor(final Actor actor) {
-    checkRunningState();
-    return actorTaskExecutor.submitCpuBound(actor.actor.task);
+    return submitActor(actor, SchedulingHints.cpuBound());
   }
 
   /**
@@ -52,19 +50,15 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    * @param schedulingHints additional scheduling hint
    */
   @Override
-  public ActorFuture<Void> submitActor(final Actor actor, final int schedulingHints) {
+  public ActorFuture<Void> submitActor(final Actor actor, final SchedulingHints schedulingHints) {
     checkRunningState();
 
     final ActorTask task = actor.actor.task;
 
-    final ActorFuture<Void> startingFuture;
-    if (SchedulingHints.isCpuBound(schedulingHints)) {
-      task.setPriority(SchedulingHints.getPriority(schedulingHints));
-      startingFuture = actorTaskExecutor.submitCpuBound(task);
-    } else {
-      startingFuture = actorTaskExecutor.submitIoBoundTask(task);
-    }
-    return startingFuture;
+    return switch (schedulingHints) {
+      case CPU_BOUND -> actorTaskExecutor.submitCpuBound(task);
+      case IO_BOUND -> actorTaskExecutor.submitIoBoundTask(task);
+    };
   }
 
   private void checkRunningState() {
@@ -104,7 +98,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   public static class ActorSchedulerBuilder {
-    private final double[] priorityQuotas = new double[] {0.60, 0.30, 0.10};
     private String schedulerName = "";
     private ActorClock actorClock;
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
@@ -160,10 +153,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     public ActorSchedulerBuilder setIoBoundActorThreadCount(final int ioBoundActorsThreadCount) {
       ioBoundThreadsCount = ioBoundActorsThreadCount;
       return this;
-    }
-
-    public double[] getPriorityQuotas() {
-      return Arrays.copyOf(priorityQuotas, priorityQuotas.length);
     }
 
     public ActorThreadFactory getActorThreadFactory() {

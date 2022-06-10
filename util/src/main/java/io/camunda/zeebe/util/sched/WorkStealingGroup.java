@@ -12,7 +12,7 @@ import static io.camunda.zeebe.util.sched.ActorTask.TaskSchedulingState.QUEUED;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Workstealing group maintains a queue per thread. */
-public final class WorkStealingGroup {
+public final class WorkStealingGroup implements TaskScheduler {
   private final int numOfThreads;
   private final ActorTaskQueue[] taskQueues;
 
@@ -40,7 +40,8 @@ public final class WorkStealingGroup {
    *
    * @return the acquired task or null if no task is available
    */
-  protected ActorTask getNextTask() {
+  @Override
+  public ActorTask getNextTask() {
     final ActorThread currentThread = ActorThread.current();
     ActorTask nextTask = taskQueues[currentThread.getRunnerId()].pop();
 
