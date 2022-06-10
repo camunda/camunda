@@ -108,8 +108,8 @@ jobs:
           ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
            
            
-  notify-if-failed:
-    name: Send slack notification on build failure
+  notify:
+    name: Send slack notification
     runs-on: ubuntu-latest
     needs: [qa-testbench]
     if: ${{ always() }}
