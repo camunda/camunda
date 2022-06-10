@@ -6,7 +6,7 @@
     "@bpmn-io/element-templates-icons-renderer": "0.2.0",
     "@camunda-cloud/common-ui": "0.0.18-rc6",
     "@camunda-cloud/common-ui-react": "0.0.18-rc6",
-    "@carbon/elements": "11.3.0",
+    "@carbon/elements": "11.4.0",
     "@carbon/react": "1.2.0",
     "@devbookhq/splitter": "1.3.2",
     "@popperjs/core": "2.11.5",
