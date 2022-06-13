@@ -25,14 +25,19 @@ import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
 
 public final class CreateProcessInstanceTest extends ClientTest {
+
+  public static final String ELEMENT_ID_A = "elementId_A";
+  public static final String ELEMENT_ID_B = "elementId_B";
 
   @Test
   public void shouldCreateProcessInstanceByProcessInstanceKey() {
@@ -170,6 +175,49 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldAddStartInstruction() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .startBeforeElement(ELEMENT_ID_A)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+
+    final List<ProcessInstanceCreationStartInstruction> startInstructionList =
+        request.getStartInstructionsList();
+    assertThat(startInstructionList).hasSize(1);
+    final ProcessInstanceCreationStartInstruction startInstructionA = startInstructionList.get(0);
+    assertThat(startInstructionA.getElementId()).isEqualTo(ELEMENT_ID_A);
+  }
+
+  @Test
+  public void shouldAddMultipleStartInstructions() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .startBeforeElement(ELEMENT_ID_A)
+        .startBeforeElement(ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+
+    final List<ProcessInstanceCreationStartInstruction> startInstructionList =
+        request.getStartInstructionsList();
+    assertThat(startInstructionList).hasSize(2);
+    final ProcessInstanceCreationStartInstruction startInstructionA = startInstructionList.get(0);
+    assertThat(startInstructionA.getElementId()).isEqualTo(ELEMENT_ID_A);
+    final ProcessInstanceCreationStartInstruction startInstructionB = startInstructionList.get(1);
+    assertThat(startInstructionB.getElementId()).isEqualTo(ELEMENT_ID_B);
   }
 
   public static class VariableDocument {

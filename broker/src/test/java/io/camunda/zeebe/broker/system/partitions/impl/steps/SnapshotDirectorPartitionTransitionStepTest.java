@@ -50,7 +50,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
     when(raftPartition.getServer()).thenReturn(raftServer);
     transitionContext.setRaftPartition(raftPartition);
 
-    when(actorSchedulingService.submitActor(any()))
+    when(actorSchedulingService.submitActor(any(), any()))
         .thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setActorSchedulingService(actorSchedulingService);
 

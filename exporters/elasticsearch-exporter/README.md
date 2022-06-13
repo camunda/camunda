@@ -84,14 +84,22 @@ exporters:
         event: true
         rejection: false
 
+        decisionRequirements: false
+        decision: false
+        decisionEvaluation: false
         deployment: false
+        error: false
         incident: true
         job: false
         jobBatch: false
         message: false
         messageSubscription: false
+        process: false
         processInstance: false
+        processInstanceCreation: false
         processMessageSubscription: false
+        variable: false
+        variableDocument: false
 ```
 
 The given example would only export incident events, and nothing else.
@@ -101,11 +109,21 @@ More specifically, each option configures the following:
 * `prefix` (`string`): this prefix will be appended to every index created by the exporter; must not
   contain `_` (underscore).
 * `createTemplate` (`boolean`): if true, missing indexes will be created as needed.
+
+
 * `command` (`boolean`): if true, command records will be exported; if false, ignored.
 * `event` (`boolean`): if true, event records will be exported; if false, ignored.
 * `rejection` (`boolean`): if true, rejection records will be exported; if false, ignored.
+
+
+* `decisionRequirements` (`boolean`): if true, records related to decision requirements will be
+  exported; if false, ignored.
+* `decision` (`boolean`): if true, records related to decisions will be exported; if false, ignored.
+* `decisionEvaluation` (`boolean`): if true, records related to decision evaluations will be
+  exported; if false, ignored.
 * `deployment` (`boolean`): if true, records related to deployments will be exported; if false,
   ignored.
+* `error` (`boolean`): if true, records related to errors will be exported; if false, ignored.
 * `incident` (`boolean`): if true, records related to incidents will be exported; if false, ignored.
 * `job` (`boolean`): if true, records related to jobs will be exported; if false, ignored.
 * `jobBatch` (`boolean`): if true, records related to job batches will be exported; if false,
@@ -113,10 +131,16 @@ More specifically, each option configures the following:
 * `message` (`boolean`): if true, records related to messages will be exported; if false, ignored.
 * `messageSubscription` (`boolean`): if true, records related to message subscriptions will be
   exported; if false, ignored.
+* `process` (`boolean`): if true, records related to processes will be exported; if false, ignored.
 * `processInstance` (`boolean`): if true, records related to process instances will be exported; if
   false, ignored.
+* `processInstanceCreation` (`boolean`): if true, records related to process instance creations will
+  be exported; if false, ignored.
 * `processMessageSubscription` (`boolean`): if true, records related to process message
   subscriptions will be exported; if false, ignored.
+* `variable` (`boolean`): if true, records related to variables will be exported; if false, ignored.
+* `variableDocument` (`boolean`): if true, records related to variable documents will be exported;
+   if false, ignored.
 
 Here is a complete, default configuration example:
 
@@ -155,18 +179,21 @@ exporters:
         event: true
         rejection: false
 
-        deployment: false
-        process: true
+        decisionRequirements: true
+        decision: true
+        decisionEvaluation: true
+        deployment: true
         error: true
         incident: true
         job: true
         jobBatch: false
-        message: false
-        messageSubscription: false
-        variable: true
-        variableDocument: true
+        message: true
+        messageSubscription: true
+        process: true
         processInstance: true
         processInstanceCreation: false
-        processMessageSubscription: false
+        processMessageSubscription: true
+        variable: true
+        variableDocument: true
 ```
 

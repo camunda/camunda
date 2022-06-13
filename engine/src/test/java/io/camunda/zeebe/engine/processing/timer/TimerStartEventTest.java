@@ -877,4 +877,47 @@ public final class TimerStartEventTest {
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("timer_start");
   }
+
+  @Test
+  public void shouldWriteTriggeredEventWithProcessInstanceKey() {
+    // given
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(SIMPLE_MODEL)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .isTrue();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(2));
+
+    // then
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getKey();
+
+    final var timerTriggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    Assertions.assertThat(timerTriggered.getValue())
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementInstanceKey(-1L)
+        .hasTargetElementId("start_1");
+  }
 }

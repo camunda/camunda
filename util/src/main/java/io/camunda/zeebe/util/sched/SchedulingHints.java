@@ -7,46 +7,15 @@
  */
 package io.camunda.zeebe.util.sched;
 
-public final class SchedulingHints {
+public enum SchedulingHints {
+  CPU_BOUND,
+  IO_BOUND;
 
-  public static int ioBound() {
-    int hints = 0;
-
-    hints = setIoBound(hints);
-
-    return hints;
+  public static SchedulingHints cpuBound() {
+    return SchedulingHints.CPU_BOUND;
   }
 
-  public static int cpuBound(final ActorPriority priority) {
-    int hints = 0;
-
-    hints = setCpuBound(hints);
-    hints = setPriority(priority.getPriorityClass(), hints);
-
-    return hints;
-  }
-
-  public static int setCpuBound(final int hints) {
-    return hints & ~1;
-  }
-
-  public static int setIoBound(final int hints) {
-    return hints | 1;
-  }
-
-  public static boolean isCpuBound(final int hints) {
-    return (hints & ~1) == hints;
-  }
-
-  public static boolean isIoBound(final int hints) {
-    return (hints & 1) == hints;
-  }
-
-  public static int setPriority(final short priority, final int hints) {
-    return hints | (priority << 1);
-  }
-
-  public static short getPriority(final int hints) {
-    return (short) (hints >> 1);
+  public static SchedulingHints ioBound() {
+    return SchedulingHints.IO_BOUND;
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.asserts;
 
 import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import java.util.List;
@@ -26,7 +27,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return new TopologyAssert(actual);
   }
 
-  public final TopologyAssert isComplete(final int clusterSize, final int partitionCount) {
+  public TopologyAssert isComplete(final int clusterSize, final int partitionCount) {
     isNotNull();
 
     final List<BrokerInfo> brokers = actual.getBrokers();
@@ -68,7 +69,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
-  public final TopologyAssert doesNotContainBroker(final int nodeId) {
+  public TopologyAssert doesNotContainBroker(final int nodeId) {
     isNotNull();
 
     final List<Integer> brokers =
@@ -82,7 +83,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
-  public final TopologyAssert hasBrokerSatisfying(final Consumer<BrokerInfo> condition) {
+  public TopologyAssert hasBrokerSatisfying(final Consumer<BrokerInfo> condition) {
     isNotNull();
 
     final List<BrokerInfo> brokers = actual.getBrokers();
@@ -91,7 +92,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     return myself;
   }
 
-  public final TopologyAssert hasBrokersCount(final int count) {
+  public TopologyAssert hasBrokersCount(final int count) {
     isNotNull();
 
     if (actual.getBrokers().size() != count) {
@@ -100,6 +101,18 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
           count, actual.getBrokers());
     }
 
+    return myself;
+  }
+
+  public TopologyAssert isHealthy() {
+    isNotNull();
+    final var partitions =
+        actual.getBrokers().stream()
+            .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
+            .collect(Collectors.toList());
+    newListAssertInstance(partitions)
+        .as("all partitions are healthy")
+        .allMatch(partition -> partition.getHealth() == PartitionBrokerHealth.HEALTHY);
     return myself;
   }
 }

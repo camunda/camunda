@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -48,7 +47,7 @@ class ExporterDirectorPartitionTransitionStepTest {
     when(exporterRepository.getExporters()).thenReturn(Map.of());
     transitionContext.setExporterRepository(exporterRepository);
 
-    when(actorSchedulingService.submitActor(any(), anyInt()))
+    when(actorSchedulingService.submitActor(any(), any()))
         .thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setActorSchedulingService(actorSchedulingService);
 

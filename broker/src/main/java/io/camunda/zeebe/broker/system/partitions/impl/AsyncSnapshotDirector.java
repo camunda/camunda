@@ -21,7 +21,6 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -100,7 +99,6 @@ public final class AsyncSnapshotDirector extends Actor
 
   @Override
   protected void onActorStarting() {
-    actor.setSchedulingHints(SchedulingHints.ioBound());
     final var firstSnapshotTime =
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
     actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);

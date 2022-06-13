@@ -45,17 +45,6 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
-   * changes the actor's scheduling hints. For example, this makes it possible to transform a
-   * cpu-bound actor into an io-bound actor and vice versa.
-   *
-   * @param hints the changed scheduling hints
-   */
-  public void setSchedulingHints(final int hints) {
-    ensureCalledFromWithinActor("resubmit(...)");
-    task.setUpdatedSchedulingHints(hints);
-  }
-
-  /**
    * Consumers are called while the actor is in the following actor lifecycle phases: {@link
    * ActorLifecyclePhase#STARTED}
    *
@@ -385,11 +374,6 @@ public class ActorControl implements ConcurrencyControl {
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
     return !(lifecyclePhase == ActorLifecyclePhase.STARTING
         || lifecyclePhase == ActorLifecyclePhase.STARTED);
-  }
-
-  public void setPriority(final ActorPriority priority) {
-    ensureCalledFromActorThread("setPriority()");
-    task.setPriority(priority.getPriorityClass());
   }
 
   public ActorLifecyclePhase getLifecyclePhase() {

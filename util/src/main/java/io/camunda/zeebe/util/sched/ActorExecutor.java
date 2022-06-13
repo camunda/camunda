@@ -42,7 +42,7 @@ public final class ActorExecutor {
     if (task.getLifecyclePhase() != ActorLifecyclePhase.CLOSED) {
       throw new IllegalStateException("ActorTask was already submitted!");
     }
-    final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup);
+    final ActorFuture<Void> startingFuture = task.onTaskScheduled(threadGroup);
 
     threadGroup.submit(task);
     return startingFuture;
