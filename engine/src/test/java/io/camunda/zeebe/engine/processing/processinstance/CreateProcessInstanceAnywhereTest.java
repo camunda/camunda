@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -388,6 +389,140 @@ public class CreateProcessInstanceAnywhereTest {
             VariableRecordValue::getValue)
         .describedAs("Expected the variable to be created in the scope of the process instance")
         .containsExactly(tuple(processInstanceKey, "variable", "123"));
+  }
+
+  @Test
+  public void shouldWriteActivateCommandForStartingElement() {
+    // Given
+    final var deploymentCreated =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .manualTask("task")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var deployedProcess = deploymentCreated.getValue().getProcessesMetadata().get(0);
+
+    // When
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(newStartInstruction("task"))
+            .create();
+
+    // Then
+    final var taskActivateCommand =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .getFirst();
+
+    assertThat(taskActivateCommand.getValue())
+        .hasProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+        .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
+        .hasVersion(deployedProcess.getVersion())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasBpmnElementType(BpmnElementType.MANUAL_TASK)
+        .hasElementId("task")
+        .hasFlowScopeKey(processInstanceKey)
+        .hasParentProcessInstanceKey(-1L)
+        .hasParentElementInstanceKey(-1L);
+  }
+
+  @Test
+  public void shouldWriteActivationEventsForScopes() {
+    // Given
+    final var deploymentCreated =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .subProcess(
+                        "subprocess",
+                        s -> s.embeddedSubProcess().startEvent().manualTask("task").endEvent())
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var deployedProcess = deploymentCreated.getValue().getProcessesMetadata().get(0);
+
+    // When
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(newStartInstruction("task"))
+            .create();
+
+    // Then
+    final var processActivationEvents =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .limit(2);
+
+    Assertions.assertThat(processActivationEvents)
+        .hasSize(2)
+        .allSatisfy(
+            record ->
+                assertThat(record.getValue())
+                    .hasProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+                    .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
+                    .hasVersion(deployedProcess.getVersion())
+                    .hasProcessInstanceKey(processInstanceKey)
+                    .hasBpmnElementType(BpmnElementType.PROCESS)
+                    .hasElementId(PROCESS_ID)
+                    .hasFlowScopeKey(-1L)
+                    .hasParentProcessInstanceKey(-1L)
+                    .hasParentElementInstanceKey(-1L));
+
+    final var subprocessActivationEvents =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .limit(2)
+            .toList();
+
+    Assertions.assertThat(subprocessActivationEvents)
+        .hasSize(2)
+        .allSatisfy(
+            record ->
+                assertThat(record.getValue())
+                    .hasProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+                    .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
+                    .hasVersion(deployedProcess.getVersion())
+                    .hasProcessInstanceKey(processInstanceKey)
+                    .hasBpmnElementType(BpmnElementType.SUB_PROCESS)
+                    .hasElementId("subprocess")
+                    .hasFlowScopeKey(processInstanceKey)
+                    .hasParentProcessInstanceKey(-1L)
+                    .hasParentElementInstanceKey(-1L));
+
+    final var taskActivateCommand =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .getFirst();
+
+    final var subprocessElementInstanceKey = subprocessActivationEvents.get(0).getKey();
+    assertThat(taskActivateCommand.getValue())
+        .hasProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+        .hasBpmnProcessId(deployedProcess.getBpmnProcessId())
+        .hasVersion(deployedProcess.getVersion())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasBpmnElementType(BpmnElementType.MANUAL_TASK)
+        .hasElementId("task")
+        .hasFlowScopeKey(subprocessElementInstanceKey)
+        .hasParentProcessInstanceKey(-1L)
+        .hasParentElementInstanceKey(-1L);
   }
 
   private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {
