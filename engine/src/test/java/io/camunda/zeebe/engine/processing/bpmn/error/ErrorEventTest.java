@@ -158,7 +158,7 @@ public class ErrorEventTest {
         .throwError();
 
     // then
-    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
+    assertThat(RecordingExporter.records().betweenProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
         .containsExactly(JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
   }

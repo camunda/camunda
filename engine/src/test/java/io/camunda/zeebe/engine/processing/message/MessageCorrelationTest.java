@@ -882,7 +882,7 @@ public final class MessageCorrelationTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .onlyCommandRejections())
         .describedAs("Expected no subscription command rejections")
         .isEmpty();
@@ -919,7 +919,7 @@ public final class MessageCorrelationTest {
         engine.processInstance().ofBpmnProcessId("process").withVariable("key", "123").create();
 
     // then
-    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+    assertThat(RecordingExporter.records().betweenProcessInstance(processInstanceKey))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSubsequence(
             tuple(RecordType.COMMAND_REJECTION, ProcessMessageSubscriptionIntent.CORRELATE),

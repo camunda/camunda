@@ -213,12 +213,12 @@ public final class ErrorEventIncidentTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords())
         .extracting(Record::getIntent)
         .contains(IncidentIntent.RESOLVED);
 
-    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
+    assertThat(RecordingExporter.records().betweenProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
         .doesNotContain(JobIntent.CANCEL);
   }

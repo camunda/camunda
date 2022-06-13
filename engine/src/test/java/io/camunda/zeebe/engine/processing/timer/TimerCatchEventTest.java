@@ -113,7 +113,7 @@ public final class TimerCatchEventTest {
             ProcessInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(
-            RecordingExporter.records().limitToProcessInstance(processInstanceKey).timerRecords())
+            RecordingExporter.records().betweenProcessInstance(processInstanceKey).timerRecords())
         .extracting(Record::getIntent)
         .containsSubsequence(TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
   }

@@ -349,7 +349,7 @@ public class InterruptingEventSubprocessTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withScopeKey(processInstanceKey))
         .extracting(r -> r.getValue().getName())

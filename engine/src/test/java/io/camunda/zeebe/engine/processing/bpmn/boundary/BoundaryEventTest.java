@@ -119,7 +119,7 @@ public final class BoundaryEventTest {
     // then
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
-            .limitToProcessInstance(processInstanceKey)
+            .betweenProcessInstance(processInstanceKey)
             .limit(
                 r ->
                     r.getValue() instanceof ProcessInstanceRecord
