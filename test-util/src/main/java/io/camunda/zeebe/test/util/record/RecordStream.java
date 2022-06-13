@@ -39,6 +39,16 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return limit(upperBound::test).skipUntil(lowerBound::test);
   }
 
+  public RecordStream limitToProcessInstance(final long processInstanceKey) {
+    return limit(
+        r ->
+            r.getKey() == processInstanceKey
+                && Set.of(
+                        ProcessInstanceIntent.ELEMENT_COMPLETED,
+                        ProcessInstanceIntent.ELEMENT_TERMINATED)
+                    .contains(r.getIntent()));
+  }
+
   public RecordStream betweenProcessInstance(final long processInstanceKey) {
     return between(
         r ->

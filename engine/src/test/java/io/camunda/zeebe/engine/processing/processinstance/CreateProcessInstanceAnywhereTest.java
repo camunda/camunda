@@ -378,11 +378,7 @@ public class CreateProcessInstanceAnywhereTest {
     // Then
     Assertions.assertThat(
             RecordingExporter.records()
-                .limit(
-                    // extract the condition into a method like limitToProcessInstance()
-                    r ->
-                        r.getKey() == processInstanceKey
-                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords())
         .hasSize(1)
         .extracting(Record::getValue)
