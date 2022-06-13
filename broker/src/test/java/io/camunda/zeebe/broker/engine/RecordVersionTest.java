@@ -68,7 +68,7 @@ public final class RecordVersionTest {
     final var processInstanceKey = createProcessInstance(PROCESS_ID);
 
     // then
-    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+    assertThat(RecordingExporter.records().betweenProcessInstance(processInstanceKey))
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
   }

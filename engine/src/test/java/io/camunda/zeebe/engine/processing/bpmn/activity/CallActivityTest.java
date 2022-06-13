@@ -148,7 +148,7 @@ public final class CallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords()
                 .withParentProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -167,7 +167,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -221,7 +221,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -249,7 +249,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords())
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName()))
@@ -303,7 +303,7 @@ public final class CallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -334,7 +334,7 @@ public final class CallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -391,7 +391,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -422,7 +422,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -515,7 +515,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -549,7 +549,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords())
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName()))

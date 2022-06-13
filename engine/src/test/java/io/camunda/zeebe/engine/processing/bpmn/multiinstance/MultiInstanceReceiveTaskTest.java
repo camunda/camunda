@@ -199,7 +199,7 @@ public final class MultiInstanceReceiveTaskTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withName("results")
                 .withScopeKey(processInstanceKey))

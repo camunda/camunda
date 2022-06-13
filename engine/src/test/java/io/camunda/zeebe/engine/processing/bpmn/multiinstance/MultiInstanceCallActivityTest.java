@@ -249,7 +249,7 @@ public final class MultiInstanceCallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withName("results")
                 .withScopeKey(processInstanceKey))

@@ -371,6 +371,28 @@ public final class ArrayValueTest {
         .isEqualTo("[{\"longProp\":1},{\"longProp\":2},{\"longProp\":3}]");
   }
 
+  @Test
+  public void shouldReturnTrueIfIsEmptyIsCalledWithoutElements() {
+    // given no elements are added
+    // when
+    final boolean isEmpty = array.isEmpty();
+
+    // then
+    assertThat(isEmpty).isTrue();
+  }
+
+  @Test
+  public void shouldReturnFalseIfIsEmptyIsCalledWithElements() {
+    // given
+    addIntValues(array, 1);
+
+    // when
+    final boolean isEmpty = array.isEmpty();
+
+    // then
+    assertThat(isEmpty).isFalse();
+  }
+
   // Helpers
 
   protected void addIntValues(final ArrayValue<IntegerValue> array, final Integer... values) {

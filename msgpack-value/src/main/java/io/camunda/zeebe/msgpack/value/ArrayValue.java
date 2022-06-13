@@ -58,6 +58,10 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     innerValueState = InnerValueState.Uninitialized;
   }
 
+  public boolean isEmpty() {
+    return elementCount == 0;
+  }
+
   @Override
   public void writeJSON(final StringBuilder builder) {
     flushAndResetInnerValue();

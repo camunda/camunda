@@ -48,4 +48,8 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     final var parallel = false;
     return StreamSupport.stream(spliterator(), parallel);
   }
+
+  public boolean isEmpty() {
+    return value.isEmpty();
+  }
 }

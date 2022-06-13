@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -64,6 +65,12 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceCreationClient withVariable(final String key, final Object value) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(key, value));
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withStartInstruction(
+        final ProcessInstanceCreationStartInstruction instruction) {
+      processInstanceCreationRecord.addStartInstruction(instruction);
       return this;
     }
 

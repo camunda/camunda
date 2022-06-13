@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -61,6 +62,8 @@ public final class ProcessEventProcessors {
         new VariableBehavior(
             zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
 
+    final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
+
     addProcessInstanceCommandProcessor(typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
@@ -71,7 +74,8 @@ public final class ProcessEventProcessors {
             eventTriggerBehavior,
             zeebeState,
             writers,
-            jobMetrics);
+            jobMetrics,
+            processEngineMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
@@ -96,7 +100,7 @@ public final class ProcessEventProcessors {
         zeebeState.getKeyGenerator(),
         writers.state());
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, zeebeState, writers, variableBehavior);
+        typedRecordProcessors, zeebeState, writers, variableBehavior, processEngineMetrics);
 
     return bpmnStreamProcessor;
   }
@@ -198,13 +202,14 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final ProcessEngineMetrics metrics) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
     final CreateProcessInstanceProcessor createProcessor =
         new CreateProcessInstanceProcessor(
-            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior);
+            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior, metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 

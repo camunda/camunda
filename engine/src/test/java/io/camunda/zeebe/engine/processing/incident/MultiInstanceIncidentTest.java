@@ -315,7 +315,7 @@ public final class MultiInstanceIncidentTest {
     final var variableNames = Set.of("item", "loopCounter");
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .filter(v -> variableNames.contains(v.getValue().getName())))
         .extracting(v -> tuple(v.getIntent(), v.getValue().getName(), v.getValue().getValue()))
