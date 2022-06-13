@@ -62,6 +62,8 @@ public final class ProcessEventProcessors {
         new VariableBehavior(
             zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
 
+    final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
+
     addProcessInstanceCommandProcessor(typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
@@ -72,7 +74,8 @@ public final class ProcessEventProcessors {
             eventTriggerBehavior,
             zeebeState,
             writers,
-            jobMetrics);
+            jobMetrics,
+            processEngineMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
@@ -97,7 +100,7 @@ public final class ProcessEventProcessors {
         zeebeState.getKeyGenerator(),
         writers.state());
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, zeebeState, writers, variableBehavior);
+        typedRecordProcessors, zeebeState, writers, variableBehavior, processEngineMetrics);
 
     return bpmnStreamProcessor;
   }
@@ -199,10 +202,10 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final ProcessEngineMetrics metrics) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
-    final ProcessEngineMetrics metrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
     final CreateProcessInstanceProcessor createProcessor =
         new CreateProcessInstanceProcessor(
