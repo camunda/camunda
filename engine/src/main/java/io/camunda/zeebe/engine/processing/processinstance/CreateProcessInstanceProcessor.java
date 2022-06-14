@@ -241,12 +241,7 @@ public final class CreateProcessInstanceProcessor
       final long processInstanceKey,
       final ProcessInstanceRecord processInstance) {
 
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, processInstance);
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, processInstance);
-
-    createEventSubscriptions(process.getProcess(), processInstance, processInstanceKey);
+    activateElementInstance(process.getProcess(), processInstanceKey, processInstance);
 
     final Map<DirectBuffer, Long> activatedFlowScopeIds = new HashMap<>();
     activatedFlowScopeIds.put(processInstance.getElementIdBuffer(), processInstanceKey);
@@ -307,15 +302,23 @@ public final class CreateProcessInstanceProcessor
       final long elementInstanceKey = keyGenerator.nextKey();
       activatedFlowScopeIds.put(flowScope.getId(), elementInstanceKey);
 
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, flowScopeRecord);
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, flowScopeRecord);
-
-      createEventSubscriptions(flowScope, flowScopeRecord, elementInstanceKey);
+      activateElementInstance(flowScope, elementInstanceKey, flowScopeRecord);
 
       return elementInstanceKey;
     }
+  }
+
+  private void activateElementInstance(
+      final ExecutableFlowElement element,
+      final long elementInstanceKey,
+      final ProcessInstanceRecord elementRecord) {
+
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
+
+    createEventSubscriptions(element, elementRecord, elementInstanceKey);
   }
 
   private void createEventSubscriptions(
