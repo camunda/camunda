@@ -46,3 +46,4 @@ hs_err*.log
 /data/
 /metrics/
 *.exe
+/clients/go/.idea/

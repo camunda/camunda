@@ -55,6 +55,8 @@ type CreateInstanceCommandStep3 interface {
 	VariablesFromObjectIgnoreOmitempty(interface{}) (CreateInstanceCommandStep3, error)
 	VariablesFromMap(map[string]interface{}) (CreateInstanceCommandStep3, error)
 
+	StartBeforeElement(string) CreateInstanceCommandStep3
+
 	WithResult() CreateInstanceWithResultCommandStep1
 }
 
@@ -110,6 +112,17 @@ func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables i
 
 func (cmd *CreateInstanceCommand) VariablesFromMap(variables map[string]interface{}) (CreateInstanceCommandStep3, error) {
 	return cmd.VariablesFromObject(variables)
+}
+
+func (cmd *CreateInstanceCommand) StartBeforeElement(elementID string) CreateInstanceCommandStep3 {
+	startInstruction := pb.ProcessInstanceCreationStartInstruction{
+		ElementId: elementID,
+	}
+
+	updatedStartInstructions := append(cmd.request.StartInstructions, &startInstruction)
+
+	cmd.request.StartInstructions = updatedStartInstructions
+	return cmd
 }
 
 func (cmd *CreateInstanceCommand) Version(version int32) CreateInstanceCommandStep3 {
