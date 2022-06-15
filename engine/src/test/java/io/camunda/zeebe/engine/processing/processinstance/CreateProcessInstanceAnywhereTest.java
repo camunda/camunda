@@ -15,10 +15,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -33,6 +37,8 @@ public class CreateProcessInstanceAnywhereTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Rule public final BrokerClassRuleHelper classRuleHelper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldActivateSingleElement() {
@@ -620,6 +626,258 @@ public class CreateProcessInstanceAnywhereTest {
             tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldSubscribeToProcessEvents() {
+    // given
+    final var messageName = classRuleHelper.getMessageName();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "message-event-subprocess",
+                    s ->
+                        s.startEvent()
+                            .interrupting(false)
+                            .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
+                            .endEvent())
+                .eventSubProcess(
+                    "timer-event-subprocess",
+                    s -> s.startEvent().interrupting(false).timerWithCycle("R/PT1H").endEvent())
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(newStartInstruction("task"))
+            .withVariable("key", "key-1")
+            .create();
+
+    // when
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
+
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.increaseTime(Duration.ofHours(1));
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+                .limit(2)
+                .count())
+        .describedAs("Await until the events are triggered")
+        .isEqualTo(2);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            record -> record.getValue().getElementId(),
+            record -> record.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSequence(
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT))
+        .containsSubsequence(
+            tuple(
+                "message-event-subprocess",
+                BpmnElementType.EVENT_SUB_PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "timer-event-subprocess",
+                BpmnElementType.EVENT_SUB_PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldSubscribeToScopeEvents() {
+    // given
+    final var messageName = classRuleHelper.getMessageName();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess -> {
+                      subprocess
+                          .embeddedSubProcess()
+                          .startEvent()
+                          .serviceTask("task", t -> t.zeebeJobType("task"))
+                          .endEvent();
+
+                      subprocess
+                          .boundaryEvent("message-boundary-event")
+                          .cancelActivity(false)
+                          .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
+                          .endEvent();
+
+                      subprocess
+                          .boundaryEvent("timer-boundary-event")
+                          .cancelActivity(false)
+                          .timerWithCycle("R/PT1H")
+                          .endEvent();
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(newStartInstruction("task"))
+            .withVariable("key", "key-1")
+            .create();
+
+    // when
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
+
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.increaseTime(Duration.ofHours(1));
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.BOUNDARY_EVENT)
+                .limit(2)
+                .count())
+        .describedAs("Await until the events are triggered")
+        .isEqualTo(2);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            record -> record.getValue().getElementId(),
+            record -> record.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSequence(
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                "subprocess",
+                BpmnElementType.SUB_PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                "subprocess", BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task", BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT))
+        .containsSubsequence(
+            tuple(
+                "message-boundary-event",
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "timer-boundary-event",
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldSubscribeToEventsOnlyOnce() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "message-event-subprocess",
+                    s ->
+                        s.startEvent()
+                            .interrupting(false)
+                            .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                            .endEvent())
+                .eventSubProcess(
+                    "timer-event-subprocess",
+                    s -> s.startEvent().interrupting(false).timerWithCycle("R/PT1H").endEvent())
+                .startEvent()
+                .parallelGateway("forking")
+                .manualTask("task1")
+                .parallelGateway("joining")
+                .moveToNode("forking")
+                .manualTask("task2")
+                .connectTo("joining")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(newStartInstruction("task1"))
+            .withStartInstruction(newStartInstruction("task2"))
+            .withVariable("key", "key-1")
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            record -> record.getValue().getElementId(),
+            record -> record.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSequence(
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task1", BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple("task2", BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT));
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .processMessageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getIntent)
+        .describedAs("Expected to create the message subscription only once")
+        .containsOnlyOnce(ProcessMessageSubscriptionIntent.CREATED);
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .timerRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getIntent)
+        .describedAs("Expected to create the timer only once")
+        .containsOnlyOnce(TimerIntent.CREATED);
   }
 
   private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {

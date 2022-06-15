@@ -11,9 +11,13 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -54,8 +58,14 @@ public final class CreateProcessInstanceProcessor
       "Expected to set variables from document, but the document is invalid";
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
+
+  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
+
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
+
+  private final CatchEventBehavior catchEventBehavior;
+
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
@@ -66,9 +76,11 @@ public final class CreateProcessInstanceProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final VariableBehavior variableBehavior,
+      final CatchEventBehavior catchEventBehavior,
       final ProcessEngineMetrics metrics) {
     this.processState = processState;
     this.variableBehavior = variableBehavior;
+    this.catchEventBehavior = catchEventBehavior;
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     stateWriter = writers.state();
@@ -79,6 +91,9 @@ public final class CreateProcessInstanceProcessor
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller) {
+    // cleanup side effects from previous command
+    sideEffectQueue.clear();
+
     final ProcessInstanceCreationRecord record = command.getValue();
     final DeployedProcess process = getProcess(record, controller);
     if (process == null || !isValidProcess(controller, process, record.startInstructions())) {
@@ -225,10 +240,8 @@ public final class CreateProcessInstanceProcessor
       final DeployedProcess process,
       final long processInstanceKey,
       final ProcessInstanceRecord processInstance) {
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, processInstance);
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, processInstance);
+
+    activateElementInstance(process.getProcess(), processInstanceKey, processInstance);
 
     final Map<DirectBuffer, Long> activatedFlowScopeIds = new HashMap<>();
     activatedFlowScopeIds.put(processInstance.getElementIdBuffer(), processInstanceKey);
@@ -245,6 +258,9 @@ public final class CreateProcessInstanceProcessor
           commandWriter.appendFollowUpCommand(
               elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
         });
+
+    // applying the side effects is part of creating the event subscriptions
+    sideEffectQueue.flush();
   }
 
   /**
@@ -285,11 +301,42 @@ public final class CreateProcessInstanceProcessor
 
       final long elementInstanceKey = keyGenerator.nextKey();
       activatedFlowScopeIds.put(flowScope.getId(), elementInstanceKey);
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, flowScopeRecord);
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, flowScopeRecord);
+
+      activateElementInstance(flowScope, elementInstanceKey, flowScopeRecord);
+
       return elementInstanceKey;
+    }
+  }
+
+  private void activateElementInstance(
+      final ExecutableFlowElement element,
+      final long elementInstanceKey,
+      final ProcessInstanceRecord elementRecord) {
+
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
+
+    createEventSubscriptions(element, elementRecord, elementInstanceKey);
+  }
+
+  /**
+   * Create the event subscriptions of the given element. Assuming that the element instance is in
+   * state ACTIVATED.
+   */
+  private void createEventSubscriptions(
+      final ExecutableFlowElement element,
+      final ProcessInstanceRecord elementRecord,
+      final long elementInstanceKey) {
+
+    if (element instanceof ExecutableCatchEventSupplier catchEventSupplier) {
+      final var bpmnElementContext = new BpmnElementContextImpl();
+      bpmnElementContext.init(
+          elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+      catchEventBehavior.subscribeToEvents(
+          bpmnElementContext, catchEventSupplier, sideEffectQueue, commandWriter);
     }
   }
 

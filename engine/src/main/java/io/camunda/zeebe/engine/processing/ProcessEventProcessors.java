@@ -100,7 +100,12 @@ public final class ProcessEventProcessors {
         zeebeState.getKeyGenerator(),
         writers.state());
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, zeebeState, writers, variableBehavior, processEngineMetrics);
+        typedRecordProcessors,
+        zeebeState,
+        writers,
+        variableBehavior,
+        catchEventBehavior,
+        processEngineMetrics);
 
     return bpmnStreamProcessor;
   }
@@ -203,13 +208,19 @@ public final class ProcessEventProcessors {
       final MutableZeebeState zeebeState,
       final Writers writers,
       final VariableBehavior variableBehavior,
+      final CatchEventBehavior catchEventBehavior,
       final ProcessEngineMetrics metrics) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
     final CreateProcessInstanceProcessor createProcessor =
         new CreateProcessInstanceProcessor(
-            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior, metrics);
+            zeebeState.getProcessState(),
+            keyGenerator,
+            writers,
+            variableBehavior,
+            catchEventBehavior,
+            metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
