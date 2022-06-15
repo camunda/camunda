@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -36,6 +37,8 @@ public class CreateProcessInstanceAnywhereTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Rule public final BrokerClassRuleHelper classRuleHelper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldActivateSingleElement() {
@@ -628,6 +631,8 @@ public class CreateProcessInstanceAnywhereTest {
   @Test
   public void shouldSubscribeToProcessEvents() {
     // given
+    final var messageName = classRuleHelper.getMessageName();
+
     ENGINE
         .deployment()
         .withXmlResource(
@@ -637,7 +642,7 @@ public class CreateProcessInstanceAnywhereTest {
                     s ->
                         s.startEvent()
                             .interrupting(false)
-                            .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                            .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
                             .endEvent())
                 .eventSubProcess(
                     "timer-event-subprocess",
@@ -661,7 +666,7 @@ public class CreateProcessInstanceAnywhereTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    ENGINE.message().withName("message").withCorrelationKey("key-1").publish();
+    ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
 
     RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -708,6 +713,8 @@ public class CreateProcessInstanceAnywhereTest {
   @Test
   public void shouldSubscribeToScopeEvents() {
     // given
+    final var messageName = classRuleHelper.getMessageName();
+
     ENGINE
         .deployment()
         .withXmlResource(
@@ -725,7 +732,7 @@ public class CreateProcessInstanceAnywhereTest {
                       subprocess
                           .boundaryEvent("message-boundary-event")
                           .cancelActivity(false)
-                          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                          .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
                           .endEvent();
 
                       subprocess
@@ -751,7 +758,7 @@ public class CreateProcessInstanceAnywhereTest {
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    ENGINE.message().withName("message").withCorrelationKey("key-1").publish();
+    ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
 
     RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
