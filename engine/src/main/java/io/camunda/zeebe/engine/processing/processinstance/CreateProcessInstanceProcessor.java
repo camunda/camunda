@@ -91,7 +91,7 @@ public final class CreateProcessInstanceProcessor
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller) {
-
+    // cleanup side effects from previous command
     sideEffectQueue.clear();
 
     final ProcessInstanceCreationRecord record = command.getValue();
@@ -321,6 +321,10 @@ public final class CreateProcessInstanceProcessor
     createEventSubscriptions(element, elementRecord, elementInstanceKey);
   }
 
+  /**
+   * Create the event subscriptions of the given element. Assuming that the element instance is in
+   * state ACTIVATED.
+   */
   private void createEventSubscriptions(
       final ExecutableFlowElement element,
       final ProcessInstanceRecord elementRecord,
