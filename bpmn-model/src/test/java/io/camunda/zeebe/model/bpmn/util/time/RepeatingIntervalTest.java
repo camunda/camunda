@@ -168,4 +168,18 @@ public class RepeatingIntervalTest {
     // then
     assertThat(parsed).isEqualTo(expected);
   }
+
+  @Test
+  public void shouldParseWithEmptyStartTime() {
+    // given
+    final String text = "R//PT10S";
+    final RepeatingInterval expected =
+        new RepeatingInterval(-1, new Interval(Period.ZERO, Duration.ofSeconds(10)));
+
+    // when
+    final RepeatingInterval parsed = RepeatingInterval.parse(text);
+
+    // then
+    assertThat(parsed).isEqualTo(expected);
+  }
 }

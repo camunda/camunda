@@ -183,7 +183,7 @@ public class Interval implements TemporalAmount {
     int startOffset = 0;
     final int index = text.lastIndexOf("/");
     Optional<ZonedDateTime> start = Optional.empty();
-    if (index != -1) {
+    if (index > 0) {
       start = Optional.ofNullable(ZonedDateTime.parse(text.substring(0, index)));
     }
 
