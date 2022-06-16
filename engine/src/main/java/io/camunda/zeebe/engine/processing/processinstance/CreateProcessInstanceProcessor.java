@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
@@ -34,7 +36,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -96,7 +97,10 @@ public final class CreateProcessInstanceProcessor
 
     final ProcessInstanceCreationRecord record = command.getValue();
     final DeployedProcess process = getProcess(record, controller);
-    if (process == null || !isValidProcess(controller, process, record.startInstructions())) {
+    if (process == null
+        || !isValidProcess(controller, process, record.startInstructions())
+        || !hasValidStartInstructions(
+            controller, process.getProcess(), record.startInstructions())) {
       return true;
     }
 
@@ -135,6 +139,30 @@ public final class CreateProcessInstanceProcessor
     }
 
     return true;
+  }
+
+  private boolean hasValidStartInstructions(
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    return startInstructions.stream()
+        .map(ProcessInstanceCreationStartInstruction::getElementId)
+        .filter(elementId -> !isElementOfProcess(process, elementId))
+        .findAny()
+        .map(
+            elementId -> {
+              controller.reject(
+                  RejectionType.INVALID_ARGUMENT,
+                  "Expected to create instance of process with start instructions but no element found with id '%s'."
+                      .formatted(elementId));
+              return true;
+            })
+        .orElse(false);
+  }
+
+  private boolean isElementOfProcess(final ExecutableProcess process, final String elementId) {
+    return process.getElementById(wrapString(elementId)) != null;
   }
 
   private boolean setVariablesFromDocument(
@@ -248,7 +276,7 @@ public final class CreateProcessInstanceProcessor
 
     startInstructions.forEach(
         instruction -> {
-          final DirectBuffer elementId = BufferUtil.wrapString(instruction.getElementId());
+          final DirectBuffer elementId = wrapString(instruction.getElementId());
           final long flowScopeKey =
               activateFlowScopes(process, processInstanceKey, elementId, activatedFlowScopeIds);
 
