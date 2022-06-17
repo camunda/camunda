@@ -53,6 +53,8 @@ public final class CreateProcessInstanceProcessor
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
 
+  private static final Either<Rejection, Object> VALID = Either.right(null);
+
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
@@ -94,18 +96,11 @@ public final class CreateProcessInstanceProcessor
     final var startInstructions = record.startInstructions();
 
     getProcess(record)
+        .flatMap(
+            process -> validateHasNoneStartEventOrStartInstructions(process, startInstructions))
+        .flatMap(process -> validateStartInstructions(process, startInstructions))
         .ifRightOrLeft(
-            process -> {
-              final var isValid =
-                  hasNoneStartEventOrStartInstructions(controller, process, startInstructions)
-                      && hasValidStartInstructions(
-                          controller, process.getProcess(), startInstructions);
-              if (!isValid) {
-                return;
-              }
-
-              createProcessInstance(controller, record, process);
-            },
+            process -> createProcessInstance(controller, record, process),
             rejection -> controller.reject(rejection.type, rejection.reason));
 
     return true;
@@ -139,29 +134,32 @@ public final class CreateProcessInstanceProcessor
     metrics.processInstanceCreated(record);
   }
 
-  private boolean hasNoneStartEventOrStartInstructions(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
+  private Either<Rejection, DeployedProcess> validateHasNoneStartEventOrStartInstructions(
       final DeployedProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-    if (process.getProcess().getNoneStartEvent() == null && startInstructions.isEmpty()) {
-      controller.reject(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT);
-      return false;
+
+    if (process.getProcess().getNoneStartEvent() != null || !startInstructions.isEmpty()) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT));
     }
-
-    return true;
   }
 
-  private boolean hasValidStartInstructions(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
-      final ExecutableProcess process,
+  private Either<Rejection, DeployedProcess> validateStartInstructions(
+      final DeployedProcess deployedProcess,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+    final var process = deployedProcess.getProcess();
 
-    return !hasStartInstructionsWithNonExistingElements(controller, process, startInstructions)
-        && !hasStartInstructionsWithMultiInstanceElement(controller, process, startInstructions);
+    return validateStartInstructionsIfElementsExist(process, startInstructions)
+        .flatMap(
+            valid ->
+                validateStartInstructionsIfElementsAreInsideMultiInstance(
+                    process, startInstructions))
+        .map(valid -> deployedProcess);
   }
 
-  private boolean hasStartInstructionsWithNonExistingElements(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
+  private Either<Rejection, ?> validateStartInstructionsIfElementsExist(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
 
@@ -170,22 +168,20 @@ public final class CreateProcessInstanceProcessor
         .filter(elementId -> !isElementOfProcess(process, elementId))
         .findAny()
         .map(
-            elementId -> {
-              controller.reject(
-                  RejectionType.INVALID_ARGUMENT,
-                  "Expected to create instance of process with start instructions but no element found with id '%s'."
-                      .formatted(elementId));
-              return true;
-            })
-        .orElse(false);
+            elementId ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        "Expected to create instance of process with start instructions but no element found with id '%s'."
+                            .formatted(elementId))))
+        .orElse(VALID);
   }
 
   private boolean isElementOfProcess(final ExecutableProcess process, final String elementId) {
     return process.getElementById(wrapString(elementId)) != null;
   }
 
-  private boolean hasStartInstructionsWithMultiInstanceElement(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
+  private Either<Rejection, ?> validateStartInstructionsIfElementsAreInsideMultiInstance(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
 
@@ -194,14 +190,13 @@ public final class CreateProcessInstanceProcessor
         .filter(elementId -> isElementInsideMultiInstance(process, elementId))
         .findAny()
         .map(
-            elementId -> {
-              controller.reject(
-                  RejectionType.INVALID_ARGUMENT,
-                  "Expected to create instance of process with start instructions but the element with id '%s' is inside a multi-instance subprocess. The creation of elements inside a multi-instance subprocess is not supported."
-                      .formatted(elementId));
-              return true;
-            })
-        .orElse(false);
+            elementId ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        "Expected to create instance of process with start instructions but the element with id '%s' is inside a multi-instance subprocess. The creation of elements inside a multi-instance subprocess is not supported."
+                            .formatted(elementId))))
+        .orElse(VALID);
   }
 
   private boolean isElementInsideMultiInstance(
