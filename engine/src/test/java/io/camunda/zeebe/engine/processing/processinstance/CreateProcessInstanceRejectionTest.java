@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -45,8 +44,8 @@ public class CreateProcessInstanceRejectionTest {
     engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
-        .withStartInstruction(newStartInstruction("task"))
-        .withStartInstruction(newStartInstruction("unknown-element"))
+        .withStartInstruction("task")
+        .withStartInstruction("unknown-element")
         .withVariable("x", 1)
         .expectRejection()
         .create();
@@ -87,8 +86,8 @@ public class CreateProcessInstanceRejectionTest {
     engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
-        .withStartInstruction(newStartInstruction("task"))
-        .withStartInstruction(newStartInstruction("task-in-multi-instance"))
+        .withStartInstruction("task")
+        .withStartInstruction("task-in-multi-instance")
         .withVariable("x", 1)
         .expectRejection()
         .create();
@@ -102,9 +101,5 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to create instance of process with start instructions but the element with id 'task-in-multi-instance' is inside a multi-instance subprocess. The creation of elements inside a multi-instance subprocess is not supported.");
-  }
-
-  private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {
-    return new ProcessInstanceCreationStartInstruction().setElementId(elementId);
   }
 }

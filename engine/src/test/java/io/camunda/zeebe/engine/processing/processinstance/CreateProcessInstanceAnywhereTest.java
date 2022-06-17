@@ -12,7 +12,6 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -51,11 +50,7 @@ public class CreateProcessInstanceAnywhereTest {
 
     // When
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("end"))
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("end").create();
 
     // Then
     Assertions.assertThat(
@@ -100,8 +95,8 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task1"))
-            .withStartInstruction(newStartInstruction("task2"))
+            .withStartInstruction("task1")
+            .withStartInstruction("task2")
             .create();
 
     // Then
@@ -159,11 +154,7 @@ public class CreateProcessInstanceAnywhereTest {
 
     // When
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("task").create();
 
     // Then
     Assertions.assertThat(
@@ -230,8 +221,8 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task1"))
-            .withStartInstruction(newStartInstruction("task2"))
+            .withStartInstruction("task1")
+            .withStartInstruction("task2")
             .create();
 
     // Then
@@ -303,11 +294,7 @@ public class CreateProcessInstanceAnywhereTest {
 
     // When
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("task").create();
 
     // Then
     Assertions.assertThat(
@@ -378,7 +365,7 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("end"))
+            .withStartInstruction("end")
             .withVariable("variable", 123)
             .create();
 
@@ -415,11 +402,7 @@ public class CreateProcessInstanceAnywhereTest {
 
     // When
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("task").create();
 
     // Then
     final var taskActivateCommand =
@@ -461,11 +444,7 @@ public class CreateProcessInstanceAnywhereTest {
 
     // When
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("task").create();
 
     // Then
     final var processActivationEvents =
@@ -551,8 +530,8 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
-            .withStartInstruction(newStartInstruction("subprocess"))
+            .withStartInstruction("task")
+            .withStartInstruction("subprocess")
             .create();
 
     // Then
@@ -599,8 +578,8 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("subprocess"))
-            .withStartInstruction(newStartInstruction("task"))
+            .withStartInstruction("subprocess")
+            .withStartInstruction("task")
             .create();
 
     // Then
@@ -657,7 +636,7 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
+            .withStartInstruction("task")
             .withVariable("key", "key-1")
             .create();
 
@@ -749,7 +728,7 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task"))
+            .withStartInstruction("task")
             .withVariable("key", "key-1")
             .create();
 
@@ -841,8 +820,8 @@ public class CreateProcessInstanceAnywhereTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withStartInstruction(newStartInstruction("task1"))
-            .withStartInstruction(newStartInstruction("task2"))
+            .withStartInstruction("task1")
+            .withStartInstruction("task2")
             .withVariable("key", "key-1")
             .create();
 
@@ -878,9 +857,5 @@ public class CreateProcessInstanceAnywhereTest {
         .extracting(Record::getIntent)
         .describedAs("Expected to create the timer only once")
         .containsOnlyOnce(TimerIntent.CREATED);
-  }
-
-  private ProcessInstanceCreationStartInstruction newStartInstruction(final String elementId) {
-    return new ProcessInstanceCreationStartInstruction().setElementId(elementId);
   }
 }

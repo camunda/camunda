@@ -89,8 +89,8 @@ public final class ProcessInstanceClient {
       return this;
     }
 
-    public ProcessInstanceCreationClient withStartInstruction(
-        final ProcessInstanceCreationStartInstruction instruction) {
+    public ProcessInstanceCreationClient withStartInstruction(final String elementId) {
+      final var instruction = new ProcessInstanceCreationStartInstruction().setElementId(elementId);
       processInstanceCreationRecord.addStartInstruction(instruction);
       return this;
     }
