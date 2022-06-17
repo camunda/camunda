@@ -98,7 +98,7 @@ public final class CreateProcessInstanceProcessor
     final ProcessInstanceCreationRecord record = command.getValue();
     final DeployedProcess process = getProcess(record, controller);
     if (process == null
-        || !isValidProcess(controller, process, record.startInstructions())
+        || !hasNoneStartEventOrStartInstructions(controller, process, record.startInstructions())
         || !hasValidStartInstructions(
             controller, process.getProcess(), record.startInstructions())) {
       return true;
@@ -129,7 +129,7 @@ public final class CreateProcessInstanceProcessor
     return true;
   }
 
-  private boolean isValidProcess(
+  private boolean hasNoneStartEventOrStartInstructions(
       final CommandControl<ProcessInstanceCreationRecord> controller,
       final DeployedProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
