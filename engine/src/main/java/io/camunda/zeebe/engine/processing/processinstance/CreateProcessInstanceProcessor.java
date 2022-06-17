@@ -93,12 +93,9 @@ public final class CreateProcessInstanceProcessor
     sideEffectQueue.clear();
 
     final ProcessInstanceCreationRecord record = command.getValue();
-    final var startInstructions = record.startInstructions();
 
     getProcess(record)
-        .flatMap(
-            process -> validateHasNoneStartEventOrStartInstructions(process, startInstructions))
-        .flatMap(process -> validateStartInstructions(process, startInstructions))
+        .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process),
             rejection -> controller.reject(rejection.type, rejection.reason));
@@ -134,29 +131,30 @@ public final class CreateProcessInstanceProcessor
     metrics.processInstanceCreated(record);
   }
 
-  private Either<Rejection, DeployedProcess> validateHasNoneStartEventOrStartInstructions(
-      final DeployedProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    if (process.getProcess().getNoneStartEvent() != null || !startInstructions.isEmpty()) {
-      return Either.right(process);
-    } else {
-      return Either.left(
-          new Rejection(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT));
-    }
-  }
-
-  private Either<Rejection, DeployedProcess> validateStartInstructions(
-      final DeployedProcess deployedProcess,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+  private Either<Rejection, DeployedProcess> validateCommand(
+      final ProcessInstanceCreationRecord command, final DeployedProcess deployedProcess) {
     final var process = deployedProcess.getProcess();
+    final var startInstructions = command.startInstructions();
 
-    return validateStartInstructionsIfElementsExist(process, startInstructions)
+    return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
+        .flatMap(valid -> validateStartInstructionsIfElementsExist(process, startInstructions))
         .flatMap(
             valid ->
                 validateStartInstructionsIfElementsAreInsideMultiInstance(
                     process, startInstructions))
         .map(valid -> deployedProcess);
+  }
+
+  private Either<Rejection, ?> validateHasNoneStartEventOrStartInstructions(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    if (process.getNoneStartEvent() != null || !startInstructions.isEmpty()) {
+      return VALID;
+    } else {
+      return Either.left(
+          new Rejection(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT));
+    }
   }
 
   private Either<Rejection, ?> validateStartInstructionsIfElementsExist(
