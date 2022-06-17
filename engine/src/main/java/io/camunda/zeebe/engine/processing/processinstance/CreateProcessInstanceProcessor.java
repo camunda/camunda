@@ -98,6 +98,14 @@ public final class CreateProcessInstanceProcessor
       return true;
     }
 
+    createProcessInstance(controller, record, process);
+    return true;
+  }
+
+  private void createProcessInstance(
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final ProcessInstanceCreationRecord record,
+      final DeployedProcess process) {
     final long processInstanceKey = keyGenerator.nextKey();
 
     setVariablesFromDocument(
@@ -118,8 +126,8 @@ public final class CreateProcessInstanceProcessor
         .setVersion(process.getVersion())
         .setProcessDefinitionKey(process.getKey());
     controller.accept(ProcessInstanceCreationIntent.CREATED, record);
+
     metrics.processInstanceCreated(record);
-    return true;
   }
 
   private boolean hasNoneStartEventOrStartInstructions(
