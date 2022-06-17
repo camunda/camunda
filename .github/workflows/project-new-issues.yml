@@ -7,7 +7,7 @@ jobs:
     name: Assign to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@v0.0.3
+      - uses: actions/add-to-project@v0.0.4
         with:
           project-url: https://github.com/orgs/camunda/projects/18
           github-token: ${{ secrets.PROJECT_ADMIN_TOKEN }}
