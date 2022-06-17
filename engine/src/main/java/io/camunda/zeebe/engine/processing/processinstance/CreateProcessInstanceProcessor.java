@@ -146,6 +146,15 @@ public final class CreateProcessInstanceProcessor
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
 
+    return !hasStartInstructionsWithNonExistingElements(controller, process, startInstructions)
+        && !hasStartInstructionsWithMultiInstanceElement(controller, process, startInstructions);
+  }
+
+  private boolean hasStartInstructionsWithNonExistingElements(
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
     return startInstructions.stream()
         .map(ProcessInstanceCreationStartInstruction::getElementId)
         .filter(elementId -> !isElementOfProcess(process, elementId))
@@ -163,6 +172,45 @@ public final class CreateProcessInstanceProcessor
 
   private boolean isElementOfProcess(final ExecutableProcess process, final String elementId) {
     return process.getElementById(wrapString(elementId)) != null;
+  }
+
+  private boolean hasStartInstructionsWithMultiInstanceElement(
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    return startInstructions.stream()
+        .map(ProcessInstanceCreationStartInstruction::getElementId)
+        .filter(elementId -> isElementInsideMultiInstance(process, elementId))
+        .findAny()
+        .map(
+            elementId -> {
+              controller.reject(
+                  RejectionType.INVALID_ARGUMENT,
+                  "Expected to create instance of process with start instructions but the element with id '%s' is inside a multi-instance subprocess. The creation of elements inside a multi-instance subprocess is not supported."
+                      .formatted(elementId));
+              return true;
+            })
+        .orElse(false);
+  }
+
+  private boolean isElementInsideMultiInstance(
+      final ExecutableProcess process, final String elementId) {
+    final var element = process.getElementById(wrapString(elementId));
+    return element != null && hasMultiInstanceScope(element);
+  }
+
+  private boolean hasMultiInstanceScope(final ExecutableFlowElement flowElement) {
+    final var flowScope = flowElement.getFlowScope();
+    if (flowScope == null) {
+      return false;
+    }
+
+    if (flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      return true;
+    } else {
+      return hasMultiInstanceScope(flowScope);
+    }
   }
 
   private boolean setVariablesFromDocument(
