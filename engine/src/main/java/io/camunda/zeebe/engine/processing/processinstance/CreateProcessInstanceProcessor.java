@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -90,15 +91,23 @@ public final class CreateProcessInstanceProcessor
     sideEffectQueue.clear();
 
     final ProcessInstanceCreationRecord record = command.getValue();
-    final DeployedProcess process = getProcess(record, controller);
-    if (process == null
-        || !hasNoneStartEventOrStartInstructions(controller, process, record.startInstructions())
-        || !hasValidStartInstructions(
-            controller, process.getProcess(), record.startInstructions())) {
-      return true;
-    }
+    final var startInstructions = record.startInstructions();
 
-    createProcessInstance(controller, record, process);
+    getProcess(record)
+        .ifRightOrLeft(
+            process -> {
+              final var isValid =
+                  hasNoneStartEventOrStartInstructions(controller, process, startInstructions)
+                      && hasValidStartInstructions(
+                          controller, process.getProcess(), startInstructions);
+              if (!isValid) {
+                return;
+              }
+
+              createProcessInstance(controller, record, process);
+            },
+            rejection -> controller.reject(rejection.type, rejection.reason));
+
     return true;
   }
 
@@ -241,64 +250,62 @@ public final class CreateProcessInstanceProcessor
     return newProcessInstance;
   }
 
-  private DeployedProcess getProcess(
-      final ProcessInstanceCreationRecord record, final CommandControl controller) {
-    final DeployedProcess process;
-
+  private Either<Rejection, DeployedProcess> getProcess(
+      final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {
-        process = getProcess(bpmnProcessId, record.getVersion(), controller);
+        return getProcess(bpmnProcessId, record.getVersion());
       } else {
-        process = getProcess(bpmnProcessId, controller);
+        return getProcess(bpmnProcessId);
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
-      process = getProcess(record.getProcessDefinitionKey(), controller);
+      return getProcess(record.getProcessDefinitionKey());
     } else {
-      controller.reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED);
-      process = null;
+      return Either.left(
+          new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
-
-    return process;
   }
 
-  private DeployedProcess getProcess(
-      final DirectBuffer bpmnProcessId, final CommandControl controller) {
+  private Either<Rejection, DeployedProcess> getProcess(final DirectBuffer bpmnProcessId) {
     final DeployedProcess process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
-    if (process == null) {
-      controller.reject(
-          RejectionType.NOT_FOUND,
-          String.format(ERROR_MESSAGE_NOT_FOUND_BY_PROCESS, bufferAsString(bpmnProcessId)));
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(ERROR_MESSAGE_NOT_FOUND_BY_PROCESS, bufferAsString(bpmnProcessId))));
     }
-
-    return process;
   }
 
-  private DeployedProcess getProcess(
-      final DirectBuffer bpmnProcessId, final int version, final CommandControl controller) {
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final int version) {
     final DeployedProcess process =
         processState.getProcessByProcessIdAndVersion(bpmnProcessId, version);
-    if (process == null) {
-      controller.reject(
-          RejectionType.NOT_FOUND,
-          String.format(
-              ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
-              bufferAsString(bpmnProcessId),
-              version));
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
+                  bufferAsString(bpmnProcessId),
+                  version)));
     }
-
-    return process;
   }
 
-  private DeployedProcess getProcess(final long key, final CommandControl controller) {
+  private Either<Rejection, DeployedProcess> getProcess(final long key) {
     final DeployedProcess process = processState.getProcessByKey(key);
-    if (process == null) {
-      controller.reject(
-          RejectionType.NOT_FOUND, String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key));
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND, String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key)));
     }
-
-    return process;
   }
 
   private void activateElementsForStartInstructions(
@@ -421,4 +428,6 @@ public final class CreateProcessInstanceProcessor
     record.setFlowScopeKey(flowScopeKey);
     return record;
   }
+
+  record Rejection(RejectionType type, String reason) {}
 }
