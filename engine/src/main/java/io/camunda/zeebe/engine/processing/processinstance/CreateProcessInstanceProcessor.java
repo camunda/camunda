@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -53,10 +51,6 @@ public final class CreateProcessInstanceProcessor
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
-  private static final String ERROR_INVALID_VARIABLES_REJECTION_MESSAGE =
-      "Expected to set variables from document, but the document is invalid: '%s'";
-  private static final String ERROR_INVALID_VARIABLES_LOGGED_MESSAGE =
-      "Expected to set variables from document, but the document is invalid";
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
@@ -105,10 +99,9 @@ public final class CreateProcessInstanceProcessor
     }
 
     final long processInstanceKey = keyGenerator.nextKey();
-    if (!setVariablesFromDocument(
-        controller, record, process.getKey(), processInstanceKey, process.getBpmnProcessId())) {
-      return true;
-    }
+
+    setVariablesFromDocument(
+        record, process.getKey(), processInstanceKey, process.getBpmnProcessId());
 
     final var processInstance = initProcessInstanceRecord(process, processInstanceKey);
     if (record.startInstructions().isEmpty()) {
@@ -213,29 +206,18 @@ public final class CreateProcessInstanceProcessor
     }
   }
 
-  private boolean setVariablesFromDocument(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
+  private void setVariablesFromDocument(
       final ProcessInstanceCreationRecord record,
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId) {
-    try {
-      variableBehavior.mergeLocalDocument(
-          processInstanceKey,
-          processDefinitionKey,
-          processInstanceKey,
-          bpmnProcessId,
-          record.getVariablesBuffer());
-    } catch (final MsgpackReaderException e) {
-      Loggers.PROCESS_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);
-      controller.reject(
-          RejectionType.INVALID_ARGUMENT,
-          String.format(ERROR_INVALID_VARIABLES_REJECTION_MESSAGE, e.getMessage()));
 
-      return false;
-    }
-
-    return true;
+    variableBehavior.mergeLocalDocument(
+        processInstanceKey,
+        processDefinitionKey,
+        processInstanceKey,
+        bpmnProcessId,
+        record.getVariablesBuffer());
   }
 
   private ProcessInstanceRecord initProcessInstanceRecord(
