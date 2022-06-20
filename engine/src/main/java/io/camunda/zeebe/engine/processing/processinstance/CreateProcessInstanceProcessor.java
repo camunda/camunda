@@ -35,8 +35,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class CreateProcessInstanceProcessor
@@ -54,6 +58,14 @@ public final class CreateProcessInstanceProcessor
       "Expected to create instance of process with none start event, but there is no such event";
 
   private static final Either<Rejection, Object> VALID = Either.right(null);
+
+  private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
+      Set.of(
+          BpmnElementType.START_EVENT,
+          BpmnElementType.SEQUENCE_FLOW,
+          BpmnElementType.BOUNDARY_EVENT,
+          BpmnElementType.UNSPECIFIED,
+          BpmnElementType.MULTI_INSTANCE_BODY);
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
@@ -139,6 +151,7 @@ public final class CreateProcessInstanceProcessor
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
         .flatMap(valid -> validateElementsExist(process, startInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
+        .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .map(valid -> deployedProcess);
   }
 
@@ -211,6 +224,36 @@ public final class CreateProcessInstanceProcessor
     } else {
       return hasMultiInstanceScope(flowScope);
     }
+  }
+
+  private Either<Rejection, ?> validateTargetsSupportedElementType(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    return startInstructions.stream()
+        .map(
+            instruction ->
+                Tuple.of(
+                    instruction.getElementId(),
+                    process.getElementById(instruction.getElementIdBuffer()).getElementType()))
+        .filter(elementTuple -> UNSUPPORTED_ELEMENT_TYPES.contains(elementTuple.getRight()))
+        .findAny()
+        .map(
+            elementTypeTuple ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        ("Expected to create instance of process with start instructions but the element with id '%s' targets unsupported element type '%s'. "
+                                + "Supported element types are: %s")
+                            .formatted(
+                                elementTypeTuple.getLeft(),
+                                elementTypeTuple.getRight(),
+                                Arrays.stream(BpmnElementType.values())
+                                    .filter(
+                                        elementType ->
+                                            !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
+                                    .collect(Collectors.toSet())))))
+        .orElse(VALID);
   }
 
   private void setVariablesFromDocument(
