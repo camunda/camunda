@@ -281,6 +281,44 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
       );
   }
 
+  @Test
+  public void kpiReportsGetRetrievedWithGroupBy() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    importAllEngineEntitiesFromScratch();
+    String reportId1 = createKpiReport(true, "1", true, PROCESS_DEFINITION_KEY);
+
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+      .build();
+    reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("2");
+
+    KpiResponseDto kpiResponseDto1 = new KpiResponseDto();
+    kpiResponseDto1.setReportId(reportId1);
+    kpiResponseDto1.setReportName("My test report");
+    kpiResponseDto1.setValue("1.0");
+    kpiResponseDto1.setTarget("1");
+    kpiResponseDto1.setIsBelow(true);
+    kpiResponseDto1.setType(KpiType.QUALITY);
+    kpiResponseDto1.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto1.setUnit("");
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+
+    // then
+    assertThat(processes).hasSize(1)
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(
+          PROCESS_DEFINITION_KEY,
+          List.of(kpiResponseDto1)
+        )
+      );
+  }
 
   private String createKpiReport(final Boolean isBelow, final String target, final Boolean isKpi,
                                  final String definitionKey) {

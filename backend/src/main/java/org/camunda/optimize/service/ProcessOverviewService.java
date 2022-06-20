@@ -45,6 +45,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
@@ -114,6 +115,9 @@ public class ProcessOverviewService {
         if (kpiReportsForKey.isPresent()) {
           for (SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto :
             kpiReportsForKey.get()) {
+            if(!singleProcessReportDefinitionRequestDto.getData().getGroupBy().equals(new NoneGroupByDto())) {
+              continue;
+            } else {
             @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
               reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
                 userId,
@@ -137,6 +141,7 @@ public class ProcessOverviewService {
               responseDto.setValue(evaluationValue.toString());
               responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
               kpis.add(responseDto);
+            }
             }
           }
         }
