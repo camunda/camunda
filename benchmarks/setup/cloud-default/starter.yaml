@@ -47,13 +47,13 @@ spec:
                 secretKeyRef:
                   name: cloud-credentials
                   key: authServer
-        resources:
-          limits:
-            cpu: 250m
-            memory: 256Mi
-          requests:
-            cpu: 250m
-            memory: 256Mi
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
