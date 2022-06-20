@@ -127,6 +127,46 @@ func TestCreateProcessInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 	}
 }
 
+func TestCreateProcessInstanceWithStartBeforeElementDirective(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.CreateProcessInstanceRequest{
+		BpmnProcessId: "foo",
+		Version:       56,
+		StartInstructions: []*pb.ProcessInstanceCreationStartInstruction{
+			{
+				ElementId: "my-start-element",
+			},
+			{
+				ElementId: "my-other-start-element",
+			},
+		},
+	}
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+	}
+
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
+
+	response, err := command.BPMNProcessId("foo").Version(56).StartBeforeElement("my-start-element").StartBeforeElement("my-other-start-element").Send(context.Background())
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestCreateProcessInstanceCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

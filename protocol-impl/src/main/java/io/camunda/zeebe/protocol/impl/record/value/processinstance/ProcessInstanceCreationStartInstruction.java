@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class ProcessInstanceCreationStartInstruction extends ObjectValue {
 
@@ -17,6 +19,11 @@ public class ProcessInstanceCreationStartInstruction extends ObjectValue {
 
   public ProcessInstanceCreationStartInstruction() {
     declareProperty(elementIdProp);
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
   }
 
   public String getElementId() {

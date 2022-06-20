@@ -218,7 +218,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -265,7 +265,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       # First, install dependencies with JDK 17
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.3.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -273,7 +273,7 @@ jobs:
       - run: mvn -B -D skipChecks -D skipTests -am -pl clients/java install
       # Then run client tests with JDK 8
       - run: rm .mvn/jvm.config # This is a workaround for java 8, which does not support the --add-exports options
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.3.0
         with:
           java-version: '8'
           distribution: 'temurin'

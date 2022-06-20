@@ -304,7 +304,7 @@ public final class MultiInstanceActivityTest {
       final var expectedNumberOfTerminatedServiceTasks = INPUT_COLLECTION.size() - completedJobs;
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -314,7 +314,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -401,7 +401,7 @@ public final class MultiInstanceActivityTest {
       final var expectedNumberOfTerminatedServiceTasks = INPUT_COLLECTION.size() - completedJobs;
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -411,7 +411,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -539,7 +539,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(processInstanceKey))
@@ -791,7 +791,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .map(Record::getValue)
                 .map(VariableRecordValue::getName))
@@ -941,7 +941,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(processInstanceKey))
@@ -966,7 +966,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(processInstanceKey))
@@ -1001,7 +1001,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withName("loopCounter"))
@@ -1056,7 +1056,7 @@ public final class MultiInstanceActivityTest {
       // after 1 has completed, the others must be terminated
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -1066,7 +1066,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -1119,7 +1119,7 @@ public final class MultiInstanceActivityTest {
       // after 2 has completed, the others must be terminated
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -1129,7 +1129,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -1180,7 +1180,7 @@ public final class MultiInstanceActivityTest {
       final var expectedNumberOfTerminatedServiceTasks = INPUT_COLLECTION.size() - completedJobs;
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -1190,7 +1190,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -1234,7 +1234,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -1282,7 +1282,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withName("global"))
@@ -1381,7 +1381,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withScopeKey(processInstanceKey))
         .extracting(r -> r.getValue().getName())

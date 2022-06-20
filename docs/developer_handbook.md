@@ -9,6 +9,8 @@ This document contains instructions for developers who want to contribute to thi
 * Source code is generated based on the information in that file
 * Make your changes in that file
 * Add comments to new fields/messages you added
+* Java sources for the protobuf classes will be generated automatically with each build
+* Go sources are generated on demand [Go Code Generation](../gateway-protocol-impl/README.md#go-code-generation).
 * Remember to also update the GRPC API documentation https://docs.camunda.io/docs/apis-clients/grpc/
 
 ## How to update the `.gocompat.json` file?

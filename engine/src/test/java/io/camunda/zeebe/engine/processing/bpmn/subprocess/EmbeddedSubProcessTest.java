@@ -557,7 +557,7 @@ public final class EmbeddedSubProcessTest {
     // then the variable is overridden
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withName("x")
                 .withScopeKey(processInstanceKey))

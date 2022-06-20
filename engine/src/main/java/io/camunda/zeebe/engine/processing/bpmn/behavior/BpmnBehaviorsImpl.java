@@ -51,12 +51,12 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookup,
       final Writers writers,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final ProcessEngineMetrics processEngineMetrics) {
 
     final StateWriter stateWriter = writers.state();
     final var commandWriter = writers.command();
     this.expressionBehavior = expressionBehavior;
-    final var metrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
     decisionBehavior =
         new BpmnDecisionBehavior(
@@ -66,7 +66,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateWriter,
             zeebeState.getKeyGenerator(),
             expressionBehavior,
-            metrics);
+            processEngineMetrics);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
@@ -76,7 +76,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnStateTransitionBehavior(
             zeebeState.getKeyGenerator(),
             stateBehavior,
-            metrics,
+            processEngineMetrics,
             processorLookup,
             writers,
             zeebeState.getElementInstanceState());

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -55,7 +56,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final EventTriggerBehavior eventTriggerBehavior,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final ProcessEngineMetrics processEngineMetrics) {
     processState = zeebeState.getProcessState();
 
     final var bpmnBehaviors =
@@ -68,7 +70,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             eventTriggerBehavior,
             this::getContainerProcessor,
             writers,
-            jobMetrics);
+            jobMetrics,
+            processEngineMetrics);
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processors = new BpmnElementProcessors(bpmnBehaviors);
