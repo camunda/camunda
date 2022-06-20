@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
@@ -152,6 +154,8 @@ public final class CreateProcessInstanceProcessor
         .flatMap(valid -> validateElementsExist(process, startInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
+        .flatMap(
+            valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
         .map(valid -> deployedProcess);
   }
 
@@ -254,6 +258,33 @@ public final class CreateProcessInstanceProcessor
                                             !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
                                     .collect(Collectors.toSet())))))
         .orElse(VALID);
+  }
+
+  private Either<Rejection, ?> validateElementNotBelongingToEventBasedGateway(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    return startInstructions.stream()
+        .map(ProcessInstanceCreationStartInstruction::getElementId)
+        .filter(elementId -> doesElementBelongToAnEventBasedGateway(process, elementId))
+        .findAny()
+        .map(
+            elementId ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        "Expected to create instance of process with start instructions but the element with id '%s' belongs to an event-based gateway. The creation of elements belonging to an event-based gateway is not supported."
+                            .formatted(elementId))))
+        .orElse(VALID);
+  }
+
+  private boolean doesElementBelongToAnEventBasedGateway(
+      final ExecutableProcess process, final String elementId) {
+    final ExecutableFlowNode element = process.getElementById(elementId, ExecutableFlowNode.class);
+    return element.getIncoming().stream()
+        .map(ExecutableSequenceFlow::getSource)
+        .anyMatch(
+            flowNode -> flowNode.getElementType().equals(BpmnElementType.EVENT_BASED_GATEWAY));
   }
 
   private void setVariablesFromDocument(
