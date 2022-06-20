@@ -125,10 +125,14 @@ public class ProcessOverviewService {
             final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
             if(!String.valueOf(evaluationValue).equals("null")){
               KpiResponseDto responseDto = new KpiResponseDto();
+              List<String> targetAndUnit = getTargetAndUnit(singleProcessReportDefinitionRequestDto);
+              if(targetAndUnit != null) {
+                responseDto.setTarget(targetAndUnit.get(0));
+                responseDto.setUnit(targetAndUnit.get(1));
+              }
               responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
               responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
               responseDto.setIsBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
-              responseDto.setTarget(getTarget(singleProcessReportDefinitionRequestDto));
               responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
               responseDto.setValue(evaluationValue.toString());
               responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
@@ -222,7 +226,8 @@ public class ProcessOverviewService {
     }
   }
 
-  private String getTarget(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+  private List<String> getTargetAndUnit(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    List<String> targetAndUnit = new ArrayList<>();
     SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
       .getConfiguration()
       .getTargetValue();
@@ -230,9 +235,13 @@ public class ProcessOverviewService {
     if (viewProperty == null) {
       return null;
     } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      return targetValue.getDurationProgress().getTarget().getValue();
+      targetAndUnit.add(0,targetValue.getDurationProgress().getTarget().getValue());
+      targetAndUnit.add(1,targetValue.getDurationProgress().getTarget().getUnit().toString());
+      return targetAndUnit;
     } else {
-      return targetValue.getCountProgress().getTarget();
+      targetAndUnit.add(0,targetValue.getCountProgress().getTarget());
+      targetAndUnit.add(1,"");
+      return targetAndUnit;
     }
   }
 

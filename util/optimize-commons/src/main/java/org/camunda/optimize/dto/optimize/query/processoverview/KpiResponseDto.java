@@ -24,5 +24,6 @@ public class KpiResponseDto {
   private Boolean isBelow;
   private KpiType type;
   private ViewProperty measure;
+  private String unit;
 
 }

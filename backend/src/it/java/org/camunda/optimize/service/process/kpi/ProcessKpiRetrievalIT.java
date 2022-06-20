@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
@@ -49,6 +51,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto1.setIsBelow(true);
     kpiResponseDto1.setType(KpiType.QUALITY);
     kpiResponseDto1.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto1.setUnit("");
 
     KpiResponseDto kpiResponseDto2 = new KpiResponseDto();
     kpiResponseDto2.setReportId(reportId2);
@@ -58,6 +61,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto2.setIsBelow(true);
     kpiResponseDto2.setType(KpiType.QUALITY);
     kpiResponseDto2.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto2.setUnit("");
 
     // when
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
@@ -101,6 +105,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto1.setIsBelow(true);
     kpiResponseDto1.setType(KpiType.QUALITY);
     kpiResponseDto1.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto1.setUnit("");
 
     // when
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
@@ -131,6 +136,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto1.setIsBelow(true);
     kpiResponseDto1.setType(KpiType.QUALITY);
     kpiResponseDto1.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto1.setUnit("");
 
     // when
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
@@ -165,6 +171,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto1.setIsBelow(true);
     kpiResponseDto1.setType(KpiType.QUALITY);
     kpiResponseDto1.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto1.setUnit("");
 
     KpiResponseDto kpiResponseDto2 = new KpiResponseDto();
     kpiResponseDto2.setReportId(reportId2);
@@ -174,6 +181,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto2.setIsBelow(true);
     kpiResponseDto2.setType(KpiType.QUALITY);
     kpiResponseDto2.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto2.setUnit("");
 
     KpiResponseDto kpiResponseDto3 = new KpiResponseDto();
     kpiResponseDto3.setReportId(reportId3);
@@ -183,6 +191,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto3.setIsBelow(true);
     kpiResponseDto3.setType(KpiType.QUALITY);
     kpiResponseDto3.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto3.setUnit("");
 
     KpiResponseDto kpiResponseDto4 = new KpiResponseDto();
     kpiResponseDto4.setReportId(reportId4);
@@ -192,6 +201,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     kpiResponseDto4.setIsBelow(true);
     kpiResponseDto4.setType(KpiType.QUALITY);
     kpiResponseDto4.setMeasure(ViewProperty.FREQUENCY);
+    kpiResponseDto4.setUnit("");
 
     // when
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
@@ -238,6 +248,40 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
       );
   }
 
+  @Test
+  public void kpiUnitGetsReturned() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    importAllEngineEntitiesFromScratch();
+    ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
+    executedFlowNodeFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
+    String reportId1 = createKpiReportWithDurationProgress(true, "1", true, PROCESS_DEFINITION_KEY);
+
+    KpiResponseDto kpiResponseDto1 = new KpiResponseDto();
+    kpiResponseDto1.setReportId(reportId1);
+    kpiResponseDto1.setReportName("My test report");
+    kpiResponseDto1.setValue("0.0");
+    kpiResponseDto1.setTarget("1.0");
+    kpiResponseDto1.setIsBelow(false);
+    kpiResponseDto1.setType(KpiType.TIME);
+    kpiResponseDto1.setMeasure(ViewProperty.DURATION);
+    kpiResponseDto1.setUnit("DAYS");
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+
+    // then
+    assertThat(processes).hasSize(1)
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(
+          PROCESS_DEFINITION_KEY,
+          List.of(kpiResponseDto1)
+        )
+      );
+  }
+
+
   private String createKpiReport(final Boolean isBelow, final String target, final Boolean isKpi,
                                  final String definitionKey) {
     final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
@@ -247,6 +291,20 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(isKpi);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(isBelow);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
+    return reportClient.createSingleProcessReport(reportDataDto);
+  }
+
+  private String createKpiReportWithDurationProgress(final Boolean isBelow, final String target, final Boolean isKpi, final String definitionKey) {
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+      .definitions(List.of(new ReportDataDefinitionDto(definitionKey)))
+      .build();
+    TargetDto targetDto = new TargetDto();
+    targetDto.setValue("1.0");
+    targetDto.setUnit(TargetValueUnit.DAYS);
+    reportDataDto.getView().setProperties(ViewProperty.DURATION);
+    reportDataDto.getConfiguration().getTargetValue().setIsKpi(isKpi);
+    reportDataDto.getConfiguration().getTargetValue().getDurationProgress().setTarget(targetDto);
     return reportClient.createSingleProcessReport(reportDataDto);
   }
 
