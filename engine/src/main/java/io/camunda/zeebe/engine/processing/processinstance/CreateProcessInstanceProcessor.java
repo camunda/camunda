@@ -137,11 +137,8 @@ public final class CreateProcessInstanceProcessor
     final var startInstructions = command.startInstructions();
 
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
-        .flatMap(valid -> validateStartInstructionsIfElementsExist(process, startInstructions))
-        .flatMap(
-            valid ->
-                validateStartInstructionsIfElementsAreInsideMultiInstance(
-                    process, startInstructions))
+        .flatMap(valid -> validateElementsExist(process, startInstructions))
+        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
         .map(valid -> deployedProcess);
   }
 
@@ -157,7 +154,7 @@ public final class CreateProcessInstanceProcessor
     }
   }
 
-  private Either<Rejection, ?> validateStartInstructionsIfElementsExist(
+  private Either<Rejection, ?> validateElementsExist(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
 
@@ -179,7 +176,7 @@ public final class CreateProcessInstanceProcessor
     return process.getElementById(wrapString(elementId)) != null;
   }
 
-  private Either<Rejection, ?> validateStartInstructionsIfElementsAreInsideMultiInstance(
+  private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
 
