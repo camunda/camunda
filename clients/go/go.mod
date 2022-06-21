@@ -13,7 +13,7 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/runc v1.0.3 // indirect
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.3
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.opencensus.io v0.23.0 // indirect
