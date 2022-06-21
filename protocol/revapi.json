@@ -31,6 +31,12 @@
           "justification": "Ignore Enum order for ValueType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
           "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType"
+        },
+        {
+          "justification": "Ignore the removal of this old BpmnElementType that was used for testing.",
+          "code": "java.field.removed",
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType",
+          "fieldName": "TESTING_ONLY"
         }
       ]
     }
