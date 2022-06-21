@@ -37,7 +37,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -236,21 +235,22 @@ public final class CreateProcessInstanceProcessor
     return startInstructions.stream()
         .map(
             instruction ->
-                Tuple.of(
+                new ElementIdAndType(
                     instruction.getElementId(),
                     process.getElementById(instruction.getElementIdBuffer()).getElementType()))
-        .filter(elementTuple -> UNSUPPORTED_ELEMENT_TYPES.contains(elementTuple.getRight()))
+        .filter(
+            elementIdAndType -> UNSUPPORTED_ELEMENT_TYPES.contains(elementIdAndType.elementType))
         .findAny()
         .map(
-            elementTypeTuple ->
+            elementIdAndType ->
                 Either.left(
                     new Rejection(
                         RejectionType.INVALID_ARGUMENT,
                         ("Expected to create instance of process with start instructions but the element with id '%s' targets unsupported element type '%s'. "
                                 + "Supported element types are: %s")
                             .formatted(
-                                elementTypeTuple.getLeft(),
-                                elementTypeTuple.getRight(),
+                                elementIdAndType.elementId,
+                                elementIdAndType.elementType,
                                 Arrays.stream(BpmnElementType.values())
                                     .filter(
                                         elementType ->
@@ -493,4 +493,6 @@ public final class CreateProcessInstanceProcessor
   }
 
   record Rejection(RejectionType type, String reason) {}
+
+  record ElementIdAndType(String elementId, BpmnElementType elementType) {}
 }
