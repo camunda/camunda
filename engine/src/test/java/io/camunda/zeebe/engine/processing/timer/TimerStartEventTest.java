@@ -991,17 +991,12 @@ public final class TimerStartEventTest {
                 .exists())
         .isTrue();
 
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
-                .exists())
-        .isFalse();
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withElementId("process_2")
-                .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
-                .exists())
-        .isFalse();
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(TimerRecordValue::getProcessDefinitionKey, TimerRecordValue::getDueDate)
+        .contains(
+            tuple(firstDeployment.getProcessDefinitionKey(), firstDueDate),
+            tuple(secondDeployment.getProcessDefinitionKey(), secondDueDate));
 
     // when
     engine.increaseTime(Duration.ofSeconds(30));
@@ -1095,46 +1090,26 @@ public final class TimerStartEventTest {
     engine.increaseTime(Duration.ofSeconds(5));
 
     // then
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(firstDeploymentProcessDefinitionKey)
-                .count())
-        .isEqualTo(2);
-
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(secondDeploymentProcessDefinitionKey)
-                .limit(2)
-                .count())
-        .isEqualTo(2);
+    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey);
 
     // when
     engine.increaseTime(Duration.ofSeconds(10));
 
     // then
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(firstDeploymentProcessDefinitionKey)
-                .count())
-        .isEqualTo(2);
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                .withElementId("process_1")
-                .withProcessDefinitionKey(firstDeploymentProcessDefinitionKey)
-                .count())
-        .isEqualTo(2);
-
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(secondDeploymentProcessDefinitionKey)
-                .count())
-        .isEqualTo(3);
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                .withElementId("process_2")
-                .withProcessDefinitionKey(secondDeploymentProcessDefinitionKey)
-                .count())
-        .isEqualTo(3);
+    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey);
   }
 
   @Test
@@ -1194,7 +1169,8 @@ public final class TimerStartEventTest {
     final TimerRecordValue lastTimerRecord =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
             .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
-            .getLast()
+            .skip(1)
+            .getFirst()
             .getValue();
 
     Assertions.assertThat(lastTimerRecord)
@@ -1205,12 +1181,14 @@ public final class TimerStartEventTest {
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .limit(2)
                 .count())
         .isEqualTo(2);
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process")
                 .withProcessDefinitionKey(processDefinitionKey)
+                .limit(2)
                 .count())
         .isEqualTo(2);
   }
