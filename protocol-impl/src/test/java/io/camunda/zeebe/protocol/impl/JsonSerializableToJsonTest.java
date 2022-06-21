@@ -724,7 +724,8 @@ final class JsonSerializableToJsonTest {
                   .setVariables(
                       new UnsafeBuffer(
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
-                  .addStartInstruction(new ProcessInstanceCreationStartInstruction().setElementId("element"))
+                  .addStartInstruction(
+                      new ProcessInstanceCreationStartInstruction().setElementId("element"))
                   .setProcessInstanceKey(instanceKey);
             },
         "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2,'startInstructions':[{'elementId':'element'}]}"
