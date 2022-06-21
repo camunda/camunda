@@ -66,8 +66,7 @@ public final class CreateProcessInstanceProcessor
           BpmnElementType.START_EVENT,
           BpmnElementType.SEQUENCE_FLOW,
           BpmnElementType.BOUNDARY_EVENT,
-          BpmnElementType.UNSPECIFIED,
-          BpmnElementType.MULTI_INSTANCE_BODY);
+          BpmnElementType.UNSPECIFIED);
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
