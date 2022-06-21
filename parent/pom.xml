@@ -68,9 +68,9 @@
     <version.msgpack>0.9.1</version.msgpack>
     <version.netty>4.1.77.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
-    <version.prometheus>0.15.0</version.prometheus>
+    <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.1</version.protobuf>
-    <version.protobuf-common>2.8.3</version.protobuf-common>
+    <version.protobuf-common>2.9.0</version.protobuf-common>
     <version.micrometer>1.9.0</version.micrometer>
     <version.rocksdbjni>7.2.2</version.rocksdbjni>
     <version.sbe>1.25.3</version.sbe>
@@ -118,7 +118,7 @@
     <plugin.version.compiler>3.10.1</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.12.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.3.0</plugin.version.dependency>
-    <plugin.version.enforcer>3.0.0</plugin.version.enforcer>
+    <plugin.version.enforcer>3.1.0</plugin.version.enforcer>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M7</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
@@ -129,7 +129,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.2.0</plugin.version.resources>
     <plugin.version.revapi>0.14.6</plugin.version.revapi>
-    <plugin.version.scala>4.6.1</plugin.version.scala>
+    <plugin.version.scala>4.6.3</plugin.version.scala>
     <plugin.version.shade>3.3.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.0.0</plugin.version.spotbugs>
