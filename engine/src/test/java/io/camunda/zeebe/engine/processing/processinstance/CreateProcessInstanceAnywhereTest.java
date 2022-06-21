@@ -13,6 +13,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -641,11 +642,15 @@ public class CreateProcessInstanceAnywhereTest {
             .create();
 
     // when
-    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
     ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
 
     RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -733,11 +738,15 @@ public class CreateProcessInstanceAnywhereTest {
             .create();
 
     // when
-    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
     ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
 
     RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
