@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -37,4 +38,15 @@ public interface ProcessInstanceCreationRecordValue
    * @return the unique key of the BPMN process definition to create a process from
    */
   long getProcessDefinitionKey();
+
+  /**
+   * @return list of start instructions (if available)
+   */
+  List<ProcessInstanceCreationStartInstructionValue> getStartInstructions();
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
+  interface ProcessInstanceCreationStartInstructionValue {
+    String getElementId();
+  }
 }

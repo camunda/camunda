@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -723,9 +724,10 @@ final class JsonSerializableToJsonTest {
                   .setVariables(
                       new UnsafeBuffer(
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
+                  .addStartInstruction(new ProcessInstanceCreationStartInstruction().setElementId("element"))
                   .setProcessInstanceKey(instanceKey);
             },
-        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2}"
+        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2,'startInstructions':[{'elementId':'element'}]}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -734,7 +736,7 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceCreationRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceCreationRecord::new,
-        "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1}"
+        "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1, 'startInstructions':[]}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

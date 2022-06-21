@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
@@ -68,6 +69,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setProcessDefinitionKey(final long key) {
     processDefinitionKeyProperty.setValue(key);
     return this;
+  }
+
+  @Override
+  public List<ProcessInstanceCreationStartInstructionValue> getStartInstructions() {
+    return startInstructionsProperty.stream().collect(Collectors.toList());
   }
 
   public ProcessInstanceCreationRecord setVersion(final int version) {

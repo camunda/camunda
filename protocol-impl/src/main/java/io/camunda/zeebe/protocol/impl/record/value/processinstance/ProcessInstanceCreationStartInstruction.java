@@ -8,12 +8,16 @@
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class ProcessInstanceCreationStartInstruction extends ObjectValue {
+@JsonIgnoreProperties({"encodedLength"})
+public class ProcessInstanceCreationStartInstruction extends ObjectValue
+    implements ProcessInstanceCreationStartInstructionValue {
 
   private final StringProperty elementIdProp = new StringProperty("elementId");
 
@@ -26,6 +30,7 @@ public class ProcessInstanceCreationStartInstruction extends ObjectValue {
     return elementIdProp.getValue();
   }
 
+  @Override
   public String getElementId() {
     return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
