@@ -41,7 +41,7 @@ spec:
           cpu: 8
           memory: 32Gi
     - name: golang
-      image: golang:1.15.15
+      image: golang:1.17.11
       command: ["cat"]
       tty: true
       resources:
