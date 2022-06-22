@@ -71,6 +71,8 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version-file: 'clients/go/go.mod'
+          cache: true
+          cache-dependency-path: 'clients/go/go.sum'
       - name: Build Go
         run: ./build.sh
         working-directory: clients/go/cmd/zbctl
