@@ -180,6 +180,7 @@ final class ControlledActorClockEndpointIT {
     final AtomicInteger previouslySeenRecords = new AtomicInteger(1);
     Awaitility.await("Waiting for a stable number of exported records")
         .during(Duration.ofSeconds(5))
+        .timeout(Duration.ofSeconds(30))
         .until(
             this::getExportedRecordsCount,
             (recordCount) -> {
