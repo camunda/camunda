@@ -1,6 +1,6 @@
 module github.com/camunda-cloud/zeebe/clients/go
 
-go 1.15
+go 1.17
 
 require (
 	github.com/docker/docker v20.10.11+incompatible
