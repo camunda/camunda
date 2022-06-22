@@ -49,12 +49,6 @@ final class SnapshotTest {
     final long key = testCase.runBefore(state);
 
     // when
-    // it's necessary to restart without the debug exporter to allow snapshotting
-    state.close();
-    state.broker(LAST_VERSION).start(false);
-    // there's a slight chance that we'd processed everything before shutting down, so we send a
-    // dummy message to ensure we have processed something since we recovered and so take a snapshot
-    sendDummyMessageToEnforceSnapshot(state);
     EitherAssert.assertThat(state.getPartitionsActuatorClient().takeSnapshot())
         .as("expect successful response as right member")
         .isRight();
