@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerNode;
@@ -20,7 +19,6 @@ import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Use ToxiProxy. Even though it does not support UDP, we can still use ToxiProxy because only
+ * Use Toxiproxy. Even though it does not support UDP, we can still use Toxiproxy because only
  * "gossip" messages use UDP. SWIM has other messages to probe and sync that uses TCP. So the
  * brokers can still find each other.
  */
@@ -92,7 +90,7 @@ final class AdvertisedAddressTest {
     // when - send a message to verify the gateway can talk to the broker directly not just via
     // gossip
     try (final var client = cluster.newClientBuilder().build()) {
-      final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
+      final var topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       final var messageSend =
           client
               .newPublishMessageCommand()
@@ -107,7 +105,7 @@ final class AdvertisedAddressTest {
               .map(ZeebeNode::getInternalHost)
               .map(host -> toxiproxy.getProxy(host, ZeebePort.COMMAND.getPort()))
               .map(ContainerProxy::getOriginalProxyPort)
-              .collect(Collectors.toList());
+              .toList();
       TopologyAssert.assertThat(topology)
           .isComplete(3, 1)
           .hasBrokerSatisfying(
@@ -130,10 +128,9 @@ final class AdvertisedAddressTest {
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
-    final String hostName = broker.getInternalHost();
+    final var hostName = broker.getInternalHost();
     final var commandApiProxy = toxiproxy.getProxy(hostName, ZeebePort.COMMAND.getPort());
     final var internalApiProxy = toxiproxy.getProxy(hostName, ZeebePort.INTERNAL.getPort());
-    final var monitoringApiProxy = toxiproxy.getProxy(hostName, ZeebePort.MONITORING.getPort());
 
     initialContactPoints.add(
         TOXIPROXY_NETWORK_ALIAS + ":" + internalApiProxy.getOriginalProxyPort());
@@ -151,24 +148,26 @@ final class AdvertisedAddressTest {
         .withEnv(
             "ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDPORT",
             String.valueOf(internalApiProxy.getOriginalProxyPort()))
-        .withEnv("ZEEBE_BROKER_NETWORK_MONITORINGAPI_ADVERTISEDHOST", TOXIPROXY_NETWORK_ALIAS)
-        .withEnv(
-            "ZEEBE_BROKER_NETWORK_MONITORINGAPI_ADVERTISEDPORT",
-            String.valueOf(monitoringApiProxy.getOriginalProxyPort()))
-        // Since gossip does not work with ToxiProxy, increase the sync interval so changes are
+        // Since gossip does not work with Toxiproxy, increase the sync interval so changes are
         // propagated faster
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "100ms");
   }
 
   private void configureGateway(final ZeebeGatewayNode<?> gateway) {
-    // gateway is not behind proxy
-    final ZeebeBrokerNode<?> contactPoint = cluster.getBrokers().get(0);
-    final ContainerProxy contactPointProxy =
+    final var gatewayClusterProxy =
+        toxiproxy.getProxy(gateway.getInternalHost(), ZeebePort.INTERNAL.getPort());
+    final var contactPoint = cluster.getBrokers().get(0);
+    final var contactPointProxy =
         toxiproxy.getProxy(contactPoint.getInternalHost(), ZeebePort.INTERNAL.getPort());
 
-    gateway.withEnv(
-        "ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT",
-        TOXIPROXY_NETWORK_ALIAS + ":" + contactPointProxy.getOriginalProxyPort());
+    gateway
+        .withEnv(
+            "ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT",
+            TOXIPROXY_NETWORK_ALIAS + ":" + contactPointProxy.getOriginalProxyPort())
+        .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", TOXIPROXY_NETWORK_ALIAS)
+        .withEnv(
+            "ZEEBE_GATEWAY_CLUSTER_ADVERTISEDPORT",
+            String.valueOf(gatewayClusterProxy.getOriginalProxyPort()));
     gateway.setDockerImageName(
         ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
   }
