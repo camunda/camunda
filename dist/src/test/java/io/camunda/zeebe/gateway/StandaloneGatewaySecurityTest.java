@@ -60,11 +60,8 @@ final class StandaloneGatewaySecurityTest {
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
 
-    // when
-    gateway = buildGateway(cfg);
-
-    // then
-    assertThatCode(() -> gateway.run())
+    // when - then
+    assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the configured cluster security certificate chain path "
@@ -77,11 +74,8 @@ final class StandaloneGatewaySecurityTest {
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setPrivateKeyPath(new File("/tmp/i-dont-exist.key"));
 
-    // when
-    gateway = buildGateway(cfg);
-
-    // then
-    assertThatCode(() -> gateway.run())
+    // when - then
+    assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the configured cluster security private key path '/tmp/i-dont-exist.key' to "
@@ -94,11 +88,8 @@ final class StandaloneGatewaySecurityTest {
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setPrivateKeyPath(null);
 
-    // when
-    gateway = buildGateway(cfg);
-
-    // then
-    assertThatCode(() -> gateway.run())
+    // when - then
+    assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have a valid private key path for cluster security, but none was configured");
@@ -110,11 +101,8 @@ final class StandaloneGatewaySecurityTest {
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setCertificateChainPath(null);
 
-    // when
-    gateway = buildGateway(cfg);
-
-    // then
-    assertThatCode(() -> gateway.run())
+    // when - then
+    assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have a valid certificate chain path for cluster security, but none "
@@ -141,7 +129,12 @@ final class StandaloneGatewaySecurityTest {
   }
 
   private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
+    final AtomixComponent clusterComponent = new AtomixComponent(gatewayCfg);
+
     return new StandaloneGateway(
-        gatewayCfg, new SpringGatewayBridge(), new ActorClockConfiguration(false));
+        gatewayCfg,
+        new SpringGatewayBridge(),
+        new ActorClockConfiguration(false),
+        clusterComponent.createAtomixCluster());
   }
 }
