@@ -129,6 +129,10 @@ final class ControlledActorClockEndpointIT {
         .collect(Collectors.toList());
   }
 
+  private int getExportedRecordsCount() throws IOException, InterruptedException {
+    return searchExportedRecords().size();
+  }
+
   void startElasticsearch() {
     final var version = RestClient.class.getPackage().getImplementationVersion();
     elasticsearchContainer =
@@ -177,11 +181,10 @@ final class ControlledActorClockEndpointIT {
     Awaitility.await("Waiting for a stable number of exported records")
         .during(Duration.ofSeconds(5))
         .until(
-            this::searchExportedRecords,
-            (records) -> {
-              final var now = records.size();
-              final var previous = previouslySeenRecords.getAndSet(now);
-              return now == previous;
+            this::getExportedRecordsCount,
+            (recordCount) -> {
+              final var previous = previouslySeenRecords.getAndSet(recordCount);
+              return recordCount == previous;
             });
   }
 
