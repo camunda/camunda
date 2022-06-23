@@ -2,7 +2,7 @@
 
 # configure Jenkins GitHub user for GO container
 git config --global user.email "ci@camunda.com"
-git config --global user.name "${GITHUB_TOKEN_USR}"
+git config --global user.name "ci.automation[bot]"
 
 # install binary tools; these are installed under $GOPATH/bin
 # NOTE: this will not work on Go > 1.16 - instead we'll have to replace `go get -u` with
