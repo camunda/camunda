@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
@@ -181,5 +182,20 @@ public class RepeatingIntervalTest {
 
     // then
     assertThat(parsed).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldCalculateDueDate() {
+    // given
+    final Interval interval = new Interval(Period.ZERO, Duration.ofSeconds(10));
+    final long dueDate = interval.toEpochMilli(System.currentTimeMillis());
+    final long expected = dueDate + 10_000L;
+
+    // when
+    final long newDueDate =
+        interval.withStart(Instant.ofEpochMilli(dueDate)).toEpochMilli(System.currentTimeMillis());
+
+    // then
+    assertThat(newDueDate).isEqualTo(expected);
   }
 }

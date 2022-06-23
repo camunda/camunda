@@ -929,8 +929,8 @@ public final class TimerStartEventTest {
             Instant.ofEpochMilli(engine.getClock().getCurrentTimeInMillis()),
             ZoneId.systemDefault());
 
-    final long firstDueDate = start.plusSeconds(20).toInstant().toEpochMilli();
-    final long secondDueDate = start.plusSeconds(50).toInstant().toEpochMilli();
+    final long firstDueDate = start.plusSeconds(10).toInstant().toEpochMilli();
+    final long secondDueDate = start.plusSeconds(40).toInstant().toEpochMilli();
     final BpmnModelInstance firstModel =
         Bpmn.createExecutableProcess("process_1")
             .startEvent("start_1")
@@ -999,7 +999,7 @@ public final class TimerStartEventTest {
             tuple(secondDeployment.getProcessDefinitionKey(), secondDueDate));
 
     // when
-    engine.increaseTime(Duration.ofSeconds(30));
+    engine.increaseTime(Duration.ofSeconds(20));
 
     // then
     assertThat(
@@ -1122,8 +1122,8 @@ public final class TimerStartEventTest {
                 ZoneId.systemDefault())
             .plusSeconds(10);
 
-    final long dueDate = start.plusSeconds(10).toInstant().toEpochMilli();
-    final long lastDueDate = start.plusSeconds(20).toInstant().toEpochMilli();
+    final long dueDate = start.toInstant().toEpochMilli();
+    final long lastDueDate = dueDate + 10_000L;
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
@@ -1141,7 +1141,7 @@ public final class TimerStartEventTest {
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
     // when
-    engine.increaseTime(Duration.ofSeconds(25));
+    engine.increaseTime(Duration.ofSeconds(15));
 
     // then
     final TimerRecordValue timerRecord =

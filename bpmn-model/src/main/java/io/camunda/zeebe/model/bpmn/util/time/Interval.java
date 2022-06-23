@@ -86,7 +86,7 @@ public class Interval implements TemporalAmount {
           .toEpochMilli();
     }
 
-    return start.get().plus(this).toInstant().toEpochMilli();
+    return start.get().toInstant().toEpochMilli();
   }
 
   /**
@@ -98,7 +98,7 @@ public class Interval implements TemporalAmount {
   public Interval withStart(final Instant start) {
     final ZoneId zoneId = getStart().map(ZonedDateTime::getZone).orElse(ZoneId.systemDefault());
     return new Interval(
-        Optional.of(ZonedDateTime.ofInstant(start, zoneId)), getPeriod(), getDuration());
+        Optional.of(ZonedDateTime.ofInstant(start, zoneId).plus(this)), getPeriod(), getDuration());
   }
 
   /**
