@@ -74,7 +74,7 @@ final class SecureClusteredMessagingIT {
 
     // then - ensure the cluster is formed correctly and all inter-cluster communication endpoints
     // are secured using the expected certificate
-    TopologyAssert.assertThat(topology).hasBrokersCount(2).isComplete(2, 1);
+    TopologyAssert.assertThat(topology).hasBrokersCount(2).isComplete(2, 1, 2);
     cluster
         .getBrokers()
         .forEach(

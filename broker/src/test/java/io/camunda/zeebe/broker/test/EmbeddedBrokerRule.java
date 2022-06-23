@@ -254,8 +254,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
                   TopologyAssert.assertThat(topology)
                       .isComplete(
                           brokerCfg.getCluster().getClusterSize(),
-                          brokerCfg.getCluster().getPartitionsCount())
-                      .isHealthy();
+                          brokerCfg.getCluster().getPartitionsCount(),
+                          brokerCfg.getCluster().getReplicationFactor());
                 });
       }
     }
