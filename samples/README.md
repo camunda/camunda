@@ -1,8 +1,3 @@
-# Zeebe Java Client Examples
+# Zeebe Examples
 
-This Maven project contains a number of examples each performing a specific task using the Zeebe
-Java client.
-
-For an overview and context have a look at
-the [Zeebe documentation](https://docs.camunda.io/docs/product-manuals/clients/java-client-examples/index)
-;
+The examples have been moved to https://github.com/camunda-community-hub/camunda-8-examples/tree/main/zeebe-client-plain-java

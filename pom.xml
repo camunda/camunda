@@ -21,7 +21,6 @@
     <module>atomix</module>
     <module>broker</module>
     <module>protocol-test-util</module>
-    <module>samples</module>
     <module>dist</module>
     <module>protocol</module>
     <module>bpmn-model</module>
