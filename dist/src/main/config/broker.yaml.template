@@ -90,6 +90,16 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT.
         # port: 26501
 
+        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST.
+        # advertisedHost: 0.0.0.0
+
+        # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDPORT.
+        # advertisedPort: 25601
+
       # internalApi:
         # Overrides the host used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_HOST.
@@ -98,6 +108,16 @@
         # Sets the port used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
+
+        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDHOST.
+        # advertisedHost: 0.0.0.0
+
+        # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDPORT.
+        # advertisedPort: 25602
 
     # data:
       # This section allows to configure Zeebe's data storage. Data is stored in
