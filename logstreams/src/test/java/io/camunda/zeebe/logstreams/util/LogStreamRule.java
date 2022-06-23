@@ -10,9 +10,9 @@ package io.camunda.zeebe.logstreams.util;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 

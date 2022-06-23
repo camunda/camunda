@@ -23,7 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;

@@ -9,10 +9,10 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.scheduler.error.FatalErrorHandler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

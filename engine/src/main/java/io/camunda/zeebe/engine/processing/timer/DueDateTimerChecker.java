@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.FeatureFlags;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Function;
 

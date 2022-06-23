@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.function.BooleanSupplier;
 
 public final class ProcessingContext implements ReadonlyProcessingContext {

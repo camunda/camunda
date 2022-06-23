@@ -29,7 +29,7 @@ import io.atomix.utils.concurrent.AtomixFuture;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
-import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.scheduler.health.FailureListener;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;

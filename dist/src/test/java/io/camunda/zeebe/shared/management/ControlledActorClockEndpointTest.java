@@ -9,8 +9,8 @@ package io.camunda.zeebe.shared.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockEndpoint.Response;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.time.Instant;
 import org.assertj.core.api.Assertions;

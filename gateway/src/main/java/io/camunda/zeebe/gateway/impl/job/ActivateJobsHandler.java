@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.impl.job;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 

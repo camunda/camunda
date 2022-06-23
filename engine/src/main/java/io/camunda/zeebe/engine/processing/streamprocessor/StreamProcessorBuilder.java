@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

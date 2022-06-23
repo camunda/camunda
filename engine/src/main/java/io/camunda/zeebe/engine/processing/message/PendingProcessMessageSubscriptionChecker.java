@@ -12,9 +12,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingCont
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 
 public final class PendingProcessMessageSubscriptionChecker

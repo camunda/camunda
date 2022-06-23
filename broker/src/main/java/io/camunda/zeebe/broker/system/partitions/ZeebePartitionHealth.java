@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.util.health.FailureListener;
-import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.scheduler.health.FailureListener;
+import io.camunda.zeebe.scheduler.health.HealthMonitorable;
+import io.camunda.zeebe.scheduler.health.HealthReport;
+import io.camunda.zeebe.scheduler.health.HealthStatus;
 import java.util.HashSet;
 import java.util.Set;
 

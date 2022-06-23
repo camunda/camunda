@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 
 public final class StubbedGatewayRule extends ExternalResource {

@@ -15,8 +15,8 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistribu
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

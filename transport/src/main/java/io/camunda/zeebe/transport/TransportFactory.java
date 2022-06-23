@@ -8,9 +8,9 @@
 package io.camunda.zeebe.transport;
 
 import io.atomix.cluster.messaging.MessagingService;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
 
 public final class TransportFactory {
 

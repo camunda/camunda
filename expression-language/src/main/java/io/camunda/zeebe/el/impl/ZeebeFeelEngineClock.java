@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.el.impl;
 
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;

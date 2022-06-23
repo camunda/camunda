@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface PartitionAdminAccess {
   ActorFuture<Void> takeSnapshot();

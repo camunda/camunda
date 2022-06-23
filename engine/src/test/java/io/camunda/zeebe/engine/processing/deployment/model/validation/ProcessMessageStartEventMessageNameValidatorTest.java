@@ -21,7 +21,7 @@ import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
-import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.scheduler.ActorCondition;
 import org.junit.jupiter.api.Test;
 
 final class SubscriptionConsumerTest {

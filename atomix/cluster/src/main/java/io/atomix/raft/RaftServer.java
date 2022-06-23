@@ -32,7 +32,7 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
-import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.scheduler.health.FailureListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
