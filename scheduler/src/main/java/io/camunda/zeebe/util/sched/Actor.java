@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.util.sched;
 
-import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Collections;
@@ -17,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public abstract class Actor implements CloseableSilently, AsyncClosable, ConcurrencyControl {
+public abstract class Actor implements AutoCloseable, AsyncClosable, ConcurrencyControl {
 
   public static final String ACTOR_PROP_NAME = "actor-name";
   public static final String ACTOR_PROP_PARTITION_ID = "partitionId";
@@ -168,7 +167,7 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
             }
 
             @Override
-            public void accept(ActorControl t) {
+            public void accept(final ActorControl t) {
               if (actorStartedHandler != null) {
                 actorStartedHandler.accept(t);
               }

@@ -16,13 +16,13 @@ import static io.camunda.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
-import io.camunda.zeebe.util.TestUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -241,8 +241,7 @@ public final class ActorLifecyclePhasesTest {
     // when
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
-
-    TestUtil.waitUntil(() -> invocations.get() >= 10);
+    Awaitility.await().until(() -> invocations.get() >= 10);
 
     actor.closeAsync();
     schedulerRule.workUntilDone();

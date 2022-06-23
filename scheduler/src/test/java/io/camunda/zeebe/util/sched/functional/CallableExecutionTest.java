@@ -10,13 +10,13 @@ package io.camunda.zeebe.util.sched.functional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.util.TestUtil;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,7 +51,7 @@ public final class CallableExecutionTest {
     barrier.await(); // signal actor to continue
 
     // then
-    TestUtil.waitUntil(() -> future.isDone());
+    Awaitility.await().until(future::isDone);
     assertThat(future).isDone();
     assertThatThrownBy(() -> future.get())
         .isInstanceOf(ExecutionException.class)

@@ -33,7 +33,7 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
+      <artifactId>zeebe-scheduler</artifactId>
     </dependency>
 
     <dependency>

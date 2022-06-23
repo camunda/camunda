@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.util.health;
 
-import static io.camunda.zeebe.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.util.sched.Actor;
@@ -15,6 +14,7 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.HashSet;
 import java.util.Set;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -126,7 +126,7 @@ public class CriticalComponentsHealthMonitorTest {
     // given
     final ControllableComponent component = new ControllableComponent();
     monitor.registerComponent("test", component);
-    waitUntil(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
+    Awaitility.await().until(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
 
     // when
     monitor.removeComponent("test");

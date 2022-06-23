@@ -9,6 +9,7 @@ package io.camunda.zeebe.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.util.sched.BoundedArrayQueue;
 import org.junit.Test;
 
 public final class BoundedArrayQueueTest {

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.util.sched;
 
-import io.camunda.zeebe.util.BoundedArrayQueue;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
