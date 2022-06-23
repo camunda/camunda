@@ -429,6 +429,14 @@
       </dependency>
 
       <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-scheduler</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>

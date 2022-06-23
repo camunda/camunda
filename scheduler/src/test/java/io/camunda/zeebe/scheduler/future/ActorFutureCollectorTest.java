@@ -10,7 +10,7 @@ package io.camunda.zeebe.scheduler.future;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.scheduler.TestConcurrencyControl;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

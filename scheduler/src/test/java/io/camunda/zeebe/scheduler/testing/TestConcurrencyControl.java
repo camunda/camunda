@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.scheduler;
+package io.camunda.zeebe.scheduler.testing;
 
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import java.util.function.BiConsumer;
 
 /**
