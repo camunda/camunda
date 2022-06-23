@@ -3,16 +3,22 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.process.goals;
+package org.camunda.optimize.service.process;
 
+import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,14 +26,18 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
+public class ProcessOwnerIT extends AbstractIT {
+
+  protected static final String DEF_KEY = "def_key";
+  private ProcessOwnerDto processOwnerDto = new ProcessOwnerDto("DEFAULT_USERNAME");
 
   @Test
   public void setProcessOwner_notPossibleForUnauthenticatedUser() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .withoutAuthentication()
       .execute();
 
@@ -39,7 +49,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
   public void setProcessOwner_noDefinitionExistsForKey() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .execute();
 
     // then
@@ -59,7 +69,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, ownerDto)
+      .buildSetProcessOwnerRequest(DEF_KEY, ownerDto)
       .execute();
 
     // then
@@ -73,11 +83,11 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
-    setOwnerForProcess(DEF_KEY, KERMIT_USER);
+    setProcessOwner(DEF_KEY, processOwnerDto);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .execute();
 
     // then
@@ -90,11 +100,11 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
     // given
     deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
-    setOwnerForProcess(DEF_KEY, DEFAULT_USERNAME);
+    setProcessOwner(DEF_KEY, processOwnerDto);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(null))
+      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessOwnerDto(null))
       .execute();
 
     // then
@@ -107,11 +117,11 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
     // given
     deploySimpleProcessDefinition(DEF_KEY);
     importAllEngineEntitiesFromScratch();
-    setOwnerForProcess(DEF_KEY, DEFAULT_USERNAME);
+    setProcessOwner(DEF_KEY, processOwnerDto);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, null)
+      .buildSetProcessOwnerRequest(DEF_KEY, null)
       .execute();
 
     // then
@@ -126,7 +136,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequest(DEF_KEY, new ProcessOwnerDto(DEFAULT_USERNAME))
       .execute();
 
     // then
@@ -145,7 +155,7 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(defKey, new ProcessOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequest(defKey, new ProcessOwnerDto(DEFAULT_USERNAME))
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
@@ -165,12 +175,40 @@ public class ProcessGoalsOwnerIT extends AbstractProcessGoalsIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequestOld(defKey, new ProcessOwnerDto(DEFAULT_USERNAME))
+      .buildSetProcessOwnerRequest(defKey, new ProcessOwnerDto(DEFAULT_USERNAME))
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(processDefinitionKey));
+  }
+
+  private void assertExpectedProcessOwner(final String defKey, final String expectedOwnerId) {
+    assertThat(getProcessOverView())
+      .filteredOn(def -> def.getProcessDefinitionKey().equals(defKey))
+      .extracting(ProcessOverviewResponseDto::getOwner)
+      .singleElement()
+      .satisfies(processOwner -> assertThat(processOwner)
+        .isEqualTo(expectedOwnerId == null ? new ProcessOwnerResponseDto()
+                     : new ProcessOwnerResponseDto(expectedOwnerId, embeddedOptimizeExtension.getIdentityService()
+          .getIdentityNameById(expectedOwnerId)
+          .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
+  }
+
+  protected List<ProcessOverviewResponseDto> getProcessOverView() {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessOverviewRequest()
+      .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  protected void setProcessOwner(final String processDefKey, final ProcessOwnerDto processOwnerDto) {
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildSetProcessOwnerRequest(processDefKey, processOwnerDto)
+      .execute();
   }
 
 }

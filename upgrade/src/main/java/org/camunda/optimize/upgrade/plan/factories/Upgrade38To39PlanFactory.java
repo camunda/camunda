@@ -7,12 +7,14 @@ package org.camunda.optimize.upgrade.plan.factories;
 
 import org.camunda.optimize.service.es.schema.index.CollectionIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessGoalIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
 public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
@@ -25,6 +27,7 @@ public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDashboards())
       .addUpgradeStep(updateCollectionsIndexWithNewField())
+      .addUpgradeStep(deleteProcessGoalIndex())
       .build();
   }
 
@@ -34,6 +37,10 @@ public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
       "ctx._source.automaticallyCreated = false;";
     // @formatter:on
     return new UpdateIndexStep(new CollectionIndex(), updateScript);
+  }
+
+  private static DeleteIndexIfExistsStep deleteProcessGoalIndex() {
+    return new DeleteIndexIfExistsStep(new ProcessGoalIndex());
   }
 
   private static UpgradeStep migrateDecisionReports() {

@@ -58,7 +58,7 @@ public class ProcessOverviewRestService {
   }
 
   @PUT
-  @Path("/{processDefinitionKey}/owner-new") // TODO remove "-new" with OPT-6175
+  @Path("/{processDefinitionKey}/owner")
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateProcessOwner(@Context final ContainerRequestContext requestContext,
                                  @PathParam("processDefinitionKey") final String processDefKey,

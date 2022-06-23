@@ -497,45 +497,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
-    return buildGetProcessGoalsRequest(null);
-  }
-
-  public OptimizeRequestExecutor buildGetProcessGoalsRequest(ProcessGoalSorter sorter) {
-    this.path = "process/goals";
-    this.method = GET;
-    Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildUpdateProcessGoalsRequest(final String processDefinitionKey,
-                                                                final List<ProcessDurationGoalDto> goals) {
-    this.path = "process/" + processDefinitionKey + "/goals";
-    this.method = PUT;
-    this.body = getBody(goals);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildEvaluateProcessGoalsRequest(final String processDefinitionKey,
-                                                                  final List<ProcessDurationGoalDto> goals) {
-    this.path = "process/" + processDefinitionKey + "/goals/evaluate";
-    this.method = POST;
-    this.body = getBody(goals);
-    return this;
-  }
-
   public OptimizeRequestExecutor buildSetProcessOwnerRequest(final String processDefinitionKey,
                                                              final ProcessOwnerDto owner) {
-    // TODO modify with OPT-6175
-    this.path = "process/" + processDefinitionKey + "/owner-new";
-    this.method = PUT;
-    this.body = getBody(owner);
-    return this;
-  }
-
-  // TODO remove with OPT-6175
-  public OptimizeRequestExecutor buildSetProcessOwnerRequestOld(final String processDefinitionKey,
-                                                                final ProcessOwnerDto owner) {
     this.path = "process/" + processDefinitionKey + "/owner";
     this.method = PUT;
     this.body = getBody(owner);

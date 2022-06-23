@@ -1,0 +1,2 @@
+{"index":{"_index":"optimize-process-goals_v1","_id":"firstProcessDefinition"}}
+{"processDefinitionKey": "firstProcessDefinition", "owner": null, "durationGoals": [ { "type": "slaDuration", "percentile": 50, "value": 5, "unit": "days" }]}
