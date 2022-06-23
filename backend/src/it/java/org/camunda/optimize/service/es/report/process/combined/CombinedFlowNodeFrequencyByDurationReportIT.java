@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.process.combined;
 
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION;
+import static org.camunda.optimize.service.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION;
 
 public class CombinedFlowNodeFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
 

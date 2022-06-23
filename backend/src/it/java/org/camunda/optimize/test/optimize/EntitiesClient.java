@@ -45,7 +45,15 @@ public class EntitiesClient {
 
   public EntityNameResponseDto getEntityNames(String collectionId, String dashboardId,
                                               String reportId, String eventProcessId) {
+    return getEntityNamesAsUser(collectionId, dashboardId, reportId, eventProcessId,
+                                DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  public EntityNameResponseDto getEntityNamesAsUser(String collectionId, String dashboardId,
+                                                    String reportId, String eventProcessId,
+                                                    String username, String password) {
     return getRequestExecutor()
+      .withUserAuthentication(username, password)
       .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
       .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
   }

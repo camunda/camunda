@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.CollectionIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -23,7 +24,16 @@ public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
       .addUpgradeStep(migrateDecisionReports())
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDashboards())
+      .addUpgradeStep(updateCollectionsIndexWithNewField())
       .build();
+  }
+
+  private UpdateIndexStep updateCollectionsIndexWithNewField() {
+    // @formatter:off
+    final String updateScript =
+      "ctx._source.automaticallyCreated = false;";
+    // @formatter:on
+    return new UpdateIndexStep(new CollectionIndex(), updateScript);
   }
 
   private static UpgradeStep migrateDecisionReports() {

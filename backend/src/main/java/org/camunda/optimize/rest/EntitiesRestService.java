@@ -54,8 +54,10 @@ public class EntitiesRestService {
   @GET
   @Path("/names")
   @Produces(MediaType.APPLICATION_JSON)
-  public EntityNameResponseDto getEntityNames(@BeanParam EntityNameRequestDto requestDto) {
-    return entitiesService.getEntityNames(requestDto);
+  public EntityNameResponseDto getEntityNames(@Context ContainerRequestContext requestContext,
+                                              @BeanParam EntityNameRequestDto requestDto) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return entitiesService.getEntityNames(requestDto, userId);
   }
 
   @POST

@@ -17,7 +17,9 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -41,6 +43,11 @@ public class DashboardRestService {
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
+  /**
+   * Creates a new dashboard.
+   *
+   * @return the id of the dashboard
+   */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -76,14 +83,31 @@ public class DashboardRestService {
     }
   }
 
+  /**
+   * Retrieve the dashboard to the specified id.
+   */
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getDashboard(@Context ContainerRequestContext requestContext,
                                                                @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
-      dashboardService.getDashboardDefinition(dashboardId, userId);
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
+    try {
+      dashboardDefinition =
+        dashboardService.getDashboardDefinition(dashboardId, userId);
+    } catch (NotFoundException | ForbiddenException e) {
+      // This is potentially a case of magic link creation, let's wait a bit and give it another chance
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException ex) {
+        // Not critical, do nothing
+        Thread.currentThread().interrupt();
+      }
+      dashboardDefinition =
+        dashboardService.getDashboardDefinition(dashboardId, userId);
+    }
+
     dashboardRestMapper.prepareRestResponse(dashboardDefinition);
     return dashboardDefinition;
   }
@@ -110,6 +134,9 @@ public class DashboardRestService {
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
+  /**
+   * Delete the dashboard to the specified id.
+   */
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)

@@ -1,0 +1,3 @@
+{"index":{"_index":"optimize-collection_v4","_id":"invoice"}}
+{"id": "invoice", "name": "Invoice Receipt", "lastModified": "2022-06-08T15:44:31.110+0300", "created": "2022-06-08T15:44:30.479+0300", "owner": "demo",  "lastModifier": "demo", "data": { "configuration": {},  "roles": [ { "id": "USER:demo", "identity": { "id": "demo", "type": "user" }, "role": "manager"  } ], "scope": [   {   "tenants": [   null ],   "definitionKey": "invoice",   "id": "process:invoice",   "definitionType": "process" } ] }}
+

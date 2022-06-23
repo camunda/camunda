@@ -34,6 +34,7 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
     this.lastModified = lastModified;
     this.lastModifier = lastModifier;
     this.owner = owner;
+    this.automaticallyCreated = false;
   }
 
   public EntityResponseDto toEntityDto(final RoleType roleType) {
