@@ -17,7 +17,7 @@ on:
 env:
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-jobs:     
+jobs:
   qa-testbench:
     name: QA Testbench run
     runs-on: ubuntu-latest
@@ -60,8 +60,8 @@ jobs:
           tag="$version-$BRANCH_NAME-${GITHUB_SHA::8}"
           echo "TAG=$tag" >> $GITHUB_ENV
           echo "QA_RUN_VARIABLES={\"zeebeImage\": \"$IMAGE:$tag\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", \"channel\": \"Internal Dev\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}" >> $GITHUB_ENV
-          echo "BUSINESS_KEY=$BUILD_URL" >> $GITHUB_ENV          
-                                    
+          echo "BUSINESS_KEY=$BUILD_URL" >> $GITHUB_ENV
+
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.4.1
@@ -77,20 +77,22 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: "1.15"
+          go-version-file: 'clients/go/go.mod'
+          cache: true
+          cache-dependency-path: 'clients/go/go.sum'
       - name: Build Go
         run: ./build.sh
         working-directory: clients/go/cmd/zbctl
       - name: Package Zeebe
         run: mvn -B -DskipTests -DskipChecks package
-        
+
       - name: Login to GCR
         uses: docker/login-action@v2
         with:
           registry: gcr.io
           username: _json_key
           password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
@@ -106,8 +108,8 @@ jobs:
         env:
           ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
           ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
-           
-           
+
+
   notify:
     name: Send slack notification
     runs-on: ubuntu-latest
@@ -152,8 +154,8 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK    
-          
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
       - id: slack-success-notify
         name: Send success slack notification
         uses: slackapi/slack-github-action@v1.19.0
@@ -181,4 +183,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK    
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
