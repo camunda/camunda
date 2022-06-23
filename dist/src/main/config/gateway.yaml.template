@@ -72,6 +72,16 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
       # port: 26502
 
+      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+      # gateway stands behind a proxy.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST.
+      # advertisedHost: 0.0.0.0
+
+      # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
+      # gateway stands behind a proxy.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDPORT.
+      # advertisedPort: 25602
+
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
       # membership:
