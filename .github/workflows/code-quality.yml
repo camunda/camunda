@@ -11,7 +11,7 @@ on:
 jobs:
   codeql:
     name: CodeQL
-    runs-on: ubuntu-latest
+    runs-on: "n1-standard-8-netssd-preempt"
     permissions:
       security-events: write
     steps:
@@ -22,6 +22,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.3
+        with:
+          maven-version: 3.8.5
+      - name: Use CI Nexus cache
+        uses: ./.github/actions/use-ci-nexus-cache
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
