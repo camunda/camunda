@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractObjectAssert;
@@ -191,7 +192,10 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
       if (brokers.size() != replicationFactor) {
         throw failure(
             "Expected partition <%d> to have <%d> replicas, but it has <%d>: brokers <%s>",
-            partitionId, replicationFactor, brokers.size(), brokers);
+            partitionId,
+            replicationFactor,
+            brokers.size(),
+            brokers.stream().map(PartitionBroker::brokerInfo).toList());
       }
     }
 
@@ -247,11 +251,11 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   public TopologyAssert doesNotContainBroker(final int nodeId) {
     isNotNull();
 
-    final List<Integer> brokerIds =
-        actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toList());
+    final Set<Integer> brokerIds =
+        actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toSet());
     if (brokerIds.contains(nodeId)) {
       throw failure(
-          "Expected topology not to contain broker with ID <%d>, but found the following: [%s]",
+          "Expected topology not to contain broker with ID <%d>, but found the following: <%s>",
           nodeId, brokerIds);
     }
 
@@ -268,11 +272,11 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   public TopologyAssert containsBroker(final int nodeId) {
     isNotNull();
 
-    final List<Integer> brokers =
-        actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toList());
+    final Set<Integer> brokers =
+        actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toSet());
     if (!brokers.contains(nodeId)) {
       throw failure(
-          "Expected topology to contain broker with ID %d, but found only the following: [%s]",
+          "Expected topology to contain broker with ID <%d>, but found only the following: <%s>",
           nodeId, brokers);
     }
 
