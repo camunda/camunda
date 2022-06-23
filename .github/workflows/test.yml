@@ -30,7 +30,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - uses: stCarolas/setup-maven@v4.3
+      - uses: stCarolas/setup-maven@v4.4
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
@@ -70,7 +70,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - uses: stCarolas/setup-maven@v4.3
+      - uses: stCarolas/setup-maven@v4.4
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
@@ -149,7 +149,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - uses: stCarolas/setup-maven@v4.3
+      - uses: stCarolas/setup-maven@v4.4
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
