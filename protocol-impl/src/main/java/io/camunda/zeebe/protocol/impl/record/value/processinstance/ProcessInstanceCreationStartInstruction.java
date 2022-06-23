@@ -15,8 +15,12 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-@JsonIgnoreProperties({"encodedLength"})
-public class ProcessInstanceCreationStartInstruction extends ObjectValue
+@JsonIgnoreProperties({
+  /* 'encodedLength' is a technical field needed for MsgPack and inherited from ObjectValue; it has
+  no purpose in exported JSON records*/
+  "encodedLength"
+})
+public final class ProcessInstanceCreationStartInstruction extends ObjectValue
     implements ProcessInstanceCreationStartInstructionValue {
 
   private final StringProperty elementIdProp = new StringProperty("elementId");

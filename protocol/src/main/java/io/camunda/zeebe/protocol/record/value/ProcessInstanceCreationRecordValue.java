@@ -40,7 +40,7 @@ public interface ProcessInstanceCreationRecordValue
   long getProcessDefinitionKey();
 
   /**
-   * @return list of start instructions (if available)
+   * @return list of start instructions (if available), or an empty list
    */
   List<ProcessInstanceCreationStartInstructionValue> getStartInstructions();
 
