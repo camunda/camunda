@@ -43,7 +43,6 @@ public class CompleteDeploymentDistributionProcessor
 
   @Override
   public void processRecord(
-      final long position,
       final TypedRecord<DeploymentDistributionRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,

@@ -66,9 +66,7 @@ public final class StreamProcessorReplayTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
     inOrder.verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(anyLong(), any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
         .onRecovered(any());
@@ -87,9 +85,7 @@ public final class StreamProcessorReplayTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(anyLong(), any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
     inOrder.verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
@@ -109,9 +105,7 @@ public final class StreamProcessorReplayTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(anyLong(), any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
     inOrder.verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))

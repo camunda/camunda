@@ -47,7 +47,6 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
 
   @Override
   public void processRecord(
-      final long position,
       final TypedRecord<DeploymentRecord> event,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,

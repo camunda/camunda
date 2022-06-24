@@ -506,11 +506,7 @@ public final class ProcessingStateMachine {
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
         currentProcessor.processRecord(
-            typedCommand.getPosition(),
-            typedCommand,
-            responseWriter,
-            logStreamWriter,
-            this::setSideEffectProducer);
+            typedCommand, responseWriter, logStreamWriter, this::setSideEffectProducer);
       }
 
       return new ProcessingResult();

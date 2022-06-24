@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -169,7 +168,7 @@ public final class StreamProcessorTest {
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any(), any(), any());
+        .processRecord(any(), any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
 
@@ -194,7 +193,7 @@ public final class StreamProcessorTest {
               return null;
             }))
         .when(typedRecordProcessor)
-        .processRecord(anyLong(), any(), any(), any(), any());
+        .processRecord(any(), any(), any(), any());
 
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
@@ -213,7 +212,7 @@ public final class StreamProcessorTest {
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(2))
-        .processRecord(eq(position), any(), any(), any(), any());
+        .processRecord(any(), any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
   }
@@ -242,10 +241,8 @@ public final class StreamProcessorTest {
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(firstPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
+        .processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
   }
@@ -281,18 +278,10 @@ public final class StreamProcessorTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
     inOrder.verify(typedRecordProcessor, TIMEOUT).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(eq(commandPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(eventPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(rejectionPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(eq(nextCommandPosition), any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(any(), any(), any(), any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -308,7 +297,6 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final long position,
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
                           final TypedStreamWriter streamWriter,
@@ -348,7 +336,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -382,7 +369,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -415,7 +401,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -454,7 +439,6 @@ public final class StreamProcessorTest {
               new TypedRecordProcessor<>() {
                 @Override
                 public void processRecord(
-                    final long position,
                     final TypedRecord<UnifiedRecordValue> record,
                     final TypedResponseWriter responseWriter,
                     final TypedStreamWriter streamWriter,
@@ -503,7 +487,6 @@ public final class StreamProcessorTest {
               new TypedRecordProcessor<>() {
                 @Override
                 public void processRecord(
-                    final long position,
                     final TypedRecord<UnifiedRecordValue> record,
                     final TypedResponseWriter responseWriter,
                     final TypedStreamWriter streamWriter,
@@ -543,7 +526,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -584,7 +566,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -742,7 +723,6 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final long position,
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
                           final TypedStreamWriter streamWriter,

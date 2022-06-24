@@ -163,7 +163,6 @@ public class StreamProcessorHealthTest {
                       new TypedRecordProcessor<>() {
                         @Override
                         public void processRecord(
-                            final long position,
                             final TypedRecord<UnifiedRecordValue> record,
                             final TypedResponseWriter responseWriter,
                             final TypedStreamWriter streamWriter,

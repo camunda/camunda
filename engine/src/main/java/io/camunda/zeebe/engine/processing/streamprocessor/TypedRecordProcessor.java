@@ -28,18 +28,6 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue>
       final TypedStreamWriter streamWriter) {}
 
   /**
-   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
-   */
-  default void processRecord(
-      final TypedRecord<T> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter);
-  }
-
-  /**
-   * @param position the position of the current record to process
    * @param record the record to process
    * @param responseWriter the default side effect that can be used for sending responses. {@link
    *     TypedResponseWriter#flush()} must not be called in this method.
@@ -50,11 +38,10 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue>
    *     in the {@link SideEffectProducer} implementation.
    */
   default void processRecord(
-      final long position,
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter, sideEffect);
+    processRecord(record, responseWriter, streamWriter);
   }
 }
