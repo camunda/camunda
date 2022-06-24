@@ -232,26 +232,33 @@ public final class ProcessingStateMachine {
     metadata.reset();
     command.readMetadata(metadata);
 
-    currentProcessor = chooseNextProcessor(command);
-    if (currentProcessor == null) {
-      skipRecord();
-      return;
-    }
-
     // Here we need to get the current time, since we want to calculate
     // how long it took between writing to the dispatcher and processing.
     // In all other cases we should prefer to use the Prometheus Timer API.
     final var processingStartTime = ActorClock.currentTimeMillis();
     metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
+    final var value = recordValues.readRecordValue(command, metadata.getValueType());
+    typedCommand.wrap(command, metadata, value);
+
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
     try {
-      final var value = recordValues.readRecordValue(command, metadata.getValueType());
-      typedCommand.wrap(command, metadata, value);
 
+      final long position = typedCommand.getPosition();
+      resetOutput(position);
 
-      processInTransaction(typedCommand);
+      // default side effect is responses; can be changed by processor
+      sideEffectProducer = responseWriter;
+
+      zeebeDbTransaction = transactionContext.getCurrentTransaction();
+      zeebeDbTransaction.run(
+          () -> {
+            final var engine = new Engine();
+            final var result = engine.process(metadata, typedCommand);
+
+            lastProcessedPositionState.markAsProcessed(position);
+          });
 
       metrics.commandsProcessed();
 
@@ -272,52 +279,10 @@ public final class ProcessingStateMachine {
     }
   }
 
-  private TypedRecordProcessor<?> chooseNextProcessor(final LoggedEvent command) {
-    TypedRecordProcessor<?> typedRecordProcessor = null;
-
-    try {
-      typedRecordProcessor =
-          recordProcessorMap.get(
-              metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
-    }
-
-    return typedRecordProcessor;
-  }
-
-  private void processInTransaction(final TypedEventImpl typedRecord) throws Exception {
-    zeebeDbTransaction = transactionContext.getCurrentTransaction();
-    zeebeDbTransaction.run(
-        () -> {
-          final long position = typedRecord.getPosition();
-          resetOutput(position);
-
-          // default side effect is responses; can be changed by processor
-          sideEffectProducer = responseWriter;
-          final boolean isNotOnBlacklist =
-              !zeebeState.getBlackListState().isOnBlacklist(typedRecord);
-          if (isNotOnBlacklist) {
-            currentProcessor.processRecord(
-                position,
-                typedRecord,
-                responseWriter,
-                logStreamWriter,
-                this::setSideEffectProducer);
-          }
-
-          lastProcessedPositionState.markAsProcessed(position);
-        });
-  }
-
   private void resetOutput(final long sourceRecordPosition) {
     responseWriter.reset();
     logStreamWriter.reset();
     logStreamWriter.configureSourceContext(sourceRecordPosition);
-  }
-
-  public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
-    this.sideEffectProducer = sideEffectProducer;
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -501,5 +466,54 @@ public final class ProcessingStateMachine {
     }
 
     actor.submit(this::readNextRecord);
+  }
+
+  public static class ProcessingResult {
+
+    public static ProcessingResult empty() {
+      return new ProcessingResult();
+    }
+  }
+
+  public final class Engine {
+
+    private TypedRecordProcessor<?> chooseNextProcessor(
+        final RecordMetadata metadata, final TypedRecord<?> command) {
+      TypedRecordProcessor<?> typedRecordProcessor = null;
+
+      try {
+        typedRecordProcessor =
+            recordProcessorMap.get(
+                metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
+      } catch (final Exception e) {
+        LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
+      }
+
+      return typedRecordProcessor;
+    }
+
+    public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
+      ProcessingStateMachine.this.sideEffectProducer = sideEffectProducer;
+    }
+
+    public ProcessingResult process(final RecordMetadata metadata, final TypedRecord typedCommand) {
+      currentProcessor = chooseNextProcessor(metadata, typedCommand);
+      if (currentProcessor == null) {
+        skipRecord();
+        return ProcessingResult.empty();
+      }
+
+      final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
+      if (isNotOnBlacklist) {
+        currentProcessor.processRecord(
+            typedCommand.getPosition(),
+            typedCommand,
+            responseWriter,
+            logStreamWriter,
+            this::setSideEffectProducer);
+      }
+
+      return new ProcessingResult();
+    }
   }
 }
