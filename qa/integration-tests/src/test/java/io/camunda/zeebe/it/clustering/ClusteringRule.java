@@ -295,11 +295,7 @@ public final class ClusteringRule extends ExternalResource {
             getSpringBrokerBridge(nodeId),
             Collections.singletonList(new LeaderListener(partitionLatch, nodeId)));
 
-    new Thread(
-            () -> {
-              broker.start();
-            })
-        .start();
+    CompletableFuture.runAsync(broker::start);
     return broker;
   }
 
@@ -495,19 +491,6 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
-  /** Returns for a given broker the leading partition id's. */
-  public List<Integer> getBrokersLeadingPartitions(final InetSocketAddress socketAddress) {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .filter(
-            b ->
-                b.getHost().equals(socketAddress.getHostName())
-                    && b.getPort() == socketAddress.getPort())
-        .flatMap(broker -> broker.getPartitions().stream())
-        .filter(PartitionInfo::isLeader)
-        .map(PartitionInfo::getPartitionId)
-        .collect(Collectors.toList());
-  }
-
   /** Returns the list of available brokers in a cluster. */
   public List<InetSocketAddress> getBrokersInCluster() {
     return client.newTopologyRequest().send().join().getBrokers().stream()
@@ -537,10 +520,6 @@ public final class ClusteringRule extends ExternalResource {
         .flatMap(broker -> broker.getPartitions().stream())
         .filter(PartitionInfo::isLeader)
         .count();
-  }
-
-  public void stepDown(final int nodeId, final int partitionId) {
-    stepDown(getBroker(nodeId), partitionId);
   }
 
   public BrokerInfo awaitOtherLeader(final int partitionId, final int previousLeader) {
