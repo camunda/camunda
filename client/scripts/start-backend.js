@@ -102,7 +102,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         const eventUserIds = users.join(',') + ',demo';
         const superUserIds = 'demo';
         backendProcess = spawnWithArgs(
-          `java -cp ../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar:../../client/demo-data/  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -DOPTIMIZE_API_ACCESS_TOKEN=secret -DOPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}] -DOPTIMIZE_SUPER_USER_IDS=[${superUserIds}] ${
+          `java -cp ../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar:../../client/demo-data/  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Dfile.encoding=UTF-8 -DOPTIMIZE_API_ACCESS_TOKEN=secret -DOPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}] -DOPTIMIZE_SUPER_USER_IDS=[${superUserIds}] ${
             zeebeMode ? '-Dspring.profiles.active=cloud -DZEEBE_IMPORT_ENABLED=true' : ''
           } org.camunda.optimize.Main`,
           {
