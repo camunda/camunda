@@ -33,6 +33,16 @@ dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz
 dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
+The distribution can be containerized with Docker (i.e. build a Docker image) by running:
+
+```
+docker build \
+  --tag camunda/zeebe:local \
+  --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
+  --target app \
+  .
+```
+
 This is a small overview of the contents of the different modules:
 - `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, metrics. Its parts are used in most of the other modules
 - `protocol` contains the SBE definition of the main message protocol
