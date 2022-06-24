@@ -8,18 +8,16 @@ package org.camunda.optimize.service.util.configuration;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_PROXY;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
 @JsonIgnoreProperties
+@Data
 public class ProxyConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;

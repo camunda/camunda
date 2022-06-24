@@ -467,6 +467,16 @@ webhookAlerting:
 #      # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
 #      # Optimize will replace this placeholder with the content of the alert message.
 #      defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
+#      # HTTP forward proxy configuration
+#      proxy:
+#        # whether an HTTP proxy should be used for requests to the webhook URL
+#        enabled: false
+#        # the host of the proxy to use
+#        host: null
+#        # the port of the proxy to use
+#        port: null
+#        # whether this proxy is using a secured connection
+#        sslEnabled: false
 
 export:
   csv:
