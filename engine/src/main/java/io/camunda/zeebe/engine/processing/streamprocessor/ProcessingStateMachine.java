@@ -242,13 +242,14 @@ public final class ProcessingStateMachine {
     // how long it took between writing to the dispatcher and processing.
     // In all other cases we should prefer to use the Prometheus Timer API.
     final var processingStartTime = ActorClock.currentTimeMillis();
+    metrics.processingLatency(command.getTimestamp(), processingStartTime);
+
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
     try {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
-      metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
       processInTransaction(typedCommand);
 
