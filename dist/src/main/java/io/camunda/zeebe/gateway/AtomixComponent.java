@@ -47,7 +47,10 @@ final class AtomixComponent {
             .withClusterId(clusterConfig.getClusterName())
             .withMembershipProvider(
                 BootstrapDiscoveryProvider.builder()
-                    .withNodes(Address.from(clusterConfig.getContactPoint()))
+                    .withNodes(
+                        clusterConfig.getInitialContactPoints().stream()
+                            .map(Address::from)
+                            .toArray(Address[]::new))
                     .build())
             .withMembershipProtocol(membershipProtocol)
             .withMessageCompression(clusterConfig.getMessageCompression());

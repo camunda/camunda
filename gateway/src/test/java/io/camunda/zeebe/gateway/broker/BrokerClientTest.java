@@ -47,6 +47,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.netty.util.NetUtil;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
@@ -74,7 +75,8 @@ public final class BrokerClientTest {
         .getCluster()
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
-        .setContactPoint(NetUtil.toSocketAddressString(broker.getSocketAddress()))
+        .setInitialContactPoints(
+            Collections.singletonList(NetUtil.toSocketAddressString(broker.getSocketAddress())))
         .setRequestTimeout(Duration.ofSeconds(3));
     configuration.init();
 

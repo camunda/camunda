@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
@@ -35,7 +36,7 @@ public final class GatewayCfgTest {
     CUSTOM_CFG.getNetwork().setHost("192.168.0.1").setPort(123);
     CUSTOM_CFG
         .getCluster()
-        .setContactPoint("foobar:1234")
+        .setInitialContactPoints(List.of("foobar:1234", "barfoo:5678"))
         .setRequestTimeout(Duration.ofHours(123))
         .setClusterName("testCluster")
         .setMemberId("testMember")
@@ -150,7 +151,7 @@ public final class GatewayCfgTest {
     // given
     setEnv("zeebe.gateway.network.host", "zeebe");
     setEnv("zeebe.gateway.network.port", "5432");
-    setEnv("zeebe.gateway.cluster.contactPoint", "broker:432");
+    setEnv("zeebe.gateway.cluster.initialContactPoints", "broker:432,anotherBroker:789");
     setEnv("zeebe.gateway.threads.managementThreads", "32");
     setEnv("zeebe.gateway.cluster.requestTimeout", Duration.ofMinutes(43).toString());
     setEnv("zeebe.gateway.cluster.longPollingEnabled", "false");
@@ -184,7 +185,7 @@ public final class GatewayCfgTest {
         .setMinKeepAliveInterval(Duration.ofSeconds(30));
     expected
         .getCluster()
-        .setContactPoint("broker:432")
+        .setInitialContactPoints(List.of("broker:432", "anotherBroker:789"))
         .setRequestTimeout(Duration.ofMinutes(43))
         .setClusterName("envCluster")
         .setMemberId("envMember")
@@ -209,6 +210,54 @@ public final class GatewayCfgTest {
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
+
+    // then
+    assertThat(gatewayCfg).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldSetInitialContactPointsWhenSetContactPoint() {
+    // given
+    final String contactPoint = "foo-bar:1";
+
+    // when
+    final GatewayCfg gatewayCfg =
+        new GatewayCfg().setCluster(new ClusterCfg().setContactPoint(contactPoint));
+
+    // then
+    assertThat(gatewayCfg.getCluster().getInitialContactPoints()).containsExactly(contactPoint);
+  }
+
+  @Test
+  public void shouldSetInitialContactPointsWhenUseContactPointEnvironmentVariable() {
+    // given
+    final String contactPoint = "broker:789";
+    setEnv("zeebe.gateway.cluster.contactPoint", contactPoint);
+
+    final GatewayCfg expected =
+        new GatewayCfg()
+            .setCluster(new ClusterCfg().setInitialContactPoints(List.of(contactPoint)));
+    expected.init();
+
+    // when
+    final GatewayCfg gatewayCfg = readDefaultConfig();
+
+    // then
+    assertThat(gatewayCfg).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldSetInitialContactPointsWhenUseContactPointConfig() {
+    // given
+    final String contactPoint = "broker:789";
+    final GatewayCfg expected =
+        new GatewayCfg()
+            .setCluster(new ClusterCfg().setInitialContactPoints(List.of(contactPoint)));
+    expected.init();
+
+    // when
+    final GatewayCfg gatewayCfg =
+        readConfig("/configuration/gateway.deprecated.contactPoint.custom.yaml");
 
     // then
     assertThat(gatewayCfg).isEqualTo(expected);

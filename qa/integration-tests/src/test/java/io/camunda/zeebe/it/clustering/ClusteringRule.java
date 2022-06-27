@@ -358,11 +358,19 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Gateway createGateway() {
-    final String contactPoint =
-        NetUtil.toSocketAddressString(getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
+    final List<String> initialContactPoints =
+        brokerCfgs.values().stream()
+            .map(
+                brokerCfg ->
+                    NetUtil.toSocketAddressString(
+                        brokerCfg.getNetwork().getInternalApi().getAddress()))
+            .collect(Collectors.toList());
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
-    gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
+    gatewayCfg
+        .getCluster()
+        .setInitialContactPoints(initialContactPoints)
+        .setClusterName(clusterName);
     gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     // temporarily increase request time out, but we should make this configurable per test
@@ -381,7 +389,10 @@ public final class ClusteringRule extends ExternalResource {
             .withClusterId(clusterCfg.getClusterName())
             .withMembershipProvider(
                 BootstrapDiscoveryProvider.builder()
-                    .withNodes(Address.from(clusterCfg.getContactPoint()))
+                    .withNodes(
+                        clusterCfg.getInitialContactPoints().stream()
+                            .map(Address::from)
+                            .toArray(Address[]::new))
                     .build())
             .withMembershipProtocol(
                 SwimMembershipProtocol.builder().withSyncInterval(Duration.ofSeconds(1)).build())
