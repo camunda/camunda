@@ -26,7 +26,9 @@ public final class ClusterCfg {
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
   private String host = DEFAULT_CLUSTER_HOST;
+  private String advertisedHost = host;
   private int port = DEFAULT_CLUSTER_PORT;
+  private int advertisedPort = port;
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
@@ -49,12 +51,34 @@ public final class ClusterCfg {
     return this;
   }
 
+  public String getAdvertisedHost() {
+    if (advertisedHost == null) {
+      return getHost();
+    }
+
+    return advertisedHost;
+  }
+
+  public ClusterCfg setAdvertisedHost(final String advertisedHost) {
+    this.advertisedHost = advertisedHost;
+    return this;
+  }
+
   public int getPort() {
     return port;
   }
 
   public ClusterCfg setPort(final int port) {
     this.port = port;
+    return this;
+  }
+
+  public int getAdvertisedPort() {
+    return advertisedPort;
+  }
+
+  public ClusterCfg setAdvertisedPort(final int advertisedPort) {
+    this.advertisedPort = advertisedPort;
     return this;
   }
 

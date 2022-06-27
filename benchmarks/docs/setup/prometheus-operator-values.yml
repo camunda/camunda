@@ -57,6 +57,7 @@ prometheusOperator:
 
 prometheus:
   prometheusSpec:
+    retention: 30d
     storageSpec:
       volumeClaimTemplate:
         metadata:

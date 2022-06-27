@@ -102,4 +102,40 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionReason(
             "Expected to create instance of process with start instructions but the element with id 'task-in-multi-instance' is inside a multi-instance subprocess. The creation of elements inside a multi-instance subprocess is not supported.");
   }
+
+  @Test
+  public void shouldRejectCommandIfEventBelongsToEventBasedGateway() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent("start")
+                .eventBasedGateway()
+                .intermediateCatchEvent("timer1", c -> c.timerWithDuration("PT0.1S"))
+                .endEvent()
+                .moveToLastGateway()
+                .intermediateCatchEvent("timer2", c -> c.timerWithDuration("PT0.1S"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withStartInstruction("timer1")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create instance of process with start instructions but the element with id 'timer1' belongs to an event-based gateway. The creation of elements belonging to an event-based gateway is not supported.");
+  }
 }

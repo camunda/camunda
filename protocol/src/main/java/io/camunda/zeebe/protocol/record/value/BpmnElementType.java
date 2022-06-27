@@ -51,9 +51,6 @@ public enum BpmnElementType {
   MULTI_INSTANCE_BODY(null),
   CALL_ACTIVITY("callActivity"),
 
-  // TODO (saig0): remove element type for testing - #6202
-  TESTING_ONLY(null),
-
   BUSINESS_RULE_TASK("businessRuleTask"),
   SCRIPT_TASK("scriptTask"),
   SEND_TASK("sendTask");

@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -471,8 +472,20 @@ public class CompactRecordLogger {
         .append("new <process ")
         .append(formatId(value.getBpmnProcessId()))
         .append(">")
+        .append(summarizeStartInstructions(value.getStartInstructions()))
         .append(summarizeVariables(value.getVariables()))
         .toString();
+  }
+
+  private String summarizeStartInstructions(
+      final List<ProcessInstanceCreationStartInstructionValue> startInstructions) {
+    if (startInstructions.isEmpty()) {
+      return " (default start) ";
+    } else {
+      return startInstructions.stream()
+          .map(ProcessInstanceCreationStartInstructionValue::getElementId)
+          .collect(Collectors.joining(", ", " (starting before elements: ", ") "));
+    }
   }
 
   private String summarizeProcessInstanceSubscription(final Record<?> record) {
