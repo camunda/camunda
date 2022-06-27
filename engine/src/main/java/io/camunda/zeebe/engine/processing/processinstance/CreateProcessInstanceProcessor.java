@@ -472,7 +472,7 @@ public final class CreateProcessInstanceProcessor
           elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
       catchEventBehavior.subscribeToEvents(
-          bpmnElementContext, catchEventSupplier, sideEffectQueue, commandWriter);
+          bpmnElementContext, catchEventSupplier);
     }
   }
 

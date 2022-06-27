@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -39,7 +38,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
   private final ProcessState processState;
@@ -63,7 +61,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var bpmnBehaviors =
         new BpmnBehaviorsImpl(
             expressionProcessor,
-            sideEffectQueue,
             zeebeState,
             catchEventBehavior,
             variableBehavior,
@@ -91,11 +88,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-
-    // initialize
-    sideEffectQueue.clear();
-    sideEffect.accept(sideEffectQueue);
-
     final var intent = (ProcessInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
 
