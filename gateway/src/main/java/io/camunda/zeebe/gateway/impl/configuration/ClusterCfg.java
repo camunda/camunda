@@ -90,7 +90,7 @@ public final class ClusterCfg {
   @Deprecated(since = "8.1.0", forRemoval = true)
   public ClusterCfg setContactPoint(final String contactPoint) {
     GATEWAY_CFG_LOGGER.warn(
-        "Configuring deprecated the contactPoint property. Expected to configure the initialContactPoints property.");
+        "Configuring deprecated property 'contactPoint', will use 'initialContactPoints'. Please consider to migrate to 'initialContactPoints' property, which allows to set a list of contact points.");
     setInitialContactPoints(Collections.singletonList(contactPoint));
     return this;
   }
