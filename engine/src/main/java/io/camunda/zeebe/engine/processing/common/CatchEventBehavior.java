@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -81,32 +80,26 @@ public final class CatchEventBehavior {
 
   /**
    * Unsubscribe from all events in the scope of the context.
-   *
-   * @param context the context to subscript from
+   *  @param context the context to subscript from
    * @param commandWriter the writer for unsubscribe commands
-   * @param sideEffects the side effects for unsubscribe actions
    */
   public void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
-      final SideEffects sideEffects) {
-    unsubscribeFromEvents(context, commandWriter, sideEffects, elementId -> true);
+      final TypedCommandWriter commandWriter) {
+    unsubscribeFromEvents(context, commandWriter, elementId -> true);
   }
 
   /**
    * Unsubscribe from all event subprocesses in the scope of the context. Ignores other event
    * subscriptions in the scope.
-   *
-   * @param context the context to subscript from
+   *  @param context the context to subscript from
    * @param commandWriter the writer for unsubscribe commands
-   * @param sideEffects the side effects for unsubscribe actions
    */
   public void unsubscribeEventSubprocesses(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
-      final SideEffects sideEffects) {
+      final TypedCommandWriter commandWriter) {
     unsubscribeFromEvents(
-        context, commandWriter, sideEffects, elementId -> isEventSubprocess(context, elementId));
+        context, commandWriter, elementId -> isEventSubprocess(context, elementId));
   }
 
   private boolean isEventSubprocess(
@@ -123,20 +116,17 @@ public final class CatchEventBehavior {
   /**
    * Unsubscribe from all events in the scope of the context that matches the given filter. Ignore
    * other event subscriptions that don't match the filter.
-   *
-   * @param context the context to subscript from
+   *  @param context the context to subscript from
    * @param commandWriter the writer for unsubscribe commands
-   * @param sideEffects the side effects for unsubscribe actions
    * @param elementIdFilter the filter for events to unsubscribe
    */
   private void unsubscribeFromEvents(
       final BpmnElementContext context,
       final TypedCommandWriter commandWriter,
-      final SideEffects sideEffects,
       final Predicate<DirectBuffer> elementIdFilter) {
 
     unsubscribeFromTimerEvents(context, commandWriter, elementIdFilter);
-    unsubscribeFromMessageEvents(context, sideEffects, elementIdFilter);
+    unsubscribeFromMessageEvents(context, elementIdFilter);
   }
 
   /**
@@ -144,9 +134,7 @@ public final class CatchEventBehavior {
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
-      final ExecutableCatchEventSupplier supplier,
-      final SideEffects sideEffects,
-      final TypedCommandWriter commandWriter) {
+      final ExecutableCatchEventSupplier supplier) {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
@@ -155,8 +143,8 @@ public final class CatchEventBehavior {
 
     evaluationResults.ifRight(
         results -> {
-          subscribeToMessageEvents(context, sideEffects, results);
-          subscribeToTimerEvents(context, sideEffects, commandWriter, results);
+          subscribeToMessageEvents(context, results);
+          subscribeToTimerEvents(context, results);
         });
 
     return evaluationResults.map(r -> null);
@@ -226,15 +214,14 @@ public final class CatchEventBehavior {
 
   private void subscribeToMessageEvents(
       final BpmnElementContext context,
-      final SideEffects sideEffects,
       final List<EvalResult> results) {
     results.stream()
         .filter(EvalResult::isMessage)
-        .forEach(result -> subscribeToMessageEvent(context, sideEffects, result));
+        .forEach(result -> subscribeToMessageEvent(context, result));
   }
 
   private void subscribeToMessageEvent(
-      final BpmnElementContext context, final SideEffects sideEffects, final EvalResult result) {
+      final BpmnElementContext context, final EvalResult result) {
     final var event = result.event;
     final var correlationKey = result.correlationKey;
     final var messageName = result.messageName;
@@ -259,22 +246,18 @@ public final class CatchEventBehavior {
     stateWriter.appendFollowUpEvent(
         subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
-    sideEffects.add(
-        () ->
-            sendOpenMessageSubscription(
-                subscriptionPartitionId,
-                processInstanceKey,
-                elementInstanceKey,
-                bpmnProcessId,
-                messageName,
-                correlationKey,
-                event.isInterrupting()));
+    sendOpenMessageSubscription(
+        subscriptionPartitionId,
+        processInstanceKey,
+        elementInstanceKey,
+        bpmnProcessId,
+        messageName,
+        correlationKey,
+        event.isInterrupting());
   }
 
   private void subscribeToTimerEvents(
       final BpmnElementContext context,
-      final SideEffects sideEffects,
-      final TypedCommandWriter commandWriter,
       final List<EvalResult> results) {
     results.stream()
         .filter(EvalResult::isTimer)
@@ -287,9 +270,8 @@ public final class CatchEventBehavior {
                   context.getProcessInstanceKey(),
                   context.getProcessDefinitionKey(),
                   event.getId(),
-                  timer,
-                  commandWriter,
-                  sideEffects);
+                  timer
+              );
             });
   }
 
@@ -298,9 +280,7 @@ public final class CatchEventBehavior {
       final long processInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
-      final Timer timer,
-      final TypedCommandWriter commandWriter,
-      final SideEffects sideEffects) {
+      final Timer timer) {
     final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
     timerRecord.reset();
     timerRecord
@@ -311,13 +291,9 @@ public final class CatchEventBehavior {
         .setTargetElementId(handlerNodeId)
         .setProcessDefinitionKey(processDefinitionKey);
 
-    sideEffects.add(
-        () -> {
-          /* timerChecker implements onRecovered to recover from restart, so no need to schedule
-          this in TimerCreatedApplier.*/
-          timerChecker.scheduleTimer(dueDate);
-          return true;
-        });
+    /* timerChecker implements onRecovered to recover from restart, so no need to schedule
+    this in TimerCreatedApplier.*/
+    timerChecker.scheduleTimer(dueDate);
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
   }
@@ -351,21 +327,20 @@ public final class CatchEventBehavior {
 
   private void unsubscribeFromMessageEvents(
       final BpmnElementContext context,
-      final SideEffects sideEffects,
       final Predicate<DirectBuffer> elementIdFilter) {
     processMessageSubscriptionState.visitElementSubscriptions(
         context.getElementInstanceKey(),
         subscription -> {
           final var elementId = subscription.getRecord().getElementIdBuffer();
           if (elementIdFilter.test(elementId)) {
-            unsubscribeFromMessageEvent(subscription, sideEffects);
+            unsubscribeFromMessageEvent(subscription);
           }
           return true;
         });
   }
 
   private void unsubscribeFromMessageEvent(
-      final ProcessMessageSubscription subscription, final SideEffects sideEffects) {
+      final ProcessMessageSubscription subscription) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getRecord().getMessageNameBuffer());
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
@@ -374,10 +349,7 @@ public final class CatchEventBehavior {
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
-    sideEffects.add(
-        () ->
-            sendCloseMessageSubscriptionCommand(
-                subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
+    sendCloseMessageSubscriptionCommand(subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(

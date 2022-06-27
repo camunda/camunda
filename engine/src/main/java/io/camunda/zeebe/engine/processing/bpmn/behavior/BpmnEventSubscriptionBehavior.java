@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -35,8 +34,6 @@ public final class BpmnEventSubscriptionBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
-  private final SideEffects sideEffects;
-
   private final KeyGenerator keyGenerator;
   private final ProcessState processState;
   private final TypedCommandWriter commandWriter;
@@ -46,13 +43,11 @@ public final class BpmnEventSubscriptionBehavior {
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final TypedCommandWriter commandWriter,
-      final SideEffects sideEffects,
       final ZeebeState zeebeState,
       final KeyGenerator keyGenerator) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.commandWriter = commandWriter;
-    this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
@@ -64,11 +59,11 @@ public final class BpmnEventSubscriptionBehavior {
    */
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
       final T element, final BpmnElementContext context) {
-    return catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
+    return catchEventBehavior.subscribeToEvents(context, element);
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {
-    catchEventBehavior.unsubscribeFromEvents(context, commandWriter, sideEffects);
+    catchEventBehavior.unsubscribeFromEvents(context, commandWriter);
   }
 
   /**

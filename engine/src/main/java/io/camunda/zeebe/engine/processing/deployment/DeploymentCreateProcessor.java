@@ -167,9 +167,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             NO_ELEMENT_INSTANCE,
             processMetadata.getKey(),
             startEvent.getId(),
-            timerOrError.get(),
-            streamWriter,
-            sideEffects);
+            timerOrError.get());
       }
     }
   }
