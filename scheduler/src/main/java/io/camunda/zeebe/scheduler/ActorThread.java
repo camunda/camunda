@@ -41,7 +41,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   protected final ActorTimerQueue timerJobQueue;
   protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
   ActorTask currentTask;
-  private final ActorMetrics actorMetrics = new ActorMetrics();
+  private final ActorMetrics actorMetrics;
   private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
   private final ActorClock clock;
   private final int threadId;
@@ -56,7 +56,8 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final ActorThreadGroup threadGroup,
       final TaskScheduler taskScheduler,
       final ActorClock clock,
-      final ActorTimerQueue timerQueue) {
+      final ActorTimerQueue timerQueue,
+      final boolean metricsEnabled) {
     setName(name);
     state = ActorThreadState.NEW;
     threadId = id;
@@ -64,6 +65,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
     actorThreadGroup = threadGroup;
     this.taskScheduler = taskScheduler;
+    actorMetrics = new ActorMetrics(metricsEnabled);
   }
 
   ActorMetrics getActorMetrics() {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 public final class ThreadsCfg implements ConfigurationEntry {
   private int cpuThreadCount = 2;
   private int ioThreadCount = 2;
+  private boolean metricsEnabled = false;
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
@@ -25,6 +26,14 @@ public final class ThreadsCfg implements ConfigurationEntry {
 
   public void setIoThreadCount(final int ioThreads) {
     ioThreadCount = ioThreads;
+  }
+
+  public boolean isMetricsEnabled() {
+    return metricsEnabled;
+  }
+
+  public void setMetricsEnabled(final boolean enableMetrics) {
+    metricsEnabled = enableMetrics;
   }
 
   @Override

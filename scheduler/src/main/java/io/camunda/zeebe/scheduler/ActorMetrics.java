@@ -47,20 +47,34 @@ final class ActorMetrics {
           .help("The length of the job queue for an actor task")
           .labelNames("actorName")
           .register();
+  private final boolean enabled;
+
+  public ActorMetrics(final boolean metricsEnabled) {
+    enabled = metricsEnabled;
+  }
 
   Histogram.Timer startExecutionTimer(final String name) {
+    if (!enabled) {
+      return null;
+    }
     return EXECUTION_LATENCY.labels(name).startTimer();
   }
 
   void countExecution(final String name) {
-    EXECUTION_COUNT.labels(name).inc();
+    if (enabled) {
+      EXECUTION_COUNT.labels(name).inc();
+    }
   }
 
   void updateJobQueueLength(final String actorName, final int length) {
-    JOB_QUEUE_LENGTH.labels(actorName).set(length);
+    if (enabled) {
+      JOB_QUEUE_LENGTH.labels(actorName).set(length);
+    }
   }
 
   public void observeJobSchedulingLatency(final long waitTimeNs, final String subscriptionType) {
-    SCHEDULING_LATENCY.labels(subscriptionType).observe(waitTimeNs / 1_000_000_000f);
+    if (enabled) {
+      SCHEDULING_LATENCY.labels(subscriptionType).observe(waitTimeNs / 1_000_000_000f);
+    }
   }
 }

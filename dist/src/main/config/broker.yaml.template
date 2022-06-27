@@ -309,6 +309,10 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
       # ioThreadCount: 2
 
+      # Controls whether to collect metrics about thread usage such as job execution latencies
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_METRICSENABLED
+      # metricsEnabled: false
+
     # backpressure:
       # Configure backpressure below.
       #

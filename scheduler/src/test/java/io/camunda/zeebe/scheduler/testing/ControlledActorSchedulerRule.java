@@ -96,7 +96,7 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
     }
   }
 
-  static class ControlledActorThreadFactory implements ActorThreadFactory {
+  static final class ControlledActorThreadFactory implements ActorThreadFactory {
     private ControlledActorThread controlledThread;
 
     @Override
@@ -106,7 +106,8 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
         final ActorThreadGroup threadGroup,
         final TaskScheduler taskScheduler,
         final ActorClock clock,
-        final ActorTimerQueue timerQueue) {
+        final ActorTimerQueue timerQueue,
+        final boolean metricsEnabled) {
       controlledThread =
           new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
       return controlledThread;

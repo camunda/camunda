@@ -1,0 +1,6 @@
+zeebe:
+  broker:
+    threads:
+      cpuThreadCount: 5
+      ioThreadCount: 7
+      metricsEnabled: true

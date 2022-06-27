@@ -263,11 +263,13 @@ public final class SystemContext {
 
     final int cpuThreads = cfg.getCpuThreadCount();
     final int ioThreads = cfg.getIoThreadCount();
+    final boolean metricsEnabled = cfg.isMetricsEnabled();
 
     return ActorScheduler.newActorScheduler()
         .setActorClock(clock)
         .setCpuBoundActorThreadCount(cpuThreads)
         .setIoBoundActorThreadCount(ioThreads)
+        .setMetricsEnabled(metricsEnabled)
         .setSchedulerName(brokerId)
         .build();
   }
