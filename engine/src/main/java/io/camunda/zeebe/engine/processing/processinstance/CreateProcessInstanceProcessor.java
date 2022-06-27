@@ -471,8 +471,7 @@ public final class CreateProcessInstanceProcessor
       bpmnElementContext.init(
           elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-      catchEventBehavior.subscribeToEvents(
-          bpmnElementContext, catchEventSupplier);
+      catchEventBehavior.subscribeToEvents(bpmnElementContext, catchEventSupplier);
     }
   }
 
