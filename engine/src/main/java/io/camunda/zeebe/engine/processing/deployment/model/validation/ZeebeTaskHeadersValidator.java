@@ -28,6 +28,11 @@ public class ZeebeTaskHeadersValidator implements ModelElementValidator<ZeebeTas
   @Override
   public void validate(
       final ZeebeTaskHeaders element, final ValidationResultCollector validationResultCollector) {
+    checkForReservedHeaderKeys(element, validationResultCollector);
+  }
+
+  private void checkForReservedHeaderKeys(
+      final ZeebeTaskHeaders element, final ValidationResultCollector validationResultCollector) {
     element.getHeaders().stream()
         .map(ZeebeHeader::getKey)
         .filter(Objects::nonNull)
