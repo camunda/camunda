@@ -41,7 +41,8 @@ public final class DefaultTransactionContext implements TransactionContext {
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);
       } else {
-        throw new RuntimeException(errorMessage, rdbex);
+        throw new RuntimeException(
+            errorMessage, rdbex); // todo: I think this should be unrecoverable then?
       }
     } catch (final Exception ex) {
       throw new RuntimeException(
