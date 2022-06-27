@@ -128,7 +128,6 @@ public final class ProcessingStateMachine {
   private final BooleanSupplier abortCondition;
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
-  private final RecordProcessorMap recordProcessorMap;
   private final TypedEventImpl typedCommand;
   private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
@@ -151,7 +150,6 @@ public final class ProcessingStateMachine {
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
 
     actor = context.getActor();
-    recordProcessorMap = context.getRecordProcessorMap();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
@@ -483,6 +481,14 @@ public final class ProcessingStateMachine {
   }
 
   public final class Engine {
+
+    private RecordProcessorMap recordProcessorMap;
+
+    private TypedRecordProcessor<?> currentProcessor;
+
+    public void init(final ProcessingContext context) {
+      recordProcessorMap = context.getRecordProcessorMap();
+    }
 
     private TypedRecordProcessor<?> chooseNextProcessor(
         final RecordMetadata metadata, final TypedRecord<?> command) {
