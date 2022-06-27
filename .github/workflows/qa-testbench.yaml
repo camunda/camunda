@@ -147,7 +147,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check: ${{ env.BUILD_URL }}\n"
+                    "text": "Please check: ${{ env.BUILD_URL }}\n \\cc @zeebe-medic"
                   }
                 }
               ]
