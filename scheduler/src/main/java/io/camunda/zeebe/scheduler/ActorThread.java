@@ -9,8 +9,8 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
-import io.camunda.zeebe.scheduler.error.FatalErrorHandler;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;

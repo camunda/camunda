@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.scheduler.health;
+package io.camunda.zeebe.util.health;
 
 /**
  * A HealthMonitor keeps tracks of all components it should monitor and calculates aggregate health

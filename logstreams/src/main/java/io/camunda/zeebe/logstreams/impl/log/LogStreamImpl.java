@@ -24,9 +24,9 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.health.FailureListener;
-import io.camunda.zeebe.scheduler.health.HealthReport;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -186,6 +186,16 @@ public final class LogStreamImpl extends Actor
     return newLogStreamWriter(LogStreamBatchWriterImpl::new);
   }
 
+  @Override
+  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.add(recordAwaiter));
+  }
+
+  @Override
+  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.remove(recordAwaiter));
+  }
+
   private <T extends LogStreamWriter> ActorFuture<T> newLogStreamWriter(
       final WriterCreator<T> logStreamCreator) {
     // this should be replaced after refactoring the actor control
@@ -196,16 +206,6 @@ public final class LogStreamImpl extends Actor
     final var writerFuture = new CompletableActorFuture<T>();
     actor.run(() -> createWriter(writerFuture, logStreamCreator));
     return writerFuture;
-  }
-
-  @Override
-  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    actor.call(() -> recordAwaiters.add(recordAwaiter));
-  }
-
-  @Override
-  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    actor.call(() -> recordAwaiters.remove(recordAwaiter));
   }
 
   private void notifyRecordAwaiters() {
@@ -402,15 +402,15 @@ public final class LogStreamImpl extends Actor
         });
   }
 
-  @FunctionalInterface
-  private interface WriterCreator<T extends LogStreamWriter> {
-
-    T create(int partitionId, Dispatcher dispatcher);
-  }
-
   private static final class LogStorageAppenderClosedException extends RuntimeException {
     private LogStorageAppenderClosedException() {
       super("LogStorageAppender was closed before opening succeeded");
     }
+  }
+
+  @FunctionalInterface
+  private interface WriterCreator<T extends LogStreamWriter> {
+
+    T create(int partitionId, Dispatcher dispatcher);
   }
 }

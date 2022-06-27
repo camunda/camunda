@@ -29,11 +29,11 @@ import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransi
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
-import io.camunda.zeebe.scheduler.health.FailureListener;
-import io.camunda.zeebe.scheduler.health.HealthReport;
-import io.camunda.zeebe.scheduler.health.HealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;

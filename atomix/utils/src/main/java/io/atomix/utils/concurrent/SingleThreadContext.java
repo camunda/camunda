@@ -19,7 +19,7 @@ package io.atomix.utils.concurrent;
 import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
-import io.camunda.zeebe.scheduler.error.FatalErrorHandler;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;

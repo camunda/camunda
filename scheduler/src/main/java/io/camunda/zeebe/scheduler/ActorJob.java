@@ -8,10 +8,10 @@
 package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.ActorTask.TaskSchedulingState;
-import io.camunda.zeebe.scheduler.error.FatalErrorHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 

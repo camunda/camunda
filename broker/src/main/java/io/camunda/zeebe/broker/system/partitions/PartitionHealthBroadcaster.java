@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.scheduler.health.FailureListener;
-import io.camunda.zeebe.scheduler.health.HealthReport;
-import io.camunda.zeebe.scheduler.health.HealthStatus;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthStatus;
 
 /** Informs its delegate of partition health changes */
 public final class PartitionHealthBroadcaster implements FailureListener {

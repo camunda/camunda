@@ -20,7 +20,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.LogStorageTermMissmatchException;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.scheduler.health.HealthMonitor;
+import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

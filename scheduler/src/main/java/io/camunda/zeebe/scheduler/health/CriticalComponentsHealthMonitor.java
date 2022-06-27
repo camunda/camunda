@@ -8,6 +8,11 @@
 package io.camunda.zeebe.scheduler.health;
 
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
