@@ -856,7 +856,7 @@ public class CreateProcessInstanceAnywhereTest {
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getIntent)
         .describedAs("Expected to create the message subscription only once")
-        .containsOnlyOnce(ProcessMessageSubscriptionIntent.CREATED);
+        .containsOnlyOnce(ProcessMessageSubscriptionIntent.CREATING);
 
     Assertions.assertThat(
             RecordingExporter.records()
