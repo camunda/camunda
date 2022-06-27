@@ -300,6 +300,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     return typedEvent;
   }
 
+  // todo: move to engine
   private void applyCurrentEvent(final TypedRecord<?> currentEvent) {
     eventApplier.applyState(
         currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());

@@ -314,6 +314,7 @@ public final class ProcessingStateMachine {
         });
   }
 
+  // todo: partly in engine
   private void errorHandlingInTransaction(final Throwable processingException) throws Exception {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
@@ -333,6 +334,7 @@ public final class ProcessingStateMachine {
         });
   }
 
+  // todo: move to engine
   private void writeRejectionOnCommand(final Throwable exception) {
     final String errorMessage =
         String.format(PROCESSING_ERROR_MESSAGE, typedCommand, exception.getMessage());
@@ -392,7 +394,7 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, this::updateState);
+            onError(throwable, this::updateState); // todo: I think this is wrong?!
           } else {
             executeSideEffects();
           }
@@ -446,6 +448,7 @@ public final class ProcessingStateMachine {
     return lastWrittenPosition;
   }
 
+  // todo: document why we have it - for health check etc. would be good as well were we set it
   public boolean isMakingProgress() {
     return !onErrorHandlingLoop;
   }

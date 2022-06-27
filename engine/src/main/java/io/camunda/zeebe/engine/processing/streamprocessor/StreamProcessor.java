@@ -308,6 +308,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return openFuture;
   }
 
+  // todo: move to engine
   private void initProcessors() {
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(processingContext);
@@ -322,6 +323,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private long recoverFromSnapshot() {
     final var zeebeState = recoverState();
 
+    // todo: for that we don't need the state
+    // split up lastProcessedPositionState
     final long snapshotPosition =
         zeebeState.getLastProcessedPositionState().getLastSuccessfulProcessedRecordPosition();
 
@@ -339,6 +342,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return snapshotPosition;
   }
 
+  // todo: move to engine
   private ZeebeDbState recoverState() {
     final TransactionContext transactionContext = zeebeDb.createContext();
     final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
