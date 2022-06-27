@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.util.startup.StartupStep;
+import io.camunda.zeebe.scheduler.startup.StartupStep;
 
 /**
  * A PartitionStartupStep is an action to be taken while opening or closing a partition (e.g.,

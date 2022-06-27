@@ -10,8 +10,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 
 public class RockDbMetricExporterPartitionStartupStep implements PartitionStartupStep {

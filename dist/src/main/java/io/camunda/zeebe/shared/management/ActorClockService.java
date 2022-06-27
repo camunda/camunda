@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
 /**
- * A service which wraps an {@link io.camunda.zeebe.util.sched.clock.ActorClock} instance. We can't
- * directly use an actor clock since the interface is by nature immutable, so instead we wrap it.
+ * A service which wraps an {@link ActorClock} instance. We can't directly use an actor clock since
+ * the interface is by nature immutable, so instead we wrap it.
  */
 @FunctionalInterface
 public interface ActorClockService {

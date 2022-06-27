@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import static io.camunda.zeebe.util.sched.future.CompletableActorFuture.completedExceptionally;
+import static io.camunda.zeebe.scheduler.future.CompletableActorFuture.completedExceptionally;
 
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.startup.StartupStep;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.startup.StartupStep;
 import java.util.function.BiConsumer;
 
 abstract class AbstractBrokerStartupStep implements StartupStep<BrokerStartupContext> {

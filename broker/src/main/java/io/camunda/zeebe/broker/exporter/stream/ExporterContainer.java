@@ -17,8 +17,8 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import org.slf4j.Logger;
 

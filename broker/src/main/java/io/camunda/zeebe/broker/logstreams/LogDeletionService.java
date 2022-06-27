@@ -8,10 +8,10 @@
 package io.camunda.zeebe.broker.logstreams;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.util.sched.Actor;
 import java.util.Collection;
 import java.util.Map;
 

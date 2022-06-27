@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
-import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.scheduler.ActorControl;
 import org.agrona.collections.Int2IntHashMap;
 
 public final class TopologyPartitionListenerImpl implements TopologyPartitionListener {

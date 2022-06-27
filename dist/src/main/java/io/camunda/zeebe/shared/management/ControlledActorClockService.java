@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;

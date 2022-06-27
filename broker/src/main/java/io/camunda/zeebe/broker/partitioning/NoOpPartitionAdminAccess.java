@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {

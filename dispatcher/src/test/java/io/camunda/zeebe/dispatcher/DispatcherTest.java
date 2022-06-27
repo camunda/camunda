@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.scheduler.ActorCondition;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.junit.Assert;

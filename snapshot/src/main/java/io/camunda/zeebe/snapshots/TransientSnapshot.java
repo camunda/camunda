@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 

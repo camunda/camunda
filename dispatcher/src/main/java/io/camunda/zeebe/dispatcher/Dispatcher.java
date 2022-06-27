@@ -15,10 +15,10 @@ import static io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADD
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorCondition;
-import io.camunda.zeebe.util.sched.FutureUtil;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorCondition;
+import io.camunda.zeebe.scheduler.FutureUtil;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;

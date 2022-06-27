@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

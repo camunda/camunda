@@ -40,8 +40,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.FeatureFlags;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.Consumer;
 
 public final class EngineProcessors {
