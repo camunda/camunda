@@ -251,7 +251,7 @@ public final class ProcessingStateMachine {
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            currentProcessingResult = engine.process(metadata, typedCommand);
+            currentProcessingResult = engine.process(typedCommand);
             lastProcessedPositionState.markAsProcessed(position);
           });
 

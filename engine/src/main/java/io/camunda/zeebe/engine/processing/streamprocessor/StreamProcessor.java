@@ -102,7 +102,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
   private final Engine engine;
-  private DbLastProcessedPositionState lastProcessedPositionState;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -158,8 +157,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       replayStateMachine =
           new ReplayStateMachine(engine, processingContext, this::shouldProcessNext);
-      // disable writing to the log stream
-      processingContext.disableLogStreamWriter();
 
       openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
@@ -257,14 +254,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final LastProcessingPositions lastProcessingPositions) {
 
     if (errorOnReceivingWriter == null) {
-      processingContext
-          .maxFragmentSize(batchWriter.getMaxFragmentLength())
-          .logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
+      processingContext.logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
       phase = Phase.PROCESSING;
-
-      // enable writing records to the stream
-      processingContext.enableLogStreamWriter();
 
       processingStateMachine =
           new ProcessingStateMachine(engine, processingContext, this::shouldProcessNext);
@@ -304,9 +296,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private long recoverFromSnapshot() {
-    // todo: for that we don't need the state
-    // split up lastProcessedPositionState
-    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext());
+    final DbLastProcessedPositionState lastProcessedPositionState =
+        new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext());
     processingContext.lastProcessedPositionState(lastProcessedPositionState);
     final long snapshotPosition =
         lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();

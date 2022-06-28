@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
@@ -29,7 +28,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
-  private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
   private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
 
   private ActorControl actor;
@@ -47,13 +45,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
 
-  private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private MutableLastProcessedPositionState lastProcessedPositionState;
-
-  public ProcessingContext() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -112,11 +105,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext maxFragmentSize(final int maxFragmentSize) {
-    this.maxFragmentSize = maxFragmentSize;
-    return this;
-  }
-
   public ProcessingContext eventApplier(final EventApplier eventApplier) {
     this.eventApplier = eventApplier;
     return this;
@@ -156,21 +144,16 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public int getMaxFragmentSize() {
-    return maxFragmentSize;
-  }
-
-  @Override
   public TypedStreamWriter getLogStreamWriter() {
-    return streamWriterProxy;
+    return logStreamWriter;
   }
 
   @Override
   public Writers getWriters() {
     // todo (#8009): cleanup - revisit after migration is finished
     // create newly every time, because the specific writers may differ over time
-    final var stateWriter = new EventApplyingStateWriter(streamWriterProxy, eventApplier);
-    return new Writers(streamWriterProxy, stateWriter, typedResponseWriter);
+    final var stateWriter = new EventApplyingStateWriter(logStreamWriter, eventApplier);
+    return new Writers(logStreamWriter, stateWriter, typedResponseWriter);
   }
 
   @Override
@@ -200,14 +183,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public StreamProcessorListener getStreamProcessorListener() {
     return streamProcessorListener;
-  }
-
-  public void enableLogStreamWriter() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
-
-  public void disableLogStreamWriter() {
-    streamWriterProxy.wrap(noopTypedStreamWriter);
   }
 
   public StreamProcessorMode getProcessorMode() {

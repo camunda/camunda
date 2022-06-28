@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -23,7 +22,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find processor for record '{} {}', but caught an exception. Skip this record.";
+      "Expected to find processor for record '{}', but caught an exception. Skip this record.";
 
   private RecordProcessorMap recordProcessorMap;
 
@@ -62,16 +61,15 @@ public final class Engine implements StreamProcessorLifecycleAware {
     recordProcessorMap.values().forEachRemaining(lifecycleAwareListeners::add);
   }
 
-  private TypedRecordProcessor<?> chooseNextProcessor(
-      final RecordMetadata metadata, final TypedRecord<?> command) {
+  private TypedRecordProcessor<?> chooseNextProcessor(final TypedRecord<?> command) {
     TypedRecordProcessor<?> typedRecordProcessor = null;
 
     try {
       typedRecordProcessor =
           recordProcessorMap.get(
-              metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
+              command.getRecordType(), command.getValueType(), command.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, e);
     }
 
     return typedRecordProcessor;
@@ -81,8 +79,8 @@ public final class Engine implements StreamProcessorLifecycleAware {
     eventApplier.applyState(typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
   }
 
-  public ProcessingResult process(final RecordMetadata metadata, final TypedRecord typedCommand) {
-    final TypedRecordProcessor<?> currentProcessor = chooseNextProcessor(metadata, typedCommand);
+  public ProcessingResult process(final TypedRecord typedCommand) {
+    final TypedRecordProcessor<?> currentProcessor = chooseNextProcessor(typedCommand);
     if (currentProcessor == null) {
 
       return ProcessingResult.empty();
