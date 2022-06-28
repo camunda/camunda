@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -30,7 +27,6 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,8 +78,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private final ActorSchedulingService actorSchedulingService;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-  private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
-  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
 
@@ -94,7 +88,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ZeebeDb zeebeDb;
   // processing
   private final ProcessingContext processingContext;
-  private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final String actorName;
   private LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
@@ -108,15 +101,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
+  private final Engine engine;
+  private DbLastProcessedPositionState lastProcessedPositionState;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
-    lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
-
-    typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
     typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
-    eventApplierFactory = processorBuilder.getEventApplierFactory();
 
     processingContext =
         processorBuilder
@@ -128,6 +119,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
+
+    engine = new Engine(processorBuilder);
   }
 
   public static StreamProcessorBuilder builder() {
@@ -159,11 +152,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      initProcessors();
+      engine.init(processingContext);
 
       healthCheckTick();
 
-      replayStateMachine = new ReplayStateMachine(processingContext, this::shouldProcessNext);
+      replayStateMachine =
+          new ReplayStateMachine(engine, processingContext, this::shouldProcessNext);
       // disable writing to the log stream
       processingContext.disableLogStreamWriter();
 
@@ -217,7 +211,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorCloseRequested() {
     if (!isFailed()) {
-      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
+      engine.onClose();
     }
   }
 
@@ -237,7 +231,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public void onActorFailed() {
     phase = Phase.FAILED;
     isOpened.set(false);
-    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
+    engine.onFailed();
     tearDown();
     closeFuture.complete(null);
   }
@@ -273,12 +267,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       processingContext.enableLogStreamWriter();
 
       processingStateMachine =
-          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
+          new ProcessingStateMachine(engine, processingContext, this::shouldProcessNext);
 
       logStream.registerRecordAvailableListener(this);
 
       // start reading
-      lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
+      engine.onRecovered(processingContext);
+
       processingStateMachine.startProcessing(lastProcessingPositions);
       if (!shouldProcess) {
         setStateToPausedAndNotifyListeners();
@@ -308,25 +303,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return openFuture;
   }
 
-  // todo: move to engine
-  private void initProcessors() {
-    final TypedRecordProcessors typedRecordProcessors =
-        typedRecordProcessorFactory.createProcessors(processingContext);
-
-    lifecycleAwareListeners.addAll(typedRecordProcessors.getLifecycleListeners());
-    final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-    recordProcessorMap.values().forEachRemaining(lifecycleAwareListeners::add);
-
-    processingContext.recordProcessorMap(recordProcessorMap);
-  }
-
   private long recoverFromSnapshot() {
-    final var zeebeState = recoverState();
-
     // todo: for that we don't need the state
     // split up lastProcessedPositionState
+    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext());
+    processingContext.lastProcessedPositionState(lastProcessedPositionState);
     final long snapshotPosition =
-        zeebeState.getLastProcessedPositionState().getLastSuccessfulProcessedRecordPosition();
+        lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
 
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader
@@ -340,18 +323,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         partitionId,
         snapshotPosition);
     return snapshotPosition;
-  }
-
-  // todo: move to engine
-  private ZeebeDbState recoverState() {
-    final TransactionContext transactionContext = zeebeDb.createContext();
-    final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
-
-    processingContext.transactionContext(transactionContext);
-    processingContext.zeebeState(zeebeState);
-    processingContext.eventApplier(eventApplierFactory.apply(zeebeState));
-
-    return zeebeState;
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
@@ -477,7 +448,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
       LOG.debug("Paused replay for partition {}", partitionId);
     } else {
-      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+      engine.onPaused();
       LOG.debug("Paused processing for partition {}", partitionId);
     }
 
@@ -498,7 +469,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             } else {
               // we only want to call the lifecycle listeners on processing resume
               // since the listeners are not recovered yet
-              lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+              engine.onResumed();
               phase = Phase.PROCESSING;
               if (processingStateMachine != null) {
                 actor.submit(processingStateMachine::readNextRecord);

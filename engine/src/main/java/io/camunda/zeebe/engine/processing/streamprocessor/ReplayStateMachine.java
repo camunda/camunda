@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -60,7 +59,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(REPLAY_FILTER));
 
   private final LogStreamBatchReader logStreamBatchReader;
-  private final EventApplier eventApplier;
 
   private final TransactionContext transactionContext;
   private final RetryStrategy replayStrategy;
@@ -83,16 +81,19 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
   private final ReplayMetrics replayMetrics;
+  private final Engine engine;
 
   public ReplayStateMachine(
-      final ProcessingContext context, final BooleanSupplier shouldReplayNext) {
+      final Engine engine,
+      final ProcessingContext context,
+      final BooleanSupplier shouldReplayNext) {
+    this.engine = engine;
     shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
     recordValues = context.getRecordValues();
     transactionContext = context.getTransactionContext();
     zeebeState = context.getZeebeState();
     abortCondition = context.getAbortCondition();
-    eventApplier = context.getEventApplier();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     streamProcessorListener = context.getStreamProcessorListener();
@@ -221,7 +222,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
-      applyCurrentEvent(currentTypedEvent);
+      engine.apply(currentTypedEvent);
+      lastReplayedEventPosition = currentTypedEvent.getPosition();
     }
 
     onRecordReplayed(currentEvent);
@@ -298,13 +300,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
     return typedEvent;
-  }
-
-  // todo: move to engine
-  private void applyCurrentEvent(final TypedRecord<?> currentEvent) {
-    eventApplier.applyState(
-        currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
-    lastReplayedEventPosition = currentEvent.getPosition();
   }
 
   private void notifyReplayListener() {

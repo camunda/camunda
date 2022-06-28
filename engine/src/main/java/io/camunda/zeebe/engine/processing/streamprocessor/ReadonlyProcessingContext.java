@@ -56,11 +56,6 @@ public interface ReadonlyProcessingContext {
   RecordValues getRecordValues();
 
   /**
-   * @return the map of processors, which are executed during processing
-   */
-  RecordProcessorMap getRecordProcessorMap();
-
-  /**
    * @return the state, where the data is stored during processing
    */
   MutableZeebeState getZeebeState();

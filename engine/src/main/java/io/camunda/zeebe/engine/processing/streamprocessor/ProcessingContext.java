@@ -40,7 +40,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private TypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
-  private RecordProcessorMap recordProcessorMap;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
   private EventApplier eventApplier;
@@ -50,6 +49,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private MutableLastProcessedPositionState lastProcessedPositionState;
 
   public ProcessingContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -72,11 +72,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
-    return this;
-  }
-
-  public ProcessingContext recordProcessorMap(final RecordProcessorMap recordProcessorMap) {
-    this.recordProcessorMap = recordProcessorMap;
     return this;
   }
 
@@ -136,8 +131,13 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return zeebeState.getKeyGeneratorControls();
   }
 
+  public void lastProcessedPositionState(
+      final MutableLastProcessedPositionState lastProcessedPositionState) {
+    this.lastProcessedPositionState = lastProcessedPositionState;
+  }
+
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return zeebeState.getLastProcessedPositionState();
+    return lastProcessedPositionState;
   }
 
   @Override
@@ -176,11 +176,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   @Override
   public RecordValues getRecordValues() {
     return recordValues;
-  }
-
-  @Override
-  public RecordProcessorMap getRecordProcessorMap() {
-    return recordProcessorMap;
   }
 
   @Override

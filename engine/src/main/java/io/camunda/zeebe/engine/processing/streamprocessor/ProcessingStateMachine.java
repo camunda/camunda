@@ -140,10 +140,14 @@ public final class ProcessingStateMachine {
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
   private boolean inProcessing;
+  private final Engine engine;
+  private ProcessingResult currentProcessingResult;
 
   public ProcessingStateMachine(
-      final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
-
+      final Engine engine,
+      final ProcessingContext context,
+      final BooleanSupplier shouldProcessNext) {
+    this.engine = engine;
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
@@ -247,13 +251,16 @@ public final class ProcessingStateMachine {
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            final var engine = new Engine();
-            final var result = engine.process(metadata, typedCommand);
-
+            currentProcessingResult = engine.process(metadata, typedCommand);
             lastProcessedPositionState.markAsProcessed(position);
           });
 
       metrics.commandsProcessed();
+
+      if (ProcessingResult.empty() == currentProcessingResult) {
+        skipRecord();
+        return;
+      }
 
       writeRecords();
     } catch (final RecoverableException recoverableException) {
@@ -452,53 +459,5 @@ public final class ProcessingStateMachine {
     }
 
     actor.submit(this::readNextRecord);
-  }
-
-  public static class ProcessingResult {
-
-    public static ProcessingResult empty() {
-      return new ProcessingResult();
-    }
-  }
-
-  public final class Engine {
-
-    private RecordProcessorMap recordProcessorMap;
-
-    private TypedRecordProcessor<?> currentProcessor;
-
-    public void init(final ProcessingContext context) {
-      recordProcessorMap = context.getRecordProcessorMap();
-    }
-
-    private TypedRecordProcessor<?> chooseNextProcessor(
-        final RecordMetadata metadata, final TypedRecord<?> command) {
-      TypedRecordProcessor<?> typedRecordProcessor = null;
-
-      try {
-        typedRecordProcessor =
-            recordProcessorMap.get(
-                metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
-      } catch (final Exception e) {
-        LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
-      }
-
-      return typedRecordProcessor;
-    }
-
-    public ProcessingResult process(final RecordMetadata metadata, final TypedRecord typedCommand) {
-      currentProcessor = chooseNextProcessor(metadata, typedCommand);
-      if (currentProcessor == null) {
-        skipRecord();
-        return ProcessingResult.empty();
-      }
-
-      final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
-      if (isNotOnBlacklist) {
-        currentProcessor.processRecord(typedCommand, responseWriter, logStreamWriter);
-      }
-
-      return new ProcessingResult();
-    }
   }
 }
