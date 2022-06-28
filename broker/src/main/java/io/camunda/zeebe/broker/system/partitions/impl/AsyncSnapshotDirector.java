@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -50,6 +51,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final String processorName;
   private final StreamProcessor streamProcessor;
   private final String actorName;
+  private final StreamProcessorMode streamProcessorMode;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final BooleanSupplier isLastWrittenPositionCommitted;
 
@@ -78,6 +80,7 @@ public final class AsyncSnapshotDirector extends Actor
     this.snapshotRate = snapshotRate;
     this.partitionId = partitionId;
     actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
+    this.streamProcessorMode = streamProcessorMode;
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       isLastWrittenPositionCommitted = () -> true;
     } else {
@@ -254,17 +257,27 @@ public final class AsyncSnapshotDirector extends Actor
     transientSnapshotFuture.onComplete(
         (transientSnapshot, snapshotTakenError) -> {
           if (snapshotTakenError != null) {
-            if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
-              LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
-            } else {
-              LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
-            }
+            logSnapshotTakenError(snapshotTakenError);
             resetStateOnFailure(snapshotTakenError);
             return;
           }
 
           onTransientSnapshotTaken(transientSnapshot);
         });
+  }
+
+  private void logSnapshotTakenError(final Throwable snapshotTakenError) {
+    if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
+      LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
+    } else if (snapshotTakenError instanceof NoEntryAtSnapshotPosition
+        && streamProcessorMode == StreamProcessorMode.REPLAY) {
+      LOG.debug(
+          "Did not take a snapshot: {}. Most likely this partition has not received the entry yet. Will retry in {}",
+          snapshotTakenError.getMessage(),
+          snapshotRate);
+    } else {
+      LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
+    }
   }
 
   private void onTransientSnapshotTaken(final TransientSnapshot transientSnapshot) {
