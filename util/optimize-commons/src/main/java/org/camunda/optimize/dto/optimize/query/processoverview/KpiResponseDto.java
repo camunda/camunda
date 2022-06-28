@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,7 +22,8 @@ public class KpiResponseDto {
   private String reportName;
   private String value;
   private String target;
-  private Boolean isBelow;
+  @JsonProperty("isBelow")
+  private boolean isBelow;
   private KpiType type;
   private ViewProperty measure;
   private String unit;

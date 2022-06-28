@@ -18,13 +18,12 @@ public class MetadataIndex extends DefaultIndexMappingCreator {
   public static final String ID = "1";
 
   public static final String SCHEMA_VERSION = MetadataDto.Fields.schemaVersion.name();
-  public static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
+  private static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
 
   @Override
   public String getIndexName() {
     return ElasticsearchConstants.METADATA_INDEX_NAME;
   }
-
 
   @Override
   public int getVersion() {

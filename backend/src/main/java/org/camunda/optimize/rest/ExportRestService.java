@@ -36,7 +36,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -119,7 +118,7 @@ public class ExportRestService {
         .combined(false)
         .data(
           ProcessReportDataDto.builder()
-            .definitions(Arrays.asList(
+            .definitions(List.of(
               new ReportDataDefinitionDto(
                 request.getProcessDefinitionKey(),
                 request.getProcessDefinitionVersions(),

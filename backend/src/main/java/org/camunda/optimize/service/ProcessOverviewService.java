@@ -115,33 +115,32 @@ public class ProcessOverviewService {
         if (kpiReportsForKey.isPresent()) {
           for (SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto :
             kpiReportsForKey.get()) {
-            if(!singleProcessReportDefinitionRequestDto.getData().getGroupBy().equals(new NoneGroupByDto())) {
-              continue;
-            } else {
-            @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
-              reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
-                userId,
-                timezone,
-                singleProcessReportDefinitionRequestDto.getId(),
-                null,
-                null
-              ).getEvaluationResult();
-            final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-            if(!String.valueOf(evaluationValue).equals("null")){
-              KpiResponseDto responseDto = new KpiResponseDto();
-              List<String> targetAndUnit = getTargetAndUnit(singleProcessReportDefinitionRequestDto);
-              if(targetAndUnit != null) {
-                responseDto.setTarget(targetAndUnit.get(0));
-                responseDto.setUnit(targetAndUnit.get(1));
+            if (singleProcessReportDefinitionRequestDto.getData().getGroupBy().equals(new NoneGroupByDto())) {
+              @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+              final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
+                reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
+                  userId,
+                  timezone,
+                  singleProcessReportDefinitionRequestDto.getId(),
+                  null,
+                  null
+                ).getEvaluationResult();
+              final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
+              if (!String.valueOf(evaluationValue).equals("null")) {
+                KpiResponseDto responseDto = new KpiResponseDto();
+                List<String> targetAndUnit = getTargetAndUnit(singleProcessReportDefinitionRequestDto);
+                if (targetAndUnit != null) {
+                  responseDto.setTarget(targetAndUnit.get(0));
+                  responseDto.setUnit(targetAndUnit.get(1));
+                }
+                responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
+                responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
+                responseDto.setBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
+                responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
+                responseDto.setValue(evaluationValue.toString());
+                responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
+                kpis.add(responseDto);
               }
-              responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
-              responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
-              responseDto.setIsBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
-              responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
-              responseDto.setValue(evaluationValue.toString());
-              responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
-              kpis.add(responseDto);
-            }
             }
           }
         }
@@ -240,12 +239,12 @@ public class ProcessOverviewService {
     if (viewProperty == null) {
       return null;
     } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      targetAndUnit.add(0,targetValue.getDurationProgress().getTarget().getValue());
-      targetAndUnit.add(1,targetValue.getDurationProgress().getTarget().getUnit().toString());
+      targetAndUnit.add(0, targetValue.getDurationProgress().getTarget().getValue());
+      targetAndUnit.add(1, targetValue.getDurationProgress().getTarget().getUnit().toString());
       return targetAndUnit;
     } else {
-      targetAndUnit.add(0,targetValue.getCountProgress().getTarget());
-      targetAndUnit.add(1,"");
+      targetAndUnit.add(0, targetValue.getCountProgress().getTarget());
+      targetAndUnit.add(1, "");
       return targetAndUnit;
     }
   }

@@ -19,7 +19,7 @@ public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 5;
 
-  public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = ImportIndexDto.Fields.lastImportExecutionTimestamp;
+  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP = ImportIndexDto.Fields.lastImportExecutionTimestamp;
   public static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   public static final String ES_TYPE_INDEX_REFERS_TO = TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
   public static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
