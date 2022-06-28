@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
@@ -83,8 +82,6 @@ public final class ProcessingStateMachine {
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
       "Expected to roll back the current transaction for record '{} {}' successfully, but exception was thrown.";
-  private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
-      "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
       "Expected to successfully update state for record '{} {}', but caught an exception. Retry.";
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
@@ -122,7 +119,6 @@ public final class ProcessingStateMachine {
   private final TypedStreamWriter logStreamWriter;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
-  private final RetryStrategy sideEffectsRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
@@ -133,7 +129,6 @@ public final class ProcessingStateMachine {
   private final StreamProcessorListener streamProcessorListener;
 
   // current iteration
-  private SideEffectProducer sideEffectProducer;
   private LoggedEvent currentRecord;
   private ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
@@ -160,7 +155,6 @@ public final class ProcessingStateMachine {
     lastProcessedPositionState = context.getLastProcessedPositionState();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
-    sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
@@ -249,9 +243,6 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       resetOutput(position);
-
-      // default side effect is responses; can be changed by processor
-      sideEffectProducer = responseWriter;
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
@@ -404,26 +395,16 @@ public final class ProcessingStateMachine {
   }
 
   private void executeSideEffects() {
-    final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
+    // send responses
+    responseWriter.flush();
+    notifyProcessedListener(typedCommand);
 
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          if (throwable != null) {
-            LOG.error(
-                ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentRecord, metadata, throwable);
-          }
+    // observe the processing duration
+    processingTimer.close();
 
-          notifyProcessedListener(typedCommand);
-
-          // observe the processing duration
-          processingTimer.close();
-
-          // continue with next record
-          inProcessing = false;
-          actor.submit(this::readNextRecord);
-        });
+    // continue with next record
+    inProcessing = false;
+    actor.submit(this::readNextRecord);
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
@@ -505,10 +486,6 @@ public final class ProcessingStateMachine {
       return typedRecordProcessor;
     }
 
-    public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
-      ProcessingStateMachine.this.sideEffectProducer = sideEffectProducer;
-    }
-
     public ProcessingResult process(final RecordMetadata metadata, final TypedRecord typedCommand) {
       currentProcessor = chooseNextProcessor(metadata, typedCommand);
       if (currentProcessor == null) {
@@ -518,8 +495,7 @@ public final class ProcessingStateMachine {
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
-        currentProcessor.processRecord(
-            typedCommand, responseWriter, logStreamWriter, this::setSideEffectProducer);
+        currentProcessor.processRecord(typedCommand, responseWriter, logStreamWriter);
       }
 
       return new ProcessingResult();

@@ -12,7 +12,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -30,7 +29,6 @@ import io.camunda.zeebe.util.sched.Actor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -165,8 +163,7 @@ public class StreamProcessorHealthTest {
                         public void processRecord(
                             final TypedRecord<UnifiedRecordValue> record,
                             final TypedResponseWriter responseWriter,
-                            final TypedStreamWriter streamWriter,
-                            final Consumer<SideEffectProducer> sideEffect) {
+                            final TypedStreamWriter streamWriter) {
 
                           invocation.getAndIncrement();
                           if (shouldProcessingThrowException.get()) {

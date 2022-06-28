@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import java.util.function.Consumer;
 
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
@@ -49,8 +47,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   public void processRecord(
       final TypedRecord<DeploymentRecord> event,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedStreamWriter streamWriter) {
     final var deploymentEvent = event.getValue();
     final var deploymentKey = event.getKey();
 

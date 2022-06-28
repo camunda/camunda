@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -22,7 +21,6 @@ import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import java.util.function.Consumer;
 
 public final class MessageSubscriptionRejectProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -49,8 +47,7 @@ public final class MessageSubscriptionRejectProcessor
   public void processRecord(
       final TypedRecord<MessageSubscriptionRecord> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedStreamWriter streamWriter) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
@@ -64,12 +61,10 @@ public final class MessageSubscriptionRejectProcessor
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
-    findSubscriptionToCorrelate(sideEffect, subscriptionRecord);
+    findSubscriptionToCorrelate(subscriptionRecord);
   }
 
-  private void findSubscriptionToCorrelate(
-      final Consumer<SideEffectProducer> sideEffect,
-      final MessageSubscriptionRecord subscriptionRecord) {
+  private void findSubscriptionToCorrelate(final MessageSubscriptionRecord subscriptionRecord) {
 
     final var messageKey = subscriptionRecord.getMessageKey();
 
@@ -101,7 +96,7 @@ public final class MessageSubscriptionRejectProcessor
                 MessageSubscriptionIntent.CORRELATING,
                 correlatingSubscription);
 
-            sideEffect.accept(() -> sendCorrelateCommand(correlatingSubscription));
+            sendCorrelateCommand(correlatingSubscription);
           }
           return !canBeCorrelated;
         });

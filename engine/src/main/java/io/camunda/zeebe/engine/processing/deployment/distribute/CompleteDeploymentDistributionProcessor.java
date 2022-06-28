@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import java.util.function.Consumer;
 
 public class CompleteDeploymentDistributionProcessor
     implements TypedRecordProcessor<DeploymentDistributionRecord> {
@@ -45,8 +43,7 @@ public class CompleteDeploymentDistributionProcessor
   public void processRecord(
       final TypedRecord<DeploymentDistributionRecord> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedStreamWriter streamWriter) {
 
     final var deploymentKey = record.getKey();
     if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {

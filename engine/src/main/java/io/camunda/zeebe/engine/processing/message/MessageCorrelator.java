@@ -8,14 +8,12 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
-import java.util.function.Consumer;
 import org.agrona.collections.MutableBoolean;
 
 public final class MessageCorrelator {
@@ -23,8 +21,6 @@ public final class MessageCorrelator {
   private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
-
-  private Consumer<SideEffectProducer> sideEffect;
 
   public MessageCorrelator(
       final MessageState messageState,
@@ -36,11 +32,7 @@ public final class MessageCorrelator {
   }
 
   public boolean correlateNextMessage(
-      final long subscriptionKey,
-      final MessageSubscriptionRecord subscriptionRecord,
-      final Consumer<SideEffectProducer> sideEffect) {
-    this.sideEffect = sideEffect;
-
+      final long subscriptionKey, final MessageSubscriptionRecord subscriptionRecord) {
     final var isMessageCorrelated = new MutableBoolean(false);
 
     messageState.visitMessages(
@@ -75,14 +67,14 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
+      sendCorrelateCommand(subscriptionRecord);
     }
 
     return correlateMessage;
   }
 
-  private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
-    return commandSender.correlateProcessMessageSubscription(
+  private void sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
+    commandSender.correlateProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),

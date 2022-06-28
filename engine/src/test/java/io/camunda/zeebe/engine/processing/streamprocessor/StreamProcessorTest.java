@@ -19,7 +19,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -42,7 +41,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -166,9 +164,7 @@ public final class StreamProcessorTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
 
@@ -193,7 +189,7 @@ public final class StreamProcessorTest {
               return null;
             }))
         .when(typedRecordProcessor)
-        .processRecord(any(), any(), any(), any());
+        .processRecord(any(), any(), any());
 
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
@@ -210,9 +206,7 @@ public final class StreamProcessorTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(2))
-        .processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).processRecord(any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
   }
@@ -239,10 +233,8 @@ public final class StreamProcessorTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(any(), any(), any(), any());
-    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any());
 
     inOrder.verifyNoMoreInteractions();
   }
@@ -278,10 +270,10 @@ public final class StreamProcessorTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
     inOrder.verify(typedRecordProcessor, TIMEOUT).onRecovered(any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(any(), any(), any(), any());
-    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
-    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any(), any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(any(), any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(any(), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(any(), any(), any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -299,8 +291,7 @@ public final class StreamProcessorTest {
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter,
-                          final Consumer<SideEffectProducer> sideEffect) {
+                          final TypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
@@ -325,106 +316,6 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldExecuteSideEffects() throws Exception {
-    // given
-    final CountDownLatch processLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
-
-                    sideEffect.accept(
-                        () -> {
-                          processLatch.countDown();
-                          return true;
-                        });
-                  }
-                }));
-
-    // when
-    streamProcessorRule.writeCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-
-    // then
-    assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
-  }
-
-  @Test
-  public void shouldRepeatExecuteSideEffects() throws Exception {
-    // given
-    final CountDownLatch processLatch = new CountDownLatch(2);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
-                    sideEffect.accept(
-                        () -> {
-                          processLatch.countDown();
-                          return processLatch.getCount() < 1;
-                        });
-                  }
-                }));
-
-    // when
-    streamProcessorRule.writeCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-
-    // then
-    assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
-  }
-
-  @Test
-  public void shouldSkipSideEffectsOnException() throws Exception {
-    // given
-    final CountDownLatch processLatch = new CountDownLatch(2);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
-
-                    sideEffect.accept(
-                        () -> {
-                          throw new RuntimeException("expected");
-                        });
-                    processLatch.countDown();
-                  }
-                }));
-
-    // when
-    streamProcessorRule.writeCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    streamProcessorRule.writeCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-
-    // then
-    assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
-  }
-
-  @Test
   public void shouldNotUpdateStateOnExceptionInProcessing() {
     // given
     final long jobKey = 1L;
@@ -441,8 +332,7 @@ public final class StreamProcessorTest {
                 public void processRecord(
                     final TypedRecord<UnifiedRecordValue> record,
                     final TypedResponseWriter responseWriter,
-                    final TypedStreamWriter streamWriter,
-                    final Consumer<SideEffectProducer> sideEffect) {
+                    final TypedStreamWriter streamWriter) {
 
                   state.getJobState().create(jobKey, JOB_RECORD);
 
@@ -489,8 +379,7 @@ public final class StreamProcessorTest {
                 public void processRecord(
                     final TypedRecord<UnifiedRecordValue> record,
                     final TypedResponseWriter responseWriter,
-                    final TypedStreamWriter streamWriter,
-                    final Consumer<SideEffectProducer> sideEffect) {
+                    final TypedStreamWriter streamWriter) {
 
                   state.getJobState().create(jobKey, JOB_RECORD);
                 }
@@ -528,8 +417,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
+                      final TypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -568,8 +456,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
+                      final TypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -725,8 +612,7 @@ public final class StreamProcessorTest {
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter,
-                          final Consumer<SideEffectProducer> sideEffect) {
+                          final TypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),

@@ -15,9 +15,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -36,7 +34,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -88,8 +85,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   public void processRecord(
       final TypedRecord<TimerRecord> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffects) {
+      final TypedStreamWriter streamWriter) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();
@@ -121,7 +117,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     }
 
     if (shouldReschedule(timer)) {
-      rescheduleTimer(timer, catchEvent, streamWriter, sideEffects);
+      rescheduleTimer(timer, catchEvent);
     }
   }
 
@@ -140,11 +136,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     return timer.getRepetitions() == RepeatingInterval.INFINITE || timer.getRepetitions() > 1;
   }
 
-  private void rescheduleTimer(
-      final TimerRecord record,
-      final ExecutableCatchEvent event,
-      final TypedCommandWriter writer,
-      final Consumer<SideEffectProducer> sideEffects) {
+  private void rescheduleTimer(final TimerRecord record, final ExecutableCatchEvent event) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
     if (timer.isLeft()) {

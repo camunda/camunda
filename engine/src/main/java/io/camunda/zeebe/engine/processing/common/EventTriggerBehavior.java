@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -60,11 +59,7 @@ public class EventTriggerBehavior {
   }
 
   private void unsubscribeEventSubprocesses(final BpmnElementContext context) {
-    final var sideEffectQueue = new SideEffectQueue();
     catchEventBehavior.unsubscribeEventSubprocesses(context, commandWriter);
-
-    // side effect can immediately executed, since on restart we not reprocess anymore the commands
-    sideEffectQueue.flush();
   }
 
   public void triggerEventSubProcess(

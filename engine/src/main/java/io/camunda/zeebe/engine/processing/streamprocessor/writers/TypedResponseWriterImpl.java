@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -18,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
+public final class TypedResponseWriterImpl implements TypedResponseWriter {
 
   private final CommandResponseWriter writer;
   private final int partitionId;
@@ -116,6 +115,11 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
     return true;
   }
 
+  @Override
+  public void reset() {
+    isResponseStaged = false;
+  }
+
   private void stage(
       final RecordType type,
       final Intent intent,
@@ -139,9 +143,5 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
     this.requestId = requestId;
     this.requestStreamId = requestStreamId;
     isResponseStaged = true;
-  }
-
-  public void reset() {
-    isResponseStaged = false;
   }
 }

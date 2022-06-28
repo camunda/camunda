@@ -67,7 +67,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         new DefaultJobCommandPreconditionGuard(
             "throw an error for",
             jobState,
-            (record, commandControl, sideEffect) -> acceptCommand(record, commandControl));
+            (record, commandControl) -> acceptCommand(record, commandControl));
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     this.eventPublicationBehavior = eventPublicationBehavior;

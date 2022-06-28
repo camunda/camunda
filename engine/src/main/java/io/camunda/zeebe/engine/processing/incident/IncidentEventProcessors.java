@@ -27,6 +27,6 @@ public final class IncidentEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
-        new ResolveIncidentProcessor(zeebeState, bpmnStreamProcessor, writers, keyGenerator));
+        new ResolveIncidentProcessor(zeebeState, bpmnStreamProcessor, writers));
   }
 }

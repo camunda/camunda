@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import java.util.function.Consumer;
 
 // todo (#8002): remove TypedStreamWriter from this interface's method signatures
 // After the migration, none of these should be in use anymore and replaced by the CommandWriter and
@@ -20,28 +18,13 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue>
     extends StreamProcessorLifecycleAware {
 
   /**
-   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
+   * @param record the record to process
+   * @param responseWriter the default side effect that can be used for sending responses. {@link
+   *     TypedResponseWriter#flush()} must not be called in this method.
+   * @param streamWriter
    */
   default void processRecord(
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {}
-
-  /**
-   * @param record the record to process
-   * @param responseWriter the default side effect that can be used for sending responses. {@link
-   *     TypedResponseWriter#flush()} must not be called in this method.
-   * @param streamWriter
-   * @param sideEffect consumer to replace the default side effect (response writer). Can be used to
-   *     implement other types of side effects or composite side effects. If a composite side effect
-   *     involving the response writer is used, {@link TypedResponseWriter#flush()} must be called
-   *     in the {@link SideEffectProducer} implementation.
-   */
-  default void processRecord(
-      final TypedRecord<T> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter);
-  }
 }

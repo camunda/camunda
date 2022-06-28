@@ -38,7 +38,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         new DefaultJobCommandPreconditionGuard(
             "complete",
             jobState,
-            (record, commandControl, sideEffect) -> acceptCommand(record, commandControl));
+            (record, commandControl) -> acceptCommand(record, commandControl));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }

@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -29,7 +28,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import java.util.function.Consumer;
 
 public final class MessagePublishProcessor implements TypedRecordProcessor<MessageRecord> {
 
@@ -75,8 +73,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   public void processRecord(
       final TypedRecord<MessageRecord> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedStreamWriter streamWriter) {
     this.responseWriter = responseWriter;
     messageRecord = command.getValue();
 
@@ -95,14 +92,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
-      handleNewMessage(command, responseWriter, sideEffect);
+      handleNewMessage(command, responseWriter);
     }
   }
 
   private void handleNewMessage(
-      final TypedRecord<MessageRecord> command,
-      final TypedResponseWriter responseWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageRecord> command, final TypedResponseWriter responseWriter) {
     messageKey = keyGenerator.nextKey();
 
     // calculate the deadline based on the command's timestamp
@@ -115,7 +110,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
 
-    sideEffect.accept(this::sendCorrelateCommand);
+    sendCorrelateCommand();
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up

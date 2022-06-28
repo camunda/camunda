@@ -20,9 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -40,15 +37,12 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
-
-  private final SideEffectQueue sideEffects = new SideEffectQueue();
 
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
@@ -88,12 +82,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   public void processRecord(
       final TypedRecord<DeploymentRecord> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
-
-    // need to add multiple side-effects for sending a response and scheduling timers
-    sideEffects.add(responseWriter);
-    sideEffect.accept(sideEffects);
+      final TypedStreamWriter streamWriter) {
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
@@ -102,7 +91,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, streamWriter, sideEffects);
+        createTimerIfTimerStartEvent(command, streamWriter);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
         responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
@@ -131,25 +120,20 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void createTimerIfTimerStartEvent(
-      final TypedRecord<DeploymentRecord> record,
-      final TypedStreamWriter streamWriter,
-      final SideEffects sideEffects) {
+      final TypedRecord<DeploymentRecord> record, final TypedStreamWriter streamWriter) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
             processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
         unsubscribeFromPreviousTimers(streamWriter, processMetadata);
-        subscribeToTimerStartEventIfExists(streamWriter, sideEffects, processMetadata, startEvents);
+        subscribeToTimerStartEventIfExists(processMetadata, startEvents);
       }
     }
   }
 
   private void subscribeToTimerStartEventIfExists(
-      final TypedStreamWriter streamWriter,
-      final SideEffects sideEffects,
-      final ProcessMetadata processMetadata,
-      final List<ExecutableStartEvent> startEvents) {
+      final ProcessMetadata processMetadata, final List<ExecutableStartEvent> startEvents) {
     for (final ExecutableCatchEventElement startEvent : startEvents) {
       if (startEvent.isTimer()) {
         // There are no variables when there is no process instance yet,

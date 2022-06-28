@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -69,8 +68,6 @@ public final class CreateProcessInstanceProcessor
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
-
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
@@ -101,8 +98,6 @@ public final class CreateProcessInstanceProcessor
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller) {
-    // cleanup side effects from previous command
-    sideEffectQueue.clear();
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
@@ -394,9 +389,6 @@ public final class CreateProcessInstanceProcessor
           commandWriter.appendFollowUpCommand(
               elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
         });
-
-    // applying the side effects is part of creating the event subscriptions
-    sideEffectQueue.flush();
   }
 
   /**
