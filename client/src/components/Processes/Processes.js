@@ -6,8 +6,9 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
+import {Link} from 'react-router-dom';
 
-import {Button, EntityList, Tooltip} from 'components';
+import {Button, EntityList, Icon, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -50,7 +51,12 @@ export function Processes({mightFail}) {
     })();
   }, []);
 
-  const columns = [t('common.name'), t('processes.timeKpi'), t('processes.qualityKpi')];
+  const columns = [
+    t('common.name'),
+    t('processes.timeKpi'),
+    t('processes.qualityKpi'),
+    t('dashboard.label'),
+  ];
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
@@ -80,46 +86,51 @@ export function Processes({mightFail}) {
         columns={columns}
         sorting={sorting}
         onChange={loadProcessesList}
-        data={processes?.map(({processDefinitionKey, processDefinitionName, owner, kpis}) => {
-          const timeKpis = kpis?.filter((kpi) => kpi.type === 'time');
-          const qualityKpis = kpis?.filter((kpi) => kpi.type === 'quality');
-          const meta = [
-            <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
-              <div className="summaryContainer">
-                <KpiSummary kpis={timeKpis} />
-              </div>
-            </Tooltip>,
-            <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
-              <div className="summaryContainer">
-                <KpiSummary kpis={qualityKpis} />
-              </div>
-            </Tooltip>,
-          ];
+        data={processes?.map(
+          ({processDefinitionKey, processDefinitionName, owner, kpis, linkToDashboard}) => {
+            const timeKpis = kpis?.filter((kpi) => kpi.type === 'time');
+            const qualityKpis = kpis?.filter((kpi) => kpi.type === 'quality');
+            const meta = [
+              <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
+                <div className="summaryContainer">
+                  <KpiSummary kpis={timeKpis} />
+                </div>
+              </Tooltip>,
+              <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
+                <div className="summaryContainer">
+                  <KpiSummary kpis={qualityKpis} />
+                </div>
+              </Tooltip>,
+              <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
+                {t('common.view')} <Icon type="jump" />
+              </Link>,
+            ];
 
-          if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
-            meta.unshift(
-              <div className="ownerInfo">
-                <Tooltip content={owner?.name} overflowOnly>
-                  <div className="ownerName">{owner?.name}</div>
-                </Tooltip>
-                <Button
-                  className="setOwnerBtn"
-                  onClick={() => setEditOwnerInfo({processDefinitionKey, owner})}
-                >
-                  {owner?.name ? t('processes.editOwner') : t('processes.addOwner')}
-                </Button>
-              </div>
-            );
+            if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
+              meta.unshift(
+                <div className="ownerInfo">
+                  <Tooltip content={owner?.name} overflowOnly>
+                    <div className="ownerName">{owner?.name}</div>
+                  </Tooltip>
+                  <Button
+                    className="processHoverBtn"
+                    onClick={() => setEditOwnerInfo({processDefinitionKey, owner})}
+                  >
+                    {owner?.name ? t('processes.editOwner') : t('processes.addOwner')}
+                  </Button>
+                </div>
+              );
+            }
+
+            return {
+              id: processDefinitionKey,
+              type: t('common.process.label'),
+              icon: 'data-source',
+              name: processDefinitionName || processDefinitionKey,
+              meta,
+            };
           }
-
-          return {
-            id: processDefinitionKey,
-            type: t('common.process.label'),
-            icon: 'data-source',
-            name: processDefinitionName || processDefinitionKey,
-            meta,
-          };
-        })}
+        )}
       />
       {editOwnerInfo && (
         <EditOwnerModal

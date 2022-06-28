@@ -22,6 +22,7 @@ jest.mock('./service', () => ({
       processDefinitionName: 'defName',
       kpis: [],
       owner: {id: null},
+      linkToDashboard: 'dashboardLink',
     },
   ]),
   updateOwner: jest.fn(),
@@ -52,7 +53,7 @@ it('should load processes', async () => {
     {
       icon: 'data-source',
       id: 'defKey',
-      meta: [expect.any(Object), expect.any(Object), expect.any(Object)],
+      meta: expect.any(Array),
       name: 'defName',
       type: 'Process',
     },
@@ -75,7 +76,7 @@ it('should hide owner column in ccsm mode', async () => {
   await runAllEffects();
 
   expect(node.find(EntityList).prop('columns')[1].key).not.toBe('owner');
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(2);
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(3);
 });
 
 it('should edit a process owner', async () => {

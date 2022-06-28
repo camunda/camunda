@@ -69,7 +69,7 @@
 
     .ListItem:not(:hover) {
       .setGoalBtn,
-      .setOwnerBtn {
+      .processHoverBtn {
         opacity: 0;
         width: 0px;
 
