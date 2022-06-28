@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -96,7 +95,11 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
 
   @Override
   public boolean tryWriteResponse(final int remoteStreamId, final long requestId) {
-    Objects.requireNonNull(valueWriter);
+    // #mach es einfach
+    // Objects.requireNonNull(valueWriter);
+    if (valueWriter == null) {
+      return true;
+    }
 
     try {
       response.reset().setPartitionId(remoteStreamId).setRequestId(requestId).writer(this);
