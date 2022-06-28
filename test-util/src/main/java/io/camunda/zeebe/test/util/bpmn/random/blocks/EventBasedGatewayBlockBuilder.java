@@ -88,6 +88,13 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
     return forkGatewayId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    // We cannot start at the events of an event based gateway, so we should always start at the
+    // gateway itself
+    return this;
+  }
+
   private AbstractFlowNodeBuilder<?, ?> addBranch(
       final io.camunda.zeebe.model.bpmn.builder.EventBasedGatewayBuilder gatewayBuilder,
       final Tuple<String, BlockBuilder> branch) {

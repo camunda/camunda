@@ -125,6 +125,11 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     return taskId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    return this;
+  }
+
   private ExecutionPathSegment buildStepsForFailedExecutions(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 

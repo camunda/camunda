@@ -120,6 +120,18 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     return forkGatewayId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
+    if (shouldGoIntoNestedBlocks) {
+      final int index = random.nextInt(blockBuilders.size());
+      final BlockBuilder blockBuilder = blockBuilders.get(index);
+      return blockBuilder.findRandomStartingPlace(random);
+    } else {
+      return this;
+    }
+  }
+
   static class Factory implements BlockBuilderFactory {
 
     @Override

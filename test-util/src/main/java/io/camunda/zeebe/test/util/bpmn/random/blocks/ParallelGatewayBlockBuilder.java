@@ -99,6 +99,18 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     return forkGatewayId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
+    if (shouldGoIntoNestedBlocks) {
+      final int index = random.nextInt(blockBuilders.size());
+      final BlockBuilder blockBuilder = blockBuilders.get(index);
+      return blockBuilder.findRandomStartingPlace(random);
+    } else {
+      return this;
+    }
+  }
+
   // shuffles the lists together by iteratively taking the first item from one of the lists
   private void shuffleStepsFromDifferentLists(
       final Random random,

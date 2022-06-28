@@ -128,6 +128,16 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     return subProcessId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
+    if (embeddedSubProcessBuilder != null && shouldGoIntoNestedBlocks) {
+      return embeddedSubProcessBuilder.findRandomStartingPlace(random);
+    } else {
+      return this;
+    }
+  }
+
   public static class Factory implements BlockBuilderFactory {
 
     @Override

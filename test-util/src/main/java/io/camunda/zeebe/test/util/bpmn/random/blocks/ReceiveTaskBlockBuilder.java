@@ -62,6 +62,11 @@ public class ReceiveTaskBlockBuilder implements BlockBuilder {
     return id;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    return this;
+  }
+
   public static class Factory implements BlockBuilderFactory {
 
     @Override

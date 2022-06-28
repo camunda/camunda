@@ -64,6 +64,11 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
     return id;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    return this;
+  }
+
   public static class Factory implements BlockBuilderFactory {
 
     @Override

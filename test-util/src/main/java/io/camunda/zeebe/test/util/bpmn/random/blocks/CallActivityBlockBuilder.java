@@ -78,6 +78,11 @@ public class CallActivityBlockBuilder implements BlockBuilder {
     return callActivityId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    return this;
+  }
+
   private void buildChildProcess() {
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         Bpmn.createExecutableProcess(calledProcessId).startEvent();

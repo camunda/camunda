@@ -43,6 +43,11 @@ public class ManualTaskBlockBuilder implements BlockBuilder {
     return taskId;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    return this;
+  }
+
   static class Factory implements BlockBuilderFactory {
 
     @Override

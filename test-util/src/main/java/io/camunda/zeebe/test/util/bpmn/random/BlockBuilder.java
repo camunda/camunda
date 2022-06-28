@@ -39,4 +39,6 @@ public interface BlockBuilder {
   ExecutionPathSegment findRandomExecutionPath(final Random random);
 
   String getElementId();
+
+  BlockBuilder findRandomStartingPlace(final Random random);
 }

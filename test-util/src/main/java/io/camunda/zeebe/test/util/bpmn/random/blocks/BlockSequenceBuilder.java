@@ -100,6 +100,13 @@ public class BlockSequenceBuilder implements BlockBuilder {
     return null;
   }
 
+  @Override
+  public BlockBuilder findRandomStartingPlace(final Random random) {
+    final int index = random.nextInt(blockBuilders.size());
+    final BlockBuilder blockBuilder = blockBuilders.get(index);
+    return blockBuilder.findRandomStartingPlace(random);
+  }
+
   public ExecutionPathSegment findRandomExecutionPath(
       final Random random, final BlockBuilder startAtBlockBuilder) {
     final ExecutionPathSegment result = new ExecutionPathSegment();

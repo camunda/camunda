@@ -122,18 +122,14 @@ public final class ProcessBuilder {
   }
 
   public ExecutionPath findRandomExecutionPath(final Random random) {
-    final var startAnywhere = random.nextBoolean();
+    final var startAnywhere = true; // TODO random.nextBoolean();
     String startElementId = null;
 
     final ExecutionPathSegment followingPath;
     if (startAnywhere) {
-      // TODO decide start element (filter out not-allowed elements, happens automatically)
-      final var index = random.nextInt(blockBuilder.getBlockBuilders().size());
-      final BlockBuilder startAtBlockBuilder = blockBuilder.getBlockBuilders().get(index);
+      final BlockBuilder startAtBlockBuilder = blockBuilder.findRandomStartingPlace(random);
       startElementId = startAtBlockBuilder.getElementId();
-      // TODO find random executionpath from start element
       followingPath = blockBuilder.findRandomExecutionPath(random, startAtBlockBuilder);
-      // TODO create executionstep to start PI with instructions
     } else {
       followingPath = blockBuilder.findRandomExecutionPath(random);
     }
