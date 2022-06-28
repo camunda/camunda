@@ -58,7 +58,7 @@
     <version.httpcomponents>4.4.15</version.httpcomponents>
     <version.jackson>2.13.3</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
-    <version.jna>5.11.0</version.jna>
+    <version.jna>5.12.0</version.jna>
     <version.junit>5.8.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.17.2</version.log4j>
@@ -69,7 +69,7 @@
     <version.netty>4.1.78.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.21.1</version.protobuf>
+    <version.protobuf>3.21.2</version.protobuf>
     <version.protobuf-common>2.9.0</version.protobuf-common>
     <version.micrometer>1.9.1</version.micrometer>
     <version.rocksdbjni>7.3.1</version.rocksdbjni>
@@ -96,7 +96,7 @@
     <version.jqwik>1.6.5</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.12.11</version.byte-buddy>
+    <version.byte-buddy>1.12.12</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.0</version.immutables>
@@ -105,7 +105,7 @@
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.7.0</version.spotbugs>
+    <version.spotbugs>4.7.1</version.spotbugs>
     <version.archunit>0.23.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
