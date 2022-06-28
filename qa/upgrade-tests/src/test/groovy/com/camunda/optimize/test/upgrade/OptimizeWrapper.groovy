@@ -114,6 +114,7 @@ class OptimizeWrapper {
     if (this.process) {
       log.info("Stopping Optimize ${optimizeVersion}...");
       this.process.destroy()
+      log.info("Optimize process exited with code: ${this.process.waitFor()}");
       this.process = null
       log.info("Optimize ${optimizeVersion} was stopped.");
     }
