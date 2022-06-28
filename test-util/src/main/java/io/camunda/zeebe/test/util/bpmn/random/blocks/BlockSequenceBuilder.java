@@ -107,6 +107,12 @@ public class BlockSequenceBuilder implements BlockBuilder {
     return blockBuilder.findRandomStartingPlace(random);
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
+    return this == blockBuilder || contains;
+  }
+
   public ExecutionPathSegment findRandomExecutionPath(
       final Random random, final BlockBuilder startAtBlockBuilder) {
     final ExecutionPathSegment result = new ExecutionPathSegment();

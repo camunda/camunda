@@ -122,7 +122,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
   @Override
   public BlockBuilder findRandomStartingPlace(final Random random) {
-    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
+    final boolean shouldGoIntoNestedBlocks = true; // TODO random.nextBoolean();
     if (shouldGoIntoNestedBlocks) {
       final int index = random.nextInt(blockBuilders.size());
       final BlockBuilder blockBuilder = blockBuilders.get(index);
@@ -130,6 +130,12 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     } else {
       return this;
     }
+  }
+
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
+    return this == blockBuilder || contains;
   }
 
   static class Factory implements BlockBuilderFactory {

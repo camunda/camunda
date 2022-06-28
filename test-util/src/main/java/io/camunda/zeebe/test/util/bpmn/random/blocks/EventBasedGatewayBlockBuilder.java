@@ -95,6 +95,11 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
     return this;
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    return this == blockBuilder;
+  }
+
   private AbstractFlowNodeBuilder<?, ?> addBranch(
       final io.camunda.zeebe.model.bpmn.builder.EventBasedGatewayBuilder gatewayBuilder,
       final Tuple<String, BlockBuilder> branch) {

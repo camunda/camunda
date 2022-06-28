@@ -130,6 +130,11 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     return this;
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    return this == blockBuilder;
+  }
+
   private ExecutionPathSegment buildStepsForFailedExecutions(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 

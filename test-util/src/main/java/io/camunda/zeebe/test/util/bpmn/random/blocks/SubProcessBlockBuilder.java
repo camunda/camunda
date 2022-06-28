@@ -138,6 +138,17 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     }
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    if (this == blockBuilder) {
+      return true;
+    } else if (embeddedSubProcessBuilder == null) {
+      return false;
+    } else {
+      return embeddedSubProcessBuilder.equalsOrContains(blockBuilder);
+    }
+  }
+
   public static class Factory implements BlockBuilderFactory {
 
     @Override

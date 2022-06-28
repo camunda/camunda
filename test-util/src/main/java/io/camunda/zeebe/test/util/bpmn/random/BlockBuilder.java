@@ -41,4 +41,6 @@ public interface BlockBuilder {
   String getElementId();
 
   BlockBuilder findRandomStartingPlace(final Random random);
+
+  boolean equalsOrContains(final BlockBuilder blockBuilder);
 }

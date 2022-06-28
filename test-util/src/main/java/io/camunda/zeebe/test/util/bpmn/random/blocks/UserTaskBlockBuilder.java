@@ -105,6 +105,11 @@ public class UserTaskBlockBuilder implements BlockBuilder {
     return this;
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    return this == blockBuilder;
+  }
+
   static class Factory implements BlockBuilderFactory {
 
     @Override

@@ -83,6 +83,11 @@ public class CallActivityBlockBuilder implements BlockBuilder {
     return this;
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    return this == blockBuilder;
+  }
+
   private void buildChildProcess() {
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         Bpmn.createExecutableProcess(calledProcessId).startEvent();
