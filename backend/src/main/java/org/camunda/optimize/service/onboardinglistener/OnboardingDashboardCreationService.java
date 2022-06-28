@@ -212,7 +212,7 @@ public class OnboardingDashboardCreationService {
     dateGroupBy.setUnit(AggregateByDateUnit.WEEK);
     groupBy.setValue(dateGroupBy);
     reportData.setGroupBy(groupBy);
-
+    reportData.getConfiguration().getTargetValue().setIsKpi(false);
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName("Are we improving incident handling?");
@@ -243,6 +243,7 @@ public class OnboardingDashboardCreationService {
 
     reportData.getConfiguration().setXLabel("Start Date");
     reportData.getConfiguration().setYLabel("Process Instance Count");
+    reportData.getConfiguration().getTargetValue().setIsKpi(false);
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName("How frequently is this process run?");
@@ -279,6 +280,7 @@ public class OnboardingDashboardCreationService {
       aggDtos.add(aggDto);
     }
     reportData.getConfiguration().setAggregationTypes(aggDtos.toArray(new AggregationDto[values.size()]));
+    reportData.getConfiguration().getTargetValue().setIsKpi(false);
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName("Is my process within control?");
@@ -423,6 +425,7 @@ public class OnboardingDashboardCreationService {
 
     reportData.getConfiguration().setAggregationTypes(aggDtoAvg, aggDtoPerc, aggDtoMax);
     reportData.getConfiguration().setXml(xml);
+    reportData.getConfiguration().getTargetValue().setIsKpi(false);
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);
     report.setName(title);
@@ -448,6 +451,7 @@ public class OnboardingDashboardCreationService {
 
     reportData.getConfiguration().setXml(xml);
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
+    reportData.getConfiguration().getTargetValue().setIsKpi(false);
     report.setData(reportData);
     report.setName(title);
     report.setCollectionId(collectionId);

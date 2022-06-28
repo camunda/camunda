@@ -59,7 +59,9 @@ public class CollectionService {
     } catch (OptimizeRuntimeException e) {
       // This can happen if the collection has been created in parallel, let's check if it already exists
       if (Optional.ofNullable(getCollectionDefinition(presetId)).isEmpty()) {
-        // If it doesn't exist yet and it could not be created, then we have another problem, rethrow exception
+        // If it doesn't exist yet and it could not be created, then we have another problem, log it and rethrow
+        // exception
+        log.error("Unexpected error when trying to create collection with ID " + presetId, e);
         throw e;
       }
       else {

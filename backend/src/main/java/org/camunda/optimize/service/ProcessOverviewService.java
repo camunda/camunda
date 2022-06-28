@@ -46,6 +46,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
@@ -67,12 +68,15 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 
 @AllArgsConstructor
 @Component
 @Slf4j
 public class ProcessOverviewService {
 
+  public static final String APP_CUE_DASHBOARD_SUFFIX = "?appcue=7c293dbb-3957-4187-a079-f0237161c489";
+  
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final ProcessOverviewWriter processOverviewWriter;
@@ -80,6 +84,7 @@ public class ProcessOverviewService {
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
   private final ReportEvaluationService reportEvaluationService;
+  private final CollectionService collectionService;
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final ZoneId timezone) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
@@ -145,6 +150,9 @@ public class ProcessOverviewService {
           }
         }
 
+        String appCueSuffix = collectionAlreadyCreatedForProcess(procDefKey) ? "" : APP_CUE_DASHBOARD_SUFFIX;
+        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, procDefKey, procDefKey) + appCueSuffix;
+
         return new ProcessOverviewResponseDto(
           StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
           procDefKey,
@@ -153,9 +161,19 @@ public class ProcessOverviewService {
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto()),
-          kpis
+          kpis,
+          magicLinkToDashboard
         );
       }).collect(Collectors.toList());
+  }
+
+  private boolean collectionAlreadyCreatedForProcess(final String procDefKey) {
+    try {
+      return collectionService.getCollectionDefinition(procDefKey).isAutomaticallyCreated();
+    } catch (NotFoundException e) {
+      // Doesn't exist yet, return false
+      return false;
+    }
   }
 
   private KpiType getReportType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {

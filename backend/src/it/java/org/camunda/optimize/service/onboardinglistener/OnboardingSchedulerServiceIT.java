@@ -26,9 +26,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_PLACEHOLDER;
 import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
-import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.PROCESS_KEY_PLACEHOLDER;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 
 public class OnboardingSchedulerServiceIT extends AbstractIT {
@@ -303,9 +301,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String expectedEmailBody = OnboardingNotificationService.EMAIL_BODY_TEMPLATE
-      .replaceAll(PROCESS_KEY_PLACEHOLDER, processKey)
-      .replaceAll(MAGIC_LINK_PLACEHOLDER, MAGIC_LINK_TEMPLATE.replaceAll(PROCESS_KEY_PLACEHOLDER, processKey));
+    String expectedEmailBody = String.format(OnboardingNotificationService.EMAIL_BODY_TEMPLATE, processKey,
+                                             String.format(MAGIC_LINK_TEMPLATE, processKey, processKey));
     assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo(expectedEmailBody);
   }
 
