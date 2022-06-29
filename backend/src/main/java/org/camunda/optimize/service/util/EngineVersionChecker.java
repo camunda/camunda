@@ -23,6 +23,7 @@ import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
+import static org.camunda.optimize.service.metadata.Version.isAlphaVersion;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 @Slf4j
@@ -73,8 +74,7 @@ public class EngineVersionChecker {
   }
 
   public static boolean isVersionSupported(String currentVersion, List<String> supportedVersions) {
-    String patchVersion = getPatchVersionFrom(currentVersion);
-    if (patchVersion.contains("alpha")) {
+    if (isAlphaVersion(currentVersion)) {
       log.warn("You are using a development version of the engine");
     }
 

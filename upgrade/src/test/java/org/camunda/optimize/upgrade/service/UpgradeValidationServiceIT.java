@@ -67,14 +67,20 @@ public class UpgradeValidationServiceIT {
       Arguments.of("", "2.0", "2.1"),
       Arguments.of("1.9", "2.0", "2.1"),
       Arguments.of("2.0", "", "2.1"),
-      Arguments.of("2.0", "2.1", "")
+      Arguments.of("2.0", "2.1", ""),
+      Arguments.of("2.0-preview-1", "2.0-preview-2", "2.0-preview-3"),
+      Arguments.of("2.0-preview-1", "2.0-preview-2", "2.0"),
+      Arguments.of("2.0-preview-2", "2.0-preview-1", "2.0")
     );
   }
 
   private static Stream<Arguments> validSchemaVersionScenarios() {
     return Stream.of(
       Arguments.of("2.0", "2.0", "2.1"),
-      Arguments.of("2.1", "2.0", "2.1")
+      Arguments.of("2.1", "2.0", "2.1"),
+      Arguments.of("2.0-preview-1", "2.0-preview-1", "2.0"),
+      Arguments.of("2.0-preview-2", "2.0-preview-1", "2.0-preview-2"),
+      Arguments.of("2.0", "2.0", "2.1-preview-1")
     );
   }
 }

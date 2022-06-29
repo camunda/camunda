@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade.plan;
 import com.vdurmont.semver4j.Semver;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
@@ -20,11 +21,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
+@RequiredArgsConstructor
 public class UpgradePlanRegistry {
 
-  private final Map<Semver, UpgradePlan> upgradePlans = new HashMap<>();
+  private final Map<Semver, UpgradePlan> upgradePlans;
 
   public UpgradePlanRegistry(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
+    this.upgradePlans = new HashMap<>();
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
       .acceptPackages(UpgradePlanFactory.class.getPackage().getName())

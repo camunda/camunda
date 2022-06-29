@@ -17,12 +17,12 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
-public class Upgrade38To39PlanFactory implements UpgradePlanFactory {
+public class Upgrade38To39Preview1PlanFactory implements UpgradePlanFactory {
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.8")
-      .toVersion("3.9.0")
+      .toVersion("3.9.0-preview-1")
       .addUpgradeStep(migrateDecisionReports())
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDashboards())

@@ -21,9 +21,13 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -80,6 +84,61 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
+  }
+
+  @ParameterizedTest
+  @MethodSource("supportedPreviewUpdateScenarios")
+  public void upgradeSucceedsForSupportedPreviewUpdateScenarios(final String fromVersion, final String toVersion) {
+    // given
+    setMetadataVersion(fromVersion);
+
+    // when
+    final UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
+      .fromVersion(fromVersion)
+      .toVersion(toVersion)
+      .build();
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+
+    // then
+    assertThat(getMetadataVersion()).isEqualTo(toVersion);
+  }
+
+  public static Stream<Arguments> supportedPreviewUpdateScenarios() {
+    return Stream.of(
+      Arguments.of("3.8.0", "3.9.0-preview-1"),
+      Arguments.of("3.9.0-preview-1", "3.9.0"),
+      Arguments.of("3.9.0-preview-1", "3.9.0-preview-2")
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("unsupportedPreviewUpdateScenarios")
+  public void upgradeIsSkippedForUnsupportedPreviewUpdateScenarios(final String fromVersion, final String toVersion) {
+    // given
+    setMetadataVersion(fromVersion);
+
+    // when
+    final UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
+      .fromVersion(fromVersion)
+      .toVersion(toVersion)
+      .build();
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+
+    // then
+    assertThat(getMetadataVersion()).isEqualTo(fromVersion);
+    logCapturer.assertContains(
+      "Target schemaVersion or a newer version is already present, no update to perform to "
+        + upgradePlan.getToVersion().getValue()
+        + "."
+    );
+  }
+
+  public static Stream<Arguments> unsupportedPreviewUpdateScenarios() {
+    return Stream.of(
+      Arguments.of("3.9.0-preview-1", "3.8.0"),
+      Arguments.of("3.9.0", "3.9.0-preview-1"),
+      Arguments.of("3.9.0-preview-2", "3.9.0-preview-1")
+    );
   }
 
   @Test
@@ -163,5 +222,4 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
           .map(field -> field.getAnnotation(JsonProperty.class).value())
           .toArray(CharSequence[]::new));
   }
-
 }
