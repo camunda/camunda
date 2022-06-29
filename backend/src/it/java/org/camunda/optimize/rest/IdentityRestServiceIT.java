@@ -31,6 +31,7 @@ import org.mockserver.model.HttpRequest;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +61,22 @@ public class IdentityRestServiceIT extends AbstractIT {
   public void searchForUser() {
     // given
     final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
+    embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(
+      new UserDto("otherId", "Bilbo", "Baggins", "bilbo.baggins@camunda.com")
+    );
+
+    // when
+    final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("frodo");
+
+    // then
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
+  }
+
+  @Test
+  public void searchForUserWithRoles() {
+    // given
+    final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com", List.of("myRole"));
     embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity);
     embeddedOptimizeExtension.getIdentityService().addIdentity(
       new UserDto("otherId", "Bilbo", "Baggins", "bilbo.baggins@camunda.com")
@@ -156,7 +173,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     final UserDto userIdentity =
       new UserDto("testUser1", "Frodo", "Baggins", "frodo.baggins@camunda.com");
     embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity);
-    final UserDto emptyMetaDataUserIdentity = new UserDto("testUser2", null, null, null);
+    final UserDto emptyMetaDataUserIdentity = new UserDto("testUser2");
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
@@ -179,7 +196,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     final UserDto userIdentity =
       new UserDto("testUser1", "Frodo", "Baggins", "frodo.baggins@camunda.com");
     embeddedOptimizeExtension.getIdentityService().addIdentity(userIdentity);
-    final UserDto emptyMetaDataUserIdentity = new UserDto("testUser2", null, null, null);
+    final UserDto emptyMetaDataUserIdentity = new UserDto("testUser2");
     embeddedOptimizeExtension.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
     // when
@@ -314,7 +331,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // then
     assertThat(identity).hasNoNullFieldsOrPropertiesExcept(
-      UserDto.Fields.email, UserDto.Fields.firstName, UserDto.Fields.lastName
+      UserDto.Fields.email, UserDto.Fields.firstName, UserDto.Fields.lastName, UserDto.Fields.roles
     );
     assertThat(identity.getName()).isEqualTo(expectedIdentity.getId());
     engineMockServer.verify(engineFetchRequestMatcher);
@@ -390,6 +407,33 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
+      ), Collections.emptyList());
+
+    assertThat(currentUserDto).isEqualTo(expectedUser);
+  }
+
+  @Test
+  public void getCurrentUserIdentityWithRolesIfPresent() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    embeddedOptimizeExtension.getUserIdentityCache().synchronizeIdentities();
+    final UserDto currentUserIdentity = embeddedOptimizeExtension.getUserIdentityCache().getUserIdentityById(KERMIT_USER)
+      .orElseThrow();
+    // artificially add the roles to it, to verify they are stored and can be retrieved
+    currentUserIdentity.setRoles(List.of("myRole"));
+    embeddedOptimizeExtension.getUserIdentityCache().addIdentity(currentUserIdentity);
+
+    // when
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+
+    // then
+    final UserResponseDto expectedUser = new UserResponseDto(
+      new UserDto(
+        KERMIT_USER,
+        DEFAULT_FIRSTNAME,
+        DEFAULT_LASTNAME,
+        KERMIT_USER + DEFAULT_EMAIL_DOMAIN,
+        List.of("myRole")
       ), Collections.emptyList());
 
     assertThat(currentUserDto).isEqualTo(expectedUser);

@@ -8,6 +8,8 @@ package org.camunda.optimize.dto.optimize.cloud;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 public class CloudUserDto {
@@ -15,6 +17,6 @@ public class CloudUserDto {
   private String userId;
   private String name;
   private String email;
-  private String role;
+  private List<String> roles;
 
 }

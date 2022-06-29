@@ -55,7 +55,7 @@ public class CCSaaSUserIdentityCache extends AbstractIdentityCache implements Us
   protected void populateCache(final SearchableIdentityCache newIdentityCache) {
     final List<UserDto> users = userClient.fetchAllCloudUsers()
       .stream()
-      .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail()))
+      .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail(), cloudUser.getRoles()))
       .collect(Collectors.toList());
     newIdentityCache.addIdentities(users);
   }

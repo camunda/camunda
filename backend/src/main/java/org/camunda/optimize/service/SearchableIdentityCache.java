@@ -494,6 +494,9 @@ public class SearchableIdentityCache implements AutoCloseable {
           getAllLowerCaseFieldForDtoField(UserDto.Fields.email), email.toLowerCase(), Field.Store.NO)
         );
       });
+      Optional.ofNullable(userDto.getRoles()).stream().flatMap(Collection::stream).forEach(
+        role -> document.add(new StringField(UserDto.Fields.roles, role, Field.Store.YES))
+      );
     } else if (identity instanceof GroupDto) {
       final GroupDto groupDto = (GroupDto) identity;
       Optional.ofNullable(groupDto.getMemberCount()).ifPresent(
@@ -536,7 +539,8 @@ public class SearchableIdentityCache implements AutoCloseable {
       document.get(IdentityDto.Fields.id),
       document.get(UserDto.Fields.firstName),
       document.get(UserDto.Fields.lastName),
-      document.get(UserDto.Fields.email)
+      document.get(UserDto.Fields.email),
+      Arrays.asList(document.getValues(UserDto.Fields.roles))
     );
   }
 
