@@ -38,8 +38,11 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
    */
   boolean canWriteAdditionalEvent(final int length);
 
+  void put(BufferWriter records);
+
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
+
     /** Use the default values as key. */
     LogEntryBuilder keyNull();
 

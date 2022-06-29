@@ -123,8 +123,10 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
       commandsBuilder.reset();
       commandsBuilder.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
-
-      return commandsBuilder.flush() > 0; // means the write was successful
+      //
+      // todo we need to replace this with the scheduling
+      //      return commandsBuilder.flush() > 0; // means the write was successful
+      return true;
     }
   }
 

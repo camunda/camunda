@@ -102,6 +102,11 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
   }
 
   @Override
+  public void put(final BufferWriter records) {
+    records.write(eventBuffer, 0);
+  }
+
+  @Override
   public LogEntryBuilder keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);
   }

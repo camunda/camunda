@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
@@ -30,7 +29,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import org.slf4j.Logger;
 
 /*
@@ -100,12 +98,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
-  private final Function<LogStreamBatchWriter, RecordsBuilder> typedStreamWriterFactory;
   private final Engine engine;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
-    typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
 
     processingContext =
@@ -255,7 +251,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     if (errorOnReceivingWriter == null) {
 
-      processingContext.logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
+      processingContext.logStreamWriter(batchWriter);
 
       phase = Phase.PROCESSING;
 

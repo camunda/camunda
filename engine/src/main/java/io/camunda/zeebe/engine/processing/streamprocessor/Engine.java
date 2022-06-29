@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordBatchBuilderImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilderImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -31,8 +33,8 @@ public final class Engine implements StreamProcessorLifecycleAware {
   private final ZeebeDb zeebeDb;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private ZeebeDbState zeebeState;
-  private ProcessingContext context;
   private EventApplier eventApplier;
+  private RecordsBuilderImpl recordsBuilder;
 
   public Engine(final StreamProcessorBuilder processorBuilder) {
     typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
@@ -42,7 +44,6 @@ public final class Engine implements StreamProcessorLifecycleAware {
   }
 
   public void init(final ProcessingContext context) {
-    this.context = context;
     final TransactionContext transactionContext = zeebeDb.createContext();
 
     final var partitionId = context.getLogStream().getPartitionId();
@@ -51,8 +52,8 @@ public final class Engine implements StreamProcessorLifecycleAware {
     context.transactionContext(transactionContext);
     context.zeebeState(zeebeState);
     eventApplier = eventApplierFactory.apply(zeebeState);
-    context.eventApplier(eventApplier);
-
+    recordsBuilder = new RecordsBuilderImpl(new RecordBatchBuilderImpl());
+    context.initBuilders(recordsBuilder, eventApplier);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(context);
 
@@ -80,6 +81,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
   }
 
   public ProcessingResult process(final TypedRecord typedCommand) {
+    recordsBuilder.reset(); // to clean up the buffer
     final TypedRecordProcessor<?> currentProcessor = chooseNextProcessor(typedCommand);
     if (currentProcessor == null) {
 
@@ -92,7 +94,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
       currentProcessor.processRecord(typedCommand);
     }
 
-    return new ProcessingResult();
+    return new ProcessingResult(recordsBuilder);
   }
 
   @Override

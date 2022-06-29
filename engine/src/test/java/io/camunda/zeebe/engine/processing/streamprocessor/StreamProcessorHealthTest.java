@@ -223,13 +223,5 @@ public class StreamProcessorHealthTest {
 
     @Override
     public void reset() {}
-
-    @Override
-    public long flush() {
-      if (shouldFlushThrowException.get()) {
-        throw new RuntimeException("Expected failure on flush");
-      }
-      return 1L;
-    }
   }
 }

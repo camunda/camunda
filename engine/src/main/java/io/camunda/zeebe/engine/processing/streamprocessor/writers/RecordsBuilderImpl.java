@@ -10,8 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -22,19 +20,30 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.HashMap;
 import java.util.Map;
+import org.agrona.MutableDirectBuffer;
 
 public class RecordsBuilderImpl implements RecordsBuilder {
 
   private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final LogStreamBatchWriter batchWriter;
+  private final RecordBatchBuilderImpl batchWriter;
 
   private long sourceRecordPosition = -1;
 
-  public RecordsBuilderImpl(final LogStreamBatchWriter batchWriter) {
-    this.batchWriter = batchWriter;
+  public RecordsBuilderImpl(final RecordBatchBuilderImpl recordBatchBuilder) {
+    batchWriter = recordBatchBuilder;
     typeRegistry = new HashMap<>();
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
+  }
+
+  @Override
+  public int getLength() {
+    return batchWriter.getLength();
+  }
+
+  @Override
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    batchWriter.write(buffer, offset);
   }
 
   protected void initMetadata(final RecordType type, final Intent intent, final RecordValue value) {
@@ -61,11 +70,12 @@ public class RecordsBuilderImpl implements RecordsBuilder {
       final String rejectionReason,
       final RecordValue value) {
 
-    final LogEntryBuilder event = batchWriter.event();
+    final LogEntrysBuilder event = batchWriter.event();
 
-    if (sourceRecordPosition >= 0) {
-      batchWriter.sourceRecordPosition(sourceRecordPosition);
-    }
+    // todo I guess this is not necessary here tbh
+    //    if (sourceRecordPosition >= 0) {
+    //      batchWriter.sourceRecordPosition(sourceRecordPosition);
+    //    }
 
     initMetadata(type, intent, value);
     metadata.rejectionType(rejectionType);
@@ -99,11 +109,6 @@ public class RecordsBuilderImpl implements RecordsBuilder {
     sourceRecordPosition = -1;
     metadata.reset();
     batchWriter.reset();
-  }
-
-  @Override
-  public long flush() {
-    return batchWriter.tryWrite();
   }
 
   @Override

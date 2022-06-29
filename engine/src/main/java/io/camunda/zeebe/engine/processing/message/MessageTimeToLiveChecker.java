@@ -50,7 +50,10 @@ public final class MessageTimeToLiveChecker implements Runnable {
     writer.appendFollowUpCommand(
         storedMessage.getMessageKey(), MessageIntent.EXPIRE, deleteMessageCommand);
 
-    final long position = writer.flush();
-    return position > 0;
+    // todo we need to replace this with the scheduling
+    //
+    // final long position = writer.flush();
+    // return position > 0;
+    return true;
   }
 }

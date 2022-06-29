@@ -87,12 +87,14 @@ public final class DeploymentDistributionBehavior {
                   commandWriter.appendFollowUpCommand(
                       key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
 
-                  final long pos = commandWriter.flush();
-                  if (pos < 0) {
-                    processingActor.yieldThread();
-                  } else {
-                    processingActor.done();
-                  }
+                  // todo we need to replace this with the scheduling
+                  //
+                  //                  final long pos = commandWriter.flush();
+                  //                  if (pos < 0) {
+                  //                    processingActor.yieldThread();
+                  //                  } else {
+                  //                    processingActor.done();
+                  //                  }
                 }));
   }
 }

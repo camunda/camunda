@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
@@ -19,6 +18,7 @@ import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
@@ -30,7 +30,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private final Builders builders = new Builders();
+  private Builders builders;
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
@@ -38,7 +38,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private MutableLastProcessedPositionState lastProcessedPositionState;
-  private RecordsBuilder logStreamWriter;
+  private LogStreamBatchWriter logStreamWriter;
+  private CommandResponseWriter commandResponseWriter;
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -75,26 +76,19 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext logStreamWriter(final RecordsBuilder logStreamWriter) {
+  public ProcessingContext logStreamWriter(final LogStreamBatchWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
-    builders.setStream(logStreamWriter);
     return this;
   }
 
   public ProcessingContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
-    builders.setResponse(
-        new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
+    this.commandResponseWriter = commandResponseWriter;
     return this;
   }
 
   public ProcessingContext listener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
-    return this;
-  }
-
-  public ProcessingContext eventApplier(final EventApplier eventApplier) {
-    builders.setState(new EventApplyingStateBuilder(logStreamWriter, eventApplier));
     return this;
   }
 
@@ -132,7 +126,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public RecordsBuilder getLogStreamWriter() {
+  public LogStreamBatchWriter getLogStreamWriter() {
     return logStreamWriter;
   }
 
@@ -168,5 +162,13 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public StreamProcessorMode getProcessorMode() {
     return streamProcessorMode;
+  }
+
+  public void initBuilders(final RecordsBuilder recordsBuilder, final EventApplier eventApplier) {
+    builders =
+        new Builders(
+            recordsBuilder,
+            eventApplier,
+            new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
   }
 }

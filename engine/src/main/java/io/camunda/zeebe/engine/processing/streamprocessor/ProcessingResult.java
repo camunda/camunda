@@ -7,11 +7,25 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+
 public class ProcessingResult {
 
   private static final ProcessingResult EMPTY = new ProcessingResult();
+  private RecordsBuilder recordsBuilder;
+
+  public ProcessingResult() {}
+
+  public ProcessingResult(final RecordsBuilder recordsBuilder) {
+    this.recordsBuilder = recordsBuilder;
+  }
 
   public static ProcessingResult empty() {
     return EMPTY;
+  }
+
+  public BufferWriter getRecords() {
+    return recordsBuilder;
   }
 }

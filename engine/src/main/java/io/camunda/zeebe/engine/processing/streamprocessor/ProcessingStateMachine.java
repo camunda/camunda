@@ -10,19 +10,18 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
@@ -116,7 +115,7 @@ public final class ProcessingStateMachine {
   private final ActorControl actor;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
-  private final RecordsBuilder logStreamWriter;
+  private final LogStreamBatchWriter logStreamWriter;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
@@ -282,7 +281,7 @@ public final class ProcessingStateMachine {
   private void resetOutput(final long sourceRecordPosition) {
     responseWriter.reset();
     logStreamWriter.reset();
-    logStreamWriter.configureSourceContext(sourceRecordPosition);
+    logStreamWriter.sourceRecordPosition(sourceRecordPosition);
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -321,16 +320,17 @@ public final class ProcessingStateMachine {
         () -> {
           final long position = typedCommand.getPosition();
           resetOutput(position);
-
-          writeRejectionOnCommand(processingException);
-          errorRecord.initErrorRecord(processingException, position);
-
-          zeebeState
-              .getBlackListState()
-              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
-
-          logStreamWriter.appendFollowUpEvent(
-              typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
+          // TODO move to the engine
+          //
+          //          writeRejectionOnCommand(processingException);
+          //          errorRecord.initErrorRecord(processingException, position);
+          //
+          //          zeebeState
+          //              .getBlackListState()
+          //              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
+          //
+          //          logStreamWriter.appendFollowUpEvent(
+          //              typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
         });
   }
 
@@ -340,7 +340,9 @@ public final class ProcessingStateMachine {
         String.format(PROCESSING_ERROR_MESSAGE, typedCommand, exception.getMessage());
     LOG.error(errorMessage, exception);
 
-    logStreamWriter.appendRejection(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
+    // TODO move
+    //    logStreamWriter.appendRejection(typedCommand, RejectionType.PROCESSING_ERROR,
+    // errorMessage);
     responseWriter.writeRejectionOnCommand(
         typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
@@ -349,7 +351,8 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final long position = logStreamWriter.flush();
+              logStreamWriter.put(currentProcessingResult.getRecords());
+              final long position = logStreamWriter.tryWrite();
 
               // only overwrite position if records were flushed
               if (position > 0) {

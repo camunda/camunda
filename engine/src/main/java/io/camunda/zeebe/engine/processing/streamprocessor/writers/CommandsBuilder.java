@@ -18,9 +18,9 @@ public interface CommandsBuilder {
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);
 
   void reset();
-
-  /**
-   * @return position of new record, negative value on failure
-   */
-  long flush();
+  //
+  //  /**
+  //   * @return position of new record, negative value on failure
+  //   */
+  //  long flush();
 }

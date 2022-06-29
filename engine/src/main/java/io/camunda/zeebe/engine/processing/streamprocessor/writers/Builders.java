@@ -7,23 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.engine.state.EventApplier;
+
 /** Convenience class to aggregate all the writers */
 public final class Builders {
 
-  private RecordsBuilder stream;
-  private StateBuilder state;
-  private TypedResponseWriter response;
+  private final RecordsBuilder stream;
+  private final StateBuilder state;
+  private final TypedResponseWriter response;
 
-  public void setStream(final RecordsBuilder stream) {
-    this.stream = stream;
-  }
-
-  public void setState(final StateBuilder state) {
-    this.state = state;
-  }
-
-  public void setResponse(final TypedResponseWriter response) {
-    this.response = response;
+  public Builders(
+      final RecordsBuilder recordsBuilder,
+      final EventApplier eventApplier,
+      final TypedResponseWriter typedResponseWriter) {
+    stream = recordsBuilder;
+    state = new EventApplyingStateBuilder(recordsBuilder, eventApplier);
+    response = typedResponseWriter;
   }
 
   /**
