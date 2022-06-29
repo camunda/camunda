@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -478,7 +479,12 @@ public final class CreateProcessInstanceProcessor
               bpmnElementContext, catchEventSupplier, sideEffectQueue, commandWriter);
 
       if (subscribedOrFailure.isLeft()) {
-        throw new UncheckedExecutionException(subscribedOrFailure.getLeft().getMessage());
+        final var message =
+            "expected to subscribe to catch event(s) of '%s' but %s"
+                .formatted(
+                    BufferUtil.bufferAsString(element.getId()),
+                    subscribedOrFailure.getLeft().getMessage());
+        throw new UncheckedExecutionException(message);
       }
     }
   }
