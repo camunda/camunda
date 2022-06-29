@@ -97,9 +97,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
       // make sure the execution paths of the other blocks isn't ignored.
       if (blockContainingStartBlock.isPresent()) {
         final var blockBuilder = blockContainingStartBlock.get();
-        final var branchExecutionPath = blockBuilder.findRandomExecutionPath(random, context);
-        result.mergeVariableDefaults(branchExecutionPath);
-        branchPointers.add(new BranchPointer(branchExecutionPath.getScheduledSteps()));
+        branchPointers.add(findRandomExecutionPathForBranch(random, context, result, blockBuilder));
       }
 
       branchPointers.addAll(
@@ -111,11 +109,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
                     if (blockContainingStartBlock.isPresent()) {
                       context.addSecondaryStartBlockBuilder(blockBuilder);
                     }
-
-                    final var branchExecutionPath =
-                        blockBuilder.findRandomExecutionPath(random, context);
-                    result.mergeVariableDefaults(branchExecutionPath);
-                    return new BranchPointer(branchExecutionPath.getScheduledSteps());
+                    return findRandomExecutionPathForBranch(random, context, result, blockBuilder);
                   })
               .collect(Collectors.toList()));
       shuffleStepsFromDifferentLists(random, result, branchPointers);
@@ -145,6 +139,16 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   public boolean equalsOrContains(final BlockBuilder blockBuilder) {
     final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
     return this == blockBuilder || contains;
+  }
+
+  private BranchPointer findRandomExecutionPathForBranch(
+      final Random random,
+      final ExecutionPathContext context,
+      final ExecutionPathSegment result,
+      final BlockBuilder blockBuilder) {
+    final var branchExecutionPath = blockBuilder.findRandomExecutionPath(random, context);
+    result.mergeVariableDefaults(branchExecutionPath);
+    return new BranchPointer(branchExecutionPath.getScheduledSteps());
   }
 
   // shuffles the lists together by iteratively taking the first item from one of the lists
