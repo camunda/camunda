@@ -15,4 +15,5 @@ public class VariableFilterDto extends ProcessFilterDto<VariableFilterDataDto<?>
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);
   }
+
 }

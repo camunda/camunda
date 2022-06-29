@@ -6,6 +6,7 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -21,6 +22,8 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerRespo
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
@@ -39,7 +42,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
@@ -76,7 +78,7 @@ import static org.camunda.optimize.service.onboardinglistener.OnboardingNotifica
 public class ProcessOverviewService {
 
   public static final String APP_CUE_DASHBOARD_SUFFIX = "?appcue=7c293dbb-3957-4187-a079-f0237161c489";
-  
+
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final ProcessOverviewWriter processOverviewWriter;
@@ -90,13 +92,7 @@ public class ProcessOverviewService {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
       .stream()
       .filter(def ->
-                definitionAuthorizationService.isAuthorizedToAccessDefinition(
-                  userId,
-                  PROCESS,
-                  def.getKey(),
-                  def.getTenantIds()
-                )
-      )
+                definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
       .collect(toMap(DefinitionWithTenantIdsDto::getKey, DefinitionWithTenantIdsDto::getName));
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
@@ -121,8 +117,7 @@ public class ProcessOverviewService {
           for (SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto :
             kpiReportsForKey.get()) {
             if (singleProcessReportDefinitionRequestDto.getData().getGroupBy().equals(new NoneGroupByDto())) {
-              @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-              final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
+              @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
                 reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
                   userId,
                   timezone,
@@ -131,19 +126,19 @@ public class ProcessOverviewService {
                   null
                 ).getEvaluationResult();
               final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-              if (!String.valueOf(evaluationValue).equals("null")) {
+              if (evaluationValue != null) {
                 KpiResponseDto responseDto = new KpiResponseDto();
-                List<String> targetAndUnit = getTargetAndUnit(singleProcessReportDefinitionRequestDto);
-                if (targetAndUnit != null) {
-                  responseDto.setTarget(targetAndUnit.get(0));
-                  responseDto.setUnit(targetAndUnit.get(1));
-                }
+                getTargetAndUnit(singleProcessReportDefinitionRequestDto)
+                  .ifPresent(targetAndUnit -> {
+                    responseDto.setTarget(targetAndUnit.getTarget());
+                    responseDto.setUnit(targetAndUnit.getTargetValueUnit());
+                  });
                 responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
                 responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
                 responseDto.setBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
-                responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
+                responseDto.setMeasure(geViewProperty(singleProcessReportDefinitionRequestDto).orElse(null));
                 responseDto.setValue(evaluationValue.toString());
-                responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
+                responseDto.setType(getKpiType(singleProcessReportDefinitionRequestDto));
                 kpis.add(responseDto);
               }
             }
@@ -176,22 +171,18 @@ public class ProcessOverviewService {
     }
   }
 
-  private KpiType getReportType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (ViewProperty.DURATION.equals(viewProperty)) {
-      return KpiType.TIME;
-    } else if (ViewProperty.PERCENTAGE.equals(viewProperty) && timeKpiFilters(
-      singleProcessReportDefinitionRequestDto)) {
-      return KpiType.TIME;
-    } else {
-      return KpiType.QUALITY;
-    }
+  private KpiType getKpiType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    return geViewProperty(singleProcessReportDefinitionRequestDto)
+      .filter(measure -> (ViewProperty.DURATION.equals(measure) || (ViewProperty.PERCENTAGE.equals(measure)
+        && !containsQualityFilter(singleProcessReportDefinitionRequestDto))))
+      .map(measure -> KpiType.TIME)
+      .orElse(KpiType.QUALITY);
   }
 
-  private boolean timeKpiFilters(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    boolean timeKpiFilters = false;
-    for (ProcessFilterDto<?> processFilter : singleProcessReportDefinitionRequestDto.getData().getFilter()) {
-      if ((processFilter instanceof FlowNodeStartDateFilterDto) ||
+  private boolean containsQualityFilter(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    return singleProcessReportDefinitionRequestDto.getData().getFilter()
+      .stream()
+      .anyMatch(processFilter -> ((processFilter instanceof FlowNodeStartDateFilterDto) ||
         (processFilter instanceof FlowNodeEndDateFilterDto) ||
         (processFilter instanceof VariableFilterDto) ||
         (processFilter instanceof MultipleVariableFilterDto) ||
@@ -212,25 +203,19 @@ public class ProcessOverviewService {
         (processFilter instanceof RunningFlowNodesOnlyFilterDto) ||
         (processFilter instanceof CompletedFlowNodesOnlyFilterDto) ||
         (processFilter instanceof CanceledFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)) {
-        return timeKpiFilters;
-      } else {
-        timeKpiFilters = true;
-      }
-    }
-    return timeKpiFilters;
+        (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)));
   }
 
-  private ViewProperty getMeasure(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+  private Optional<ViewProperty> geViewProperty(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     List<ViewProperty> viewProperties = singleProcessReportDefinitionRequestDto.getData().getViewProperties();
     if (viewProperties.contains(ViewProperty.DURATION)) {
-      return ViewProperty.DURATION;
+      return Optional.of(ViewProperty.DURATION);
     } else if (viewProperties.contains(ViewProperty.FREQUENCY)) {
-      return ViewProperty.FREQUENCY;
+      return Optional.of(ViewProperty.FREQUENCY);
     } else if (viewProperties.contains(ViewProperty.PERCENTAGE)) {
-      return ViewProperty.PERCENTAGE;
+      return Optional.of(ViewProperty.PERCENTAGE);
     } else {
-      return null;
+      return Optional.empty();
     }
   }
 
@@ -238,33 +223,28 @@ public class ProcessOverviewService {
     SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
       .getConfiguration()
       .getTargetValue();
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (viewProperty == null) {
-      return false;
-    } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      return targetValue.getDurationProgress().getTarget().getIsBelow();
-    } else {
-      return targetValue.getCountProgress().getIsBelow();
-    }
+    return geViewProperty(singleProcessReportDefinitionRequestDto)
+      .map(measure -> {
+        if (measure.equals(ViewProperty.DURATION)) {
+          return targetValue.getDurationProgress().getTarget().getIsBelow();
+        } else {
+          return targetValue.getCountProgress().getIsBelow();
+        }
+      }).orElse(false);
   }
 
-  private List<String> getTargetAndUnit(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    List<String> targetAndUnit = new ArrayList<>();
-    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
-      .getConfiguration()
-      .getTargetValue();
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (viewProperty == null) {
-      return null;
-    } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      targetAndUnit.add(0, targetValue.getDurationProgress().getTarget().getValue());
-      targetAndUnit.add(1, targetValue.getDurationProgress().getTarget().getUnit().toString());
-      return targetAndUnit;
-    } else {
-      targetAndUnit.add(0, targetValue.getCountProgress().getTarget());
-      targetAndUnit.add(1, "");
-      return targetAndUnit;
-    }
+  private Optional<TargetAndUnit> getTargetAndUnit(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    SingleReportTargetValueDto targetValue =
+      singleProcessReportDefinitionRequestDto.getData().getConfiguration().getTargetValue();
+    return geViewProperty(singleProcessReportDefinitionRequestDto)
+      .map(measure -> {
+        if (measure.equals(ViewProperty.DURATION)) {
+          final TargetDto targetDto = targetValue.getDurationProgress().getTarget();
+          return Optional.of(new TargetAndUnit(targetDto.getValue(), targetDto.getUnit()));
+        } else {
+          return Optional.of(new TargetAndUnit(targetValue.getCountProgress().getTarget(), null));
+        }
+      }).orElse(Optional.empty());
   }
 
   public void updateProcessOwner(final String userId, final String processDefKey, final String ownerId) {
@@ -300,28 +280,38 @@ public class ProcessOverviewService {
 
   private void validateIsAuthorizedToUpdateDigest(final String userId,
                                                   final String processDefinitionKey) {
-    final Optional<ProcessOverviewDto> processOverview =
-      processOverviewReader.getProcessOverviewByKey(processDefinitionKey);
-    if (processOverview.isEmpty() || !processOverview.get().getOwner().equals(userId)) {
-      throw new ForbiddenException(String.format(
-        "User [%s] is not authorized to update digest for process definition with key [%s]. " +
-          "Only process owners are permitted to update process digest settings.",
-        userId,
-        processDefinitionKey
-      )
-      );
-    }
+    processOverviewReader.getProcessOverviewByKey(processDefinitionKey)
+      .ifPresentOrElse(processOverview -> {
+        if (!processOverview.getOwner().equals(userId)) {
+          throw new ForbiddenException(String.format(
+            "User [%s] is not authorized to update digest for process definition with key [%s]. " +
+              "Only process owners are permitted to update process digest settings.",
+            userId,
+            processDefinitionKey
+          ));
+        }
+      }, () -> {
+        throw new NotFoundException("Process definition with key " + processDefinitionKey + " does not exist.");
+      });
   }
 
   private void validateProcessDefinitionAuthorization(final String userId, final String processDefKey) {
-    final Optional<DefinitionWithTenantIdsDto> definitionForKey =
-      definitionService.getProcessDefinitionWithTenants(processDefKey);
-    if (definitionForKey.isEmpty()) {
-      throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
-    }
-    if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
-      userId, PROCESS, definitionForKey.get().getKey(), definitionForKey.get().getTenantIds())) {
-      throw new ForbiddenException("User is not authorized to access the process definition with key " + processDefKey);
-    }
+    definitionService.getProcessDefinitionWithTenants(processDefKey)
+      .ifPresentOrElse(definition -> {
+        if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
+          userId, PROCESS, definition.getKey(), definition.getTenantIds())) {
+          throw new ForbiddenException("User is not authorized to access the process definition with key " + processDefKey);
+        }
+      }, () -> {
+        throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
+      });
   }
+
+  @Data
+  @AllArgsConstructor
+  private static class TargetAndUnit {
+    private String target;
+    private TargetValueUnit targetValueUnit;
+  }
+
 }

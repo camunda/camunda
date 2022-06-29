@@ -40,6 +40,7 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 @Conditional(CamundaPlatformCondition.class)
 @Component
 public class CamundaPlatformDefinitionAuthorizationService implements DataSourceDefinitionAuthorizationService {
+
   private final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService;
   private final EventProcessAuthorizationService eventProcessAuthorizationService;
   private final TenantService tenantService;

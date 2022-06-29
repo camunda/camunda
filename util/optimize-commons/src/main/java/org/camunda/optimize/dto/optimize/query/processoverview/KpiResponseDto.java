@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 
 @Data
 @FieldNameConstants
@@ -26,6 +27,6 @@ public class KpiResponseDto {
   private boolean isBelow;
   private KpiType type;
   private ViewProperty measure;
-  private String unit;
+  private TargetValueUnit unit;
 
 }

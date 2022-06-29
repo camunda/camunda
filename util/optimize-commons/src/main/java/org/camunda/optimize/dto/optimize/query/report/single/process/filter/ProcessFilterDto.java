@@ -17,7 +17,6 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
-
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which
  * filter type the jackson object mapper should transform the object to.
