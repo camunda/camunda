@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
@@ -128,8 +129,8 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    return this;
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    return List.of(this);
   }
 
   @Override

@@ -19,6 +19,8 @@ import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -133,13 +135,13 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
-    if (embeddedSubProcessBuilder != null && shouldGoIntoNestedBlocks) {
-      return embeddedSubProcessBuilder.findRandomStartingPlace(random);
-    } else {
-      return this;
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    final List<BlockBuilder> blockBuilders = new ArrayList<>();
+    blockBuilders.add(this);
+    if (embeddedSubProcessBuilder != null) {
+      blockBuilders.addAll(embeddedSubProcessBuilder.getPossibleStartingBlocks());
     }
+    return blockBuilders;
   }
 
   @Override

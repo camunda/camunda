@@ -121,15 +121,12 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
-    if (shouldGoIntoNestedBlocks) {
-      final int index = random.nextInt(blockBuilders.size());
-      final BlockBuilder blockBuilder = blockBuilders.get(index);
-      return blockBuilder.findRandomStartingPlace(random);
-    } else {
-      return this;
-    }
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    final List<BlockBuilder> allBlockBuilders = new ArrayList<>();
+    allBlockBuilders.add(this);
+    blockBuilders.forEach(
+        blockBuilder -> allBlockBuilders.addAll(blockBuilder.getPossibleStartingBlocks()));
+    return allBlockBuilders;
   }
 
   @Override

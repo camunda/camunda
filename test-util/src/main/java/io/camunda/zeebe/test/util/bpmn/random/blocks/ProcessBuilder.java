@@ -10,7 +10,6 @@ package io.camunda.zeebe.test.util.bpmn.random.blocks;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
@@ -128,8 +127,10 @@ public final class ProcessBuilder {
     final ExecutionPathContext context;
     final ExecutionPathSegment followingPath;
     if (startAnywhere) {
-      // TODO give an equal chance to each block to be started at
-      final BlockBuilder startAtBlockBuilder = blockBuilder.findRandomStartingPlace(random);
+      final var possibleStartingBlocks = blockBuilder.getPossibleStartingBlocks();
+      final int startBlockIndex = random.nextInt(possibleStartingBlocks.size());
+      final var startAtBlockBuilder = possibleStartingBlocks.get(startBlockIndex);
+
       context = new ExecutionPathContext(startAtBlockBuilder);
       followingPath = blockBuilder.findRandomExecutionPath(random, context);
     } else {

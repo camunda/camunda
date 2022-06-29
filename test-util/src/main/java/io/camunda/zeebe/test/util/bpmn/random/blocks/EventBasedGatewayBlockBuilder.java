@@ -91,10 +91,8 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    // We cannot start at the events of an event based gateway, so we should always start at the
-    // gateway itself
-    return this;
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    return List.of(this);
   }
 
   @Override

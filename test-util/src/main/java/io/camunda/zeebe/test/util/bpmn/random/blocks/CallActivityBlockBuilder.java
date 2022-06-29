@@ -16,6 +16,7 @@ import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
+import java.util.List;
 import java.util.Random;
 
 /** Generates a call activity. The called process is a Process that contains any block sequence. */
@@ -81,8 +82,10 @@ public class CallActivityBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    return this;
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    // We cannot start a process inside of a call activity.
+    // Therefore the blocks of the calledProcessBuilder are not returned here.
+    return List.of(this);
   }
 
   @Override

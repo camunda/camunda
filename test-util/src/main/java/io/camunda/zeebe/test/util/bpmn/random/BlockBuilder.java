@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.bpmn.random;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -56,7 +57,7 @@ public interface BlockBuilder {
 
   String getElementId();
 
-  BlockBuilder findRandomStartingPlace(final Random random);
+  List<BlockBuilder> getPossibleStartingBlocks();
 
   boolean equalsOrContains(final BlockBuilder blockBuilder);
 }

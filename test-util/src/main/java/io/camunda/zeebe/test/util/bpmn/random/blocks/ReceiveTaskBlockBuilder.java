@@ -15,6 +15,7 @@ import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -65,8 +66,8 @@ public class ReceiveTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    return this;
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    return List.of(this);
   }
 
   @Override

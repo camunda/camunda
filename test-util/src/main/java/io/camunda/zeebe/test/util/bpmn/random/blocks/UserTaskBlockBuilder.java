@@ -21,6 +21,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepCompleteUserTask;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepThrowError;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
+import java.util.List;
 import java.util.Random;
 
 /** Generates a user task */
@@ -104,8 +105,8 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    return this;
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    return List.of(this);
   }
 
   @Override

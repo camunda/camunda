@@ -105,10 +105,11 @@ public class BlockSequenceBuilder implements BlockBuilder {
   }
 
   @Override
-  public BlockBuilder findRandomStartingPlace(final Random random) {
-    final int index = random.nextInt(blockBuilders.size());
-    final BlockBuilder blockBuilder = blockBuilders.get(index);
-    return blockBuilder.findRandomStartingPlace(random);
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    final List<BlockBuilder> allBlockBuilders = new ArrayList<>();
+    blockBuilders.forEach(
+        blockBuilder -> allBlockBuilders.addAll(blockBuilder.getPossibleStartingBlocks()));
+    return allBlockBuilders;
   }
 
   @Override
