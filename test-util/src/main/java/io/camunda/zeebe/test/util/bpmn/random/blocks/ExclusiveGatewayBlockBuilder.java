@@ -12,6 +12,7 @@ import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -88,29 +90,41 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final int branch = random.nextInt(branchIds.size());
+    if (shouldAddExecutionPath(context)) {
 
-    if (branch == 0) {
-      result.appendDirectSuccessor(
-          new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
-    } else if (random.nextBoolean()) {
-      // take a non-default branch
-      result.appendDirectSuccessor(
-          new StepPickConditionCase(
-              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
-    } else {
-      // cause an incident then resolve it and set a variable
-      result.appendDirectSuccessor(
-          new StepRaiseIncidentThenResolveAndPickConditionCase(
-              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
+      final Optional<Integer> branchContainingStartBlock =
+          blockBuilders.stream()
+              .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
+              .map(blockBuilders::indexOf)
+              .findFirst();
+
+      final int branch = branchContainingStartBlock.orElse(random.nextInt(branchIds.size()));
+
+      if (branchContainingStartBlock.isEmpty() || this == context.getStartAtBlockBuilder()) {
+        if (branch == 0) {
+          result.appendDirectSuccessor(
+              new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
+        } else if (random.nextBoolean() || branchContainingStartBlock.isPresent()) {
+          // take a non-default branch
+          result.appendDirectSuccessor(
+              new StepPickConditionCase(
+                  forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
+        } else {
+          // cause an incident then resolve it and set a variable
+          result.appendDirectSuccessor(
+              new StepRaiseIncidentThenResolveAndPickConditionCase(
+                  forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
+        }
+      }
+
+      final BlockBuilder blockBuilder = blockBuilders.get(branch);
+
+      result.append(blockBuilder.findRandomExecutionPath(random, context));
     }
-
-    final BlockBuilder blockBuilder = blockBuilders.get(branch);
-
-    result.append(blockBuilder.findRandomExecutionPath(random));
 
     return result;
   }
@@ -122,7 +136,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
   @Override
   public BlockBuilder findRandomStartingPlace(final Random random) {
-    final boolean shouldGoIntoNestedBlocks = true; // TODO random.nextBoolean();
+    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
     if (shouldGoIntoNestedBlocks) {
       final int index = random.nextInt(blockBuilders.size());
       final BlockBuilder blockBuilder = blockBuilders.get(index);

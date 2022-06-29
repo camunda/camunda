@@ -12,12 +12,14 @@ import io.camunda.zeebe.model.bpmn.builder.ParallelGatewayBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -74,22 +76,50 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
-    result.appendDirectSuccessor(forkingGateway);
+    if (shouldAddExecutionPath(context)) {
 
-    final var branchPointers =
-        blockBuilders.stream()
-            .map(
-                blockBuilder -> {
-                  final var branchExecutionPath = blockBuilder.findRandomExecutionPath(random);
-                  result.mergeVariableDefaults(branchExecutionPath);
-                  return new BranchPointer(branchExecutionPath.getScheduledSteps());
-                })
-            .collect(Collectors.toList());
-    shuffleStepsFromDifferentLists(random, result, branchPointers);
+      final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
+      result.appendDirectSuccessor(forkingGateway);
+
+      final Optional<BlockBuilder> blockContainingStartBlock =
+          blockBuilders.stream()
+              .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
+              .findFirst();
+
+      final List<ParallelGatewayBlockBuilder.BranchPointer> branchPointers = new ArrayList<>();
+
+      // Find the execution path of the block containing the start block first. This is required
+      // as it will update the context, saying the start block has been found. As a result it will
+      // make sure the execution paths of the other blocks isn't ignored.
+      if (blockContainingStartBlock.isPresent()) {
+        final var blockBuilder = blockContainingStartBlock.get();
+        final var branchExecutionPath = blockBuilder.findRandomExecutionPath(random, context);
+        result.mergeVariableDefaults(branchExecutionPath);
+        branchPointers.add(new BranchPointer(branchExecutionPath.getScheduledSteps()));
+      }
+
+      branchPointers.addAll(
+          blockBuilders.stream()
+              .filter(
+                  blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtBlockBuilder()))
+              .map(
+                  blockBuilder -> {
+                    if (blockContainingStartBlock.isPresent()) {
+                      context.addSecondaryStartBlockBuilder(blockBuilder);
+                    }
+
+                    final var branchExecutionPath =
+                        blockBuilder.findRandomExecutionPath(random, context);
+                    result.mergeVariableDefaults(branchExecutionPath);
+                    return new BranchPointer(branchExecutionPath.getScheduledSteps());
+                  })
+              .collect(Collectors.toList()));
+      shuffleStepsFromDifferentLists(random, result, branchPointers);
+    }
 
     return result;
   }
@@ -101,7 +131,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
 
   @Override
   public BlockBuilder findRandomStartingPlace(final Random random) {
-    final boolean shouldGoIntoNestedBlocks = true; // TODO random.nextBoolean();
+    final boolean shouldGoIntoNestedBlocks = random.nextBoolean();
     if (shouldGoIntoNestedBlocks) {
       final int index = random.nextInt(blockBuilders.size());
       final BlockBuilder blockBuilder = blockBuilders.get(index);

@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
@@ -67,18 +68,21 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final int branchNumber = random.nextInt(branches.size());
-    final var branch = branches.get(branchNumber);
-    final var blockBuilder = branch.getRight();
+    if (shouldAddExecutionPath(context)) {
+      final int branchNumber = random.nextInt(branches.size());
+      final var branch = branches.get(branchNumber);
+      final var blockBuilder = branch.getRight();
 
-    final var executionStep =
-        new StepPublishMessage(
-            getMessageName(branch), CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
-    result.appendDirectSuccessor(executionStep);
-    result.append(blockBuilder.findRandomExecutionPath(random));
+      final var executionStep =
+          new StepPublishMessage(
+              getMessageName(branch), CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
+      result.appendDirectSuccessor(executionStep);
+      result.append(blockBuilder.findRandomExecutionPath(random, context));
+    }
 
     return result;
   }

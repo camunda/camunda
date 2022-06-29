@@ -13,6 +13,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
@@ -122,16 +123,19 @@ public final class ProcessBuilder {
   }
 
   public ExecutionPath findRandomExecutionPath(final Random random) {
-    final var startAnywhere = true; // TODO random.nextBoolean();
-    String startElementId = null;
+    final var startAnywhere = random.nextBoolean();
 
+    final ExecutionPathContext context;
     final ExecutionPathSegment followingPath;
     if (startAnywhere) {
       final BlockBuilder startAtBlockBuilder = blockBuilder.findRandomStartingPlace(random);
-      startElementId = startAtBlockBuilder.getElementId();
-      followingPath = blockBuilder.findRandomExecutionPath(random, startAtBlockBuilder);
+      context = new ExecutionPathContext(startAtBlockBuilder);
+      followingPath = blockBuilder.findRandomExecutionPath(random, context);
     } else {
-      followingPath = blockBuilder.findRandomExecutionPath(random);
+      context = new ExecutionPathContext(blockBuilder).foundBlockBuilder();
+      followingPath =
+          blockBuilder.findRandomExecutionPath(
+              random, new ExecutionPathContext(blockBuilder).foundBlockBuilder());
     }
 
     if (hasEventSubProcess) {
@@ -146,7 +150,7 @@ public final class ProcessBuilder {
       startPath = new ExecutionPathSegment();
       startPath.appendDirectSuccessor(
           new StepStartProcessInstance(
-              processId, followingPath.collectVariables(), startElementId));
+              processId, followingPath.collectVariables(), context.getStartElementIds()));
     } else {
       startPath =
           startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());

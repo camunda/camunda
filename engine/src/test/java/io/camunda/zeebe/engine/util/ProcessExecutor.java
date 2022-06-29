@@ -255,9 +255,9 @@ public class ProcessExecutor {
             .ofBpmnProcessId(startProcess.getProcessId())
             .withVariables(startProcess.getProcessVariables());
 
-    if (startProcess.getStartInstruction() != null) {
-      processInstanceCreationClient.withStartInstruction(startProcess.getStartInstruction());
-    }
+    startProcess
+        .getStartInstructions()
+        .forEach(processInstanceCreationClient::withStartInstruction);
 
     processInstanceCreationClient.create();
   }

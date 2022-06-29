@@ -36,11 +36,21 @@ public interface BlockBuilder {
   AbstractFlowNodeBuilder<?, ?> buildFlowNodes(final AbstractFlowNodeBuilder<?, ?> nodeBuilder);
 
   /** Creates a random execution path segment. */
-  ExecutionPathSegment findRandomExecutionPath(final Random random);
+  ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context);
 
   String getElementId();
 
   BlockBuilder findRandomStartingPlace(final Random random);
 
   boolean equalsOrContains(final BlockBuilder blockBuilder);
+
+  default boolean shouldAddExecutionPath(final ExecutionPathContext context) {
+    if (this == context.getStartAtBlockBuilder()) {
+      context.foundBlockBuilder();
+    }
+
+    return context.hasFoundStartBlockBuilder()
+        || equalsOrContains(context.getStartAtBlockBuilder());
+  }
 }

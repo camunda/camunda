@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,21 +84,28 @@ public class BlockSequenceBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
-    return blockBuilders.size() > 0
-        ? findRandomExecutionPath(random, blockBuilders.get(0))
-        : new ExecutionPathSegment();
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context) {
+    final ExecutionPathSegment result = new ExecutionPathSegment();
+
+    if (shouldAddExecutionPath(context)) {
+      blockBuilders.forEach(
+          blockBuilder -> {
+            result.append(blockBuilder.findRandomExecutionPath(random, context));
+          });
+    }
+
+    return result;
   }
 
   /**
    * The BlockSequenceBuilder is a special case. This is not an executable block, but is responsible
-   * for building the sequence of blocks. As a result it does not have an element id.
-   *
-   * @return null
+   * for building the sequence of blocks. Instead it will return the element id of the first block
+   * it contains.
    */
   @Override
   public String getElementId() {
-    return null;
+    return blockBuilders.get(0).getElementId();
   }
 
   @Override
@@ -111,20 +119,6 @@ public class BlockSequenceBuilder implements BlockBuilder {
   public boolean equalsOrContains(final BlockBuilder blockBuilder) {
     final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
     return this == blockBuilder || contains;
-  }
-
-  public ExecutionPathSegment findRandomExecutionPath(
-      final Random random, final BlockBuilder startAtBlockBuilder) {
-    final ExecutionPathSegment result = new ExecutionPathSegment();
-
-    final var blockBuildersFromStartBlock =
-        blockBuilders.subList(blockBuilders.indexOf(startAtBlockBuilder), blockBuilders.size());
-    blockBuildersFromStartBlock.forEach(
-        blockBuilder -> {
-          result.append(blockBuilder.findRandomExecutionPath(random));
-        });
-
-    return result;
   }
 
   public List<BlockBuilder> getBlockBuilders() {

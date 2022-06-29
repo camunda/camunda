@@ -8,26 +8,30 @@
 package io.camunda.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public final class StepStartProcessInstance extends AbstractExecutionStep
     implements ProcessStartStep {
 
   private final String processId;
-  private final String startInstruction;
+  private final List<String> startInstructions;
 
   public StepStartProcessInstance(final String processId, final Map<String, Object> variables) {
     this.processId = processId;
     this.variables.putAll(variables);
-    startInstruction = null;
+    startInstructions = new ArrayList<>();
   }
 
   public StepStartProcessInstance(
-      final String processId, final Map<String, Object> variables, final String startInstruction) {
+      final String processId,
+      final Map<String, Object> variables,
+      final List<String> startInstructions) {
     this.processId = processId;
     this.variables.putAll(variables);
-    this.startInstruction = startInstruction;
+    this.startInstructions = startInstructions;
   }
 
   @Override
@@ -39,8 +43,8 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
     return processId;
   }
 
-  public String getStartInstruction() {
-    return startInstruction;
+  public List<String> getStartInstructions() {
+    return startInstructions;
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
@@ -92,33 +93,38 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (hasBoundaryTimerEvent) {
-      // set an infinite timer as default; this can be overwritten by the execution path chosen
-      result.setVariableDefault(
-          subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
-    }
-    final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
-
-    result.appendDirectSuccessor(activateSubProcess);
-
-    if (embeddedSubProcessBuilder == null) {
-      return result;
-    }
-
-    final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(random);
-
-    if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
-      result.append(internalExecutionPath);
-    } else {
-      internalExecutionPath.cutAtRandomPosition(random);
-      result.append(internalExecutionPath);
+    if (shouldAddExecutionPath(context)) {
       if (hasBoundaryTimerEvent) {
-        result.appendExecutionSuccessor(
-            new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
-      } // extend here for other boundary events
+        // set an infinite timer as default; this can be overwritten by the execution path chosen
+        result.setVariableDefault(
+            subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+      }
+      final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
+
+      result.appendDirectSuccessor(activateSubProcess);
+
+      if (embeddedSubProcessBuilder == null) {
+        return result;
+      }
+
+      final var internalExecutionPath =
+          embeddedSubProcessBuilder.findRandomExecutionPath(random, context);
+
+      if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
+        result.append(internalExecutionPath);
+      } else {
+        internalExecutionPath.cutAtRandomPosition(random);
+        result.append(internalExecutionPath);
+        if (hasBoundaryTimerEvent) {
+          result.appendExecutionSuccessor(
+              new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId),
+              activateSubProcess);
+        } // extend here for other boundary events
+      }
     }
     return result;
   }

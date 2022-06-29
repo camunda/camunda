@@ -12,6 +12,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
@@ -101,21 +102,24 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
    * activation and complete cycle. The steps before are randomly determined failed attempts.
    */
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final var activateStep = new StepActivateBPMNElement(taskId);
-    result.appendDirectSuccessor(activateStep);
+    if (shouldAddExecutionPath(context)) {
+      final var activateStep = new StepActivateBPMNElement(taskId);
+      result.appendDirectSuccessor(activateStep);
 
-    if (hasBoundaryTimerEvent) {
-      // set an infinite timer as default; this can be overwritten by the execution path chosen
-      result.setVariableDefault(
-          boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+      if (hasBoundaryTimerEvent) {
+        // set an infinite timer as default; this can be overwritten by the execution path chosen
+        result.setVariableDefault(
+            boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+      }
+
+      result.append(buildStepsForFailedExecutions(random));
+
+      result.appendExecutionSuccessor(buildStepForSuccessfulExecution(random), activateStep);
     }
-
-    result.append(buildStepsForFailedExecutions(random));
-
-    result.appendExecutionSuccessor(buildStepForSuccessfulExecution(random), activateStep);
 
     return result;
   }
