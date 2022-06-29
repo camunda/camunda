@@ -15,8 +15,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -46,8 +46,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
   private final EventHandle eventHandle;
 
   public ProcessMessageSubscriptionCorrelateProcessor(
@@ -60,7 +60,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     rejectionWriter = writers.rejection();
 
     eventHandle =
@@ -104,7 +104,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             .setElementId(subscriptionRecord.getElementIdBuffer())
             .setInterrupting(subscriptionRecord.isInterrupting());
 
-        stateWriter.appendFollowUpEvent(
+        stateBuilder.appendFollowUpEvent(
             subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
 
         final var catchEvent =

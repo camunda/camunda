@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
@@ -24,7 +24,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
   private final DeploymentResponder deploymentResponder;
   private final int partitionId;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
 
   public DeploymentDistributeProcessor(
       final ProcessState processState,
@@ -38,7 +38,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
             processState, messageStartEventSubscriptionState, keyGenerator);
     this.deploymentResponder = deploymentResponder;
     this.partitionId = partitionId;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
   }
 
   @Override
@@ -46,10 +46,10 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     final var deploymentEvent = event.getValue();
     final var deploymentKey = event.getKey();
 
-    stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
+    stateBuilder.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
     deploymentResponder.sendDeploymentResponse(deploymentKey, partitionId);
 
     messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-        deploymentEvent, stateWriter);
+        deploymentEvent, stateBuilder);
   }
 }

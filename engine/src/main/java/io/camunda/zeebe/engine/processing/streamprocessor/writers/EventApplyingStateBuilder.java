@@ -15,17 +15,17 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
  * A state writer that uses the event applier, to alter the state for each written event.
  *
  * <p>Note that it does not write events to the stream itself, but it delegates this to the {@link
- * TypedStreamWriter}.
+ * RecordsBuilder}.
  *
  * <p>Note that it does not change the state itself, but delegates this to the {@link EventApplier}.
  */
-public final class EventApplyingStateWriter implements StateWriter {
+public final class EventApplyingStateBuilder implements StateBuilder {
 
-  private final TypedEventWriter eventWriter;
+  private final EventsBuilder eventWriter;
   private final EventApplier eventApplier;
 
-  public EventApplyingStateWriter(
-      final TypedEventWriter eventWriter, final EventApplier eventApplier) {
+  public EventApplyingStateBuilder(
+      final EventsBuilder eventWriter, final EventApplier eventApplier) {
     this.eventWriter = eventWriter;
     this.eventApplier = eventApplier;
   }

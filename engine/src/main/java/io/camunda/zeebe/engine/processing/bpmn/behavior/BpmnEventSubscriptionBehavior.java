@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -36,13 +36,13 @@ public final class BpmnEventSubscriptionBehavior {
 
   private final KeyGenerator keyGenerator;
   private final ProcessState processState;
-  private final TypedCommandWriter commandWriter;
+  private final CommandsBuilder commandWriter;
   private final EventTriggerBehavior eventTriggerBehavior;
 
   public BpmnEventSubscriptionBehavior(
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final TypedCommandWriter commandWriter,
+      final CommandsBuilder commandWriter,
       final ZeebeState zeebeState,
       final KeyGenerator keyGenerator) {
     this.catchEventBehavior = catchEventBehavior;

@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -22,15 +22,15 @@ public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRec
       "Expected to cancel timer with key '%d', but no such timer was found";
 
   private final TimerInstanceState timerInstanceState;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
 
   public CancelTimerProcessor(
       final TimerInstanceState timerInstanceState,
-      final StateWriter stateWriter,
-      final TypedRejectionWriter rejectionWriter) {
+      final StateBuilder stateBuilder,
+      final RejectionsBuilder rejectionWriter) {
     this.timerInstanceState = timerInstanceState;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
     this.rejectionWriter = rejectionWriter;
   }
 
@@ -44,7 +44,7 @@ public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRec
       rejectionWriter.appendRejection(
           record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
     } else {
-      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
+      stateBuilder.appendFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
     }
   }
 }

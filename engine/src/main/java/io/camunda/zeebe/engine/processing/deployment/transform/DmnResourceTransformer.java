@@ -15,7 +15,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
@@ -48,17 +48,17 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
   private final DecisionState decisionState;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
-      final StateWriter stateWriter,
+      final StateBuilder stateBuilder,
       final Function<DeploymentResource, DirectBuffer> checksumGenerator,
       final DecisionState decisionState) {
     this.keyGenerator = keyGenerator;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
     this.checksumGenerator = checksumGenerator;
     this.decisionState = decisionState;
   }
@@ -272,7 +272,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .findFirst()
         .ifPresent(
             drg ->
-                stateWriter.appendFollowUpEvent(
+                stateBuilder.appendFollowUpEvent(
                     drg.getDecisionRequirementsKey(),
                     DecisionRequirementsIntent.CREATED,
                     new DecisionRequirementsRecord()
@@ -290,7 +290,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
             decision ->
-                stateWriter.appendFollowUpEvent(
+                stateBuilder.appendFollowUpEvent(
                     decision.getDecisionKey(),
                     DecisionIntent.CREATED,
                     new DecisionRecord()

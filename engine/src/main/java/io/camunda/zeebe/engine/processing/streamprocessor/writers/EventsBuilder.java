@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public interface TypedEventWriter {
+public interface EventsBuilder {
 
   void appendFollowUpEvent(long key, Intent intent, RecordValue value);
 

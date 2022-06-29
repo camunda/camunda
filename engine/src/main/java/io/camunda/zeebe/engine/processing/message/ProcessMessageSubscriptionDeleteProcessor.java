@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -25,14 +25,14 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       "Expected to delete process message subscription for element with key '%d' and message name '%s', "
           + "but no such subscription was found.";
 
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
   private final ProcessMessageSubscriptionState subscriptionState;
 
   public ProcessMessageSubscriptionDeleteProcessor(
       final ProcessMessageSubscriptionState subscriptionState, final Writers writers) {
     this.subscriptionState = subscriptionState;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     rejectionWriter = writers.rejection();
   }
 
@@ -50,7 +50,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETED, subscription.getRecord());
   }
 

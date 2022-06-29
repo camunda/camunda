@@ -20,8 +20,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -49,7 +49,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
   private final ExpressionProcessor expressionProcessor;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
   private final Writers writers;
@@ -66,9 +66,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     processState = zeebeState.getProcessState();
     timerInstanceState = zeebeState.getTimerState();
     this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     deploymentTransformer =
-        new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
+        new DeploymentTransformer(stateBuilder, zeebeState, expressionProcessor, keyGenerator);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
     messageStartEventSubscriptionManager =
@@ -101,11 +101,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           .response()
           .writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
 
-      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+      stateBuilder.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
       deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
       messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-          deploymentEvent, stateWriter);
+          deploymentEvent, stateBuilder);
 
     } else {
       writers
@@ -124,7 +124,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void createTimerIfTimerStartEvent(
-      final TypedRecord<DeploymentRecord> record, final TypedCommandWriter streamWriter) {
+      final TypedRecord<DeploymentRecord> record, final CommandsBuilder streamWriter) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
@@ -161,14 +161,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedCommandWriter streamWriter, final ProcessMetadata processRecord) {
+      final CommandsBuilder streamWriter, final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
         timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final TypedCommandWriter streamWriter,
+      final CommandsBuilder streamWriter,
       final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =

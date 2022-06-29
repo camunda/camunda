@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Things that any actor can write to a partition. */
-public interface TypedCommandWriter {
+public interface CommandsBuilder {
 
   void appendNewCommand(Intent intent, RecordValue value);
 

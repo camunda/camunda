@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCal
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -46,8 +46,8 @@ public final class BpmnStateTransitionBehavior {
       processorLookUp;
 
   private final ProcessEngineMetrics metrics;
-  private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
+  private final StateBuilder stateBuilder;
+  private final CommandsBuilder commandWriter;
   private final ElementInstanceState elementInstanceState;
 
   public BpmnStateTransitionBehavior(
@@ -62,7 +62,7 @@ public final class BpmnStateTransitionBehavior {
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     commandWriter = writers.command();
     this.elementInstanceState = elementInstanceState;
   }
@@ -216,7 +216,7 @@ public final class BpmnStateTransitionBehavior {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
 
-    stateWriter.appendFollowUpEvent(key, transition, value);
+    stateBuilder.appendFollowUpEvent(key, transition, value);
     return context.copy(key, value, transition);
   }
 
@@ -244,7 +244,7 @@ public final class BpmnStateTransitionBehavior {
 
     // take the sequence flow
     final var sequenceFlowKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
     final BpmnElementContext sequenceFlowTaken =
         context.copy(

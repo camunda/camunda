@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -52,7 +52,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobMetrics jobMetrics,
       final ProcessEngineMetrics processEngineMetrics) {
 
-    final StateWriter stateWriter = writers.state();
+    final StateBuilder stateBuilder = writers.state();
     final var commandWriter = writers.command();
     this.expressionBehavior = expressionBehavior;
 
@@ -61,7 +61,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             DecisionEngineFactory.createDecisionEngine(),
             zeebeState,
             eventTriggerBehavior,
-            stateWriter,
+            stateBuilder,
             zeebeState.getKeyGenerator(),
             expressionBehavior,
             processEngineMetrics);
@@ -86,7 +86,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             zeebeState,
             zeebeState.getKeyGenerator());
     incidentBehavior =
-        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
+        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateBuilder);
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);

@@ -20,8 +20,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -74,8 +74,8 @@ public final class CreateProcessInstanceProcessor
   private final CatchEventBehavior catchEventBehavior;
 
   private final KeyGenerator keyGenerator;
-  private final TypedCommandWriter commandWriter;
-  private final StateWriter stateWriter;
+  private final CommandsBuilder commandWriter;
+  private final StateBuilder stateBuilder;
   private final ProcessEngineMetrics metrics;
 
   public CreateProcessInstanceProcessor(
@@ -90,7 +90,7 @@ public final class CreateProcessInstanceProcessor
     this.catchEventBehavior = catchEventBehavior;
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     this.metrics = metrics;
   }
 
@@ -441,9 +441,9 @@ public final class CreateProcessInstanceProcessor
       final long elementInstanceKey,
       final ProcessInstanceRecord elementRecord) {
 
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
 
     createEventSubscriptions(element, elementRecord, elementInstanceKey);

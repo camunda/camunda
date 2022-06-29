@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
@@ -22,7 +22,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   private final JobState state;
 
   private ScheduledTimer timer;
-  private TypedCommandWriter writer;
+  private CommandsBuilder writer;
   private ReadonlyProcessingContext processingContext;
 
   public JobTimeoutTrigger(final JobState state) {

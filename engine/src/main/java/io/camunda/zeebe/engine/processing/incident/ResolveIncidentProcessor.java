@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.processing.incident;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -36,8 +36,8 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
 
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
@@ -48,7 +48,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     incidentState = zeebeState.getIncidentState();
@@ -66,7 +66,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       return;
     }
 
-    stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
+    stateBuilder.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised

@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -45,7 +45,7 @@ public final class CatchEventBehavior {
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
@@ -62,12 +62,12 @@ public final class CatchEventBehavior {
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final StateWriter stateWriter,
+      final StateBuilder stateBuilder,
       final DueDateTimerChecker timerChecker,
       final int partitionsCount) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
     this.partitionsCount = partitionsCount;
 
     timerInstanceState = zeebeState.getTimerState();
@@ -85,7 +85,7 @@ public final class CatchEventBehavior {
    * @param commandWriter the writer for unsubscribe commands
    */
   public void unsubscribeFromEvents(
-      final BpmnElementContext context, final TypedCommandWriter commandWriter) {
+      final BpmnElementContext context, final CommandsBuilder commandWriter) {
     unsubscribeFromEvents(context, commandWriter, elementId -> true);
   }
 
@@ -97,7 +97,7 @@ public final class CatchEventBehavior {
    * @param commandWriter the writer for unsubscribe commands
    */
   public void unsubscribeEventSubprocesses(
-      final BpmnElementContext context, final TypedCommandWriter commandWriter) {
+      final BpmnElementContext context, final CommandsBuilder commandWriter) {
     unsubscribeFromEvents(
         context, commandWriter, elementId -> isEventSubprocess(context, elementId));
   }
@@ -123,7 +123,7 @@ public final class CatchEventBehavior {
    */
   private void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
+      final CommandsBuilder commandWriter,
       final Predicate<DirectBuffer> elementIdFilter) {
 
     unsubscribeFromTimerEvents(context, commandWriter, elementIdFilter);
@@ -241,7 +241,7 @@ public final class CatchEventBehavior {
     subscription.setInterrupting(event.isInterrupting());
 
     final var subscriptionKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
     sendOpenMessageSubscription(
@@ -291,12 +291,12 @@ public final class CatchEventBehavior {
     this in TimerCreatedApplier.*/
     timerChecker.scheduleTimer(dueDate);
 
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
+    stateBuilder.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
   }
 
   private void unsubscribeFromTimerEvents(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
+      final CommandsBuilder commandWriter,
       final Predicate<DirectBuffer> elementIdFilter) {
     timerInstanceState.forEachTimerForElementInstance(
         context.getElementInstanceKey(),
@@ -308,7 +308,7 @@ public final class CatchEventBehavior {
   }
 
   public void unsubscribeFromTimerEvent(
-      final TimerInstance timer, final TypedCommandWriter commandWriter) {
+      final TimerInstance timer, final CommandsBuilder commandWriter) {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
@@ -341,7 +341,7 @@ public final class CatchEventBehavior {
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
 
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);

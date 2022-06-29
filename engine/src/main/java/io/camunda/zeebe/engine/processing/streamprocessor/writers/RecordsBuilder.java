@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
-public interface TypedStreamWriter
-    extends TypedCommandWriter, TypedEventWriter, TypedRejectionWriter {
-
+public interface RecordsBuilder extends CommandsBuilder, EventsBuilder, RejectionsBuilder {
   void configureSourceContext(long sourceRecordPosition);
 }

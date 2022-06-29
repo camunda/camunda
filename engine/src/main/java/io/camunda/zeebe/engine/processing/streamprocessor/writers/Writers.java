@@ -10,15 +10,15 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 /** Convenience class to aggregate all the writers */
 public final class Writers {
 
-  private TypedStreamWriter stream;
-  private StateWriter state;
+  private RecordsBuilder stream;
+  private StateBuilder state;
   private TypedResponseWriter response;
 
-  public void setStream(final TypedStreamWriter stream) {
+  public void setStream(final RecordsBuilder stream) {
     this.stream = stream;
   }
 
-  public void setState(final StateWriter state) {
+  public void setState(final StateBuilder state) {
     this.state = state;
   }
 
@@ -29,21 +29,21 @@ public final class Writers {
   /**
    * @return the writer, which is used by the processors to write (follow-up) commands
    */
-  public TypedCommandWriter command() {
+  public CommandsBuilder command() {
     return stream;
   }
 
   /**
    * @return the writer, which is used by the processors to write command rejections
    */
-  public TypedRejectionWriter rejection() {
+  public RejectionsBuilder rejection() {
     return stream;
   }
 
   /**
    * @return the writer of events that also changes state for each event it writes
    */
-  public StateWriter state() {
+  public StateBuilder state() {
     return state;
   }
 

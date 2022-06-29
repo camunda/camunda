@@ -8,4 +8,4 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 /** An event writer that alters the state for each events it writes. */
-public interface StateWriter extends TypedEventWriter {}
+public interface StateBuilder extends EventsBuilder {}

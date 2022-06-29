@@ -12,7 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -40,7 +40,7 @@ public class StreamProcessorHealthTest {
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
   private StreamProcessor streamProcessor;
-  private TypedStreamWriter mockedLogStreamWriter;
+  private RecordsBuilder mockedLogStreamWriter;
   private AtomicBoolean shouldFlushThrowException;
   private AtomicInteger invocation;
   private AtomicBoolean shouldFailErrorHandlingInTransaction;
@@ -168,7 +168,7 @@ public class StreamProcessorHealthTest {
                         }
                       });
             },
-            batchWriter -> new WrappedStreamWriter());
+            batchWriter -> new WrappedRecordsBuilder());
 
     return streamProcessor;
   }
@@ -191,7 +191,7 @@ public class StreamProcessorHealthTest {
     }
   }
 
-  private final class WrappedStreamWriter implements TypedStreamWriter {
+  private final class WrappedRecordsBuilder implements RecordsBuilder {
 
     @Override
     public void appendRejection(

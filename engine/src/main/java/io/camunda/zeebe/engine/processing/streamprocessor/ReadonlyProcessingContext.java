@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -36,7 +36,7 @@ public interface ReadonlyProcessingContext {
   /**
    * @return the actual log stream writer, used to write any record
    */
-  TypedStreamWriter getLogStreamWriter();
+  RecordsBuilder getLogStreamWriter();
 
   /**
    * @return the specific writers, like command, response, etc

@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
@@ -50,12 +50,12 @@ public final class CreateProcessInstanceWithResultProcessor
 
   @Override
   public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
+      final CommandsBuilder commandWriter,
+      final StateBuilder stateBuilder,
       final long key,
       final Intent intent,
       final ProcessInstanceCreationRecord value) {
-    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
+    createProcessor.afterAccept(commandWriter, stateBuilder, key, intent, value);
   }
 
   private class CommandControlWithAwaitResult

@@ -9,21 +9,21 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 
 public final class MessageExpireProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
 
-  public MessageExpireProcessor(final StateWriter stateWriter) {
-    this.stateWriter = stateWriter;
+  public MessageExpireProcessor(final StateBuilder stateBuilder) {
+    this.stateBuilder = stateBuilder;
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> record) {
 
-    stateWriter.appendFollowUpEvent(record.getKey(), MessageIntent.EXPIRED, record.getValue());
+    stateBuilder.appendFollowUpEvent(record.getKey(), MessageIntent.EXPIRED, record.getValue());
   }
 }

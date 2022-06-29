@@ -12,8 +12,8 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -34,8 +34,8 @@ public class EventTriggerBehavior {
 
   private final KeyGenerator keyGenerator;
   private final CatchEventBehavior catchEventBehavior;
-  private final TypedCommandWriter commandWriter;
-  private final StateWriter stateWriter;
+  private final CommandsBuilder commandWriter;
+  private final StateBuilder stateBuilder;
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
 
@@ -49,7 +49,7 @@ public class EventTriggerBehavior {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
 
     elementInstanceState = zeebeState.getElementInstanceState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
@@ -163,7 +163,7 @@ public class EventTriggerBehavior {
         .setVariablesBuffer(variables)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey);
-    stateWriter.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
+    stateBuilder.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
     return eventKey;
   }
 
@@ -188,7 +188,7 @@ public class EventTriggerBehavior {
         .setTargetElementIdBuffer(catchEventId)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey);
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         eventTriggerKey, ProcessEventIntent.TRIGGERED, processEventRecord);
   }
 
@@ -233,9 +233,9 @@ public class EventTriggerBehavior {
 
     final var eventInstanceKey = keyGenerator.nextKey();
     // transition to activating and activated directly to pass the variables to this instance
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
 
     if (variables.capacity() > 0) {

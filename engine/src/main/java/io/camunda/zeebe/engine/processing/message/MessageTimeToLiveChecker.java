@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -16,13 +16,12 @@ import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class MessageTimeToLiveChecker implements Runnable {
 
-  private final TypedCommandWriter writer;
+  private final CommandsBuilder writer;
   private final MessageState messageState;
 
   private final MessageRecord deleteMessageCommand = new MessageRecord();
 
-  public MessageTimeToLiveChecker(
-      final TypedCommandWriter writer, final MessageState messageState) {
+  public MessageTimeToLiveChecker(final CommandsBuilder writer, final MessageState messageState) {
     this.writer = writer;
     this.messageState = messageState;
   }

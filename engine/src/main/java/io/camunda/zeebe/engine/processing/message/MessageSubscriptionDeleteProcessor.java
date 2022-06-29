@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -28,8 +28,8 @@ public final class MessageSubscriptionDeleteProcessor
 
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
@@ -39,7 +39,7 @@ public final class MessageSubscriptionDeleteProcessor
       final Writers writers) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     rejectionWriter = writers.rejection();
   }
 
@@ -52,7 +52,7 @@ public final class MessageSubscriptionDeleteProcessor
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
     if (messageSubscription != null) {
-      stateWriter.appendFollowUpEvent(
+      stateBuilder.appendFollowUpEvent(
           messageSubscription.getKey(),
           MessageSubscriptionIntent.DELETED,
           messageSubscription.getRecord());

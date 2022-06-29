@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -38,7 +38,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnTransformer bpmnTransformer = BpmnFactory.createTransformer();
 
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
 
   private final BpmnValidator validator;
@@ -46,12 +46,12 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
-      final StateWriter stateWriter,
+      final StateBuilder stateBuilder,
       final Function<DeploymentResource, DirectBuffer> checksumGenerator,
       final ProcessState processState,
       final ExpressionProcessor expressionProcessor) {
     this.keyGenerator = keyGenerator;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
     validator = BpmnFactory.createValidator(expressionProcessor);
@@ -147,7 +147,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           final var key = keyGenerator.nextKey();
           processMetadata.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
 
-          stateWriter.appendFollowUpEvent(
+          stateBuilder.appendFollowUpEvent(
               key,
               ProcessIntent.CREATED,
               new ProcessRecord().wrap(processMetadata, deploymentResource.getResource()));

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -22,14 +22,16 @@ public final class BpmnIncidentBehavior {
   private final IncidentRecord incidentRecord = new IncidentRecord();
 
   private final IncidentState incidentState;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final KeyGenerator keyGenerator;
 
   public BpmnIncidentBehavior(
-      final ZeebeState zeebeState, final KeyGenerator keyGenerator, final StateWriter stateWriter) {
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator,
+      final StateBuilder stateBuilder) {
     incidentState = zeebeState.getIncidentState();
     this.keyGenerator = keyGenerator;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -38,7 +40,7 @@ public final class BpmnIncidentBehavior {
 
     if (hasIncident) {
       final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
-      stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
+      stateBuilder.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
     }
   }
 
@@ -64,12 +66,12 @@ public final class BpmnIncidentBehavior {
         .setErrorMessage(failure.getMessage());
 
     final var key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
+    stateBuilder.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
   }
 
   public void resolveIncidents(final BpmnElementContext context) {
     incidentState.forExistingProcessIncident(
         context.getElementInstanceKey(),
-        (record, key) -> stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
+        (record, key) -> stateBuilder.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
   }
 }

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -26,8 +26,8 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
   // TODO (#8003): clean up after refactoring; this is just a simple hook to be able to append
   // additional commands/events
   default void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
+      final CommandsBuilder commandWriter,
+      final StateBuilder stateBuilder,
       final long key,
       final Intent intent,
       final T value) {}

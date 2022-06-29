@@ -23,7 +23,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
@@ -53,7 +53,7 @@ public final class BpmnDecisionBehavior {
   private final DecisionState decisionState;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableState variableState;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final KeyGenerator keyGenerator;
   private final ExpressionProcessor expressionBehavior;
   private final ProcessEngineMetrics metrics;
@@ -62,7 +62,7 @@ public final class BpmnDecisionBehavior {
       final DecisionEngine decisionEngine,
       final ZeebeState zeebeState,
       final EventTriggerBehavior eventTriggerBehavior,
-      final StateWriter stateWriter,
+      final StateBuilder stateBuilder,
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionBehavior,
       final ProcessEngineMetrics metrics) {
@@ -70,7 +70,7 @@ public final class BpmnDecisionBehavior {
     decisionState = zeebeState.getDecisionState();
     variableState = zeebeState.getVariableState();
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
     this.keyGenerator = keyGenerator;
     this.expressionBehavior = expressionBehavior;
     this.metrics = metrics;
@@ -259,7 +259,7 @@ public final class BpmnDecisionBehavior {
     }
 
     final var newDecisionEvaluationKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         newDecisionEvaluationKey, decisionEvaluationIntent, decisionEvaluationEvent);
   }
 

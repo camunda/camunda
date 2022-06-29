@@ -13,8 +13,8 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -32,8 +32,8 @@ import org.agrona.DirectBuffer;
 
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final JobBatchCollector jobBatchCollector;
   private final KeyGenerator keyGenerator;
@@ -45,12 +45,12 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics) {
 
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     jobBatchCollector =
         new JobBatchCollector(
-            state.getJobState(), state.getVariableState(), stateWriter::canWriteEventOfLength);
+            state.getJobState(), state.getVariableState(), stateBuilder::canWriteEventOfLength);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -120,13 +120,13 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobBatchRecord value,
       final long jobBatchKey,
       final Integer activatedCount) {
-    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    stateBuilder.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
     jobMetrics.jobActivated(value.getType(), activatedCount);
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(final long jobKey, final JobRecord job) {
-    final String messageSize = ByteValue.prettyPrint(stateWriter.getMaxEventLength());
+    final String messageSize = ByteValue.prettyPrint(stateBuilder.getMaxEventLength());
     final DirectBuffer incidentMessage =
         wrapString(
             String.format(
@@ -145,6 +145,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setJobKey(jobKey)
             .setVariableScopeKey(job.getElementInstanceKey());
 
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    stateBuilder.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
 }

@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
@@ -42,12 +42,12 @@ public class MessageStartEventSubscriptionManager {
   }
 
   public void tryReOpenMessageStartEventSubscription(
-      final DeploymentRecord deploymentRecord, final StateWriter stateWriter) {
+      final DeploymentRecord deploymentRecord, final StateBuilder stateBuilder) {
 
     for (final ProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
       if (isLatestProcess(processRecord)) {
-        closeExistingMessageStartEventSubscriptions(processRecord, stateWriter);
-        openMessageStartEventSubscriptions(processRecord, stateWriter);
+        closeExistingMessageStartEventSubscriptions(processRecord, stateBuilder);
+        openMessageStartEventSubscriptions(processRecord, stateBuilder);
       }
     }
   }
@@ -60,7 +60,7 @@ public class MessageStartEventSubscriptionManager {
   }
 
   private void closeExistingMessageStartEventSubscriptions(
-      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+      final ProcessMetadata processRecord, final StateBuilder stateBuilder) {
     final DeployedProcess lastMsgProcess = findLastMessageStartProcess(processRecord);
     if (lastMsgProcess == null) {
       return;
@@ -69,7 +69,7 @@ public class MessageStartEventSubscriptionManager {
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         lastMsgProcess.getKey(),
         subscription ->
-            stateWriter.appendFollowUpEvent(
+            stateBuilder.appendFollowUpEvent(
                 subscription.getKey(),
                 MessageStartEventSubscriptionIntent.DELETED,
                 subscription.getRecord()));
@@ -91,7 +91,7 @@ public class MessageStartEventSubscriptionManager {
   }
 
   private void openMessageStartEventSubscriptions(
-      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+      final ProcessMetadata processRecord, final StateBuilder stateBuilder) {
     final long processDefinitionKey = processRecord.getKey();
     final DeployedProcess processDefinition = processState.getProcessByKey(processDefinitionKey);
     final ExecutableProcess process = processDefinition.getProcess();
@@ -115,7 +115,7 @@ public class MessageStartEventSubscriptionManager {
                       .setStartEventId(startEvent.getId());
 
                   final var subscriptionKey = keyGenerator.nextKey();
-                  stateWriter.appendFollowUpEvent(
+                  stateBuilder.appendFollowUpEvent(
                       subscriptionKey,
                       MessageStartEventSubscriptionIntent.CREATED,
                       subscriptionRecord);

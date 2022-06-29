@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -52,7 +52,7 @@ public final class BpmnJobBehavior {
   private final HeaderEncoder headerEncoder = new HeaderEncoder();
 
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final JobState jobState;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
@@ -70,7 +70,7 @@ public final class BpmnJobBehavior {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     this.stateBehavior = stateBehavior;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
@@ -150,7 +150,7 @@ public final class BpmnJobBehavior {
         .setElementInstanceKey(context.getElementInstanceKey());
 
     final var jobKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+    stateBuilder.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
   }
 
   private DirectBuffer encodeHeaders(
@@ -184,7 +184,7 @@ public final class BpmnJobBehavior {
       final JobRecord job = jobState.getJob(jobKey);
       // Note that this logic is duplicated in JobCancelProcessor, if you change this please change
       // it there as well.
-      stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
+      stateBuilder.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.jobCanceled(job.getType());
     }
   }

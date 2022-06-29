@@ -12,8 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -57,8 +57,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
+      final CommandsBuilder commandWriter,
+      final StateBuilder stateBuilder,
       final long key,
       final Intent intent,
       final JobRecord value) {
@@ -81,7 +81,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           .setJobKey(key)
           .setVariableScopeKey(value.getElementInstanceKey());
 
-      stateWriter.appendFollowUpEvent(
+      stateBuilder.appendFollowUpEvent(
           keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
     }
   }

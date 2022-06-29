@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 
-public interface TypedRejectionWriter {
+public interface RejectionsBuilder {
 
   void appendRejection(
       TypedRecord<? extends RecordValue> command, RejectionType type, String reason);

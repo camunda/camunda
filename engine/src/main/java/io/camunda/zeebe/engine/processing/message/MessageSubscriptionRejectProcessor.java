@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
@@ -26,8 +26,8 @@ public final class MessageSubscriptionRejectProcessor
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final StateBuilder stateBuilder;
+  private final RejectionsBuilder rejectionWriter;
 
   public MessageSubscriptionRejectProcessor(
       final MessageState messageState,
@@ -37,7 +37,7 @@ public final class MessageSubscriptionRejectProcessor
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     rejectionWriter = writers.rejection();
   }
 
@@ -53,7 +53,7 @@ public final class MessageSubscriptionRejectProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
     findSubscriptionToCorrelate(subscriptionRecord);
@@ -86,7 +86,7 @@ public final class MessageSubscriptionRejectProcessor
                 .setMessageKey(messageKey)
                 .setVariables(storedMessage.getMessage().getVariablesBuffer());
 
-            stateWriter.appendFollowUpEvent(
+            stateBuilder.appendFollowUpEvent(
                 subscription.getKey(),
                 MessageSubscriptionIntent.CORRELATING,
                 correlatingSubscription);

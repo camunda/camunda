@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -26,13 +26,13 @@ public class CompleteDeploymentDistributionProcessor
       "Expected to find pending deployment with key %d, but deployment distribution already completed.";
 
   private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final DeploymentState deploymentState;
-  private final TypedRejectionWriter rejectionWriter;
+  private final RejectionsBuilder rejectionWriter;
 
   public CompleteDeploymentDistributionProcessor(
       final DeploymentState deploymentState, final Writers writers) {
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     this.deploymentState = deploymentState;
     rejectionWriter = writers.rejection();
   }
@@ -49,13 +49,13 @@ public class CompleteDeploymentDistributionProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
+    stateBuilder.appendFollowUpEvent(
         deploymentKey, DeploymentDistributionIntent.COMPLETED, record.getValue());
 
     if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {
       // to be consistent we write here as well an empty deployment record
       // https://github.com/zeebe-io/zeebe/issues/6314
-      stateWriter.appendFollowUpEvent(
+      stateBuilder.appendFollowUpEvent(
           deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
     }
   }

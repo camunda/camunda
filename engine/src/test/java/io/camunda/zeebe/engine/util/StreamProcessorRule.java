@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListene
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -156,7 +156,7 @@ public final class StreamProcessorRule implements TestRule {
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
       final TypedRecordProcessorFactory processorFactory,
-      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory) {
+      final Function<LogStreamBatchWriter, RecordsBuilder> streamWriterFactory) {
     return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
         startPartitionId, processorFactory, streamWriterFactory);
   }

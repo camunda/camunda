@@ -12,8 +12,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBeha
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
@@ -82,8 +82,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
+      final CommandsBuilder commandWriter,
+      final StateBuilder stateBuilder,
       final long jobKey,
       final Intent intent,
       final JobRecord job) {
@@ -92,7 +92,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var serviceTaskInstanceKey = job.getElementId();
 
     if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, stateWriter, foundCatchEvent.getLeft());
+      raiseIncident(jobKey, job, stateBuilder, foundCatchEvent.getLeft());
       return;
     }
 
@@ -141,7 +141,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void raiseIncident(
-      final long key, final JobRecord job, final StateWriter stateWriter, final Failure failure) {
+      final long key, final JobRecord job, final StateBuilder stateBuilder, final Failure failure) {
 
     incidentEvent.reset();
     incidentEvent
@@ -155,6 +155,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setJobKey(key)
         .setVariableScopeKey(job.getElementInstanceKey());
 
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    stateBuilder.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
 }

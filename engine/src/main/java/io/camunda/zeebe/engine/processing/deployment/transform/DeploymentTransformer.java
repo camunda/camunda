@@ -13,7 +13,7 @@ import static java.util.Map.entry;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -43,7 +43,7 @@ public final class DeploymentTransformer {
   private String rejectionReason;
 
   public DeploymentTransformer(
-      final StateWriter stateWriter,
+      final StateBuilder stateBuilder,
       final ZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final KeyGenerator keyGenerator) {
@@ -62,13 +62,13 @@ public final class DeploymentTransformer {
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
             keyGenerator,
-            stateWriter,
+            stateBuilder,
             this::getChecksum,
             zeebeState.getProcessState(),
             expressionProcessor);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
-            keyGenerator, stateWriter, this::getChecksum, zeebeState.getDecisionState());
+            keyGenerator, stateBuilder, this::getChecksum, zeebeState.getDecisionState());
 
     resourceTransformers =
         Map.ofEntries(

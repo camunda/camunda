@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -31,8 +31,8 @@ public final class DeploymentDistributionBehavior {
   private final List<Integer> otherPartitions;
   private final DeploymentDistributor deploymentDistributor;
   private final ActorControl processingActor;
-  private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
+  private final StateBuilder stateBuilder;
+  private final CommandsBuilder commandWriter;
 
   public DeploymentDistributionBehavior(
       final Writers writers,
@@ -47,7 +47,7 @@ public final class DeploymentDistributionBehavior {
     this.deploymentDistributor = deploymentDistributor;
     this.processingActor = processingActor;
 
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     commandWriter = writers.command();
   }
 
@@ -57,7 +57,7 @@ public final class DeploymentDistributionBehavior {
     otherPartitions.forEach(
         partitionId -> {
           deploymentDistributionRecord.setPartition(partitionId);
-          stateWriter.appendFollowUpEvent(
+          stateBuilder.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
 
           distributeDeploymentToPartition(partitionId, key, copiedDeploymentBuffer);
@@ -68,7 +68,7 @@ public final class DeploymentDistributionBehavior {
       // we easily reach the record limit if we always write the deployment record
       // since no one consumes currently the FULLY_DISTRIBUTED (only the key) we write an empty
       // record
-      stateWriter.appendFollowUpEvent(
+      stateBuilder.appendFollowUpEvent(
           key, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
     }
   }

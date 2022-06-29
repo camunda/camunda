@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateBuilder;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
@@ -44,7 +44,7 @@ final class VariableBehaviorTest {
   @BeforeEach
   void beforeEach() {
     final var stateWriter =
-        new EventApplyingStateWriter(eventWriter, new EventAppliers(zeebeState));
+        new EventApplyingStateBuilder(eventWriter, new EventAppliers(zeebeState));
 
     state = zeebeState.getVariableState();
     behavior = new VariableBehavior(state, stateWriter, zeebeState.getKeyGenerator());

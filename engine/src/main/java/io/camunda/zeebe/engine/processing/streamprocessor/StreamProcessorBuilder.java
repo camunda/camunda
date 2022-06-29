@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilderImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -30,8 +30,8 @@ public final class StreamProcessorBuilder {
   private ZeebeDb zeebeDb;
   private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
-  private Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory =
-      TypedStreamWriterImpl::new;
+  private Function<LogStreamBatchWriter, RecordsBuilder> typedStreamWriterFactory =
+      RecordsBuilderImpl::new;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
@@ -130,12 +130,12 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }
 
-  public Function<LogStreamBatchWriter, TypedStreamWriter> getTypedStreamWriterFactory() {
+  public Function<LogStreamBatchWriter, RecordsBuilder> getTypedStreamWriterFactory() {
     return typedStreamWriterFactory;
   }
 
   public StreamProcessorBuilder typedStreamWriterFactory(
-      final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory) {
+      final Function<LogStreamBatchWriter, RecordsBuilder> typedStreamWriterFactory) {
     this.typedStreamWriterFactory = typedStreamWriterFactory;
     return this;
   }

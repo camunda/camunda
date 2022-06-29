@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 public final class VariableBehavior {
 
   private final VariableState variableState;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
   private final KeyGenerator keyGenerator;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
@@ -36,10 +36,10 @@ public final class VariableBehavior {
 
   public VariableBehavior(
       final VariableState variableState,
-      final StateWriter stateWriter,
+      final StateBuilder stateBuilder,
       final KeyGenerator keyGenerator) {
     this.variableState = variableState;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
     this.keyGenerator = keyGenerator;
   }
 
@@ -129,7 +129,7 @@ public final class VariableBehavior {
 
         if (variableInstance != null && !variableInstance.getValue().equals(entry.getValue())) {
           applyEntryToRecord(entry);
-          stateWriter.appendFollowUpEvent(
+          stateBuilder.appendFollowUpEvent(
               variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
           entryIterator.remove();
         }
@@ -187,9 +187,9 @@ public final class VariableBehavior {
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
       final long key = keyGenerator.nextKey();
-      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
+      stateBuilder.appendFollowUpEvent(key, VariableIntent.CREATED, record);
     } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
-      stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
+      stateBuilder.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
     }
   }
 

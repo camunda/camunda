@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -20,15 +20,15 @@ public final class MessageCorrelator {
 
   private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
 
   public MessageCorrelator(
       final MessageState messageState,
       final SubscriptionCommandSender commandSender,
-      final StateWriter stateWriter) {
+      final StateBuilder stateBuilder) {
     this.messageState = messageState;
     this.commandSender = commandSender;
-    this.stateWriter = stateWriter;
+    this.stateBuilder = stateBuilder;
   }
 
   public boolean correlateNextMessage(
@@ -64,7 +64,7 @@ public final class MessageCorrelator {
     if (correlateMessage) {
       subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
 
-      stateWriter.appendFollowUpEvent(
+      stateBuilder.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
       sendCorrelateCommand(subscriptionRecord);

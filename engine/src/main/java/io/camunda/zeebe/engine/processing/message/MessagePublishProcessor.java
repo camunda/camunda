@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -38,7 +38,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
+  private final StateBuilder stateBuilder;
 
   private final EventHandle eventHandle;
   private final Subscriptions correlatingSubscriptions = new Subscriptions();
@@ -62,7 +62,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
+    stateBuilder = writers.state();
     eventHandle =
         new EventHandle(
             keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
@@ -100,7 +100,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     // calculate the deadline based on the command's timestamp
     messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
 
-    stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
+    stateBuilder.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
@@ -111,7 +111,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
-      stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
+      stateBuilder.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
     }
   }
 
@@ -132,7 +132,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
                     .setMessageKey(messageKey)
                     .setVariables(message.getVariablesBuffer());
 
-            stateWriter.appendFollowUpEvent(
+            stateBuilder.appendFollowUpEvent(
                 subscription.getKey(),
                 MessageSubscriptionIntent.CORRELATING,
                 correlatingSubscription);
