@@ -484,6 +484,7 @@ public final class CreateProcessInstanceProcessor
                 .formatted(
                     BufferUtil.bufferAsString(element.getId()),
                     subscribedOrFailure.getLeft().getMessage());
+        // todo(#9644): reject command using logical transaction instead of exception throwing
         throw new UncheckedExecutionException(message);
       }
     }
