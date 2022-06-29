@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -46,11 +46,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
-      final Writers writers) {
+      final Builders builders) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
-    stateBuilder = writers.state();
-    rejectionWriter = writers.rejection();
-    responseWriter = writers.response();
+    stateBuilder = builders.state();
+    rejectionWriter = builders.rejection();
+    responseWriter = builders.response();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
   }

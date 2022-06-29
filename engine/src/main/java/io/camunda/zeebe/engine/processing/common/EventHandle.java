@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.processing.common;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -47,14 +47,14 @@ public final class EventHandle {
   public EventHandle(
       final KeyGenerator keyGenerator,
       final EventScopeInstanceState eventScopeInstanceState,
-      final Writers writers,
+      final Builders builders,
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.processState = processState;
-    commandWriter = writers.command();
-    stateBuilder = writers.state();
+    commandWriter = builders.command();
+    stateBuilder = builders.state();
     this.eventTriggerBehavior = eventTriggerBehavior;
   }
 

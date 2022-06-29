@@ -14,8 +14,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.util.RecordStream;
@@ -192,10 +192,10 @@ public final class TypedStreamProcessorTest {
 
   protected static class ErrorProneProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-    private final Writers writers;
+    private final Builders builders;
 
-    public ErrorProneProcessor(final Writers writers) {
-      this.writers = writers;
+    public ErrorProneProcessor(final Builders builders) {
+      this.builders = builders;
     }
 
     @Override
@@ -203,7 +203,7 @@ public final class TypedStreamProcessorTest {
       if (record.getKey() == 0) {
         throw new RuntimeException("expected");
       }
-      writers
+      builders
           .state()
           .appendFollowUpEvent(record.getKey(), DeploymentIntent.CREATED, record.getValue());
     }
@@ -211,15 +211,15 @@ public final class TypedStreamProcessorTest {
 
   protected class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-    private final Writers writers;
+    private final Builders builders;
 
-    public BatchProcessor(final Writers writers) {
-      this.writers = writers;
+    public BatchProcessor(final Builders builders) {
+      this.builders = builders;
     }
 
     @Override
     public void processRecord(final TypedRecord<DeploymentRecord> record) {
-      writers
+      builders
           .state()
           .appendFollowUpEvent(keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
     }

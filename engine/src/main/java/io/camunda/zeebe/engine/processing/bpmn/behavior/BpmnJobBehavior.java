@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -62,7 +62,7 @@ public final class BpmnJobBehavior {
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
       final JobState jobState,
-      final Writers writers,
+      final Builders builders,
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
       final BpmnIncidentBehavior incidentBehavior,
@@ -70,7 +70,7 @@ public final class BpmnJobBehavior {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
-    stateBuilder = writers.state();
+    stateBuilder = builders.state();
     this.stateBehavior = stateBehavior;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;

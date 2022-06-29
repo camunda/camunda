@@ -9,9 +9,9 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -31,10 +31,10 @@ public class CompleteDeploymentDistributionProcessor
   private final RejectionsBuilder rejectionWriter;
 
   public CompleteDeploymentDistributionProcessor(
-      final DeploymentState deploymentState, final Writers writers) {
-    stateBuilder = writers.state();
+      final DeploymentState deploymentState, final Builders builders) {
+    stateBuilder = builders.state();
     this.deploymentState = deploymentState;
-    rejectionWriter = writers.rejection();
+    rejectionWriter = builders.rejection();
   }
 
   @Override

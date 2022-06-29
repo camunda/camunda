@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -21,14 +21,14 @@ public final class ProcessInstanceCommandProcessor
   private final ProcessInstanceCommandHandlers commandHandlers;
   private final ElementInstanceState elementInstanceState;
   private final ProcessInstanceCommandContext context;
-  private final Writers writers;
+  private final Builders builders;
 
   public ProcessInstanceCommandProcessor(
-      final Writers writers, final MutableElementInstanceState elementInstanceState) {
+      final Builders builders, final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
     commandHandlers = new ProcessInstanceCommandHandlers();
     context = new ProcessInstanceCommandContext(elementInstanceState);
-    this.writers = writers;
+    this.builders = builders;
   }
 
   @Override
@@ -39,7 +39,7 @@ public final class ProcessInstanceCommandProcessor
 
   private void populateCommandContext(final TypedRecord<ProcessInstanceRecord> record) {
     context.setRecord(record);
-    context.setWriters(writers);
+    context.setWriters(builders);
 
     final ElementInstance elementInstance = elementInstanceState.getInstance(record.getKey());
     context.setElementInstance(elementInstance);

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -21,16 +21,16 @@ public final class TypedRecordProcessors {
   private final RecordProcessorMap recordProcessorMap = new RecordProcessorMap();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final KeyGenerator keyGenerator;
-  private final Writers writers;
+  private final Builders builders;
 
-  private TypedRecordProcessors(final KeyGenerator keyGenerator, final Writers writers) {
+  private TypedRecordProcessors(final KeyGenerator keyGenerator, final Builders builders) {
     this.keyGenerator = keyGenerator;
-    this.writers = writers;
+    this.builders = builders;
   }
 
   public static TypedRecordProcessors processors(
-      final KeyGenerator keyGenerator, final Writers writers) {
-    return new TypedRecordProcessors(keyGenerator, writers);
+      final KeyGenerator keyGenerator, final Builders builders) {
+    return new TypedRecordProcessors(keyGenerator, builders);
   }
 
   public TypedRecordProcessors onCommand(
@@ -41,7 +41,7 @@ public final class TypedRecordProcessors {
 
   public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(
       final ValueType valueType, final Intent intent, final CommandProcessor<T> commandProcessor) {
-    final var processor = new CommandProcessorImpl<>(commandProcessor, keyGenerator, writers);
+    final var processor = new CommandProcessorImpl<>(commandProcessor, keyGenerator, builders);
     return onCommand(valueType, intent, processor);
   }
 

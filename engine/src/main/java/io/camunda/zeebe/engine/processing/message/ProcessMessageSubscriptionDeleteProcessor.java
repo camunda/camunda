@@ -9,9 +9,9 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -30,10 +30,10 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   private final ProcessMessageSubscriptionState subscriptionState;
 
   public ProcessMessageSubscriptionDeleteProcessor(
-      final ProcessMessageSubscriptionState subscriptionState, final Writers writers) {
+      final ProcessMessageSubscriptionState subscriptionState, final Builders builders) {
     this.subscriptionState = subscriptionState;
-    stateBuilder = writers.state();
-    rejectionWriter = writers.rejection();
+    stateBuilder = builders.state();
+    rejectionWriter = builders.rejection();
   }
 
   @Override

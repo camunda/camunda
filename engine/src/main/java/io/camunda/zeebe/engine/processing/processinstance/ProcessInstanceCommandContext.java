@@ -8,9 +8,9 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -23,7 +23,7 @@ public final class ProcessInstanceCommandContext {
 
   private TypedRecord<ProcessInstanceRecord> record;
   private ElementInstance elementInstance;
-  private Writers writers;
+  private Builders builders;
 
   public ProcessInstanceCommandContext(final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
@@ -50,7 +50,7 @@ public final class ProcessInstanceCommandContext {
   }
 
   public TypedResponseWriter getResponseWriter() {
-    return writers.response();
+    return builders.response();
   }
 
   public MutableElementInstanceState getElementInstanceState() {
@@ -58,15 +58,15 @@ public final class ProcessInstanceCommandContext {
   }
 
   public void reject(final RejectionType rejectionType, final String reason) {
-    writers.rejection().appendRejection(record, rejectionType, reason);
-    writers.response().writeRejectionOnCommand(record, rejectionType, reason);
+    builders.rejection().appendRejection(record, rejectionType, reason);
+    builders.response().writeRejectionOnCommand(record, rejectionType, reason);
   }
 
   public CommandsBuilder getCommandWriter() {
-    return writers.command();
+    return builders.command();
   }
 
-  public void setWriters(final Writers writers) {
-    this.writers = writers;
+  public void setWriters(final Builders builders) {
+    this.builders = builders;
   }
 }

@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
@@ -34,7 +34,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final ZeebeState zeebeState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
-      final Writers writers) {
+      final Builders builders) {
     messageState = zeebeState.getMessageState();
     processState = zeebeState.getProcessState();
     messageStartEventSubscriptionState = zeebeState.getMessageStartEventSubscriptionState();
@@ -43,7 +43,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
         new EventHandle(
             keyGenerator,
             zeebeState.getEventScopeInstanceState(),
-            writers,
+            builders,
             processState,
             eventTriggerBehavior);
   }

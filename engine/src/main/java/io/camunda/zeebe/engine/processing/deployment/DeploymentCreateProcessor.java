@@ -20,9 +20,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -52,21 +52,21 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final StateBuilder stateBuilder;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
-  private final Writers writers;
+  private final Builders builders;
 
   public DeploymentCreateProcessor(
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,
-      final Writers writers,
+      final Builders builders,
       final ActorControl actor,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
     timerInstanceState = zeebeState.getTimerState();
     this.keyGenerator = keyGenerator;
-    stateBuilder = writers.state();
+    stateBuilder = builders.state();
     deploymentTransformer =
         new DeploymentTransformer(stateBuilder, zeebeState, expressionProcessor, keyGenerator);
     this.catchEventBehavior = catchEventBehavior;
@@ -75,8 +75,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         new MessageStartEventSubscriptionManager(
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
-    this.writers = writers;
+        new DeploymentDistributionBehavior(builders, partitionsCount, deploymentDistributor, actor);
+    this.builders = builders;
   }
 
   @Override
@@ -89,15 +89,17 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, writers.command());
+        createTimerIfTimerStartEvent(command, builders.command());
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        writers.response().writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-        writers.rejection().appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        builders
+            .response()
+            .writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        builders.rejection().appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
         return;
       }
 
-      writers
+      builders
           .response()
           .writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
 
@@ -108,13 +110,13 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentEvent, stateBuilder);
 
     } else {
-      writers
+      builders
           .response()
           .writeRejectionOnCommand(
               command,
               deploymentTransformer.getRejectionType(),
               deploymentTransformer.getRejectionReason());
-      writers
+      builders
           .rejection()
           .appendRejection(
               command,

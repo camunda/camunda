@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 /** Convenience class to aggregate all the writers */
-public final class Writers {
+public final class Builders {
 
   private RecordsBuilder stream;
   private StateBuilder state;

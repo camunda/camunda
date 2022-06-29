@@ -15,9 +15,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -55,19 +55,19 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final EventTriggerBehavior eventTriggerBehavior,
-      final Writers writers) {
+      final Builders builders) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
-    stateBuilder = writers.state();
-    rejectionWriter = writers.rejection();
+    stateBuilder = builders.state();
+    rejectionWriter = builders.rejection();
 
     eventHandle =
         new EventHandle(
             zeebeState.getKeyGenerator(),
             zeebeState.getEventScopeInstanceState(),
-            writers,
+            builders,
             processState,
             eventTriggerBehavior);
   }

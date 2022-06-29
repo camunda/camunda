@@ -254,6 +254,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final LastProcessingPositions lastProcessingPositions) {
 
     if (errorOnReceivingWriter == null) {
+
       processingContext.logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
       phase = Phase.PROCESSING;

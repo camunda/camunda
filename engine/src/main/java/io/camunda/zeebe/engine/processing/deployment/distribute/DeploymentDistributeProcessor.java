@@ -11,8 +11,8 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -31,14 +31,14 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
       final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
       final DeploymentResponder deploymentResponder,
       final int partitionId,
-      final Writers writers,
+      final Builders builders,
       final KeyGenerator keyGenerator) {
     messageStartEventSubscriptionManager =
         new MessageStartEventSubscriptionManager(
             processState, messageStartEventSubscriptionState, keyGenerator);
     this.deploymentResponder = deploymentResponder;
     this.partitionId = partitionId;
-    stateBuilder = writers.state();
+    stateBuilder = builders.state();
   }
 
   @Override

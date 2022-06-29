@@ -28,7 +28,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -154,7 +154,7 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final Writers writers,
+      final Builders builders,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics) {
     return ProcessEventProcessors.addProcessProcessors(
@@ -165,7 +165,7 @@ public final class EngineProcessors {
         catchEventBehavior,
         timerChecker,
         eventTriggerBehavior,
-        writers,
+        builders,
         jobMetrics);
   }
 
@@ -176,7 +176,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
-      final Writers writers,
+      final Builders builders,
       final int partitionsCount,
       final ActorControl actor,
       final DeploymentDistributor deploymentDistributor,
@@ -190,7 +190,7 @@ public final class EngineProcessors {
             catchEventBehavior,
             expressionProcessor,
             partitionsCount,
-            writers,
+            builders,
             actor,
             deploymentDistributor,
             keyGenerator);
@@ -209,14 +209,14 @@ public final class EngineProcessors {
             zeebeState.getMessageStartEventSubscriptionState(),
             deploymentResponder,
             partitionId,
-            writers,
+            builders,
             keyGenerator);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
 
     // completes the deployment distribution
     final var completeDeploymentDistributionProcessor =
-        new CompleteDeploymentDistributionProcessor(zeebeState.getDeploymentState(), writers);
+        new CompleteDeploymentDistributionProcessor(zeebeState.getDeploymentState(), builders);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT_DISTRIBUTION,
         DeploymentDistributionIntent.COMPLETE,
@@ -227,10 +227,10 @@ public final class EngineProcessors {
       final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers,
+      final Builders builders,
       final KeyGenerator keyGenerator) {
     IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers, keyGenerator);
+        typedRecordProcessors, zeebeState, bpmnStreamProcessor, builders, keyGenerator);
   }
 
   private static void addMessageProcessors(
@@ -238,12 +238,12 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers) {
+      final Builders builders) {
     MessageEventProcessors.addMessageProcessors(
         eventTriggerBehavior,
         typedRecordProcessors,
         zeebeState,
         subscriptionCommandSender,
-        writers);
+        builders);
   }
 }

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -40,15 +40,15 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
   private RejectionType rejectionType;
   private String rejectionReason;
-  private final Writers writers;
+  private final Builders builders;
 
   public CommandProcessorImpl(
       final CommandProcessor<T> commandProcessor,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Builders builders) {
     wrappedProcessor = commandProcessor;
     this.keyGenerator = keyGenerator;
-    this.writers = writers;
+    this.builders = builders;
   }
 
   @Override
@@ -61,16 +61,16 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 
     if (isAccepted) {
-      writers.state().appendFollowUpEvent(entityKey, newState, updatedValue);
+      builders.state().appendFollowUpEvent(entityKey, newState, updatedValue);
       wrappedProcessor.afterAccept(
-          writers.command(), writers.state(), entityKey, newState, updatedValue);
+          builders.command(), builders.state(), entityKey, newState, updatedValue);
       if (respond) {
-        writers.response().writeEventOnCommand(entityKey, newState, updatedValue, command);
+        builders.response().writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
-      writers.rejection().appendRejection(command, rejectionType, rejectionReason);
+      builders.rejection().appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
-        writers.response().writeRejectionOnCommand(command, rejectionType, rejectionReason);
+        builders.response().writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
   }

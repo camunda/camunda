@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
@@ -37,10 +37,10 @@ public final class MessageSubscriptionCorrelateProcessor
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
-      final Writers writers) {
+      final Builders builders) {
     this.subscriptionState = subscriptionState;
-    stateBuilder = writers.state();
-    rejectionWriter = writers.rejection();
+    stateBuilder = builders.state();
+    rejectionWriter = builders.rejection();
     messageCorrelator = new MessageCorrelator(messageState, commandSender, stateBuilder);
   }
 

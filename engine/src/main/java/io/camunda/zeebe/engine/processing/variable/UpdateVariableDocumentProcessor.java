@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -26,17 +26,17 @@ public final class UpdateVariableDocumentProcessor
   private final ElementInstanceState elementInstanceState;
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
-  private final Writers writers;
+  private final Builders builders;
 
   public UpdateVariableDocumentProcessor(
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
-      final Writers writers) {
+      final Builders builders) {
     this.elementInstanceState = elementInstanceState;
     this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
-    this.writers = writers;
+    this.builders = builders;
   }
 
   @Override
@@ -49,8 +49,8 @@ public final class UpdateVariableDocumentProcessor
           String.format(
               "Expected to update variables for element with key '%d', but no such element was found",
               value.getScopeKey());
-      writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      builders.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
+      builders.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -78,14 +78,14 @@ public final class UpdateVariableDocumentProcessor
           String.format(
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
-      writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      builders.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
+      builders.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
     final long key = keyGenerator.nextKey();
 
-    writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    builders.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+    builders.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 }

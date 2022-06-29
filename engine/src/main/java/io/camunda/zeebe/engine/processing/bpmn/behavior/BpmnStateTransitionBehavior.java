@@ -17,9 +17,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCal
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -56,14 +56,14 @@ public final class BpmnStateTransitionBehavior {
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
-      final Writers writers,
+      final Builders builders,
       final ElementInstanceState elementInstanceState) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
-    stateBuilder = writers.state();
-    commandWriter = writers.command();
+    stateBuilder = builders.state();
+    commandWriter = builders.command();
     this.elementInstanceState = elementInstanceState;
   }
 

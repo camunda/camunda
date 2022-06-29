@@ -23,7 +23,7 @@ import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceW
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.timer.CancelTimerProcessor;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.timer.TriggerTimerProcessor;
@@ -53,18 +53,18 @@ public final class ProcessEventProcessors {
       final CatchEventBehavior catchEventBehavior,
       final DueDateTimerChecker timerChecker,
       final EventTriggerBehavior eventTriggerBehavior,
-      final Writers writers,
+      final Builders builders,
       final JobMetrics jobMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
     final VariableBehavior variableBehavior =
         new VariableBehavior(
-            zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
+            zeebeState.getVariableState(), builders.state(), zeebeState.getKeyGenerator());
 
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
     addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, zeebeState.getElementInstanceState());
+        builders, typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -73,7 +73,7 @@ public final class ProcessEventProcessors {
             variableBehavior,
             eventTriggerBehavior,
             zeebeState,
-            writers,
+            builders,
             jobMetrics,
             processEngineMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
@@ -84,7 +84,7 @@ public final class ProcessEventProcessors {
         subscriptionCommandSender,
         eventTriggerBehavior,
         zeebeState,
-        writers);
+        builders);
     addTimerStreamProcessors(
         typedRecordProcessors,
         timerChecker,
@@ -92,17 +92,17 @@ public final class ProcessEventProcessors {
         catchEventBehavior,
         eventTriggerBehavior,
         expressionProcessor,
-        writers);
+        builders);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
         variableBehavior,
         zeebeState.getElementInstanceState(),
         zeebeState.getKeyGenerator(),
-        writers);
+        builders);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         zeebeState,
-        writers,
+        builders,
         variableBehavior,
         catchEventBehavior,
         processEngineMetrics);
@@ -111,12 +111,12 @@ public final class ProcessEventProcessors {
   }
 
   private static void addProcessInstanceCommandProcessor(
-      final Writers writers,
+      final Builders builders,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableElementInstanceState elementInstanceState) {
 
     final ProcessInstanceCommandProcessor commandProcessor =
-        new ProcessInstanceCommandProcessor(writers, elementInstanceState);
+        new ProcessInstanceCommandProcessor(builders, elementInstanceState);
 
     Arrays.stream(ProcessInstanceIntent.values())
         .filter(ProcessInstanceIntent::isProcessInstanceCommand)
@@ -144,13 +144,13 @@ public final class ProcessEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final EventTriggerBehavior eventTriggerBehavior,
       final MutableZeebeState zeebeState,
-      final Writers writers) {
+      final Builders builders) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CREATE,
             new ProcessMessageSubscriptionCreateProcessor(
-                zeebeState.getProcessMessageSubscriptionState(), writers))
+                zeebeState.getProcessMessageSubscriptionState(), builders))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
@@ -159,11 +159,11 @@ public final class ProcessEventProcessors {
                 subscriptionCommandSender,
                 zeebeState,
                 eventTriggerBehavior,
-                writers))
+                builders))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
-            new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, writers))
+            new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, builders))
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender, zeebeState.getPendingProcessMessageSubscriptionState()));
@@ -176,18 +176,18 @@ public final class ProcessEventProcessors {
       final CatchEventBehavior catchEventOutput,
       final EventTriggerBehavior eventTriggerBehavior,
       final ExpressionProcessor expressionProcessor,
-      final Writers writers) {
+      final Builders builders) {
     typedRecordProcessors
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
             new TriggerTimerProcessor(
-                zeebeState, catchEventOutput, eventTriggerBehavior, expressionProcessor, writers))
+                zeebeState, catchEventOutput, eventTriggerBehavior, expressionProcessor, builders))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,
             new CancelTimerProcessor(
-                zeebeState.getTimerState(), writers.state(), writers.rejection()))
+                zeebeState.getTimerState(), builders.state(), builders.rejection()))
         .withListener(timerChecker);
   }
 
@@ -196,18 +196,18 @@ public final class ProcessEventProcessors {
       final VariableBehavior variableBehavior,
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Builders builders) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new UpdateVariableDocumentProcessor(
-            elementInstanceState, keyGenerator, variableBehavior, writers));
+            elementInstanceState, keyGenerator, variableBehavior, builders));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
-      final Writers writers,
+      final Builders builders,
       final VariableBehavior variableBehavior,
       final CatchEventBehavior catchEventBehavior,
       final ProcessEngineMetrics metrics) {
@@ -218,7 +218,7 @@ public final class ProcessEventProcessors {
         new CreateProcessInstanceProcessor(
             zeebeState.getProcessState(),
             keyGenerator,
-            writers,
+            builders,
             variableBehavior,
             catchEventBehavior,
             metrics);

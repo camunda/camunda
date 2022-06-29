@@ -12,9 +12,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -44,18 +44,18 @@ public class EventTriggerBehavior {
   public EventTriggerBehavior(
       final KeyGenerator keyGenerator,
       final CatchEventBehavior catchEventBehavior,
-      final Writers writers,
+      final Builders builders,
       final ZeebeState zeebeState) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
-    commandWriter = writers.command();
-    stateBuilder = writers.state();
+    commandWriter = builders.command();
+    stateBuilder = builders.state();
 
     elementInstanceState = zeebeState.getElementInstanceState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
 
     variableBehavior =
-        new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
+        new VariableBehavior(zeebeState.getVariableState(), builders.state(), keyGenerator);
   }
 
   private void unsubscribeEventSubprocesses(final BpmnElementContext context) {

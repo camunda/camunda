@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -28,7 +28,7 @@ public final class JobEventProcessors {
       final MutableZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
-      final Writers writers,
+      final Builders builders,
       final JobMetrics jobMetrics,
       final EventTriggerBehavior eventTriggerBehavior) {
 
@@ -39,7 +39,7 @@ public final class JobEventProcessors {
         new EventHandle(
             keyGenerator,
             zeebeState.getEventScopeInstanceState(),
-            writers,
+            builders,
             zeebeState.getProcessState(),
             eventTriggerBehavior);
 
@@ -69,7 +69,7 @@ public final class JobEventProcessors {
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                writers, zeebeState, zeebeState.getKeyGenerator(), jobMetrics))
+                builders, zeebeState, zeebeState.getKeyGenerator(), jobMetrics))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(jobBackoffChecker)
         .withListener(

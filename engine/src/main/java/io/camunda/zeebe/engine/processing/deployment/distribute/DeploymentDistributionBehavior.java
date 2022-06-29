@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -35,7 +35,7 @@ public final class DeploymentDistributionBehavior {
   private final CommandsBuilder commandWriter;
 
   public DeploymentDistributionBehavior(
-      final Writers writers,
+      final Builders builders,
       final int partitionsCount,
       final DeploymentDistributor deploymentDistributor,
       final ActorControl processingActor) {
@@ -47,8 +47,8 @@ public final class DeploymentDistributionBehavior {
     this.deploymentDistributor = deploymentDistributor;
     this.processingActor = processingActor;
 
-    stateBuilder = writers.state();
-    commandWriter = writers.command();
+    stateBuilder = builders.state();
+    commandWriter = builders.command();
   }
 
   public void distributeDeployment(final DeploymentRecord deploymentEvent, final long key) {

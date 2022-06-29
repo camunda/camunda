@@ -15,9 +15,9 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -59,11 +59,11 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final ExpressionProcessor expressionProcessor,
-      final Writers writers) {
+      final Builders builders) {
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
-    stateBuilder = writers.state();
-    rejectionWriter = writers.rejection();
+    stateBuilder = builders.state();
+    rejectionWriter = builders.rejection();
 
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
@@ -74,7 +74,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         new EventHandle(
             keyGenerator,
             zeebeState.getEventScopeInstanceState(),
-            writers,
+            builders,
             processState,
             eventTriggerBehavior);
   }

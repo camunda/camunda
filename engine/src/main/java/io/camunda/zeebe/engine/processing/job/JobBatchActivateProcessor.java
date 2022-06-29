@@ -13,10 +13,10 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RejectionsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -40,14 +40,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobMetrics jobMetrics;
 
   public JobBatchActivateProcessor(
-      final Writers writers,
+      final Builders builders,
       final ZeebeState state,
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics) {
 
-    stateBuilder = writers.state();
-    rejectionWriter = writers.rejection();
-    responseWriter = writers.response();
+    stateBuilder = builders.state();
+    rejectionWriter = builders.rejection();
+    responseWriter = builders.response();
     jobBatchCollector =
         new JobBatchCollector(
             state.getJobState(), state.getVariableState(), stateBuilder::canWriteEventOfLength);

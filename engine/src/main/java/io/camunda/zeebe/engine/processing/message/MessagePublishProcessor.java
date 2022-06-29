@@ -14,9 +14,9 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
@@ -45,7 +45,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   private MessageRecord messageRecord;
   private long messageKey;
-  private final Writers writers;
+  private final Builders builders;
 
   public MessagePublishProcessor(
       final MessageState messageState,
@@ -54,7 +54,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final EventScopeInstanceState eventScopeInstanceState,
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
-      final Writers writers,
+      final Builders builders,
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior) {
     this.messageState = messageState;
@@ -62,11 +62,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
-    stateBuilder = writers.state();
+    stateBuilder = builders.state();
     eventHandle =
         new EventHandle(
-            keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
-    this.writers = writers;
+            keyGenerator, eventScopeInstanceState, builders, processState, eventTriggerBehavior);
+    this.builders = builders;
   }
 
   @Override
@@ -84,12 +84,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           String.format(
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
-      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      writers
+      builders.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      builders
           .response()
           .writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
-      handleNewMessage(command, writers.response());
+      handleNewMessage(command, builders.response());
     }
   }
 

@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
@@ -32,19 +32,19 @@ public final class MessageSubscriptionCreateProcessor
   private final KeyGenerator keyGenerator;
 
   private MessageSubscriptionRecord subscriptionRecord;
-  private final Writers writers;
+  private final Builders builders;
 
   public MessageSubscriptionCreateProcessor(
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
-      final Writers writers,
+      final Builders builders,
       final KeyGenerator keyGenerator) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, writers.state());
-    this.writers = writers;
+    messageCorrelator = new MessageCorrelator(messageState, commandSender, builders.state());
+    this.builders = builders;
   }
 
   @Override
@@ -55,7 +55,7 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sendAcknowledgeCommand();
 
-      writers
+      builders
           .rejection()
           .appendRejection(
               record,
@@ -73,7 +73,7 @@ public final class MessageSubscriptionCreateProcessor
   private void handleNewSubscription() {
 
     final var subscriptionKey = keyGenerator.nextKey();
-    writers
+    builders
         .state()
         .appendFollowUpEvent(
             subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);

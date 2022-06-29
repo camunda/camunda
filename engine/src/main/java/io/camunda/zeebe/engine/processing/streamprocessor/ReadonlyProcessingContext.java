@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -41,7 +41,7 @@ public interface ReadonlyProcessingContext {
   /**
    * @return the specific writers, like command, response, etc
    */
-  Writers getWriters();
+  Builders getWriters();
 
   /**
    * @return the pool, which contains the mapping from ValueType to UnpackedObject (record)

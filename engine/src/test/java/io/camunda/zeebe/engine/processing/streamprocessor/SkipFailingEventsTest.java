@@ -18,8 +18,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -87,7 +87,7 @@ public final class SkipFailingEventsTest {
   @Mock protected CommandResponseWriter commandResponseWriter;
   private KeyGenerator keyGenerator;
   private MutableZeebeState zeebeState;
-  private final AtomicReference<Writers> writers = new AtomicReference<>();
+  private final AtomicReference<Builders> writers = new AtomicReference<>();
 
   @Before
   public void setUp() {
@@ -484,9 +484,9 @@ public final class SkipFailingEventsTest {
 
   protected static class DumpProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
     final List<Long> processedInstances = new ArrayList<>();
-    final AtomicReference<Writers> writers;
+    final AtomicReference<Builders> writers;
 
-    public DumpProcessor(final AtomicReference<Writers> writers) {
+    public DumpProcessor(final AtomicReference<Builders> writers) {
       this.writers = writers;
     }
 

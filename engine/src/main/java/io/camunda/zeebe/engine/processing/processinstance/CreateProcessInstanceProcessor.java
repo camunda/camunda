@@ -20,9 +20,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -81,7 +81,7 @@ public final class CreateProcessInstanceProcessor
   public CreateProcessInstanceProcessor(
       final ProcessState processState,
       final KeyGenerator keyGenerator,
-      final Writers writers,
+      final Builders builders,
       final VariableBehavior variableBehavior,
       final CatchEventBehavior catchEventBehavior,
       final ProcessEngineMetrics metrics) {
@@ -89,8 +89,8 @@ public final class CreateProcessInstanceProcessor
     this.variableBehavior = variableBehavior;
     this.catchEventBehavior = catchEventBehavior;
     this.keyGenerator = keyGenerator;
-    commandWriter = writers.command();
-    stateBuilder = writers.state();
+    commandWriter = builders.command();
+    stateBuilder = builders.state();
     this.metrics = metrics;
   }
 

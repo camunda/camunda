@@ -8,11 +8,11 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -30,7 +30,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private final Writers writers = new Writers();
+  private final Builders builders = new Builders();
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
@@ -77,13 +77,13 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext logStreamWriter(final RecordsBuilder logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
-    writers.setStream(logStreamWriter);
+    builders.setStream(logStreamWriter);
     return this;
   }
 
   public ProcessingContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
-    writers.setResponse(
+    builders.setResponse(
         new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
     return this;
   }
@@ -94,7 +94,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   public ProcessingContext eventApplier(final EventApplier eventApplier) {
-    writers.setState(new EventApplyingStateBuilder(logStreamWriter, eventApplier));
+    builders.setState(new EventApplyingStateBuilder(logStreamWriter, eventApplier));
     return this;
   }
 
@@ -137,9 +137,9 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public Writers getWriters() {
+  public Builders getWriters() {
 
-    return writers;
+    return builders;
   }
 
   @Override
