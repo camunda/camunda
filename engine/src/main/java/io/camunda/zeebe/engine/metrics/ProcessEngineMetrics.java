@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.prometheus.client.Counter;
 
 public final class ProcessEngineMetrics {
@@ -72,9 +72,9 @@ public final class ProcessEngineMetrics {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  public void processInstanceCreated(final ProcessInstanceCreationRecord record) {
+  public void processInstanceCreated(final ProcessInstanceCreationRecordValue recordValue) {
     final CreationMode creationMode =
-        record.startInstructions().isEmpty()
+        recordValue.getStartInstructions().isEmpty()
             ? CreationMode.CREATION_AT_GIVEN_ELEMENT
             : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
 
