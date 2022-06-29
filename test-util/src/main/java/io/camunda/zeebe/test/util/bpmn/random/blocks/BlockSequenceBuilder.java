@@ -84,12 +84,9 @@ public class BlockSequenceBuilder implements BlockBuilder {
 
   @Override
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
-    final ExecutionPathSegment result = new ExecutionPathSegment();
-
-    blockBuilders.forEach(
-        blockBuilder -> result.append(blockBuilder.findRandomExecutionPath(random)));
-
-    return result;
+    return blockBuilders.size() > 0
+        ? findRandomExecutionPath(random, blockBuilders.get(0))
+        : new ExecutionPathSegment();
   }
 
   /**
@@ -101,6 +98,24 @@ public class BlockSequenceBuilder implements BlockBuilder {
   @Override
   public String getElementId() {
     return null;
+  }
+
+  public ExecutionPathSegment findRandomExecutionPath(
+      final Random random, final BlockBuilder startAtBlockBuilder) {
+    final ExecutionPathSegment result = new ExecutionPathSegment();
+
+    final var blockBuildersFromStartBlock =
+        blockBuilders.subList(blockBuilders.indexOf(startAtBlockBuilder), blockBuilders.size());
+    blockBuildersFromStartBlock.forEach(
+        blockBuilder -> {
+          result.append(blockBuilder.findRandomExecutionPath(random));
+        });
+
+    return result;
+  }
+
+  public List<BlockBuilder> getBlockBuilders() {
+    return blockBuilders;
   }
 
   public static class BlockSequenceBuilderFactory {

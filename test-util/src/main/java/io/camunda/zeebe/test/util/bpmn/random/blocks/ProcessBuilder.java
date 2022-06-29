@@ -13,8 +13,10 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -31,7 +33,7 @@ public final class ProcessBuilder {
               MessageStartEventBuilder::new,
               TimerStartEventBuilder::new);
 
-  private final BlockBuilder blockBuilder;
+  private final BlockSequenceBuilder blockBuilder;
   private final StartEventBlockBuilder startEventBuilder;
   private final List<BpmnModelInstance> calledChildModelInstances = new ArrayList<>();
 
@@ -120,7 +122,21 @@ public final class ProcessBuilder {
   }
 
   public ExecutionPath findRandomExecutionPath(final Random random) {
-    final var followingPath = blockBuilder.findRandomExecutionPath(random);
+    final var startAnywhere = random.nextBoolean();
+    String startElementId = null;
+
+    final ExecutionPathSegment followingPath;
+    if (startAnywhere) {
+      // TODO decide start element (filter out not-allowed elements, happens automatically)
+      final var index = random.nextInt(blockBuilder.getBlockBuilders().size());
+      final BlockBuilder startAtBlockBuilder = blockBuilder.getBlockBuilders().get(index);
+      startElementId = startAtBlockBuilder.getElementId();
+      // TODO find random executionpath from start element
+      followingPath = blockBuilder.findRandomExecutionPath(random, startAtBlockBuilder);
+      // TODO create executionstep to start PI with instructions
+    } else {
+      followingPath = blockBuilder.findRandomExecutionPath(random);
+    }
 
     if (hasEventSubProcess) {
       final var shouldTriggerEventSubProcess = random.nextBoolean();
@@ -129,8 +145,16 @@ public final class ProcessBuilder {
       }
     }
 
-    final var startPath =
-        startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());
+    final ExecutionPathSegment startPath;
+    if (startAnywhere) {
+      startPath = new ExecutionPathSegment();
+      startPath.appendDirectSuccessor(
+          new StepStartProcessInstance(
+              processId, followingPath.collectVariables(), startElementId));
+    } else {
+      startPath =
+          startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());
+    }
     startPath.append(followingPath);
 
     return new ExecutionPath(processId, startPath);
