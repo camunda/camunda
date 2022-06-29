@@ -19,8 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -87,6 +86,7 @@ public final class SkipFailingEventsTest {
   @Mock protected CommandResponseWriter commandResponseWriter;
   private KeyGenerator keyGenerator;
   private MutableZeebeState zeebeState;
+  private Writers writers;
 
   @Before
   public void setUp() {
@@ -157,10 +157,7 @@ public final class SkipFailingEventsTest {
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   new TypedRecordProcessor<>() {
                     @Override
-                    public void processRecord(
-                        final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
-                        final TypedStreamWriter streamWriter) {
+                    public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
                       throw new NullPointerException();
                     }
                   });
@@ -191,7 +188,7 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldBlacklistInstance() {
     // given
-    final DumpProcessor dumpProcessor = spy(new DumpProcessor());
+    final DumpProcessor dumpProcessor = spy(new DumpProcessor(writers));
     final ErrorProneProcessor processor = new ErrorProneProcessor();
 
     streams.startStreamProcessor(
@@ -199,6 +196,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
+          writers = processingContext.getWriters();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
@@ -248,7 +246,7 @@ public final class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
 
-    verify(dumpProcessor, times(1)).processRecord(any(), any(), any());
+    verify(dumpProcessor, times(1)).processRecord(any());
     assertThat(dumpProcessor.processedInstances).containsExactly(2L);
   }
 
@@ -292,7 +290,7 @@ public final class SkipFailingEventsTest {
               .onCommand(
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                  new DumpProcessor());
+                  new DumpProcessor(writers));
         });
 
     // when
@@ -315,25 +313,21 @@ public final class SkipFailingEventsTest {
         spy(
             new TypedRecordProcessor<>() {
               @Override
-              public void processRecord(
-                  final TypedRecord<JobRecord> record,
-                  final TypedResponseWriter responseWriter,
-                  final TypedStreamWriter streamWriter) {
+              public void processRecord(final TypedRecord<JobRecord> record) {
                 processedInstances.add(record.getValue().getProcessInstanceKey());
                 final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
-                streamWriter.appendFollowUpCommand(
-                    record.getKey(),
-                    ProcessInstanceIntent.COMPLETE_ELEMENT,
-                    Records.processInstance(processInstanceKey));
+                writers
+                    .command()
+                    .appendFollowUpCommand(
+                        record.getKey(),
+                        ProcessInstanceIntent.COMPLETE_ELEMENT,
+                        Records.processInstance(processInstanceKey));
               }
             });
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
           @Override
-          public void processRecord(
-              final TypedRecord<JobRecord> record,
-              final TypedResponseWriter responseWriter,
-              final TypedStreamWriter streamWriter) {
+          public void processRecord(final TypedRecord<JobRecord> record) {
             throw new RuntimeException("expected");
           }
         };
@@ -343,6 +337,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
+          writers = processingContext.getWriters();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
@@ -386,7 +381,7 @@ public final class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
 
-    verify(dumpProcessor, timeout(1000).times(2)).processRecord(any(), any(), any());
+    verify(dumpProcessor, timeout(1000).times(2)).processRecord(any());
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 
@@ -398,18 +393,17 @@ public final class SkipFailingEventsTest {
     final TypedRecordProcessor<DeploymentRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
           @Override
-          public void processRecord(
-              final TypedRecord<DeploymentRecord> record,
-              final TypedResponseWriter responseWriter,
-              final TypedStreamWriter streamWriter) {
+          public void processRecord(final TypedRecord<DeploymentRecord> record) {
             if (record.getKey() == 0) {
               throw new RuntimeException("expected");
             }
             processedInstances.add(TimerInstance.NO_ELEMENT_INSTANCE);
-            streamWriter.appendFollowUpEvent(
-                record.getKey(),
-                TimerIntent.CREATED,
-                Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
+            writers
+                .state()
+                .appendFollowUpEvent(
+                    record.getKey(),
+                    TimerIntent.CREATED,
+                    Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
           }
         };
     final BpmnModelInstance process =
@@ -429,6 +423,7 @@ public final class SkipFailingEventsTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
+          writers = processingContext.getWriters();
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
@@ -474,10 +469,7 @@ public final class SkipFailingEventsTest {
     public final AtomicLong processCount = new AtomicLong(0);
 
     @Override
-    public void processRecord(
-        final TypedRecord<ProcessInstanceRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+    public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
       processCount.incrementAndGet();
       throw new RuntimeException("expected");
     }
@@ -489,15 +481,19 @@ public final class SkipFailingEventsTest {
 
   protected static class DumpProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
     final List<Long> processedInstances = new ArrayList<>();
+    final Writers writers;
+
+    public DumpProcessor(final Writers writers) {
+      this.writers = writers;
+    }
 
     @Override
-    public void processRecord(
-        final TypedRecord<ProcessInstanceRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+    public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
-      streamWriter.appendFollowUpEvent(
-          record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());
+      writers
+          .state()
+          .appendFollowUpEvent(
+              record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());
     }
   }
 }

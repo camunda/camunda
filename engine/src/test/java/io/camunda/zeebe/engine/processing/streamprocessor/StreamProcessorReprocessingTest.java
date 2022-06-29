@@ -18,8 +18,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
@@ -103,9 +101,9 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
 
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any());
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any());
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any());
   }
 
   @Test
@@ -155,7 +153,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
 
-    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any());
   }
 
   @Test
@@ -245,10 +243,7 @@ public final class StreamProcessorReprocessingTest {
                 ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {}
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
                 }));
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
@@ -272,10 +267,7 @@ public final class StreamProcessorReprocessingTest {
                 ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {}
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
                 }));
 
     final long position =
@@ -384,10 +376,7 @@ public final class StreamProcessorReprocessingTest {
                 ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {}
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
                 }));
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);

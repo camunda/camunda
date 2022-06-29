@@ -8,11 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -36,9 +31,6 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   private final CommandProcessor<T> wrappedProcessor;
 
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
-  private final TypedCommandWriter commandWriter;
 
   private boolean isAccepted;
   private long entityKey;
@@ -48,6 +40,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
   private RejectionType rejectionType;
   private String rejectionReason;
+  private final Writers writers;
 
   public CommandProcessorImpl(
       final CommandProcessor<T> commandProcessor,
@@ -55,16 +48,11 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       final Writers writers) {
     wrappedProcessor = commandProcessor;
     this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
-    commandWriter = writers.command();
-    rejectionWriter = writers.rejection();
+    this.writers = writers;
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<T> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<T> command) {
 
     entityKey = command.getKey();
 
@@ -73,15 +61,16 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 
     if (isAccepted) {
-      stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
-      wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
+      writers.state().appendFollowUpEvent(entityKey, newState, updatedValue);
+      wrappedProcessor.afterAccept(
+          writers.command(), writers.state(), entityKey, newState, updatedValue);
       if (respond) {
-        responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
+        writers.response().writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
-      rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
+      writers.rejection().appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
-        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+        writers.response().writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
   }

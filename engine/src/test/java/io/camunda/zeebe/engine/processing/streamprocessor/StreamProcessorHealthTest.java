@@ -12,7 +12,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
@@ -160,10 +159,7 @@ public class StreamProcessorHealthTest {
                       ACTIVATE_ELEMENT,
                       new TypedRecordProcessor<>() {
                         @Override
-                        public void processRecord(
-                            final TypedRecord<UnifiedRecordValue> record,
-                            final TypedResponseWriter responseWriter,
-                            final TypedStreamWriter streamWriter) {
+                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
 
                           invocation.getAndIncrement();
                           if (shouldProcessingThrowException.get()) {

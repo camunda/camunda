@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -42,6 +41,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
+  private final TypedResponseWriter responseWriter;
 
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
@@ -50,21 +50,19 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
 
     final var incident = incidentState.getIncidentRecord(key);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
-      rejectResolveCommand(command, responseWriter, errorMessage, RejectionType.NOT_FOUND);
+      rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
       return;
     }
 
@@ -72,23 +70,19 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised
-    attemptToContinueProcessProcessing(command, streamWriter, incident);
+    attemptToContinueProcessProcessing(command, incident);
   }
 
   private void rejectResolveCommand(
       final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
       final String errorMessage,
       final RejectionType rejectionType) {
-
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
     responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
   }
 
   private void attemptToContinueProcessProcessing(
-      final TypedRecord<IncidentRecord> command,
-      final TypedStreamWriter streamWriter,
-      final IncidentRecord incident) {
+      final TypedRecord<IncidentRecord> command, final IncidentRecord incident) {
     final long jobKey = incident.getJobKey();
     final boolean isJobIncident = jobKey > 0;
 
@@ -98,8 +92,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
     getFailedCommand(incident)
         .ifRightOrLeft(
-            failedCommand ->
-                bpmnStreamProcessor.processRecord(failedCommand, noopResponseWriter, streamWriter),
+            failedCommand -> bpmnStreamProcessor.processRecord(failedCommand),
             failure -> {
               final var message =
                   String.format(

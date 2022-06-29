@@ -21,8 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransfo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -53,6 +52,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final StateWriter stateWriter;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
+  private final Writers writers;
 
   public DeploymentCreateProcessor(
       final ZeebeState zeebeState,
@@ -76,13 +76,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
+    this.writers = writers;
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<DeploymentRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<DeploymentRecord> command) {
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
@@ -91,15 +89,17 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, streamWriter);
+        createTimerIfTimerStartEvent(command, writers.command());
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-        streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        writers.response().writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        writers.rejection().appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
         return;
       }
 
-      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+      writers
+          .response()
+          .writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
 
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
@@ -108,19 +108,23 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentEvent, stateWriter);
 
     } else {
-      responseWriter.writeRejectionOnCommand(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
-      streamWriter.appendRejection(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
+      writers
+          .response()
+          .writeRejectionOnCommand(
+              command,
+              deploymentTransformer.getRejectionType(),
+              deploymentTransformer.getRejectionReason());
+      writers
+          .rejection()
+          .appendRejection(
+              command,
+              deploymentTransformer.getRejectionType(),
+              deploymentTransformer.getRejectionReason());
     }
   }
 
   private void createTimerIfTimerStartEvent(
-      final TypedRecord<DeploymentRecord> record, final TypedStreamWriter streamWriter) {
+      final TypedRecord<DeploymentRecord> record, final TypedCommandWriter streamWriter) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
@@ -157,14 +161,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
+      final TypedCommandWriter streamWriter, final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
         timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final TypedStreamWriter streamWriter,
+      final TypedCommandWriter streamWriter,
       final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =

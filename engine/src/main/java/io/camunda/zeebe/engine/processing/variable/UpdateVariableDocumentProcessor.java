@@ -9,9 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -28,24 +26,21 @@ public final class UpdateVariableDocumentProcessor
   private final ElementInstanceState elementInstanceState;
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
-  private final StateWriter stateWriter;
+  private final Writers writers;
 
   public UpdateVariableDocumentProcessor(
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     this.elementInstanceState = elementInstanceState;
     this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
-    this.stateWriter = stateWriter;
+    this.writers = writers;
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<VariableDocumentRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<VariableDocumentRecord> record) {
     final VariableDocumentRecord value = record.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());
@@ -54,8 +49,8 @@ public final class UpdateVariableDocumentProcessor
           String.format(
               "Expected to update variables for element with key '%d', but no such element was found",
               value.getScopeKey());
-      streamWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
+      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -83,14 +78,14 @@ public final class UpdateVariableDocumentProcessor
           String.format(
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
-      streamWriter.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
+      writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
     final long key = keyGenerator.nextKey();
 
-    stateWriter.appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    responseWriter.writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 }

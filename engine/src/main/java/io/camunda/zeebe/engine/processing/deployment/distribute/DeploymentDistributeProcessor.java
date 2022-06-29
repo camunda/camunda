@@ -12,8 +12,6 @@ import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscripti
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
@@ -44,10 +42,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<DeploymentRecord> event,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<DeploymentRecord> event) {
     final var deploymentEvent = event.getValue();
     final var deploymentKey = event.getKey();
 

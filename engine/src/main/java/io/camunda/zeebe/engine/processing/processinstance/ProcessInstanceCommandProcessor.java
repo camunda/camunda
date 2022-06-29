@@ -9,8 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -22,29 +21,25 @@ public final class ProcessInstanceCommandProcessor
   private final ProcessInstanceCommandHandlers commandHandlers;
   private final ElementInstanceState elementInstanceState;
   private final ProcessInstanceCommandContext context;
+  private final Writers writers;
 
-  public ProcessInstanceCommandProcessor(final MutableElementInstanceState elementInstanceState) {
+  public ProcessInstanceCommandProcessor(
+      final Writers writers, final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
     commandHandlers = new ProcessInstanceCommandHandlers();
     context = new ProcessInstanceCommandContext(elementInstanceState);
+    this.writers = writers;
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
-    populateCommandContext(record, responseWriter, streamWriter);
+  public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
+    populateCommandContext(record);
     commandHandlers.handle(context);
   }
 
-  private void populateCommandContext(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  private void populateCommandContext(final TypedRecord<ProcessInstanceRecord> record) {
     context.setRecord(record);
-    context.setResponseWriter(responseWriter);
-    context.setStreamWriter(streamWriter);
+    context.setWriters(writers);
 
     final ElementInstance elementInstance = elementInstanceState.getInstance(record.getKey());
     context.setElementInstance(elementInstance);

@@ -11,8 +11,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -40,10 +38,7 @@ public class CompleteDeploymentDistributionProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<DeploymentDistributionRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<DeploymentDistributionRecord> record) {
 
     final var deploymentKey = record.getKey();
     if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {

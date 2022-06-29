@@ -89,8 +89,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
     final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
     if (isNotOnBlacklist) {
       // todo remove the writers
-      currentProcessor.processRecord(
-          typedCommand, context.getWriters().response(), context.getLogStreamWriter());
+      currentProcessor.processRecord(typedCommand);
     }
 
     return new ProcessingResult();

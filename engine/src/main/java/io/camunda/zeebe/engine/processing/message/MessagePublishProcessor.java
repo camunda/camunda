@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -44,9 +43,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final EventHandle eventHandle;
   private final Subscriptions correlatingSubscriptions = new Subscriptions();
 
-  private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
   private long messageKey;
+  private final Writers writers;
 
   public MessagePublishProcessor(
       final MessageState messageState,
@@ -67,14 +66,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     eventHandle =
         new EventHandle(
             keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
+    this.writers = writers;
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<MessageRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
-    this.responseWriter = responseWriter;
+  public void processRecord(final TypedRecord<MessageRecord> command) {
     messageRecord = command.getValue();
 
     correlatingSubscriptions.clear();
@@ -88,11 +84,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           String.format(
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
-      streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      writers
+          .response()
+          .writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
-      handleNewMessage(command, responseWriter);
+      handleNewMessage(command, writers.response());
     }
   }
 
@@ -172,19 +169,15 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   }
 
   private boolean sendCorrelateCommand() {
-
-    final var success =
-        correlatingSubscriptions.visitSubscriptions(
-            subscription ->
-                commandSender.correlateProcessMessageSubscription(
-                    subscription.getProcessInstanceKey(),
-                    subscription.getElementInstanceKey(),
-                    subscription.getBpmnProcessId(),
-                    messageRecord.getNameBuffer(),
-                    messageKey,
-                    messageRecord.getVariablesBuffer(),
-                    messageRecord.getCorrelationKeyBuffer()));
-
-    return success && responseWriter.flush();
+    return correlatingSubscriptions.visitSubscriptions(
+        subscription ->
+            commandSender.correlateProcessMessageSubscription(
+                subscription.getProcessInstanceKey(),
+                subscription.getElementInstanceKey(),
+                subscription.getBpmnProcessId(),
+                messageRecord.getNameBuffer(),
+                messageKey,
+                messageRecord.getVariablesBuffer(),
+                messageRecord.getCorrelationKeyBuffer()));
   }
 }

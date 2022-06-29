@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -58,10 +57,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<JobBatchRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     if (isValid(value)) {
       activateJobs(record);

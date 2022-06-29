@@ -38,7 +38,7 @@ public final class CancelProcessInstanceHandler implements ProcessInstanceComman
     final ProcessInstanceRecord value = elementInstance.getValue();
 
     commandContext
-        .getStreamWriter()
+        .getCommandWriter()
         .appendFollowUpCommand(command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
 
     commandContext

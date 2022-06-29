@@ -10,9 +10,6 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -32,10 +29,10 @@ public final class MessageSubscriptionCreateProcessor
   private final MessageCorrelator messageCorrelator;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
-  private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
   private MessageSubscriptionRecord subscriptionRecord;
+  private final Writers writers;
 
   public MessageSubscriptionCreateProcessor(
       final MessageState messageState,
@@ -45,29 +42,28 @@ public final class MessageSubscriptionCreateProcessor
       final KeyGenerator keyGenerator) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
-    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator = new MessageCorrelator(messageState, commandSender, writers.state());
+    this.writers = writers;
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sendAcknowledgeCommand();
 
-      streamWriter.appendRejection(
-          record,
-          RejectionType.INVALID_STATE,
-          String.format(
-              SUBSCRIPTION_ALREADY_OPENED_MESSAGE,
-              subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
+      writers
+          .rejection()
+          .appendRejection(
+              record,
+              RejectionType.INVALID_STATE,
+              String.format(
+                  SUBSCRIPTION_ALREADY_OPENED_MESSAGE,
+                  subscriptionRecord.getElementInstanceKey(),
+                  BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
       return;
     }
 
@@ -77,8 +73,10 @@ public final class MessageSubscriptionCreateProcessor
   private void handleNewSubscription() {
 
     final var subscriptionKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
-        subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
+    writers
+        .state()
+        .appendFollowUpEvent(
+            subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
 
     final var isMessageCorrelated =
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord);

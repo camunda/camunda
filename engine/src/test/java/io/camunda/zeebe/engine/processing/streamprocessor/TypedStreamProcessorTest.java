@@ -15,8 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.util.RecordStream;
@@ -78,7 +77,10 @@ public final class TypedStreamProcessorTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
             TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
-                .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor()));
+                .onCommand(
+                    ValueType.DEPLOYMENT,
+                    DeploymentIntent.CREATE,
+                    new BatchProcessor(processingContext.getWriters())));
     final long firstEventPosition =
         streams
             .newRecord(STREAM_NAME)
@@ -112,7 +114,9 @@ public final class TypedStreamProcessorTest {
         (processingContext) ->
             TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
                 .onCommand(
-                    ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor()));
+                    ValueType.DEPLOYMENT,
+                    DeploymentIntent.CREATE,
+                    new ErrorProneProcessor(processingContext.getWriters())));
     final AtomicLong requestId = new AtomicLong(0);
     final AtomicInteger requestStreamId = new AtomicInteger(0);
 
@@ -188,30 +192,36 @@ public final class TypedStreamProcessorTest {
 
   protected static class ErrorProneProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
+    private final Writers writers;
+
+    public ErrorProneProcessor(final Writers writers) {
+      this.writers = writers;
+    }
+
     @Override
-    public void processRecord(
-        final TypedRecord<DeploymentRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+    public void processRecord(final TypedRecord<DeploymentRecord> record) {
       if (record.getKey() == 0) {
         throw new RuntimeException("expected");
       }
-      streamWriter.appendFollowUpEvent(
-          record.getKey(), DeploymentIntent.CREATED, record.getValue());
-      streamWriter.flush();
+      writers
+          .state()
+          .appendFollowUpEvent(record.getKey(), DeploymentIntent.CREATED, record.getValue());
     }
   }
 
   protected class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
+    private final Writers writers;
+
+    public BatchProcessor(final Writers writers) {
+      this.writers = writers;
+    }
+
     @Override
-    public void processRecord(
-        final TypedRecord<DeploymentRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
-      streamWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
-      streamWriter.flush();
+    public void processRecord(final TypedRecord<DeploymentRecord> record) {
+      writers
+          .state()
+          .appendFollowUpEvent(keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
     }
   }
 }
