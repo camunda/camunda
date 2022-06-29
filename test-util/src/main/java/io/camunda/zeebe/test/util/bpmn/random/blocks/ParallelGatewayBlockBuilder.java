@@ -76,44 +76,41 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context)) {
+    final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
+    result.appendDirectSuccessor(forkingGateway);
 
-      final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
-      result.appendDirectSuccessor(forkingGateway);
+    final Optional<BlockBuilder> blockContainingStartBlock =
+        blockBuilders.stream()
+            .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
+            .findFirst();
 
-      final Optional<BlockBuilder> blockContainingStartBlock =
-          blockBuilders.stream()
-              .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
-              .findFirst();
+    final List<ParallelGatewayBlockBuilder.BranchPointer> branchPointers = new ArrayList<>();
 
-      final List<ParallelGatewayBlockBuilder.BranchPointer> branchPointers = new ArrayList<>();
-
-      // Find the execution path of the block containing the start block first. This is required
-      // as it will update the context, saying the start block has been found. As a result it will
-      // make sure the execution paths of the other blocks isn't ignored.
-      if (blockContainingStartBlock.isPresent()) {
-        final var blockBuilder = blockContainingStartBlock.get();
-        branchPointers.add(findRandomExecutionPathForBranch(random, context, result, blockBuilder));
-      }
-
-      branchPointers.addAll(
-          blockBuilders.stream()
-              .filter(
-                  blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtBlockBuilder()))
-              .map(
-                  blockBuilder -> {
-                    if (blockContainingStartBlock.isPresent()) {
-                      context.addSecondaryStartBlockBuilder(blockBuilder);
-                    }
-                    return findRandomExecutionPathForBranch(random, context, result, blockBuilder);
-                  })
-              .collect(Collectors.toList()));
-      shuffleStepsFromDifferentLists(random, result, branchPointers);
+    // Find the execution path of the block containing the start block first. This is required
+    // as it will update the context, saying the start block has been found. As a result it will
+    // make sure the execution paths of the other blocks isn't ignored.
+    if (blockContainingStartBlock.isPresent()) {
+      final var blockBuilder = blockContainingStartBlock.get();
+      branchPointers.add(findRandomExecutionPathForBranch(random, context, result, blockBuilder));
     }
+
+    branchPointers.addAll(
+        blockBuilders.stream()
+            .filter(
+                blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtBlockBuilder()))
+            .map(
+                blockBuilder -> {
+                  if (blockContainingStartBlock.isPresent()) {
+                    context.addSecondaryStartBlockBuilder(blockBuilder);
+                  }
+                  return findRandomExecutionPathForBranch(random, context, result, blockBuilder);
+                })
+            .collect(Collectors.toList()));
+    shuffleStepsFromDifferentLists(random, result, branchPointers);
 
     return result;
   }

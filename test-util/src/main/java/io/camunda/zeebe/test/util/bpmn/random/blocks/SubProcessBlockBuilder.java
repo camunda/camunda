@@ -93,39 +93,37 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context)) {
-      if (hasBoundaryTimerEvent) {
-        // set an infinite timer as default; this can be overwritten by the execution path chosen
-        result.setVariableDefault(
-            subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
-      }
-      final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
-
-      result.appendDirectSuccessor(activateSubProcess);
-
-      if (embeddedSubProcessBuilder == null) {
-        return result;
-      }
-
-      final var internalExecutionPath =
-          embeddedSubProcessBuilder.findRandomExecutionPath(random, context);
-
-      if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
-        result.append(internalExecutionPath);
-      } else {
-        internalExecutionPath.cutAtRandomPosition(random);
-        result.append(internalExecutionPath);
-        if (hasBoundaryTimerEvent) {
-          result.appendExecutionSuccessor(
-              new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId),
-              activateSubProcess);
-        } // extend here for other boundary events
-      }
+    if (hasBoundaryTimerEvent) {
+      // set an infinite timer as default; this can be overwritten by the execution path chosen
+      result.setVariableDefault(
+          subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
     }
+    final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
+
+    result.appendDirectSuccessor(activateSubProcess);
+
+    if (embeddedSubProcessBuilder == null) {
+      return result;
+    }
+
+    final var internalExecutionPath =
+        embeddedSubProcessBuilder.findRandomExecutionPath(random, context);
+
+    if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
+      result.append(internalExecutionPath);
+    } else {
+      internalExecutionPath.cutAtRandomPosition(random);
+      result.append(internalExecutionPath);
+      if (hasBoundaryTimerEvent) {
+        result.appendExecutionSuccessor(
+            new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
+      } // extend here for other boundary events
+    }
+
     return result;
   }
 

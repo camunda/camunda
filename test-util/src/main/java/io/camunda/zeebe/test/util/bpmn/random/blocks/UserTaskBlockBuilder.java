@@ -73,28 +73,26 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context)) {
-      final var activateStep = new StepActivateBPMNElement(taskId);
-      result.appendDirectSuccessor(activateStep);
+    final var activateStep = new StepActivateBPMNElement(taskId);
+    result.appendDirectSuccessor(activateStep);
 
-      if (hasBoundaryTimerEvent) {
-        // set an infinite timer as default; this can be overwritten by the execution path chosen
-        result.setVariableDefault(
-            boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
-      }
+    if (hasBoundaryTimerEvent) {
+      // set an infinite timer as default; this can be overwritten by the execution path chosen
+      result.setVariableDefault(
+          boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+    }
 
-      if (hasBoundaryTimerEvent && random.nextBoolean()) {
-        result.appendExecutionSuccessor(
-            new StepTriggerTimerBoundaryEvent(boundaryTimerEventId), activateStep);
-      } else if (hasBoundaryErrorEvent && random.nextBoolean()) {
-        result.appendExecutionSuccessor(new StepThrowError(taskId, errorCode), activateStep);
-      } else {
-        result.appendExecutionSuccessor(new StepCompleteUserTask(taskId), activateStep);
-      }
+    if (hasBoundaryTimerEvent && random.nextBoolean()) {
+      result.appendExecutionSuccessor(
+          new StepTriggerTimerBoundaryEvent(boundaryTimerEventId), activateStep);
+    } else if (hasBoundaryErrorEvent && random.nextBoolean()) {
+      result.appendExecutionSuccessor(new StepThrowError(taskId, errorCode), activateStep);
+    } else {
+      result.appendExecutionSuccessor(new StepCompleteUserTask(taskId), activateStep);
     }
 
     return result;

@@ -49,14 +49,12 @@ public class ReceiveTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context)) {
-      result.appendDirectSuccessor(
-          new StepPublishMessage(messageName, CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE));
-    }
+    result.appendDirectSuccessor(
+        new StepPublishMessage(messageName, CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE));
 
     return result;
   }

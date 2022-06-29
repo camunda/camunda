@@ -30,6 +30,13 @@ public class ExecutionPathContext {
     return foundBlockBuilder;
   }
 
+  /**
+   * Sets a flag in the context that we have found the block that we want the process to start at.
+   * All blocks that we come across after this flag is set to true will always have their execution
+   * path generated.
+   *
+   * @return this
+   */
   public ExecutionPathContext foundBlockBuilder() {
     foundBlockBuilder = true;
     return this;

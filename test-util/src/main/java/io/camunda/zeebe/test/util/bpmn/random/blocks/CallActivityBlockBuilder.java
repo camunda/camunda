@@ -64,11 +64,11 @@ public class CallActivityBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context) && calledProcessBuilder != null) {
+    if (calledProcessBuilder != null) {
       result.append(calledProcessBuilder.findRandomExecutionPath(random, context));
     }
 

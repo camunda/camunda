@@ -90,41 +90,38 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context)) {
+    final Optional<Integer> branchContainingStartBlock =
+        blockBuilders.stream()
+            .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
+            .map(blockBuilders::indexOf)
+            .findFirst();
 
-      final Optional<Integer> branchContainingStartBlock =
-          blockBuilders.stream()
-              .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
-              .map(blockBuilders::indexOf)
-              .findFirst();
+    final int branch = branchContainingStartBlock.orElse(random.nextInt(branchIds.size()));
 
-      final int branch = branchContainingStartBlock.orElse(random.nextInt(branchIds.size()));
-
-      if (branchContainingStartBlock.isEmpty() || this == context.getStartAtBlockBuilder()) {
-        if (branch == 0) {
-          result.appendDirectSuccessor(
-              new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
-        } else if (random.nextBoolean() || branchContainingStartBlock.isPresent()) {
-          // take a non-default branch
-          result.appendDirectSuccessor(
-              new StepPickConditionCase(
-                  forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
-        } else {
-          // cause an incident then resolve it and set a variable
-          result.appendDirectSuccessor(
-              new StepRaiseIncidentThenResolveAndPickConditionCase(
-                  forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
-        }
+    if (branchContainingStartBlock.isEmpty() || this == context.getStartAtBlockBuilder()) {
+      if (branch == 0) {
+        result.appendDirectSuccessor(
+            new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
+      } else if (random.nextBoolean() || branchContainingStartBlock.isPresent()) {
+        // take a non-default branch
+        result.appendDirectSuccessor(
+            new StepPickConditionCase(
+                forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
+      } else {
+        // cause an incident then resolve it and set a variable
+        result.appendDirectSuccessor(
+            new StepRaiseIncidentThenResolveAndPickConditionCase(
+                forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
       }
-
-      final BlockBuilder blockBuilder = blockBuilders.get(branch);
-
-      result.append(blockBuilder.findRandomExecutionPath(random, context));
     }
+
+    final BlockBuilder blockBuilder = blockBuilders.get(branch);
+
+    result.append(blockBuilder.findRandomExecutionPath(random, context));
 
     return result;
   }

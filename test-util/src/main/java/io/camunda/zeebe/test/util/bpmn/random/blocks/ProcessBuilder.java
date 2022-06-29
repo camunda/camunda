@@ -128,6 +128,7 @@ public final class ProcessBuilder {
     final ExecutionPathContext context;
     final ExecutionPathSegment followingPath;
     if (startAnywhere) {
+      // TODO give an equal chance to each block to be started at
       final BlockBuilder startAtBlockBuilder = blockBuilder.findRandomStartingPlace(random);
       context = new ExecutionPathContext(startAtBlockBuilder);
       followingPath = blockBuilder.findRandomExecutionPath(random, context);

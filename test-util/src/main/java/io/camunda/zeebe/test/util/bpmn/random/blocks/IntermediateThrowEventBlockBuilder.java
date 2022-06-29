@@ -33,12 +33,10 @@ public class IntermediateThrowEventBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
-    if (shouldAddExecutionPath(context)) {
-      result.appendDirectSuccessor(new StepActivateBPMNElement(taskId));
-    }
+    result.appendDirectSuccessor(new StepActivateBPMNElement(taskId));
     return result;
   }
 

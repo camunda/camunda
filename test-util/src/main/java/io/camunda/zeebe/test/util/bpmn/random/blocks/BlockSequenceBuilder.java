@@ -84,16 +84,12 @@ public class BlockSequenceBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(
+  public ExecutionPathSegment generateRandomExecutionPath(
       final Random random, final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (shouldAddExecutionPath(context)) {
-      blockBuilders.forEach(
-          blockBuilder -> {
-            result.append(blockBuilder.findRandomExecutionPath(random, context));
-          });
-    }
+    blockBuilders.forEach(
+        blockBuilder -> result.append(blockBuilder.findRandomExecutionPath(random, context)));
 
     return result;
   }
