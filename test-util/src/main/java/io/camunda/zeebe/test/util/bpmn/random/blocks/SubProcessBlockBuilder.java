@@ -123,6 +123,11 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return subProcessId;
+  }
+
   public static class Factory implements BlockBuilderFactory {
 
     @Override

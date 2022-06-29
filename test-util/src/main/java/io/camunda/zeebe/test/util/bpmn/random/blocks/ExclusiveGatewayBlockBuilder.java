@@ -115,6 +115,11 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return forkGatewayId;
+  }
+
   static class Factory implements BlockBuilderFactory {
 
     @Override

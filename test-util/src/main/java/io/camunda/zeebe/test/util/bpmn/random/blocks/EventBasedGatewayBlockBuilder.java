@@ -83,6 +83,11 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return forkGatewayId;
+  }
+
   private AbstractFlowNodeBuilder<?, ?> addBranch(
       final io.camunda.zeebe.model.bpmn.builder.EventBasedGatewayBuilder gatewayBuilder,
       final Tuple<String, BlockBuilder> branch) {

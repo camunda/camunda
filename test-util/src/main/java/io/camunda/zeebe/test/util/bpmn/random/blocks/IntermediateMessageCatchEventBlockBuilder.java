@@ -59,6 +59,11 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return id;
+  }
+
   public static class Factory implements BlockBuilderFactory {
 
     @Override

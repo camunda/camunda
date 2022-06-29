@@ -94,6 +94,11 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return forkGatewayId;
+  }
+
   // shuffles the lists together by iteratively taking the first item from one of the lists
   private void shuffleStepsFromDifferentLists(
       final Random random,

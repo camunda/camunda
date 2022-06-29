@@ -73,6 +73,11 @@ public class CallActivityBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return callActivityId;
+  }
+
   private void buildChildProcess() {
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         Bpmn.createExecutableProcess(calledProcessId).startEvent();

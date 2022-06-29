@@ -38,6 +38,11 @@ public class IntermediateThrowEventBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return taskId;
+  }
+
   static class Factory implements BlockBuilderFactory {
 
     @Override

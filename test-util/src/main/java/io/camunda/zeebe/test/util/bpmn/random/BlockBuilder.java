@@ -37,4 +37,6 @@ public interface BlockBuilder {
 
   /** Creates a random execution path segment. */
   ExecutionPathSegment findRandomExecutionPath(final Random random);
+
+  String getElementId();
 }

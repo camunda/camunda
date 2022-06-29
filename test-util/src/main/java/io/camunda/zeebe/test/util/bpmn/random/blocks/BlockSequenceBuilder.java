@@ -54,8 +54,8 @@ public class BlockSequenceBuilder implements BlockBuilder {
 
     if (currentDepth < maxDepth) {
 
-      // reduce the number of steps in a sequence when we are nested
-      final int steps = random.nextInt(Math.max(0, maxBlocks - currentDepth));
+      // reduce the number of steps in a sequence when we are nested and guarantee at least 1 step
+      final int steps = random.nextInt(Math.max(0, maxBlocks - currentDepth)) + 1;
 
       for (int step = 0; step < steps; step++) {
 
@@ -90,6 +90,17 @@ public class BlockSequenceBuilder implements BlockBuilder {
         blockBuilder -> result.append(blockBuilder.findRandomExecutionPath(random)));
 
     return result;
+  }
+
+  /**
+   * The BlockSequenceBuilder is a special case. This is not an executable block, but is responsible
+   * for building the sequence of blocks. As a result it does not have an element id.
+   *
+   * @return null
+   */
+  @Override
+  public String getElementId() {
+    return null;
   }
 
   public static class BlockSequenceBuilderFactory {

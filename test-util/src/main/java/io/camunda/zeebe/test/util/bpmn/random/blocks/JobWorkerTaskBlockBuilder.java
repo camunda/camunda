@@ -120,6 +120,11 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  @Override
+  public String getElementId() {
+    return taskId;
+  }
+
   private ExecutionPathSegment buildStepsForFailedExecutions(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
