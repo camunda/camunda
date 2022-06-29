@@ -117,10 +117,6 @@ public class BlockSequenceBuilder implements BlockBuilder {
     return this == blockBuilder || contains;
   }
 
-  public List<BlockBuilder> getBlockBuilders() {
-    return blockBuilders;
-  }
-
   public static class BlockSequenceBuilderFactory {
 
     public BlockSequenceBuilder createBlockSequenceBuilder(final ConstructionContext context) {
