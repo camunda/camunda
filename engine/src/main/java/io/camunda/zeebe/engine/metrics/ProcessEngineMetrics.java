@@ -75,8 +75,8 @@ public final class ProcessEngineMetrics {
   public void processInstanceCreated(final ProcessInstanceCreationRecordValue recordValue) {
     final var creationMode =
         recordValue.getStartInstructions().isEmpty()
-            ? CreationMode.CREATION_AT_GIVEN_ELEMENT
-            : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
+            ? CreationMode.CREATION_AT_DEFAULT_START_EVENT
+            : CreationMode.CREATION_AT_GIVEN_ELEMENT;
 
     CREATED_PROCESS_INSTANCES.labels(partitionIdLabel, creationMode.toString()).inc();
   }
