@@ -15,4 +15,6 @@ import lombok.NoArgsConstructor;
 public class OnboardingResponseDto {
   private boolean enabled;
   private String appCuesScriptUrl;
+  private String orgId;
+  private String clusterId;
 }

@@ -18,10 +18,8 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -45,7 +43,6 @@ public class UIConfigurationService implements ConfigurationReloadable {
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
   private final SettingsService settingService;
-  @Autowired
   private final Environment environment;
 
   // cached version
@@ -82,6 +79,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
     final OnboardingResponseDto onboarding = uiConfigurationDto.getOnboarding();
     onboarding.setEnabled(configurationService.getOnboarding().isEnabled());
     onboarding.setAppCuesScriptUrl(configurationService.getOnboarding().getAppCuesScriptUrl());
+    onboarding.setOrgId(configurationService.getOnboarding().getProperties().getOrganizationId());
+    onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
     return uiConfigurationDto;
   }

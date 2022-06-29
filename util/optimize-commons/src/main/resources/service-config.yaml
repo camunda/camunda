@@ -618,6 +618,9 @@ onboarding:
   enableOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_SEND_EMAILS:false}
   # How often (in seconds) shall optimize check whether process instances from new processes completed?
   intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:1800}
+  properties:
+    organizationId: ${CAMUNDA_OPTIMIZE_ONBOARDING_ORGANIZATION:dev}
+    clusterId: ${CAMUNDA_OPTIMIZE_ONBOARDING_CLUSTER_ID:dev}
 
 # Configuration of application internal in-memory caches
 caches:
