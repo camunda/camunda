@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -37,6 +38,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -471,8 +474,19 @@ public final class CreateProcessInstanceProcessor
       bpmnElementContext.init(
           elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-      catchEventBehavior.subscribeToEvents(
-          bpmnElementContext, catchEventSupplier, sideEffectQueue, commandWriter);
+      final Either<Failure, ?> subscribedOrFailure =
+          catchEventBehavior.subscribeToEvents(
+              bpmnElementContext, catchEventSupplier, sideEffectQueue, commandWriter);
+
+      if (subscribedOrFailure.isLeft()) {
+        final var message =
+            "expected to subscribe to catch event(s) of '%s' but %s"
+                .formatted(
+                    BufferUtil.bufferAsString(element.getId()),
+                    subscribedOrFailure.getLeft().getMessage());
+        // todo(#9644): reject command using logical transaction instead of exception throwing
+        throw new UncheckedExecutionException(message);
+      }
     }
   }
 
