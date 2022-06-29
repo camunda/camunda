@@ -59,7 +59,7 @@ public final class ProcessEngineMetrics {
           .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL)
           .register();
   private static final String CREATION_MODE_LABEL = "creation_mode";
-  private static final Counter CREATED_PROCESS_INSTANCES =
+  static final Counter CREATED_PROCESS_INSTANCES =
       Counter.build()
           .namespace(NAMESPACE)
           .name("process_instance_creations_total")
