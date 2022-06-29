@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -63,9 +62,4 @@ public interface ReadonlyProcessingContext {
    * @return condition which indicates, whether the processing should stop or not
    */
   BooleanSupplier getAbortCondition();
-
-  /**
-   * @return the consumer of events to apply their state changes
-   */
-  EventApplier getEventApplier();
 }

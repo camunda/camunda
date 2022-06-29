@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -86,7 +87,7 @@ public final class SkipFailingEventsTest {
   @Mock protected CommandResponseWriter commandResponseWriter;
   private KeyGenerator keyGenerator;
   private MutableZeebeState zeebeState;
-  private Writers writers;
+  private final AtomicReference<Writers> writers = new AtomicReference<>();
 
   @Before
   public void setUp() {
@@ -196,7 +197,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          writers = processingContext.getWriters();
+          writers.set(processingContext.getWriters());
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
@@ -317,6 +318,7 @@ public final class SkipFailingEventsTest {
                 processedInstances.add(record.getValue().getProcessInstanceKey());
                 final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
                 writers
+                    .get()
                     .command()
                     .appendFollowUpCommand(
                         record.getKey(),
@@ -337,7 +339,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          writers = processingContext.getWriters();
+          writers.set(processingContext.getWriters());
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
@@ -399,6 +401,7 @@ public final class SkipFailingEventsTest {
             }
             processedInstances.add(TimerInstance.NO_ELEMENT_INSTANCE);
             writers
+                .get()
                 .state()
                 .appendFollowUpEvent(
                     record.getKey(),
@@ -423,7 +426,7 @@ public final class SkipFailingEventsTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
-          writers = processingContext.getWriters();
+          writers.set(processingContext.getWriters());
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
@@ -481,9 +484,9 @@ public final class SkipFailingEventsTest {
 
   protected static class DumpProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
     final List<Long> processedInstances = new ArrayList<>();
-    final Writers writers;
+    final AtomicReference<Writers> writers;
 
-    public DumpProcessor(final Writers writers) {
+    public DumpProcessor(final AtomicReference<Writers> writers) {
       this.writers = writers;
     }
 
@@ -491,6 +494,7 @@ public final class SkipFailingEventsTest {
     public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
       writers
+          .get()
           .state()
           .appendFollowUpEvent(
               record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());

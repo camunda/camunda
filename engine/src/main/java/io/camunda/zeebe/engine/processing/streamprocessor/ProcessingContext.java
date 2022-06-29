@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,25 +27,18 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
-  private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
-
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private TypedStreamWriter logStreamWriter = noopTypedStreamWriter;
-  private CommandResponseWriter commandResponseWriter;
-  private TypedResponseWriterImpl typedResponseWriter;
-
+  private final Writers writers = new Writers();
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
-  private EventApplier eventApplier;
-
   private BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
-
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private MutableLastProcessedPositionState lastProcessedPositionState;
+  private TypedStreamWriter logStreamWriter;
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -85,19 +77,15 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext logStreamWriter(final TypedStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
+    writers.setStream(logStreamWriter);
     return this;
   }
 
   public ProcessingContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
-    this.commandResponseWriter = commandResponseWriter;
-    typedResponseWriter =
-        new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
+    writers.setResponse(
+        new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
     return this;
-  }
-
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriter;
   }
 
   public ProcessingContext listener(final StreamProcessorListener streamProcessorListener) {
@@ -106,7 +94,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   public ProcessingContext eventApplier(final EventApplier eventApplier) {
-    this.eventApplier = eventApplier;
+    writers.setState(new EventApplyingStateWriter(logStreamWriter, eventApplier));
     return this;
   }
 
@@ -150,10 +138,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   @Override
   public Writers getWriters() {
-    // todo (#8009): cleanup - revisit after migration is finished
-    // create newly every time, because the specific writers may differ over time
-    final var stateWriter = new EventApplyingStateWriter(logStreamWriter, eventApplier);
-    return new Writers(logStreamWriter, stateWriter, typedResponseWriter);
+
+    return writers;
   }
 
   @Override
@@ -174,11 +160,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   @Override
   public BooleanSupplier getAbortCondition() {
     return abortCondition;
-  }
-
-  @Override
-  public EventApplier getEventApplier() {
-    return eventApplier;
   }
 
   public StreamProcessorListener getStreamProcessorListener() {
