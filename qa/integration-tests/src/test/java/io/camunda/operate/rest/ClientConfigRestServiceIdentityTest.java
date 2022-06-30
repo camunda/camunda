@@ -32,7 +32,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         ClientConfig.class,
         ClientConfigRestService.class,
         JacksonConfig.class,
-        OperateProperties.class}
+        OperateProperties.class},
+    properties = {
+        OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"
+    }
 )
 public class ClientConfigRestServiceIdentityTest extends OperateIntegrationTest {
 

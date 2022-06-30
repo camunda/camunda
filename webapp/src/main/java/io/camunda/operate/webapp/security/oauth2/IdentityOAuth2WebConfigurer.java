@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.oauth2;
 import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
 import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
+import io.camunda.operate.property.OperateProperties;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,10 +33,15 @@ public class IdentityOAuth2WebConfigurer {
   public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI =
       "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
 
+  public static final String JWKS_PATH = "/protocol/openid-connect/certs";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityOAuth2WebConfigurer.class);
 
   @Autowired
   private Environment env;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Autowired
   private IdentityJwt2AuthenticationTokenConverter jwtConverter;
@@ -45,9 +51,14 @@ public class IdentityOAuth2WebConfigurer {
       http.oauth2ResourceServer(
           serverCustomizer ->
               serverCustomizer.authenticationEntryPoint(this::authenticationFailure)
-                  .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
+                  .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)
+                      .jwkSetUri(getJwkSetUriProperty())));
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
+  }
+
+  private String getJwkSetUriProperty() {
+    return operateProperties.getIdentity().getIssuerBackendUrl() + JWKS_PATH;
   }
 
   private void authenticationFailure(final HttpServletRequest request,

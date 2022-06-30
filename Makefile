@@ -38,8 +38,8 @@ env-identity-up:
 	@docker-compose -f ./config/docker-compose.identity.yml up -d \
 	&& docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
-	&& CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform \
-	   CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
+	&& CAMUNDA_OPERATE_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform \
+	   CAMUNDA_OPERATE_IDENTITY_ISSUERBACKENDURL=http://localhost:18080/auth/realms/camunda-platform \
        CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate \
        CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
        CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api \

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.auth0.jwt.exceptions.InvalidClaimException;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.List;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -34,6 +36,9 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
         TestApplicationWithNoBeans.class,
         IdentityJwt2AuthenticationTokenConverter.class
+    },
+    properties = {
+        OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"
     }
 )
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
