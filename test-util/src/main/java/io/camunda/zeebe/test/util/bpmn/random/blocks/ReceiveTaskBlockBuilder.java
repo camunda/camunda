@@ -70,11 +70,6 @@ public class ReceiveTaskBlockBuilder implements BlockBuilder {
     return List.of(this);
   }
 
-  @Override
-  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
-    return this == blockBuilder;
-  }
-
   public static class Factory implements BlockBuilderFactory {
 
     @Override

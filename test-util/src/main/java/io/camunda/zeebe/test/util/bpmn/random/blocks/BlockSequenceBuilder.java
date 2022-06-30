@@ -112,12 +112,6 @@ public class BlockSequenceBuilder implements BlockBuilder {
     return allBlockBuilders;
   }
 
-  @Override
-  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
-    final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
-    return this == blockBuilder || contains;
-  }
-
   public static class BlockSequenceBuilderFactory {
 
     public BlockSequenceBuilder createBlockSequenceBuilder(final ConstructionContext context) {

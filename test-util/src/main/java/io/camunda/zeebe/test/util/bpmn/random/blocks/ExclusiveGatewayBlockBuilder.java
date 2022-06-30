@@ -140,12 +140,6 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     return allBlockBuilders;
   }
 
-  @Override
-  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
-    final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
-    return this == blockBuilder || contains;
-  }
-
   static class Factory implements BlockBuilderFactory {
 
     @Override

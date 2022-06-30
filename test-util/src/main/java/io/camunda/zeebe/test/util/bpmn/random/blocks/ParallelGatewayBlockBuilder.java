@@ -129,12 +129,6 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     return allBlockBuilders;
   }
 
-  @Override
-  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
-    final boolean contains = blockBuilders.stream().anyMatch(b -> b.equalsOrContains(blockBuilder));
-    return this == blockBuilder || contains;
-  }
-
   private BranchPointer findRandomExecutionPathForBranch(
       final Random random,
       final ExecutionPathContext context,

@@ -59,5 +59,7 @@ public interface BlockBuilder {
 
   List<BlockBuilder> getPossibleStartingBlocks();
 
-  boolean equalsOrContains(final BlockBuilder blockBuilder);
+  default boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    return getPossibleStartingBlocks().contains(blockBuilder);
+  }
 }
