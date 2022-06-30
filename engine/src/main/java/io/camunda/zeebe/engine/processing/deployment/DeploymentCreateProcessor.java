@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
@@ -34,7 +35,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -51,8 +51,10 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final ExpressionProcessor expressionProcessor;
   private final StateBuilder stateBuilder;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
-  private final DeploymentDistributionBehavior deploymentDistributionBehavior;
+  private DeploymentDistributionBehavior deploymentDistributionBehavior;
   private final Builders builders;
+  private final int partitionsCount;
+  private final DeploymentDistributor deploymentDistributor;
 
   public DeploymentCreateProcessor(
       final ZeebeState zeebeState,
@@ -60,7 +62,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,
       final Builders builders,
-      final ActorControl actor,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
@@ -74,9 +75,19 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     messageStartEventSubscriptionManager =
         new MessageStartEventSubscriptionManager(
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
-    deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(builders, partitionsCount, deploymentDistributor, actor);
+    this.partitionsCount = partitionsCount;
+    this.deploymentDistributor = deploymentDistributor;
     this.builders = builders;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    deploymentDistributionBehavior =
+        new DeploymentDistributionBehavior(
+            builders,
+            partitionsCount,
+            deploymentDistributor,
+            context.getProcessingSchedulingService());
   }
 
   @Override

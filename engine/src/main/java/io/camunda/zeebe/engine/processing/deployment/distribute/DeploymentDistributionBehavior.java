@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;
@@ -16,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +31,7 @@ public final class DeploymentDistributionBehavior {
 
   private final List<Integer> otherPartitions;
   private final DeploymentDistributor deploymentDistributor;
-  private final ActorControl processingActor;
+  private final ProcessingSchedulingServiceImpl processingActor;
   private final StateBuilder stateBuilder;
   private final CommandsBuilder commandWriter;
 
@@ -38,7 +39,7 @@ public final class DeploymentDistributionBehavior {
       final Builders builders,
       final int partitionsCount,
       final DeploymentDistributor deploymentDistributor,
-      final ActorControl processingActor) {
+      final ProcessingSchedulingServiceImpl processingActor) {
     otherPartitions =
         IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
             .filter(partition -> partition != Protocol.DEPLOYMENT_PARTITION)
@@ -46,7 +47,6 @@ public final class DeploymentDistributionBehavior {
             .collect(Collectors.toList());
     this.deploymentDistributor = deploymentDistributor;
     this.processingActor = processingActor;
-
     stateBuilder = builders.state();
     commandWriter = builders.command();
   }
@@ -78,23 +78,15 @@ public final class DeploymentDistributionBehavior {
     final var deploymentPushedFuture =
         deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
 
-    deploymentPushedFuture.onComplete(
-        (v, t) ->
-            processingActor.runUntilDone(
-                () -> {
-                  deploymentDistributionRecord.setPartition(partitionId);
-                  commandWriter.reset();
-                  commandWriter.appendFollowUpCommand(
-                      key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
-
-                  // todo we need to replace this with the scheduling
-                  //
-                  //                  final long pos = commandWriter.flush();
-                  //                  if (pos < 0) {
-                  //                    processingActor.yieldThread();
-                  //                  } else {
-                  //                    processingActor.done();
-                  //                  }
-                }));
+    // TODO IDEALLY we should here not use the actor future
+    processingActor.runOnSuccess(
+        deploymentPushedFuture,
+        () -> {
+          deploymentDistributionRecord.setPartition(partitionId);
+          commandWriter.reset();
+          commandWriter.appendFollowUpCommand(
+              key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
+          return new ProcessingResult(commandWriter);
+        });
   }
 }

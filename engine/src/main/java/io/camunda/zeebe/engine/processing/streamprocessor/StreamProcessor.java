@@ -484,6 +484,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public interface ProcessingSchedulingService {
 
     void runWithDelay(Duration duration, Supplier<ProcessingResult> scheduledProcessing);
+
+    void runOnSuccess(
+        ActorFuture<Void> deploymentPushedFuture, Supplier<ProcessingResult> scheduledProcessing);
   }
 
   public enum Phase {
@@ -530,6 +533,37 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       //
       // CURRENTLY THIS IS GUARANTEED BY THE ACTOR SCHEDULER AND USING RUNUNITLDONE AND RUNDELAYED
       processingActor.runDelayed(duration, () -> executeScheduleProcessing(scheduledProcessing));
+    }
+
+    @Override
+    public void runOnSuccess(
+        final ActorFuture<Void> future, final Supplier<ProcessingResult> scheduledProcessing) {
+
+      // THIS IS NOT ALLOWED DURING REPLAY - but should never happen
+      if (phase == Phase.REPLAY) {
+        throw new UnsupportedOperationException("Scheduling work during replay is not permitted.");
+      }
+
+      // WHAT WE HAVE TO GUARANTEE HERE
+      //
+      // A) WE run after the future
+      // B) all changes during a transaction are committed (when we schedule this during the
+      // normal
+      // processing)
+      // C) WE execute after a processing not in between! This is necessary to not mess with dirty
+      // buffers/writers
+      //
+      // CURRENTLY THIS IS GUARANTEED BY THE ACTOR SCHEDULER AND USING RUNUNITLDONE AND
+      // runOnCompletion
+      processingActor.runOnCompletion(
+          future,
+          (v, t) -> {
+            if (t != null) {
+              return;
+            }
+
+            executeScheduleProcessing(scheduledProcessing);
+          });
     }
 
     private void executeScheduleProcessing(final Supplier<ProcessingResult> scheduledProcessing) {
