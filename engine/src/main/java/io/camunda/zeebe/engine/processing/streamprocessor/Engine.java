@@ -72,35 +72,30 @@ public final class Engine implements StreamProcessorLifecycleAware {
     builders = context.getWriters();
   }
 
-  private TypedRecordProcessor<?> chooseNextProcessor(final TypedRecord<?> command) {
-    TypedRecordProcessor<?> typedRecordProcessor = null;
-
-    try {
-      typedRecordProcessor =
-          recordProcessorMap.get(
-              command.getRecordType(), command.getValueType(), command.getIntent().value());
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, e);
-    }
-
-    return typedRecordProcessor;
-  }
-
   public void apply(final TypedRecord typedEvent) {
     eventApplier.applyState(typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
   }
 
   public ProcessingResult process(final TypedRecord typedCommand) {
-    recordsBuilder.reset(); // to clean up the buffer
-    final TypedRecordProcessor<?> currentProcessor = chooseNextProcessor(typedCommand);
-    if (currentProcessor == null) {
+    TypedRecordProcessor<?> currentProcessor = null;
 
+    try {
+      currentProcessor =
+          recordProcessorMap.get(
+              ((TypedRecord<?>) typedCommand).getRecordType(),
+              ((TypedRecord<?>) typedCommand).getValueType(),
+              ((TypedRecord<?>) typedCommand).getIntent().value());
+    } catch (final Exception e) {
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, typedCommand, e);
+    }
+
+    if (currentProcessor == null) {
       return ProcessingResult.empty();
     }
 
+    recordsBuilder.reset(); // to clean up the buffer
     final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
     if (isNotOnBlacklist) {
-      // todo remove the writers
       currentProcessor.processRecord(typedCommand);
     }
 
