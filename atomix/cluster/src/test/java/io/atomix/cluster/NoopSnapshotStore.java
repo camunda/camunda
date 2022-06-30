@@ -24,6 +24,7 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 
 class NoopSnapshotStore implements ReceivableSnapshotStore {
 
@@ -35,6 +36,11 @@ class NoopSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.empty();
+  }
+
+  @Override
+  public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
+    return null;
   }
 
   @Override
