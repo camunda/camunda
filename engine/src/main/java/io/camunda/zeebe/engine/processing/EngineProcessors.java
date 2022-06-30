@@ -54,7 +54,6 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var actor = processingContext.getActor();
     final MutableZeebeState zeebeState = processingContext.getZeebeState();
     final var writers = processingContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =

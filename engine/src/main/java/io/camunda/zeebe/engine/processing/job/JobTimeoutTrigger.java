@@ -9,7 +9,9 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -22,8 +24,9 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   private final JobState state;
 
   private ScheduledTimer timer;
-  private CommandsBuilder writer;
   private ReadonlyProcessingContext processingContext;
+  private ProcessingSchedulingServiceImpl processingSchedulingService;
+  private CommandsBuilder commandsBuilder;
 
   public JobTimeoutTrigger(final JobState state) {
     this.state = state;
@@ -32,11 +35,10 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyProcessingContext processingContext) {
     this.processingContext = processingContext;
-    timer =
-        this.processingContext
-            .getActor()
-            .runAtFixedRate(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
-    writer = processingContext.getLogStreamWriter();
+    processingSchedulingService = processingContext.getProcessingSchedulingService();
+    commandsBuilder = processingContext.getWriters().command();
+    processingSchedulingService.runWithDelay(
+        TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
   }
 
   @Override
@@ -71,18 +73,18 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
     }
   }
 
-  void deactivateTimedOutJobs() {
+  ProcessingResult deactivateTimedOutJobs() {
+    commandsBuilder.reset();
     final long now = currentTimeMillis();
     state.forEachTimedOutEntry(
         now,
         (key, record) -> {
-          writer.reset();
-          writer.appendFollowUpCommand(key, JobIntent.TIME_OUT, record);
+          commandsBuilder.appendFollowUpCommand(key, JobIntent.TIME_OUT, record);
 
-          // todo we need to replace this with the scheduling
-          //
-          //          return writer.flush() >= 0;
+          // todo here we could limit this to write not too much
           return true;
         });
+
+    return new ProcessingResult(commandsBuilder);
   }
 }
