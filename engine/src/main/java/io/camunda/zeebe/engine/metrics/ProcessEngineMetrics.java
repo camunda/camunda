@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.prometheus.client.Counter;
 
 public final class ProcessEngineMetrics {
@@ -59,7 +59,7 @@ public final class ProcessEngineMetrics {
           .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL)
           .register();
   private static final String CREATION_MODE_LABEL = "creation_mode";
-  private static final Counter CREATED_PROCESS_INSTANCES =
+  static final Counter CREATED_PROCESS_INSTANCES =
       Counter.build()
           .namespace(NAMESPACE)
           .name("process_instance_creations_total")
@@ -72,11 +72,11 @@ public final class ProcessEngineMetrics {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  public void processInstanceCreated(final ProcessInstanceCreationRecord record) {
-    final CreationMode creationMode =
-        record.startInstructions().isEmpty()
-            ? CreationMode.CREATION_AT_GIVEN_ELEMENT
-            : CreationMode.CREATION_AT_DEFAULT_START_EVENT;
+  public void processInstanceCreated(final ProcessInstanceCreationRecordValue recordValue) {
+    final var creationMode =
+        recordValue.getStartInstructions().isEmpty()
+            ? CreationMode.CREATION_AT_DEFAULT_START_EVENT
+            : CreationMode.CREATION_AT_GIVEN_ELEMENT;
 
     CREATED_PROCESS_INSTANCES.labels(partitionIdLabel, creationMode.toString()).inc();
   }

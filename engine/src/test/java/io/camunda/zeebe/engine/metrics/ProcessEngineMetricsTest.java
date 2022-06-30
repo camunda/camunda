@@ -33,6 +33,7 @@ public class ProcessEngineMetricsTest {
   public void resetMetrics() {
     ProcessEngineMetrics.EVALUATED_DMN_ELEMENTS.clear();
     ProcessEngineMetrics.EXECUTED_INSTANCES.clear();
+    ProcessEngineMetrics.CREATED_PROCESS_INSTANCES.clear();
   }
 
   @Test
@@ -144,6 +145,40 @@ public class ProcessEngineMetricsTest {
         .isEqualTo(1);
   }
 
+  @Test
+  public void shouldIncreaseProcessInstanceCreatedAtDefaultStartEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done())
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isNull();
+    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldIncreaseProcessInstanceCreatedAtGivenElement() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done())
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("end").create();
+
+    // then
+    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isNull();
+    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isEqualTo(1);
+  }
+
   private Double activatedProcessInstanceMetric() {
     return executedProcessInstanceMetric("activated");
   }
@@ -163,6 +198,13 @@ public class ProcessEngineMetricsTest {
         entry("type", "ROOT_PROCESS_INSTANCE"),
         entry("action", action),
         entry("partition", "1"));
+  }
+
+  private Double processInstanceCreationsMetric(final String creationMode) {
+    return MetricsTestHelper.readMetricValue(
+        "zeebe_process_instance_creations_total",
+        entry("partition", "1"),
+        entry("creation_mode", creationMode));
   }
 
   private Double succeededEvaluatedDmnElementsMetric() {
