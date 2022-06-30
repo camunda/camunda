@@ -23,7 +23,6 @@ import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -484,7 +483,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public interface ProcessingSchedulingService {
 
-    ScheduledTimer runWithDelay(Duration duration, Supplier<ProcessingResult> scheduledProcessing);
+    void runWithDelay(Duration duration, Supplier<ProcessingResult> scheduledProcessing);
   }
 
   public enum Phase {
@@ -512,7 +511,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     }
 
     @Override
-    public ScheduledTimer runWithDelay(
+    public void runWithDelay(
         final Duration duration, final Supplier<ProcessingResult> scheduledProcessing) {
 
       // THIS IS NOT ALLOWED DURING REPLAY - but should never happen
