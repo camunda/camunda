@@ -19,9 +19,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
@@ -89,8 +87,6 @@ public final class ProcessingStateMachine {
       "Expected to successfully process record '{} {}' with processor, but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
-  private static final String PROCESSING_ERROR_MESSAGE =
-      "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
@@ -121,7 +117,6 @@ public final class ProcessingStateMachine {
   private final RetryStrategy updateStateRetryStrategy;
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
-  private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
   private final TypedEventImpl typedCommand;
   private final StreamProcessorMetrics metrics;
@@ -313,38 +308,16 @@ public final class ProcessingStateMachine {
         });
   }
 
-  // todo: partly in engine
   private void errorHandlingInTransaction(final Throwable processingException) throws Exception {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
           final long position = typedCommand.getPosition();
           resetOutput(position);
-          // TODO move to the engine
-          //
-          //          writeRejectionOnCommand(processingException);
-          //          errorRecord.initErrorRecord(processingException, position);
-          //
-          //          zeebeState
-          //              .getBlackListState()
-          //              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
-          //
-          //          logStreamWriter.appendFollowUpEvent(
-          //              typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
+
+          currentProcessingResult =
+              engine.onProcessingError(processingException, typedCommand, position);
         });
-  }
-
-  // todo: move to engine
-  private void writeRejectionOnCommand(final Throwable exception) {
-    final String errorMessage =
-        String.format(PROCESSING_ERROR_MESSAGE, typedCommand, exception.getMessage());
-    LOG.error(errorMessage, exception);
-
-    // TODO move
-    //    logStreamWriter.appendRejection(typedCommand, RejectionType.PROCESSING_ERROR,
-    // errorMessage);
-    responseWriter.writeRejectionOnCommand(
-        typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
   private void writeRecords() {
@@ -370,6 +343,8 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
             onError(t, this::writeRecords);
           } else {
+            // TODO we could get this also out from the processing result :bulb:
+            //
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
@@ -397,7 +372,7 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, this::updateState); // todo: I think this is wrong?!
+            onError(throwable, this::updateState);
           } else {
             executeSideEffects();
           }

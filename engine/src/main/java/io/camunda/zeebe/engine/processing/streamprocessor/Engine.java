@@ -9,12 +9,16 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordBatchBuilderImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilderImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -23,6 +27,8 @@ public final class Engine implements StreamProcessorLifecycleAware {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
+  private static final String PROCESSING_ERROR_MESSAGE =
+      "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
 
@@ -32,9 +38,12 @@ public final class Engine implements StreamProcessorLifecycleAware {
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
   private final ZeebeDb zeebeDb;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
+  private final ErrorRecord errorRecord = new ErrorRecord();
+
   private ZeebeDbState zeebeState;
   private EventApplier eventApplier;
   private RecordsBuilderImpl recordsBuilder;
+  private Builders builders;
 
   public Engine(final StreamProcessorBuilder processorBuilder) {
     typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
@@ -60,6 +69,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
     lifecycleAwareListeners.addAll(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
     recordProcessorMap.values().forEachRemaining(lifecycleAwareListeners::add);
+    builders = context.getWriters();
   }
 
   private TypedRecordProcessor<?> chooseNextProcessor(final TypedRecord<?> command) {
@@ -122,5 +132,28 @@ public final class Engine implements StreamProcessorLifecycleAware {
   public void onResumed() {
     // todo: should not called - engine doesn't need to be aware.
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+  }
+
+  public ProcessingResult onProcessingError(
+      final Throwable processingException, final TypedRecord typedCommand, final long position) {
+    final String errorMessage =
+        String.format(PROCESSING_ERROR_MESSAGE, typedCommand, processingException.getMessage());
+    LOG.error(errorMessage, processingException);
+
+    builders
+        .rejection()
+        .appendRejection(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
+    builders
+        .response()
+        .writeRejectionOnCommand(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
+    errorRecord.initErrorRecord(processingException, position);
+
+    // I think we don't need this since the applier will do it.
+    //    zeebeState
+    //        .getBlackListState()
+    //        .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
+
+    builders.state().appendFollowUpEvent(typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
+    return ProcessingResult.empty();
   }
 }
