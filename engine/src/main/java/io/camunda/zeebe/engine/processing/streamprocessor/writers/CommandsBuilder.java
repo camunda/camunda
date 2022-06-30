@@ -9,9 +9,10 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /** Things that any actor can write to a partition. */
-public interface CommandsBuilder {
+public interface CommandsBuilder extends BufferWriter {
 
   void appendNewCommand(Intent intent, RecordValue value);
 

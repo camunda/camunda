@@ -7,24 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingService;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
-  private ActorControl actor;
-  private RecordsBuilder streamWriter;
-
-  private ScheduledTimer scheduledTimer;
   private long nextDueDate = -1L;
   private final long timerResolution;
   private final Function<CommandsBuilder, Long> nextDueDateSupplier;
+  private ProcessingSchedulingService processingSchedulingService;
+  private CommandsBuilder commandsBuilder;
 
   public DueDateChecker(
       final long timerResolution, final Function<CommandsBuilder, Long> nextDueDateFunction) {
@@ -43,29 +41,28 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     final Duration delay = calculateDelayForNextRun(dueDate);
 
-    if (scheduledTimer == null) {
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-      nextDueDate = dueDate;
+    processingSchedulingService.runWithDelay(delay, this::triggerEntities);
+    nextDueDate = dueDate;
 
-    } else if (nextDueDate - dueDate > timerResolution) {
-      scheduledTimer.cancel();
-
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-      nextDueDate = dueDate;
-    }
+    // TODO WE COULD RETURN THE SCHEDULED TIMER, BUT TWO THINGS TO THIS
+    //
+    // a) is this really necessary? I see no real issue than it will just
+    //    to nothing if there no more timers ?!
+    // b) we have to introduce a separate interface to not pollute our impl with that details
+    //
   }
 
-  private void triggerEntities() {
-    nextDueDate = nextDueDateSupplier.apply(streamWriter);
+  private ProcessingResult triggerEntities() {
+    nextDueDate = nextDueDateSupplier.apply(commandsBuilder);
 
     // reschedule the runnable if there are timers left
 
     if (nextDueDate > 0) {
       final Duration delay = calculateDelayForNextRun(nextDueDate);
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-
+      processingSchedulingService.runWithDelay(delay, this::triggerEntities);
+      return new ProcessingResult(commandsBuilder);
     } else {
-      scheduledTimer = null;
+      return ProcessingResult.empty();
     }
   }
 
@@ -84,25 +81,20 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(final  processingContext) {
-    actor = processingContext.getActor();
-    streamWriter = processingContext.getLogStreamWriter();
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    processingSchedulingService = context.getProcessingSchedulingService();
+    commandsBuilder = context.getWriters().command();
     // check if timers are due after restart
     triggerEntities();
   }
 
   @Override
   public void onPaused() {
-    if (scheduledTimer != null) {
-      scheduledTimer.cancel();
-      scheduledTimer = null;
-    }
+    // THIS IS NO LONGER NECESSARY
   }
 
   @Override
   public void onResumed() {
-    if (scheduledTimer == null) {
-      triggerEntities();
-    }
+    // THIS IS NO LONGER NECESSARY
   }
 }

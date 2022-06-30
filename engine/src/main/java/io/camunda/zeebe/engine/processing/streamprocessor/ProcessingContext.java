@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
@@ -40,6 +41,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private MutableLastProcessedPositionState lastProcessedPositionState;
   private LogStreamBatchWriter logStreamWriter;
   private CommandResponseWriter commandResponseWriter;
+  private ProcessingSchedulingServiceImpl processingSchedulingService;
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -170,5 +172,14 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
             recordsBuilder,
             eventApplier,
             new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
+  }
+
+  public void processingSchedulingService(
+      final ProcessingSchedulingServiceImpl processingSchedulingService) {
+    this.processingSchedulingService = processingSchedulingService;
+  }
+
+  public ProcessingSchedulingServiceImpl getProcessingSchedulingService() {
+    return processingSchedulingService;
   }
 }

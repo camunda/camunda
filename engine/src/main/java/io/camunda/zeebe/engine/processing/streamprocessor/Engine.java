@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordBatchBuilderImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilderImpl;
@@ -104,8 +103,8 @@ public final class Engine implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(final ProcessingSchedulingService schedulingService) {
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(schedulingService));
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    lifecycleAwareListeners.forEach(l -> l.onRecovered(context));
   }
 
   @Override
