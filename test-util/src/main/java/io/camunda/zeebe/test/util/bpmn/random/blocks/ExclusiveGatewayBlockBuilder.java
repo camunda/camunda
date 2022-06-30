@@ -102,11 +102,11 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
     final int branch = branchContainingStartBlock.orElse(random.nextInt(branchIds.size()));
 
-    if (branchContainingStartBlock.isEmpty() || this == context.getStartAtBlockBuilder()) {
+    if (branchContainingStartBlock.isEmpty()) {
       if (branch == 0) {
         result.appendDirectSuccessor(
             new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
-      } else if (random.nextBoolean() || branchContainingStartBlock.isPresent()) {
+      } else if (random.nextBoolean()) {
         // take a non-default branch
         result.appendDirectSuccessor(
             new StepPickConditionCase(
