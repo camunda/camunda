@@ -267,6 +267,57 @@ public class FileBasedSnapshotStoreTest {
     assertThatThrownBy(result::join).hasCauseInstanceOf(FileNotFoundException.class);
   }
 
+  @Test
+  public void shouldNotDeleteReservedSnapshot() {
+    // given
+    final var reservedSnapshot = takeTransientSnapshot(1, snapshotStore).persist().join();
+    reservedSnapshot.reserve().join();
+
+    // when
+    final var newSnapshot = takeTransientSnapshot(2, snapshotStore).persist().join();
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(reservedSnapshot, newSnapshot);
+    assertThat(reservedSnapshot.getPath()).exists();
+  }
+
+  @Test
+  public void shouldDeleteReleasedSnapshot() {
+    // given
+    final var reservedSnapshot = takeTransientSnapshot(1, snapshotStore).persist().join();
+    final var reservation = reservedSnapshot.reserve().join();
+
+    // when
+    reservation.release().join();
+    final var newSnapshot = takeTransientSnapshot(3, snapshotStore).persist().join();
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join()).containsExactly(newSnapshot);
+    assertThat(reservedSnapshot.getPath()).doesNotExist();
+  }
+
+  @Test
+  public void shouldNotDeleteReservedSnapshotUntilAllReservationsAreReleased() {
+    // given
+    final var reservedSnashot = takeTransientSnapshot(1, snapshotStore).persist().join();
+
+    // first reservation
+    final var reservation = reservedSnashot.reserve().join();
+    // second reservation
+    reservedSnashot.reserve().join();
+
+    // when
+    reservation.release();
+
+    final var newSnapshot = takeTransientSnapshot(2, snapshotStore).persist().join();
+
+    // then
+    assertThat(snapshotStore.getAvailableSnapshots().join())
+        .containsExactlyInAnyOrder(reservedSnashot, newSnapshot);
+    assertThat(reservedSnashot.getPath()).exists();
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);

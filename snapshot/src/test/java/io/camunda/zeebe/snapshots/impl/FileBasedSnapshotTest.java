@@ -10,6 +10,8 @@ package io.camunda.zeebe.snapshots.impl;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,12 +31,16 @@ public final class FileBasedSnapshotTest {
           "file2", "file2 contents");
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
 
   private Path snapshotDir;
+  private TestActor actor;
 
   @Before
   public void beforeEach() throws Exception {
     snapshotDir = temporaryFolder.newFolder("store", "snapshots").toPath();
+    actor = new TestActor();
+    scheduler.submitActor(actor);
   }
 
   @Test
@@ -52,6 +58,57 @@ public final class FileBasedSnapshotTest {
     assertThat(checksumPath).doesNotExist();
   }
 
+  @Test
+  public void shouldReserveSnapshot() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var snapshot = createSnapshot(snapshotPath, checksumPath);
+
+    // when
+    snapshot.reserve().join();
+
+    // then
+    assertThat(snapshot.isReserved()).isTrue();
+  }
+
+  @Test
+  public void shouldReleaseReservedSnapshot() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var reservation = snapshot.reserve().join();
+
+    // when
+    reservation.release().join();
+
+    // then
+    assertThat(snapshot.isReserved()).isFalse();
+  }
+
+  @Test
+  public void shouldReleaseSnapshotOnlyAfterAllReservationsAreReleased() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var firstReservation = snapshot.reserve().join();
+    final var secondReservation = snapshot.reserve().join();
+
+    // when
+    firstReservation.release().join();
+
+    // then
+    assertThat(snapshot.isReserved()).isTrue();
+
+    // when
+    secondReservation.release().join();
+
+    // then
+    assertThat(snapshot.isReserved()).isFalse();
+  }
+
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
     final var metadata = new FileBasedSnapshotMetadata(1L, 1L, 1L, 1L);
@@ -64,6 +121,13 @@ public final class FileBasedSnapshotTest {
     }
     SnapshotChecksum.persist(checksumPath, SnapshotChecksum.calculate(snapshotPath));
 
-    return new FileBasedSnapshot(snapshotPath, checksumPath, 1L, metadata);
+    return new FileBasedSnapshot(
+        snapshotPath, checksumPath, 1L, metadata, s -> {}, actor.getActorControl());
+  }
+
+  static class TestActor extends Actor {
+    io.camunda.zeebe.scheduler.ActorControl getActorControl() {
+      return actor;
+    }
   }
 }
