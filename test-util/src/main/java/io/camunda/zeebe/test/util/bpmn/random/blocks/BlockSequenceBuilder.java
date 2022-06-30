@@ -112,6 +112,11 @@ public class BlockSequenceBuilder implements BlockBuilder {
     return allBlockBuilders;
   }
 
+  @Override
+  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
+    return this == blockBuilder || getPossibleStartingBlocks().contains(blockBuilder);
+  }
+
   public static class BlockSequenceBuilderFactory {
 
     public BlockSequenceBuilder createBlockSequenceBuilder(final ConstructionContext context) {
