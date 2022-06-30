@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 /**
  * Generates a block with a forking parallel gateway, a random number of branches, and a joining
@@ -96,6 +95,9 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     if (blockContainingStartBlock.isPresent()) {
       final var blockBuilder = blockContainingStartBlock.get();
       branchPointers.add(findRandomExecutionPathForBranch(random, context, result, blockBuilder));
+      blockBuilders.stream()
+          .filter(bb -> bb != blockBuilder)
+          .forEach(context::addSecondaryStartBlockBuilder);
     }
 
     branchPointers.addAll(
@@ -103,13 +105,9 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
             .filter(
                 blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtBlockBuilder()))
             .map(
-                blockBuilder -> {
-                  if (blockContainingStartBlock.isPresent()) {
-                    context.addSecondaryStartBlockBuilder(blockBuilder);
-                  }
-                  return findRandomExecutionPathForBranch(random, context, result, blockBuilder);
-                })
-            .collect(Collectors.toList()));
+                blockBuilder ->
+                    findRandomExecutionPathForBranch(random, context, result, blockBuilder))
+            .toList());
     shuffleStepsFromDifferentLists(random, result, branchPointers);
 
     return result;
