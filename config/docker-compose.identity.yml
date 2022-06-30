@@ -1,6 +1,27 @@
 version: "3.6"
 
 services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+    networks:
+      - identity-network
+
   keycloak:
     container_name: keycloak
     image: jboss/keycloak:16.1.1
@@ -9,6 +30,8 @@ services:
     environment:
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
+    networks:
+      - identity-network
   identity:
     depends_on:
       - keycloak
@@ -16,14 +39,86 @@ services:
     container_name: identity
     image: camunda/identity:8.1.0-alpha2
     ports:
-      - "8081:8081"
+      - "8084:8084"
     environment:
-      SERVER_PORT: 8081
+      SERVER_PORT: 8084
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8080
+      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081
+      KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
+      KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_ROLES_0: "Identity"
       KEYCLOAK_USERS_0_ROLES_1: "Operate"
+      KEYCLOAK_USERS_0_ROLES_2: "Tasklist"
+    networks:
+      - identity-network
+
+  zeebe:
+    container_name: zeebe
+    image: camunda/zeebe:8.1.0-alpha2
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENT=false
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+    ports:
+      - 26500:26500
+      - 8000:8000
+    restart: always
+    networks:
+      - identity-network
+
+  operate:
+    image: camunda/operate:8.1.0-alpha3
+    container_name: operate
+    environment:
+      - SERVER_PORT=8081
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - SPRING_PROFILES_ACTIVE=dev-data,identity-auth
+      - CAMUNDA_OPERATE_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+    ports:
+      - 8081:8081
+    depends_on:
+      - elasticsearch
+      - zeebe
+      - identity
+    networks:
+      - identity-network
+
+  tasklist:
+    image: camunda/tasklist:8.1.0-alpha3
+    container_name: tasklist
+    environment:
+      - SERVER_PORT=8082
+      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - SPRING_PROFILES_ACTIVE=identity-auth
+      - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
+      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+      - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
+    ports:
+      - 8082:8082
+    depends_on:
+      - elasticsearch
+      - zeebe
+      - identity
+    networks:
+      - identity-network
+
+networks:
+  identity-network: { }
