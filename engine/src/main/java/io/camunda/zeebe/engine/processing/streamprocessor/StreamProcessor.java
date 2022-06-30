@@ -19,7 +19,9 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -29,6 +31,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 /*
@@ -261,7 +265,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       logStream.registerRecordAvailableListener(this);
 
       // start reading
-      engine.onRecovered(processingContext);
+
+      final var processingSchedulingService =
+          new ProcessingSchedulingServiceImpl(actor, batchWriter, () -> !shouldProcess);
+      engine.onRecovered(processingSchedulingService);
 
       processingStateMachine.startProcessing(lastProcessingPositions);
       if (!shouldProcess) {
@@ -473,11 +480,76 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     actor.run(processingStateMachine::readNextRecord);
   }
 
+  public interface ProcessingSchedulingService {
+
+    void runWithDelay(Duration duration, Supplier<ProcessingResult> scheduledProcessing);
+  }
+
   public enum Phase {
     INITIAL,
     REPLAY,
     PROCESSING,
     FAILED,
     PAUSED,
+  }
+
+  public class ProcessingSchedulingServiceImpl implements ProcessingSchedulingService {
+    private final ActorControl processingActor;
+    private final BooleanSupplier isPaused;
+    private final AbortableRetryStrategy writeRetryStrategy;
+    private final LogStreamBatchWriter batchWriter;
+
+    public ProcessingSchedulingServiceImpl(
+        final ActorControl processingActor,
+        final LogStreamBatchWriter batchWriter,
+        final BooleanSupplier isPaused) {
+      this.processingActor = processingActor;
+      this.isPaused = isPaused;
+      this.batchWriter = batchWriter;
+      writeRetryStrategy = new AbortableRetryStrategy(processingActor);
+    }
+
+    @Override
+    public void runWithDelay(
+        final Duration duration, final Supplier<ProcessingResult> scheduledProcessing) {
+
+      // THIS IS NOT ALLOWED DURING REPLAY - but should never happen
+      if (phase == Phase.REPLAY) {
+        throw new UnsupportedOperationException("Scheduling work during replay is not permitted.");
+      }
+
+      // WHAT WE HAVE TO GUARANTEE HERE
+      //
+      // A) WE run after the duration
+      // B) all changes during a transaction are committed (when we schedule this during the
+      // normal
+      // processing)
+      // C) WE execute after a processing not in between! This is necessary to not mess with dirty
+      // buffers/writers
+      //
+      // CURRENTLY THIS IS GUARANTEED BY THE ACTOR SCHEDULER AND USING RUNUNITLDONE AND RUNDELAYED
+      processingActor.runDelayed(duration, () -> executeScheduleProcessing(scheduledProcessing));
+    }
+
+    private void executeScheduleProcessing(final Supplier<ProcessingResult> scheduledProcessing) {
+      // todo it would be much nicer if we could suspend actors instead of doing this here
+      if (isPaused.getAsBoolean()) {
+        processingActor.submit(() -> executeScheduleProcessing(scheduledProcessing));
+        return;
+      }
+
+      // NO TRANSACTION - nothing is allowed to be written / updated (state related) so nothing will
+      // be committed
+      // STATE READING is allowed
+      // Result will be written (result are potentially commands to change the state)
+      final var processingResult = scheduledProcessing.get();
+
+      writeRetryStrategy.runWithRetry(
+          () -> {
+            batchWriter.put(processingResult.getRecords());
+            final long position = batchWriter.tryWrite();
+            return position >= 0;
+          });
+    }
   }
 }

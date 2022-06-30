@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingService;
+
 public interface StreamProcessorLifecycleAware {
 
   /** Callback after reprocessing was successful and before regular processing begins */
-  default void onRecovered(final ReadonlyProcessingContext context) {}
+  default void onRecovered(final ProcessingSchedulingService schedulingService) {}
 
   /** Callback which is called when StreamProcessor is on closing phase. */
   default void onClose() {}

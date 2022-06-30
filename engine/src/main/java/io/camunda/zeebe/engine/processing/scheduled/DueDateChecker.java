@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
@@ -85,7 +84,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext processingContext) {
+  public void onRecovered(final  processingContext) {
     actor = processingContext.getActor();
     streamWriter = processingContext.getLogStreamWriter();
     // check if timers are due after restart
