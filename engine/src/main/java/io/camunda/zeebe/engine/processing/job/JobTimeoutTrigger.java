@@ -49,6 +49,9 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
           return true;
         });
 
+    // reschedule
+    processingSchedulingService.runWithDelay(
+        TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
     return new ProcessingResult(commandsBuilder);
   }
 }

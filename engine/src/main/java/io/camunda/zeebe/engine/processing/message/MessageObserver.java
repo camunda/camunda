@@ -8,11 +8,12 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
@@ -25,6 +26,9 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
   private final MutablePendingMessageSubscriptionState pendingState;
+  private ProcessingSchedulingServiceImpl processingSchedulingService;
+  private MessageTimeToLiveChecker timeToLiveChecker;
+  private PendingMessageSubscriptionChecker pendingSubscriptionChecker;
 
   public MessageObserver(
       final MessageState messageState,
@@ -35,17 +39,33 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     this.pendingState = pendingState;
   }
 
+  ProcessingResult runMessageTTLCheck() {
+    processingSchedulingService.runWithDelay(
+        MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, this::runMessageTTLCheck);
+
+    return timeToLiveChecker.get();
+  }
+
+  ProcessingResult runPendingSubscriptionCheck() {
+    processingSchedulingService.runWithDelay(
+        SUBSCRIPTION_CHECK_INTERVAL, this::runPendingSubscriptionCheck);
+
+    return pendingSubscriptionChecker.get();
+  }
+
   @Override
   public void onRecovered(final ReadonlyProcessingContext context) {
-    final ActorControl actor = context.getActor();
     // it is safe to reuse the write because we running in the same actor/thread
-    final MessageTimeToLiveChecker timeToLiveChecker =
-        new MessageTimeToLiveChecker(context.getLogStreamWriter(), messageState);
-    context.getActor().runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    timeToLiveChecker = new MessageTimeToLiveChecker(context.getWriters().command(), messageState);
 
-    final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
+    processingSchedulingService = context.getProcessingSchedulingService();
+    processingSchedulingService.runWithDelay(
+        MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, this::runMessageTTLCheck);
+
+    pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
             subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
-    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+    processingSchedulingService.runWithDelay(
+        SUBSCRIPTION_CHECK_INTERVAL, this::runPendingSubscriptionCheck);
   }
 }

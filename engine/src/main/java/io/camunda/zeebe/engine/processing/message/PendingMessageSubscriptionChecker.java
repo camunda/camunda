@@ -8,11 +8,13 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
+import java.util.function.Supplier;
 
-public final class PendingMessageSubscriptionChecker implements Runnable {
+public final class PendingMessageSubscriptionChecker implements Supplier<ProcessingResult> {
   private final SubscriptionCommandSender commandSender;
   private final MutablePendingMessageSubscriptionState transientState;
 
@@ -28,9 +30,10 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
   }
 
   @Override
-  public void run() {
+  public ProcessingResult get() {
     transientState.visitSubscriptionBefore(
         ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
+    return ProcessingResult.empty();
   }
 
   private boolean sendCommand(final MessageSubscription subscription) {
