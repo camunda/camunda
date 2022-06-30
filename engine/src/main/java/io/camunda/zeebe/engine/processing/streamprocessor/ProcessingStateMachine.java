@@ -381,6 +381,9 @@ public final class ProcessingStateMachine {
 
   private void executeSideEffects() {
     // send responses
+
+    // TODO we would return something in the ProcessingResult as we do with the
+    // normal records, but to save time I skipped that in the POC, it would look similar.
     responseWriter.flush();
     notifyProcessedListener(typedCommand);
 

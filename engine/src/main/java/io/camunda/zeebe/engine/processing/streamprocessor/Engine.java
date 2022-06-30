@@ -131,6 +131,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
   @Override
   public void onResumed() {
     // todo: should not called - engine doesn't need to be aware.
+    // this can be removed after the schedule service is inserted
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
   }
 
