@@ -16,15 +16,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecyc
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 
 public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
   private final JobState state;
 
-  private ScheduledTimer timer;
-  private ReadonlyProcessingContext processingContext;
   private ProcessingSchedulingServiceImpl processingSchedulingService;
   private CommandsBuilder commandsBuilder;
 
@@ -34,43 +31,10 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyProcessingContext processingContext) {
-    this.processingContext = processingContext;
     processingSchedulingService = processingContext.getProcessingSchedulingService();
     commandsBuilder = processingContext.getWriters().command();
     processingSchedulingService.runWithDelay(
         TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
-  }
-
-  @Override
-  public void onClose() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onFailed() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onPaused() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onResumed() {
-    if (timer == null) {
-      timer =
-          processingContext
-              .getActor()
-              .runAtFixedRate(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
-    }
-  }
-
-  private void cancelTimer() {
-    if (timer != null) {
-      timer.cancel();
-      timer = null;
-    }
   }
 
   ProcessingResult deactivateTimedOutJobs() {
