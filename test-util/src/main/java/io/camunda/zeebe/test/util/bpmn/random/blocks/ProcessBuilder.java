@@ -122,7 +122,8 @@ public final class ProcessBuilder {
   }
 
   public ExecutionPath findRandomExecutionPath(final Random random) {
-    final var startAnywhere = random.nextBoolean();
+    // Give processes a 1/3 chance to start in a random spot
+    final var startAnywhere = random.nextInt(3) == 0;
 
     final ExecutionPathContext context;
     if (startAnywhere) {
