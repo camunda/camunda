@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 
 /**
- * A listener for the {@link StreamProcessor}. Allows retrieving insides of the processing and
- * replay of records. It can be especially useful for testing purposes. Note that the listener is
- * invoked inside the context of the stream processor and should not block its execution.
+ * A listener for the {@link StreamPlatform}. Allows retrieving insides of the processing and replay
+ * of records. It can be especially useful for testing purposes. Note that the listener is invoked
+ * inside the context of the stream processor and should not block its execution.
  */
 public interface StreamProcessorListener {
 

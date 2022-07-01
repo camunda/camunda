@@ -10,19 +10,19 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import java.io.IOException;
 import java.util.function.Supplier;
 
 public class PartitionAdminControlImpl implements PartitionAdminControl {
 
-  private final Supplier<StreamProcessor> streamProcessorSupplier;
+  private final Supplier<StreamPlatform> streamProcessorSupplier;
   private final Supplier<ExporterDirector> exporterDirectorSupplier;
   private final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier;
   private final Supplier<PartitionProcessingState> partitionProcessingStateSupplier;
 
   public PartitionAdminControlImpl(
-      final Supplier<StreamProcessor> streamProcessorSupplier,
+      final Supplier<StreamPlatform> streamProcessorSupplier,
       final Supplier<ExporterDirector> exporterDirectorSupplier,
       final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier,
       final Supplier<PartitionProcessingState> partitionProcessingStateSupplier) {
@@ -33,7 +33,7 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   }
 
   @Override
-  public StreamProcessor getStreamProcessor() {
+  public StreamPlatform getStreamProcessor() {
     return streamProcessorSupplier.get();
   }
 

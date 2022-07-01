@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -52,7 +52,7 @@ public final class AsyncSnapshottingTest {
 
   private StateControllerImpl snapshotController;
   private AsyncSnapshotDirector asyncSnapshotDirector;
-  private StreamProcessor mockStreamProcessor;
+  private StreamPlatform mockStreamPlatform;
   private ConstructableSnapshotStore persistedSnapshotStore;
 
   @Before
@@ -87,14 +87,14 @@ public final class AsyncSnapshottingTest {
   }
 
   private void createStreamProcessorControllerMock() {
-    mockStreamProcessor = mock(StreamProcessor.class);
+    mockStreamPlatform = mock(StreamPlatform.class);
 
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
+    when(mockStreamPlatform.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(0L))
         .thenReturn(CompletableActorFuture.completed(25L))
         .thenReturn(CompletableActorFuture.completed(32L));
 
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
+    when(mockStreamPlatform.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(99L))
         .thenReturn(CompletableActorFuture.completed(100L));
   }
@@ -102,14 +102,14 @@ public final class AsyncSnapshottingTest {
   private void createAsyncSnapshotDirectorOfProcessingMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofProcessingMode(
-            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+            0, 1, mockStreamPlatform, snapshotController, Duration.ofMinutes(1));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
   private void createAsyncSnapshotDirectorOfReplayMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofReplayMode(
-            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+            0, 1, mockStreamPlatform, snapshotController, Duration.ofMinutes(1));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
@@ -158,23 +158,23 @@ public final class AsyncSnapshottingTest {
     final long lastWrittenPosition = 26L;
     final long commitPosition = 100L;
 
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
+    when(mockStreamPlatform.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
     final var initialFailure = new RuntimeException("getLastWrittenPositionAsync fails");
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
+    when(mockStreamPlatform.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completedExceptionally(initialFailure));
     setCommitPosition(commitPosition);
     assertThatThrownBy(() -> asyncSnapshotDirector.forceSnapshot().join()).hasCause(initialFailure);
-    verify(mockStreamProcessor, timeout(10000).times(1)).getLastWrittenPositionAsync();
+    verify(mockStreamPlatform, timeout(10000).times(1)).getLastWrittenPositionAsync();
 
     // when
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
+    when(mockStreamPlatform.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
 
     // then
     assertThat(asyncSnapshotDirector.forceSnapshot().join()).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent();
-    verify(mockStreamProcessor, timeout(10000).times(2)).getLastWrittenPositionAsync();
+    verify(mockStreamPlatform, timeout(10000).times(2)).getLastWrittenPositionAsync();
   }
 
   @Test
@@ -186,16 +186,16 @@ public final class AsyncSnapshottingTest {
     final long commitPosition = 100L;
 
     final var initialFailure = new RuntimeException("getLastProcessedPositionAsync fails");
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
+    when(mockStreamPlatform.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completedExceptionally(initialFailure));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
+    when(mockStreamPlatform.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
 
     assertThatThrownBy(() -> asyncSnapshotDirector.forceSnapshot().join()).hasCause(initialFailure);
-    verify(mockStreamProcessor, timeout(5000).times(1)).getLastProcessedPositionAsync();
+    verify(mockStreamPlatform, timeout(5000).times(1)).getLastProcessedPositionAsync();
 
     // when
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
+    when(mockStreamPlatform.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
     final var secondSnapshot = asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(commitPosition);

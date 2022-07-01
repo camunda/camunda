@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;

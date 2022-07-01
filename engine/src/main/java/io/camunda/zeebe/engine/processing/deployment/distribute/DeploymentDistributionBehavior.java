@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateBuilder;

@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.NoOpPartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.util.sched.Actor;
@@ -168,12 +168,12 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private void getLeaderPartitionStatus(
       final ZeebePartition partition,
-      final StreamProcessor streamProcessor,
+      final StreamPlatform streamPlatform,
       final ExporterDirector exporterDirector,
       final CompletableFuture<PartitionStatus> partitionStatus) {
 
-    final var positionFuture = streamProcessor.getLastProcessedPositionAsync();
-    final var currentPhaseFuture = streamProcessor.getCurrentPhase();
+    final var positionFuture = streamPlatform.getLastProcessedPositionAsync();
+    final var currentPhaseFuture = streamPlatform.getCurrentPhase();
     final var exporterPhaseFuture = exporterDirector.getPhase();
     final var exporterPositionFuture = exporterDirector.getLowestPosition();
     final var snapshotId = getSnapshotId(partition);

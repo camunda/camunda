@@ -47,7 +47,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
 
-public final class StreamProcessorTest {
+public final class StreamPlatformTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -278,7 +278,7 @@ public final class StreamProcessorTest {
   @Test
   public void shouldWriteFollowUpEvent() {
     // given
-    final StreamProcessor streamProcessor =
+    final StreamPlatform streamPlatform =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, processingContext) ->
                 processors.onCommand(
@@ -307,9 +307,9 @@ public final class StreamProcessorTest {
     assertThat(activatedEvent).isNotNull();
     assertThat((activatedEvent).getSourceRecordPosition()).isEqualTo(position);
 
-    assertThat(streamProcessor.getLastWrittenPositionAsync().join())
+    assertThat(streamPlatform.getLastWrittenPositionAsync().join())
         .isEqualTo((activatedEvent).getPosition());
-    assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(position);
+    assertThat(streamPlatform.getLastProcessedPositionAsync().join()).isEqualTo(position);
   }
 
   @Test
@@ -510,7 +510,7 @@ public final class StreamProcessorTest {
     final CountDownLatch pauseLatch = new CountDownLatch(1);
     final CountDownLatch resumeLatch = new CountDownLatch(1);
 
-    final StreamProcessor streamProcessor =
+    final StreamPlatform streamPlatform =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, state) ->
                 processors.withListener(
@@ -527,8 +527,8 @@ public final class StreamProcessorTest {
                     }));
 
     // when
-    streamProcessor.pauseProcessing();
-    streamProcessor.resumeProcessing();
+    streamPlatform.pauseProcessing();
+    streamPlatform.resumeProcessing();
 
     // then
     pauseLatch.await();
@@ -544,7 +544,7 @@ public final class StreamProcessorTest {
     final CountDownLatch pauseLatch = new CountDownLatch(1);
     final CountDownLatch resumeLatch = new CountDownLatch(1);
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final StreamProcessor streamProcessor =
+    final StreamPlatform streamPlatform =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, state) ->
                 processors
@@ -569,14 +569,14 @@ public final class StreamProcessorTest {
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // when
-    streamProcessor.pauseProcessing();
+    streamPlatform.pauseProcessing();
     pauseLatch.await();
 
     final long positionProcessedAfterResume =
         streamProcessorRule.writeCommand(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
-    streamProcessor.resumeProcessing();
+    streamPlatform.resumeProcessing();
     resumeLatch.await();
 
     // then

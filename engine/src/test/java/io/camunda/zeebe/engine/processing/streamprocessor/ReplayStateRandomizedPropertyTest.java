@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.Phase;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.ProcessExecutor;

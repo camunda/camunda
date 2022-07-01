@@ -18,7 +18,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -224,7 +224,7 @@ public final class TestStreams {
     return rootDirectory.resolve("runtime");
   }
 
-  public StreamProcessor startStreamProcessor(
+  public StreamPlatform startStreamProcessor(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
@@ -232,7 +232,7 @@ public final class TestStreams {
     return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, null, true);
   }
 
-  public StreamProcessor startStreamProcessorNotAwaitOpening(
+  public StreamPlatform startStreamProcessorNotAwaitOpening(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
@@ -240,7 +240,7 @@ public final class TestStreams {
         log, zeebeDbFactory, typedRecordProcessorFactory, null);
   }
 
-  public StreamProcessor startStreamProcessorNotAwaitOpening(
+  public StreamPlatform startStreamProcessorNotAwaitOpening(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
@@ -250,7 +250,7 @@ public final class TestStreams {
         stream, zeebeDbFactory, typedRecordProcessorFactory, streamWriterFactory, false);
   }
 
-  public StreamProcessor buildStreamProcessor(
+  public StreamPlatform buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
@@ -279,7 +279,7 @@ public final class TestStreams {
     final String logName = stream.getLogName();
 
     final var builder =
-        StreamProcessor.builder()
+        StreamPlatform.builder()
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
@@ -292,8 +292,8 @@ public final class TestStreams {
     if (streamWriterFactory != null) {
       builder.typedStreamWriterFactory(streamWriterFactory);
     }
-    final StreamProcessor streamProcessor = builder.build();
-    final var openFuture = streamProcessor.openAsync(false);
+    final StreamPlatform streamPlatform = builder.build();
+    final var openFuture = streamPlatform.openAsync(false);
 
     if (awaitOpening) { // and recovery
       try {
@@ -306,20 +306,20 @@ public final class TestStreams {
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
-        ProcessorContext.createStreamContext(context, streamProcessor, zeebeDb, storage, snapshot);
+        ProcessorContext.createStreamContext(context, streamPlatform, zeebeDb, storage, snapshot);
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
 
-    return streamProcessor;
+    return streamPlatform;
   }
 
   public void pauseProcessing(final String streamName) {
-    streamContextMap.get(streamName).streamProcessor.pauseProcessing().join();
+    streamContextMap.get(streamName).streamPlatform.pauseProcessing().join();
     LOG.info("Paused processing for stream {}", streamName);
   }
 
   public void resumeProcessing(final String streamName) {
-    streamContextMap.get(streamName).streamProcessor.resumeProcessing();
+    streamContextMap.get(streamName).streamPlatform.resumeProcessing();
     LOG.info("Resume processing for stream {}", streamName);
   }
 
@@ -334,9 +334,9 @@ public final class TestStreams {
     LOG.info("Closed stream {}", streamName);
   }
 
-  public StreamProcessor getStreamProcessor(final String streamName) {
+  public StreamPlatform getStreamProcessor(final String streamName) {
     return Optional.ofNullable(streamContextMap.get(streamName))
-        .map(c -> c.streamProcessor)
+        .map(c -> c.streamPlatform)
         .orElseThrow(
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
@@ -472,19 +472,19 @@ public final class TestStreams {
   private static final class ProcessorContext implements AutoCloseable {
     private final LogContext logContext;
     private final ZeebeDb zeebeDb;
-    private final StreamProcessor streamProcessor;
+    private final StreamPlatform streamPlatform;
     private final Path runtimePath;
     private final Path snapshotPath;
     private boolean closed = false;
 
     private ProcessorContext(
         final LogContext logContext,
-        final StreamProcessor streamProcessor,
+        final StreamPlatform streamPlatform,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
         final Path snapshotPath) {
       this.logContext = logContext;
-      this.streamProcessor = streamProcessor;
+      this.streamPlatform = streamPlatform;
       this.zeebeDb = zeebeDb;
       this.runtimePath = runtimePath;
       this.snapshotPath = snapshotPath;
@@ -492,11 +492,11 @@ public final class TestStreams {
 
     public static ProcessorContext createStreamContext(
         final LogContext logContext,
-        final StreamProcessor streamProcessor,
+        final StreamPlatform streamPlatform,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
         final Path snapshotPath) {
-      return new ProcessorContext(logContext, streamProcessor, zeebeDb, runtimePath, snapshotPath);
+      return new ProcessorContext(logContext, streamPlatform, zeebeDb, runtimePath, snapshotPath);
     }
 
     public SynchronousLogStream getLogStream() {
@@ -514,7 +514,7 @@ public final class TestStreams {
       }
 
       LOG.debug("Close stream processor");
-      streamProcessor.closeAsync().join();
+      streamPlatform.closeAsync().join();
       zeebeDb.close();
       if (runtimePath.toFile().exists()) {
         FileUtil.deleteFolder(runtimePath);

@@ -11,7 +11,7 @@ import static io.camunda.zeebe.engine.util.Records.processInstance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LogEntrysBuilder;
@@ -57,7 +57,7 @@ public class StreamProcessingComposite {
     return streams.getLogStreamRecordWriter(logName);
   }
 
-  public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
+  public StreamPlatform startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return startTypedStreamProcessor(
         (processingContext) -> createTypedRecordProcessors(factory, processingContext));
   }
@@ -74,11 +74,11 @@ public class StreamProcessingComposite {
         processingContext);
   }
 
-  public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
+  public StreamPlatform startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
     return startTypedStreamProcessor(partitionId, factory);
   }
 
-  public StreamProcessor startTypedStreamProcessor(
+  public StreamPlatform startTypedStreamProcessor(
       final int partitionId, final TypedRecordProcessorFactory factory) {
     return streams.startStreamProcessor(
         getLogName(partitionId),
@@ -90,18 +90,18 @@ public class StreamProcessingComposite {
         }));
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final StreamProcessorTestFactory factory) {
     return startTypedStreamProcessorNotAwaitOpening(
         (processingContext) -> createTypedRecordProcessors(factory, processingContext));
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final TypedRecordProcessorFactory factory) {
     return startTypedStreamProcessorNotAwaitOpening(partitionId, factory);
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final int partitionId, final TypedRecordProcessorFactory factory) {
     return streams.startStreamProcessorNotAwaitOpening(
         getLogName(partitionId),
@@ -113,7 +113,7 @@ public class StreamProcessingComposite {
         }));
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
       final Function<LogEntrysBuilder, RecordsBuilder> streamWriterFactory) {
@@ -148,7 +148,7 @@ public class StreamProcessingComposite {
     }
   }
 
-  public StreamProcessor getStreamProcessor(final int partitionId) {
+  public StreamPlatform getStreamProcessor(final int partitionId) {
     return streams.getStreamProcessor(getLogName(partitionId));
   }
 

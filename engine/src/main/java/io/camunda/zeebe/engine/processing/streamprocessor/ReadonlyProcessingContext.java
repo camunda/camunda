@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;

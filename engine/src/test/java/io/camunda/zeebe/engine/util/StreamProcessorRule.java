@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -139,29 +139,29 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getLogStreamRecordWriter(partitionId);
   }
 
-  public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
+  public StreamPlatform startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessor(factory);
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final StreamProcessorTestFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(factory);
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final TypedRecordProcessorFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
         startPartitionId, factory);
   }
 
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+  public StreamPlatform startTypedStreamProcessorNotAwaitOpening(
       final TypedRecordProcessorFactory processorFactory,
       final Function<LogEntrysBuilder, RecordsBuilder> streamWriterFactory) {
     return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
         startPartitionId, processorFactory, streamWriterFactory);
   }
 
-  public StreamProcessor startTypedStreamProcessor(
+  public StreamPlatform startTypedStreamProcessor(
       final int partitionId, final TypedRecordProcessorFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);
   }
@@ -182,7 +182,7 @@ public final class StreamProcessorRule implements TestRule {
     closeStreamProcessor(startPartitionId);
   }
 
-  public StreamProcessor getStreamProcessor(final int partitionId) {
+  public StreamPlatform getStreamProcessor(final int partitionId) {
     return streamProcessingComposite.getStreamProcessor(partitionId);
   }
 

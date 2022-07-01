@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
@@ -158,6 +158,11 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return abortCondition;
   }
 
+  @Override
+  public ProcessingSchedulingServiceImpl getProcessingSchedulingService() {
+    return processingSchedulingService;
+  }
+
   public StreamProcessorListener getStreamProcessorListener() {
     return streamProcessorListener;
   }
@@ -177,9 +182,5 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   public void processingSchedulingService(
       final ProcessingSchedulingServiceImpl processingSchedulingService) {
     this.processingSchedulingService = processingSchedulingService;
-  }
-
-  public ProcessingSchedulingServiceImpl getProcessingSchedulingService() {
-    return processingSchedulingService;
   }
 }

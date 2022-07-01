@@ -19,7 +19,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -66,7 +66,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final PartitionProcessingState partitionProcessingState;
   private final StateController stateController;
 
-  private StreamProcessor streamProcessor;
+  private StreamPlatform streamPlatform;
   private LogStream logStream;
   private LogDeletionService logDeletionService;
   private AsyncSnapshotDirector snapshotDirector;
@@ -172,13 +172,13 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public StreamProcessor getStreamProcessor() {
-    return streamProcessor;
+  public StreamPlatform getStreamProcessor() {
+    return streamPlatform;
   }
 
   @Override
-  public void setStreamProcessor(final StreamProcessor streamProcessor) {
-    this.streamProcessor = streamProcessor;
+  public void setStreamProcessor(final StreamPlatform streamPlatform) {
+    this.streamPlatform = streamPlatform;
   }
 
   @Override

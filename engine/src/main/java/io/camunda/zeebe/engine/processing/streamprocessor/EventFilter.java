@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import java.util.Objects;
 
-/** Implement to control which events should be handled by a {@link StreamProcessor}. */
+/** Implement to control which events should be handled by a {@link StreamPlatform}. */
 @FunctionalInterface
 public interface EventFilter {
 

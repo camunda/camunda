@@ -114,10 +114,10 @@ public final class StreamProcessorBuilder {
     return eventApplierFactory;
   }
 
-  public StreamProcessor build() {
+  public StreamPlatform build() {
     validate();
 
-    return new StreamProcessor(this);
+    return new StreamPlatform(this);
   }
 
   private void validate() {

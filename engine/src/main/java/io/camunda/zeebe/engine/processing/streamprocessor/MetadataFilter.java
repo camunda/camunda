@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import java.util.Objects;
 
 /**
- * Implement to control which events should be handled by a {@link StreamProcessor} based on the
+ * Implement to control which events should be handled by a {@link StreamPlatform} based on the
  * event's metadata.
  */
 @FunctionalInterface

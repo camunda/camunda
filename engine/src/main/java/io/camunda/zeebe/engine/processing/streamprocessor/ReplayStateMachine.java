@@ -65,12 +65,12 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private final BooleanSupplier abortCondition;
   // current iteration
-  private long lastSourceEventPosition = StreamProcessor.UNSET_POSITION;
-  private long batchSourceEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastSourceEventPosition = StreamPlatform.UNSET_POSITION;
+  private long batchSourceEventPosition = StreamPlatform.UNSET_POSITION;
 
   private long snapshotPosition;
-  private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
-  private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastReadRecordPosition = StreamPlatform.UNSET_POSITION;
+  private long lastReplayedEventPosition = StreamPlatform.UNSET_POSITION;
 
   private ActorFuture<LastProcessingPositions> recoveryFuture;
   private ZeebeDbTransaction zeebeDbTransaction;
@@ -109,7 +109,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   /**
    * Replay events on the log stream to restore the state. It returns the position of the last
    * command that was processed on the stream. If no command was processed it returns {@link
-   * StreamProcessor#UNSET_POSITION}.
+   * StreamPlatform#UNSET_POSITION}.
    *
    * @return a ActorFuture with the position of the last processed command
    */
@@ -117,7 +117,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     recoveryFuture = new CompletableActorFuture<>();
     this.snapshotPosition = snapshotPosition;
     lastSourceEventPosition =
-        snapshotPosition > 0 ? snapshotPosition : StreamProcessor.UNSET_POSITION;
+        snapshotPosition > 0 ? snapshotPosition : StreamPlatform.UNSET_POSITION;
 
     // start after snapshot
     logStreamBatchReader.seekToNextBatch(snapshotPosition);

@@ -33,13 +33,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class StreamProcessorHealthTest {
+public class StreamPlatformHealthTest {
 
   private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
-  private StreamProcessor streamProcessor;
+  private StreamPlatform streamPlatform;
   private RecordsBuilder mockedLogStreamWriter;
   private AtomicBoolean shouldFlushThrowException;
   private AtomicInteger invocation;
@@ -64,7 +64,7 @@ public class StreamProcessorHealthTest {
   @Test
   public void shouldBeHealthyOnStart() {
     // when
-    streamProcessor =
+    streamPlatform =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, context) ->
                 processors.onCommand(
@@ -73,14 +73,14 @@ public class StreamProcessorHealthTest {
                     mock(TypedRecordProcessor.class)));
 
     // then
-    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
+    waitUntil(() -> streamPlatform.getHealthReport().isHealthy());
   }
 
   @Test
   public void shouldMarkUnhealthyWhenOnErrorHandlingWriteEventFails() {
     // given
-    streamProcessor = getErrorProneStreamProcessor();
-    final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
+    streamPlatform = getErrorProneStreamProcessor();
+    final var healthStatusCheck = HealthStatusCheck.of(streamPlatform);
     streamProcessorRule.getActorSchedulerRule().submitActor(healthStatusCheck);
 
     waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.HEALTHY));
@@ -97,8 +97,8 @@ public class StreamProcessorHealthTest {
   @Test
   public void shouldMarkUnhealthyWhenProcessingOnWriteEventFails() {
     // given
-    streamProcessor = getErrorProneStreamProcessor();
-    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
+    streamPlatform = getErrorProneStreamProcessor();
+    waitUntil(() -> streamPlatform.getHealthReport().isHealthy());
 
     // when
     shouldProcessingThrowException.set(false);
@@ -107,15 +107,15 @@ public class StreamProcessorHealthTest {
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    waitUntil(() -> streamProcessor.getHealthReport().isUnhealthy());
+    waitUntil(() -> streamPlatform.getHealthReport().isUnhealthy());
   }
 
   @Test
   public void shouldMarkUnhealthyWhenExceptionErrorHandlingInTransaction() {
     // given
     shouldProcessingThrowException.set(true);
-    streamProcessor = getErrorProneStreamProcessor();
-    final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
+    streamPlatform = getErrorProneStreamProcessor();
+    final var healthStatusCheck = HealthStatusCheck.of(streamPlatform);
     streamProcessorRule.getActorSchedulerRule().submitActor(healthStatusCheck);
     waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.HEALTHY));
 
@@ -134,22 +134,22 @@ public class StreamProcessorHealthTest {
   public void shouldBecomeHealthyWhenErrorIsResolved() {
     // given
     shouldFlushThrowException.set(true);
-    streamProcessor = getErrorProneStreamProcessor();
-    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
+    streamPlatform = getErrorProneStreamProcessor();
+    waitUntil(() -> streamPlatform.getHealthReport().isHealthy());
 
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    waitUntil(() -> streamProcessor.getHealthReport().isUnhealthy());
+    waitUntil(() -> streamPlatform.getHealthReport().isUnhealthy());
 
     // when
     shouldFlushThrowException.set(false);
 
     // then
-    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
+    waitUntil(() -> streamPlatform.getHealthReport().isHealthy());
   }
 
-  private StreamProcessor getErrorProneStreamProcessor() {
-    streamProcessor =
+  private StreamPlatform getErrorProneStreamProcessor() {
+    streamPlatform =
         streamProcessorRule.startTypedStreamProcessorNotAwaitOpening(
             processingContext -> {
               final MutableZeebeState zeebeState = processingContext.getZeebeState();
@@ -170,23 +170,23 @@ public class StreamProcessorHealthTest {
             },
             batchWriter -> new WrappedRecordsBuilder());
 
-    return streamProcessor;
+    return streamPlatform;
   }
 
   private static final class HealthStatusCheck extends Actor {
-    private final StreamProcessor streamProcessor;
+    private final StreamPlatform streamPlatform;
 
-    private HealthStatusCheck(final StreamProcessor streamProcessor) {
-      this.streamProcessor = streamProcessor;
+    private HealthStatusCheck(final StreamPlatform streamPlatform) {
+      this.streamPlatform = streamPlatform;
     }
 
-    public static HealthStatusCheck of(final StreamProcessor streamProcessor) {
-      return new HealthStatusCheck(streamProcessor);
+    public static HealthStatusCheck of(final StreamPlatform streamPlatform) {
+      return new HealthStatusCheck(streamPlatform);
     }
 
     public boolean hasHealthStatus(final HealthStatus healthStatus) {
       return actor
-          .call(() -> streamProcessor.getHealthReport().getStatus() == healthStatus)
+          .call(() -> streamPlatform.getHealthReport().getStatus() == healthStatus)
           .join(5, TimeUnit.SECONDS);
     }
   }

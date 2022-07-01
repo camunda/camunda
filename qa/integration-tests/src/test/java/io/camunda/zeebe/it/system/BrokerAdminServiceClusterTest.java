@@ -13,7 +13,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.Phase;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import java.time.Duration;

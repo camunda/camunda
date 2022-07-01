@@ -39,7 +39,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
-public final class StreamProcessorReprocessingTest {
+public final class StreamPlatformReprocessingTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);

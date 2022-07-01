@@ -25,7 +25,7 @@ import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.Actor;
@@ -87,7 +87,7 @@ public class RandomizedPartitionTransitionTest {
             operations));
 
     final var instanceTracker =
-        new PropertyAssertingInstanceTracker<StreamProcessor>() {
+        new PropertyAssertingInstanceTracker<StreamPlatform>() {
           @Override
           void assertProperties() {
             if (opened.size() > 1) {
@@ -245,9 +245,9 @@ public class RandomizedPartitionTransitionTest {
     }
   }
 
-  private StreamProcessor produceMockStreamProcessor(
-      final PropertyAssertingInstanceTracker<StreamProcessor> instanceTracker) {
-    final var mockStreamProcessor = mock(StreamProcessor.class);
+  private StreamPlatform produceMockStreamProcessor(
+      final PropertyAssertingInstanceTracker<StreamPlatform> instanceTracker) {
+    final var mockStreamProcessor = mock(StreamPlatform.class);
 
     instanceTracker.registerCreation(mockStreamProcessor);
 

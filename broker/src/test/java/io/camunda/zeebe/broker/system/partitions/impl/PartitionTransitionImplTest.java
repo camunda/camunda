@@ -27,7 +27,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
@@ -341,18 +341,18 @@ class PartitionTransitionImplTest {
     when(mockContext.getComponentHealthMonitor()).thenReturn(mock(HealthMonitor.class));
     when(mockContext.getConcurrencyControl()).thenReturn(TEST_CONCURRENCY_CONTROL);
 
-    final var mockStreamProcessor1 = mock(StreamProcessor.class);
+    final var mockStreamProcessor1 = mock(StreamPlatform.class);
     when(mockStreamProcessor1.openAsync(anyBoolean()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
     when(mockStreamProcessor1.closeAsync())
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
-    final var mockStreamProcessor2 = mock(StreamProcessor.class);
+    final var mockStreamProcessor2 = mock(StreamPlatform.class);
     when(mockStreamProcessor2.openAsync(anyBoolean()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
     when(mockStreamProcessor2.closeAsync())
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
 
-    final BiFunction<PartitionTransitionContext, Role, StreamProcessor> creator =
+    final BiFunction<PartitionTransitionContext, Role, StreamPlatform> creator =
         mock(BiFunction.class);
     when(creator.apply(any(), any())).thenReturn(mockStreamProcessor1, mockStreamProcessor2);
 
@@ -360,7 +360,7 @@ class PartitionTransitionImplTest {
     doAnswer(
             answer ->
                 when(mockContext.getStreamProcessor())
-                    .thenReturn((StreamProcessor) answer.getArguments()[0]))
+                    .thenReturn((StreamPlatform) answer.getArguments()[0]))
         .when(mockContext)
         .setStreamProcessor(any());
 

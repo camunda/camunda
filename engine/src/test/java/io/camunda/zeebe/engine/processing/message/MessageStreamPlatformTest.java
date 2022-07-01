@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public final class MessageStreamProcessorTest {
+public final class MessageStreamPlatformTest {
 
   @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 

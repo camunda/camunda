@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingServiceImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.ProcessingSchedulingServiceImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;

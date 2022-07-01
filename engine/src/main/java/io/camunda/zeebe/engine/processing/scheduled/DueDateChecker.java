@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.scheduled;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.ProcessingSchedulingService;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.ProcessingSchedulingService;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandsBuilder;
 import io.camunda.zeebe.util.sched.clock.ActorClock;

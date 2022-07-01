@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMes
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -282,7 +282,7 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getZeebeState();
   }
 
-  public StreamProcessor getStreamProcessor(final int partitionId) {
+  public StreamPlatform getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
   }
 

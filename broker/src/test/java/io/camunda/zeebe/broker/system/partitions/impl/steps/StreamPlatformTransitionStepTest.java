@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -31,15 +31,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class StreamProcessorTransitionStepTest {
+class StreamPlatformTransitionStepTest {
 
   private static final TestConcurrencyControl TEST_CONCURRENCY_CONTROL =
       new TestConcurrencyControl();
 
   TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
   final StreamProcessorBuilder streamProcessorBuilder = spy(StreamProcessorBuilder.class);
-  final StreamProcessor streamProcessor = mock(StreamProcessor.class);
-  final StreamProcessor streamProcessorFromPrevRole = mock(StreamProcessor.class);
+  final StreamPlatform streamPlatform = mock(StreamPlatform.class);
+  final StreamPlatform streamPlatformFromPrevRole = mock(StreamPlatform.class);
 
   private StreamProcessorTransitionStep step;
 
@@ -49,14 +49,13 @@ class StreamProcessorTransitionStepTest {
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
     transitionContext.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
 
-    doReturn(streamProcessor).when(streamProcessorBuilder).build();
+    doReturn(streamPlatform).when(streamProcessorBuilder).build();
 
-    when(streamProcessor.openAsync(anyBoolean())).thenReturn(TestActorFuture.completedFuture(null));
-    when(streamProcessor.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
-    when(streamProcessorFromPrevRole.closeAsync())
-        .thenReturn(TestActorFuture.completedFuture(null));
+    when(streamPlatform.openAsync(anyBoolean())).thenReturn(TestActorFuture.completedFuture(null));
+    when(streamPlatform.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
+    when(streamPlatformFromPrevRole.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
 
-    step = new StreamProcessorTransitionStep((ctx, role) -> streamProcessor);
+    step = new StreamProcessorTransitionStep((ctx, role) -> streamPlatform);
   }
 
   @ParameterizedTest
@@ -65,7 +64,7 @@ class StreamProcessorTransitionStepTest {
     // given
     transitionContext.setCurrentRole(currentRole);
     if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+      transitionContext.setStreamProcessor(streamPlatformFromPrevRole);
     }
 
     // when
@@ -73,7 +72,7 @@ class StreamProcessorTransitionStepTest {
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
-    verify(streamProcessorFromPrevRole).closeAsync();
+    verify(streamPlatformFromPrevRole).closeAsync();
   }
 
   @ParameterizedTest
@@ -82,7 +81,7 @@ class StreamProcessorTransitionStepTest {
     // given
     transitionContext.setCurrentRole(currentRole);
     if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+      transitionContext.setStreamProcessor(streamPlatformFromPrevRole);
     }
 
     // when
@@ -91,8 +90,8 @@ class StreamProcessorTransitionStepTest {
     // then
     assertThat(transitionContext.getStreamProcessor())
         .isNotNull()
-        .isNotEqualTo(streamProcessorFromPrevRole);
-    verify(streamProcessor).openAsync(anyBoolean());
+        .isNotEqualTo(streamPlatformFromPrevRole);
+    verify(streamPlatform).openAsync(anyBoolean());
   }
 
   @ParameterizedTest
@@ -101,7 +100,7 @@ class StreamProcessorTransitionStepTest {
     // given
     transitionContext.setCurrentRole(currentRole);
     if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+      transitionContext.setStreamProcessor(streamPlatformFromPrevRole);
     }
     final var existingStreamProcessor = transitionContext.getStreamProcessor();
 
@@ -110,7 +109,7 @@ class StreamProcessorTransitionStepTest {
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isEqualTo(existingStreamProcessor);
-    verify(streamProcessorFromPrevRole, never()).closeAsync();
+    verify(streamPlatformFromPrevRole, never()).closeAsync();
   }
 
   @ParameterizedTest
@@ -119,7 +118,7 @@ class StreamProcessorTransitionStepTest {
     // given
     transitionContext.setCurrentRole(currentRole);
     if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+      transitionContext.setStreamProcessor(streamPlatformFromPrevRole);
     }
     final var existingStreamProcessor = transitionContext.getStreamProcessor();
     // when
@@ -136,14 +135,14 @@ class StreamProcessorTransitionStepTest {
   void shouldCloseStreamProcessorWhenTransitioningToInactive(final Role currentRole) {
     // given
     transitionContext.setCurrentRole(currentRole);
-    transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+    transitionContext.setStreamProcessor(streamPlatformFromPrevRole);
 
     // when
     transitionTo(Role.INACTIVE);
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
-    verify(streamProcessorFromPrevRole).closeAsync();
+    verify(streamPlatformFromPrevRole).closeAsync();
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldCloseExistingStreamProcessor() {

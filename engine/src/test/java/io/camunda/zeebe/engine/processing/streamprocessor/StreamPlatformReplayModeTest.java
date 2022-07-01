@@ -21,7 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform.Phase;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -37,7 +37,7 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.mockito.verification.VerificationWithTimeout;
 
-public final class StreamProcessorReplayModeTest {
+public final class StreamPlatformReplayModeTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -332,7 +332,7 @@ public final class StreamProcessorReplayModeTest {
         .isEqualTo(snapshotPosition);
   }
 
-  private StreamProcessor startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
+  private StreamPlatform startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
     return streamProcessorRule
         .withEventApplierFactory(zeebeState -> eventApplier)
         .startTypedStreamProcessorNotAwaitOpening(
@@ -357,7 +357,7 @@ public final class StreamProcessorReplayModeTest {
     return getStreamProcessor(streamProcessorRule).getLastWrittenPositionAsync().join();
   }
 
-  private StreamProcessor getStreamProcessor(final StreamProcessorRule streamProcessorRule) {
+  private StreamPlatform getStreamProcessor(final StreamProcessorRule streamProcessorRule) {
     return streamProcessorRule.getStreamProcessor(PARTITION_ID);
   }
 }

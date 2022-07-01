@@ -70,7 +70,7 @@ import org.slf4j.Logger;
 
 https://textik.com/#f8692d3c3e76c699
 */
-public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter {
+public class StreamPlatform extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
@@ -104,7 +104,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Engine engine;
 
-  protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
+  protected StreamPlatform(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     zeebeDb = processorBuilder.getZeebeDb();
 
@@ -364,7 +364,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             return replayStateMachine.getLastSourceEventPosition();
           } else if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
-            return StreamProcessor.UNSET_POSITION;
+            return StreamPlatform.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastSuccessfulProcessedRecordPosition();
           }
@@ -382,7 +382,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             return replayStateMachine.getLastReplayedEventPosition();
           } else if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
-            return StreamProcessor.UNSET_POSITION;
+            return StreamPlatform.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastWrittenPosition();
           }

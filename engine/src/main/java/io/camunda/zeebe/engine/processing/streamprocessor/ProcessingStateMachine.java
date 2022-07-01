@@ -125,9 +125,9 @@ public final class ProcessingStateMachine {
   // current iteration
   private LoggedEvent currentRecord;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private long writtenPosition = StreamProcessor.UNSET_POSITION;
-  private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
-  private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
+  private long writtenPosition = StreamPlatform.UNSET_POSITION;
+  private long lastSuccessfulProcessedRecordPosition = StreamPlatform.UNSET_POSITION;
+  private long lastWrittenPosition = StreamPlatform.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
   private int onErrorRetries;
   // Used for processing duration metrics
@@ -431,11 +431,11 @@ public final class ProcessingStateMachine {
     // Be aware on processing we ignore events, so we will process the next command
     final var lastProcessedPosition = lastProcessingPositions.getLastProcessedPosition();
     logStreamReader.seekToNextEvent(lastProcessedPosition);
-    if (lastSuccessfulProcessedRecordPosition == StreamProcessor.UNSET_POSITION) {
+    if (lastSuccessfulProcessedRecordPosition == StreamPlatform.UNSET_POSITION) {
       lastSuccessfulProcessedRecordPosition = lastProcessedPosition;
     }
 
-    if (lastWrittenPosition == StreamProcessor.UNSET_POSITION) {
+    if (lastWrittenPosition == StreamPlatform.UNSET_POSITION) {
       lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
     }
 

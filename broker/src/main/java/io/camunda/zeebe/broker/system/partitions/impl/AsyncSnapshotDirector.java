@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.camunda.zeebe.broker.system.partitions.StateController;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -48,7 +48,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final StateController stateController;
   private final Duration snapshotRate;
   private final String processorName;
-  private final StreamProcessor streamProcessor;
+  private final StreamPlatform streamPlatform;
   private final String actorName;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final BooleanSupplier isLastWrittenPositionCommitted;
@@ -68,13 +68,13 @@ public final class AsyncSnapshotDirector extends Actor
   private AsyncSnapshotDirector(
       final int nodeId,
       final int partitionId,
-      final StreamProcessor streamProcessor,
+      final StreamPlatform streamPlatform,
       final StateController stateController,
       final Duration snapshotRate,
       final StreamProcessorMode streamProcessorMode) {
-    this.streamProcessor = streamProcessor;
+    this.streamPlatform = streamPlatform;
     this.stateController = stateController;
-    processorName = streamProcessor.getName();
+    processorName = streamPlatform.getName();
     this.snapshotRate = snapshotRate;
     this.partitionId = partitionId;
     actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
@@ -137,7 +137,7 @@ public final class AsyncSnapshotDirector extends Actor
    *
    * @param nodeId id of this broker
    * @param partitionId partition id
-   * @param streamProcessor stream processor for the partition
+   * @param streamPlatform stream processor for the partition
    * @param stateController state controller that manages state
    * @param snapshotRate rate at which the snapshot is taken
    * @return snapshot director
@@ -145,13 +145,13 @@ public final class AsyncSnapshotDirector extends Actor
   public static AsyncSnapshotDirector ofReplayMode(
       final int nodeId,
       final int partitionId,
-      final StreamProcessor streamProcessor,
+      final StreamPlatform streamPlatform,
       final StateController stateController,
       final Duration snapshotRate) {
     return new AsyncSnapshotDirector(
         nodeId,
         partitionId,
-        streamProcessor,
+        streamPlatform,
         stateController,
         snapshotRate,
         StreamProcessorMode.REPLAY);
@@ -163,7 +163,7 @@ public final class AsyncSnapshotDirector extends Actor
    *
    * @param nodeId id of this broker
    * @param partitionId partition id
-   * @param streamProcessor stream processor for the partition
+   * @param streamPlatform stream processor for the partition
    * @param stateController state controller that manages state
    * @param snapshotRate rate at which the snapshot is taken
    * @return snapshot director
@@ -171,13 +171,13 @@ public final class AsyncSnapshotDirector extends Actor
   public static AsyncSnapshotDirector ofProcessingMode(
       final int nodeId,
       final int partitionId,
-      final StreamProcessor streamProcessor,
+      final StreamPlatform streamPlatform,
       final StateController stateController,
       final Duration snapshotRate) {
     return new AsyncSnapshotDirector(
         nodeId,
         partitionId,
-        streamProcessor,
+        streamPlatform,
         stateController,
         snapshotRate,
         StreamProcessorMode.PROCESSING);
@@ -224,12 +224,12 @@ public final class AsyncSnapshotDirector extends Actor
     }
 
     snapshotFuture = newSnapshotFuture;
-    final var futureLastProcessedPosition = streamProcessor.getLastProcessedPositionAsync();
+    final var futureLastProcessedPosition = streamPlatform.getLastProcessedPositionAsync();
     actor.runOnCompletion(
         futureLastProcessedPosition,
         (lastProcessedPosition, error) -> {
           if (error == null) {
-            if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
+            if (lastProcessedPosition == StreamPlatform.UNSET_POSITION) {
               LOG.debug(
                   "We will skip taking this snapshot, because we haven't processed something yet.");
               snapshotFuture.complete(null);
@@ -272,7 +272,7 @@ public final class AsyncSnapshotDirector extends Actor
     pendingSnapshot = transientSnapshot;
     onRecovered();
 
-    final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
+    final ActorFuture<Long> lastWrittenPosition = streamPlatform.getLastWrittenPositionAsync();
     actor.runOnCompletion(lastWrittenPosition, this::onLastWrittenPositionReceived);
   }
 

@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public final class StreamProcessorInconsistentPositionTest {
+public final class StreamPlatformInconsistentPositionTest {
 
   private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 

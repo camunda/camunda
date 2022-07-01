@@ -19,7 +19,7 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.TestActorFuture;
@@ -44,7 +44,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
   @BeforeEach
   void setup() {
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
-    transitionContext.setStreamProcessor(mock(StreamProcessor.class));
+    transitionContext.setStreamProcessor(mock(StreamPlatform.class));
     transitionContext.setBrokerCfg(new BrokerCfg());
 
     when(raftPartition.getServer()).thenReturn(raftServer);

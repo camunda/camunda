@@ -16,7 +16,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamPlatform;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -445,7 +445,7 @@ public final class ZeebePartition extends Actor
     return context.getRaftPartition().getServer().getPersistedSnapshotStore();
   }
 
-  public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
+  public ActorFuture<Optional<StreamPlatform>> getStreamProcessor() {
     return actor.call(() -> Optional.ofNullable(context.getStreamProcessor()));
   }
 

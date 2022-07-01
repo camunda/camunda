@@ -41,7 +41,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
 
-public final class TypedStreamProcessorTest {
+public final class TypedStreamPlatformTest {
 
   private static final String STREAM_NAME = "foo";
   protected SynchronousLogStream stream;
