@@ -119,6 +119,19 @@ public class BlockSequenceBuilder implements BlockBuilder {
         || getPossibleStartingElementIds().contains(startingElementId);
   }
 
+  /**
+   * When building a parallel gateway we need to know the element id of the next element in the
+   * process as we need to append it to the list of start elements. Since each branch of the
+   * parallel gateway is a BlockSequenceBuilder, we cannot use the element id of this block as it is
+   * a dummy id (we cannot start at a BlockSequenceBlock). Instead, we need to return the element id
+   * of the first block inside this block.
+   *
+   * @return the element id of the block inside this block
+   */
+  public String getFirstBlockElementId() {
+    return blockBuilders.get(0).getElementId();
+  }
+
   public static class BlockSequenceBuilderFactory {
 
     public BlockSequenceBuilder createBlockSequenceBuilder(final ConstructionContext context) {

@@ -28,7 +28,7 @@ import java.util.Random;
  */
 public class ParallelGatewayBlockBuilder implements BlockBuilder {
 
-  private final List<BlockBuilder> blockBuilders = new ArrayList<>();
+  private final List<BlockSequenceBuilder> blockBuilders = new ArrayList<>();
   private final List<String> branchIds = new ArrayList<>();
   private final String forkGatewayId;
   private final String joinGatewayId;
@@ -82,7 +82,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
     result.appendDirectSuccessor(forkingGateway);
 
-    final Optional<BlockBuilder> blockContainingStartBlock =
+    final Optional<BlockSequenceBuilder> blockContainingStartBlock =
         blockBuilders.stream()
             .filter(b -> b.equalsOrContains(context.getStartAtElementId()))
             .findFirst();
@@ -97,7 +97,8 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
       branchPointers.add(findRandomExecutionPathForBranch(context, result, blockBuilder));
       blockBuilders.stream()
           .filter(bb -> bb != blockBuilder)
-          .forEach(context::addSecondaryStartBlockBuilder);
+          .map(BlockSequenceBuilder::getFirstBlockElementId)
+          .forEach(context::addSecondaryStartElementId);
     }
 
     branchPointers.addAll(

@@ -14,13 +14,13 @@ import java.util.Random;
 public class ExecutionPathContext {
 
   final String startAtElementId;
-  final List<BlockBuilder> secondaryStartBlockBuilders;
+  final List<String> secondaryStartElementIds;
   boolean foundBlockBuilder = false;
   final Random random;
 
   public ExecutionPathContext(final String startAtElementId, final Random random) {
     this.startAtElementId = startAtElementId;
-    secondaryStartBlockBuilders = new ArrayList<>();
+    secondaryStartElementIds = new ArrayList<>();
     this.random = random;
   }
 
@@ -44,15 +44,14 @@ public class ExecutionPathContext {
     return this;
   }
 
-  public void addSecondaryStartBlockBuilder(final BlockBuilder blockBuilder) {
-    secondaryStartBlockBuilders.add(blockBuilder);
+  public void addSecondaryStartElementId(final String elementId) {
+    secondaryStartElementIds.add(elementId);
   }
 
   public List<String> getStartElementIds() {
     final List<String> startElementIds = new ArrayList<>();
     startElementIds.add(startAtElementId);
-    startElementIds.addAll(
-        secondaryStartBlockBuilders.stream().map(BlockBuilder::getElementId).toList());
+    startElementIds.addAll(secondaryStartElementIds);
     return startElementIds;
   }
 
