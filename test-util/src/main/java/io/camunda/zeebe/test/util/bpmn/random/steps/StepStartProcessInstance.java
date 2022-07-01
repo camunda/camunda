@@ -17,21 +17,21 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
     implements ProcessStartStep {
 
   private final String processId;
-  private final List<String> startInstructions;
+  private final List<String> startElementIds;
 
   public StepStartProcessInstance(final String processId, final Map<String, Object> variables) {
     this.processId = processId;
     this.variables.putAll(variables);
-    startInstructions = new ArrayList<>();
+    startElementIds = new ArrayList<>();
   }
 
   public StepStartProcessInstance(
       final String processId,
       final Map<String, Object> variables,
-      final List<String> startInstructions) {
+      final List<String> startElementIds) {
     this.processId = processId;
     this.variables.putAll(variables);
-    this.startInstructions = startInstructions;
+    this.startElementIds = startElementIds;
   }
 
   @Override
@@ -43,8 +43,8 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
     return processId;
   }
 
-  public List<String> getStartInstructions() {
-    return startInstructions;
+  public List<String> getStartElementIds() {
+    return startElementIds;
   }
 
   @Override
