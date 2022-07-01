@@ -90,9 +90,9 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+    final Random random = context.getRandom();
 
     final Optional<Integer> branchContainingStartBlock =
         blockBuilders.stream()
@@ -121,7 +121,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
     final BlockBuilder blockBuilder = blockBuilders.get(branch);
 
-    result.append(blockBuilder.findRandomExecutionPath(random, context));
+    result.append(blockBuilder.findRandomExecutionPath(context));
 
     return result;
   }

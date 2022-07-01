@@ -103,8 +103,7 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
    * activation and complete cycle. The steps before are randomly determined failed attempts.
    */
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     final var activateStep = new StepActivateBPMNElement(taskId);
@@ -116,9 +115,10 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
           boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
     }
 
-    result.append(buildStepsForFailedExecutions(random));
+    result.append(buildStepsForFailedExecutions(context.getRandom()));
 
-    result.appendExecutionSuccessor(buildStepForSuccessfulExecution(random), activateStep);
+    result.appendExecutionSuccessor(
+        buildStepForSuccessfulExecution(context.getRandom()), activateStep);
 
     return result;
   }

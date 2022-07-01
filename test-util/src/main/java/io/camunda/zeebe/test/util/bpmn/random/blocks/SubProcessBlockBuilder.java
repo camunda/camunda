@@ -95,9 +95,9 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+    final Random random = context.getRandom();
 
     if (hasBoundaryTimerEvent) {
       // set an infinite timer as default; this can be overwritten by the execution path chosen
@@ -112,8 +112,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       return result;
     }
 
-    final var internalExecutionPath =
-        embeddedSubProcessBuilder.findRandomExecutionPath(random, context);
+    final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(context);
 
     if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
       result.append(internalExecutionPath);

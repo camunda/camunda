@@ -75,9 +75,9 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+    final Random random = context.getRandom();
 
     final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
     result.appendDirectSuccessor(forkingGateway);
@@ -94,7 +94,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     // make sure the execution paths of the other blocks isn't ignored.
     if (blockContainingStartBlock.isPresent()) {
       final var blockBuilder = blockContainingStartBlock.get();
-      branchPointers.add(findRandomExecutionPathForBranch(random, context, result, blockBuilder));
+      branchPointers.add(findRandomExecutionPathForBranch(context, result, blockBuilder));
       blockBuilders.stream()
           .filter(bb -> bb != blockBuilder)
           .forEach(context::addSecondaryStartBlockBuilder);
@@ -104,9 +104,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
         blockBuilders.stream()
             .filter(
                 blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtBlockBuilder()))
-            .map(
-                blockBuilder ->
-                    findRandomExecutionPathForBranch(random, context, result, blockBuilder))
+            .map(blockBuilder -> findRandomExecutionPathForBranch(context, result, blockBuilder))
             .toList());
     shuffleStepsFromDifferentLists(random, result, branchPointers);
 
@@ -128,11 +126,10 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   }
 
   private BranchPointer findRandomExecutionPathForBranch(
-      final Random random,
       final ExecutionPathContext context,
       final ExecutionPathSegment result,
       final BlockBuilder blockBuilder) {
-    final var branchExecutionPath = blockBuilder.findRandomExecutionPath(random, context);
+    final var branchExecutionPath = blockBuilder.findRandomExecutionPath(context);
     result.mergeVariableDefaults(branchExecutionPath);
     return new BranchPointer(branchExecutionPath.getScheduledSteps());
   }

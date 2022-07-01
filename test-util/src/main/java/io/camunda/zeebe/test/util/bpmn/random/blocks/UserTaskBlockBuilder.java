@@ -74,9 +74,9 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+    final Random random = context.getRandom();
 
     final var activateStep = new StepActivateBPMNElement(taskId);
     result.appendDirectSuccessor(activateStep);

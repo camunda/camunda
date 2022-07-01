@@ -17,7 +17,6 @@ import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Generates an intermediate message catch event. It waits for a message with name {@code
@@ -52,8 +51,7 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     result.appendDirectSuccessor(

@@ -68,11 +68,10 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final int branchNumber = random.nextInt(branches.size());
+    final int branchNumber = context.getRandom().nextInt(branches.size());
     final var branch = branches.get(branchNumber);
     final var blockBuilder = branch.getRight();
 
@@ -80,7 +79,7 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
         new StepPublishMessage(
             getMessageName(branch), CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
     result.appendDirectSuccessor(executionStep);
-    result.append(blockBuilder.findRandomExecutionPath(random, context));
+    result.append(blockBuilder.findRandomExecutionPath(context));
 
     return result;
   }

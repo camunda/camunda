@@ -16,7 +16,6 @@ import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import java.util.List;
-import java.util.Random;
 
 public class IntermediateThrowEventBlockBuilder implements BlockBuilder {
 
@@ -34,8 +33,7 @@ public class IntermediateThrowEventBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment generateRandomExecutionPath(
-      final Random random, final ExecutionPathContext context) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
     result.appendDirectSuccessor(new StepActivateBPMNElement(taskId));
     return result;

@@ -129,13 +129,12 @@ public final class ProcessBuilder {
       final var possibleStartingBlocks = blockBuilder.getPossibleStartingBlocks();
       final int startBlockIndex = random.nextInt(possibleStartingBlocks.size());
       final var startAtBlockBuilder = possibleStartingBlocks.get(startBlockIndex);
-      context = new ExecutionPathContext(startAtBlockBuilder);
+      context = new ExecutionPathContext(startAtBlockBuilder, random);
     } else {
-      context = new ExecutionPathContext(blockBuilder);
+      context = new ExecutionPathContext(blockBuilder, random);
     }
 
-    final ExecutionPathSegment followingPath =
-        blockBuilder.findRandomExecutionPath(random, context);
+    final ExecutionPathSegment followingPath = blockBuilder.findRandomExecutionPath(context);
 
     if (hasEventSubProcess) {
       final var shouldTriggerEventSubProcess = random.nextBoolean();

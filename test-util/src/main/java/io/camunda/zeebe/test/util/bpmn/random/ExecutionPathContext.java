@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.bpmn.random;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 public class ExecutionPathContext {
@@ -16,10 +17,12 @@ public class ExecutionPathContext {
   final BlockBuilder startAtBlockBuilder;
   final List<BlockBuilder> secondaryStartBlockBuilders;
   boolean foundBlockBuilder = false;
+  final Random random;
 
-  public ExecutionPathContext(final BlockBuilder startAtBlockBuilder) {
+  public ExecutionPathContext(final BlockBuilder startAtBlockBuilder, final Random random) {
     this.startAtBlockBuilder = startAtBlockBuilder;
     secondaryStartBlockBuilders = new ArrayList<>();
+    this.random = random;
   }
 
   public BlockBuilder getStartAtBlockBuilder() {
@@ -54,5 +57,9 @@ public class ExecutionPathContext {
             .map(BlockBuilder::getElementId)
             .collect(Collectors.toList()));
     return startElementIds;
+  }
+
+  public Random getRandom() {
+    return random;
   }
 }
