@@ -101,27 +101,10 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
             .findFirst();
 
     final int branch = branchContainingStartBlock.orElse(random.nextInt(branchIds.size()));
-
     if (branchContainingStartBlock.isEmpty()) {
-      if (branch == 0) {
-        result.appendDirectSuccessor(
-            new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
-      } else if (random.nextBoolean()) {
-        // take a non-default branch
-        result.appendDirectSuccessor(
-            new StepPickConditionCase(
-                forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
-      } else {
-        // cause an incident then resolve it and set a variable
-        result.appendDirectSuccessor(
-            new StepRaiseIncidentThenResolveAndPickConditionCase(
-                forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
-      }
+      addRandomGatewayExecutionStep(result, random, branch);
     }
-
-    final BlockBuilder blockBuilder = blockBuilders.get(branch);
-
-    result.append(blockBuilder.findRandomExecutionPath(context));
+    addRandomBranchExecutionSteps(context, result, branch);
 
     return result;
   }
@@ -138,6 +121,28 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     blockBuilders.forEach(
         blockBuilder -> allBlockBuilders.addAll(blockBuilder.getPossibleStartingBlocks()));
     return allBlockBuilders;
+  }
+
+  private void addRandomGatewayExecutionStep(final ExecutionPathSegment result, final Random random, final int branch) {
+    // If the branch is the default flow we should always add the default steps
+    // If not we randomly match the condition, or throw an incident and resolve it before matching
+    final int stepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
+    final var executionStep = switch (stepNumber) {
+      case 0 -> new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable);
+      case 1 -> new StepPickConditionCase(forkGatewayId, gatewayConditionVariable, branchIds.get(branch));
+      default -> new StepRaiseIncidentThenResolveAndPickConditionCase(forkGatewayId, gatewayConditionVariable, branchIds.get(branch));
+    };
+    result.appendDirectSuccessor(executionStep);
+  }
+
+  final boolean isDefaultFlow(final int branch) {
+    return branch == 0;
+  }
+
+  private void addRandomBranchExecutionSteps(final ExecutionPathContext context, final ExecutionPathSegment result,
+      final int branch) {
+    final BlockBuilder blockBuilder = blockBuilders.get(branch);
+    result.append(blockBuilder.findRandomExecutionPath(context));
   }
 
   static class Factory implements BlockBuilderFactory {
