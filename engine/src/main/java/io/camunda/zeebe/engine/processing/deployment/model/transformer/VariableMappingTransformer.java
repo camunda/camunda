@@ -52,8 +52,8 @@ import org.apache.commons.text.StringEscapeUtils;
  * </pre>
  *
  * <p>Output variable mappings differ from input mappings that the result variables needs to be
- * merged with the existing variables if the variable is a JSON object. The merging is done by
- * calling the FEEL function 'put all()' and referencing the variable.
+ * merged with the existing variables if the variable is a JSON object. The merging is done, as a
+ * first draft, by calling the FEEL function 'put all()' and referencing the variable.
  *
  * <pre>
  *   {
@@ -69,6 +69,28 @@ import org.apache.commons.text.StringEscapeUtils;
  *       })
  *   }
  * </pre>
+ *
+ * <p>There is one edge case, though, which was revealed in #9543: At the time of this writing the
+ * two branches of the if statement behave differently with respect to evaluation errors. The first
+ * branch (if the target variable is null) will propagate any error that occurs to the result of the
+ * evaluation. However, the second branch uses the put all(...) method which will transform any
+ * error in one of its parameters into a null as result. Therefore, the two branches will produce
+ * inconsistent results if there are errors in the expression.
+ *
+ * <p>To account for this the expression, was amended to
+ *
+ * <pre>
+ *  if (targetVar = null or not(is defined(outputMappingResult)) )
+ *    then outputMappingResult
+ *    else put all(targetVar,outputMappingResult)
+ * </pre>
+ *
+ * <p>This is a workaround which hopefully can be removed in the future. It first checks whether the
+ * result of the output mapping is defined. If it is not defined, or if the target variable does not
+ * exist, we return the raw result of the output mapping evaluation. If it is not defined, it will
+ * be evaluated to an error and this error is propagated to the result of the evaluation. The put
+ * all(...) method is only called if the target variable exists and the result of the output mapping
+ * is defined
  */
 public final class VariableMappingTransformer {
 
@@ -185,8 +207,8 @@ public final class VariableMappingTransformer {
     // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
     final var existingContext = String.join(".", contextPath);
     return String.format(
-        "if (%s = null) then %s else put all(%s,%s)",
-        existingContext, nestedContext, existingContext, nestedContext);
+        "if (%s = null or not(is defined(%s)) ) then %s else put all(%s,%s)",
+        existingContext, nestedContext, nestedContext, existingContext, nestedContext);
   }
 
   private Expression parseExpression(
@@ -245,8 +267,7 @@ public final class VariableMappingTransformer {
                     final var key = entry.getKey();
                     final var value = entry.getValue();
 
-                    if (value instanceof MappingContext) {
-                      final var nestedContext = (MappingContext) value;
+                    if (value instanceof final MappingContext nestedContext) {
                       final var contextValue = nestedContext.visit(visitor);
 
                       return visitor.onContextEntry(key, contextValue, nestedContext.path);
