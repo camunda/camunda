@@ -80,17 +80,16 @@ import org.apache.commons.text.StringEscapeUtils;
  * <p>To account for this the expression, was amended to
  *
  * <pre>
- *  if (targetVar = null or not(is defined(outputMappingResult)) )
- *    then outputMappingResult
- *    else put all(targetVar,outputMappingResult)
+ *  if (targetVar != null and is defined(outputMappingResult))
+ *    then put all(targetVar,outputMappingResult)
+ *    else outputMappingResult
  * </pre>
  *
  * <p>This is a workaround which hopefully can be removed in the future. It first checks whether the
- * result of the output mapping is defined. If it is not defined, or if the target variable does not
- * exist, we return the raw result of the output mapping evaluation. If it is not defined, it will
- * be evaluated to an error and this error is propagated to the result of the evaluation. The put
- * all(...) method is only called if the target variable exists and the result of the output mapping
- * is defined
+ * result of the output mapping is defined, and the target variable exists. If this is true, the put
+ * all(...) method is called to merge the result into the existing target variable. In all other
+ * cases the output mapping result is returned as is. If it evaluates to en error, this error is
+ * propagated to the final result of the evaluation
  */
 public final class VariableMappingTransformer {
 
@@ -207,8 +206,8 @@ public final class VariableMappingTransformer {
     // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
     final var existingContext = String.join(".", contextPath);
     return String.format(
-        "if (%s = null or not(is defined(%s)) ) then %s else put all(%s,%s)",
-        existingContext, nestedContext, nestedContext, existingContext, nestedContext);
+        "if (%s != null and is defined(%s)) then put all(%s,%s) else %s",
+        existingContext, nestedContext, existingContext, nestedContext, nestedContext);
   }
 
   private Expression parseExpression(
