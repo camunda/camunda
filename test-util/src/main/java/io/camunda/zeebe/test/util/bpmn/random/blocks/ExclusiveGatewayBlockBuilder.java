@@ -32,23 +32,22 @@ import java.util.Random;
  * "[edge_id]"} so one only needs to set the right variables when starting the process to make sure
  * that a certain edge will be executed
  */
-public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
+public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
   private final List<String> branchIds = new ArrayList<>();
-  private final String forkGatewayId;
   private final String joinGatewayId;
   private final String gatewayConditionVariable;
 
   public ExclusiveGatewayBlockBuilder(final ConstructionContext context) {
+    super("fork_", context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final IDGenerator idGenerator = context.getIdGenerator();
     final int maxBranches = context.getMaxBranches();
 
-    forkGatewayId = "fork_" + idGenerator.nextId();
     joinGatewayId = "join_" + idGenerator.nextId();
 
-    gatewayConditionVariable = forkGatewayId + "_branch";
+    gatewayConditionVariable = elementId + "_branch";
 
     final BlockSequenceBuilder.BlockSequenceBuilderFactory blockSequenceBuilderFactory =
         context.getBlockSequenceBuilderFactory();
@@ -65,7 +64,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final ExclusiveGatewayBuilder forkGateway = nodeBuilder.exclusiveGateway(forkGatewayId);
+    final ExclusiveGatewayBuilder forkGateway = nodeBuilder.exclusiveGateway(getElementId());
 
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         blockBuilders
@@ -79,7 +78,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
       final AbstractFlowNodeBuilder<?, ?> outgoingEdge =
           workInProgress
-              .moveToNode(forkGatewayId)
+              .moveToNode(getElementId())
               .sequenceFlowId(edgeId)
               .conditionExpression(gatewayConditionVariable + " = \"" + edgeId + "\"");
 
@@ -110,11 +109,6 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public String getElementId() {
-    return forkGatewayId;
-  }
-
-  @Override
   public List<BlockBuilder> getPossibleStartingBlocks() {
     final List<BlockBuilder> allBlockBuilders = new ArrayList<>();
     allBlockBuilders.add(this);
@@ -128,9 +122,9 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     // If not we randomly match the condition, or throw an incident and resolve it before matching
     final int stepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
     final var executionStep = switch (stepNumber) {
-      case 0 -> new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable);
-      case 1 -> new StepPickConditionCase(forkGatewayId, gatewayConditionVariable, branchIds.get(branch));
-      default -> new StepRaiseIncidentThenResolveAndPickConditionCase(forkGatewayId, gatewayConditionVariable, branchIds.get(branch));
+      case 0 -> new StepPickDefaultCase(getElementId(), gatewayConditionVariable);
+      case 1 -> new StepPickConditionCase(getElementId(), gatewayConditionVariable, branchIds.get(branch));
+      default -> new StepRaiseIncidentThenResolveAndPickConditionCase(getElementId(), gatewayConditionVariable, branchIds.get(branch));
     };
     result.appendDirectSuccessor(executionStep);
   }

@@ -26,19 +26,18 @@ import java.util.Random;
  * Generates a block with a forking parallel gateway, a random number of branches, and a joining
  * parallel gateway. Each branch has a nested sequence of blocks.
  */
-public class ParallelGatewayBlockBuilder implements BlockBuilder {
+public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
 
   private final List<BlockSequenceBuilder> blockBuilders = new ArrayList<>();
   private final List<String> branchIds = new ArrayList<>();
-  private final String forkGatewayId;
   private final String joinGatewayId;
 
   public ParallelGatewayBlockBuilder(final ConstructionContext context) {
+    super("fork_", context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final IDGenerator idGenerator = context.getIdGenerator();
     final int maxBranches = context.getMaxBranches();
 
-    forkGatewayId = "fork_" + idGenerator.nextId();
     joinGatewayId = "join_" + idGenerator.nextId();
 
     final BlockSequenceBuilder.BlockSequenceBuilderFactory blockSequenceBuilderFactory =
@@ -56,7 +55,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final ParallelGatewayBuilder forkGateway = nodeBuilder.parallelGateway(forkGatewayId);
+    final ParallelGatewayBuilder forkGateway = nodeBuilder.parallelGateway(getElementId());
 
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         blockBuilders.get(0).buildFlowNodes(forkGateway).parallelGateway(joinGatewayId);
@@ -66,7 +65,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
       final BlockBuilder blockBuilder = blockBuilders.get(i);
 
       final AbstractFlowNodeBuilder<?, ?> outgoingEdge =
-          workInProgress.moveToNode(forkGatewayId).sequenceFlowId(edgeId);
+          workInProgress.moveToNode(getElementId()).sequenceFlowId(edgeId);
 
       workInProgress = blockBuilder.buildFlowNodes(outgoingEdge).connectTo(joinGatewayId);
     }
@@ -79,7 +78,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
     final Random random = context.getRandom();
 
-    final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
+    final var forkingGateway = new StepActivateBPMNElement(getElementId());
     result.appendDirectSuccessor(forkingGateway);
 
     final Optional<BlockSequenceBuilder> blockContainingStartElement =
@@ -112,11 +111,6 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     shuffleStepsFromDifferentLists(random, result, branchPointers);
 
     return result;
-  }
-
-  @Override
-  public String getElementId() {
-    return forkGatewayId;
   }
 
   @Override

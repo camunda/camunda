@@ -27,10 +27,9 @@ import java.util.Random;
  * Generates an embedded sub process. The embedded sub process contains either a sequence of random
  * blocks or a start event directly connected to the end event
  */
-public class SubProcessBlockBuilder implements BlockBuilder {
+public class SubProcessBlockBuilder extends AbstractBlockBuilder {
 
   private BlockBuilder embeddedSubProcessBuilder;
-  private final String subProcessId;
   private final String subProcessStartEventId;
   private final String subProcessEndEventId;
   private final String subProcessBoundaryTimerEventId;
@@ -39,6 +38,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   private final boolean hasBoundaryTimerEvent;
 
   public SubProcessBlockBuilder(final ConstructionContext context) {
+    super(context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final IDGenerator idGenerator = context.getIdGenerator();
     final BlockSequenceBuilder.BlockSequenceBuilderFactory factory =
@@ -46,11 +46,10 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     final int maxDepth = context.getMaxDepth();
     final int currentDepth = context.getCurrentDepth();
 
-    subProcessId = idGenerator.nextId();
     subProcessStartEventId = idGenerator.nextId();
     subProcessEndEventId = idGenerator.nextId();
 
-    subProcessBoundaryTimerEventId = "boundary_timer_" + subProcessId;
+    subProcessBoundaryTimerEventId = "boundary_timer_" + elementId;
 
     final boolean goDeeper = random.nextInt(maxDepth) > currentDepth;
 
@@ -69,7 +68,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final SubProcessBuilder subProcessBuilderStart = nodeBuilder.subProcess(subProcessId);
+    final SubProcessBuilder subProcessBuilderStart = nodeBuilder.subProcess(getElementId());
 
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         subProcessBuilderStart.embeddedSubProcess().startEvent(subProcessStartEventId);
@@ -84,7 +83,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     AbstractFlowNodeBuilder result = subProcessBuilderDone;
     if (hasBoundaryEvents) {
       final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(subProcessId, subProcessBuilderDone);
+          new BoundaryEventBuilder(getElementId(), subProcessBuilderDone);
 
       if (hasBoundaryTimerEvent) {
         result = boundaryEventBuilder.connectBoundaryTimerEvent(subProcessBoundaryTimerEventId);
@@ -104,7 +103,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       result.setVariableDefault(
           subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
     }
-    final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
+    final var activateSubProcess = new StepActivateBPMNElement(getElementId());
 
     result.appendDirectSuccessor(activateSubProcess);
 
@@ -126,11 +125,6 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     }
 
     return result;
-  }
-
-  @Override
-  public String getElementId() {
-    return subProcessId;
   }
 
   @Override

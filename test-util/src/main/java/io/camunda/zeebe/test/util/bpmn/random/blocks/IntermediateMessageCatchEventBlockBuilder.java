@@ -16,30 +16,27 @@ import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
-import java.util.List;
 
 /**
  * Generates an intermediate message catch event. It waits for a message with name {@code
  * message_[id]} and a correlation key of {@code CORRELATION_KEY_VALUE}
  */
-public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
+public class IntermediateMessageCatchEventBlockBuilder extends AbstractBlockBuilder {
 
   public static final String CORRELATION_KEY_FIELD = "correlationKey";
   public static final String CORRELATION_KEY_VALUE = "default_correlation_key";
-
-  private final String id;
   private final String messageName;
 
   public IntermediateMessageCatchEventBlockBuilder(final IDGenerator idGenerator) {
-    id = idGenerator.nextId();
-    messageName = "message_" + id;
+    super(idGenerator.nextId());
+    messageName = "message_" + elementId;
   }
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
 
-    final IntermediateCatchEventBuilder result = nodeBuilder.intermediateCatchEvent(id);
+    final IntermediateCatchEventBuilder result = nodeBuilder.intermediateCatchEvent(getElementId());
 
     result.message(
         messageBuilder -> {
@@ -58,16 +55,6 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
         new StepPublishMessage(messageName, CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE));
 
     return result;
-  }
-
-  @Override
-  public String getElementId() {
-    return id;
-  }
-
-  @Override
-  public List<BlockBuilder> getPossibleStartingBlocks() {
-    return List.of(this);
   }
 
   public static class Factory implements BlockBuilderFactory {

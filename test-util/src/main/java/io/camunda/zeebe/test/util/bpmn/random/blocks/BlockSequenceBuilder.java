@@ -24,7 +24,7 @@ import java.util.Random;
  * <p>Hints: Depending on random value this may also create a sequence with no block. If current
  * depth is at max depth it will only pick block builders which do not add depth.
  */
-public class BlockSequenceBuilder implements BlockBuilder {
+public class BlockSequenceBuilder extends AbstractBlockBuilder {
 
   private static final List<BlockBuilderFactory> BLOCK_BUILDER_FACTORIES =
       Arrays.asList(
@@ -45,10 +45,9 @@ public class BlockSequenceBuilder implements BlockBuilder {
           new IntermediateThrowEventBlockBuilder.Factory());
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
-  private final String dummyElementId;
 
   public BlockSequenceBuilder(final ConstructionContext context) {
-    dummyElementId = context.getIdGenerator().nextId();
+    super(context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final int maxDepth = context.getMaxDepth();
     final int maxBlocks = context.getMaxBlocks();
@@ -93,16 +92,6 @@ public class BlockSequenceBuilder implements BlockBuilder {
         blockBuilder -> result.append(blockBuilder.findRandomExecutionPath(context)));
 
     return result;
-  }
-
-  /**
-   * The BlockSequenceBuilder is a special case. This is not an executable block, but is responsible
-   * for building the sequence of blocks. It has no sensible element id, yet it must be a unique
-   * value, so a dummy element id is generated and returned here.
-   */
-  @Override
-  public String getElementId() {
-    return dummyElementId;
   }
 
   @Override

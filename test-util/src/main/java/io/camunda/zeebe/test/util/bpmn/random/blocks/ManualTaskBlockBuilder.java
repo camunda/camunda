@@ -13,40 +13,25 @@ import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
-import java.util.List;
 
-public class ManualTaskBlockBuilder implements BlockBuilder {
-
-  private final String taskId;
+public class ManualTaskBlockBuilder extends AbstractBlockBuilder {
 
   public ManualTaskBlockBuilder(final ConstructionContext context) {
-    final IDGenerator idGenerator = context.getIdGenerator();
-    taskId = idGenerator.nextId();
+    super(context.getIdGenerator().nextId());
   }
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    return nodeBuilder.manualTask(taskId).name(taskId);
+    return nodeBuilder.manualTask(elementId).name(elementId);
   }
 
   @Override
   public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
-    result.appendDirectSuccessor(new StepActivateBPMNElement(taskId));
+    result.appendDirectSuccessor(new StepActivateBPMNElement(getElementId()));
     return result;
-  }
-
-  @Override
-  public String getElementId() {
-    return taskId;
-  }
-
-  @Override
-  public List<BlockBuilder> getPossibleStartingBlocks() {
-    return List.of(this);
   }
 
   static class Factory implements BlockBuilderFactory {

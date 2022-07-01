@@ -35,19 +35,7 @@ public interface BlockBuilder {
    */
   AbstractFlowNodeBuilder<?, ?> buildFlowNodes(final AbstractFlowNodeBuilder<?, ?> nodeBuilder);
 
-  default ExecutionPathSegment findRandomExecutionPath(final ExecutionPathContext context) {
-    final boolean shouldGenerateExecutionPath =
-        context.hasFoundStartElement() || equalsOrContains(context.getStartElementIds());
-
-    if (shouldGenerateExecutionPath) {
-      if (context.getStartElementIds().contains(getElementId())) {
-        context.foundStartElement();
-      }
-      return generateRandomExecutionPath(context);
-    } else {
-      return new ExecutionPathSegment();
-    }
-  }
+  ExecutionPathSegment findRandomExecutionPath(final ExecutionPathContext context);
 
   /** Creates a random execution path segment. */
   ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context);
@@ -56,11 +44,7 @@ public interface BlockBuilder {
 
   List<BlockBuilder> getPossibleStartingBlocks();
 
-  default List<String> getPossibleStartingElementIds() {
-    return getPossibleStartingBlocks().stream().map(BlockBuilder::getElementId).toList();
-  }
+  List<String> getPossibleStartingElementIds();
 
-  default boolean equalsOrContains(final List<String> startElementIds) {
-    return getPossibleStartingElementIds().stream().anyMatch(startElementIds::contains);
-  }
+  boolean equalsOrContains(final List<String> startElementIds);
 }

@@ -15,22 +15,19 @@ import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
-import java.util.List;
 import java.util.Random;
 
 /** Generates a call activity. The called process is a Process that contains any block sequence. */
-public class CallActivityBlockBuilder implements BlockBuilder {
+public class CallActivityBlockBuilder extends AbstractBlockBuilder {
 
   private final boolean shouldPropagateAllChildVariables;
   private final String calledProcessId;
   private final BlockSequenceBuilder calledProcessBuilder;
   private final ConstructionContext context;
-  private final String callActivityId;
 
   public CallActivityBlockBuilder(final ConstructionContext context) {
+    super("call_activity_", context.getIdGenerator().nextId());
     final Random random = context.getRandom();
-    final IDGenerator idGenerator = context.getIdGenerator();
     final int maxDepth = context.getMaxDepth();
     final int currentDepth = context.getCurrentDepth();
     final boolean goDeeper = random.nextInt(maxDepth) > currentDepth;
@@ -38,9 +35,7 @@ public class CallActivityBlockBuilder implements BlockBuilder {
     this.context = context;
     shouldPropagateAllChildVariables = random.nextBoolean();
 
-    final var reusableId = idGenerator.nextId();
-    calledProcessId = "process_child_" + reusableId;
-    callActivityId = "call_activity_" + reusableId;
+    calledProcessId = "process_child_" + elementId;
 
     if (goDeeper) {
       calledProcessBuilder =
@@ -59,7 +54,7 @@ public class CallActivityBlockBuilder implements BlockBuilder {
     buildChildProcess();
 
     return nodeBuilder
-        .callActivity(callActivityId)
+        .callActivity(getElementId())
         .zeebeProcessId(calledProcessId)
         .zeebePropagateAllChildVariables(shouldPropagateAllChildVariables);
   }
@@ -73,18 +68,6 @@ public class CallActivityBlockBuilder implements BlockBuilder {
     }
 
     return result;
-  }
-
-  @Override
-  public String getElementId() {
-    return callActivityId;
-  }
-
-  @Override
-  public List<BlockBuilder> getPossibleStartingBlocks() {
-    // We cannot start a process inside of a call activity.
-    // Therefore the blocks of the calledProcessBuilder are not returned here.
-    return List.of(this);
   }
 
   private void buildChildProcess() {
