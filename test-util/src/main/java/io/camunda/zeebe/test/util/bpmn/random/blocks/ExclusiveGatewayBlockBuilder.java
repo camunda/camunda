@@ -94,14 +94,14 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
     final Random random = context.getRandom();
 
-    final Optional<Integer> branchContainingStartBlock =
+    final Optional<Integer> branchContainingStartElement =
         blockBuilders.stream()
-            .filter(b -> b.equalsOrContains(context.getStartAtElementId()))
+            .filter(b -> b.equalsOrContains(context.getStartElementIds()))
             .map(blockBuilders::indexOf)
             .findFirst();
 
-    final int branch = branchContainingStartBlock.orElse(random.nextInt(branchIds.size()));
-    if (branchContainingStartBlock.isEmpty()) {
+    final int branch = branchContainingStartElement.orElse(random.nextInt(branchIds.size()));
+    if (branchContainingStartElement.isEmpty()) {
       addRandomGatewayExecutionStep(result, random, branch);
     }
     addRandomBranchExecutionSteps(context, result, branch);

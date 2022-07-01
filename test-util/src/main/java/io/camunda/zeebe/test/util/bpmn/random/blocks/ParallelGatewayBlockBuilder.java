@@ -82,18 +82,18 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
     result.appendDirectSuccessor(forkingGateway);
 
-    final Optional<BlockSequenceBuilder> blockContainingStartBlock =
+    final Optional<BlockSequenceBuilder> blockContainingStartElement =
         blockBuilders.stream()
-            .filter(b -> b.equalsOrContains(context.getStartAtElementId()))
+            .filter(b -> b.equalsOrContains(context.getStartElementIds()))
             .findFirst();
 
     final List<ParallelGatewayBlockBuilder.BranchPointer> branchPointers = new ArrayList<>();
 
-    // Find the execution path of the block containing the start block first. This is required
-    // as it will update the context, saying the start block has been found. As a result it will
+    // Find the execution path of the block containing the start element first. This is required
+    // as it will update the context, saying the start element has been found. As a result it will
     // make sure the execution paths of the other blocks isn't ignored.
-    if (blockContainingStartBlock.isPresent()) {
-      final var blockBuilder = blockContainingStartBlock.get();
+    if (blockContainingStartElement.isPresent()) {
+      final var blockBuilder = blockContainingStartElement.get();
       branchPointers.add(findRandomExecutionPathForBranch(context, result, blockBuilder));
       blockBuilders.stream()
           .filter(bb -> bb != blockBuilder)
@@ -103,7 +103,10 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
 
     branchPointers.addAll(
         blockBuilders.stream()
-            .filter(blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtElementId()))
+            .filter(
+                blockBuilder ->
+                    blockContainingStartElement.isEmpty()
+                        || blockContainingStartElement.get() != blockBuilder)
             .map(blockBuilder -> findRandomExecutionPathForBranch(context, result, blockBuilder))
             .toList());
     shuffleStepsFromDifferentLists(random, result, branchPointers);

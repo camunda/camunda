@@ -37,11 +37,11 @@ public interface BlockBuilder {
 
   default ExecutionPathSegment findRandomExecutionPath(final ExecutionPathContext context) {
     final boolean shouldGenerateExecutionPath =
-        context.hasFoundStartBlockBuilder() || equalsOrContains(context.getStartAtElementId());
+        context.hasFoundStartElement() || equalsOrContains(context.getStartElementIds());
 
     if (shouldGenerateExecutionPath) {
-      if (getElementId().equals(context.getStartAtElementId())) {
-        context.foundBlockBuilder();
+      if (context.getStartElementIds().contains(getElementId())) {
+        context.foundStartElement();
       }
       return generateRandomExecutionPath(context);
     } else {
@@ -60,7 +60,7 @@ public interface BlockBuilder {
     return getPossibleStartingBlocks().stream().map(BlockBuilder::getElementId).toList();
   }
 
-  default boolean equalsOrContains(final String startElementId) {
-    return getPossibleStartingElementIds().contains(startElementId);
+  default boolean equalsOrContains(final List<String> startElementIds) {
+    return getPossibleStartingElementIds().stream().anyMatch(startElementIds::contains);
   }
 }

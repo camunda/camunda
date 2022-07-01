@@ -13,45 +13,34 @@ import java.util.Random;
 
 public class ExecutionPathContext {
 
-  final String startAtElementId;
-  final List<String> secondaryStartElementIds;
-  boolean foundBlockBuilder = false;
+  final List<String> startElementIds;
+  boolean foundStartElement = false;
   final Random random;
 
   public ExecutionPathContext(final String startAtElementId, final Random random) {
-    this.startAtElementId = startAtElementId;
-    secondaryStartElementIds = new ArrayList<>();
+    startElementIds = new ArrayList<>();
+    startElementIds.add(startAtElementId);
     this.random = random;
   }
 
-  public String getStartAtElementId() {
-    return startAtElementId;
-  }
-
-  public boolean hasFoundStartBlockBuilder() {
-    return foundBlockBuilder;
+  public boolean hasFoundStartElement() {
+    return foundStartElement;
   }
 
   /**
    * Sets a flag in the context that we have found the block that we want the process to start at.
    * All blocks that we come across after this flag is set to true will always have their execution
    * path generated.
-   *
-   * @return this
    */
-  public ExecutionPathContext foundBlockBuilder() {
-    foundBlockBuilder = true;
-    return this;
+  public void foundStartElement() {
+    foundStartElement = true;
   }
 
   public void addSecondaryStartElementId(final String elementId) {
-    secondaryStartElementIds.add(elementId);
+    startElementIds.add(elementId);
   }
 
   public List<String> getStartElementIds() {
-    final List<String> startElementIds = new ArrayList<>();
-    startElementIds.add(startAtElementId);
-    startElementIds.addAll(secondaryStartElementIds);
     return startElementIds;
   }
 

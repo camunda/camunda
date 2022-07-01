@@ -114,9 +114,9 @@ public class BlockSequenceBuilder implements BlockBuilder {
   }
 
   @Override
-  public boolean equalsOrContains(final String startingElementId) {
-    return getElementId().equals(startingElementId)
-        || getPossibleStartingElementIds().contains(startingElementId);
+  public boolean equalsOrContains(final List<String> startingElementIds) {
+    return startingElementIds.contains(getElementId())
+        || getPossibleStartingElementIds().stream().anyMatch(startingElementIds::contains);
   }
 
   /**
