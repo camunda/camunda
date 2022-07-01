@@ -81,13 +81,13 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
   private final ReplayMetrics replayMetrics;
-  private final Engine engine;
+  private final StreamProcessor processor;
 
   public ReplayStateMachine(
-      final Engine engine,
+      final StreamProcessor processor,
       final ProcessingContext context,
       final BooleanSupplier shouldReplayNext) {
-    this.engine = engine;
+    this.processor = processor;
     shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
     recordValues = context.getRecordValues();
@@ -222,7 +222,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
-      engine.apply(currentTypedEvent);
+      processor.apply(currentTypedEvent);
       lastReplayedEventPosition = currentTypedEvent.getPosition();
     }
 

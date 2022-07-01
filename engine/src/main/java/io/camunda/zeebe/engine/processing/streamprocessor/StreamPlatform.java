@@ -102,7 +102,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
-  private final Engine engine;
+  private final Engine processor;
 
   protected StreamPlatform(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -119,7 +119,8 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
 
-    engine = new Engine(processorBuilder);
+    // todo this can be then created outside!
+    processor = new Engine(processorBuilder);
   }
 
   public static StreamProcessorBuilder builder() {
@@ -151,12 +152,12 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      engine.init(processingContext);
+      processor.init(processingContext);
 
       healthCheckTick();
 
       replayStateMachine =
-          new ReplayStateMachine(engine, processingContext, this::shouldProcessNext);
+          new ReplayStateMachine(processor, processingContext, this::shouldProcessNext);
 
       openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
@@ -208,7 +209,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
   @Override
   protected void onActorCloseRequested() {
     if (!isFailed()) {
-      engine.onClose();
+      processor.onClose();
     }
   }
 
@@ -228,7 +229,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
   public void onActorFailed() {
     phase = Phase.FAILED;
     isOpened.set(false);
-    engine.onFailed();
+    processor.onFailed();
     tearDown();
     closeFuture.complete(null);
   }
@@ -260,7 +261,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
       phase = Phase.PROCESSING;
 
       processingStateMachine =
-          new ProcessingStateMachine(engine, processingContext, this::shouldProcessNext);
+          new ProcessingStateMachine(processor, processingContext, this::shouldProcessNext);
 
       logStream.registerRecordAvailableListener(this);
 
@@ -269,7 +270,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
       final var processingSchedulingService =
           new ProcessingSchedulingServiceImpl(actor, batchWriter, () -> !shouldProcess);
       processingContext.processingSchedulingService(processingSchedulingService);
-      engine.onRecovered(processingContext);
+      processor.onRecovered(processingContext);
 
       processingStateMachine.startProcessing(lastProcessingPositions);
       if (!shouldProcess) {
@@ -444,7 +445,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
     if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
       LOG.debug("Paused replay for partition {}", partitionId);
     } else {
-      engine.onPaused();
+      processor.onPaused();
       LOG.debug("Paused processing for partition {}", partitionId);
     }
 
@@ -465,7 +466,7 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
             } else {
               // we only want to call the lifecycle listeners on processing resume
               // since the listeners are not recovered yet
-              engine.onResumed();
+              processor.onResumed();
               phase = Phase.PROCESSING;
               if (processingStateMachine != null) {
                 actor.submit(processingStateMachine::readNextRecord);

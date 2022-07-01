@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -104,7 +103,6 @@ public final class ProcessingStateMachine {
       new MetadataEventFilter(
           recordMetadata -> recordMetadata.getRecordType() != RecordType.COMMAND);
 
-  private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final TypedResponseWriter responseWriter;
@@ -134,20 +132,19 @@ public final class ProcessingStateMachine {
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
   private boolean inProcessing;
-  private final Engine engine;
+  private final StreamProcessor processor;
   private ProcessingResult currentProcessingResult;
 
   public ProcessingStateMachine(
-      final Engine engine,
+      final StreamProcessor processor,
       final ProcessingContext context,
       final BooleanSupplier shouldProcessNext) {
-    this.engine = engine;
+    this.processor = processor;
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
     logStream = context.getLogStream();
-    zeebeState = context.getZeebeState();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
@@ -245,7 +242,7 @@ public final class ProcessingStateMachine {
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            currentProcessingResult = engine.process(typedCommand);
+            currentProcessingResult = processor.process(typedCommand);
             lastProcessedPositionState.markAsProcessed(position);
           });
 
@@ -316,7 +313,7 @@ public final class ProcessingStateMachine {
           resetOutput(position);
 
           currentProcessingResult =
-              engine.onProcessingError(processingException, typedCommand, position);
+              processor.onProcessingError(processingException, typedCommand, position);
         });
   }
 
