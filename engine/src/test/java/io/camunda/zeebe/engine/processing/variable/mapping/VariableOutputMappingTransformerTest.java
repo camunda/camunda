@@ -135,7 +135,7 @@ public final class VariableOutputMappingTransformerTest {
       {
         List.of(mapping("x", "a.b")),
         Map.of(),
-        "failed to evaluate expression '{a:if (a = null or not(is defined({b: x})) ) then {b: x} else put all(a,{b: x})}': no variable found for name 'x'"
+        "failed to evaluate expression '{a:if (a != null and is defined({b: x})) then put all(a,{b: x}) else {b: x}}': no variable found for name 'x'"
       }, // #9543
     };
   }
