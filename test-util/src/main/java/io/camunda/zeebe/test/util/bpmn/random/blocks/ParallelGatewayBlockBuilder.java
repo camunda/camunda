@@ -127,10 +127,10 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
 
   private BranchPointer findRandomExecutionPathForBranch(
       final ExecutionPathContext context,
-      final ExecutionPathSegment result,
+      final ExecutionPathSegment executionPathSegment,
       final BlockBuilder blockBuilder) {
     final var branchExecutionPath = blockBuilder.findRandomExecutionPath(context);
-    result.mergeVariableDefaults(branchExecutionPath);
+    executionPathSegment.mergeVariableDefaults(branchExecutionPath);
     return new BranchPointer(branchExecutionPath.getScheduledSteps());
   }
 
