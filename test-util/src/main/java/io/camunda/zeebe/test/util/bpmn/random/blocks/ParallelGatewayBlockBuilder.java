@@ -84,7 +84,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
 
     final Optional<BlockBuilder> blockContainingStartBlock =
         blockBuilders.stream()
-            .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
+            .filter(b -> b.equalsOrContains(context.getStartAtElementId()))
             .findFirst();
 
     final List<ParallelGatewayBlockBuilder.BranchPointer> branchPointers = new ArrayList<>();
@@ -102,8 +102,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
 
     branchPointers.addAll(
         blockBuilders.stream()
-            .filter(
-                blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtBlockBuilder()))
+            .filter(blockBuilder -> !blockBuilder.equalsOrContains(context.getStartAtElementId()))
             .map(blockBuilder -> findRandomExecutionPathForBranch(context, result, blockBuilder))
             .toList());
     shuffleStepsFromDifferentLists(random, result, branchPointers);

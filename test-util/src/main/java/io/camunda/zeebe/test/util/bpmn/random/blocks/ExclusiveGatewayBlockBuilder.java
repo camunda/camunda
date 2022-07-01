@@ -96,7 +96,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
     final Optional<Integer> branchContainingStartBlock =
         blockBuilders.stream()
-            .filter(b -> b.equalsOrContains(context.getStartAtBlockBuilder()))
+            .filter(b -> b.equalsOrContains(context.getStartAtElementId()))
             .map(blockBuilders::indexOf)
             .findFirst();
 

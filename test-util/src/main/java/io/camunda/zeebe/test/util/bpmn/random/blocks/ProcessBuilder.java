@@ -126,12 +126,12 @@ public final class ProcessBuilder {
 
     final ExecutionPathContext context;
     if (startAnywhere) {
-      final var possibleStartingBlocks = blockBuilder.getPossibleStartingBlocks();
-      final int startBlockIndex = random.nextInt(possibleStartingBlocks.size());
-      final var startAtBlockBuilder = possibleStartingBlocks.get(startBlockIndex);
-      context = new ExecutionPathContext(startAtBlockBuilder, random);
+      final var possibleStartingElementIds = blockBuilder.getPossibleStartingElementIds();
+      final int startBlockIndex = random.nextInt(possibleStartingElementIds.size());
+      final var startAtElementId = possibleStartingElementIds.get(startBlockIndex);
+      context = new ExecutionPathContext(startAtElementId, random);
     } else {
-      context = new ExecutionPathContext(blockBuilder, random);
+      context = new ExecutionPathContext(blockBuilder.getElementId(), random);
     }
 
     final ExecutionPathSegment followingPath = blockBuilder.findRandomExecutionPath(context);

@@ -45,8 +45,10 @@ public class BlockSequenceBuilder implements BlockBuilder {
           new IntermediateThrowEventBlockBuilder.Factory());
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
+  private final String dummyElementId;
 
   public BlockSequenceBuilder(final ConstructionContext context) {
+    dummyElementId = context.getIdGenerator().nextId();
     final Random random = context.getRandom();
     final int maxDepth = context.getMaxDepth();
     final int maxBlocks = context.getMaxBlocks();
@@ -95,12 +97,12 @@ public class BlockSequenceBuilder implements BlockBuilder {
 
   /**
    * The BlockSequenceBuilder is a special case. This is not an executable block, but is responsible
-   * for building the sequence of blocks. Instead it will return the element id of the first block
-   * it contains.
+   * for building the sequence of blocks. It has no sensible element id, yet it must be a unique
+   * value, so a dummy element id is generated and returned here.
    */
   @Override
   public String getElementId() {
-    return blockBuilders.get(0).getElementId();
+    return dummyElementId;
   }
 
   @Override
@@ -112,8 +114,9 @@ public class BlockSequenceBuilder implements BlockBuilder {
   }
 
   @Override
-  public boolean equalsOrContains(final BlockBuilder blockBuilder) {
-    return this == blockBuilder || getPossibleStartingBlocks().contains(blockBuilder);
+  public boolean equalsOrContains(final String startingElementId) {
+    return getElementId().equals(startingElementId)
+        || getPossibleStartingElementIds().contains(startingElementId);
   }
 
   public static class BlockSequenceBuilderFactory {

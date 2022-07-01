@@ -10,23 +10,22 @@ package io.camunda.zeebe.test.util.bpmn.random;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 public class ExecutionPathContext {
 
-  final BlockBuilder startAtBlockBuilder;
+  final String startAtElementId;
   final List<BlockBuilder> secondaryStartBlockBuilders;
   boolean foundBlockBuilder = false;
   final Random random;
 
-  public ExecutionPathContext(final BlockBuilder startAtBlockBuilder, final Random random) {
-    this.startAtBlockBuilder = startAtBlockBuilder;
+  public ExecutionPathContext(final String startAtElementId, final Random random) {
+    this.startAtElementId = startAtElementId;
     secondaryStartBlockBuilders = new ArrayList<>();
     this.random = random;
   }
 
-  public BlockBuilder getStartAtBlockBuilder() {
-    return startAtBlockBuilder;
+  public String getStartAtElementId() {
+    return startAtElementId;
   }
 
   public boolean hasFoundStartBlockBuilder() {
@@ -51,11 +50,9 @@ public class ExecutionPathContext {
 
   public List<String> getStartElementIds() {
     final List<String> startElementIds = new ArrayList<>();
-    startElementIds.add(startAtBlockBuilder.getElementId());
+    startElementIds.add(startAtElementId);
     startElementIds.addAll(
-        secondaryStartBlockBuilders.stream()
-            .map(BlockBuilder::getElementId)
-            .collect(Collectors.toList()));
+        secondaryStartBlockBuilders.stream().map(BlockBuilder::getElementId).toList());
     return startElementIds;
   }
 
