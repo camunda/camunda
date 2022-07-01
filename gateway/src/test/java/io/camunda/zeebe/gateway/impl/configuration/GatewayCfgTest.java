@@ -263,6 +263,22 @@ public final class GatewayCfgTest {
     assertThat(gatewayCfg).isEqualTo(expected);
   }
 
+  @Test
+  public void shouldFallbackIfAdvertisedAddressIsNotConfigured() {
+    // given
+    final var expectedHost = "zeebe";
+    final var expectedPort = "5432";
+    setEnv("zeebe.gateway.cluster.host", expectedHost);
+    setEnv("zeebe.gateway.cluster.port", expectedPort);
+
+    // when
+    final GatewayCfg actual = readEmptyConfig();
+
+    // then
+    assertThat(actual.getCluster().getAdvertisedHost()).isEqualTo(expectedHost);
+    assertThat(actual.getCluster().getAdvertisedPort()).isEqualTo(Integer.parseInt(expectedPort));
+  }
+
   private void setEnv(final String key, final String value) {
     environment.put(key, value);
   }
