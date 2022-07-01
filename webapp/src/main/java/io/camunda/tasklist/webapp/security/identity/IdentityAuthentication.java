@@ -6,55 +6,24 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.Permission;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.stereotype.Component;
 
-@Profile(TasklistProfileService.IDENTITY_AUTH_PROFILE)
-@Component
-@Scope(SCOPE_PROTOTYPE)
 public class IdentityAuthentication extends AbstractAuthenticationToken {
 
-  public static final String READ_PERMISSION_VALUE = "read:*";
-  public static final String WRITE_PERMISSION_VALUE = "write:*";
-
-  private transient Logger logger;
-  private transient Identity identity;
-
-  @Value("${" + TasklistProperties.PREFIX + ".identity.issuer.url}")
-  private String issuerUrl;
-
-  @Value("${" + TasklistProperties.PREFIX + ".identity.issuer.backend.url}")
-  private String issuerBackendUrl;
-
-  @Value("${" + TasklistProperties.PREFIX + ".identity.client.id}")
-  private String clientId;
-
-  @Value("${" + TasklistProperties.PREFIX + ".identity.client.secret}")
-  private String clientSecret;
-
-  @Value("${" + TasklistProperties.PREFIX + ".identity.audience}")
-  private String audience;
+  private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
 
   private Tokens tokens;
   private String id;
@@ -100,16 +69,16 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {
-      getLogger().info("Access token is expired");
+      LOGGER.info("Access token is expired");
       if (hasRefreshTokenExpired()) {
         setAuthenticated(false);
-        getLogger().info("No refresh token available. Authentication is invalid.");
+        LOGGER.info("No refresh token available. Authentication is invalid.");
       } else {
-        getLogger().info("Get a new access token by using refresh token");
+        LOGGER.info("Get a new access token by using refresh token");
         try {
           renewAccessToken();
         } catch (Exception e) {
-          getLogger().error("Renewing access token failed with exception", e);
+          LOGGER.error("Renewing access token failed with exception", e);
           setAuthenticated(false);
         }
       }
@@ -121,27 +90,10 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     return id;
   }
 
-  private boolean hasPermission(String permissionName) {
-    return permissions.containsAll(Set.of(permissionName));
-  }
-
-  private boolean hasReadPermission() {
-    return hasPermission(READ_PERMISSION_VALUE);
-  }
-
-  private boolean hasWritePermission() {
-    return hasPermission(WRITE_PERMISSION_VALUE);
-  }
-
   public List<Permission> getPermissions() {
-    final List<Permission> permissions = new ArrayList<>();
-    if (hasReadPermission()) {
-      permissions.add(Permission.READ);
-    }
-    if (hasWritePermission()) {
-      permissions.add(Permission.WRITE);
-    }
-    return permissions;
+    return permissions.stream()
+        .map(PermissionConverter.getInstance()::convert)
+        .collect(Collectors.toList());
   }
 
   public void authenticate(final Tokens tokens) {
@@ -173,22 +125,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
         () -> getIdentity().authentication().renewToken(refreshToken));
   }
 
-  // Can't use Autowired for Identity and Logger due to serialization
   private Identity getIdentity() {
-    if (identity == null) {
-      identity =
-          new Identity(
-              new IdentityConfiguration(
-                  issuerUrl, issuerBackendUrl, clientId, clientSecret, audience));
-    }
-    return identity;
-  }
-
-  private Logger getLogger() {
-    if (logger == null) {
-      logger = LoggerFactory.getLogger(this.getClass());
-    }
-    return logger;
+    return SpringContextHolder.getBean(Identity.class);
   }
 
   public IdentityAuthentication setExpires(final Date expires) {

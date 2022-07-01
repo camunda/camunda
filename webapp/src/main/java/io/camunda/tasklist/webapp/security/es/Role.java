@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.webapp.security;
+package io.camunda.tasklist.webapp.security.es;
 
 import java.util.Arrays;
 

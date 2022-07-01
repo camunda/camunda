@@ -13,7 +13,6 @@ import java.util.Optional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public interface UserReader {
 
@@ -27,24 +26,13 @@ public interface UserReader {
     if (authentication instanceof AnonymousAuthenticationToken) {
       throw new TasklistRuntimeException("User is not authenticated");
     }
-    if (authentication instanceof JwtAuthenticationToken) {
-      final JwtAuthenticationToken jwtAuthentication = ((JwtAuthenticationToken) authentication);
-      final String name =
-          jwtAuthentication.getName() == null ? DEFAULT_USER : jwtAuthentication.getName();
-      return new UserDTO()
-          .setUserId(name)
-          .setDisplayName(name)
-          .setApiUser(true)
-          .setPermissions(List.of(Permission.WRITE));
-    } else {
-      final Optional<UserDTO> maybeUserDTO = getCurrentUserBy(authentication);
-      return maybeUserDTO.orElseThrow(
-          () ->
-              new TasklistRuntimeException(
-                  String.format(
-                      "Could not build UserDTO from authentication authentication %s",
-                      authentication)));
-    }
+    final Optional<UserDTO> maybeUserDTO = getCurrentUserBy(authentication);
+    return maybeUserDTO.orElseThrow(
+        () ->
+            new TasklistRuntimeException(
+                String.format(
+                    "Could not build UserDTO from authentication authentication %s",
+                    authentication)));
   }
 
   Optional<UserDTO> getCurrentUserBy(final Authentication authentication);

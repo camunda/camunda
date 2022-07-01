@@ -87,7 +87,7 @@ public class Auth0Service {
     final ClusterInfo.Permission tasklistPermissions =
         clusterInfo.getPermissions().getCluster().getTasklist();
     if (tasklistPermissions.getRead()) {
-      authentication.getPermissions().add(Permission.READ);
+      authentication.addPermission(Permission.READ);
     } else {
       throw new InsufficientAuthenticationException("User doesn't have read access");
     }
@@ -95,7 +95,7 @@ public class Auth0Service {
     if (tasklistPermissions.getDelete()
         && tasklistPermissions.getCreate()
         && tasklistPermissions.getUpdate()) {
-      authentication.getPermissions().add(Permission.WRITE);
+      authentication.addPermission(Permission.WRITE);
     }
   }
 

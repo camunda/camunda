@@ -14,7 +14,6 @@ import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.webapp.security.Role;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.util.ArrayList;

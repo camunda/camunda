@@ -16,6 +16,7 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
 
 import com.auth0.AuthenticationController;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
@@ -28,7 +29,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,8 @@ import org.springframework.stereotype.Component;
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
-public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class SSOWebSecurityConfig extends BaseWebConfigurer {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOWebSecurityConfig.class);
 
   @Autowired private TasklistProperties tasklistProperties;
@@ -64,6 +65,11 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::authenticationEntry);
+    configureOAuth2(http);
+  }
+
+  @Override
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 

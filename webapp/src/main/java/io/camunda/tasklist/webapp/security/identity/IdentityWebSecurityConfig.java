@@ -14,49 +14,31 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
 
-import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.IdentityConfiguration;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
+import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
+import io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 @Profile(IDENTITY_AUTH_PROFILE)
-@Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
-public class IdentityWebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
 
-  @Bean
-  public Identity identity() throws IllegalArgumentException {
-    final IdentityProperties props = tasklistProperties.getIdentity();
-    final IdentityConfiguration configuration =
-        new IdentityConfiguration(
-            props.getIssuerUrl(),
-            props.getIssuerBackendUrl(),
-            props.getClientId(),
-            props.getClientSecret(),
-            props.getAudience());
-    return new Identity(configuration);
-  }
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
@@ -70,6 +52,11 @@ public class IdentityWebSecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::authenticationEntry);
+    configureOAuth2(http);
+  }
+
+  @Override
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 

@@ -16,7 +16,6 @@ import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
-import io.camunda.tasklist.webapp.security.Role;
 import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;

@@ -81,6 +81,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return permissions;
   }
 
+  public void addPermission(Permission permission) {
+    this.permissions.add(permission);
+  }
+
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {

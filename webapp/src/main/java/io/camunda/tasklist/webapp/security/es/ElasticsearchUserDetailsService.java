@@ -13,7 +13,6 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUT
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
-import io.camunda.tasklist.webapp.security.Role;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

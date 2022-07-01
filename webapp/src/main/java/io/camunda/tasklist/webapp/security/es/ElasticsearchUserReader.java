@@ -11,7 +11,6 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUT
 
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.security.RolePermissionService;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
 import java.util.Optional;

@@ -12,14 +12,16 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUT
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.security.RolePermissionService;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.security.es.RolePermissionService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -48,6 +50,17 @@ public class SSOUserReader implements UserReader {
               .setPermissions(tokenAuthentication.getPermissions())
               .setRoles(tokenAuthentication.getRoles(tasklistProperties.getAuth0().getRolesKey()))
               .setSalesPlanType(tokenAuthentication.getSalesPlanType()));
+    } else if (authentication instanceof JwtAuthenticationToken) {
+      final JwtAuthenticationToken jwtAuthentication = ((JwtAuthenticationToken) authentication);
+      final String name =
+          jwtAuthentication.getName() == null ? DEFAULT_USER : jwtAuthentication.getName();
+      return Optional.of(
+          new UserDTO()
+              .setUserId(name)
+              .setDisplayName(name)
+              .setApiUser(true)
+              // M2M token in the cloud always has WRITE permissions
+              .setPermissions(List.of(Permission.WRITE)));
     }
     return Optional.empty();
   }

@@ -4,14 +4,15 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.webapp.security;
+package io.camunda.tasklist.webapp.security.es;
 
 import static io.camunda.tasklist.webapp.security.Permission.READ;
 import static io.camunda.tasklist.webapp.security.Permission.WRITE;
-import static io.camunda.tasklist.webapp.security.Role.OPERATOR;
-import static io.camunda.tasklist.webapp.security.Role.OWNER;
-import static io.camunda.tasklist.webapp.security.Role.READER;
+import static io.camunda.tasklist.webapp.security.es.Role.OPERATOR;
+import static io.camunda.tasklist.webapp.security.es.Role.OWNER;
+import static io.camunda.tasklist.webapp.security.es.Role.READER;
 
+import io.camunda.tasklist.webapp.security.Permission;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;

@@ -8,7 +8,6 @@ package io.camunda.tasklist.webapp.security.es;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
-import io.camunda.tasklist.webapp.security.Role;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
