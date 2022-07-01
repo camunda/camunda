@@ -99,6 +99,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
+  public boolean hasStartInstructions() {
+    return !startInstructionsProperty.isEmpty();
+  }
+
   @Override
   public long getProcessInstanceKey() {
     return processInstanceKeyProperty.getValue();
