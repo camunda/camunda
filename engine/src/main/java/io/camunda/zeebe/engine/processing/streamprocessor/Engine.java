@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
-public final class Engine implements StreamProcessorLifecycleAware {
+public final class Engine implements StreamProcessor {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
@@ -52,6 +52,7 @@ public final class Engine implements StreamProcessorLifecycleAware {
     eventApplierFactory = processorBuilder.getEventApplierFactory();
   }
 
+  @Override
   public void init(final ProcessingContext context) {
     final TransactionContext transactionContext = zeebeDb.createContext();
 
@@ -72,10 +73,12 @@ public final class Engine implements StreamProcessorLifecycleAware {
     builders = context.getWriters();
   }
 
+  @Override
   public void apply(final TypedRecord typedEvent) {
     eventApplier.applyState(typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
   }
 
+  @Override
   public ProcessingResult process(final TypedRecord typedCommand) {
     TypedRecordProcessor<?> currentProcessor = null;
 
@@ -100,6 +103,30 @@ public final class Engine implements StreamProcessorLifecycleAware {
     }
 
     return new ProcessingResult(recordsBuilder);
+  }
+
+  @Override
+  public ProcessingResult onProcessingError(
+      final Throwable processingException, final TypedRecord typedCommand, final long position) {
+    final String errorMessage =
+        String.format(PROCESSING_ERROR_MESSAGE, typedCommand, processingException.getMessage());
+    LOG.error(errorMessage, processingException);
+
+    builders
+        .rejection()
+        .appendRejection(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
+    builders
+        .response()
+        .writeRejectionOnCommand(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
+    errorRecord.initErrorRecord(processingException, position);
+
+    // I think we don't need this since the applier will do it.
+    //    zeebeState
+    //        .getBlackListState()
+    //        .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
+
+    builders.state().appendFollowUpEvent(typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
+    return ProcessingResult.empty();
   }
 
   @Override
@@ -128,28 +155,5 @@ public final class Engine implements StreamProcessorLifecycleAware {
     // todo: should not called - engine doesn't need to be aware.
     // this can be removed after the schedule service is inserted
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-  }
-
-  public ProcessingResult onProcessingError(
-      final Throwable processingException, final TypedRecord typedCommand, final long position) {
-    final String errorMessage =
-        String.format(PROCESSING_ERROR_MESSAGE, typedCommand, processingException.getMessage());
-    LOG.error(errorMessage, processingException);
-
-    builders
-        .rejection()
-        .appendRejection(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
-    builders
-        .response()
-        .writeRejectionOnCommand(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
-    errorRecord.initErrorRecord(processingException, position);
-
-    // I think we don't need this since the applier will do it.
-    //    zeebeState
-    //        .getBlackListState()
-    //        .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
-
-    builders.state().appendFollowUpEvent(typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
-    return ProcessingResult.empty();
   }
 }
