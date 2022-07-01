@@ -117,15 +117,19 @@ public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
     return allBlockBuilders;
   }
 
-  private void addRandomGatewayExecutionStep(final ExecutionPathSegment result, final Random random, final int branch) {
+  private void addRandomGatewayExecutionStep(
+      final ExecutionPathSegment result, final Random random, final int branch) {
     // If the branch is the default flow we should always add the default steps
     // If not we randomly match the condition, or throw an incident and resolve it before matching
     final int stepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
-    final var executionStep = switch (stepNumber) {
-      case 0 -> new StepPickDefaultCase(getElementId(), gatewayConditionVariable);
-      case 1 -> new StepPickConditionCase(getElementId(), gatewayConditionVariable, branchIds.get(branch));
-      default -> new StepRaiseIncidentThenResolveAndPickConditionCase(getElementId(), gatewayConditionVariable, branchIds.get(branch));
-    };
+    final var executionStep =
+        switch (stepNumber) {
+          case 0 -> new StepPickDefaultCase(getElementId(), gatewayConditionVariable);
+          case 1 -> new StepPickConditionCase(
+              getElementId(), gatewayConditionVariable, branchIds.get(branch));
+          default -> new StepRaiseIncidentThenResolveAndPickConditionCase(
+              getElementId(), gatewayConditionVariable, branchIds.get(branch));
+        };
     result.appendDirectSuccessor(executionStep);
   }
 
@@ -133,8 +137,8 @@ public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
     return branch == 0;
   }
 
-  private void addRandomBranchExecutionSteps(final ExecutionPathContext context, final ExecutionPathSegment result,
-      final int branch) {
+  private void addRandomBranchExecutionSteps(
+      final ExecutionPathContext context, final ExecutionPathSegment result, final int branch) {
     final BlockBuilder blockBuilder = blockBuilders.get(branch);
     result.append(blockBuilder.findRandomExecutionPath(context));
   }
