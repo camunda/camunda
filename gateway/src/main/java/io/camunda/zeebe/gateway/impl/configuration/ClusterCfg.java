@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class ClusterCfg {
 
@@ -31,9 +32,9 @@ public final class ClusterCfg {
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
   private String host = DEFAULT_CLUSTER_HOST;
-  private String advertisedHost = host;
+  private String advertisedHost = null;
   private int port = DEFAULT_CLUSTER_PORT;
-  private int advertisedPort = port;
+  private Integer advertisedPort = null;
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
@@ -57,11 +58,7 @@ public final class ClusterCfg {
   }
 
   public String getAdvertisedHost() {
-    if (advertisedHost == null) {
-      return getHost();
-    }
-
-    return advertisedHost;
+    return Optional.ofNullable(advertisedHost).orElseGet(this::getHost);
   }
 
   public ClusterCfg setAdvertisedHost(final String advertisedHost) {
@@ -79,7 +76,7 @@ public final class ClusterCfg {
   }
 
   public int getAdvertisedPort() {
-    return advertisedPort;
+    return Optional.ofNullable(advertisedPort).orElseGet(this::getPort);
   }
 
   public ClusterCfg setAdvertisedPort(final int advertisedPort) {
