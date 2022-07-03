@@ -69,8 +69,7 @@ final class LongPollingIT {
             .withEmbeddedGateway(false)
             .withPartitionsCount(3)
             .withReplicationFactor(1)
-            .withBrokerImage(ZeebeTestContainerDefaults.defaultTestImage())
-            .withGatewayImage(ZeebeTestContainerDefaults.defaultTestImage())
+            .withImage(ZeebeTestContainerDefaults.defaultTestImage())
             .build();
     cluster.start();
     final var zeebeClient = cluster.newClientBuilder().build();
