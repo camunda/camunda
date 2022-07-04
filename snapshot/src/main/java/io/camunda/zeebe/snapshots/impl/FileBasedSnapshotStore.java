@@ -30,6 +30,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
@@ -242,7 +243,7 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
     // return a new set so that caller cannot modify availableSnapshot
-    return actor.call(() -> new HashSet<>(availableSnapshots));
+    return actor.call(() -> Collections.unmodifiableSet(availableSnapshots));
   }
 
   @Override
