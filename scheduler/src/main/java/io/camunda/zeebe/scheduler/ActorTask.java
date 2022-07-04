@@ -531,7 +531,7 @@ public class ActorTask {
     if (fastLaneJobs instanceof ClosedQueue || submittedJobs instanceof ClosedQueue) {
       return 0;
     }
-    // TODO: In theory this could overflow. We could consider using a saturating add using a long
+    // In theory this could overflow. In practice, both queue sizes are very low.
     return fastLaneJobs.size() + submittedJobs.size();
   }
 
