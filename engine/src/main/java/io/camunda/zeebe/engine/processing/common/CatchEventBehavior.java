@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -260,8 +261,7 @@ public final class CatchEventBehavior {
         subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
     sideEffects.add(
-        () ->
-            sendOpenMessageSubscription(
+        new OpenMessageSubscriptionSideEffectProducer(subscriptionCommandSender,
                 subscriptionPartitionId,
                 processInstanceKey,
                 elementInstanceKey,
@@ -389,22 +389,43 @@ public final class CatchEventBehavior {
         subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
   }
 
-  private boolean sendOpenMessageSubscription(
-      final int subscriptionPartitionId,
-      final long processInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer bpmnProcessId,
-      final DirectBuffer messageName,
-      final DirectBuffer correlationKey,
-      final boolean closeOnCorrelate) {
-    return subscriptionCommandSender.openMessageSubscription(
-        subscriptionPartitionId,
-        processInstanceKey,
-        elementInstanceKey,
-        bpmnProcessId,
-        messageName,
-        correlationKey,
-        closeOnCorrelate);
+  private static final class OpenMessageSubscriptionSideEffectProducer implements SideEffectProducer {
+    private final SubscriptionCommandSender subscriptionCommandSender;
+    private final int subscriptionPartitionId;
+    private final long processInstanceKey;
+    private final long elementInstanceKey;
+    private final DirectBuffer bpmnProcessId;
+    private final DirectBuffer messageName;
+    private final DirectBuffer correlationKey;
+    private final boolean closeOnCorrelate;
+
+    private OpenMessageSubscriptionSideEffectProducer(
+        final SubscriptionCommandSender subscriptionCommandSender,
+        final int subscriptionPartitionId, final long processInstanceKey,
+        final long elementInstanceKey, final DirectBuffer bpmnProcessId,
+        final DirectBuffer messageName, final DirectBuffer correlationKey,
+        final boolean closeOnCorrelate) {
+      this.subscriptionCommandSender = subscriptionCommandSender;
+      this.subscriptionPartitionId = subscriptionPartitionId;
+      this.processInstanceKey = processInstanceKey;
+      this.elementInstanceKey = elementInstanceKey;
+      this.bpmnProcessId = bpmnProcessId;
+      this.messageName = messageName;
+      this.correlationKey = correlationKey;
+      this.closeOnCorrelate = closeOnCorrelate;
+    }
+
+    @Override
+    public boolean flush() {
+      return subscriptionCommandSender.openMessageSubscription(
+          subscriptionPartitionId,
+          processInstanceKey,
+          elementInstanceKey,
+          bpmnProcessId,
+          messageName,
+          correlationKey,
+          closeOnCorrelate);
+    }
   }
 
   /**
