@@ -24,6 +24,7 @@ import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,6 +47,11 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.ofNullable(currentPersistedSnapshot.get());
+  }
+
+  @Override
+  public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
+    return null;
   }
 
   @Override
