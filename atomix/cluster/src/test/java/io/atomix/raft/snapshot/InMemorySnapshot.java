@@ -130,9 +130,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
-  public void delete() {}
-
-  @Override
   public Path getPath() {
     return null;
   }

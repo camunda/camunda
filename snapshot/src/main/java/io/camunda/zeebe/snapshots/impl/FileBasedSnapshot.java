@@ -93,25 +93,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public void delete() {
-    // the checksum, as a mark file, should be deleted first
-    try {
-      Files.deleteIfExists(checksumFile);
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to delete snapshot checksum file {}", checksumFile, e);
-    }
-
-    try {
-      FileUtil.deleteFolderIfExists(directory);
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to delete snapshot {}", directory, e);
-    }
-
-    deleted = true;
-    onSnapshotDeleted.accept(this);
-  }
-
-  @Override
   public Path getPath() {
     return getDirectory();
   }
@@ -149,6 +130,24 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
           }
         });
     return snapshotLocked;
+  }
+
+  void delete() {
+    // the checksum, as a mark file, should be deleted first
+    try {
+      Files.deleteIfExists(checksumFile);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete snapshot checksum file {}", checksumFile, e);
+    }
+
+    try {
+      FileUtil.deleteFolderIfExists(directory);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete snapshot {}", directory, e);
+    }
+
+    deleted = true;
+    onSnapshotDeleted.accept(this);
   }
 
   @Override

@@ -49,9 +49,6 @@ public interface PersistedSnapshot extends CloseableSilently {
    */
   SnapshotChunkReader newChunkReader();
 
-  /** Deletes the snapshot. */
-  void delete();
-
   /**
    * @return a path to the snapshot location
    */

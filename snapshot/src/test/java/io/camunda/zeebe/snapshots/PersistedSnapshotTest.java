@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.snapshots;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
@@ -19,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class PersistedSnapshotTest {
@@ -37,20 +34,6 @@ public final class PersistedSnapshotTest {
 
     factory.createReceivableSnapshotStore(root.toPath(), partitionId);
     snapshotStore = factory.getConstructableSnapshotStore(partitionId);
-  }
-
-  @Test
-  public void shouldDeleteSnapshot() {
-    // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
-    transientSnapshot.take(this::writeSnapshot);
-    final var persistedSnapshot = transientSnapshot.persist().join();
-
-    // when
-    persistedSnapshot.delete();
-
-    // then
-    assertThat(persistedSnapshot.getPath()).doesNotExist();
   }
 
   private boolean writeSnapshot(final Path path) {

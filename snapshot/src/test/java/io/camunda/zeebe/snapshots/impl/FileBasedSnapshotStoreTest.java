@@ -269,6 +269,18 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldDeleteSnapshot() {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+
+    // when
+    persistedSnapshot.delete();
+
+    // then
+    assertThat(persistedSnapshot.getPath()).doesNotExist();
+  }
+
+  @Test
   public void shouldNotDeleteReservedSnapshot() {
     // given
     final var reservedSnapshot = takeTransientSnapshot(1, snapshotStore).persist().join();
