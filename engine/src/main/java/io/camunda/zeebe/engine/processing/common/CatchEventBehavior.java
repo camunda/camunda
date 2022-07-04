@@ -261,14 +261,15 @@ public final class CatchEventBehavior {
         subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
     sideEffects.add(
-        new OpenMessageSubscriptionSideEffectProducer(subscriptionCommandSender,
-                subscriptionPartitionId,
-                processInstanceKey,
-                elementInstanceKey,
-                bpmnProcessId,
-                messageName,
-                correlationKey,
-                event.isInterrupting()));
+        new OpenMessageSubscriptionSideEffectProducer(
+            subscriptionCommandSender,
+            subscriptionPartitionId,
+            processInstanceKey,
+            elementInstanceKey,
+            bpmnProcessId,
+            messageName,
+            correlationKey,
+            event.isInterrupting()));
   }
 
   private void subscribeToTimerEvents(
@@ -311,13 +312,7 @@ public final class CatchEventBehavior {
         .setTargetElementId(handlerNodeId)
         .setProcessDefinitionKey(processDefinitionKey);
 
-    sideEffects.add(
-        () -> {
-          /* timerChecker implements onRecovered to recover from restart, so no need to schedule
-          this in TimerCreatedApplier.*/
-          timerChecker.scheduleTimer(dueDate);
-          return true;
-        });
+    sideEffects.add(new ScheduleTimerSideEffectProducer(timerChecker, dueDate));
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
   }
@@ -367,29 +362,42 @@ public final class CatchEventBehavior {
   private void unsubscribeFromMessageEvent(
       final ProcessMessageSubscription subscription, final SideEffects sideEffects) {
 
-    final DirectBuffer messageName = cloneBuffer(subscription.getRecord().getMessageNameBuffer());
-    final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
-    final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
-    final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
-
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sideEffects.add(
-        () ->
-            sendCloseMessageSubscriptionCommand(
-                subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
+        new CloseMessageSubscriptionSideEffectProducer(
+            subscriptionCommandSender, subscription.getRecord()));
   }
 
-  private boolean sendCloseMessageSubscriptionCommand(
-      final int subscriptionPartitionId,
-      final long processInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName) {
-    return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
+  private static final class CloseMessageSubscriptionSideEffectProducer
+      implements SideEffectProducer {
+
+    private final SubscriptionCommandSender subscriptionCommandSender;
+    private final int subscriptionPartitionId;
+    private final long processInstanceKey;
+    private final long elementInstanceKey;
+    private final DirectBuffer messageName;
+
+    private CloseMessageSubscriptionSideEffectProducer(
+        final SubscriptionCommandSender subscriptionCommandSender,
+        final ProcessMessageSubscriptionRecord record) {
+      this.subscriptionCommandSender = subscriptionCommandSender;
+
+      messageName = cloneBuffer(record.getMessageNameBuffer());
+      subscriptionPartitionId = record.getSubscriptionPartitionId();
+      processInstanceKey = record.getProcessInstanceKey();
+      elementInstanceKey = record.getElementInstanceKey();
+    }
+
+    @Override
+    public boolean flush() {
+      return subscriptionCommandSender.closeMessageSubscription(
+          subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
+    }
   }
 
-  private static final class OpenMessageSubscriptionSideEffectProducer implements SideEffectProducer {
+  private static final class OpenMessageSubscriptionSideEffectProducer
+      implements SideEffectProducer {
     private final SubscriptionCommandSender subscriptionCommandSender;
     private final int subscriptionPartitionId;
     private final long processInstanceKey;
@@ -401,9 +409,12 @@ public final class CatchEventBehavior {
 
     private OpenMessageSubscriptionSideEffectProducer(
         final SubscriptionCommandSender subscriptionCommandSender,
-        final int subscriptionPartitionId, final long processInstanceKey,
-        final long elementInstanceKey, final DirectBuffer bpmnProcessId,
-        final DirectBuffer messageName, final DirectBuffer correlationKey,
+        final int subscriptionPartitionId,
+        final long processInstanceKey,
+        final long elementInstanceKey,
+        final DirectBuffer bpmnProcessId,
+        final DirectBuffer messageName,
+        final DirectBuffer correlationKey,
         final boolean closeOnCorrelate) {
       this.subscriptionCommandSender = subscriptionCommandSender;
       this.subscriptionPartitionId = subscriptionPartitionId;
@@ -493,6 +504,26 @@ public final class CatchEventBehavior {
 
     public boolean isTimer() {
       return event.isTimer();
+    }
+  }
+
+  private static final class ScheduleTimerSideEffectProducer implements SideEffectProducer {
+
+    private final DueDateTimerChecker timerChecker;
+    private final long dueDate;
+
+    private ScheduleTimerSideEffectProducer(
+        final DueDateTimerChecker timerChecker, final long dueDate) {
+      this.timerChecker = timerChecker;
+      this.dueDate = dueDate;
+    }
+
+    @Override
+    public boolean flush() {
+      /* timerChecker implements onRecovered to recover from restart, so no need to schedule
+      this in TimerCreatedApplier.*/
+      timerChecker.scheduleTimer(dueDate);
+      return true;
     }
   }
 }
