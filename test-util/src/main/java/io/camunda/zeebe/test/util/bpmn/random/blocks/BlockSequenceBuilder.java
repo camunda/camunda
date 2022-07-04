@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +24,7 @@ import java.util.Random;
  * <p>Hints: Depending on random value this may also create a sequence with no block. If current
  * depth is at max depth it will only pick block builders which do not add depth.
  */
-public class BlockSequenceBuilder implements BlockBuilder {
+public class BlockSequenceBuilder extends AbstractBlockBuilder {
 
   private static final List<BlockBuilderFactory> BLOCK_BUILDER_FACTORIES =
       Arrays.asList(
@@ -46,6 +47,7 @@ public class BlockSequenceBuilder implements BlockBuilder {
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
 
   public BlockSequenceBuilder(final ConstructionContext context) {
+    super(context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final int maxDepth = context.getMaxDepth();
     final int maxBlocks = context.getMaxBlocks();
@@ -54,8 +56,8 @@ public class BlockSequenceBuilder implements BlockBuilder {
 
     if (currentDepth < maxDepth) {
 
-      // reduce the number of steps in a sequence when we are nested
-      final int steps = random.nextInt(Math.max(0, maxBlocks - currentDepth));
+      // reduce the number of steps in a sequence when we are nested and guarantee at least 1 step
+      final int steps = random.nextInt(Math.max(0, maxBlocks - currentDepth)) + 1;
 
       for (int step = 0; step < steps; step++) {
 
@@ -83,13 +85,40 @@ public class BlockSequenceBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     blockBuilders.forEach(
-        blockBuilder -> result.append(blockBuilder.findRandomExecutionPath(random)));
+        blockBuilder -> result.append(blockBuilder.findRandomExecutionPath(context)));
 
     return result;
+  }
+
+  @Override
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    final List<BlockBuilder> allBlockBuilders = new ArrayList<>();
+    blockBuilders.forEach(
+        blockBuilder -> allBlockBuilders.addAll(blockBuilder.getPossibleStartingBlocks()));
+    return allBlockBuilders;
+  }
+
+  @Override
+  public boolean equalsOrContains(final List<String> startingElementIds) {
+    return startingElementIds.contains(getElementId())
+        || getPossibleStartingElementIds().stream().anyMatch(startingElementIds::contains);
+  }
+
+  /**
+   * When building a parallel gateway we need to know the element id of the next element in the
+   * process as we need to append it to the list of start elements. Since each branch of the
+   * parallel gateway is a BlockSequenceBuilder, we cannot use the element id of this block as it is
+   * a dummy id (we cannot start at a BlockSequenceBlock). Instead, we need to return the element id
+   * of the first block inside this block.
+   *
+   * @return the element id of the block inside this block
+   */
+  public String getFirstBlockElementId() {
+    return blockBuilders.get(0).getElementId();
   }
 
   public static class BlockSequenceBuilderFactory {
