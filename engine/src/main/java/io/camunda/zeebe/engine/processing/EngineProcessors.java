@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
@@ -89,7 +90,11 @@ public final class EngineProcessors {
 
     final var eventTriggerBehavior =
         new EventTriggerBehavior(
-            zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
+            zeebeState.getKeyGenerator(),
+            catchEventBehavior,
+            writers,
+            zeebeState,
+            processingContext.getSideEffectContext());
 
     final var eventPublicationBehavior =
         new BpmnEventPublicationBehavior(
@@ -126,7 +131,8 @@ public final class EngineProcessors {
             eventTriggerBehavior,
             writers,
             timerChecker,
-            jobMetrics);
+            jobMetrics,
+            processingContext.getSideEffectContext());
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -156,7 +162,8 @@ public final class EngineProcessors {
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
       final DueDateTimerChecker timerChecker,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final SideEffectContext context) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         expressionProcessor,
@@ -166,7 +173,8 @@ public final class EngineProcessors {
         timerChecker,
         eventTriggerBehavior,
         writers,
-        jobMetrics);
+        jobMetrics,
+        context);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

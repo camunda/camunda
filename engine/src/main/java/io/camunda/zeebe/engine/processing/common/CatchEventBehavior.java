@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -390,7 +391,7 @@ public final class CatchEventBehavior {
     }
 
     @Override
-    public boolean produce() {
+    public boolean produce(final SideEffectContext sideEffectContext) {
       return subscriptionCommandSender.closeMessageSubscription(
           subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
     }
@@ -427,7 +428,7 @@ public final class CatchEventBehavior {
     }
 
     @Override
-    public boolean produce() {
+    public boolean produce(final SideEffectContext context) {
       return subscriptionCommandSender.openMessageSubscription(
           subscriptionPartitionId,
           processInstanceKey,
@@ -519,7 +520,7 @@ public final class CatchEventBehavior {
     }
 
     @Override
-    public boolean produce() {
+    public boolean produce(final SideEffectContext context) {
       /* timerChecker implements onRecovered to recover from restart, so no need to schedule
       this in TimerCreatedApplier.*/
       timerChecker.scheduleTimer(dueDate);

@@ -355,7 +355,7 @@ public final class StreamProcessorTest {
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
-                        () -> {
+                        (context) -> {
                           processLatch.countDown();
                           return true;
                         });
@@ -388,7 +388,7 @@ public final class StreamProcessorTest {
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
-                        () -> {
+                        (context) -> {
                           processLatch.countDown();
                           return processLatch.getCount() < 1;
                         });
@@ -422,7 +422,7 @@ public final class StreamProcessorTest {
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
-                        () -> {
+                        (context) -> {
                           throw new RuntimeException("expected");
                         });
                     processLatch.countDown();

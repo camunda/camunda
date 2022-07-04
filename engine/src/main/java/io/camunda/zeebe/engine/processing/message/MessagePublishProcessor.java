@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -210,7 +211,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
 
     @Override
-    public boolean produce() {
+    public boolean produce(final SideEffectContext context) {
       final var success =
           correlatingSubscriptions.visitSubscriptions(
               subscription ->
@@ -223,7 +224,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
                       variablesBuffer,
                       correlationKeyBUffer));
 
-      return success && responseWriter.produce();
+      return success && responseWriter.produce(context);
     }
   }
 }

@@ -7,17 +7,4 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.sideeffect;
 
-/**
- * An action that is executed at the end of the processing. It will <b>not</b> be executed during
- * the re-processing.
- */
-@FunctionalInterface
-public interface SideEffectProducer {
-
-  /**
-   * Applies the side effect.
-   *
-   * @return <code>false</code> to indicate that the side effect could not be applied successfully
-   */
-  boolean produce(SideEffectContext context);
-}
+public interface SideEffectContext {}

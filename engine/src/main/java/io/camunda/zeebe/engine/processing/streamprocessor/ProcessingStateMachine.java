@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -147,6 +148,8 @@ public final class ProcessingStateMachine {
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
 
+  private final SideEffectContext sideEffectContext;
+
   public ProcessingStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
 
@@ -172,6 +175,7 @@ public final class ProcessingStateMachine {
 
     metrics = new StreamProcessorMetrics(partitionId);
     streamProcessorListener = context.getStreamProcessorListener();
+    sideEffectContext = context.getSideEffectContext();
   }
 
   private void skipRecord() {
@@ -435,7 +439,11 @@ public final class ProcessingStateMachine {
 
   private void executeSideEffects() {
     final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::produce, abortCondition);
+        sideEffectsRetryStrategy.runWithRetry(
+            () -> {
+              return sideEffectProducer.produce(sideEffectContext);
+            },
+            abortCondition);
 
     actor.runOnCompletion(
         retryFuture,

@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -57,7 +58,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final MutableZeebeState zeebeState,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final SideEffectContext sideEffectContext) {
     processState = zeebeState.getProcessState();
 
     final var bpmnBehaviors =
@@ -71,7 +73,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             this::getContainerProcessor,
             writers,
             jobMetrics,
-            processEngineMetrics);
+            processEngineMetrics,
+            sideEffectContext);
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processors = new BpmnElementProcessors(bpmnBehaviors);

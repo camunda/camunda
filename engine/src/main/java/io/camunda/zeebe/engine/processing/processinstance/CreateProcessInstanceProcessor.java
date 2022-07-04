@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -84,13 +85,16 @@ public final class CreateProcessInstanceProcessor
   private final StateWriter stateWriter;
   private final ProcessEngineMetrics metrics;
 
+  private final SideEffectContext sideEffectContext;
+
   public CreateProcessInstanceProcessor(
       final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final VariableBehavior variableBehavior,
       final CatchEventBehavior catchEventBehavior,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final SideEffectContext sideEffectContext) {
     this.processState = processState;
     this.variableBehavior = variableBehavior;
     this.catchEventBehavior = catchEventBehavior;
@@ -98,6 +102,7 @@ public final class CreateProcessInstanceProcessor
     commandWriter = writers.command();
     stateWriter = writers.state();
     this.metrics = metrics;
+    this.sideEffectContext = sideEffectContext;
   }
 
   @Override
@@ -399,7 +404,7 @@ public final class CreateProcessInstanceProcessor
         });
 
     // applying the side effects is part of creating the event subscriptions
-    sideEffectQueue.produce();
+    sideEffectQueue.produce(sideEffectContext);
   }
 
   /**

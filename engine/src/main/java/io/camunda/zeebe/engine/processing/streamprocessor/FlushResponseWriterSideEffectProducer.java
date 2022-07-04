@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 
@@ -19,7 +20,7 @@ public final class FlushResponseWriterSideEffectProducer implements SideEffectPr
   }
 
   @Override
-  public boolean produce() {
-    return responseWriter.produce();
+  public boolean produce(final SideEffectContext sideEffectContext) {
+    return responseWriter.produce(sideEffectContext);
   }
 }

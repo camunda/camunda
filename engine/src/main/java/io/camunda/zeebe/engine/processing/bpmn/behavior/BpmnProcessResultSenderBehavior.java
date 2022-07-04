@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -32,11 +33,16 @@ public final class BpmnProcessResultSenderBehavior {
   private final VariableState variableState;
   private final TypedResponseWriter responseWriter;
 
+  private final SideEffectContext sideEffectContext;
+
   public BpmnProcessResultSenderBehavior(
-      final ZeebeState zeebeState, final TypedResponseWriter responseWriter) {
+      final ZeebeState zeebeState,
+      final TypedResponseWriter responseWriter,
+      final SideEffectContext sideEffectContext) {
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
     this.responseWriter = responseWriter;
+    this.sideEffectContext = sideEffectContext;
   }
 
   public void sendResult(final BpmnElementContext context) {
@@ -75,7 +81,7 @@ public final class BpmnProcessResultSenderBehavior {
         requestMetadata.getRequestId(),
         requestMetadata.getRequestStreamId());
 
-    responseWriter.produce();
+    responseWriter.produce(sideEffectContext);
   }
 
   private DirectBuffer collectVariables(

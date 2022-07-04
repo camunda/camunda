@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
@@ -25,7 +26,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.function.BooleanSupplier;
 
-public final class ProcessingContext implements ReadonlyProcessingContext {
+public final class ProcessingContext implements ReadonlyProcessingContext, SideEffectContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -217,5 +218,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public StreamProcessorMode getProcessorMode() {
     return streamProcessorMode;
+  }
+
+  @Deprecated // this should be removed
+  public SideEffectContext getSideEffectContext() {
+    return this;
   }
 }

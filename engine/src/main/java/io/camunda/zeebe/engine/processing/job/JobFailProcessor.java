@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -124,7 +125,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     }
 
     @Override
-    public boolean produce() {
+    public boolean produce(final SideEffectContext sideEffectContext) {
       jobBackoffChecker.scheduleBackOff(dueDate);
       return true;
     }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceW
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.CancelTimerProcessor;
@@ -55,7 +56,8 @@ public final class ProcessEventProcessors {
       final DueDateTimerChecker timerChecker,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final SideEffectContext sideEffectContext) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
     final VariableBehavior variableBehavior =
@@ -75,7 +77,8 @@ public final class ProcessEventProcessors {
             zeebeState,
             writers,
             jobMetrics,
-            processEngineMetrics);
+            processEngineMetrics,
+            sideEffectContext);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
@@ -105,7 +108,8 @@ public final class ProcessEventProcessors {
         writers,
         variableBehavior,
         catchEventBehavior,
-        processEngineMetrics);
+        processEngineMetrics,
+        sideEffectContext);
 
     return bpmnStreamProcessor;
   }
@@ -209,7 +213,8 @@ public final class ProcessEventProcessors {
       final Writers writers,
       final VariableBehavior variableBehavior,
       final CatchEventBehavior catchEventBehavior,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final SideEffectContext sideEffectContext) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
@@ -220,7 +225,8 @@ public final class ProcessEventProcessors {
             writers,
             variableBehavior,
             catchEventBehavior,
-            metrics);
+            metrics,
+            sideEffectContext);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 

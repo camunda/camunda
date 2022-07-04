@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -39,10 +40,10 @@ public final class NoopResponseWriter implements TypedResponseWriter {
       final int requestStreamId) {}
 
   @Override
-  public boolean produce() {
-    return false;
-  }
+  public void reset() {}
 
   @Override
-  public void reset() {}
+  public boolean produce(final SideEffectContext sideEffectContext) {
+    return false;
+  }
 }

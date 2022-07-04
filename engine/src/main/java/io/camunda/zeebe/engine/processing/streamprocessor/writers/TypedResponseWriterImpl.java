@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -109,7 +110,7 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
   }
 
   @Override
-  public boolean produce() {
+  public boolean produce(final SideEffectContext sideEffectContext) {
     if (isResponseStaged) {
       writer.tryWriteResponse(requestStreamId, requestId);
     }
