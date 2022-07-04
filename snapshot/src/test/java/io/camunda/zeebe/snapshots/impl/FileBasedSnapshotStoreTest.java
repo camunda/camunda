@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -281,6 +282,19 @@ public class FileBasedSnapshotStoreTest {
         .containsExactlyInAnyOrder(reservedSnapshot, newSnapshot);
     assertThat(reservedSnapshot.getPath()).exists();
     assertThat(newSnapshot.getPath()).exists();
+  }
+
+  @Test
+  public void shouldNotReserveDeletedSnapshot() throws IOException {
+    // given
+    final var snapshotToReserve = takeTransientSnapshot(1, snapshotStore).persist().join();
+
+    // when
+    takeTransientSnapshot(2, snapshotStore).persist().join();
+
+    // then
+    assertThatThrownBy(() -> snapshotToReserve.reserve().join())
+        .hasCauseInstanceOf(SnapshotNotFoundException.class);
   }
 
   @Test
