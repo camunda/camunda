@@ -136,8 +136,11 @@ public class BatchOperationWriter {
     try {
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      UpdateRequest updateRequest = new UpdateRequest().index(operationTemplate.getFullQualifiedName()).id(operation.getId())
-          .doc(jsonMap);
+      UpdateRequest updateRequest = new UpdateRequest()
+          .index(operationTemplate.getFullQualifiedName())
+          .id(operation.getId())
+          .doc(jsonMap)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
       if (refreshImmediately) {
         updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       }
