@@ -48,6 +48,17 @@
 # minKeepAliveInterval: 30s
 
 # cluster:
+# Sets initial contact points of brokers
+# The contact points of the internal network configuration must be specified.
+# The format is [HOST:PORT]
+# Example:
+# initialContactPoints : [ 192.168.1.22:26502, 192.168.1.32:26502 ]
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+# specifying a comma-separated list of contact points.
+# Default is 127.0.0.1:26502
+# initialContactPoints : [127.0.0.1:26502]
+
+# WARNING: This setting is deprecated! Use initialContactPoints instead.
 # Sets the broker the gateway should initial contact
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT.
 # contactPoint: 127.0.0.1:26502

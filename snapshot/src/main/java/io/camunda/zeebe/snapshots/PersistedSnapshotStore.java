@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.nio.file.Path;
 import java.util.Optional;
 

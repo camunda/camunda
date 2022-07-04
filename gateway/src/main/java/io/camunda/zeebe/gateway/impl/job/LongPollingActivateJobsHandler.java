@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import static io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler.toInflightActivateJobsRequest;
-import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
+import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
@@ -19,8 +19,8 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.grpc.protobuf.StatusProto;
 import java.time.Duration;
 import java.util.Map;

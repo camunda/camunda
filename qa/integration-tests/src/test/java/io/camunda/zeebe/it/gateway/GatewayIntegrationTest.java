@@ -17,9 +17,10 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
@@ -47,7 +48,7 @@ public final class GatewayIntegrationTest {
         .getCluster()
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
-        .setContactPoint(internalApi.toString())
+        .setInitialContactPoints(Collections.singletonList(internalApi.toString()))
         .setRequestTimeout(Duration.ofSeconds(10));
     configuration.init();
 

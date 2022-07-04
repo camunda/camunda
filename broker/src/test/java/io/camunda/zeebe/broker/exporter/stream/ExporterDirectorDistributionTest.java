@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;

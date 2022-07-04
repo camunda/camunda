@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
+import static io.camunda.zeebe.gateway.Loggers.GATEWAY_CFG_LOGGER;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
@@ -14,21 +15,26 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class ClusterCfg {
-  private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
 
+  private List<String> initialContactPoints =
+      Collections.singletonList(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT);
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
   private String host = DEFAULT_CLUSTER_HOST;
-  private String advertisedHost = host;
+  private String advertisedHost = null;
   private int port = DEFAULT_CLUSTER_PORT;
-  private int advertisedPort = port;
+  private Integer advertisedPort = null;
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
@@ -52,11 +58,7 @@ public final class ClusterCfg {
   }
 
   public String getAdvertisedHost() {
-    if (advertisedHost == null) {
-      return getHost();
-    }
-
-    return advertisedHost;
+    return Optional.ofNullable(advertisedHost).orElseGet(this::getHost);
   }
 
   public ClusterCfg setAdvertisedHost(final String advertisedHost) {
@@ -74,7 +76,7 @@ public final class ClusterCfg {
   }
 
   public int getAdvertisedPort() {
-    return advertisedPort;
+    return Optional.ofNullable(advertisedPort).orElseGet(this::getPort);
   }
 
   public ClusterCfg setAdvertisedPort(final int advertisedPort) {
@@ -82,12 +84,11 @@ public final class ClusterCfg {
     return this;
   }
 
-  public String getContactPoint() {
-    return contactPoint;
-  }
-
+  @Deprecated(since = "8.1.0", forRemoval = true)
   public ClusterCfg setContactPoint(final String contactPoint) {
-    this.contactPoint = contactPoint;
+    GATEWAY_CFG_LOGGER.warn(
+        "Configuring deprecated property 'contactPoint', will use 'initialContactPoints'. Please consider to migrate to 'initialContactPoints' property, which allows to set a list of contact points.");
+    setInitialContactPoints(Collections.singletonList(contactPoint));
     return this;
   }
 
@@ -134,10 +135,19 @@ public final class ClusterCfg {
     messageCompression = compressionAlgorithm;
   }
 
+  public List<String> getInitialContactPoints() {
+    return initialContactPoints;
+  }
+
+  public ClusterCfg setInitialContactPoints(final List<String> initialContactPoints) {
+    this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
-        contactPoint,
+        initialContactPoints,
         requestTimeout,
         clusterName,
         memberId,
@@ -158,7 +168,7 @@ public final class ClusterCfg {
     }
     final ClusterCfg that = (ClusterCfg) o;
     return port == that.port
-        && Objects.equals(contactPoint, that.contactPoint)
+        && Objects.equals(initialContactPoints, that.initialContactPoints)
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(clusterName, that.clusterName)
         && Objects.equals(memberId, that.memberId)
@@ -171,9 +181,8 @@ public final class ClusterCfg {
   @Override
   public String toString() {
     return "ClusterCfg{"
-        + "contactPoint='"
-        + contactPoint
-        + '\''
+        + "initialContactPoints="
+        + initialContactPoints
         + ", requestTimeout="
         + requestTimeout
         + ", clusterName='"

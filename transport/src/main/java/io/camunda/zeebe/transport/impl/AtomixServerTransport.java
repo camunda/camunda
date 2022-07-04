@@ -8,12 +8,12 @@
 package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingService;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.ServerTransport;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;

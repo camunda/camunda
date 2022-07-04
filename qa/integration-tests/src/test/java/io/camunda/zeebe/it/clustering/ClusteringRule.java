@@ -51,6 +51,10 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -58,10 +62,6 @@ import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -358,11 +358,19 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Gateway createGateway() {
-    final String contactPoint =
-        NetUtil.toSocketAddressString(getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
+    final List<String> initialContactPoints =
+        brokerCfgs.values().stream()
+            .map(
+                brokerCfg ->
+                    NetUtil.toSocketAddressString(
+                        brokerCfg.getNetwork().getInternalApi().getAddress()))
+            .collect(Collectors.toList());
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
-    gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
+    gatewayCfg
+        .getCluster()
+        .setInitialContactPoints(initialContactPoints)
+        .setClusterName(clusterName);
     gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     // temporarily increase request time out, but we should make this configurable per test
@@ -381,7 +389,10 @@ public final class ClusteringRule extends ExternalResource {
             .withClusterId(clusterCfg.getClusterName())
             .withMembershipProvider(
                 BootstrapDiscoveryProvider.builder()
-                    .withNodes(Address.from(clusterCfg.getContactPoint()))
+                    .withNodes(
+                        clusterCfg.getInitialContactPoints().stream()
+                            .map(Address::from)
+                            .toArray(Address[]::new))
                     .build())
             .withMembershipProtocol(
                 SwimMembershipProtocol.builder().withSyncInterval(Duration.ofSeconds(1)).build())

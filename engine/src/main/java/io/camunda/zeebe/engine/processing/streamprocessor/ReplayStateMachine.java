@@ -25,11 +25,11 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
-import io.camunda.zeebe.util.retry.RetryStrategy;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 

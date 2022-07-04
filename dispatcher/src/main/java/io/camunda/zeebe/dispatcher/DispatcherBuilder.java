@@ -12,11 +12,11 @@ import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredC
 
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.allocation.AllocatedBuffer;
 import io.camunda.zeebe.util.allocation.BufferAllocators;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.Objects;
 import org.agrona.BitUtil;
 

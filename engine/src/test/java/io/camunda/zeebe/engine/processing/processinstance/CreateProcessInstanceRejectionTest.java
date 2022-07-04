@@ -138,4 +138,50 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionReason(
             "Expected to create instance of process with start instructions but the element with id 'timer1' belongs to an event-based gateway. The creation of elements belonging to an event-based gateway is not supported.");
   }
+
+  @Test
+  public void shouldRejectCommandIfUnableToSubscribeToEvents() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess -> {
+                      subprocess
+                          .embeddedSubProcess()
+                          .startEvent()
+                          .serviceTask("task", t -> t.zeebeJobType("task"))
+                          .endEvent();
+
+                      subprocess
+                          .boundaryEvent("message-boundary-event")
+                          .cancelActivity(false)
+                          .message(m -> m.name("msg").zeebeCorrelationKeyExpression("unknown_var"))
+                          .endEvent();
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withStartInstruction("task")
+        .expectRejection()
+        .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withBpmnProcessId(PROCESS_ID)
+                .withStartInstruction("task")
+                .onlyCommandRejections()
+                .getFirst())
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.PROCESSING_ERROR);
+  }
 }

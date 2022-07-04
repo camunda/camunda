@@ -5,7 +5,9 @@ zeebe:
       port: 123
 
     cluster:
-      contactPoint: foobar:1234
+      initialContactPoints:
+        - foobar:1234
+        - barfoo:5678
       maxMessageSize: 4G
       requestTimeout: 123h
       clusterName: testCluster

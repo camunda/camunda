@@ -12,9 +12,9 @@ import io.camunda.zeebe.broker.logstreams.LogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
-import io.camunda.zeebe.util.sched.SchedulingHints;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.List;
 
 public class LogDeletionPartitionStartupStep implements PartitionStartupStep {

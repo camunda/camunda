@@ -20,9 +20,9 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffse
 import io.camunda.zeebe.dispatcher.ClaimedFragment;
 import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;

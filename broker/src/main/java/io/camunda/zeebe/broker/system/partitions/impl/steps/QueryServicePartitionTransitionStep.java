@@ -12,8 +12,8 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.query.StateQueryService;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.agrona.CloseHelper;
 
 public final class QueryServicePartitionTransitionStep implements PartitionTransitionStep {

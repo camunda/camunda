@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;

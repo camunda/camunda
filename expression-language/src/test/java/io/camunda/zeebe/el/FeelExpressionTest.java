@@ -11,7 +11,7 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;

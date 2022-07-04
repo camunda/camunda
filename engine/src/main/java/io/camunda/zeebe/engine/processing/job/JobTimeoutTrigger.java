@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
+import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
 
 public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {

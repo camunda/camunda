@@ -11,8 +11,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
 import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 final class PendingProcessMessageSubscriptionState {
 

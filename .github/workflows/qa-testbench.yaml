@@ -13,7 +13,7 @@ on:
         required: false
   schedule:
   # * is a special character in YAML so you have to quote this string
-    - cron:  '0 1 * * *'
+    - cron:  '0 23 * * *'
 env:
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
@@ -130,7 +130,7 @@ jobs:
       - id: slack-failure-notify
         name: Send failure slack notification
         uses: slackapi/slack-github-action@v1.19.0
-        if: ${{ failure() }}
+        if: ${{ always() && needs.qa-testbench.result != 'success' }}
         with:
           payload: |
             {
@@ -147,7 +147,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check: ${{ env.BUILD_URL }}\n"
+                    "text": "Please check: ${{ env.BUILD_URL }}\n \\cc @zeebe-medic"
                   }
                 }
               ]
@@ -159,7 +159,7 @@ jobs:
       - id: slack-success-notify
         name: Send success slack notification
         uses: slackapi/slack-github-action@v1.19.0
-        if: ${{ !failure() }}
+        if: ${{ always() && needs.qa-testbench.result == 'success' }}
         with:
           payload: |
             {

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /**
  * A received volatile snapshot, which consist of several {@link SnapshotChunk}'s. It can be
