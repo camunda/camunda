@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessKpiRetrievalIT extends AbstractIT {
@@ -231,7 +233,6 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     String reportId = createKpiReport("1", PROCESS_DEFINITION_KEY);
-
     final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
@@ -252,6 +253,38 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
           List.of(createExpectedKpiResponse(reportId, "1"))
         )
       );
+  }
+
+  @Test
+  public void userCanSeeUnauthorizedKpiReports() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    importAllEngineEntitiesFromScratch();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
+      new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+      .build();
+    reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("9999999");
+    singleProcessReportDefinitionRequestDto.setData(reportDataDto);
+    singleProcessReportDefinitionRequestDto.setId("someId");
+    reportClient.createSingleProcessReportAsUser(
+      singleProcessReportDefinitionRequestDto,
+      KERMIT_USER,
+      KERMIT_USER
+    );
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+
+    // then
+    assertThat(processes).hasSize(1);
+    assertThat(processes.get(0).getKpis().get(0).getTarget()).isEqualTo("9999999");
   }
 
   private KpiResponseDto createExpectedKpiResponse(final String reportId, final String target) {
@@ -321,7 +354,8 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     return builder.noIncidents().add();
   }
 
-  private ProcessFilterBuilder addInstanceDateFilterToBuilder(final ProcessFilterBuilder builder, OffsetDateTime startDate) {
+  private ProcessFilterBuilder addInstanceDateFilterToBuilder(final ProcessFilterBuilder builder,
+                                                              OffsetDateTime startDate) {
     return builder.fixedInstanceStartDate().start(startDate).add();
   }
 

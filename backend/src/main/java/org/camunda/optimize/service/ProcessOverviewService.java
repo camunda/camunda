@@ -6,63 +6,29 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.KpiResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DeletedIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
-import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,69 +51,30 @@ public class ProcessOverviewService {
   private final ProcessOverviewReader processOverviewReader;
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
-  private final ReportEvaluationService reportEvaluationService;
   private final CollectionService collectionService;
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final ZoneId timezone) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
       .stream()
       .filter(def ->
-                definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
+                definitionAuthorizationService.isAuthorizedToAccessDefinition(
+                  userId,
+                  PROCESS,
+                  def.getKey(),
+                  def.getTenantIds()
+                ))
       .collect(toMap(DefinitionWithTenantIdsDto::getKey, DefinitionWithTenantIdsDto::getName));
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
       processOverviewReader.getProcessOverviewsByKey(procDefKeysAndName.keySet());
 
-    final Map<String, List<SingleProcessReportDefinitionRequestDto>> kpiReportsByKey = new HashMap<>();
-    procDefKeysAndName.keySet()
-      .forEach(processDefinitionKey -> kpiReportsByKey.put(
-        processDefinitionKey,
-        kpiService.getKpiReportsForProcessDefinition(processDefinitionKey)
-      ));
-
     return procDefKeysAndName.entrySet()
       .stream()
       .map(entry -> {
         final String procDefKey = entry.getKey();
-        final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
-        final Optional<List<SingleProcessReportDefinitionRequestDto>> kpiReportsForKey = Optional.ofNullable(
-          kpiReportsByKey.get(procDefKey));
-        List<KpiResponseDto> kpis = new ArrayList<>();
-        if (kpiReportsForKey.isPresent()) {
-          for (SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto :
-            kpiReportsForKey.get()) {
-            if (singleProcessReportDefinitionRequestDto.getData().getGroupBy().equals(new NoneGroupByDto())) {
-              @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
-                reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
-                  userId,
-                  timezone,
-                  singleProcessReportDefinitionRequestDto.getId(),
-                  null,
-                  null
-                ).getEvaluationResult();
-              final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-              if (evaluationValue != null) {
-                KpiResponseDto responseDto = new KpiResponseDto();
-                getTargetAndUnit(singleProcessReportDefinitionRequestDto)
-                  .ifPresent(targetAndUnit -> {
-                    responseDto.setTarget(targetAndUnit.getTarget());
-                    responseDto.setUnit(targetAndUnit.getTargetValueUnit());
-                  });
-                responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
-                responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
-                responseDto.setBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
-                responseDto.setMeasure(geViewProperty(singleProcessReportDefinitionRequestDto).orElse(null));
-                responseDto.setValue(evaluationValue.toString());
-                responseDto.setType(getKpiType(singleProcessReportDefinitionRequestDto));
-                kpis.add(responseDto);
-              }
-            }
-          }
-        }
-
         String appCueSuffix = collectionAlreadyCreatedForProcess(procDefKey) ? "" : APP_CUE_DASHBOARD_SUFFIX;
         String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, procDefKey, procDefKey) + appCueSuffix;
-
+        final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
           StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
           procDefKey,
@@ -156,7 +83,7 @@ public class ProcessOverviewService {
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto()),
-          kpis,
+          kpiService.getKpiResultsForProcessDefinition(procDefKey, timezone),
           magicLinkToDashboard
         );
       }).collect(Collectors.toList());
@@ -171,41 +98,6 @@ public class ProcessOverviewService {
     }
   }
 
-  private KpiType getKpiType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    return geViewProperty(singleProcessReportDefinitionRequestDto)
-      .filter(measure -> (ViewProperty.DURATION.equals(measure) || (ViewProperty.PERCENTAGE.equals(measure)
-        && !containsQualityFilter(singleProcessReportDefinitionRequestDto))))
-      .map(measure -> KpiType.TIME)
-      .orElse(KpiType.QUALITY);
-  }
-
-  private boolean containsQualityFilter(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    return singleProcessReportDefinitionRequestDto.getData().getFilter()
-      .stream()
-      .anyMatch(processFilter -> ((processFilter instanceof FlowNodeStartDateFilterDto) ||
-        (processFilter instanceof FlowNodeEndDateFilterDto) ||
-        (processFilter instanceof VariableFilterDto) ||
-        (processFilter instanceof MultipleVariableFilterDto) ||
-        (processFilter instanceof ExecutedFlowNodeFilterDto) ||
-        (processFilter instanceof ExecutingFlowNodeFilterDto) ||
-        (processFilter instanceof CanceledFlowNodeFilterDto) ||
-        (processFilter instanceof RunningInstancesOnlyFilterDto) ||
-        (processFilter instanceof CompletedInstancesOnlyFilterDto) ||
-        (processFilter instanceof CanceledInstancesOnlyFilterDto) ||
-        (processFilter instanceof NonCanceledInstancesOnlyFilterDto) ||
-        (processFilter instanceof SuspendedInstancesOnlyFilterDto) ||
-        (processFilter instanceof NonSuspendedInstancesOnlyFilterDto) ||
-        (processFilter instanceof FlowNodeDurationFilterDto) ||
-        (processFilter instanceof OpenIncidentFilterDto) ||
-        (processFilter instanceof DeletedIncidentFilterDto) ||
-        (processFilter instanceof ResolvedIncidentFilterDto) ||
-        (processFilter instanceof NoIncidentFilterDto) ||
-        (processFilter instanceof RunningFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CanceledFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)));
-  }
-
   private Optional<ViewProperty> geViewProperty(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     List<ViewProperty> viewProperties = singleProcessReportDefinitionRequestDto.getData().getViewProperties();
     if (viewProperties.contains(ViewProperty.DURATION)) {
@@ -217,34 +109,6 @@ public class ProcessOverviewService {
     } else {
       return Optional.empty();
     }
-  }
-
-  private boolean getIsBelow(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
-      .getConfiguration()
-      .getTargetValue();
-    return geViewProperty(singleProcessReportDefinitionRequestDto)
-      .map(measure -> {
-        if (measure.equals(ViewProperty.DURATION)) {
-          return targetValue.getDurationProgress().getTarget().getIsBelow();
-        } else {
-          return targetValue.getCountProgress().getIsBelow();
-        }
-      }).orElse(false);
-  }
-
-  private Optional<TargetAndUnit> getTargetAndUnit(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    SingleReportTargetValueDto targetValue =
-      singleProcessReportDefinitionRequestDto.getData().getConfiguration().getTargetValue();
-    return geViewProperty(singleProcessReportDefinitionRequestDto)
-      .map(measure -> {
-        if (measure.equals(ViewProperty.DURATION)) {
-          final TargetDto targetDto = targetValue.getDurationProgress().getTarget();
-          return Optional.of(new TargetAndUnit(targetDto.getValue(), targetDto.getUnit()));
-        } else {
-          return Optional.of(new TargetAndUnit(targetValue.getCountProgress().getTarget(), null));
-        }
-      }).orElse(Optional.empty());
   }
 
   public void updateProcessOwner(final String userId, final String processDefKey, final String ownerId) {
@@ -306,12 +170,4 @@ public class ProcessOverviewService {
         throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
       });
   }
-
-  @Data
-  @AllArgsConstructor
-  private static class TargetAndUnit {
-    private String target;
-    private TargetValueUnit targetValueUnit;
-  }
-
 }
