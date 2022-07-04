@@ -420,9 +420,9 @@ public final class CatchEventBehavior {
       this.subscriptionPartitionId = subscriptionPartitionId;
       this.processInstanceKey = processInstanceKey;
       this.elementInstanceKey = elementInstanceKey;
-      this.bpmnProcessId = bpmnProcessId;
-      this.messageName = messageName;
-      this.correlationKey = correlationKey;
+      this.bpmnProcessId = BufferUtil.cloneBuffer(bpmnProcessId);
+      this.messageName = BufferUtil.cloneBuffer(messageName);
+      this.correlationKey = BufferUtil.cloneBuffer(correlationKey);
       this.closeOnCorrelate = closeOnCorrelate;
     }
 
