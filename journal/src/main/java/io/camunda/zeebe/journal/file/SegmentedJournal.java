@@ -651,6 +651,19 @@ public final class SegmentedJournal implements Journal {
     final var segmentFile = JournalSegmentFile.createSegmentFile(name, directory, descriptor.id());
     final MappedByteBuffer mappedSegment;
 
+    // pre-allocate segment files to deal with out-of-disk errors now instead of on flushing later
+    // on. this will avoid certain unrecoverable errors (e.g. SIGBUS) and also help efficiently deal
+    // with InternalError (which is difficult to distinguish/understand)
+    try {
+      FileUtil.allocate(segmentFile.toPath(), descriptor.length());
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format(
+              "Failed to pre-allocate [%d] bytes of disk space for new segment [%s]",
+              descriptor.length(), descriptor),
+          e);
+    }
+
     try {
       mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {

@@ -35,6 +35,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SuppressWarnings("resource")
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
@@ -130,6 +131,25 @@ class SegmentedJournalTest {
       assertThat(entry.asqn()).isEqualTo(asqn + i);
       assertThat(entry.data()).isEqualTo(data);
     }
+  }
+
+  @Test
+  void shouldPreAllocateNewSegments() {
+    // given
+    final var segmentSize = 1024 * 1024;
+    final SegmentedJournalBuilder builder =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data").toFile())
+            .withMaxSegmentSize(segmentSize)
+            .withJournalIndexDensity(journalIndexDensity)
+            .withName(JOURNAL_NAME);
+
+    // when
+    final SegmentedJournal journal = builder.build();
+
+    // then
+    final var segmentFile = journal.getFirstSegment().file().file();
+    assertThat(segmentFile).hasSize(segmentSize);
   }
 
   @Test
