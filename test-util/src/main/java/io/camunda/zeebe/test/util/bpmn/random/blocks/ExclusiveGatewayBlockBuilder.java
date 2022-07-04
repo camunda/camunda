@@ -121,9 +121,9 @@ public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
       final ExecutionPathSegment result, final Random random, final int branch) {
     // If the branch is the default flow we should always add the default steps
     // If not we randomly match the condition, or throw an incident and resolve it before matching
-    final int stepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
+    final int randomNextStepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
     final var executionStep =
-        switch (stepNumber) {
+        switch (randomNextStepNumber) {
           case 0 -> new StepPickDefaultCase(getElementId(), gatewayConditionVariable);
           case 1 -> new StepPickConditionCase(
               getElementId(), gatewayConditionVariable, branchIds.get(branch));
