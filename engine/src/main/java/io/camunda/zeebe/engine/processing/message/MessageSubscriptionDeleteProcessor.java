@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
@@ -33,16 +32,13 @@ public final class MessageSubscriptionDeleteProcessor
           + "but no such message subscription exists";
 
   private final MessageSubscriptionState subscriptionState;
-  private final SubscriptionCommandSender commandSender;
+
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionDeleteProcessor(
-      final MessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender,
-      final Writers writers) {
+      final MessageSubscriptionState subscriptionState, final Writers writers) {
     this.subscriptionState = subscriptionState;
-    this.commandSender = commandSender;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
   }
@@ -69,8 +65,7 @@ public final class MessageSubscriptionDeleteProcessor
       rejectCommand(record);
     }
 
-    sideEffect.accept(
-        new CloseProcessMessageSubscriptionSideEffectProducer(commandSender, subscriptionRecord));
+    sideEffect.accept(new CloseProcessMessageSubscriptionSideEffectProducer(subscriptionRecord));
   }
 
   private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
@@ -87,15 +82,12 @@ public final class MessageSubscriptionDeleteProcessor
   private static final class CloseProcessMessageSubscriptionSideEffectProducer
       implements SideEffectProducer {
 
-    private final SubscriptionCommandSender commandSender;
-
     private final long processInstanceKey;
     private final long elementInstanceKey;
     private final DirectBuffer messageNameBuffer;
 
     private CloseProcessMessageSubscriptionSideEffectProducer(
-        final SubscriptionCommandSender commandSender, final MessageSubscriptionRecord record) {
-      this.commandSender = commandSender;
+        final MessageSubscriptionRecord record) {
 
       processInstanceKey = record.getProcessInstanceKey();
       elementInstanceKey = record.getElementInstanceKey();
@@ -104,8 +96,10 @@ public final class MessageSubscriptionDeleteProcessor
 
     @Override
     public boolean produce(final SideEffectContext context) {
-      return commandSender.closeProcessMessageSubscription(
-          processInstanceKey, elementInstanceKey, messageNameBuffer);
+      return context
+          .getSiSubscriptionCommandSender()
+          .closeProcessMessageSubscription(
+              processInstanceKey, elementInstanceKey, messageNameBuffer);
     }
   }
 }

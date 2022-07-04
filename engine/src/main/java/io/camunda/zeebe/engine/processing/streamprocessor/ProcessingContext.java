@@ -26,7 +26,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.function.BooleanSupplier;
 
-public final class ProcessingContext implements ReadonlyProcessingContext, SideEffectContext {
+public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -51,6 +51,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext, SideE
 
   private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+
+  private SideEffectContext sideEffectContext;
 
   public ProcessingContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -222,6 +224,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext, SideE
 
   @Deprecated // this should be removed
   public SideEffectContext getSideEffectContext() {
-    return this;
+    return sideEffectContext;
+  }
+
+  public void setSideEffectContext(final SideEffectContext sideEffectContext) {
+    this.sideEffectContext = sideEffectContext;
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -29,18 +28,15 @@ public final class MessageSubscriptionRejectProcessor
 
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
-  private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionRejectProcessor(
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender,
       final Writers writers) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
-    this.commandSender = commandSender;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
   }
@@ -101,8 +97,7 @@ public final class MessageSubscriptionRejectProcessor
                 MessageSubscriptionIntent.CORRELATING,
                 correlatingSubscription);
 
-            sideEffect.accept(
-                new SendCorrelateCommandSideEffectProducer(commandSender, correlatingSubscription));
+            sideEffect.accept(new SendCorrelateCommandSideEffectProducer(correlatingSubscription));
           }
           return !canBeCorrelated;
         });

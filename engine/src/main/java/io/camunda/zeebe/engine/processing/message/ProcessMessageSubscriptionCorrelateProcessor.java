@@ -12,7 +12,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -47,7 +46,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
           + "but it is already closing";
 
   private final ProcessMessageSubscriptionState subscriptionState;
-  private final SubscriptionCommandSender subscriptionCommandSender;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final StateWriter stateWriter;
@@ -56,12 +54,10 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
   public ProcessMessageSubscriptionCorrelateProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
-    this.subscriptionCommandSender = subscriptionCommandSender;
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
     stateWriter = writers.state();

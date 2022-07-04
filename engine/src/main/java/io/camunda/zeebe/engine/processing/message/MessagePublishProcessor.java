@@ -11,7 +11,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
@@ -42,7 +41,6 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
-  private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
 
@@ -55,7 +53,6 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
       final EventScopeInstanceState eventScopeInstanceState,
-      final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessState processState,
@@ -63,7 +60,6 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
-    this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     eventHandle =
@@ -115,7 +111,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
     sideEffect.accept(
         new CorrelateMultipleProcessMessageSubscriptionsSideEffectProducer(
-            correlatingSubscriptions, commandSender, responseWriter, messageKey, messageRecord));
+            correlatingSubscriptions, responseWriter, messageKey, messageRecord));
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -186,7 +182,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       implements SideEffectProducer {
 
     private final Subscriptions correlatingSubscriptions;
-    private final SubscriptionCommandSender commandSender;
+
     private final TypedResponseWriter responseWriter;
 
     private final DirectBuffer nameBuffer;
@@ -196,12 +192,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
     private CorrelateMultipleProcessMessageSubscriptionsSideEffectProducer(
         final Subscriptions correlatingSubscriptions,
-        final SubscriptionCommandSender commandSender,
         final TypedResponseWriter responseWriter,
         final long messageKey,
         final MessageRecord record) {
       this.correlatingSubscriptions = correlatingSubscriptions;
-      this.commandSender = commandSender;
       this.responseWriter = responseWriter;
 
       this.messageKey = messageKey;
@@ -212,6 +206,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
     @Override
     public boolean produce(final SideEffectContext context) {
+      final var commandSender = context.getSiSubscriptionCommandSender();
       final var success =
           correlatingSubscriptions.visitSubscriptions(
               subscription ->

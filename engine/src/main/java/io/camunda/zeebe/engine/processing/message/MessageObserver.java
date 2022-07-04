@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -22,15 +21,11 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
-  private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
   private final MutablePendingMessageSubscriptionState pendingState;
 
   public MessageObserver(
-      final MessageState messageState,
-      final MutablePendingMessageSubscriptionState pendingState,
-      final SubscriptionCommandSender subscriptionCommandSender) {
-    this.subscriptionCommandSender = subscriptionCommandSender;
+      final MessageState messageState, final MutablePendingMessageSubscriptionState pendingState) {
     this.messageState = messageState;
     this.pendingState = pendingState;
   }

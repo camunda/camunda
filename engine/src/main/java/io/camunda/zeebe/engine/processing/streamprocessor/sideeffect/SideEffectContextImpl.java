@@ -9,7 +9,16 @@ package io.camunda.zeebe.engine.processing.streamprocessor.sideeffect;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 
-public interface SideEffectContext {
+public class SideEffectContextImpl implements SideEffectContext {
 
-  SubscriptionCommandSender getSiSubscriptionCommandSender();
+  private final SubscriptionCommandSender subscriptionCommandSender;
+
+  public SideEffectContextImpl(final SubscriptionCommandSender subscriptionCommandSender) {
+    this.subscriptionCommandSender = subscriptionCommandSender;
+  }
+
+  @Override
+  public SubscriptionCommandSender getSiSubscriptionCommandSender() {
+    return subscriptionCommandSender;
+  }
 }

@@ -51,6 +51,7 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContextImpl;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -223,6 +224,8 @@ final class PartitionFactory {
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
+      processingContext.setSideEffectContext(new SideEffectContextImpl(subscriptionCommandSender));
+
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(eventService);
 
@@ -230,7 +233,6 @@ final class PartitionFactory {
           EngineProcessors.createEngineProcessors(
               processingContext,
               localBroker.getPartitionsCount(),
-              subscriptionCommandSender,
               deploymentDistributor,
               deploymentRequestHandler,
               jobsAvailableNotification::onJobsAvailable,

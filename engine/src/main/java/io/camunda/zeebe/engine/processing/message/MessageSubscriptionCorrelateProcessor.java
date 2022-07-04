@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -40,12 +39,11 @@ public final class MessageSubscriptionCorrelateProcessor
   public MessageSubscriptionCorrelateProcessor(
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator = new MessageCorrelator(messageState, stateWriter);
   }
 
   @Override

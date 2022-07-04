@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -21,17 +20,12 @@ import org.agrona.collections.MutableBoolean;
 public final class MessageCorrelator {
 
   private final MessageState messageState;
-  private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
 
   private Consumer<SideEffectProducer> sideEffect;
 
-  public MessageCorrelator(
-      final MessageState messageState,
-      final SubscriptionCommandSender commandSender,
-      final StateWriter stateWriter) {
+  public MessageCorrelator(final MessageState messageState, final StateWriter stateWriter) {
     this.messageState = messageState;
-    this.commandSender = commandSender;
     this.stateWriter = stateWriter;
   }
 
@@ -75,8 +69,7 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffect.accept(
-          new SendCorrelateCommandSideEffectProducer(commandSender, subscriptionRecord));
+      sideEffect.accept(new SendCorrelateCommandSideEffectProducer(subscriptionRecord));
     }
 
     return correlateMessage;

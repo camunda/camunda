@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
@@ -23,7 +22,6 @@ public final class PendingProcessMessageSubscriptionChecker
   private static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
-  private final SubscriptionCommandSender commandSender;
   private final MutablePendingProcessMessageSubscriptionState pendingState;
   private final long subscriptionTimeoutInMillis;
 
@@ -31,9 +29,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private ScheduledTimer timer;
 
   public PendingProcessMessageSubscriptionChecker(
-      final SubscriptionCommandSender commandSender,
       final MutablePendingProcessMessageSubscriptionState pendingState) {
-    this.commandSender = commandSender;
     this.pendingState = pendingState;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();
   }

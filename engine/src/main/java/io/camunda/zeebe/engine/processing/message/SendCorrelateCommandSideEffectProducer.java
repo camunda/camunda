@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -16,7 +15,6 @@ import org.agrona.DirectBuffer;
 
 final class SendCorrelateCommandSideEffectProducer implements SideEffectProducer {
 
-  private final SubscriptionCommandSender commandSender;
   private final long processInstanceKey;
   private final long elementInstanceKey;
   private final DirectBuffer bpmnProcessIdBuffer;
@@ -25,10 +23,7 @@ final class SendCorrelateCommandSideEffectProducer implements SideEffectProducer
   private final DirectBuffer variablesBuffer;
   private final DirectBuffer correlationKeyBuffer;
 
-  SendCorrelateCommandSideEffectProducer(
-      final SubscriptionCommandSender commandSender,
-      final MessageSubscriptionRecord subscriptionRecord) {
-    this.commandSender = commandSender;
+  SendCorrelateCommandSideEffectProducer(final MessageSubscriptionRecord subscriptionRecord) {
 
     processInstanceKey = subscriptionRecord.getProcessInstanceKey();
     elementInstanceKey = subscriptionRecord.getElementInstanceKey();
@@ -41,13 +36,15 @@ final class SendCorrelateCommandSideEffectProducer implements SideEffectProducer
 
   @Override
   public boolean produce(final SideEffectContext context) {
-    return commandSender.correlateProcessMessageSubscription(
-        processInstanceKey,
-        elementInstanceKey,
-        bpmnProcessIdBuffer,
-        messageNameBuffer,
-        messageKey,
-        variablesBuffer,
-        correlationKeyBuffer);
+    return context
+        .getSiSubscriptionCommandSender()
+        .correlateProcessMessageSubscription(
+            processInstanceKey,
+            elementInstanceKey,
+            bpmnProcessIdBuffer,
+            messageNameBuffer,
+            messageKey,
+            variablesBuffer,
+            correlationKeyBuffer);
   }
 }

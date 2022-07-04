@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -46,7 +45,6 @@ import org.agrona.DirectBuffer;
 public final class CatchEventBehavior {
 
   private final ExpressionProcessor expressionProcessor;
-  private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
   private final StateWriter stateWriter;
 
@@ -64,12 +62,10 @@ public final class CatchEventBehavior {
       final ZeebeState zeebeState,
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final StateWriter stateWriter,
       final DueDateTimerChecker timerChecker,
       final int partitionsCount) {
     this.expressionProcessor = expressionProcessor;
-    this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
     this.partitionsCount = partitionsCount;
 
@@ -263,7 +259,6 @@ public final class CatchEventBehavior {
 
     sideEffects.add(
         new OpenMessageSubscriptionSideEffectProducer(
-            subscriptionCommandSender,
             subscriptionPartitionId,
             processInstanceKey,
             elementInstanceKey,
@@ -365,24 +360,19 @@ public final class CatchEventBehavior {
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
-    sideEffects.add(
-        new CloseMessageSubscriptionSideEffectProducer(
-            subscriptionCommandSender, subscription.getRecord()));
+    sideEffects.add(new CloseMessageSubscriptionSideEffectProducer(subscription.getRecord()));
   }
 
   private static final class CloseMessageSubscriptionSideEffectProducer
       implements SideEffectProducer {
 
-    private final SubscriptionCommandSender subscriptionCommandSender;
     private final int subscriptionPartitionId;
     private final long processInstanceKey;
     private final long elementInstanceKey;
     private final DirectBuffer messageName;
 
     private CloseMessageSubscriptionSideEffectProducer(
-        final SubscriptionCommandSender subscriptionCommandSender,
         final ProcessMessageSubscriptionRecord record) {
-      this.subscriptionCommandSender = subscriptionCommandSender;
 
       messageName = cloneBuffer(record.getMessageNameBuffer());
       subscriptionPartitionId = record.getSubscriptionPartitionId();
@@ -392,14 +382,15 @@ public final class CatchEventBehavior {
 
     @Override
     public boolean produce(final SideEffectContext sideEffectContext) {
-      return subscriptionCommandSender.closeMessageSubscription(
-          subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
+      return sideEffectContext
+          .getSiSubscriptionCommandSender()
+          .closeMessageSubscription(
+              subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
     }
   }
 
   private static final class OpenMessageSubscriptionSideEffectProducer
       implements SideEffectProducer {
-    private final SubscriptionCommandSender subscriptionCommandSender;
     private final int subscriptionPartitionId;
     private final long processInstanceKey;
     private final long elementInstanceKey;
@@ -409,7 +400,6 @@ public final class CatchEventBehavior {
     private final boolean closeOnCorrelate;
 
     private OpenMessageSubscriptionSideEffectProducer(
-        final SubscriptionCommandSender subscriptionCommandSender,
         final int subscriptionPartitionId,
         final long processInstanceKey,
         final long elementInstanceKey,
@@ -417,7 +407,6 @@ public final class CatchEventBehavior {
         final DirectBuffer messageName,
         final DirectBuffer correlationKey,
         final boolean closeOnCorrelate) {
-      this.subscriptionCommandSender = subscriptionCommandSender;
       this.subscriptionPartitionId = subscriptionPartitionId;
       this.processInstanceKey = processInstanceKey;
       this.elementInstanceKey = elementInstanceKey;
@@ -429,14 +418,16 @@ public final class CatchEventBehavior {
 
     @Override
     public boolean produce(final SideEffectContext context) {
-      return subscriptionCommandSender.openMessageSubscription(
-          subscriptionPartitionId,
-          processInstanceKey,
-          elementInstanceKey,
-          bpmnProcessId,
-          messageName,
-          correlationKey,
-          closeOnCorrelate);
+      return context
+          .getSiSubscriptionCommandSender()
+          .openMessageSubscription(
+              subscriptionPartitionId,
+              processInstanceKey,
+              elementInstanceKey,
+              bpmnProcessId,
+              messageName,
+              correlationKey,
+              closeOnCorrelate);
     }
   }
 

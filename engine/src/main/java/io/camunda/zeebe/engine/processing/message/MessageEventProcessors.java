@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -27,7 +26,6 @@ public final class MessageEventProcessors {
       final EventTriggerBehavior eventTriggerBehavior,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers) {
 
     final MutableMessageState messageState = zeebeState.getMessageState();
@@ -49,7 +47,6 @@ public final class MessageEventProcessors {
                 subscriptionState,
                 startEventSubscriptionState,
                 eventScopeInstanceState,
-                subscriptionCommandSender,
                 keyGenerator,
                 writers,
                 processState,
@@ -60,26 +57,20 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CREATE,
             new MessageSubscriptionCreateProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers, keyGenerator))
+                messageState, subscriptionState, writers, keyGenerator))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new MessageSubscriptionCorrelateProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers))
+            new MessageSubscriptionCorrelateProcessor(messageState, subscriptionState, writers))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.DELETE,
-            new MessageSubscriptionDeleteProcessor(
-                subscriptionState, subscriptionCommandSender, writers))
+            new MessageSubscriptionDeleteProcessor(subscriptionState, writers))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,
-            new MessageSubscriptionRejectProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers))
+            new MessageSubscriptionRejectProcessor(messageState, subscriptionState, writers))
         .withListener(
-            new MessageObserver(
-                messageState,
-                zeebeState.getPendingMessageSubscriptionState(),
-                subscriptionCommandSender));
+            new MessageObserver(messageState, zeebeState.getPendingMessageSubscriptionState()));
   }
 }

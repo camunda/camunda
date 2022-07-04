@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectContext;
@@ -35,7 +34,6 @@ public final class MessageSubscriptionCreateProcessor
 
   private final MessageCorrelator messageCorrelator;
   private final MessageSubscriptionState subscriptionState;
-  private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
@@ -44,14 +42,12 @@ public final class MessageSubscriptionCreateProcessor
   public MessageSubscriptionCreateProcessor(
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender,
       final Writers writers,
       final KeyGenerator keyGenerator) {
     this.subscriptionState = subscriptionState;
-    this.commandSender = commandSender;
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator = new MessageCorrelator(messageState, stateWriter);
   }
 
   @Override
@@ -64,8 +60,7 @@ public final class MessageSubscriptionCreateProcessor
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sideEffect.accept(
-          new OpenProcessMessageSubscriptionSideEffectProducer(commandSender, subscriptionRecord));
+      sideEffect.accept(new OpenProcessMessageSubscriptionSideEffectProducer(subscriptionRecord));
 
       streamWriter.appendRejection(
           record,
@@ -90,23 +85,20 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
 
     if (!isMessageCorrelated) {
-      sideEffect.accept(
-          new OpenProcessMessageSubscriptionSideEffectProducer(commandSender, subscriptionRecord));
+      sideEffect.accept(new OpenProcessMessageSubscriptionSideEffectProducer(subscriptionRecord));
     }
   }
 
   private static final class OpenProcessMessageSubscriptionSideEffectProducer
       implements SideEffectProducer {
 
-    private final SubscriptionCommandSender commandSender;
     private final long processInstanceKey;
     private final long elementInstanceKey;
     private final DirectBuffer messageNameBuffer;
     private final boolean isInterrupting;
 
     private OpenProcessMessageSubscriptionSideEffectProducer(
-        final SubscriptionCommandSender commandSender, final MessageSubscriptionRecord record) {
-      this.commandSender = commandSender;
+        final MessageSubscriptionRecord record) {
 
       processInstanceKey = record.getProcessInstanceKey();
       elementInstanceKey = record.getElementInstanceKey();
@@ -116,8 +108,10 @@ public final class MessageSubscriptionCreateProcessor
 
     @Override
     public boolean produce(final SideEffectContext context) {
-      return commandSender.openProcessMessageSubscription(
-          processInstanceKey, elementInstanceKey, messageNameBuffer, isInterrupting);
+      return context
+          .getSiSubscriptionCommandSender()
+          .openProcessMessageSubscription(
+              processInstanceKey, elementInstanceKey, messageNameBuffer, isInterrupting);
     }
   }
 }

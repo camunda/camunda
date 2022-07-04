@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedist
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -50,7 +49,6 @@ public final class EngineProcessors {
   public static TypedRecordProcessors createEngineProcessors(
       final ProcessingContext processingContext,
       final int partitionsCount,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final DeploymentResponder deploymentResponder,
       final Consumer<String> onJobsAvailableCallback,
@@ -83,7 +81,6 @@ public final class EngineProcessors {
             zeebeState,
             zeebeState.getKeyGenerator(),
             expressionProcessor,
-            subscriptionCommandSender,
             writers.state(),
             timerChecker,
             partitionsCount);
@@ -112,12 +109,7 @@ public final class EngineProcessors {
         actor,
         deploymentDistributor,
         zeebeState.getKeyGenerator());
-    addMessageProcessors(
-        eventTriggerBehavior,
-        subscriptionCommandSender,
-        zeebeState,
-        typedRecordProcessors,
-        writers);
+    addMessageProcessors(eventTriggerBehavior, zeebeState, typedRecordProcessors, writers);
 
     final var jobMetrics = new JobMetrics(partitionId);
 
@@ -126,7 +118,6 @@ public final class EngineProcessors {
             zeebeState,
             expressionProcessor,
             typedRecordProcessors,
-            subscriptionCommandSender,
             catchEventBehavior,
             eventTriggerBehavior,
             writers,
@@ -157,7 +148,6 @@ public final class EngineProcessors {
       final MutableZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
@@ -168,7 +158,6 @@ public final class EngineProcessors {
         zeebeState,
         expressionProcessor,
         typedRecordProcessors,
-        subscriptionCommandSender,
         catchEventBehavior,
         timerChecker,
         eventTriggerBehavior,
@@ -243,15 +232,10 @@ public final class EngineProcessors {
 
   private static void addMessageProcessors(
       final EventTriggerBehavior eventTriggerBehavior,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
-        eventTriggerBehavior,
-        typedRecordProcessors,
-        zeebeState,
-        subscriptionCommandSender,
-        writers);
+        eventTriggerBehavior, typedRecordProcessors, zeebeState, writers);
   }
 }

@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscript
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
@@ -51,7 +50,6 @@ public final class ProcessEventProcessors {
       final MutableZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
       final DueDateTimerChecker timerChecker,
       final EventTriggerBehavior eventTriggerBehavior,
@@ -82,12 +80,7 @@ public final class ProcessEventProcessors {
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
-        typedRecordProcessors,
-        subscriptionState,
-        subscriptionCommandSender,
-        eventTriggerBehavior,
-        zeebeState,
-        writers);
+        typedRecordProcessors, subscriptionState, eventTriggerBehavior, zeebeState, writers);
     addTimerStreamProcessors(
         typedRecordProcessors,
         timerChecker,
@@ -144,7 +137,6 @@ public final class ProcessEventProcessors {
   private static void addMessageStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessMessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender subscriptionCommandSender,
       final EventTriggerBehavior eventTriggerBehavior,
       final MutableZeebeState zeebeState,
       final Writers writers) {
@@ -158,18 +150,14 @@ public final class ProcessEventProcessors {
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
             new ProcessMessageSubscriptionCorrelateProcessor(
-                subscriptionState,
-                subscriptionCommandSender,
-                zeebeState,
-                eventTriggerBehavior,
-                writers))
+                subscriptionState, zeebeState, eventTriggerBehavior, writers))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
             new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, writers))
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
-                subscriptionCommandSender, zeebeState.getPendingProcessMessageSubscriptionState()));
+                zeebeState.getPendingProcessMessageSubscriptionState()));
   }
 
   private static void addTimerStreamProcessors(
