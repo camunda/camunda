@@ -103,14 +103,30 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     failedJob.setRetryBackoff(retryBackOff);
     if (retries > 0 && retryBackOff > 0) {
       final long receivedTime = command.getTimestamp();
-      failedJob.setRecurringTime(receivedTime + retryBackOff);
-      sideEffect.accept(
-          () -> {
-            jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
-            return true;
-          });
+      final long dueDate = receivedTime + retryBackOff;
+      failedJob.setRecurringTime(dueDate);
+
+      sideEffect.accept(new ScheduleBackOffSideEffectProducer(jobBackoffChecker, dueDate));
     }
     commandControl.accept(JobIntent.FAILED, failedJob);
     jobMetrics.jobFailed(failedJob.getType());
+  }
+
+  private static final class ScheduleBackOffSideEffectProducer implements SideEffectProducer {
+
+    private final JobBackoffChecker jobBackoffChecker;
+    private final long dueDate;
+
+    private ScheduleBackOffSideEffectProducer(
+        final JobBackoffChecker jobBackoffChecker, final long dueDate) {
+      this.jobBackoffChecker = jobBackoffChecker;
+      this.dueDate = dueDate;
+    }
+
+    @Override
+    public boolean flush() {
+      jobBackoffChecker.scheduleBackOff(dueDate);
+      return true;
+    }
   }
 }
