@@ -40,7 +40,7 @@ public class ProcessDigestRetrievalIT extends AbstractIT {
     processOverviewClient.updateProcessOwner("anotherProcess", "kermit");
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(2)

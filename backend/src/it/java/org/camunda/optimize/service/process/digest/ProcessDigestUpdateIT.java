@@ -106,7 +106,7 @@ public class ProcessDigestUpdateIT extends AbstractIT {
     );
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).singleElement()
@@ -117,7 +117,7 @@ public class ProcessDigestUpdateIT extends AbstractIT {
     processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(null, true));
 
     // when
-    final List<ProcessOverviewResponseDto> processesAfterUpdate = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processesAfterUpdate = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processesAfterUpdate).singleElement()
@@ -133,7 +133,7 @@ public class ProcessDigestUpdateIT extends AbstractIT {
     processOverviewClient.updateProcessOwner(DEF_KEY, DEFAULT_USERNAME);
 
     // when
-    final List<ProcessOverviewResponseDto> processesBeforeUpdate = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processesBeforeUpdate = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processesBeforeUpdate).singleElement()
@@ -144,7 +144,7 @@ public class ProcessDigestUpdateIT extends AbstractIT {
     processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(new AlertInterval(2, DAYS), true));
 
     // when
-    final List<ProcessOverviewResponseDto> processesAfterUpdate = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processesAfterUpdate = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processesAfterUpdate).singleElement()

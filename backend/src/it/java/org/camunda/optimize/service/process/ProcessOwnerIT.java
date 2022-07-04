@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -188,7 +189,7 @@ public class ProcessOwnerIT extends AbstractIT {
   }
 
   private void assertExpectedProcessOwner(final String defKey, final String expectedOwnerId) {
-    assertThat(getProcessOverView())
+    assertThat(getProcessOverView(null))
       .filteredOn(def -> def.getProcessDefinitionKey().equals(defKey))
       .extracting(ProcessOverviewResponseDto::getOwner)
       .singleElement()
@@ -199,9 +200,9 @@ public class ProcessOwnerIT extends AbstractIT {
           .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
   }
 
-  protected List<ProcessOverviewResponseDto> getProcessOverView() {
+  protected List<ProcessOverviewResponseDto> getProcessOverView(final ProcessOverviewSorter processOverviewSorter) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessOverviewRequest()
+      .buildGetProcessOverviewRequest(processOverviewSorter)
       .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
   }
 

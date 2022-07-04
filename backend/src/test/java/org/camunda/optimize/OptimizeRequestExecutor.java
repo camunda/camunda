@@ -31,7 +31,6 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -68,7 +67,7 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
-import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
@@ -505,9 +504,10 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessOverviewRequest() {
+  public OptimizeRequestExecutor buildGetProcessOverviewRequest(final ProcessOverviewSorter processOverviewSorter) {
     this.path = "process/overview";
     this.method = GET;
+    Optional.ofNullable(processOverviewSorter).ifPresent(sortParams -> addSortParams(processOverviewSorter.getSortRequestDto()));
     return this;
   }
 

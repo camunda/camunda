@@ -50,7 +50,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     String reportId2 = createKpiReport("2", PROCESS_DEFINITION_KEY);
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1)
@@ -85,7 +85,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     reportDataDto.setFilter(Collections.singletonList(startDateFilterDto));
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1)
@@ -107,7 +107,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     createReport("2", false, PROCESS_DEFINITION_KEY);
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1)
@@ -133,7 +133,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     String reportId4 = createKpiReport("2", defKey);
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(2)
@@ -173,7 +173,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     );
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1);
@@ -212,7 +212,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     expectedResponse.setUnit(TargetValueUnit.DAYS);
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1)
@@ -241,7 +241,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("2");
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1)

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.ProcessOverviewService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
@@ -41,10 +43,12 @@ public class ProcessOverviewRestService {
   @GET
   @Path("/overview")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ProcessOverviewResponseDto> getProcessOverviews(@Context ContainerRequestContext requestContext) {
+  public List<ProcessOverviewResponseDto> getProcessOverviews(@Context ContainerRequestContext requestContext,
+                                                              @BeanParam final ProcessOverviewSorter processOverviewSorter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
-    return processOverviewService.getAllProcessOverviews(userId, timezone);
+    List<ProcessOverviewResponseDto> processOverviewResponseDtos = processOverviewService.getAllProcessOverviews(userId, timezone);
+    return processOverviewSorter.applySort(processOverviewResponseDtos);
   }
 
   @PUT

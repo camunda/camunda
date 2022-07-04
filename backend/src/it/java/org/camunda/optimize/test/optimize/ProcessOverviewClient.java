@@ -10,6 +10,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -21,8 +22,12 @@ public class ProcessOverviewClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public List<ProcessOverviewResponseDto> getProcessOverviews() {
+    return getProcessOverviews(null);
+  }
+
+  public List<ProcessOverviewResponseDto> getProcessOverviews(final ProcessOverviewSorter processOverviewSorter) {
     return getRequestExecutor()
-      .buildGetProcessOverviewRequest()
+      .buildGetProcessOverviewRequest(processOverviewSorter)
       .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
