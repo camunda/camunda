@@ -18,8 +18,8 @@ export async function loadProcesses(sortBy, sortOrder) {
   return await response.json();
 }
 
-export function updateOwner(processDefinitionKey, id) {
-  return put(`api/process/${processDefinitionKey}/owner`, {id});
+export function updateProcess(processDefinitionKey, payload) {
+  return put(`api/process/${processDefinitionKey}`, payload);
 }
 
 export async function loadManagementDashboard() {

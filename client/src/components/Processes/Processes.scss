@@ -44,7 +44,20 @@
   .EntityList {
     .ListItem .meta,
     .columnHeaders .meta {
-      flex-basis: 250px;
+      flex-basis: 130px;
+    }
+
+    .ListItemAction {
+      width: 0;
+      margin: 0;
+    }
+
+    .columnHeaders {
+      padding-right: 0;
+
+      .meta:last-child span {
+        visibility: hidden;
+      }
     }
 
     .ownerInfo {

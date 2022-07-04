@@ -17,15 +17,15 @@ import {getOptimizeProfile} from 'config';
 import {DashboardView} from '../Dashboards/DashboardView';
 import KpiResult from './KpiResult';
 import KpiSummary from './KpiSummary';
-import EditOwnerModal from './EditOwnerModal';
-import {loadProcesses, updateOwner, loadManagementDashboard} from './service';
+import ConfigureProcessModal from './ConfigureProcessModal';
+import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 
 import './Processes.scss';
 
 export function Processes({mightFail}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
-  const [editOwnerInfo, setEditOwnerInfo] = useState();
+  const [editProcessConfig, setEditProcessConfig] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [dashboard, setDashboard] = useState();
 
@@ -56,6 +56,7 @@ export function Processes({mightFail}) {
     t('processes.timeKpi'),
     t('processes.qualityKpi'),
     t('dashboard.label'),
+    t('common.configure'),
   ];
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
@@ -87,7 +88,7 @@ export function Processes({mightFail}) {
         sorting={sorting}
         onChange={loadProcessesList}
         data={processes?.map(
-          ({processDefinitionKey, processDefinitionName, owner, kpis, linkToDashboard}) => {
+          ({processDefinitionKey, processDefinitionName, owner, digest, kpis, linkToDashboard}) => {
             const timeKpis = kpis?.filter((kpi) => kpi.type === 'time');
             const qualityKpis = kpis?.filter((kpi) => kpi.type === 'quality');
             const meta = [
@@ -108,17 +109,18 @@ export function Processes({mightFail}) {
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
               meta.unshift(
-                <div className="ownerInfo">
-                  <Tooltip content={owner?.name} overflowOnly>
-                    <div className="ownerName">{owner?.name}</div>
-                  </Tooltip>
-                  <Button
-                    className="processHoverBtn"
-                    onClick={() => setEditOwnerInfo({processDefinitionKey, owner})}
-                  >
-                    {owner?.name ? t('processes.editOwner') : t('processes.addOwner')}
-                  </Button>
-                </div>
+                <Tooltip content={owner?.name} overflowOnly>
+                  <div className="ownerName">{owner?.name}</div>
+                </Tooltip>
+              );
+
+              meta.push(
+                <Button
+                  className="processHoverBtn"
+                  onClick={() => setEditProcessConfig({processDefinitionKey, owner, digest})}
+                >
+                  {t('common.configure')}
+                </Button>
               );
             }
 
@@ -132,15 +134,15 @@ export function Processes({mightFail}) {
           }
         )}
       />
-      {editOwnerInfo && (
-        <EditOwnerModal
-          initialOwner={editOwnerInfo.owner}
-          onClose={() => setEditOwnerInfo()}
-          onConfirm={async (userId) => {
+      {editProcessConfig && (
+        <ConfigureProcessModal
+          initialConfig={editProcessConfig}
+          onClose={() => setEditProcessConfig()}
+          onConfirm={async (newConfig) => {
             await mightFail(
-              updateOwner(editOwnerInfo.processDefinitionKey, userId),
+              updateProcess(editProcessConfig.processDefinitionKey, newConfig),
               () => {
-                setEditOwnerInfo();
+                setEditProcessConfig();
                 loadProcessesList();
               },
               showError

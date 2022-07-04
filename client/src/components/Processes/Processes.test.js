@@ -12,8 +12,8 @@ import {EntityList} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import {Processes} from './Processes';
-import {loadProcesses, updateOwner, loadManagementDashboard} from './service';
-import EditOwnerModal from './EditOwnerModal';
+import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
+import ConfigureProcessModal from './ConfigureProcessModal';
 
 jest.mock('./service', () => ({
   loadProcesses: jest.fn().mockReturnValue([
@@ -25,7 +25,7 @@ jest.mock('./service', () => ({
       linkToDashboard: 'dashboardLink',
     },
   ]),
-  updateOwner: jest.fn(),
+  updateProcess: jest.fn(),
   loadManagementDashboard: jest.fn(),
 }));
 
@@ -69,7 +69,7 @@ it('should load processes with sort parameters', () => {
   expect(node.find('EntityList').prop('sorting')).toEqual({key: 'lastModifier', order: 'desc'});
 });
 
-it('should hide owner column in ccsm mode', async () => {
+it('should hide owner column and process config button in ccsm mode', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = shallow(<Processes {...props} />);
 
@@ -79,19 +79,23 @@ it('should hide owner column in ccsm mode', async () => {
   expect(node.find(EntityList).prop('data')[0].meta.length).toBe(3);
 });
 
-it('should edit a process owner', async () => {
-  const node = shallow(<Processes {...props} />);
+it('should edit a process config', async () => {
+  const testConfig = {
+    ownerId: 'testId',
+    processDigest: {enabled: true, checkInterval: {value: 1, unit: 'months'}},
+  };
 
+  const node = shallow(<Processes {...props} />);
   await runAllEffects();
 
-  const addOwnerBtn = node.find(EntityList).prop('data')[0].meta[0].props.children[1];
-  addOwnerBtn.props.onClick();
-  node.find(EditOwnerModal).simulate('confirm', 'userId');
+  const configureProcessBtn = node.find(EntityList).prop('data')[0].meta[4];
+  configureProcessBtn.props.onClick();
 
-  expect(updateOwner).toHaveBeenCalledWith('defKey', 'userId');
+  node.find(ConfigureProcessModal).simulate('confirm', testConfig);
+  expect(updateProcess).toHaveBeenCalledWith('defKey', testConfig);
 });
 
-it('should hide owner column in ccsm mode', async () => {
+it('should pass loaded reports and filters to the management dashboard view component', async () => {
   const testDashboard = {reports: [], availableFilters: []};
   loadManagementDashboard.mockReturnValueOnce(testDashboard);
   const node = shallow(<Processes {...props} />);
