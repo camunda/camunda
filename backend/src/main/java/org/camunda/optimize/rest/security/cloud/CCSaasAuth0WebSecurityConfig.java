@@ -30,10 +30,10 @@ public class CCSaasAuth0WebSecurityConfig {
   public static final String OAUTH_REDIRECT_ENDPOINT = "/sso-callback";
   public static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";
   public static final String URL_TEMPLATE = "https://%s%s";
+  public static final String AUTH_0_CLIENT_REGISTRATION_ID = "auth0";
   private static final String AUTH0_AUTH_ENDPOINT = "/authorize";
   private static final String AUTH0_TOKEN_ENDPOINT = "/oauth/token";
   private static final String AUTH0_USERINFO_ENDPOINT = "/userinfo";
-
   private final ConfigurationService configurationService;
 
   @Bean
@@ -42,16 +42,19 @@ public class CCSaasAuth0WebSecurityConfig {
       clientRegistrationRepository()
     );
   }
+
   @Bean
   public ClientRegistrationRepository clientRegistrationRepository() {
-    final ClientRegistration.Builder builder = ClientRegistration.withRegistrationId("auth0")
+    final ClientRegistration.Builder builder = ClientRegistration.withRegistrationId(AUTH_0_CLIENT_REGISTRATION_ID)
       .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
       .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
       // For allowed redirect urls auth0 is not supporting wildcards within the actual path.
       // Thus the clusterId is passed along as query parameter and will get picked up by the cloud ingress proxy
       // which redirects the callback to the particular Optimize instance of the cluster the login was issued from.
       .redirectUri("{baseUrl}" + OAUTH_REDIRECT_ENDPOINT + "?uuid=" + getAuth0Configuration().getClusterId())
-      .authorizationUri(buildAuth0CustomDomainUrl(AUTH0_AUTH_ENDPOINT))
+      .authorizationUri(buildAuth0CustomDomainUrl(
+        AUTH0_AUTH_ENDPOINT + "?audience=" + getAuth0Configuration().getUserAccessTokenAudience().orElse("")
+      ))
       .tokenUri(buildAuth0DomainUrl(AUTH0_TOKEN_ENDPOINT))
       .userInfoUri(buildAuth0DomainUrl(AUTH0_USERINFO_ENDPOINT))
       .scope("openid", "profile")

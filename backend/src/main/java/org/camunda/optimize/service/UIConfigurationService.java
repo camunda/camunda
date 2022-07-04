@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigRe
 import org.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
+import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
@@ -44,6 +46,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
   private final TenantService tenantService;
   private final SettingsService settingService;
   private final Environment environment;
+  // optional as it is only available conditionally, see implementations of the interface
+  private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
 
   // cached version
   private String logoAsBase64;
@@ -82,11 +86,9 @@ public class UIConfigurationService implements ConfigurationReloadable {
     onboarding.setOrgId(configurationService.getOnboarding().getProperties().getOrganizationId());
     onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
-    return uiConfigurationDto;
-  }
+    cloudSaasMetaInfoService.flatMap(CloudSaasMetaInfoService::getSalesPlanType).ifPresent(onboarding::setSalesPlanType);
 
-  public boolean isEnterpriseMode() {
-    return isEnterpriseMode(determineOptimizeProfile());
+    return uiConfigurationDto;
   }
 
   private boolean isEnterpriseMode(final String optimizeProfile) {

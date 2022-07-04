@@ -7,11 +7,12 @@ security:
       clientSecret: ${CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET:}
       domain: ${CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN:}
       customDomain: ${CAMUNDA_OPTIMIZE_AUTH0_DOMAIN:}
-      userIdAttributeName: 'name'
+      userIdAttributeName: 'sub'
       organizationClaimName: 'https://camunda.com/orgs'
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
       audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
+      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_USER_TOKEN_AUDIENCE:null}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
       issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}

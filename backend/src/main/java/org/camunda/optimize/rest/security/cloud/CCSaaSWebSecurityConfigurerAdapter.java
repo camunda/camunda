@@ -29,6 +29,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -51,6 +52,7 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOUR
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT;
 import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
@@ -136,12 +138,23 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
   private AuthenticationSuccessHandler getAuthenticationSuccessHandler() {
     return (request, response, authentication) -> {
       final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
-      final String authToken = sessionService.createAuthToken(user.getIdToken().getSubject());
+      final String userId = user.getIdToken().getSubject();
+      final String authToken = sessionService.createAuthToken(userId);
 
       if (hasAccess(user)) {
         final String optimizeAuthCookie =
           authCookieService.createNewOptimizeAuthCookie(authToken, request.getScheme());
         response.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
+
+        // spring security internally stores the access token as an authorized client, we retrieve it here to store it
+        // in a cookie to allow potential other Optimize webapps to reuse it
+        final OAuth2AccessToken serviceAccessToken = oAuth2AuthorizedClientService
+          .loadAuthorizedClient(AUTH_0_CLIENT_REGISTRATION_ID, userId)
+          .getAccessToken();
+        final String serviceTokenCookie = authCookieService.createOptimizeServiceTokenCookie(
+          serviceAccessToken, request.getScheme()
+        );
+        response.addHeader(HttpHeaders.SET_COOKIE, serviceTokenCookie);
 
         // we can't redirect to the previously accesses path or the root of the application as the Optimize Cookie
         // won't be sent by the browser in this case. This is because the chain of requests that lead to the

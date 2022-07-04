@@ -17,4 +17,5 @@ public class OnboardingResponseDto {
   private String appCuesScriptUrl;
   private String orgId;
   private String clusterId;
+  private String salesPlanType;
 }

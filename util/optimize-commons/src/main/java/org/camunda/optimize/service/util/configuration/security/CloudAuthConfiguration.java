@@ -7,6 +7,8 @@ package org.camunda.optimize.service.util.configuration.security;
 
 import lombok.Data;
 
+import java.util.Optional;
+
 @Data
 public class CloudAuthConfiguration {
   // oauth client id to use by Optimize
@@ -27,5 +29,10 @@ public class CloudAuthConfiguration {
   private String clusterId;
   // the audience (scope) for API access
   private String audience;
+  // the audience requested for a users service access token
+  private String userAccessTokenAudience;
 
+  public Optional<String> getUserAccessTokenAudience() {
+    return Optional.ofNullable(userAccessTokenAudience);
+  }
 }

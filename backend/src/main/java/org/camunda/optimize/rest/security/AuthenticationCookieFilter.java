@@ -39,6 +39,6 @@ public class AuthenticationCookieFilter extends AbstractPreAuthenticatedProcessi
   }
 
   private Optional<String> getJwtAuthenticationToken(final HttpServletRequest request) {
-    return AuthCookieService.getToken(request);
+    return AuthCookieService.getAuthCookieToken(request);
   }
 }
