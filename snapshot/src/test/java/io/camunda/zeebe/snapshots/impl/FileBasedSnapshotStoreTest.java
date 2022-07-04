@@ -280,6 +280,7 @@ public class FileBasedSnapshotStoreTest {
     assertThat(snapshotStore.getAvailableSnapshots().join())
         .containsExactlyInAnyOrder(reservedSnapshot, newSnapshot);
     assertThat(reservedSnapshot.getPath()).exists();
+    assertThat(newSnapshot.getPath()).exists();
   }
 
   @Test
@@ -295,6 +296,7 @@ public class FileBasedSnapshotStoreTest {
     // then
     assertThat(snapshotStore.getAvailableSnapshots().join()).containsExactly(newSnapshot);
     assertThat(reservedSnapshot.getPath()).doesNotExist();
+    assertThat(newSnapshot.getPath()).exists();
   }
 
   @Test
@@ -316,6 +318,7 @@ public class FileBasedSnapshotStoreTest {
     assertThat(snapshotStore.getAvailableSnapshots().join())
         .containsExactlyInAnyOrder(reservedSnashot, newSnapshot);
     assertThat(reservedSnashot.getPath()).exists();
+    assertThat(newSnapshot.getPath()).exists();
   }
 
   private boolean createSnapshotDir(final Path path) {
