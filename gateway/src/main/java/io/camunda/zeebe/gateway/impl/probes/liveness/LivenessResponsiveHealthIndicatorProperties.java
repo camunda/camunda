@@ -7,30 +7,37 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.liveness;
 
+import io.camunda.zeebe.gateway.impl.probes.health.HealthZeebeClientProperties;
 import io.camunda.zeebe.util.health.AbstractDelayedHealthIndicatorProperties;
 import java.time.Duration;
-import java.util.Objects;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "management.health.liveness.gateway-responsive")
 public class LivenessResponsiveHealthIndicatorProperties
     extends AbstractDelayedHealthIndicatorProperties {
 
-  private Duration requestTimeout = Duration.ofSeconds(5);
+  private HealthZeebeClientProperties healthZeebeClientProperties =
+      new HealthZeebeClientProperties();
+
+  public LivenessResponsiveHealthIndicatorProperties() {
+    healthZeebeClientProperties.setRequestTimeout(Duration.ofSeconds(5));
+  }
 
   @Override
   protected Duration getDefaultMaxDowntime() {
     return Duration.ofMinutes(10);
   }
 
-  public Duration getRequestTimeout() {
-    return requestTimeout;
+  public void setRequestTimeout(final Duration requestTimeout) {
+    healthZeebeClientProperties.setRequestTimeout(requestTimeout);
   }
 
-  public void setRequestTimeout(final Duration requestTimeout) {
-    if (Objects.requireNonNull(requestTimeout).toMillis() <= 0) {
-      throw new IllegalArgumentException("requestTimeout must be greater than 0");
-    }
-    this.requestTimeout = requestTimeout;
+  public HealthZeebeClientProperties getHealthZeebeClientProperties() {
+    return healthZeebeClientProperties;
+  }
+
+  public void setHealthZeebeClientProperties(
+      final HealthZeebeClientProperties healthZeebeClientProperties) {
+    this.healthZeebeClientProperties = healthZeebeClientProperties;
   }
 }

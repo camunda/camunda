@@ -21,7 +21,9 @@ public class ResponsiveHealthIndicatorAutoConfigurationTest {
     final var gatewayCfg = new GatewayCfg();
     final var timeout = Duration.ofSeconds(3);
     final var properties = new ResponsiveHealthIndicatorProperties();
-    properties.setRequestTimeout(timeout);
+    final HealthZeebeClientProperties healthZeebeClientProperties =
+        properties.getHealthZeebeClientProperties();
+    healthZeebeClientProperties.setRequestTimeout(timeout);
 
     final var sutAutoConfig = new ResponsiveHealthIndicatorAutoConfiguration();
 
@@ -32,6 +34,7 @@ public class ResponsiveHealthIndicatorAutoConfigurationTest {
     // then
     assertThat(actualHealthIndicator).isNotNull();
     assertThat(actualHealthIndicator.getGatewayCfg()).isSameAs(gatewayCfg);
-    assertThat(actualHealthIndicator.getDefaultTimeout()).isSameAs(timeout);
+    assertThat(actualHealthIndicator.getHealthZeebeClientProperties())
+        .isSameAs(healthZeebeClientProperties);
   }
 }

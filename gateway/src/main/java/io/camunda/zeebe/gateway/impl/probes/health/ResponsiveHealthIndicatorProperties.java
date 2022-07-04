@@ -14,16 +14,24 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "management.health.gateway-responsive")
 public class ResponsiveHealthIndicatorProperties {
 
-  private Duration requestTimeout = Duration.ofMillis(500);
+  private HealthZeebeClientProperties healthZeebeClientProperties =
+      new HealthZeebeClientProperties();
 
-  public Duration getRequestTimeout() {
-    return requestTimeout;
+  public ResponsiveHealthIndicatorProperties() {
+    healthZeebeClientProperties.setRequestTimeout(Duration.ofMillis(500));
   }
 
+  public HealthZeebeClientProperties getHealthZeebeClientProperties() {
+    return healthZeebeClientProperties;
+  }
+
+  public void setHealthZeebeClientProperties(
+      final HealthZeebeClientProperties healthZeebeClientProperties) {
+    this.healthZeebeClientProperties = healthZeebeClientProperties;
+  }
+
+  @Deprecated(forRemoval = true, since = "8.1.0")
   public void setRequestTimeout(final Duration requestTimeout) {
-    if (requestTimeout.toMillis() <= 0) {
-      throw new IllegalArgumentException("requestTimeout must be a positive value");
-    }
-    this.requestTimeout = requestTimeout;
+    healthZeebeClientProperties.setRequestTimeout(requestTimeout);
   }
 }
