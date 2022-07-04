@@ -39,7 +39,7 @@ public final class NoopResponseWriter implements TypedResponseWriter {
       final int requestStreamId) {}
 
   @Override
-  public boolean flush() {
+  public boolean produce() {
     return false;
   }
 

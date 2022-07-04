@@ -114,7 +114,7 @@ public final class MessageSubscriptionCreateProcessor
     }
 
     @Override
-    public boolean flush() {
+    public boolean produce() {
       return commandSender.openProcessMessageSubscription(
           processInstanceKey, elementInstanceKey, messageNameBuffer, isInterrupting);
     }

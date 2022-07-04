@@ -39,7 +39,7 @@ final class SendCorrelateCommandSideEffectProducer implements SideEffectProducer
   }
 
   @Override
-  public boolean flush() {
+  public boolean produce() {
     return commandSender.correlateProcessMessageSubscription(
         processInstanceKey,
         elementInstanceKey,

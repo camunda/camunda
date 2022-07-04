@@ -124,7 +124,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     }
 
     @Override
-    public boolean flush() {
+    public boolean produce() {
       jobBackoffChecker.scheduleBackOff(dueDate);
       return true;
     }

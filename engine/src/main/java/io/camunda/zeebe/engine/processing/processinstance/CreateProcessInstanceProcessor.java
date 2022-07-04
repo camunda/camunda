@@ -399,7 +399,7 @@ public final class CreateProcessInstanceProcessor
         });
 
     // applying the side effects is part of creating the event subscriptions
-    sideEffectQueue.flush();
+    sideEffectQueue.produce();
   }
 
   /**

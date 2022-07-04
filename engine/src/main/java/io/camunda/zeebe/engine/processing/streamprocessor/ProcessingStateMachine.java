@@ -435,7 +435,7 @@ public final class ProcessingStateMachine {
 
   private void executeSideEffects() {
     final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
+        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::produce, abortCondition);
 
     actor.runOnCompletion(
         retryFuture,

@@ -42,11 +42,11 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue>
    * @param position the position of the current record to process
    * @param record the record to process
    * @param responseWriter the default side effect that can be used for sending responses. {@link
-   *     TypedResponseWriter#flush()} must not be called in this method.
+   *     TypedResponseWriter#produce()} must not be called in this method.
    * @param streamWriter
    * @param sideEffect consumer to replace the default side effect (response writer). Can be used to
    *     implement other types of side effects or composite side effects. If a composite side effect
-   *     involving the response writer is used, {@link TypedResponseWriter#flush()} must be called
+   *     involving the response writer is used, {@link TypedResponseWriter#produce()} must be called
    *     in the {@link SideEffectProducer} implementation.
    */
   default void processRecord(

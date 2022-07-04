@@ -36,7 +36,8 @@ public interface TypedResponseWriter extends SideEffectProducer {
    *
    * @return false in case of backpressure, else true
    */
-  boolean flush();
+  @Override
+  boolean produce();
 
   void reset();
 }

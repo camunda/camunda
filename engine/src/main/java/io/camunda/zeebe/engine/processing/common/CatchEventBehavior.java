@@ -390,7 +390,7 @@ public final class CatchEventBehavior {
     }
 
     @Override
-    public boolean flush() {
+    public boolean produce() {
       return subscriptionCommandSender.closeMessageSubscription(
           subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
     }
@@ -427,7 +427,7 @@ public final class CatchEventBehavior {
     }
 
     @Override
-    public boolean flush() {
+    public boolean produce() {
       return subscriptionCommandSender.openMessageSubscription(
           subscriptionPartitionId,
           processInstanceKey,
@@ -519,7 +519,7 @@ public final class CatchEventBehavior {
     }
 
     @Override
-    public boolean flush() {
+    public boolean produce() {
       /* timerChecker implements onRecovered to recover from restart, so no need to schedule
       this in TimerCreatedApplier.*/
       timerChecker.scheduleTimer(dueDate);

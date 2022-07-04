@@ -19,5 +19,5 @@ public interface SideEffectProducer {
    *
    * @return <code>false</code> to indicate that the side effect could not be applied successfully
    */
-  boolean flush();
+  boolean produce();
 }

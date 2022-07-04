@@ -109,11 +109,16 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
   }
 
   @Override
-  public boolean flush() {
+  public boolean produce() {
     if (isResponseStaged) {
       writer.tryWriteResponse(requestStreamId, requestId);
     }
     return true;
+  }
+
+  @Override
+  public void reset() {
+    isResponseStaged = false;
   }
 
   private void stage(
@@ -139,9 +144,5 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
     this.requestId = requestId;
     this.requestStreamId = requestStreamId;
     isResponseStaged = true;
-  }
-
-  public void reset() {
-    isResponseStaged = false;
   }
 }

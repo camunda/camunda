@@ -64,7 +64,7 @@ public class EventTriggerBehavior {
     catchEventBehavior.unsubscribeEventSubprocesses(context, commandWriter, sideEffectQueue);
 
     // side effect can immediately executed, since on restart we not reprocess anymore the commands
-    sideEffectQueue.flush();
+    sideEffectQueue.produce();
   }
 
   public void triggerEventSubProcess(

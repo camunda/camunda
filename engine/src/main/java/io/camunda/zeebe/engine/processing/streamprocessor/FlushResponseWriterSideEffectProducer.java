@@ -19,7 +19,7 @@ public final class FlushResponseWriterSideEffectProducer implements SideEffectPr
   }
 
   @Override
-  public boolean flush() {
-    return responseWriter.flush();
+  public boolean produce() {
+    return responseWriter.produce();
   }
 }

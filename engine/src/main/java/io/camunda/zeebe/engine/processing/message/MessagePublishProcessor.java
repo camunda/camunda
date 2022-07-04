@@ -210,7 +210,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
 
     @Override
-    public boolean flush() {
+    public boolean produce() {
       final var success =
           correlatingSubscriptions.visitSubscriptions(
               subscription ->
@@ -223,7 +223,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
                       variablesBuffer,
                       correlationKeyBUffer));
 
-      return success && responseWriter.flush();
+      return success && responseWriter.produce();
     }
   }
 }

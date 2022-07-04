@@ -18,7 +18,7 @@ public final class SideEffectQueue implements SideEffectProducer, SideEffects {
   }
 
   @Override
-  public boolean flush() {
+  public boolean produce() {
     if (sideEffects.isEmpty()) {
       return true;
     }
@@ -32,7 +32,7 @@ public final class SideEffectQueue implements SideEffectProducer, SideEffects {
       final SideEffectProducer sideEffect = sideEffects.get(i);
 
       if (sideEffect != null) {
-        if (sideEffect.flush()) {
+        if (sideEffect.produce()) {
           sideEffects.set(i, null);
         } else {
           flushed = false;
