@@ -36,7 +36,9 @@ test('load task details when a task is selected', async (t) => {
   const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t
-    .expect(withinDetailsTable.getByRole('columnheader', {name: 'Name'}).exists)
+    .expect(
+      withinDetailsTable.getByRole('columnheader', {name: 'Task Name'}).exists,
+    )
     .ok()
     .expect(
       withinDetailsTable.getByRole('cell', {name: 'Some user activity'}).exists,
@@ -45,7 +47,8 @@ test('load task details when a task is selected', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Process'}).exists,
+      withinDetailsTable.getByRole('columnheader', {name: 'Process Name'})
+        .exists,
     )
     .ok()
     .expect(
@@ -56,7 +59,7 @@ test('load task details when a task is selected', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Creation Time'})
+      withinDetailsTable.getByRole('columnheader', {name: 'Creation Date'})
         .exists,
     )
     .ok();
@@ -128,7 +131,7 @@ test('complete task', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.queryByRole('columnheader', {name: 'Completion Time'})
+      withinDetailsTable.queryByRole('columnheader', {name: 'Completion Date'})
         .exists,
     )
     .notOk();
@@ -149,7 +152,7 @@ test('complete task', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Completion Time'})
+      withinDetailsTable.getByRole('columnheader', {name: 'Completion Date'})
         .exists,
     )
     .ok();

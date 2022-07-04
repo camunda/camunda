@@ -161,20 +161,20 @@ const Details: React.FC = () => {
       <Table data-testid="details-table">
         <tbody>
           <TR>
-            <RowTH>Name</RowTH>
+            <RowTH>Task Name</RowTH>
             <TD>{name}</TD>
           </TR>
           <TR>
-            <RowTH>Process</RowTH>
+            <RowTH>Process Name</RowTH>
             <TD>{processName}</TD>
           </TR>
           <TR>
-            <RowTH>Creation Time</RowTH>
+            <RowTH>Creation Date</RowTH>
             <TD>{formatDate(creationTime)}</TD>
           </TR>
           {completionTime && (
             <TR>
-              <RowTH>Completion Time</RowTH>
+              <RowTH>Completion Date</RowTH>
               <TD>{formatDate(completionTime)}</TD>
             </TR>
           )}
