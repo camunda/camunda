@@ -21,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Subscriptions {
 
+  // TODO doesn't need to be reusable anymore
   private final ReusableObjectList<Subscription> subscriptions =
       new ReusableObjectList<>(Subscription::new);
 

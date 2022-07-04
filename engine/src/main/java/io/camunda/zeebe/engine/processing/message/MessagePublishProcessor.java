@@ -29,7 +29,9 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 
 public final class MessagePublishProcessor implements TypedRecordProcessor<MessageRecord> {
 
@@ -44,11 +46,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final StateWriter stateWriter;
 
   private final EventHandle eventHandle;
-  private final Subscriptions correlatingSubscriptions = new Subscriptions();
 
-  private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
-  private long messageKey;
 
   public MessagePublishProcessor(
       final MessageState messageState,
@@ -77,10 +76,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    this.responseWriter = responseWriter;
     messageRecord = command.getValue();
-
-    correlatingSubscriptions.clear();
 
     if (messageRecord.hasMessageId()
         && messageState.exist(
@@ -103,7 +99,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final TypedRecord<MessageRecord> command,
       final TypedResponseWriter responseWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    messageKey = keyGenerator.nextKey();
+    final var messageKey = keyGenerator.nextKey();
 
     // calculate the deadline based on the command's timestamp
     messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
@@ -112,10 +108,13 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
-    correlateToSubscriptions(messageKey, messageRecord);
-    correlateToMessageStartEvents(messageRecord);
+    final var correlatingSubscriptions = new Subscriptions();
+    correlateToSubscriptions(messageKey, messageRecord, correlatingSubscriptions);
+    correlateToMessageStartEvents(messageKey, messageRecord, correlatingSubscriptions);
 
-    sideEffect.accept(this::sendCorrelateCommand);
+    sideEffect.accept(
+        new CorrelateMultipleProcessMessageSubscriptionsSideEffectProducer(
+            correlatingSubscriptions, commandSender, responseWriter, messageKey, messageRecord));
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -123,7 +122,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
   }
 
-  private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
+  private void correlateToSubscriptions(
+      final long messageKey,
+      final MessageRecord message,
+      final Subscriptions correlatingSubscriptions) {
     subscriptionState.visitSubscriptions(
         message.getNameBuffer(),
         message.getCorrelationKeyBuffer(),
@@ -152,7 +154,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         });
   }
 
-  private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
+  private void correlateToMessageStartEvents(
+      final long messageKey,
+      final MessageRecord messageRecord,
+      final Subscriptions correlatingSubscriptions) {
 
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageRecord.getNameBuffer(),
@@ -176,20 +181,49 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         });
   }
 
-  private boolean sendCorrelateCommand() {
+  private static final class CorrelateMultipleProcessMessageSubscriptionsSideEffectProducer
+      implements SideEffectProducer {
 
-    final var success =
-        correlatingSubscriptions.visitSubscriptions(
-            subscription ->
-                commandSender.correlateProcessMessageSubscription(
-                    subscription.getProcessInstanceKey(),
-                    subscription.getElementInstanceKey(),
-                    subscription.getBpmnProcessId(),
-                    messageRecord.getNameBuffer(),
-                    messageKey,
-                    messageRecord.getVariablesBuffer(),
-                    messageRecord.getCorrelationKeyBuffer()));
+    private final Subscriptions correlatingSubscriptions;
+    private final SubscriptionCommandSender commandSender;
+    private final TypedResponseWriter responseWriter;
 
-    return success && responseWriter.flush();
+    private final DirectBuffer nameBuffer;
+    private final long messageKey;
+    private final DirectBuffer variablesBuffer;
+    private final DirectBuffer correlationKeyBUffer;
+
+    private CorrelateMultipleProcessMessageSubscriptionsSideEffectProducer(
+        final Subscriptions correlatingSubscriptions,
+        final SubscriptionCommandSender commandSender,
+        final TypedResponseWriter responseWriter,
+        final long messageKey,
+        final MessageRecord record) {
+      this.correlatingSubscriptions = correlatingSubscriptions;
+      this.commandSender = commandSender;
+      this.responseWriter = responseWriter;
+
+      this.messageKey = messageKey;
+      nameBuffer = BufferUtil.cloneBuffer(record.getNameBuffer());
+      variablesBuffer = BufferUtil.cloneBuffer(record.getVariablesBuffer());
+      correlationKeyBUffer = BufferUtil.cloneBuffer(record.getCorrelationKeyBuffer());
+    }
+
+    @Override
+    public boolean flush() {
+      final var success =
+          correlatingSubscriptions.visitSubscriptions(
+              subscription ->
+                  commandSender.correlateProcessMessageSubscription(
+                      subscription.getProcessInstanceKey(),
+                      subscription.getElementInstanceKey(),
+                      subscription.getBpmnProcessId(),
+                      nameBuffer,
+                      messageKey,
+                      variablesBuffer,
+                      correlationKeyBUffer));
+
+      return success && responseWriter.flush();
+    }
   }
 }
