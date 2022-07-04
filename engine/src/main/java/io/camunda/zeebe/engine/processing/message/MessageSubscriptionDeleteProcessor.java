@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 
 public final class MessageSubscriptionDeleteProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -34,8 +35,6 @@ public final class MessageSubscriptionDeleteProcessor
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-
-  private MessageSubscriptionRecord subscriptionRecord;
 
   public MessageSubscriptionDeleteProcessor(
       final MessageSubscriptionState subscriptionState,
@@ -53,7 +52,7 @@ public final class MessageSubscriptionDeleteProcessor
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    subscriptionRecord = record.getValue();
+    final var subscriptionRecord = record.getValue();
 
     final var messageSubscription =
         subscriptionState.get(
@@ -69,7 +68,8 @@ public final class MessageSubscriptionDeleteProcessor
       rejectCommand(record);
     }
 
-    sideEffect.accept(this::sendAcknowledgeCommand);
+    sideEffect.accept(
+        new CloseProcessMessageSubscriptionSideEffectProducer(commandSender, subscriptionRecord));
   }
 
   private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
@@ -83,10 +83,28 @@ public final class MessageSubscriptionDeleteProcessor
     rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
   }
 
-  private boolean sendAcknowledgeCommand() {
-    return commandSender.closeProcessMessageSubscription(
-        subscriptionRecord.getProcessInstanceKey(),
-        subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageNameBuffer());
+  private static final class CloseProcessMessageSubscriptionSideEffectProducer
+      implements SideEffectProducer {
+
+    private final SubscriptionCommandSender commandSender;
+
+    private final long processInstanceKey;
+    private final long elementInstanceKey;
+    private final DirectBuffer messageNameBuffer;
+
+    private CloseProcessMessageSubscriptionSideEffectProducer(
+        final SubscriptionCommandSender commandSender, final MessageSubscriptionRecord record) {
+      this.commandSender = commandSender;
+
+      processInstanceKey = record.getProcessInstanceKey();
+      elementInstanceKey = record.getElementInstanceKey();
+      messageNameBuffer = BufferUtil.cloneBuffer(record.getMessageNameBuffer());
+    }
+
+    @Override
+    public boolean flush() {
+      return commandSender.closeProcessMessageSubscription(
+          processInstanceKey, elementInstanceKey, messageNameBuffer);
+    }
   }
 }
