@@ -7,6 +7,7 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -494,6 +495,19 @@ public class ElasticsearchChecks {
     }
   }
 
+  public long getActiveIncidentsCount(Long processInstanceKey) {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
+        .source(new SearchSourceBuilder()
+            .query(joinWithAnd(ACTIVE_INCIDENT_QUERY, NOT_PENDING_INCIDENT_QUERY,
+                termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Checks whether the incidents of given args[0] processInstanceKey (Long) equals given args[1] incidentsCount (Integer)
    * @return
@@ -507,8 +521,7 @@ public class ElasticsearchChecks {
       Long processInstanceKey = (Long)objects[0];
       int incidentsCount = (int)objects[1];
       try {
-        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
-        return allActivityInstances.stream().filter(ai -> ai.isIncident()).count() == incidentsCount;
+        return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }

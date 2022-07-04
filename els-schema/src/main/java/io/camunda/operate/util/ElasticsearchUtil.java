@@ -269,8 +269,9 @@ public abstract class ElasticsearchUtil {
               request.index(indexName);
               if (indexName == null) {
                 logger.warn("Index is not known for incident: " + incidentId);
+              } else {
+                esClient.update((UpdateRequest)request, RequestOptions.DEFAULT);
               }
-              esClient.update((UpdateRequest)request, RequestOptions.DEFAULT);
             } else {
               logger.error(String
                   .format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(),

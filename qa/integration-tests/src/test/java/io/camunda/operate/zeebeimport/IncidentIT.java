@@ -43,7 +43,6 @@ import org.springframework.util.unit.DataSize;
     classes = {TestApplication.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        OperateProperties.PREFIX + ".isNextFlowNodeInstances = true",
         //configure webhook to notify about the incidents
         OperateProperties.PREFIX + ".alert.webhook = http://somepath"})
 public class IncidentIT extends OperateZeebeIntegrationTest {

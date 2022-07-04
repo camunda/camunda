@@ -349,9 +349,12 @@ public class IncidentPostImportAction implements PostImportAction {
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT));
     } else {
-      //delete resolved incident
-      bulkUpdateRequest.add(new DeleteRequest().index(index)
-          .id(incidentId));
+      //we don't remove resolved incidents any more
+      Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(IncidentTemplate.PENDING, false);
+      bulkUpdateRequest.add(new UpdateRequest(index, incidentId)
+          .doc(updateFields)
+          .retryOnConflict(UPDATE_RETRY_COUNT));
     }
 
   }
