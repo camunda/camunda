@@ -77,4 +77,8 @@ final class ActorMetrics {
       SCHEDULING_LATENCY.labels(subscriptionType).observe(waitTimeNs / 1_000_000_000f);
     }
   }
+
+  public boolean isEnabled() {
+    return enabled;
+  }
 }

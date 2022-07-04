@@ -86,8 +86,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       try (final var timer = actorMetrics.startExecutionTimer(actorName)) {
         executeCurrentTask();
       }
-      actorMetrics.updateJobQueueLength(actorName, currentTask.estimateQueueLength());
-      actorMetrics.countExecution(actorName);
+      if (actorMetrics.isEnabled()) {
+        actorMetrics.updateJobQueueLength(actorName, currentTask.estimateQueueLength());
+        actorMetrics.countExecution(actorName);
+      }
     } else {
       idleStrategy.onIdle();
     }
