@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 
 public final class MessageSubscriptionCreateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -62,7 +63,8 @@ public final class MessageSubscriptionCreateProcessor
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sideEffect.accept(this::sendAcknowledgeCommand);
+      sideEffect.accept(
+          new OpenProcessMessageSubscriptionSideEffectProducer(commandSender, subscriptionRecord));
 
       streamWriter.appendRejection(
           record,
@@ -87,15 +89,34 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
 
     if (!isMessageCorrelated) {
-      sideEffect.accept(this::sendAcknowledgeCommand);
+      sideEffect.accept(
+          new OpenProcessMessageSubscriptionSideEffectProducer(commandSender, subscriptionRecord));
     }
   }
 
-  private boolean sendAcknowledgeCommand() {
-    return commandSender.openProcessMessageSubscription(
-        subscriptionRecord.getProcessInstanceKey(),
-        subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.isInterrupting());
+  private static final class OpenProcessMessageSubscriptionSideEffectProducer
+      implements SideEffectProducer {
+
+    private final SubscriptionCommandSender commandSender;
+    private final long processInstanceKey;
+    private final long elementInstanceKey;
+    private final DirectBuffer messageNameBuffer;
+    private final boolean isInterrupting;
+
+    private OpenProcessMessageSubscriptionSideEffectProducer(
+        final SubscriptionCommandSender commandSender, final MessageSubscriptionRecord record) {
+      this.commandSender = commandSender;
+
+      processInstanceKey = record.getProcessInstanceKey();
+      elementInstanceKey = record.getElementInstanceKey();
+      messageNameBuffer = BufferUtil.cloneBuffer(record.getMessageNameBuffer());
+      isInterrupting = record.isInterrupting();
+    }
+
+    @Override
+    public boolean flush() {
+      return commandSender.openProcessMessageSubscription(
+          processInstanceKey, elementInstanceKey, messageNameBuffer, isInterrupting);
+    }
   }
 }
