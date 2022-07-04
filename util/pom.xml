@@ -87,10 +87,22 @@
     </dependency>
 
     <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna-platform</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>provided</scope>
     </dependency>
+
+    <!-- Test dependencies -->
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -141,6 +153,17 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <!-- false positive - this is definitely used in NativeFS -->
+            <ignoredNonTestScopedDependency>net.java.dev.jna:jna-platform:jar</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>

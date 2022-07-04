@@ -9,7 +9,11 @@ package io.camunda.zeebe.util;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 
+import com.sun.jna.Platform;
+import io.camunda.zeebe.util.error.OutOfDiskSpaceException;
+import io.camunda.zeebe.util.fs.NativeFS;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
@@ -23,11 +27,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
-import org.agrona.SystemUtil;
+import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public final class FileUtil {
-  private static final Logger LOG = Loggers.FILE_LOGGER;
+  private static final Logger LOGGER = Loggers.FILE_LOGGER;
 
   private FileUtil() {}
 
@@ -60,7 +64,7 @@ public final class FileUtil {
     // Windows does not allow flushing a directory except under very specific conditions which are
     // not possible to produce with the standard JDK; it's also not necessary to flush a directory
     // in Windows
-    if (SystemUtil.isWindows()) {
+    if (Platform.isWindows()) {
       return;
     }
 
@@ -81,6 +85,64 @@ public final class FileUtil {
       throws IOException {
     Files.move(source, target, options);
     flushDirectory(target.getParent());
+  }
+
+  /**
+   * Allocates a new file at the given path with the given size. This method guarantees that the
+   * file will have at least the expected size (but may have one page more).
+   *
+   * <p>Convenience method for {@link #allocate(Path, long, NativeFS)} using the default {@link
+   * NativeFS}.
+   *
+   * @param path the destination path
+   * @param length the length of the file
+   */
+  public static void allocate(final Path path, final long length) throws IOException {
+    allocate(path, length, NativeFS.DEFAULT);
+  }
+
+  /**
+   * Allocates a new file at the given path with the given size. This method guarantees that the
+   * file will have at least the expected size (but may have one page more). You can pass an
+   * optional {@link NativeFS} which may be used for optimization.
+   *
+   * @param path the destination path
+   * @param length the length of the file
+   * @param nativeFS the native file system to use for optimization
+   */
+  public static void allocate(final Path path, final long length, final NativeFS nativeFS)
+      throws IOException {
+    if (length < 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected to allocate file [%s] of length [%d], but the length cannot be negative",
+              path, length));
+    }
+
+    try (final RandomAccessFile file = new RandomAccessFile(path.toFile(), "rw")) {
+      if (!nativeFS.supportsPosixFallocate()) {
+        IoUtil.fill(file.getChannel(), 0, length, (byte) 0);
+        return;
+      }
+
+      try {
+        nativeFS.posixFallocate(file.getFD(), 0, length);
+      } catch (final UnsupportedOperationException e) {
+        LOGGER.warn(
+            "Cannot use native calls to pre-allocate files; will fallback to zero-ing from now on",
+            e);
+        IoUtil.fill(file.getChannel(), 0, length, (byte) 0);
+      } catch (final OutOfDiskSpaceException e) {
+        throw new IOException(
+            String.format(
+                "Failed to allocate new file at [%s] of length [%d]; available disk space [%d] is insufficient",
+                path, length, Files.getFileStore(path).getUsableSpace()),
+            e);
+      } catch (final IOException e) {
+        throw new IOException(
+            String.format("Failed to allocate new file at [%s] of length [%d]", path, length), e);
+      }
+    }
   }
 
   public static void deleteFolder(final String path) throws IOException {
