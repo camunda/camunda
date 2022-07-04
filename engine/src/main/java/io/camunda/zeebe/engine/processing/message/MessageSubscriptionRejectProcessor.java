@@ -101,21 +101,11 @@ public final class MessageSubscriptionRejectProcessor
                 MessageSubscriptionIntent.CORRELATING,
                 correlatingSubscription);
 
-            sideEffect.accept(() -> sendCorrelateCommand(correlatingSubscription));
+            sideEffect.accept(
+                new SendCorrelateCommandSideEffectProducer(commandSender, correlatingSubscription));
           }
           return !canBeCorrelated;
         });
-  }
-
-  private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
-    return commandSender.correlateProcessMessageSubscription(
-        subscription.getProcessInstanceKey(),
-        subscription.getElementInstanceKey(),
-        subscription.getBpmnProcessIdBuffer(),
-        subscription.getMessageNameBuffer(),
-        subscription.getMessageKey(),
-        subscription.getVariablesBuffer(),
-        subscription.getCorrelationKeyBuffer());
   }
 
   private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
