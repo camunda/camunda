@@ -10,8 +10,11 @@ package io.camunda.zeebe.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-public class FeatureFlagsTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class FeatureFlagsTest {
 
   @Test
   void testDefaultValues() {
@@ -20,6 +23,7 @@ public class FeatureFlagsTest {
 
     // then
     assertThat(sut.yieldingDueDateChecker()).isFalse();
+    assertThat(sut.disableAllocateOptimization()).isFalse();
   }
 
   @Test
@@ -29,5 +33,6 @@ public class FeatureFlagsTest {
 
     // then
     assertThat(sut.yieldingDueDateChecker()).isTrue();
+    assertThat(sut.disableAllocateOptimization()).isFalse();
   }
 }

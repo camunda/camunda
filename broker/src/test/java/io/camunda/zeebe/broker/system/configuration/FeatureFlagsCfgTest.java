@@ -12,8 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-public class FeatureFlagsCfgTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class FeatureFlagsCfgTest {
 
   public final Map<String, String> environment = new HashMap<>();
 
@@ -38,5 +41,28 @@ public class FeatureFlagsCfgTest {
 
     // then
     assertThat(featureFlagsCfg.isEnableYieldingDueDateChecker()).isFalse();
+  }
+
+  @Test
+  public void shouldSetDisableAllocateOptimizationFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isAllocateOptimizationDisabled()).isTrue();
+  }
+
+  @Test
+  public void shouldDisableAllocateOptimizationFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.disableAllocateOptimization", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isAllocateOptimizationDisabled()).isFalse();
   }
 }

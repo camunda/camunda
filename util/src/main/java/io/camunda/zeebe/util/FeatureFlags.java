@@ -10,7 +10,8 @@ package io.camunda.zeebe.util;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-public record FeatureFlags(boolean yieldingDueDateChecker /*, boolean foo*/) {
+public record FeatureFlags(
+    boolean yieldingDueDateChecker, boolean disableAllocateOptimization /*, boolean foo*/) {
 
   /* To add a new feature toggle, please follow these steps:
    *
@@ -40,9 +41,11 @@ public record FeatureFlags(boolean yieldingDueDateChecker /*, boolean foo*/) {
   //  protected static final boolean FOO_DEFAULT = false;
 
   private static final boolean YIELDING_DUE_DATE_CHECKER = false;
+  private static final boolean DISABLE_ALLOCATE_OPTIMIZATION = false;
 
   public static FeatureFlags createDefault() {
-    return new FeatureFlags(YIELDING_DUE_DATE_CHECKER /*, FOO_DEFAULT*/);
+    return new FeatureFlags(
+        YIELDING_DUE_DATE_CHECKER, DISABLE_ALLOCATE_OPTIMIZATION /*, FOO_DEFAULT*/);
   }
 
   /**
@@ -51,7 +54,9 @@ public record FeatureFlags(boolean yieldingDueDateChecker /*, boolean foo*/) {
    * @return
    */
   public static FeatureFlags createDefaultForTests() {
-    return new FeatureFlags(/* YIELDING_DUE_DATE_CHECKER*/ true /*, FOO_DEFAULT*/);
+    return new FeatureFlags(
+        /* YIELDING_DUE_DATE_CHECKER*/ true, /* DISABLE_ALLOCATE_OPTIMIZATION*/
+        false /*, FOO_DEFAULT*/);
   }
 
   @Override

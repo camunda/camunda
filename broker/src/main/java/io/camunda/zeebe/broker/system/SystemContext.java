@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.util.fs.NativeFS;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,6 +65,11 @@ public final class SystemContext {
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
     scheduler = initScheduler(clock, brokerId);
+
+    // TODO: figure out a better way to apply this flag
+    if (brokerCfg.getExperimental().getFeatures().isAllocateOptimizationDisabled()) {
+      NativeFS.DEFAULT.disablePosixFallocate();
+    }
   }
 
   private void validateConfiguration() {

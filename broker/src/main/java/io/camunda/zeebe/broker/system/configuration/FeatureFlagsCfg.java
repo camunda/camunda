@@ -31,6 +31,7 @@ public final class FeatureFlagsCfg {
   //  }
 
   private boolean enableYieldingDueDateChecker = DEFAULT_SETTINGS.yieldingDueDateChecker();
+  private boolean disableAllocateOptimization = DEFAULT_SETTINGS.disableAllocateOptimization();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -40,8 +41,17 @@ public final class FeatureFlagsCfg {
     this.enableYieldingDueDateChecker = enableYieldingDueDateChecker;
   }
 
+  public boolean isAllocateOptimizationDisabled() {
+    return disableAllocateOptimization;
+  }
+
+  public void disableAllocateOptimization(final boolean disableAllocateOptimization) {
+    this.disableAllocateOptimization = disableAllocateOptimization;
+  }
+
   public FeatureFlags toFeatureFlags() {
-    return new FeatureFlags(enableYieldingDueDateChecker /*, enableFoo*/);
+    return new FeatureFlags(
+        enableYieldingDueDateChecker, disableAllocateOptimization /*, enableFoo*/);
   }
 
   @Override
