@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
 
 public final class MessageCorrelator {
@@ -75,20 +77,48 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
+      sideEffect.accept(
+          new SendCorrelateCommandSideEffectProducer(commandSender, subscriptionRecord));
     }
 
     return correlateMessage;
   }
 
-  private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
-    return commandSender.correlateProcessMessageSubscription(
-        subscriptionRecord.getProcessInstanceKey(),
-        subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getBpmnProcessIdBuffer(),
-        subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.getMessageKey(),
-        subscriptionRecord.getVariablesBuffer(),
-        subscriptionRecord.getCorrelationKeyBuffer());
+  private static final class SendCorrelateCommandSideEffectProducer implements SideEffectProducer {
+
+    private final SubscriptionCommandSender commandSender;
+    private final long processInstanceKey;
+    private final long elementInstanceKey;
+    private final DirectBuffer bpmnProcessIdBuffer;
+    private final DirectBuffer messageNameBuffer;
+    private final long messageKey;
+    private final DirectBuffer variablesBuffer;
+    private final DirectBuffer correlationKeyBuffer;
+
+    private SendCorrelateCommandSideEffectProducer(
+        final SubscriptionCommandSender commandSender,
+        final MessageSubscriptionRecord subscriptionRecord) {
+      this.commandSender = commandSender;
+
+      processInstanceKey = subscriptionRecord.getProcessInstanceKey();
+      elementInstanceKey = subscriptionRecord.getElementInstanceKey();
+      bpmnProcessIdBuffer = BufferUtil.cloneBuffer(subscriptionRecord.getBpmnProcessIdBuffer());
+      messageNameBuffer = BufferUtil.cloneBuffer(subscriptionRecord.getMessageNameBuffer());
+      messageKey = subscriptionRecord.getMessageKey();
+      variablesBuffer = BufferUtil.cloneBuffer(subscriptionRecord.getVariablesBuffer());
+      correlationKeyBuffer = BufferUtil.cloneBuffer(subscriptionRecord.getCorrelationKeyBuffer());
+    }
+
+    @Override
+    public boolean flush() {
+      return commandSender.correlateProcessMessageSubscription(
+          processInstanceKey,
+          elementInstanceKey,
+          bpmnProcessIdBuffer,
+          messageNameBuffer,
+          messageKey,
+          variablesBuffer,
+          correlationKeyBuffer);
+    }
   }
 }
