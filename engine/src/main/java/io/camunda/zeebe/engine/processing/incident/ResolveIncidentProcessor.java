@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.FlushResponseWriterSideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -111,7 +112,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
         .ifRightOrLeft(
             failedCommand -> {
               sideEffects.clear();
-              sideEffects.add(responseWriter::flush);
+              sideEffects.add(new FlushResponseWriterSideEffectProducer(responseWriter));
 
               bpmnStreamProcessor.processRecord(
                   failedCommand, noopResponseWriter, streamWriter, sideEffects::add);
